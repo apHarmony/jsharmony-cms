@@ -1,0 +1,165 @@
+{
+  "code_branch_type": {
+    "type": "code",
+    "caption": "Branch Type",
+    "init_data": [
+      { "code_val": "USER", "code_txt": "User", "code_seq": 1 },
+      { "code_val": "PUBLIC", "code_txt": "Public", "code_seq": 2 },
+      { "code_val": "PUBLISH", "code_txt": "Publish", "code_seq": 3 }
+    ]
+  },
+
+  "code_branch_item_action": {
+    "type": "code",
+    "caption": "Branch Item Action",
+    "init_data": [
+      { "code_val": "ADD", "code_txt": "Add", "code_seq": 1 },
+      { "code_val": "DELETE", "code_txt": "Delete", "code_seq": 2 },
+      { "code_val": "UPDATE", "code_txt": "Update", "code_seq": 3 }
+    ]
+  },
+
+  "branch": {
+    "type": "table",
+    "caption": ["Branch", "Branches"],
+    "columns": [
+      { "name": "branch_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "branch_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_type": "code_val" }, "null": false },
+      { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
+      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": "branch_id" } },
+
+      { "name": "branch_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_name","branch_user_id"]
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { "branch_name": "master", "branch_type": "PUBLISH" }
+    ]
+  },
+  
+  "branch_menu": {
+    "type": "table",
+    "caption": ["Branch Menu", "Branch Menus"],
+    "columns": [
+      { "name": "branch_menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "menu_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "branch_menu_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "menu_orig_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      
+      { "name": "branch_menu_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_menu_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_menu_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_menu_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","menu_key"]
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_menu_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_menu_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_menu.branch_menu_action='DELETE',menu_id,null);",
+          "errorif(branch_menu_action='DELETE' and null(menu_orig_id),'menu_orig_id is required for DELETE action');",
+          "errorif(branch_menu_action='UPDATE' and null(menu_id),'menu_id is required for UPDATE action');",
+          "errorif(branch_menu_action='UPDATE' and null(menu_orig_id),'menu_orig_id is required for UPDATE action');",
+          "errorif(branch_menu_action='ADD' and null(menu_id),'menu_id is required for ADD action');",
+          "errorif(branch_menu_action='ADD' and not(null(menu_orig_id)),'menu_orig_id must be null for ADD action');"
+        ]
+      }
+    ],
+    "sample_data": [
+      { 
+        "branch_id": {"sql":"(select top 1 branch_id from {schema}.branch where branch_name='master' and branch_user_id is null)"},
+        "menu_key": {"sql":"(select top 1 menu_key from {schema}.menu where menu_name='Site Menu')"},
+        "menu_id": {"sql":"(select top 1 menu_id from {schema}.menu where menu_name='Site Menu')"}
+      },
+      { 
+        "branch_id": {"sql":"(select top 1 branch_id from {schema}.branch where branch_name='master' and branch_user_id is null)"},
+        "menu_key": {"sql":"(select top 1 menu_key from {schema}.menu where menu_name='Footer Menu')"},
+        "menu_id": {"sql":"(select top 1 menu_id from {schema}.menu where menu_name='Footer Menu')"}
+      }
+    ]
+  },
+
+  "branch_page": {
+    "type": "table",
+    "caption": ["Branch Page", "Branch Pages"],
+    "columns": [
+      { "name": "branch_page_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "branch_page_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "page_orig_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      
+      { "name": "branch_page_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_page_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_page_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_page_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","page_key"]
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_page_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_page.branch_page_action='DELETE',page_id,null);",
+          "errorif(branch_page_action='DELETE' and null(page_orig_id),'page_orig_id is required for DELETE action');",
+          "errorif(branch_page_action='UPDATE' and null(page_id),'page_id is required for UPDATE action');",
+          "errorif(branch_page_action='UPDATE' and null(page_orig_id),'page_orig_id is required for UPDATE action');",
+          "errorif(branch_page_action='ADD' and null(page_id),'page_id is required for ADD action');",
+          "errorif(branch_page_action='ADD' and not(null(page_orig_id)),'page_orig_id must be null for ADD action');"
+        ]
+      }
+    ]
+  },
+
+  "branch_media": {
+    "type": "table",
+    "caption": ["Branch Media", "Branch Media"],
+    "columns": [
+      { "name": "branch_media_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" }, "null": false , "actions": ["prevent_update"]},
+      { "name": "media_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "branch_media_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "media_orig_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      
+      { "name": "branch_media_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_media_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_media_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_media_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","media_key"]
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_media_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_media.branch_media_action='DELETE',media_id,null);",
+          "errorif(branch_media_action='DELETE' and null(media_orig_id),'media_orig_id is required for DELETE action');",
+          "errorif(branch_media_action='UPDATE' and null(media_id),'media_id is required for UPDATE action');",
+          "errorif(branch_media_action='UPDATE' and null(media_orig_id),'media_orig_id is required for UPDATE action');",
+          "errorif(branch_media_action='ADD' and null(media_id),'media_id is required for ADD action');",
+          "errorif(branch_media_action='ADD' and not(null(media_orig_id)),'media_orig_id must be null for ADD action');"
+        ]
+      }
+    ]
+  }
+}

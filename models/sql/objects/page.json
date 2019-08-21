@@ -1,0 +1,92 @@
+{
+  "page_key": {
+    "type": "table",
+    "caption": ["Page Key", "Page Keys"],
+    "columns": [
+      { "name": "page_key", "type": "bigint", "key": true, "identity": true, "null": false }
+    ]
+  },
+
+  "page": {
+    "type": "table",
+    "caption": ["Page","Pages"],
+    "columns": [
+      { "name": "page_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "page_title", "type": "varchar", "length": 1024 },
+      { "name": "page_path", "type": "varchar", "length": 2048, "null": false },
+      { "name": "page_tags", "type": "varchar", "length": -1 },
+      { "name": "page_author", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
+      { "name": "template_id", "type": "varchar", "length": 255 },
+
+      { "name": "page_seo_title", "type": "varchar", "length": 2048 },
+      { "name": "page_seo_canonical_url", "type": "varchar", "length": 2048 },
+      { "name": "page_seo_metadesc", "type": "varchar", "length": -1 },
+
+      { "name": "page_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
+      { "name": "page_lang", "type": "varchar", "length": 32, "foreignkey": { "code_lang": "code_val" } },
+      
+      { "name": "page_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "page_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "page_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "page_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          "setif(null(page.page_key),page_key,page.page_id);",
+          "setif(null(page.page_author),page_author,jsharmony.my_sys_user_id());"
+        ]
+      },
+      { "on": ["update"], "exec": [
+          "errorif(update(page_key) and (deleted(page_key) is not null),'Cannot update page_key');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(page_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { "page_path": "/index.htm", "page_title": "Welcome", "page_author": 1, "template_id": "default" },
+      { "page_path": "/style-guide.htm", "page_title": "Style Guide", "page_author": 1, "template_id": "default" }
+    ],
+    "sample_data_files": [
+      { "1.json": "page/1.json" },
+      { "2.json": "page/2.json" }
+    ]
+  },
+
+  "category": {
+    "type": "table",
+    "caption": ["Category","Categories"],
+    "columns": [
+      { "name": "category_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "category_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "category_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
+      { "name": "category_seq", "type": "int" },
+      
+      { "name": "category_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "category_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "category_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "category_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(category_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(category_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "page_category_id": {
+    "type": "table",
+    "caption":["Page Category","Page Categories"],
+    "columns": [
+      { "name": "page_category_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false },
+      { "name": "category_id", "type": "bigint", "foreignkey": { "category": "category_id" }, "null": false }
+    ]
+  }
+}

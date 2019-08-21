@@ -1,0 +1,46 @@
+{
+  "code_redirect_url_type": {
+    "type": "code",
+    "caption": "Redirect URL Type",
+    "init_data": [
+      { "code_val": "BEGINS", "code_txt": "Begins With", "code_seq": 1 },
+      { "code_val": "EXACT", "code_txt": "Exact Match", "code_seq": 2 },
+      { "code_val": "REGEX", "code_txt": "Regular Expression", "code_seq": 3 }
+    ]
+  },
+
+  "code_redirect_http_code": {
+    "type": "code",
+    "caption": "Redirect HTTP Code",
+    "init_data": [
+      { "code_val": "301", "code_txt": "301 (Permanent)", "code_seq": 1 },
+      { "code_val": "302", "code_txt": "302 (Temporary)", "code_seq": 2 },
+      { "code_val": "PASSTHRU", "code_txt": "Pass-thru (Proxy)", "code_seq": 3 }
+    ]
+  },
+
+  "redirect": {
+    "type": "table",
+    "caption": ["Redirect","Redirects"],
+    "columns": [
+      { "name": "redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "redirect_url", "type": "varchar", "length": 1024, "null": false },
+      { "name": "redirect_url_type", "type": "varchar", "length": 32, "foreignkey": { "code_redirect_url_type": "code_val" }, "null": false, "default": "EXACT" },
+      { "name": "redirect_seq", "type": "int" },
+      { "name": "redirect_dest", "type": "varchar", "length": 1024, "null": false },
+      { "name": "redirect_http_code", "type": "varchar", "length": 32, "foreignkey": { "code_redirect_http_code": "code_val" }, "null": false, "default": "301" },
+      
+      { "name": "redirect_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "redirect_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "redirect_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "redirect_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(redirect_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(redirect_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  }
+}

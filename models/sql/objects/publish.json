@@ -1,0 +1,59 @@
+{
+  "code_publish_review_sts": {
+    "type": "code",
+    "caption": "Publish Review Status",
+    "init_data": [
+      { "code_val": "APPROVED", "code_txt": "Approved", "code_seq": 1 },
+      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 2 },
+      { "code_val": "REJECTED", "code_txt": "Rejected", "code_seq": 3 }
+    ]
+  },
+
+  "code_publish_sts": {
+    "type": "code",
+    "caption": "Publish Status",
+    "init_data": [
+      { "code_val": "CANCEL", "code_txt": "Canceled", "code_seq": 1 },
+      { "code_val": "COMPLETE", "code_txt": "Complete", "code_seq": 2 },
+      { "code_val": "HOLD", "code_txt": "On Hold", "code_seq": 3 },
+      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 4 }
+    ]
+  },
+
+  "publish": {
+    "type": "table",
+    "caption": ["Publish Request","Publish Requests"],
+    "columns": [
+      { "name": "publish_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false },
+      { "name": "publish_date", "type": "datetime", "length": 7 },
+      { "name": "publish_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_publish_review_sts": "code_val" } },
+      { "name": "publish_sts", "type": "varchar", "length": 32, "foreignkey": { "code_publish_sts": "code_val" }, "null": false, "default": "HOLD" },
+      { "name": "publish_target_id", "type": "varchar", "length": 1024 },
+      
+      { "name": "publish_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "publish_sts_user", "type": "varchar", "length": 20 },
+      { "name": "publish_review_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "publish_review_sts_user", "type": "varchar", "length": 20 },
+      { "name": "publish_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "publish_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "publish_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "publish_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(publish_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(publish_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(publish_sts),publish_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(publish_sts),publish_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(publish_review_sts),publish_review_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(publish_review_sts),publish_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
+          "errorif(publish_sts='PENDING' and null(publish_date),'publish_sts PENDING requires publish_date');",
+          "errorif(publish_sts='PENDING' and null(publish_target_id),'publish_sts PENDING requires publish_target_id');",
+          "errorif(publish_sts='COMPLETE' and null(publish_date),'publish_sts PENDING requires publish_date');",
+          "errorif(publish_sts='COMPLETE' and null(publish_target_id),'publish_sts PENDING requires publish_target_id');"
+        ]
+      }
+    ]
+  }
+}

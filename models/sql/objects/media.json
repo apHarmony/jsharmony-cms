@@ -1,0 +1,106 @@
+{
+  "code_media_type": {
+    "type": "code",
+    "code_type": "app",
+    "caption": "Media Type",
+    "init_data": [
+      { "code_val": "ARTWORK", "code_txt": "Artwork", "code_seq": 1 },
+      { "code_val": "CAD", "code_txt": "CAD File", "code_seq": 2 },
+      { "code_val": "DOC", "code_txt": "Document", "code_seq": 3 },
+      { "code_val": "ICON", "code_txt": "Icon", "code_seq": 4 },
+      { "code_val": "ILLUST", "code_txt": "Illustration", "code_seq": 5 },
+      { "code_val": "LOGO", "code_txt": "Logo", "code_seq": 6 },
+      { "code_val": "PHOTO", "code_txt": "Photo", "code_seq": 7 },
+      { "code_val": "OTHER", "code_txt": "Other", "code_seq": 8 }
+    ]
+  },
+
+  "media": {
+    "type": "table",
+    "caption": ["Media", "Media"],
+    "columns": [
+      { "name": "media_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "media_file_id", "type": "bigint", "foreignkey": { "media_file": "media_file_id" }, "null": false },
+      { "name": "media_desc", "type": "varchar", "length": 256 },
+      { "name": "media_path", "type": "varchar", "length": 2048, "null": false },
+      { "name": "media_tags", "type": "varchar", "length": -1 },
+      { "name": "media_type", "type": "varchar", "length": 32, "foreignkey": { "code_media_type": "code_val" }, "null": false },
+      { "name": "media_folder_id", "type": "bigint", "foreignkey": { "media_folder": "media_folder_id" } },
+      { "name": "media_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
+      { "name": "media_lang", "type": "varchar", "length": 32, "foreignkey": { "code_lang": "code_val" } },
+      
+      { "name": "media_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "media_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "media_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "media_muser", "type": "varchar", "length": 20 },
+      { "name": "media_snotes", "type": "varchar", "length": -1 }
+    ],
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          "setif(null(media.media_key),media_key,media.media_id);"
+        ]
+      },
+      { "on": ["update"], "exec": [
+          "errorif(update(media_key) and (deleted(media_key) is not null),'Cannot update media_key');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(media_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+  "media_file": {
+    "type": "table",
+    "caption": ["Media File", "Media Files"],
+    "columns": [
+      { "name": "media_file_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "media_file_ext", "type": "varchar", "length": 16, "null": false },
+      { "name": "media_file_size", "type": "int", "null": false },
+      { "name": "media_file_filename", "type": "varchar", "length": 256, "null": false },
+      { "name": "media_file_width", "type": "int" },
+      { "name": "media_file_height", "type": "int" },
+      
+      { "name": "media_file_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "media_file_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "media_file_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "media_file_muser", "type": "varchar", "length": 20 },
+      { "name": "media_file_uptstmp", "type": "datetime", "length": 7 },
+      { "name": "media_file_upuser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(media_file_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(media_file_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+  "media_folder": {
+    "type": "table",
+    "caption": ["Media Folder", "Media Folders"],
+    "columns": [
+      { "name": "media_folder_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "media_folder_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "media_folder_path", "type": "varchar", "length": 2048, "null": false },
+      { "name": "media_folder_parent_id", "type": "bigint", "foreignkey": { "media_folder": "media_folder_id" } },
+      
+      { "name": "media_folder_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "media_folder_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "media_folder_mtstmp", "type": "datetime", "length": 7  },
+      { "name": "media_folder_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["media_folder_name","media_folder_parent_id"]
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(media_folder_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(media_folder_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  }
+}

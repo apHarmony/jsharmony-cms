@@ -1,0 +1,38 @@
+{
+  "menu": {
+    "type": "table",
+    "caption": ["Menu","Menus"],
+    "columns": [
+      { "name": "menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "menu_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "menu_notes", "type": "varchar", "length": -1 },
+      { "name": "menu_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
+      { "name": "menu_lang", "type": "varchar", "length": 32, "foreignkey": { "code_lang": "code_val" } },
+      
+      { "name": "menu_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "menu_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "menu_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "menu_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          "setif(null(menu.menu_key),menu_key,menu.menu_id);"
+        ]
+      },
+      { "on": ["update"], "exec": [
+          "errorif(update(menu_key) and (deleted(menu_key) is not null),'Cannot update menu_key');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(menu_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(menu_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { "menu_name": "Site Menu" },
+      { "menu_name": "Footer Menu" }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "Deployment_Listing": {
+    "layout":"form",
+    "unbound":"true",
+    "title":"Publish",
+    "menu":"jsHarmonyCMS/Deployment_Listing",
+    "onecolumn":true,
+    "onload":"XForm.prototype.XExecute('../_funcs/publish', {}, function(rslt){ jsh.$root('.publish_target').text(rslt.publish_path); });",
+    "fields": [
+      {"name":"publish_target","control":"label","caption":"Publish Target"},
+      {"control":"button","value":"Publish Site","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "XForm.prototype.XExecutePost('../_funcs/publish', {}, function(rslt){ XExt.Alert('Successfully published to: '+String.fromCharCode(10)+rslt.publish_path); });"}
+    ]
+  }
+}

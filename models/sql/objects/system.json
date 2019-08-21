@@ -1,0 +1,91 @@
+{
+  "code_lang": {
+    "type": "code",
+    "caption": "Language",
+    "init_data": [
+      { "code_val": "en", "code_txt": "English", "code_seq": 1 }
+    ]
+  },
+
+  "code_item_review_sts": {
+    "type": "code",
+    "caption": "Item Review Status",
+    "init_data": [
+      { "code_val": "APPROVED", "code_txt": "Approved", "code_seq": 1 },
+      { "code_val": "DRAFT", "code_txt": "Draft", "code_seq": 2 },
+      { "code_val": "REJECTED", "code_txt": "Rejected", "code_seq": 3 },
+      { "code_val": "REVIEW", "code_txt": "Pending Review", "code_seq": 4 }
+    ]
+  },
+
+  "jsharmony.param": {
+    "data_keys": ["param_process","param_attrib"],
+    "init_data": [
+      { "param_process": "CMS", "param_attrib": "PUBLISH_TGT", "param_desc": "Publish Target Folder", "param_type": "C", "is_param_app": true, "is_param_sys": false, "is_param_user": true }
+    ]
+  },
+
+  "jsharmony.param_app": {
+    "data_keys": ["param_app_process","param_app_attrib"],
+    "init_data": [
+      { "param_app_process": "CMS", "param_app_attrib": "PUBLISH_TGT", "param_app_val": "publish" }
+    ]
+  },
+
+  "jsharmony.sys_role": {
+    "init_data": [
+      { "sys_role_name": "VIEWER", "sys_role_desc": "Viewer", "sys_role_seq": 1 },
+      { "sys_role_name": "AUTHOR", "sys_role_desc": "Author", "sys_role_seq": 2 },
+      { "sys_role_name": "PUBLISHER", "sys_role_desc": "Publisher", "sys_role_seq": 3 },
+      { "sys_role_name": "WEBMASTER", "sys_role_desc": "Webmaster", "sys_role_seq": 4 }
+    ]
+  },
+
+  "jsharmony.sys_user_role": {
+    "init_data": [
+      { "sys_user_id": 1, "sys_role_name": "VIEWER" },
+      { "sys_user_id": 1, "sys_role_name": "AUTHOR" },
+      { "sys_user_id": 1, "sys_role_name": "PUBLISHER" },
+      { "sys_user_id": 1, "sys_role_name": "WEBMASTER" }
+    ]
+  },
+
+  "jsharmony.menu": {
+    "init_data": [
+      { "menu_group": "S", "menu_id": 300, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 10000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
+      { "menu_group": "S", "menu_id": 30001, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 30001, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
+
+      { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 20000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Listing" },
+      { "menu_group": "S", "menu_id": 40001, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/Media_Listing", "menu_seq": 40001, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Listing" },
+      { "menu_group": "S", "menu_id": 40002, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/MediaFolder_Listing", "menu_seq": 40002, "menu_desc": "Media Folders", "menu_cmd": "jsHarmonyCMS/MediaFolder_Listing" },
+
+      { "menu_group": "S", "menu_id": 500, "menu_id_parent": 1, "menu_name": "Publish", "menu_seq": 30000, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Deployment_Listing" },
+      { "menu_group": "S", "menu_id": 50001, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Deployment_Listing", "menu_seq": 50001, "menu_desc": "Deployments", "menu_cmd": "jsHarmonyCMS/Deployment_Listing" },
+      { "menu_group": "S", "menu_id": 50002, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Review_Pending_Listing", "menu_seq": 50002, "menu_desc": "Pending Review", "menu_cmd": "jsHarmonyCMS/Review_Pending_Listing" },
+
+      { "menu_group": "S", "menu_id": 600, "menu_id_parent": 1, "menu_name": "Site", "menu_seq": 40000, "menu_desc": "Site", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
+      { "menu_group": "S", "menu_id": 60001, "menu_id_parent": 600, "menu_name": "jsHarmonyCMS/Site_Listing", "menu_seq": 60001, "menu_desc": "Sites", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
+      { "menu_group": "S", "menu_id": 60002, "menu_id_parent": 600, "menu_name": "jsHarmonyCMS/Category_Listing", "menu_seq": 60002, "menu_desc": "Categories", "menu_cmd": "jsHarmonyCMS/Category_Listing" }
+
+    ]
+  },
+
+  "jsharmony.sys_menu_role": {
+    "init_data": [
+      { "menu_id": 300, "sys_role_name": "*" },
+      { "menu_id": 30001, "sys_role_name": "*" },
+
+      //{ "menu_id": 400, "sys_role_name": "*" },
+      //{ "menu_id": 40001, "sys_role_name": "*" },
+      //{ "menu_id": 40002, "sys_role_name": "WEBMASTER" },
+
+      { "menu_id": 500, "sys_role_name": "PUBLISHER" },
+      { "menu_id": 50001, "sys_role_name": "PUBLISHER" },
+      //{ "menu_id": 50002, "sys_role_name": "PUBLISHER" },
+
+      //{ "menu_id": 600, "sys_role_name": "WEBMASTER" },
+      //{ "menu_id": 60001, "sys_role_name": "WEBMASTER" },
+      //{ "menu_id": 60002, "sys_role_name": "WEBMASTER" }
+    ]
+  }
+}
