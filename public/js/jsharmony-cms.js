@@ -190,6 +190,8 @@ window.jsHarmonyCMS = new (function(){
     var url = '../_funcs/page/'+_this.page_id;
     XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
       if ('_success' in rslt) {
+        _this.page.body = $('#jsharmony_cms_body').html();
+        _this.hasChanges = false;
         window.location.reload(true);
       }
       else XExt.Alert('Error loading page');
