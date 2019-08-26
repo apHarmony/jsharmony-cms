@@ -1,0 +1,10 @@
+{
+  "Site_Listing": {
+    "layout":"grid",
+    "caption":["Site","Sites"],
+    "menu":"jsHarmonyCMS/Site_Listing",
+    "unbound":true,
+    "fields": [
+    ]
+  }
+}

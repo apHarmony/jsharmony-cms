@@ -1,0 +1,23 @@
+{
+  "Branch_Active_User_Listing": {
+    "layout":"grid",
+    "table":"{schema}.branch",
+    "actions":"B",
+    "sqlwhere":"branch_type='USER' and branch_sts='ACTIVE'",
+    "caption":["Branch","Branches"],
+    "title":"My Branches",
+    "hide_system_buttons":["search","export"],
+    "rowlimit":1000,
+    "tablestyle":"min-width:600px;",
+    "noresultsmessage":"No user branches.  Please clone a public branch.",
+    "fields": [
+      {"name":"branch_name","caption":"Name","cellstyle":"min-width:200px;"},
+      {"name":"branch_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]},
+      {"name":"branch_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(branch_muser))","control":"label","actions":"B"},
+      {"caption":"Checkout","control":"linkbutton","link":"js:XExt.Alert('Checkout');","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
+      {"caption":"Clone","control":"linkbutton","link":"js:XExt.Alert('Clone');","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
+      {"caption":"Archive","control":"linkbutton","link":"js:XExt.Alert('Archive');","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
+      {"caption":"Publish","control":"linkbutton","link":"js:XExt.Alert('Publish');","captionstyle":"text-align:center;","cellstyle":"text-align:center;"}
+    ]
+  }
+}

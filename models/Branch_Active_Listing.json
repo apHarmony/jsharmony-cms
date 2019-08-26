@@ -1,0 +1,16 @@
+{
+  "Branch_Active_Listing": {
+    "layout":"form",
+    "table":"{schema}.branch",
+    "actions":"B",
+    "roles": {"*": "B"},
+    "caption":["Branch","Branches"],
+    "title":"Active Branches",
+    "menu":"jsHarmonyCMS/Branch_Active_Listing",
+    "nokey":true,
+    "fields": [
+      {"control":"subform","target":"Branch_Active_User_Listing","bindings":{},"controlclass":"no-border"},
+      {"control":"subform","target":"Branch_Active_Public_Listing","bindings":{},"controlclass":"no-border"}
+    ]
+  }
+}

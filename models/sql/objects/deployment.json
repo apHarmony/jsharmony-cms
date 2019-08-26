@@ -1,0 +1,46 @@
+{
+
+  "code_deployment_sts": {
+    "type": "code",
+    "caption": "Deployment Status",
+    "init_data": [
+      { "code_val": "CANCEL", "code_txt": "Canceled", "code_seq": 1 },
+      { "code_val": "COMPLETE", "code_txt": "Complete", "code_seq": 2 },
+      { "code_val": "HOLD", "code_txt": "On Hold", "code_seq": 3 },
+      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 4 }
+    ]
+  },
+
+  "deployment": {
+    "type": "table",
+    "caption": ["Deployment","Deployments"],
+    "columns": [
+      { "name": "deployment_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "deployment_tag", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false },
+      { "name": "deployment_date", "type": "datetime", "length": 7 },
+      { "name": "deployment_sts", "type": "varchar", "length": 32, "foreignkey": { "code_deployment_sts": "code_val" }, "null": false, "default": "HOLD" },
+      { "name": "deployment_target_id", "type": "varchar", "length": 1024 },
+      
+      { "name": "deployment_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "deployment_sts_user", "type": "varchar", "length": 20 },
+      { "name": "deployment_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "deployment_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "deployment_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "deployment_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "errorif(deployment_sts='PENDING' and null(deployment_date),'deployment_sts PENDING requires deployment_date');",
+          "errorif(deployment_sts='PENDING' and null(deployment_target_id),'deployment_sts PENDING requires deployment_target_id');",
+          "errorif(deployment_sts='COMPLETE' and null(deployment_date),'deployment_sts PENDING requires deployment_date');",
+          "errorif(deployment_sts='COMPLETE' and null(deployment_target_id),'deployment_sts PENDING requires deployment_target_id');",
+          "set(deployment_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(deployment_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(deployment_sts),deployment_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(deployment_sts),deployment_sts_user,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  }
+}

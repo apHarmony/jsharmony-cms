@@ -1,0 +1,16 @@
+{
+  "Branch_Public_Listing": {
+    "layout":"grid",
+    "table":"{schema}.branch",
+    "caption":["Branch","Branches"],
+    "title":"Public Branches",
+    "menu":"jsHarmonyCMS/Branch_Public_Listing",
+    "fields": [
+      {"name":"branch_name","caption":"Title","control":"textbox_M"},
+      {"name":"branch_type","caption":"Type"},
+      {"name":"branch_sts","caption":"Status"},
+      {"name":"branch_review_sts","caption":"Review Sts"},
+      {"name":"branch_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]}
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "Deployment_History_Listing": {
+    "layout":"grid",
+    "table":"{schema}.deployment",
+    "caption":["Deployment","Deployments"],
+    "title":"Deployment History",
+    "menu":"jsHarmonyCMS/Deployment_History_Listing",
+    "fields": [
+      {"name":"deployment_tag","caption":"Tag","control":"textbox_M"},
+      {"name":"deployment_date","caption":"Date"},
+      {"name":"deployment_sts","caption":"Status"}
+    ]
+  }
+}

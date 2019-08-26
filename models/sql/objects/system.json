@@ -52,18 +52,24 @@
 
   "jsharmony.menu": {
     "init_data": [
-      { "menu_group": "S", "menu_id": 300, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 10000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
-      { "menu_group": "S", "menu_id": 30001, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 30001, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
+      { "menu_group": "S", "menu_id": 300, "menu_id_parent": 1, "menu_name": "Branches", "menu_seq": 30000, "menu_desc": "Branches", "menu_cmd": "jsHarmonyCMS/Branch_Active_Listing" },
+      { "menu_group": "S", "menu_id": 30001, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_Active_Listing", "menu_seq": 30001, "menu_desc": "Active Branches", "menu_cmd": "jsHarmonyCMS/Branch_Active_Listing" },
+      { "menu_group": "S", "menu_id": 30002, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_Archive_Listing", "menu_seq": 30002, "menu_desc": "Branch History", "menu_cmd": "jsHarmonyCMS/Branch_Archive_Listing" },
+      { "menu_group": "S", "menu_id": 30003, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_User_Listing", "menu_seq": 30003, "menu_desc": "User Branches", "menu_cmd": "jsHarmonyCMS/Branch_User_Listing" },
+      { "menu_group": "S", "menu_id": 30004, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_Public_Listing", "menu_seq": 30004, "menu_desc": "Public Branches", "menu_cmd": "jsHarmonyCMS/Branch_Public_Listing" },
 
-      { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 20000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Listing" },
+      { "menu_group": "S", "menu_id": 350, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 35000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
+      { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35001, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
+
+      { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 40000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Listing" },
       { "menu_group": "S", "menu_id": 40001, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/Media_Listing", "menu_seq": 40001, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Listing" },
-      { "menu_group": "S", "menu_id": 40002, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/MediaFolder_Listing", "menu_seq": 40002, "menu_desc": "Media Folders", "menu_cmd": "jsHarmonyCMS/MediaFolder_Listing" },
 
-      { "menu_group": "S", "menu_id": 500, "menu_id_parent": 1, "menu_name": "Publish", "menu_seq": 30000, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Deployment_Listing" },
-      { "menu_group": "S", "menu_id": 50001, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Deployment_Listing", "menu_seq": 50001, "menu_desc": "Deployments", "menu_cmd": "jsHarmonyCMS/Deployment_Listing" },
-      { "menu_group": "S", "menu_id": 50002, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Review_Pending_Listing", "menu_seq": 50002, "menu_desc": "Pending Review", "menu_cmd": "jsHarmonyCMS/Review_Pending_Listing" },
+      { "menu_group": "S", "menu_id": 500, "menu_id_parent": 1, "menu_name": "Publish", "menu_seq": 50000, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Deployment_Scheduled_Listing" },
+      { "menu_group": "S", "menu_id": 50001, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Deployment_Scheduled_Listing", "menu_seq": 50001, "menu_desc": "Scheduled Depoyments", "menu_cmd": "jsHarmonyCMS/Deployment_Scheduled_Listing" },
+      { "menu_group": "S", "menu_id": 50002, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Deployment_History_Listing", "menu_seq": 50002, "menu_desc": "Deployment History", "menu_cmd": "jsHarmonyCMS/Deployment_History_Listing" },
+      { "menu_group": "S", "menu_id": 50003, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Branch_Review_Listing", "menu_seq": 50003, "menu_desc": "Branch Review", "menu_cmd": "jsHarmonyCMS/Branch_Review_Listing" },
 
-      { "menu_group": "S", "menu_id": 600, "menu_id_parent": 1, "menu_name": "Site", "menu_seq": 40000, "menu_desc": "Site", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
+      { "menu_group": "S", "menu_id": 600, "menu_id_parent": 1, "menu_name": "Site", "menu_seq": 60000, "menu_desc": "Site", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
       { "menu_group": "S", "menu_id": 60001, "menu_id_parent": 600, "menu_name": "jsHarmonyCMS/Site_Listing", "menu_seq": 60001, "menu_desc": "Sites", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
       { "menu_group": "S", "menu_id": 60002, "menu_id_parent": 600, "menu_name": "jsHarmonyCMS/Category_Listing", "menu_seq": 60002, "menu_desc": "Categories", "menu_cmd": "jsHarmonyCMS/Category_Listing" }
 
@@ -74,18 +80,24 @@
     "init_data": [
       { "menu_id": 300, "sys_role_name": "*" },
       { "menu_id": 30001, "sys_role_name": "*" },
+      { "menu_id": 30002, "sys_role_name": "*" },
+      { "menu_id": 30003, "sys_role_name": "PUBLISHER" },
+      { "menu_id": 30004, "sys_role_name": "PUBLISHER" },
 
-      //{ "menu_id": 400, "sys_role_name": "*" },
-      //{ "menu_id": 40001, "sys_role_name": "*" },
-      //{ "menu_id": 40002, "sys_role_name": "WEBMASTER" },
+      { "menu_id": 350, "sys_role_name": "*" },
+      { "menu_id": 35001, "sys_role_name": "*" },
+
+      { "menu_id": 400, "sys_role_name": "*" },
+      { "menu_id": 40001, "sys_role_name": "*" },
 
       { "menu_id": 500, "sys_role_name": "PUBLISHER" },
       { "menu_id": 50001, "sys_role_name": "PUBLISHER" },
-      //{ "menu_id": 50002, "sys_role_name": "PUBLISHER" },
+      { "menu_id": 50002, "sys_role_name": "PUBLISHER" },
+      { "menu_id": 50003, "sys_role_name": "PUBLISHER" },
 
-      //{ "menu_id": 600, "sys_role_name": "WEBMASTER" },
-      //{ "menu_id": 60001, "sys_role_name": "WEBMASTER" },
-      //{ "menu_id": 60002, "sys_role_name": "WEBMASTER" }
+      { "menu_id": 600, "sys_role_name": "WEBMASTER" },
+      { "menu_id": 60001, "sys_role_name": "WEBMASTER" },
+      { "menu_id": 60002, "sys_role_name": "WEBMASTER" }
     ]
   }
 }
