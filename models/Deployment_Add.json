@@ -1,9 +1,9 @@
 {
-  "Deployment_Listing": {
+  "Deployment_Add": {
     "layout":"form",
     "unbound":"true",
-    "title":"Publish",
-    "menu":"jsHarmonyCMS/Deployment_Listing",
+    "title":"Schedule Deployment",
+    "menu":"Publish",
     "onecolumn":true,
     "onload":"XForm.prototype.XExecute('../_funcs/publish', {}, function(rslt){ jsh.$root('.publish_target').text(rslt.publish_path); });",
     "fields": [

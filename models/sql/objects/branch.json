@@ -4,8 +4,27 @@
     "caption": "Branch Type",
     "init_data": [
       { "code_val": "USER", "code_txt": "User", "code_seq": 1 },
-      { "code_val": "PUBLIC", "code_txt": "Public", "code_seq": 2 },
-      { "code_val": "PUBLISH", "code_txt": "Publish", "code_seq": 3 }
+      { "code_val": "PUBLIC", "code_txt": "Public", "code_seq": 2 }
+    ]
+  },
+
+  "code_branch_sts": {
+    "type": "code",
+    "caption": "Branch Status",
+    "init_data": [
+      { "code_val": "ACTIVE", "code_txt": "Active", "code_seq": 1 },
+      { "code_val": "REVIEW", "code_txt": "Review", "code_seq": 2 },
+      { "code_val": "ARCHIVE", "code_txt": "Archive", "code_seq": 3 }
+    ]
+  },
+
+  "code_branch_review_sts": {
+    "type": "code",
+    "caption": "Branch Review Status",
+    "init_data": [
+      { "code_val": "APPROVED", "code_txt": "Approved", "code_seq": 1 },
+      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 2 },
+      { "code_val": "REJECTED", "code_txt": "Rejected", "code_seq": 3 }
     ]
   },
 
@@ -26,9 +45,15 @@
       { "name": "branch_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "branch_name", "type": "varchar", "length": 256, "null": false },
       { "name": "branch_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_type": "code_val" }, "null": false },
+      { "name": "branch_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_sts": "code_val" }, "null": false },
+      { "name": "branch_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_review_sts": "code_val" } },
       { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
       { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": "branch_id" } },
 
+      { "name": "branch_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_sts_user", "type": "varchar", "length": 20 },
+      { "name": "branch_review_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_review_sts_user", "type": "varchar", "length": 20 },
       { "name": "branch_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "branch_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
       { "name": "branch_mtstmp", "type": "datetime", "length": 7 },
@@ -39,13 +64,18 @@
     ],
     "triggers": [
       { "on": ["update", "insert"], "exec": [
+          "errorif(branch_type='PUBLIC' and branch_sts='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
           "set(branch_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
-          "set(branch_muser,%%%%%%jsh.map.current_user%%%%%%);"
+          "set(branch_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(branch_sts),branch_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(branch_sts),branch_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(branch_review_sts),branch_review_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(branch_review_sts),branch_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);"
         ]
       }
     ],
     "sample_data": [
-      { "branch_name": "master", "branch_type": "PUBLISH" }
+      { "branch_name": "master", "branch_type": "PUBLIC", "branch_sts": "ACTIVE" }
     ]
   },
   
@@ -70,14 +100,14 @@
     ],
     "triggers": [
       { "on": ["update", "insert"], "exec": [
-          "set(branch_menu_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
-          "set(branch_menu_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_menu.branch_menu_action='DELETE',menu_id,null);",
           "errorif(branch_menu_action='DELETE' and null(menu_orig_id),'menu_orig_id is required for DELETE action');",
           "errorif(branch_menu_action='UPDATE' and null(menu_id),'menu_id is required for UPDATE action');",
           "errorif(branch_menu_action='UPDATE' and null(menu_orig_id),'menu_orig_id is required for UPDATE action');",
           "errorif(branch_menu_action='ADD' and null(menu_id),'menu_id is required for ADD action');",
-          "errorif(branch_menu_action='ADD' and not(null(menu_orig_id)),'menu_orig_id must be null for ADD action');"
+          "errorif(branch_menu_action='ADD' and not(null(menu_orig_id)),'menu_orig_id must be null for ADD action');",
+          "set(branch_menu_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_menu_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_menu.branch_menu_action='DELETE',menu_id,null);"
         ]
       }
     ],
@@ -116,14 +146,14 @@
     ],
     "triggers": [
       { "on": ["update", "insert"], "exec": [
-          "set(branch_page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
-          "set(branch_page_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_page.branch_page_action='DELETE',page_id,null);",
           "errorif(branch_page_action='DELETE' and null(page_orig_id),'page_orig_id is required for DELETE action');",
           "errorif(branch_page_action='UPDATE' and null(page_id),'page_id is required for UPDATE action');",
           "errorif(branch_page_action='UPDATE' and null(page_orig_id),'page_orig_id is required for UPDATE action');",
           "errorif(branch_page_action='ADD' and null(page_id),'page_id is required for ADD action');",
-          "errorif(branch_page_action='ADD' and not(null(page_orig_id)),'page_orig_id must be null for ADD action');"
+          "errorif(branch_page_action='ADD' and not(null(page_orig_id)),'page_orig_id must be null for ADD action');",
+          "set(branch_page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_page_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_page.branch_page_action='DELETE',page_id,null);"
         ]
       }
     ]
@@ -150,14 +180,14 @@
     ],
     "triggers": [
       { "on": ["update", "insert"], "exec": [
-          "set(branch_media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
-          "set(branch_media_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_media.branch_media_action='DELETE',media_id,null);",
           "errorif(branch_media_action='DELETE' and null(media_orig_id),'media_orig_id is required for DELETE action');",
           "errorif(branch_media_action='UPDATE' and null(media_id),'media_id is required for UPDATE action');",
           "errorif(branch_media_action='UPDATE' and null(media_orig_id),'media_orig_id is required for UPDATE action');",
           "errorif(branch_media_action='ADD' and null(media_id),'media_id is required for ADD action');",
-          "errorif(branch_media_action='ADD' and not(null(media_orig_id)),'media_orig_id must be null for ADD action');"
+          "errorif(branch_media_action='ADD' and not(null(media_orig_id)),'media_orig_id must be null for ADD action');",
+          "set(branch_media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_media_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_media.branch_media_action='DELETE',media_id,null);"
         ]
       }
     ]

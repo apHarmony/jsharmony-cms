@@ -1,0 +1,16 @@
+{
+  "Deployment_Scheduled_Listing": {
+    "layout":"grid",
+    "table":"{schema}.deployment",
+    "caption":["Deployment","Deployments"],
+    "title":"Scheduled Deployments",
+    "menu":"jsHarmonyCMS/Deployment_Scheduled_Listing",
+    "actions":"BUD",
+    "buttons":[{ "link":"Deployment_Add","icon":"Add","text":"Add Deployment" }],
+    "fields": [
+      {"name":"deployment_tag","caption":"Tag","control":"textbox_M"},
+      {"name":"deployment_date","caption":"Date"},
+      {"name":"deployment_sts","caption":"Status"}
+    ]
+  }
+}

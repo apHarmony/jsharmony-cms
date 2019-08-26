@@ -1,0 +1,14 @@
+{
+  "Media_Listing": {
+    "layout":"grid",
+    "table":"{schema}.media",
+    "caption":["Media","Media"],
+    "menu":"jsHarmonyCMS/Media_Listing",
+    "fields": [
+      {"name":"media_desc","caption":"Title","control":"textbox_M"},
+      {"name":"media_path","caption":"URL","control":"textbox_L"},
+      {"name":"media_type","caption":"Type"},
+      {"name":"media_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]}
+    ]
+  }
+}

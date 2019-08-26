@@ -1,0 +1,14 @@
+{
+  "Category_Listing": {
+    "layout":"grid",
+    "table":"{schema}.category",
+    "caption":["Category","Categories"],
+    "menu":"jsHarmonyCMS/Category_Listing",
+    "fields": [
+      {"name":"category_name","caption":"Category","control":"textbox_M"},
+      {"name":"category_sts","caption":"Status","control":"textbox_L"},
+      {"name":"category_seq","caption":"Seq"},
+      {"name":"category_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]}
+    ]
+  }
+}

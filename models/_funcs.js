@@ -248,7 +248,7 @@ function ModuleFunctions(module){
     var jsh = module.jsh;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Deployment_Listing');
+    var model = jsh.getModel(req, module.namespace + 'Deployment_Add');
     
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
