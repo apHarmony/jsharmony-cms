@@ -42,7 +42,7 @@ function ModuleFunctions(module){
 
     //Load Page Content from disk
     module.jsh.ParseJSON(funcs.getPageFile(page_id), module.name, 'Page ID#'+page_id, function(err, page_content){
-      page_content = page_content || {};
+      page_content = page_content || { body: template.default_body };
       if(!page_content.seo) page_content.seo = {};
       var client_page = {
         title: page.page_title||'',
@@ -310,7 +310,6 @@ function ModuleFunctions(module){
               async.eachSeries(rslt[0], function(page, page_cb){
                 funcs.getClientPage(page, function(err, clientPage){
                   if(err) return cb(err);
-                  console.log(clientPage);
 
                   //Merge content with template
                   var ejsparams = {
