@@ -20,7 +20,7 @@
           "setif(null(menu.menu_key),menu_key,menu.menu_id);"
         ]
       },
-      { "on": ["update"], "exec": [
+      { "on": ["validate_update"], "exec": [
           "errorif(update(menu_key) and (deleted(menu_key) is not null),'Cannot update menu_key');"
         ]
       },

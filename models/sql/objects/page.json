@@ -1,11 +1,11 @@
 {
-  "page_key": {
-    "type": "table",
-    "caption": ["Page Key", "Page Keys"],
-    "columns": [
-      { "name": "page_key", "type": "bigint", "key": true, "identity": true, "null": false }
-    ]
-  },
+  //"page_key": {
+  //  "type": "table",
+  //  "caption": ["Page Key", "Page Keys"],
+  //  "columns": [
+  //    { "name": "page_key", "type": "bigint", "key": true, "identity": true, "null": false }
+  //  ]
+  //},
 
   "page": {
     "type": "table",
@@ -37,7 +37,7 @@
           "setif(null(page.page_author),page_author,jsharmony.my_sys_user_id());"
         ]
       },
-      { "on": ["update"], "exec": [
+      { "on": ["validate_update"], "exec": [
           "errorif(update(page_key) and (deleted(page_key) is not null),'Cannot update page_key');"
         ]
       },
@@ -48,12 +48,8 @@
       }
     ],
     "sample_data": [
-      { "page_path": "/index.htm", "page_title": "Welcome", "page_author": 1, "template_id": "default" },
-      { "page_path": "/style-guide.htm", "page_title": "Style Guide", "page_author": 1, "template_id": "default" }
-    ],
-    "sample_data_files": [
-      { "1.json": "page/1.json" },
-      { "2.json": "page/2.json" }
+      { "page_path": "/index.htm", "page_title": "Welcome", "page_author": 1, "template_id": "default", "_FILES": { "1.json": "page/{{page_id}}.json" } },
+      { "page_path": "/style-guide.htm", "page_title": "Style Guide", "page_author": 1, "template_id": "default", "_FILES": { "2.json": "page/{{page_id}}.json" } }
     ]
   },
 

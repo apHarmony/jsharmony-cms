@@ -63,8 +63,11 @@
       ["branch_name","branch_user_id"]
     ],
     "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(branch_type='PUBLIC' and branch_sts='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');"
+        ]
+      },
       { "on": ["update", "insert"], "exec": [
-          "errorif(branch_type='PUBLIC' and branch_sts='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
           "set(branch_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_muser,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(update(branch_sts),branch_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
@@ -99,12 +102,15 @@
       ["branch_id","menu_key"]
     ],
     "triggers": [
-      { "on": ["update", "insert"], "exec": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(branch_menu_action='DELETE' and null(menu_orig_id),'menu_orig_id is required for DELETE action');",
           "errorif(branch_menu_action='UPDATE' and null(menu_id),'menu_id is required for UPDATE action');",
           "errorif(branch_menu_action='UPDATE' and null(menu_orig_id),'menu_orig_id is required for UPDATE action');",
           "errorif(branch_menu_action='ADD' and null(menu_id),'menu_id is required for ADD action');",
-          "errorif(branch_menu_action='ADD' and not(null(menu_orig_id)),'menu_orig_id must be null for ADD action');",
+          "errorif(branch_menu_action='ADD' and not(null(menu_orig_id)),'menu_orig_id must be null for ADD action');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
           "set(branch_menu_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_menu_muser,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(branch_menu.branch_menu_action='DELETE',menu_id,null);"
@@ -113,14 +119,14 @@
     ],
     "sample_data": [
       { 
-        "branch_id": {"sql":"(select top 1 branch_id from {schema}.branch where branch_name='master' and branch_user_id is null)"},
-        "menu_key": {"sql":"(select top 1 menu_key from {schema}.menu where menu_name='Site Menu')"},
-        "menu_id": {"sql":"(select top 1 menu_id from {schema}.menu where menu_name='Site Menu')"}
+        "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
+        "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Site Menu'))"},
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"}
       },
       { 
-        "branch_id": {"sql":"(select top 1 branch_id from {schema}.branch where branch_name='master' and branch_user_id is null)"},
-        "menu_key": {"sql":"(select top 1 menu_key from {schema}.menu where menu_name='Footer Menu')"},
-        "menu_id": {"sql":"(select top 1 menu_id from {schema}.menu where menu_name='Footer Menu')"}
+        "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
+        "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Footer Menu'))"},
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"}
       }
     ]
   },
@@ -145,12 +151,15 @@
       ["branch_id","page_key"]
     ],
     "triggers": [
-      { "on": ["update", "insert"], "exec": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(branch_page_action='DELETE' and null(page_orig_id),'page_orig_id is required for DELETE action');",
           "errorif(branch_page_action='UPDATE' and null(page_id),'page_id is required for UPDATE action');",
           "errorif(branch_page_action='UPDATE' and null(page_orig_id),'page_orig_id is required for UPDATE action');",
           "errorif(branch_page_action='ADD' and null(page_id),'page_id is required for ADD action');",
-          "errorif(branch_page_action='ADD' and not(null(page_orig_id)),'page_orig_id must be null for ADD action');",
+          "errorif(branch_page_action='ADD' and not(null(page_orig_id)),'page_orig_id must be null for ADD action');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
           "set(branch_page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_page_muser,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(branch_page.branch_page_action='DELETE',page_id,null);"
@@ -179,12 +188,15 @@
       ["branch_id","media_key"]
     ],
     "triggers": [
-      { "on": ["update", "insert"], "exec": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(branch_media_action='DELETE' and null(media_orig_id),'media_orig_id is required for DELETE action');",
           "errorif(branch_media_action='UPDATE' and null(media_id),'media_id is required for UPDATE action');",
           "errorif(branch_media_action='UPDATE' and null(media_orig_id),'media_orig_id is required for UPDATE action');",
           "errorif(branch_media_action='ADD' and null(media_id),'media_id is required for ADD action');",
-          "errorif(branch_media_action='ADD' and not(null(media_orig_id)),'media_orig_id must be null for ADD action');",
+          "errorif(branch_media_action='ADD' and not(null(media_orig_id)),'media_orig_id must be null for ADD action');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
           "set(branch_media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_media_muser,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(branch_media.branch_media_action='DELETE',media_id,null);"

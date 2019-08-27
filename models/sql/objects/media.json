@@ -41,7 +41,7 @@
           "setif(null(media.media_key),media_key,media.media_id);"
         ]
       },
-      { "on": ["update"], "exec": [
+      { "on": ["validate_update"], "exec": [
           "errorif(update(media_key) and (deleted(media_key) is not null),'Cannot update media_key');"
         ]
       },
