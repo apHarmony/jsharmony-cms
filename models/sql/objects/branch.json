@@ -64,7 +64,7 @@
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
-          "errorif(branch_type='PUBLIC' and branch_sts='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');"
+          "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -103,11 +103,11 @@
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
-          "errorif(branch_menu_action='DELETE' and null(menu_orig_id),'menu_orig_id is required for DELETE action');",
-          "errorif(branch_menu_action='UPDATE' and null(menu_id),'menu_id is required for UPDATE action');",
-          "errorif(branch_menu_action='UPDATE' and null(menu_orig_id),'menu_orig_id is required for UPDATE action');",
-          "errorif(branch_menu_action='ADD' and null(menu_id),'menu_id is required for ADD action');",
-          "errorif(branch_menu_action='ADD' and not(null(menu_orig_id)),'menu_orig_id must be null for ADD action');"
+          "errorif(inserted(branch_menu_action)='DELETE' and null(inserted(menu_orig_id)),'menu_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_menu_action)='UPDATE' and null(inserted(menu_id)),'menu_id is required for UPDATE action');",
+          "errorif(inserted(branch_menu_action)='UPDATE' and null(inserted(menu_orig_id)),'menu_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_menu_action)='ADD' and null(inserted(menu_id)),'menu_id is required for ADD action');",
+          "errorif(inserted(branch_menu_action)='ADD' and not(null(inserted(menu_orig_id))),'menu_orig_id must be null for ADD action');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -152,11 +152,11 @@
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
-          "errorif(branch_page_action='DELETE' and null(page_orig_id),'page_orig_id is required for DELETE action');",
-          "errorif(branch_page_action='UPDATE' and null(page_id),'page_id is required for UPDATE action');",
-          "errorif(branch_page_action='UPDATE' and null(page_orig_id),'page_orig_id is required for UPDATE action');",
-          "errorif(branch_page_action='ADD' and null(page_id),'page_id is required for ADD action');",
-          "errorif(branch_page_action='ADD' and not(null(page_orig_id)),'page_orig_id must be null for ADD action');"
+          "errorif(inserted(branch_page_action)='DELETE' and null(inserted(page_orig_id)),'page_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_page_action)='UPDATE' and null(inserted(page_id)),'page_id is required for UPDATE action');",
+          "errorif(inserted(branch_page_action)='UPDATE' and null(inserted(page_orig_id)),'page_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_page_action)='ADD' and null(inserted(page_id)),'page_id is required for ADD action');",
+          "errorif(inserted(branch_page_action)='ADD' and not(null(inserted(page_orig_id))),'page_orig_id must be null for ADD action');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -189,11 +189,11 @@
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
-          "errorif(branch_media_action='DELETE' and null(media_orig_id),'media_orig_id is required for DELETE action');",
-          "errorif(branch_media_action='UPDATE' and null(media_id),'media_id is required for UPDATE action');",
-          "errorif(branch_media_action='UPDATE' and null(media_orig_id),'media_orig_id is required for UPDATE action');",
-          "errorif(branch_media_action='ADD' and null(media_id),'media_id is required for ADD action');",
-          "errorif(branch_media_action='ADD' and not(null(media_orig_id)),'media_orig_id must be null for ADD action');"
+          "errorif(inserted(branch_media_action)='DELETE' and null(inserted(media_orig_id)),'media_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_media_action)='UPDATE' and null(inserted(media_id)),'media_id is required for UPDATE action');",
+          "errorif(inserted(branch_media_action)='UPDATE' and null(inserted(media_orig_id)),'media_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_media_action)='ADD' and null(inserted(media_id)),'media_id is required for ADD action');",
+          "errorif(inserted(branch_media_action)='ADD' and not(null(inserted(media_orig_id))),'media_orig_id must be null for ADD action');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
