@@ -1,14 +1,14 @@
 {
-  "Branch_User_Listing": {
+  "Branch_History_User_Listing": {
     "layout":"grid",
     "table":"{schema}.branch",
     "caption":["Branch","Branches"],
-    "title":"All User Branches",
-    "menu":"jsHarmonyCMS/Branch_User_Listing",
+    "title":"My Branch History",
+    "menu":"jsHarmonyCMS/Branch_History_User_Listing",
     "actions":"BIUD",
-    "roles": { "PUBLISHER": "*" },
-    "sqlwhere":"branch_type='USER' and (branch_user_id is not null)",
-    "sort":["vbranch_user_id_fmt","vbranch_mtstmp"],
+    "roles": { "*": "B", "PUBLISHER": "*" },
+    "sqlwhere":"branch_type='USER' and (branch_user_id = jsharmony.my_sys_user_id())",
+    "sort":["vbranch_mtstmp"],
     "hide_system_buttons":["search","export"],
     "rowlimit":1000,
     "tablestyle":"min-width:600px;",
@@ -17,7 +17,6 @@
     "fields": [
       {"name":"branch_id","control":"hidden"},
       {"name":"branch_is_checked_out","control":"hidden","sqlselect":"(select branch_is_checked_out from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
-      {"name":"branch_user_id_fmt","caption":"Owner","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))","control":"label","actions":"B"},
       {"name":"branch_desc","caption":"Name","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
       {"name":"branch_sts","caption":"Status"},
       {"name":"branch_review_sts","caption":"Review Sts","control":"label","actions":"B"},

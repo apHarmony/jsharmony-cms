@@ -5,12 +5,19 @@
     "caption":["Deployment","Deployments"],
     "title":"Scheduled Deployments",
     "menu":"jsHarmonyCMS/Deployment_Scheduled_Listing",
-    "actions":"BUD",
-    "buttons":[{ "link":"Deployment_Add","icon":"Add","text":"Add Deployment" }],
+    "noresultsmessage":"No scheduled deployments.",
+    "actions":"BU",
+    "sqlwhere":"deployment_sts in ('HOLD','PENDING','RUNNING')",
+    "buttons":[{ "link":"Deployment_Add","icon":"add","text":"Add Deployment" }],
     "fields": [
-      {"name":"deployment_tag","caption":"Tag","control":"textbox_M"},
-      {"name":"deployment_date","caption":"Date"},
-      {"name":"deployment_sts","caption":"Status"}
+      {"name":"deployment_tag","caption":"Tag","control":"label"},
+      {"name":"deployment_date","caption":"Date","validate":["IsDate"],"format":"date:'YYYY-MM-DD hh:mm A'"},
+      {"name":"deployment_sts","caption":"Status"},
+      {"name":"branch_id","control":"hidden"},
+      {"name":"branch_desc","caption":"Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.deployment.branch_id)"},
+      {"caption":"Checkout","control":"linkbutton","link":"update:Branch_Checkout&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;",
+        "controlstyle":"<%=xejs.iif(datarow['branch_is_checked_out']==1,'display:none;')%>"},
+      {"caption":"Clone","control":"linkbutton","link":"update:Branch_Clone&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;"}
     ]
   }
 }

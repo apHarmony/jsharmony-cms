@@ -1,0 +1,20 @@
+{
+  "{schema}.my_user_is_publisher":{
+    "params": [],
+    "sql": [
+      "(select count(*) from jsharmony.sys_user_role where sys_user_id=jsharmony.my_sys_user_id() and sys_role_name='PUBLISHER')"
+    ]
+  },
+  "{schema}.my_current_branch_id":{
+    "params": [],
+    "sql": [
+      "(select branch_id from {schema}.sys_user_branch where {schema}.sys_user_branch.sys_user_id=jsharmony.my_sys_user_id())"
+    ]
+  },
+  "{schema}.my_current_branch_is_editable":{
+    "params": [],
+    "sql": [
+      "ifnull((select case branch_access when 'RW' then 1 else 0 end is_editable from {schema}.v_my_branch_access where branch_id={schema}.my_current_branch_id()),0)"
+    ]
+  }
+}

@@ -1,5 +1,4 @@
 {
-
   "code_deployment_sts": {
     "type": "code",
     "caption": "Deployment Status",
@@ -7,7 +6,34 @@
       { "code_val": "CANCEL", "code_txt": "Canceled", "code_seq": 1 },
       { "code_val": "COMPLETE", "code_txt": "Complete", "code_seq": 2 },
       { "code_val": "HOLD", "code_txt": "On Hold", "code_seq": 3 },
-      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 4 }
+      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 4 },
+      { "code_val": "RUNNING", "code_txt": "Running", "code_seq": 5 }
+    ]
+  },
+
+  "deployment_target": {
+    "type": "table",
+    "caption": ["Deployment Target","Deployment Targets"],
+    "columns": [
+      { "name": "deployment_target_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "deployment_target_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "deployment_target_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
+      { "name": "deployment_target_path", "type": "varchar", "length": 2048 },
+      { "name": "deployment_target_preview_url", "type": "varchar", "length": 2048 },
+      { "name": "deployment_target_params", "type": "varchar", "length": -1 },
+      
+      { "name": "deployment_target_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "deployment_target_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "deployment_target_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "deployment_target_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(deployment_target_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(deployment_target_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
     ]
   },
 
@@ -16,11 +42,11 @@
     "caption": ["Deployment","Deployments"],
     "columns": [
       { "name": "deployment_id", "type": "bigint", "key": true, "identity": true, "null": false },
-      { "name": "deployment_tag", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "deployment_tag", "type": "varchar", "length": 256, "null": false, "actions": ["prevent_update"] },
       { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false },
       { "name": "deployment_date", "type": "datetime", "length": 7 },
       { "name": "deployment_sts", "type": "varchar", "length": 32, "foreignkey": { "code_deployment_sts": "code_val" }, "null": false, "default": "HOLD" },
-      { "name": "deployment_target_id", "type": "varchar", "length": 1024 },
+      { "name": "deployment_target_id", "type": "varchar", "length": 1024, "foreignkey": { "deployment_target": "deployment_target_id" } },
       
       { "name": "deployment_sts_tstmp", "type": "datetime", "length": 7 },
       { "name": "deployment_sts_user", "type": "varchar", "length": 20 },
@@ -30,6 +56,10 @@
       { "name": "deployment_muser", "type": "varchar", "length": 20 }
     ],
     "triggers": [
+      { "on": ["validate_insert"], "exec": [
+          "errorif(exists(select 1 from {schema}.deployment inner join {schema}.deployment_target on {schema}.deployment_target.deployment_target_id={schema}.deployment.deployment_target_id where deployment_tag=inserted(deployment_tag) and site_id=(select site_id from deployment_target where deployment_target_id=inserted(deployment_target_id))),'Deployment Tag must be unique for the site.');",
+        ]
+      },
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(deployment_sts)='PENDING' and null(inserted(deployment_date)),'deployment_sts PENDING requires deployment_date');",
           "errorif(inserted(deployment_sts)='PENDING' and null(inserted(deployment_target_id)),'deployment_sts PENDING requires deployment_target_id');",
@@ -42,6 +72,48 @@
           "set(deployment_muser,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(update(deployment_sts),deployment_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "setif(update(deployment_sts),deployment_sts_user,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "v_deployment": {
+    "type": "view",
+    "caption": ["Deployment","Deployments"],
+    "tables": {
+      "deployment": {
+        "columns": [
+          "deployment_id",
+          "deployment_tag",
+          "branch_id",
+          "deployment_date",
+          "deployment_target_id"
+        ]
+      },
+      "deployment_target": {
+        "columns": [
+          "site_id"
+        ],
+        "join_type": "inner",
+        "join_columns": {
+          "deployment.deployment_target_id": "deployment_target.deployment_target_id"
+        }
+      }
+    },
+    "triggers": [
+      {"on": ["insert"], "exec": [
+          //Verify non-duplicate tag name
+          "errorif(exists(select 1 from {schema}.deployment inner join {schema}.branch on {schema}.branch.branch_id={schema}.deployment.branch_id where deployment_tag=inserted(deployment_tag) and site_id=inserted(site_id)),'Deployment Tag must be unique for the site.');",
+          //Verify deployment_target site_id matches branch site_id
+          "errorif(exists(select 1 where (select site_id from {schema}.branch where branch_id=inserted(branch_id))<>(select site_id from {schema}.deployment_target where deployment_target_id=inserted(deployment_target_id))),'Deployment Target and Branch Sites do not match')",
+          //Insert branch
+          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_id), 'DEPLOYMENT', inserted(deployment_tag), 'ARCHIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_id)), null)",
+          //Insert deployment
+          "insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts) values(inserted(deployment_tag), (select ifnull(last_insert_rowid_override,last_insert_rowid()) from jsharmony_meta), inserted(deployment_date), inserted(deployment_target_id), 'PENDING')",
+          //Add all pages / media / menu from other branch
+          "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_id) and menu_id is not null",
+          "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), media_key, media_id, media_id from {schema}.branch_media where branch_id=inserted(branch_id) and media_id is not null",
+          "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_id) and page_id is not null"
         ]
       }
     ]

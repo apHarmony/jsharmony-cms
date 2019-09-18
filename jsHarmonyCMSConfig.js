@@ -25,6 +25,18 @@ function jsHarmonyCMSConfig(){
   //jsHarmony CMS module path
   this.moduledir = path.dirname(module.filename);
 
+  this.git = {
+    enabled: false,
+    bin_path: ''
+  };
+
+  this.aws_key = {
+    //accessKeyId: 'xxxxxxxxxxxxxxxxxxxx',
+    //secretAccessKey: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+  };
+
+  this.deploymentJobDelay = (1000 * 60 * 60)
+
   this.onRender = null; //function(target, content, cb){ return cb(new_content); }  //target = 'editor', 'publish'
 }
 

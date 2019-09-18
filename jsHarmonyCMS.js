@@ -128,7 +128,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     this.jsh.Config.macros.CMS_TEMPLATES.push(tmpl_lov);
 
     var client_template = {
-      editor: '/page_editor/%%%page_id%%%',
+      editor: '/page_editor/%%%page_key%%%',
       publish: undefined
     };
     if(tmpl.remote_template){
@@ -143,9 +143,26 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
 jsHarmonyCMS.prototype.getFactoryConfig = function(){
   var _this = this;
 
+  var configFactory = _this.jsh.Modules['jsHarmonyFactory'].Config;
+
   _this.jsh.Modules['jsHarmonyFactory'].onCreateServer.push(function(server){
     server.app.use(jsHarmonyRouter.PublicRoot(path.join(__dirname, 'public')));
   });
+
+  /**********************
+  *** TASK SCHEDULER ***
+  **********************/
+  configFactory.scheduled_tasks['deploy'] = {
+    action: configFactory.Helper.JobProc.ExecuteSQL("select deployment_id from "+_this.schema+".deployment where deployment_sts='PENDING' and strftime('%Y-%m-%dT%H:%M:%f',deployment_date) <= strftime('%Y-%m-%dT%H:%M:%f',%%%%%%jsh.map.timestamp%%%%%%) order by deployment_date asc;", function(rslt){
+      if(rslt && rslt.length && rslt[0] && rslt[0].length){
+        var deployment = rslt[0][0];
+        _this.funcs.deploy.call(_this.jsh.AppSrv, deployment.deployment_id);
+      }
+    }),
+    when: function (curdt, lastdt) {  //return true if the job should run
+      return (curdt.getTime() - lastdt.getTime() > _this.Config.deploymentJobDelay);
+    }
+  };
 
   return {
     globalparams: {
@@ -164,89 +181,9 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     ],
     private_apps: [
       {
-        '/_funcs/page/:page_id': _this.funcs.page,
-        '/_funcs/publish': _this.funcs.publish,
-      },
-      {
-        //Page Editor
-        '/page_editor/*': function(req, res, next){
-          var jshrouter = this;
-          var verb = req.method.toLowerCase();
-          var jsh = _this.jsh;
-          var appsrv = jsh.AppSrv;
-          var XValidate = jsh.XValidate;
-          var sql = '';
-          var sql_ptypes = [];
-          var sql_params = {};
-          var dbtypes = appsrv.DB.types;
-
-          //Check if user has access to page editor model
-          var model = jsh.getModel(req, _this.namespace + 'Page_Editor');
-          if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-          if (!('_DBContext' in req) || (req._DBContext == '') || (req._DBContext == null)) { return Helper.GenError(req, res, -30, 'Invalid request.'); }
-          
-          if(!req.params || !req.params[0]) return next();
-          var page_id = req.params[0];
-
-          if(verb == 'get') {
-            //Check if tutorial exists
-            sql = 'select page_id,page_key,page_title,page_path,page_tags,page_author,template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang from '+(_this.schema?_this.schema+'.':'')+'page where page_id=@page_id';
-            sql_ptypes = [dbtypes.BigInt];
-            sql_params = { 'page_id': page_id };
-
-            //Validate Parameters
-            var validate = new XValidate();
-            validate.AddValidator('_obj.page_id', 'page_id', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-            var verrors = _.merge(verrors, validate.Validate('B', sql_params));
-            if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-
-            appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              else {
-                if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
-                var page = rslt[0][0];
-                //Get Page Template
-                var template_id = page['template_id'];
-                var template_body = _this.Templates[template_id].body||'';
-
-                //Load Page Content from disk
-                var page_file = path.join(path.join(jsh.Config.datadir,'page'),page_id.toString()+'.json');
-                var content = jsh.ParseJSON(page_file, _this.name, 'Page ID#'+page_id);
-
-                //Resolve EJS
-                var ejsparams = {
-                  page: content
-                };
-                var page_html = ejs.render(template_body, ejsparams);
-
-                Helper.execif(_this.Config.onRender, function(render_cb){
-                  _this.Config.onRender('editor', page_html, function(rslt){ page_html = rslt; return render_cb(); });
-                }, function(){
-                  //Render Page Template
-                  //  Inject jsHarmony Code + Editor Code
-                  //Inject CKEditor
-                  //Override Renderer - Handle Includes onPageRender('edit'/'publish', cb)
-                  //Add bar on top (Save / Save & Close / Pin icon / Properties icon with popup for page settings)
-                  //Add elements / layouts
-
-                  res.end(page_html);
-                });
-              }
-            });
-            return;
-
-            var filepath = _this.tutfolder+'/'+tutorial;
-            if(!(tutorial in _this.tutorials)){
-              if(tutorial in _this.tutids){
-                return Helper.Redirect302(res,'/tutorials/'+_this.tutids[tutorial]);
-              }
-              return next();
-            }
-            HelperRender.reqGet(req, res, jshrouter.jsh, 'tutorials_home', 'jsHarmony Tutorials',
-              { basetemplate: 'tutorials', params: { req: req, menu: _this.tutmenu, tutids: _this.tutids, tutorials: _this.tutorials, popups: jshrouter.jsh.Popups } }, function(){});
-
-          }
-        }
+        '/_funcs/page/:page_key': _this.funcs.page,
+        '/_funcs/deploy': _this.funcs.deploy_req,
+        '/_funcs/diff': _this.funcs.diff,
       }
     ]
   }

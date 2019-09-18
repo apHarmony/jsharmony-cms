@@ -1,0 +1,3 @@
+<%-(rootcss)%> .xtbl tbody tr.branch_checked_out {
+  background-color:#c2ffb8;
+}

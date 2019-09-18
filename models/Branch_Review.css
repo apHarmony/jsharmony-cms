@@ -1,0 +1,20 @@
+.<%=model.class%>_branch_page_path {
+  font-family:monospace;
+}
+.spacer_<%=model.class%> {
+  width:800px;
+}
+.diff_<%=model.class%> hr {
+  border-top:1px solid #eee;
+}
+.diff_<%=model.class%> h4 {
+  margin-top:4px;
+  margin-bottom:4px;
+}
+.<%=model.class%>_diff_head {
+  font-weight:bold;
+  font-family:monospace;
+}
+.<%=model.class%>_diff_item {
+  font-family:monospace;
+}

@@ -26,7 +26,7 @@ window.jsHarmonyCMS = new (function(){
   //Load jsHarmony
   this._baseurl = 'http://localhost:3500/';
   this.page = null;
-  this.page_id = null;
+  this.page_key = null;
   this.template = null;
   this.views = {};
   this.origMarginTop = undefined;
@@ -91,15 +91,15 @@ window.jsHarmonyCMS = new (function(){
 
   this.onready= function(){
     $('#jsharmony_cms_body').prop('contenteditable','true');
-    if(jsh._GET['page_id']){
-      this.loadPage(jsh._GET['page_id']);
+    if(jsh._GET['page_key']){
+      this.loadPage(jsh._GET['page_key']);
     }
-    else XExt.Alert('Page ID not defined');
+    else XExt.Alert('Page Key not defined');
   }
 
-  this.loadPage = function(page_id){
-    _this.page_id = page_id;
-    var url = '../_funcs/page/'+_this.page_id;
+  this.loadPage = function(page_key){
+    _this.page_key = page_key;
+    var url = '../_funcs/page/'+_this.page_key;
     //Execute the C_CUSTOM_GET_C model
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
@@ -187,7 +187,7 @@ window.jsHarmonyCMS = new (function(){
     this.getValues();
 
     //Execute the save function
-    var url = '../_funcs/page/'+_this.page_id;
+    var url = '../_funcs/page/'+_this.page_key;
     XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.page.body = $('#jsharmony_cms_body').html();

@@ -1,0 +1,65 @@
+{
+  "Branch_Review": {
+    "layout":"form",
+    "table":"{schema}.branch",
+    "menu":"Publish",
+    "onecolumn":true,
+    "roles": {"PUBLISHER": "B"},
+    "actions":"B",
+    "caption":["Branch","Branches"],
+    "title":"Branch Review",
+    "buttons":[
+      { "link":"js:_this.approveBranch();","icon":"ok","text":"Approve" },
+      { "link":"js:_this.rejectBranch();","icon":"delete","text":"Reject" },
+      { "link":"update:Branch_Checkout","icon":"edit","text":"Checkout / Edit Branch" }
+    ],
+    "sqlwhere":"branch_sts='REVIEW' and branch_review_sts='PENDING'",
+    "onload":"_this.onload(xmodel, callback);",
+    "fields": [
+      {"name":"branch_desc","caption":"Branch","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
+      {"name":"branch_user_id_fmt","caption":"Author","control":"label","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))"},
+      {"name":"branch_mtstmp","caption":"Last Modified","control":"label","format":["date","MM/DD/YYYY h:mm a"]},
+      {"name":"dst_branch_id","control":"hidden","unbound":true,
+        "lov": { "sql": "select branch_id code_val,branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' and site_id=(select site_id from {schema}.branch where branch_id=@branch_id) order by branch_desc", "blank": 1} },
+    ]
+  },
+  "Branch_Review_Approve": {
+    "layout": "exec",
+    "title": "Approve Branch",
+    "actions": "U",
+    "roles": {"PUBLISHER": "BU"},
+    "sqlexec": [
+      "delete from {schema}.branch_menu where branch_id=@dst_branch_id and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@src_branch_id and branch_menu_action='DELETE');",
+      "delete from {schema}.branch_media where branch_id=@dst_branch_id and media_key in (select media_key from {schema}.branch_media where branch_id=@src_branch_id and branch_media_action='DELETE');",
+      "delete from {schema}.branch_page where branch_id=@dst_branch_id and page_key in (select page_key from {schema}.branch_page where branch_id=@src_branch_id and branch_page_action='DELETE');",
+      
+      
+
+      "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select @dst_branch_id, menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=@src_branch_id and (branch_menu_action='ADD' or branch_menu_action='UPDATE') and menu_key not in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id);",
+      "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select @dst_branch_id, media_key, media_id, media_id from {schema}.branch_media where branch_id=@src_branch_id and (branch_media_action='ADD' or branch_media_action='UPDATE') and media_key not in (select media_key from {schema}.branch_media where branch_id=@dst_branch_id);",
+      "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select @dst_branch_id, page_key, page_id, page_id from {schema}.branch_page where branch_id=@src_branch_id and (branch_page_action='ADD' or branch_page_action='UPDATE') and page_key not in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id);",
+
+      "update {schema}.branch_menu set menu_id=(select menu_id from (select menu_id,menu_key src_menu_key from {schema}.branch_menu where branch_id=@src_branch_id) tbl where src_menu_key=menu_key) where branch_id=@dst_branch_id and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@src_branch_id and (branch_menu_action='ADD' or branch_menu_action='UPDATE') and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id));",
+      "update {schema}.branch_media set media_id=(select media_id from (select media_id,media_key src_media_key from {schema}.branch_media where branch_id=@src_branch_id) tbl where src_media_key=media_key) where branch_id=@dst_branch_id and media_key in (select media_key from {schema}.branch_media where branch_id=@src_branch_id and (branch_media_action='ADD' or branch_media_action='UPDATE') and media_key in (select media_key from {schema}.branch_media where branch_id=@dst_branch_id));",
+      "update {schema}.branch_page set page_id=(select page_id from (select page_id,page_key src_page_key from {schema}.branch_page where branch_id=@src_branch_id) tbl where src_page_key=page_key) where branch_id=@dst_branch_id and page_key in (select page_key from {schema}.branch_page where branch_id=@src_branch_id and (branch_page_action='ADD' or branch_page_action='UPDATE') and page_key in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id));",
+
+      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id;"
+    ],
+    "fields": [
+      {"name":"src_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Source Branch ID"},
+      {"name":"dst_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Destination Branch ID"}
+    ]
+  },
+  "Branch_Review_Reject": {
+    "layout": "exec",
+    "title": "Reject Branch",
+    "actions": "U",
+    "roles": {"PUBLISHER": "BU"},
+    "sqlexec": [
+      "update {schema}.branch set branch_sts='ACTIVE',branch_review_sts='REJECTED' where branch_id=@branch_id"
+    ],
+    "fields": [
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID"}
+    ]
+  }
+}

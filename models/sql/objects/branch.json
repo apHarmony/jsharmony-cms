@@ -4,7 +4,8 @@
     "caption": "Branch Type",
     "init_data": [
       { "code_val": "USER", "code_txt": "User", "code_seq": 1 },
-      { "code_val": "PUBLIC", "code_txt": "Public", "code_seq": 2 }
+      { "code_val": "PUBLIC", "code_txt": "Public", "code_seq": 2 },
+      { "code_val": "DEPLOYMENT", "code_txt": "Deployment", "code_seq": 3 }
     ]
   },
 
@@ -46,9 +47,11 @@
       { "name": "branch_name", "type": "varchar", "length": 256, "null": false },
       { "name": "branch_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_type": "code_val" }, "null": false },
       { "name": "branch_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_sts": "code_val" }, "null": false },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
+
       { "name": "branch_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_review_sts": "code_val" } },
       { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
-      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": "branch_id" } },
+      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "null" } } },
 
       { "name": "branch_sts_tstmp", "type": "datetime", "length": 7 },
       { "name": "branch_sts_user", "type": "varchar", "length": 20 },
@@ -64,7 +67,8 @@
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
-          "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');"
+          "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
+          "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -73,12 +77,14 @@
           "setif(update(branch_sts),branch_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "setif(update(branch_sts),branch_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(update(branch_review_sts),branch_review_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
-          "setif(update(branch_review_sts),branch_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);"
+          "setif(update(branch_review_sts),branch_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_sts='REVIEW' and branch_review_sts is null,branch_review_sts,'PENDING');"
         ]
       }
     ],
     "sample_data": [
-      { "branch_name": "master", "branch_type": "PUBLIC", "branch_sts": "ACTIVE" }
+      { "branch_name": "master", "branch_type": "PUBLIC", "branch_sts": "ACTIVE", "site_id": 1 },
+      { "branch_name": "Test Branch", "branch_type": "USER", "branch_sts": "ACTIVE", "site_id": 1, "branch_user_id": 1 }
     ]
   },
   
@@ -87,7 +93,7 @@
     "caption": ["Branch Menu", "Branch Menus"],
     "columns": [
       { "name": "branch_menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
-      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" }, "null": false, "actions": ["prevent_update"] },
       { "name": "menu_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "branch_menu_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
@@ -136,7 +142,7 @@
     "caption": ["Branch Page", "Branch Pages"],
     "columns": [
       { "name": "branch_page_id", "type": "bigint", "key": true, "identity": true, "null": false },
-      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false, "actions": ["prevent_update"] },
       { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "branch_page_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
@@ -149,6 +155,11 @@
     ],
     "unique": [
       ["branch_id","page_key"]
+    ],
+    "data_keys": ["branch_id","page_key"],
+    "sample_data": [
+      { "branch_id": "1", "page_key": "1", "page_id": "1", "page_orig_id": "1" },
+      { "branch_id": "1", "page_key": "2", "page_id": "2", "page_orig_id": "2" }
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
@@ -173,7 +184,7 @@
     "caption": ["Branch Media", "Branch Media"],
     "columns": [
       { "name": "branch_media_id", "type": "bigint", "key": true, "identity": true, "null": false },
-      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" }, "null": false , "actions": ["prevent_update"]},
       { "name": "media_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
       { "name": "branch_media_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
@@ -200,6 +211,148 @@
           "set(branch_media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_media_muser,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(branch_media.branch_media_action='DELETE',media_id,null);"
+        ]
+      }
+    ]
+  },
+
+  "sys_user_branch": {
+    "type": "table",
+    "caption": ["User Branch", "User Branches"],
+    "columns": [
+      { "name": "sys_user_branch_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } } },
+      { "name": "sys_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": { "column": "sys_user_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"], "unique": true },
+
+      { "name": "sys_user_branch_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "sys_user_branch_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "sys_user_branch_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "sys_user_branch_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(sys_user_branch_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(sys_user_branch_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "data_keys": ["sys_user_id"],
+    "sample_data": [
+      { "branch_id": "1", "sys_user_id": "1" }
+    ]
+  },
+
+  "v_my_branch_access": {
+    "type": "view",
+    "caption": ["Branch", "Branches"],
+    "tables": {
+      "branch": {
+        "columns": [
+          "branch_id",
+          "branch_name",
+          "branch_type",
+          "branch_user_id",
+          "branch_parent_id",
+          "site_id",
+          "branch_sts",
+          "branch_mtstmp",
+          "branch_muser",
+          { "name":"branch_is_checked_out", "sqlselect": "(case branch_id when {schema}.my_current_branch_id() then 1 else 0 end)" },
+          { "name":"branch_access", "sqlselect": "case when branch_type='DEPLOYMENT' then 'R' when {schema}.my_user_is_publisher() then 'RW' else decode(branch_type, 'PUBLIC', 'R', 'USER', decode(branch_sts,'ACTIVE','RW','R')) end" }
+        ]
+      },
+      "site": {
+        "columns": [
+          "site_name"
+        ],
+        "join_type": "inner",
+        "join_columns": {
+          "branch.site_id": "site.site_id"
+        }
+      }
+    },
+    "where": "branch_id in (select branch_id from {schema}.branch where branch_type='PUBLIC' or branch_type='DEPLOYMENT' or ({schema}.my_user_is_publisher() = 1) or (branch_user_id = jsharmony.my_sys_user_id()))"
+  },
+
+  "v_my_branch_desc": {
+    "type": "view",
+    "caption": ["Branch", "Branches"],
+    "tables": {
+      "v_my_branch_access": {
+        "columns": [
+          "branch_id",
+          "branch_name",
+          "branch_type",
+          "branch_user_id",
+          "branch_parent_id",
+          "site_id",
+          "site_name",
+          "branch_sts",
+          "branch_mtstmp",
+          "branch_muser",
+          "branch_access",
+          "branch_is_checked_out",
+          { "name":"branch_desc", "sqlselect": "site_name||'/'||(case branch_type when 'DEPLOYMENT' then 'deployment' when 'PUBLIC' then 'public' else (select sys_user_fname||' '||sys_user_lname from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=branch_user_id) end)||'/'||branch_name||(case branch_access when 'R' then ' (Read-only)' else '' end)" }
+        ]
+      }
+    }
+  },
+
+  "v_my_current_branch": {
+    "type": "view",
+    "caption": ["Branch", "Branches"],
+    "tables": {
+      "jsharmony.sys_user": {
+        "columns": [
+          "sys_user_id"
+        ]
+      },
+      "sys_user_branch": {
+        "join_type": "left",
+        "join_columns": {
+          "sys_user_branch.sys_user_id": "jsharmony.sys_user.sys_user_id"
+        }
+      },
+      "v_my_branch_desc": {
+        "columns": [
+          "branch_id",
+          "branch_name",
+          "branch_type",
+          "branch_parent_id",
+          "site_id",
+          "site_name",
+          "branch_access",
+          "branch_desc"
+        ],
+        "join_type": "left",
+        "join_columns": {
+          "sys_user_branch.branch_id": "v_my_branch_desc.branch_id"
+        }
+      }
+    },
+    "where": "jsharmony.sys_user.sys_user_id = jsharmony.my_sys_user_id()",
+    "triggers": [
+      {"on": ["update"], "exec": [
+          "errorif(not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(branch_id)),'User does not have access to branch')",
+          "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
+          "update {schema}.sys_user_branch set branch_id = inserted(branch_id)"
+        ]
+      },
+      {"on": ["insert"], "exec": [
+          //Verify access to source branch
+          "errorif(not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(branch_parent_id)),'User does not have access to source branch')",
+          //Verify non-duplicate branch name
+          "errorif(exists(select * from {schema}.branch where {schema}.branch.branch_type=inserted(branch_type) and {schema}.branch.branch_name=inserted(branch_name) and ({schema}.branch.branch_type='PUBLIC' or ({schema}.branch.branch_user_id=jsharmony.my_sys_user_id()))),'The target branch name already exists')",
+          //Verify access to target branch type
+          "errorif(exists(select 1 where (inserted(branch_type)='PUBLIC' or inserted(branch_type)='DEPLOYMENT') and ({schema}.my_user_is_publisher() <> 1)),'User does not have access to add public branches')",
+          //Insert branch
+          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
+          //Set user's current branch to cloned branch
+          "update {schema}.v_my_current_branch set branch_id=(select ifnull(last_insert_rowid_override,last_insert_rowid()) from jsharmony_meta)",
+          //Add all pages / media / menu from other branch
+          "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and menu_id is not null",
+          "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, media_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and media_id is not null",
+          "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and page_id is not null"
         ]
       }
     ]

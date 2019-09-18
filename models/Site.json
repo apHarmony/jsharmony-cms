@@ -1,0 +1,19 @@
+{
+  "Site": {
+    "layout":"form",
+    "table":"{schema}.site",
+    "title": {
+      "insert": "Add Site",
+      "update": { "sql": "select {{concat}}('Site :: ',site_name) from {schema}.site where site_id=@site_id" }
+    },
+    "caption":["Site","Sites"],
+    "popup": [1260, 600],
+    "roles": { "publisher": "BIUD" },
+    "fields": [
+      {"name":"site_name","caption":"Site Name"},
+      {"name":"site_sts","caption":"Status"},
+
+      {"name":"Site_Deployment_Target","control":"subform","controlstyle":"width:1200px;margin-top:20px;","target":"Site_Deployment_Target","caption":"Deployment Targets"}
+    ]
+  }
+}

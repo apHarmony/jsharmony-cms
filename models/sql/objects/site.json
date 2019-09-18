@@ -1,0 +1,26 @@
+{
+  "site": {
+    "type": "table",
+    "caption": ["Site","Sites"],
+    "columns": [
+      { "name": "site_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "site_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "site_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
+      
+      { "name": "site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "site_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "site_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(site_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(site_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { "site_name": "Default Web Site" }
+    ]
+  }
+}

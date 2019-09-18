@@ -13,6 +13,7 @@
     "columns": [
       { "name": "page_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "page_file_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "page_title", "type": "varchar", "length": 1024 },
       { "name": "page_path", "type": "varchar", "length": 2048, "null": false },
       { "name": "page_tags", "type": "varchar", "length": -1 },
@@ -34,11 +35,13 @@
     "triggers": [
       { "on": ["insert"], "exec": [
           "setif(null(page.page_key),page_key,page.page_id);",
+          "setif(null(page.page_file_id),page_file_id,page.page_id);",
           "setif(null(page.page_author),page_author,jsharmony.my_sys_user_id());"
         ]
       },
       { "on": ["validate_update"], "exec": [
-          "errorif(update(page_key) and (deleted(page_key) is not null),'Cannot update page_key');"
+          "errorif(update(page_key) and (deleted(page_key) is not null),'Cannot update page_key');",
+          "errorif(update(page_file_id) and (deleted(page_file_id) is not null),'Cannot update page_file_id');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -83,6 +86,76 @@
       { "name": "page_category_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false },
       { "name": "category_id", "type": "bigint", "foreignkey": { "category": "category_id" }, "null": false }
+    ]
+  },
+
+  "v_my_page": {
+    "type": "view",
+    "caption": ["Branch", "Branches"],
+    "tables": {
+      "page": {
+        "columns": [
+          "page_id",
+          "page_key",
+          "page_file_id",
+          "page_title",
+          "page_path",
+          "page_tags",
+          "page_author",
+          "template_id",
+    
+          "page_seo_title",
+          "page_seo_canonical_url",
+          "page_seo_metadesc",
+    
+          "page_review_sts",
+          "page_lang",
+          
+          "page_etstmp",
+          "page_euser",
+          "page_mtstmp",
+          "page_muser"
+        ]
+      },
+      "branch_page": {
+        "join_type": "inner",
+        "join_columns": {
+          "branch_page.page_id": "page.page_id",
+          "branch_page.branch_id": "{schema}.my_current_branch_id()"
+        }
+      }
+    },
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "pass_insert_id(page, page_id, ",
+            "  insert into page(page_title, page_path, page_tags, page_author, template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang) values(inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang)),",
+            "  return_insert_key(page, page_key, (page_key=%%%INSERT_ID%%%));",
+            "  insert into branch_page(branch_id, page_key, page_id, branch_page_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "pass_insert_id(page, page_id, ",
+            "  insert into page(page_key, page_file_id, page_title, page_path, page_tags, page_author, template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang) values(deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang)),",
+            "  update branch_page set page_id=%%%INSERT_ID%%%,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key);",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "update branch_page set page_id=null,branch_page_action='DELETE' where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and ((branch_page_action is null) or (branch_page_action in ('UPDATE','DELETE')))",
+          "delete from branch_page where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and branch_page_action='ADD'",
+          "increment_changes()"
+        ]
+      }
     ]
   }
 }

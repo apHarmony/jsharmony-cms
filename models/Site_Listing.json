@@ -1,10 +1,15 @@
 {
   "Site_Listing": {
     "layout":"grid",
+    "table":"{schema}.site",
+    "actions":"B",
     "caption":["Site","Sites"],
     "menu":"jsHarmonyCMS/Site_Listing",
-    "unbound":true,
+    "buttons":[{ "link":"insert:Site","icon":"add","text":"Add Site" }],
     "fields": [
+      {"name":"site_name","caption":"Site Name","link":"update:Site"},
+      {"name":"site_sts","caption":"Status"},
+      {"control":"html","caption":"Edit","link":"update:Site","value":"<img src='/images/icon_edit.png' class='xicon' />"}
     ]
   }
 }

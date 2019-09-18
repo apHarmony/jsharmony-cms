@@ -1,14 +1,37 @@
 {
   "Deployment_Add": {
     "layout":"form",
-    "unbound":"true",
+    "unbound":true,
     "title":"Schedule Deployment",
     "menu":"Publish",
     "onecolumn":true,
-    "onload":"XForm.prototype.XExecute('../_funcs/publish', {}, function(rslt){ jsh.$root('.publish_target').text(rslt.publish_path); });",
+    //"onload":"XForm.prototype.XExecute('../_funcs/deploy', {}, function(rslt){ jsh.$root('.publish_target').text(rslt.publish_path); });",
     "fields": [
-      {"name":"publish_target","control":"label","caption":"Publish Target"},
-      {"control":"button","value":"Publish Site","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "XForm.prototype.XExecutePost('../_funcs/publish', {}, function(rslt){ XExt.Alert('Successfully published to: '+String.fromCharCode(10)+rslt.publish_path); });"}
+      {"name":"site_id","control":"dropdown","caption":"Site","validate":["Required"],
+        "lov":{"sql":"select site_id code_val, site_name code_txt from {schema}.site where site_sts='ACTIVE'"}},
+        {"name":"deployment_target_id","control":"dropdown","caption":"Deployment Target","validate":["Required"],
+          "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.deployment_target where deployment_target_sts='ACTIVE' order by site_id,deployment_target_name"}},
+      {"name":"branch_id","control":"dropdown","caption":"Branch","validate":["Required"],
+        "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, branch_id code_val, branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' order by site_id,branch_desc"}},
+      {"name":"deployment_date","control":"textbox","caption":"Publish Date", "validate":["Required","IsDate"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;"},
+      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"]},
+      {"control":"button","value":"Schedule Deployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; XForm.Post(xmodel.module_namespace+'Deployment_Add_Exec', {}, _.pick(xmodel.controller.form.Data,['site_id','branch_id','deployment_target_id','deployment_date','deployment_tag']), function(rslt){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Deployment_Scheduled_Listing'); });"}
+    ]
+  },
+  "Deployment_Add_Exec": {
+    "layout": "exec",
+    "title": "Reject Branch",
+    "actions": "U",
+    "roles": {"PUBLISHER": "BU"},
+    "sqlexec": [
+      "insert into {schema}.v_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag) values(@site_id, @deployment_target_id, @branch_id, @deployment_date, @deployment_tag) "
+    ],
+    "fields": [
+      {"name":"site_id", "actions":"BU", "type":"bigint", "caption":"Site ID"},
+      {"name":"deployment_target_id", "actions":"BU", "type":"bigint", "caption":"Deployment Target ID"},
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "caption":"Branch ID"},
+      {"name":"deployment_date", "actions":"BU", "type": "datetime", "length": 7, "caption":"Deployment Date"},
+      {"name":"deployment_tag", "actions":"BU", "type":"varchar", "length": 256, "caption":"Deployment Tag"}
     ]
   }
 }

@@ -1,20 +1,28 @@
 {
   "Branch_Active_Public_Listing": {
     "layout":"grid",
-    "table":"{schema}.branch",
+    "table":"{schema}.v_my_branch_desc",
     "actions":"B",
+    "roles": {"*": "B"},
     "sqlwhere":"branch_type='PUBLIC' and branch_sts='ACTIVE'",
     "caption":["Branch","Branches"],
     "title":"Public Branches",
     "hide_system_buttons":["search","export"],
     "rowlimit":1000,
     "tablestyle":"min-width:600px;",
+    "noresultsmessage":"No public branches.",
+    "rowclass": "<%=xejs.iif(datarow['branch_is_checked_out']==1,'branch_checked_out')%>",
     "fields": [
-      {"name":"branch_name","caption":"Name","cellstyle":"min-width:200px;"},
+      {"name":"branch_id","control":"hidden"},
+      {"name":"branch_is_checked_out","control":"hidden"},
+      {"name":"branch_desc","caption":"Name","cellstyle":"min-width:200px;"},
       {"name":"branch_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]},
       {"name":"branch_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(branch_muser))","control":"label","actions":"B"},
-      {"caption":"Checkout","control":"linkbutton","link":"js:XExt.Alert('Checkout');","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
-      {"caption":"Clone","control":"linkbutton","link":"js:XExt.Alert('Clone');","captionstyle":"text-align:center;","cellstyle":"text-align:center;"}
+      {"caption":"Checkout","control":"linkbutton","link":"update:Branch_Checkout&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;",
+        "controlstyle":"<%=xejs.iif(datarow['branch_is_checked_out']==1,'display:none;')%>"},
+      {"caption":"Clone","control":"linkbutton","link":"update:Branch_Clone&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
+      {"caption":"Archive","control":"linkbutton","link":"js:jsh.System.ArchiveBranch(xmodel.get('branch_id', this))","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*"}},
+      {"caption":"Delete","control":"linkbutton","link":"update:Branch_Delete&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*"}}
     ]
   }
 }

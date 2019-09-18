@@ -1,7 +1,7 @@
 {
   "Branch_Active_Listing": {
     "layout":"form",
-    "table":"{schema}.branch",
+    "table":"{schema}.v_my_branch_desc",
     "actions":"B",
     "roles": {"*": "B"},
     "caption":["Branch","Branches"],
