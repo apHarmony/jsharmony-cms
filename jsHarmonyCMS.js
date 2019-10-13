@@ -45,6 +45,7 @@ function jsHarmonyCMS(name, options){
   _this.schema = options.schema;
 
   _this.Templates = {};
+  _this.DefaultTemplate = undefined;
   _this.Layouts = {};
   _this.Elements = {};
   _this.funcs = new funcs(_this);
@@ -61,6 +62,7 @@ jsHarmonyCMS.prototype.Application = function(){
   jsh.Sites[factory.mainSiteID] = _.extend(this.getFactoryConfig(),jsh.Sites[factory.mainSiteID]);
   jsh.Config.onConfigLoaded.push(function(cb){
     _this.LoadTemplates();
+    _this.LoadClientJS();
     return cb();
   });
   return jsh;
@@ -76,6 +78,17 @@ jsHarmonyCMS.prototype.Init = function(cb){
   HelperFS.createFolderIfNotExistsSync(path.join(this.jsh.Config.datadir,'menu'));
   
   return cb();
+}
+
+//Load Client JS
+jsHarmonyCMS.prototype.LoadClientJS = function(){
+  var _this = this;
+  _this.jsh.Cache['js/jsharmony-cms.js'] = fs.readFileSync(path.join(_this.basepath, 'public/js/jsharmony-cms.js'), 'utf8');
+  var modeldirs = _this.jsh.getModelDirs();
+  for (var i = 0; i < modeldirs.length; i++) {
+    var jspath = path.join(modeldirs[i].path, '../public/js/jsharmony-cms.local.js');
+    if (fs.existsSync(jspath)) _this.jsh.Cache['js/jsharmony-cms.js'] += '\r\n' + fs.readFileSync(jspath);
+  }
 }
 
 //Load Templates
@@ -124,6 +137,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   var client_templates = {};
   for(var tmplname in this.Templates){
     var tmpl = this.Templates[tmplname];
+    if(typeof _this.DefaultTemplate == 'undefined') _this.DefaultTemplate = tmplname;
     var tmpl_lov = { "code_val": tmplname, "code_txt": tmpl.title };
     this.jsh.Config.macros.CMS_TEMPLATES.push(tmpl_lov);
 
@@ -138,6 +152,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     client_templates[tmplname] = client_template;
   }
   this.jsh.Sites['main'].globalparams.templates = client_templates;
+  this.jsh.Sites['main'].globalparams.default_template = _this.DefaultTemplate;
 }
 
 jsHarmonyCMS.prototype.getFactoryConfig = function(){
@@ -146,6 +161,10 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   var configFactory = _this.jsh.Modules['jsHarmonyFactory'].Config;
 
   _this.jsh.Modules['jsHarmonyFactory'].onCreateServer.push(function(server){
+    server.app.use('/js/jsharmony-cms.js', function(req, res){
+      if(_this.Config.debug_params.no_cache_client_js) _this.LoadClientJS();
+      return res.end(_this.jsh.Cache['js/jsharmony-cms.js']); 
+    });
     server.app.use(jsHarmonyRouter.PublicRoot(path.join(__dirname, 'public')));
   });
 
@@ -153,7 +172,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   *** TASK SCHEDULER ***
   **********************/
   configFactory.scheduled_tasks['deploy'] = {
-    action: configFactory.Helper.JobProc.ExecuteSQL("select deployment_id from "+_this.schema+".deployment where deployment_sts='PENDING' and strftime('%Y-%m-%dT%H:%M:%f',deployment_date) <= strftime('%Y-%m-%dT%H:%M:%f',%%%%%%jsh.map.timestamp%%%%%%) order by deployment_date asc;", function(rslt){
+    action: configFactory.Helper.JobProc.ExecuteSQL("jsHarmonyCMS_GetNextDeployment", function(rslt){
       if(rslt && rslt.length && rslt[0] && rslt[0].length){
         var deployment = rslt[0][0];
         _this.funcs.deploy.call(_this.jsh.AppSrv, deployment.deployment_id);
@@ -182,6 +201,9 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     private_apps: [
       {
         '/_funcs/page/:page_key': _this.funcs.page,
+        '/_funcs/media/:media_key/:thumbnail': _this.funcs.media,
+        '/_funcs/media/:media_key/': _this.funcs.media,
+        '/_funcs/media/': _this.funcs.media,
         '/_funcs/deploy': _this.funcs.deploy_req,
         '/_funcs/diff': _this.funcs.diff,
       }

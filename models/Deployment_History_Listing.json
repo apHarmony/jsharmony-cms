@@ -6,6 +6,7 @@
     "title":"Deployment History",
     "menu":"jsHarmonyCMS/Deployment_History_Listing",
     "noresultsmessage":"No deployment history.",
+    "tablestyle":"min-width:450px;",
     "sqlwhere":"deployment_sts not in ('HOLD','PENDING','RUNNING')",
     "actions":"B",
     "sort":["vdeployment_date"],

@@ -1,12 +1,4 @@
 {
-  //"page_key": {
-  //  "type": "table",
-  //  "caption": ["Page Key", "Page Keys"],
-  //  "columns": [
-  //    { "name": "page_key", "type": "bigint", "key": true, "identity": true, "null": false }
-  //  ]
-  //},
-
   "page": {
     "type": "table",
     "caption": ["Page","Pages"],
@@ -16,6 +8,8 @@
       { "name": "page_file_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "page_title", "type": "varchar", "length": 1024 },
       { "name": "page_path", "type": "varchar", "length": 2048, "null": false },
+      { "name": "page_folder", "type": "varchar", "length": 2048 },
+      { "name": "page_filename", "type": "varchar", "length": 2048 },
       { "name": "page_tags", "type": "varchar", "length": -1 },
       { "name": "page_author", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
       { "name": "template_id", "type": "varchar", "length": 255 },
@@ -33,15 +27,25 @@
       { "name": "page_muser", "type": "varchar", "length": 20 }
     ],
     "triggers": [
+      { "on": ["validate_insert"], "exec": [
+          "errorif((inserted(page_folder) is not null),'Cannot set page_folder - this is a calculated field');",
+          "errorif((inserted(page_filename) is not null),'Cannot set page_filename - this is a calculated field');"
+        ]
+      },
       { "on": ["insert"], "exec": [
           "setif(null(page.page_key),page_key,page.page_id);",
           "setif(null(page.page_file_id),page_file_id,page.page_id);",
-          "setif(null(page.page_author),page_author,jsharmony.my_sys_user_id());"
+          "setif(null(page.page_author),page_author,jsharmony.my_sys_user_id());",
+          "setif(null(page.page_folder),page_folder,{schema}.dirname(page.page_path));",
+          "setif(null(page.page_filename),page_filename,(case {schema}.filename(page.page_path) when '' then 'index.html' else {schema}.filename(page.page_path) end));"
         ]
       },
       { "on": ["validate_update"], "exec": [
           "errorif(update(page_key) and (deleted(page_key) is not null),'Cannot update page_key');",
-          "errorif(update(page_file_id) and (deleted(page_file_id) is not null),'Cannot update page_file_id');"
+          "errorif(update(page_file_id) and (deleted(page_file_id) is not null),'Cannot update page_file_id');",
+          "errorif(update(page_folder) and (deleted(page_folder) is not null),'Cannot update page_folder');",
+          "errorif(update(page_filename) and (deleted(page_filename) is not null),'Cannot update page_filename');",
+          "errorif(update(page_path) and (deleted(page_path) is not null),'Cannot update page_path');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -51,8 +55,8 @@
       }
     ],
     "sample_data": [
-      { "page_path": "/index.htm", "page_title": "Welcome", "page_author": 1, "template_id": "default", "_FILES": { "1.json": "page/{{page_id}}.json" } },
-      { "page_path": "/style-guide.htm", "page_title": "Style Guide", "page_author": 1, "template_id": "default", "_FILES": { "2.json": "page/{{page_id}}.json" } }
+      { "page_path": "/index.html", "page_title": "Welcome", "page_author": 1, "template_id": "default", "_FILES": { "1.json": "page/{{page_id}}.json" } },
+      { "page_path": "/style-guide.html", "page_title": "Style Guide", "page_author": 1, "template_id": "default", "_FILES": { "2.json": "page/{{page_id}}.json" } }
     ]
   },
 
@@ -100,6 +104,8 @@
           "page_file_id",
           "page_title",
           "page_path",
+          "page_folder",
+          "page_filename",
           "page_tags",
           "page_author",
           "template_id",
@@ -129,7 +135,8 @@
       { "on": ["insert"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
-            "pass_insert_id(page, page_id, ",
+            "errorif(exists(select * from {schema}.v_my_page where page_path=inserted(page_path)),'Page file name already exists');",
+            "with_insert_identity(page, page_id, ",
             "  insert into page(page_title, page_path, page_tags, page_author, template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang) values(inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang)),",
             "  return_insert_key(page, page_key, (page_key=%%%INSERT_ID%%%));",
             "  insert into branch_page(branch_id, page_key, page_id, branch_page_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
@@ -141,7 +148,7 @@
       { "on": ["update"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
-            "pass_insert_id(page, page_id, ",
+            "with_insert_identity(page, page_id, ",
             "  insert into page(page_key, page_file_id, page_title, page_path, page_tags, page_author, template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang) values(deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang)),",
             "  update branch_page set page_id=%%%INSERT_ID%%%,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key);",
             "  increment_changes()",

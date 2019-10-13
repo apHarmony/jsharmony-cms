@@ -1,3 +1,16 @@
 <%-(rootcss)%> .xtbl tbody tr.branch_checked_out {
   background-color:#c2ffb8;
 }
+<%-(rootcss)%> .bcrumbs_branch_header {
+  border:1px solid #333;
+  color:white;
+  background-color:#333;
+  padding:4px 11px;
+  display:inline-block;
+}
+<%-(rootcss)%> .bcrumbs_branch_body {
+  border:1px solid #333;
+  padding:4px 11px;
+  display:inline-block;
+  color:#000;
+}

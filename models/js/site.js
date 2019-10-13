@@ -25,4 +25,4 @@
     });
   }
 
-})(jshInstance);
+})(window.jshInstance);

@@ -6,6 +6,7 @@
     "title":"Scheduled Deployments",
     "menu":"jsHarmonyCMS/Deployment_Scheduled_Listing",
     "noresultsmessage":"No scheduled deployments.",
+    "tablestyle":"min-width:450px;",
     "actions":"BU",
     "sqlwhere":"deployment_sts in ('HOLD','PENDING','RUNNING')",
     "buttons":[{ "link":"Deployment_Add","icon":"add","text":"Add Deployment" }],

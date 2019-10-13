@@ -35,7 +35,19 @@ function jsHarmonyCMSConfig(){
     //secretAccessKey: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
   };
 
-  this.deploymentJobDelay = (1000 * 60 * 60)
+  this.media_thumbnails = {
+    file_tile: { resize: [150, 150], format: "jpg" },
+    file_preview: { resize: [300, 300] },
+    small: { resize: [512, 384] },
+    medium: { resize: [1024, 768] },
+    large: { resize: [2048, 1538] }
+  }
+
+  this.deploymentJobDelay = (1000 * 60 * 60);
+
+  this.debug_params = {
+    no_cache_client_js: false  //Do not cache jsharmony-cms.js, always reload from disk
+  };
 
   this.onRender = null; //function(target, content, cb){ return cb(new_content); }  //target = 'editor', 'publish'
 }

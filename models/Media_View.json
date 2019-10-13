@@ -1,0 +1,23 @@
+{
+  "Media_View": {
+    "layout":"form",
+    "table":"{schema}.media",
+    "caption":["Media","Media"],
+    "roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" },
+    "fields": [
+      {"name":"media_id","caption":"Media"},
+      {"name":"media_file","actions":"B","type":"file","caption":"File",
+        "controlparams": {
+          "sqlparams": {
+            "file_size": "media_size",
+            "file_extension": "media_ext",
+            "file_name": "media_filename",
+            "file_upload_user": "media_euser",
+            "file_upload_timestamp": "media_etstmp"
+          },
+          "data_folder": "media"
+        }
+      }
+    ]
+  }
+}

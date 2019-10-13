@@ -1,0 +1,34 @@
+{
+  "Page_Tree_Listing": {
+    "layout":"grid",
+    "table":"{schema}.v_my_page",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "caption":["Page","Pages"],
+    "title":"",
+    "commitlevel":"row",
+    "reselectafteredit": "row",
+    "sort":["^page_filename"],
+    "menu":"jsHarmonyCMS/Page_Listing",
+    "rowlimit":250,
+    "hide_system_buttons" : ["add","search","export"], 
+    "tablestyle":"width:100%;",
+    "css":[
+      ".xform<%=model.class%> .xtbl tbody td.xgrid_action_cell.delete { border-right:0px; }",
+      ".xform<%=model.class%> .xgrid_action_thead.delete { border-right:0px; }",
+      ".xbodyhead.xelem<%=model.class%> { display:none !important; }"
+    ],
+    "oninit": "xmodel.controller.grid.OnLoadError = function(err){ if(err && err.Number==-14){ XExt.Alert('Please checkout a branch', function(){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true }) }); return true; } }",
+    "fields": [
+      {"name":"page_key","control":"hidden","actions":"B","key":true},
+      {"name":"page_folder","control":"hidden","actions":"B"},
+      {"name":"page_path","caption":"URL","control":"hidden","actions":"BIU"},
+      {"name":"page_title","caption":"Title","control":"hidden","actions":"BIU"},
+      {"name":"page_filename","caption":"File","actions":"B","control":"label","cellstyle":"white-space:nowrap;width:100%;border-left:0;","link":"js:_this.openPageEditor(this)","captionstyle":"width:50%;"},
+      {"name":"template_id","caption":"Template","control":"dropdown","lov":{ "values": "#CMS_TEMPLATES" },"actions":"BIU","validate":["Required"]},
+      {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"},
+      {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"caption":"Edit","link":"js:_this.openPageEditor(this)","control":"html","value":"<img data-rowid='<%=rowid%>' src='/images/icon_edit.png' height=12 class='xicon' />","cellstyle": "text-align:center;" }
+    ]
+  }
+}

@@ -1,8 +1,45 @@
-<div id="jsharmony_cms_editor_bar">
+<div id="jsharmony_cms_editor_bar" class="jsharmony_cms">
   <div class="actions"><!--
-    --><a class="button" style="display:none;" onclick="jsHarmonyCMS.settings(); return false;" title="Save">Page Settings</a><!--
-    --><a class="button" onclick="jsHarmonyCMS.save(); return false;" title="Save">Save</a><!--
+    --><a class="button settings" onclick="jsHarmonyCMS.toggleSettings(); return false;" title="Page Settings">Page Settings</a><!--
+    --><a class="button save" onclick="jsHarmonyCMS.save(); return false;" title="Save">Save</a><!--
     --><a class="button icon autoHideEditorBar" style="display:none;" onclick="jsHarmonyCMS.toggleEditorBarAutoHide(); return false;" title="Auto-hide"><i class="material-icons hide">vertical_align_top</i><i class="material-icons dock">vertical_align_bottom</i></a><!--
   --></div>
   <div class="title" ></div>
+  <div class="page_settings" style="display:none;">
+    <div class="xtabcontrol">
+      <div class="xtabs">
+        <a href="#" class="xtab" for="jsharmony_cms_page_settings_overview">Overview</a>
+        <a href="#" class="xtab" for="jsharmony_cms_page_settings_seo">SEO</a>
+        <a href="#" class="xtab" for="jsharmony_cms_page_settings_css">Custom CSS</a>
+        <a href="#" class="xtab" for="jsharmony_cms_page_settings_header">Header Code</a>
+        <a href="#" class="xtab" for="jsharmony_cms_page_settings_footer">Footer Code</a>
+      </div>
+      <div class="xpanel">
+        <div class="xtabbody jsharmony_cms_page_settings_overview">
+          <table cellpadding="0" cellspacing="0" border="0">
+            <tr><td><label>Page Title:</label></td><td width="100%"><input type="text" class="page_settings_title" /></td></tr>
+            <tr><td valign="top" style="padding-top:7px;"><label>Tags:</label></td><td><div class="page_settings_tags_control xtagcontrol"></div><input type="text" class="page_settings_tags" /></td></tr>
+            <tr><td><label>Author:</label></td><td><select class="page_settings_author"></select></td></tr>
+          </table>
+        </div>
+        <div class="xtabbody jsharmony_cms_page_settings_seo">
+          <table cellpadding="0" cellspacing="0" border="0">
+            <tr><td><label>Title Tag:</label></td><td width="100%"><input type="text" class="page_settings_seo_title" /></td></tr>
+            <tr><td><label>Meta Keywords:</label></td><td><input type="text" class="page_settings_seo_keywords" /></td></tr>
+            <tr><td valign="top" style="padding-top:3px;"><label>Meta Description:</label></td><td><textarea class="page_settings_seo_metadesc small"></textarea></td></tr>
+            <tr><td><label>Canonical URL:</label></td><td><input type="text" class="page_settings_seo_canonical_url" /></td></tr>
+          </table>
+        </div>
+        <div class="xtabbody jsharmony_cms_page_settings_css">
+          <textarea class="page_settings_css code"></textarea>
+        </div>
+        <div class="xtabbody jsharmony_cms_page_settings_header">
+          <textarea class="page_settings_header code"></textarea>
+        </div>
+        <div class="xtabbody jsharmony_cms_page_settings_footer">
+          <textarea class="page_settings_footer code"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

@@ -10,7 +10,7 @@
       "(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()) prev_branch_name,",
       "(select branch_desc from {schema}.v_my_branch_desc where branch_id=@branch_id) new_branch_name"
     ],
-    "sqlupdate":"update {schema}.v_my_current_branch set branch_id=@branch_id",
+    "sqlupdate":"update {schema}.v_my_current_branch set new_branch_id=@branch_id",
     "hide_system_buttons":["print"],
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},

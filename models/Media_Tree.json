@@ -1,0 +1,110 @@
+{
+  "Media_Tree": {
+    "layout":"form",
+    "table":"",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "title":"Media",
+    "caption":["Media","Media"],
+    "unbound":true,
+    "menu":"jsHarmonyCMS/Media_Listing",
+    "breadcrumbs":{
+      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
+      "sql": "select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"
+    },
+    "buttons":[
+      { "link":"js:_this.addFile();","icon":"add","text":"Add File" },
+      { "link":"update:Media_Listing","icon":"search","text":"Search","bindings":{} },
+      { "link":"js:_this.toggleSidebar();","icon":"sidebar","text":"Toggle Sidebar" },
+      { "link":"js:_this.setSort('filename');","icon":"bullet","text":"File Name","group":"Sort By" },
+      { "link":"js:_this.setSort('date');","icon":"bullet","text":"Date","group":"Sort By" },
+      { "link":"js:_this.setSort('description');","icon":"bullet","text":"Description","group":"Sort By" },
+      { "link":"js:_this.setSort('size');","icon":"bullet","text":"Size","group":"Sort By" },
+      { "link":"js:_this.setSort('type');","icon":"bullet","text":"Type","group":"Sort By" },
+      { "link":"js:_this.setView('tiles');","icon":"tiles","text":"Tiles","group":"View" },
+      { "link":"js:_this.setView('details');","icon":"list","text":"Details","group":"View" }
+    ],
+    "hide_system_buttons" : ["print","export","help","delete"], 
+    "oninit": "_this.oninit();",
+    "onload": "_this.onload();",
+    "ongetstate": "return _this.ongetstate(xmodel);",
+    "onloadstate": "_this.onloadstate(xmodel, state);",
+    "fields":[
+	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
+      {"name": "media_folder", "actions": "BIU","foreignkey":1,"caption": "","control": "tree",
+       "unbound": 1, "always_editable":1,
+       "default": "/",
+       "lov": {
+         "sql": "select distinct null as code_id, null as code_parent_id, ifnull(media_folder, '/') as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_media order by media_folder",
+         "post_process": "jsh.generateLOVTree(values, { new_code_val: function(patharr){ var rslt = patharr.join('/'); if(!rslt) return '/'; return '/'+rslt+'/'; } });"
+        },
+       "controlparams": {
+          "expand_all": true,
+          "item_context_menu": [
+            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);", "actions": "I" },
+            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);", "actions": "U" },
+            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);", "actions": "U" },
+            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);", "actions": "D" }
+          ]
+        },
+        "onchange": "_this.media_folder_onchange(obj,newval);"
+      },
+      {"control":"html","value":"<div class='<%=model.class%>_file_listing'></div>"},
+      {"control":"html","value":"<div class='<%=model.class%>_file_info'></div>"},
+      {"control":"html", "value": "</div>"}
+	  ]
+  },
+  "Media_Tree_File_Listing": {
+    "layout": "exec",
+    "title": "Reject Branch",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U","VIEWER":"U"},
+    "sqlexec": [
+      "select media_key, media_file_id, media_id, media_desc, media_path, media_folder, media_filename, media_tags, media_type, media_ext, media_size, media_width, media_height, media_uptstmp, jsharmony.my_db_user_fmt(media_upuser) media_upuser_fmt, media_mtstmp, jsharmony.my_db_user_fmt(media_muser) media_muser_fmt from {schema}.v_my_media where media_folder=@media_folder and media_file_id is not null order by media_filename, media_key"
+    ],
+    "fields": [
+      {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+    ]
+  },
+  "Media_Tree_Folder_Add": {
+    "layout": "exec",
+    "title": "Add Media Folder",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      "insert into {schema}.v_my_media(media_path) values(@media_path);"
+    ],
+    "fields": [
+      {"name":"media_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+    ]
+  },
+  "Media_Tree_Folder_Move": {
+    "layout": "exec",
+    "title": "Move Media Folder",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      [
+        "update {schema}.v_my_media set media_path = concat(@new_media_folder,substr(media_path,length(@old_media_folder)+1)) where media_folder like concat(@old_media_folder,'%');"
+      ]
+    ],
+    "fields": [
+      {"name":"old_media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"},
+      {"name":"new_media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+    ]
+  },
+  "Media_Tree_Folder_Delete": {
+    "layout": "exec",
+    "title": "Delete Media Folder",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      [
+        "delete from {schema}.v_my_media where media_folder like concat(@media_folder,'%');"
+      ]
+    ],
+    "fields": [
+      {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+    ]
+  }
+}

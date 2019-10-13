@@ -1,0 +1,85 @@
+<script type="text/x-jsharmony-template" class="<%=model.class%>_file_listing_template_tiles">
+  <div class="<%=model.class%>_file_listing_scroll">
+    <div class="<%=model.class%>_file_tile_container">
+      <# _.each(media_files, function(media_file){ #>
+        <div class="<%=model.class%>_file_tile" data-key="<#=media_file.media_key#>">
+          
+          <# if(media_file.media_width && media_file.media_height){ #><img src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile" />
+          <# } else { #><img src="<%=jsh._BASEURL%>images/icon_file.svg" /><# } #>
+          <span><#=media_file.media_filename#></span>
+        </div>
+      <# }); #>
+    </div>
+  </div>
+  <div class="<%=model.class%>_drop_overlay"><div class="<%=model.class%>_drop_overlay_body">Drop files here</div></div>
+</script>
+
+<script type="text/x-jsharmony-template" class="<%=model.class%>_file_listing_template_details">
+  <div class="<%=model.class%>_file_listing_scroll">
+    <table class="<%=model.class%>_file_listing_tbl" cellspacing="0">
+      <thead>
+        <tr>
+          <th align="left" width="30%" data-sort="filename" class="sortable">File Name</th>
+          <th align="left" width="50%" data-sort="description" class="sortable">Description</th>
+          <th align="right" width="70" data-sort="size" class="sortable">Size</th>
+          <th align="center" width="70">Edit</th>
+          <th align="center" width="70">Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        <# _.each(media_files, function(media_file){ #>
+          <tr data-key="<#=media_file.media_key#>">
+            <td align="left"><a href="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile" target="<%=jsh._instance%>_xfileproxy"><#=media_file.media_filename#></a></td>
+            <td align="left"><#=media_file.media_desc#></td>
+            <td align="right" style="white-space:nowrap;"><#=jsh.XFormat.bytes(media_file.media_size)#></td>
+            <td align="center"><a href="#" class="<%=model.class%>_edit_media" data-media_key="<#=media_file.media_key#>"><img src="/images/icon_edit.png" class="icon" title="Edit"></a></td>
+            <td align="center"><a href="#" class="<%=model.class%>_delete_media" data-media_key="<#=media_file.media_key#>"><img src="/images/icon_delete.png" class="icon" title="Delete"></a></td>
+          </tr>
+        <# }); #>
+      </tbody>
+    </table>
+  </div>
+  <div class="<%=model.class%>_drop_overlay"><div class="<%=model.class%>_drop_overlay_body">Drop files here</div></div>
+</script>
+
+<script type="text/x-jsharmony-template" class="<%=model.class%>_file_info_template">
+  <div class="<%=model.class%>_file_info_header">Media Information</div>
+  <# if(media_file){ #>
+    <# if(media_file.media_width && media_file.media_height){ #><img class="<%=model.class%>_file_info_preview" src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_preview" />
+    <# } else { #><img class="<%=model.class%>_file_info_preview" src="<%=jsh._BASEURL%>images/icon_file.svg" /><# } #>
+    <div class="<%=model.class%>_file_info_actions">
+      <a class="<%=model.class%>_file_info_download" href="#"><img src="/images/icon_download.png" /> Download</a>
+      <a class="<%=model.class%>_file_info_delete" href="#"><img src="/images/icon_delete.png" /> Delete</a>
+    </div>
+    <div class="<%=model.class%>_file_info_items">
+      <div class="<%=model.class%>_file_info_item"><label>File Name:</label><span class="media_filename"><#=media_file.media_filename#></span> <a class="<%=model.class%>_file_info_rename" href="#"><img src="/images/icon_edit.png" /></a></div>
+      <div class="<%=model.class%>_file_info_item"><label>Path:</label><span class="media_path"><#=media_file.media_path#></span></div>
+      <div class="<%=model.class%>_file_info_item"><label>Size:</label><span class="media_size"><#=jsh.XFormat.bytes(media_file.media_size)#> (<#=jsh.XFormat.comma(media_file.media_size)#> bytes)</span></div>
+      <# if(media_file.media_width){ #><div class="<%=model.class%>_file_info_item"><label>Width:</label><span class="media_width"><#=media_file.media_width#> pixels</span></div><# } #>
+      <# if(media_file.media_height){ #><div class="<%=model.class%>_file_info_item"><label>Height:</label><span class="media_height"><#=media_file.media_height#> pixels</span></div><# } #>
+      <div style="padding-top:10px;"></div>
+      <div class="<%=model.class%>_file_info_item"><label>Modified:</label><span class="media_mtstmp"><#=jsh.moment(media_file.media_mtstmp).format('YYYY-MM-DD h:mm a')#></span></div>
+      <div class="<%=model.class%>_file_info_item"><label>Modified By:</label><span class="media_muser_fmt"><#=media_file.media_muser_fmt#></span></div>
+      <div class="<%=model.class%>_file_info_item"><label>Uploaded:</label><span class="media_uptstmp"><#=jsh.moment(media_file.media_uptstmp).format('YYYY-MM-DD h:mm a')#></span></div>
+      <div class="<%=model.class%>_file_info_item"><label>Uploaded By:</label><span class="media_upuser_fmt"><#=media_file.media_upuser_fmt#></span></div>
+    </div>
+  <# } #>
+</script>
+
+<div style="display:none;">
+  <div class="<%=model.class%>_AddMedia xdialogbox xpromptbox" style="min-width:350px;height:200px;">
+    <div style="position:relative;width:100%;height:200px;">
+      <div class="<%=model.class%>_drop_overlay_body">
+        Drop files here<br/>
+        <input type="file" class="media_upload" multiple accept="image/*" onchange="" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="xcontext_menu <%=model.class%>_file_context_menu">
+  <a onclick="<%-js('_this.downloadFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_download.png" />Download</a>
+  <a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a>
+  <a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a>
+  <a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a>
+</div>  

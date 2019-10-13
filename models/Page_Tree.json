@@ -1,0 +1,56 @@
+{
+  "Page_Tree": {
+    "layout":"form",
+    "table":"",
+    "actions":"B",
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "title":"Pages",
+    "caption":["Page","Pages"],
+    "unbound":true,
+    "menu":"jsHarmonyCMS/Page_Listing",
+    "breadcrumbs":{
+      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
+      "sql": "select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"
+    },
+    "buttons":[
+      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","actions":"I" }
+    ],
+    "hide_system_buttons" : ["print","export"], 
+    "oninit": "_this.oninit();",
+    "onload": "_this.onload();",
+    "css": [
+      ".xbody_<%=model.class%> { width:100%; padding-right:20px; box-sizing:border-box; }",
+      ".xbody_<%=model.class%> .bcrumbs { width:100%; padding-right:20px; box-sizing:border-box; }",
+    ],
+    "fields":[
+	    {"control": "html", "value": "<div class=\"clear\"></div><div style='display:flex;width:100%;min-width:950px;box-sizing:border-box;'>" },
+      {"name": "page_folder", "actions": "B","foreignkey":1,"caption": "","control": "tree",
+       "unbound": 1, "always_editable":1,
+       "default": "/",
+       "controlstyle": "height:auto;min-height:400px;",
+       "lov": {
+         "sql": "select distinct null as code_id, null as code_parent_id, page_folder as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_page order by page_folder",
+         "post_process": "jsh.generateLOVTree(values, { new_code_val: function(patharr){ var rslt = patharr.join('/'); if(!rslt) return '/'; return '/'+rslt+'/'; } });"
+        },
+       "controlparams": {
+          "expand_all": true,
+          "item_context_menu": [
+            { "icon": "download", "text": "Download Folder", "command": "var url = '/client/_funcs/FCERT_ARCHIVE?FCERT_ID='+context_item; jsh.getFileProxy().prop('src', url);", "actions": "B" }
+          ]
+        },
+        "onchange": "_this.page_folder_onchange(obj,newval);"
+      },
+      {
+        "name": "Page_Tree_Listing",
+        "control": "subform",
+        "controlstyle": "flex-grow:1;margin-top:0px;border-right:1px solid #aaa; border-bottom:1px solid #aaa; border-top:1px solid #aaa;padding-bottom:1px;",
+        "target": "Page_Tree_Listing",
+        "controlparams":{ "panelstyle": "border:0;padding:0;" },
+        "bindings": { "page_folder": "page_folder" },
+        "caption": "",
+        "actions": "BIUD"
+      },
+      {"control":"html", "value": "</div>"}
+	  ]
+  }
+}

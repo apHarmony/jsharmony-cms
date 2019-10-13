@@ -8,6 +8,7 @@
     "menu":"jsHarmonyCMS/Branch_Review_Listing",
     "noresultsmessage":"No branches waiting for review.",
     "sqlwhere":"branch_sts='REVIEW' and branch_review_sts='PENDING'",
+    "tablestyle":"min-width:400px;",
     "fields": [
       {"name":"branch_desc","caption":"Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)","link":"update:Branch_Review"},
       {"name":"branch_user_id_fmt","caption":"Author","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))","control":"label","actions":"B"},
