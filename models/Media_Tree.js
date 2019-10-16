@@ -15,6 +15,7 @@ jsh.App[modelid] = new (function(){
   this.state = _.extend({}, this.state_default);
   this._current_media_folder = null;
   this.loadobj = {};
+  this.isInEditor = false;
 
   this.oninit = function(){
     /*
@@ -27,6 +28,10 @@ jsh.App[modelid] = new (function(){
       }
     }
     */
+   if(jsh._GET.CKEditor){
+     jsh.$root('.xbody').addClass('InEditor');
+     this.isInEditor = true;
+   }
 
    $(window).bind('resize', _this.onresize);
    _this.refreshLayout();
@@ -35,6 +40,10 @@ jsh.App[modelid] = new (function(){
    jsh.$root('.'+xmodel.class+'_file_listing').on('dragleave', _this.file_listing_onDragLeave);
    jsh.$root('.'+xmodel.class+'_file_listing').on('dragover', _this.file_listing_onDragOver);
    jsh.$root('.'+xmodel.class+'_file_listing').on('drop', _this.file_listing_onDrop);
+  }
+
+  this.ondestroy = function(xmodel){
+    $(window).unbind('resize', _this.onresize);
   }
 
   this.file_listing_dragCounter = 0;
@@ -135,10 +144,6 @@ jsh.App[modelid] = new (function(){
     _this.getMediaFileListing();
   }
 
-  this.ondestroy = function(xmodel){
-    $(window).unbind('resize', _this.onresize);
-  }
-
   this.onresize = function(){ _this.refreshLayout(); }
 
   this.ongetstate = function(){ return _this.state; }
@@ -155,6 +160,8 @@ jsh.App[modelid] = new (function(){
 
   this.refreshLayout = function(){
     var jbrowser = $('.'+xmodel.class+'_browser');
+
+    if(!jbrowser.length) return;
 
     var wh = $(window).height();
     var top = jbrowser.offset().top;
@@ -256,6 +263,11 @@ jsh.App[modelid] = new (function(){
         e.preventDefault();
         e.stopImmediatePropagation();
       });
+      if(_this.isInEditor) jfiles.on('dblclick', function(e){
+        _this.sendToEditor($(this).data('key'));
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      });
       jfiles.contextmenu(function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -266,6 +278,11 @@ jsh.App[modelid] = new (function(){
       var jfiles = jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr');
       jfiles.on('click', function(e){ 
         _this.selectFile($(this).data('key'));
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      });
+      if(_this.isInEditor) jfiles.on('dblclick', function(e){
+        _this.sendToEditor($(this).data('key'));
         e.preventDefault();
         e.stopImmediatePropagation();
       });
@@ -293,7 +310,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.selectFile = function(media_key, options){
-    options = _.extend({ scrollIntoView: false }, options);
+    options = _.extend({ scrollIntoView: undefined }, options);
     _this.selected_media_key = media_key||null;
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
     jcontainer.find('.selected').removeClass('selected');
@@ -304,11 +321,20 @@ jsh.App[modelid] = new (function(){
       if(media_key) jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr[data-key='+media_key+']').addClass('selected');
     }
     var media_file = _this.getMediaFile(media_key);
+    if(media_file){
+      //if((typeof options.scrollIntoView == 'undefined') && !_this.isSidebarVisible()) options.scrollIntoView = true;
+      //_this.toggleSidebar(true);
+    }
     _this.renderInfo(media_file);
     if(options.scrollIntoView){
       var jselected = jcontainer.find('.selected');
       if(jselected.length) jselected[0].scrollIntoView();
     }
+  }
+
+  this.viewFileDetails = function(media_key){
+    _this.toggleSidebar(true);
+    _this.selectFile(media_key, { scrollIntoView: true });
   }
 
   this.renderInfo = function(media_file){
@@ -320,8 +346,15 @@ jsh.App[modelid] = new (function(){
     _this.bindEventsInfo();
   }
 
-  this.toggleSidebar = function(){
-    jsh.$root('.'+xmodel.class+'_file_info').toggle();
+  this.toggleSidebar = function(show){
+    var jinfo = jsh.$root('.'+xmodel.class+'_file_info');
+    if(typeof show == 'undefined') show = !_this.isSidebarVisible();
+    if(!show) jinfo.css('display','none');
+    else jinfo.css('display','flex');
+  }
+
+  this.isSidebarVisible = function(){
+    return jsh.$root('.'+xmodel.class+'_file_info').is(':visible');
   }
 
   this.bindEventsInfo = function(){
@@ -505,6 +538,14 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
+  }
+
+  this.sendToEditor = function(media_key){
+    if(window.opener && jsh._GET.CKEditor){
+      window.opener.postMessage('ckeditor:'+JSON.stringify({ media_key: media_key, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
+      window.close();
+    }
+    else XExt.Alert('Parent editor not found');
   }
 
 })();

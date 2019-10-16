@@ -21,6 +21,7 @@
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "deployment_target_path", "type": "varchar", "length": 2048 },
       { "name": "deployment_target_preview_url", "type": "varchar", "length": 2048 },
+      { "name": "deployment_target_content_path", "type": "varchar", "length": 2048 },
       { "name": "deployment_target_params", "type": "varchar", "length": -1 },
       
       { "name": "deployment_target_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },

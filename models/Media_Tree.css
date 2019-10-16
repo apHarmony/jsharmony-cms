@@ -203,3 +203,5 @@
 .<%=model.class%>_AddMedia.dragOver {
   background-color:#f5f5ff;
 }
+.<%=model.class%>_file_context_menu .select { display:none; }
+.xbody.InEditor .<%=model.class%>_file_context_menu .select { display:block; }

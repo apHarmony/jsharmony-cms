@@ -15,9 +15,7 @@ jsh.App[modelid] = new (function(){
     var template = jshInstance.globalparams.templates[template_id];
     if(!template) return XExt.Alert('Template is not defined');
     
-    var url = template.editor;
-    url = XExt.ReplaceAll(url, '%%%page_key%%%', page_key);
-    window.open(url, '_blank', "width=1000,height=800");
+    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, '.'+xmodel.class+'_RawTextEditor');
   }
 
   this.addPage = function(page_folder){
@@ -65,6 +63,17 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} }, success);
       });
     });
+  }
+
+  this.sendToEditor = function(obj){
+    var rowid = $(obj).closest('tr').data('id');
+    var page_key = xmodel.get('page_key', rowid);
+
+    if(window.opener && jsh._GET.CKEditor){
+      window.opener.postMessage('ckeditor:'+JSON.stringify({ page_key: page_key, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
+      window.close();
+    }
+    else XExt.Alert('Parent editor not found');
   }
 
 })();

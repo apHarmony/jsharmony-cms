@@ -60,9 +60,26 @@ module.exports = exports = function(module, funcs){
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
       var branch_pages = [];
+      var branch_media = [];
       var pages = {};
 
       async.waterfall([
+
+        //Get all branch_media
+        function(cb){
+          var sql = "select branch_media.media_key, branch_media.branch_media_action, branch_media.media_id, branch_media.media_orig_id, \
+              old_media.media_path old_media_path, old_media.media_file_id old_media_file_id,\
+              new_media.media_path new_media_path, new_media.media_file_id new_media_file_id\
+            from "+(module.schema?module.schema+'.':'')+"branch_media branch_media \
+              left outer join "+(module.schema?module.schema+'.':'')+"media old_media on old_media.media_id=branch_media.media_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"media new_media on new_media.media_id=branch_media.media_id \
+            where branch_id=@branch_id and branch_media_action is not null";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) branch_media = rslt[0];
+            return cb();
+          });
+        },
 
         //Get all branch_pages
         function(cb){
@@ -137,7 +154,11 @@ module.exports = exports = function(module, funcs){
 
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
-        res.end(JSON.stringify({ '_success': 1, 'branch_pages': branch_pages }));
+        res.end(JSON.stringify({
+          '_success': 1,
+          'branch_pages': branch_pages,
+          'branch_media': branch_media
+        }));
       });
       return;
     }

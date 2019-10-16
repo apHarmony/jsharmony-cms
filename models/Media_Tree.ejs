@@ -78,6 +78,8 @@
 </div>
 
 <div class="xcontext_menu <%=model.class%>_file_context_menu">
+  <a class="select" onclick="<%-js('_this.sendToEditor(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_ok.png" />Select File</a>
+  <a onclick="<%-js('_this.viewFileDetails(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_browse.png" />View Details</a>
   <a onclick="<%-js('_this.downloadFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_download.png" />Download</a>
   <a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a>
   <a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a>

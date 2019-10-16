@@ -4,7 +4,7 @@
     "table":"{schema}.site",
     "title": {
       "insert": "Add Site",
-      "update": { "sql": "select {{concat}}('Site :: ',site_name) from {schema}.site where site_id=@site_id" }
+      "update": { "sql": "select concat('Site :: ',site_name) from {schema}.site where site_id=@site_id" }
     },
     "caption":["Site","Sites"],
     "popup": [1260, 600],

@@ -13,17 +13,17 @@
       "sql": "select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"
     },
     "buttons":[
-      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","actions":"I" }
+      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } }
     ],
     "hide_system_buttons" : ["print","export"], 
     "oninit": "_this.oninit();",
     "onload": "_this.onload();",
     "css": [
-      ".xbody_<%=model.class%> { width:100%; padding-right:20px; box-sizing:border-box; }",
+      ".xbody_<%=model.class%> { width:100%; padding-right:20px; box-sizing:border-box; padding-bottom:0px; }",
       ".xbody_<%=model.class%> .bcrumbs { width:100%; padding-right:20px; box-sizing:border-box; }",
     ],
     "fields":[
-	    {"control": "html", "value": "<div class=\"clear\"></div><div style='display:flex;width:100%;min-width:950px;box-sizing:border-box;'>" },
+	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser' style='display:flex;width:100%;min-width:950px;box-sizing:border-box;'>" },
       {"name": "page_folder", "actions": "B","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
        "default": "/",
@@ -52,5 +52,23 @@
       },
       {"control":"html", "value": "</div>"}
 	  ]
+  },
+  "Page_Browser": {
+    "inherits": "Page_Tree",
+    "title": "",
+    "buttons": [],
+    "css": [
+      ".xbody_<%=model.class%> .bcrumbs { width: auto; display:inline-block; }"
+    ],
+    "popup": [980, 600],
+    "fields":[
+      {"name":"Page_Tree_Listing","target":"Page_Browser_Listing"}
+    ]
+  },
+  "Page_Browser_Tab": {
+    "inherits": "Page_Browser",
+    "fields": [
+      {"control":"html","value":"<h1>Pages</h1>","__AFTER__":"__START__"}
+    ]
   }
 }

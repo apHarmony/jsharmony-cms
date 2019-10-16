@@ -132,6 +132,9 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     var dpath = path.normalize(modeldirs[i].path + '../views/templates/');
     LoadTemplatesFolder(dpath);
   }
+  _this.Templates['<Raw Text>'] = {
+    title: '<Raw Text>'
+  };
 
   this.jsh.Config.macros.CMS_TEMPLATES = [];
   var client_templates = {};
@@ -142,7 +145,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     this.jsh.Config.macros.CMS_TEMPLATES.push(tmpl_lov);
 
     var client_template = {
-      editor: '/page_editor/%%%page_key%%%',
+      editor: undefined,
       publish: undefined
     };
     if(tmpl.remote_template){
@@ -163,7 +166,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   _this.jsh.Modules['jsHarmonyFactory'].onCreateServer.push(function(server){
     server.app.use('/js/jsharmony-cms.js', function(req, res){
       if(_this.Config.debug_params.no_cache_client_js) _this.LoadClientJS();
-      return res.end(_this.jsh.Cache['js/jsharmony-cms.js']); 
+      return res.end(_this.jsh.Cache['js/jsharmony-cms.js']);
     });
     server.app.use(jsHarmonyRouter.PublicRoot(path.join(__dirname, 'public')));
   });

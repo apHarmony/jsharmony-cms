@@ -106,5 +106,20 @@
     "fields": [
       {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
     ]
+  },
+  "Media_Browser": {
+    "inherits": "Media_Tree",
+    "title": "",
+    "css": [
+      ".xbody_<%=model.class%> .bcrumbs { width: auto; display:inline-block; }",
+      ".<%=model.class%>_file_info { display:none; }"
+    ],
+    "popup": [980, 600]
+  },
+  "Media_Browser_Tab": {
+    "inherits": "Media_Browser",
+    "fields": [
+      {"control":"html","value":"<h1>Media</h1>","__AFTER__":"__START__"}
+    ]
   }
 }

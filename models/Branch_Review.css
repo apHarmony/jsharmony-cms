@@ -11,10 +11,19 @@
   margin-top:4px;
   margin-bottom:4px;
 }
+.<%=model.class%>_diff {
+  overflow:auto;
+  position:relative;
+  max-width:90vw;
+  max-height:400px;
+}
 .<%=model.class%>_diff_head {
   font-weight:bold;
   font-family:monospace;
 }
 .<%=model.class%>_diff_item {
   font-family:monospace;
+}
+.<%=model.class%>_diff .d2h-file-diff {
+  overflow-y: visible;
 }

@@ -2,6 +2,7 @@ jsh.App[modelid] = new (function(){
   var _this = this;
 
   this.branch_pages = [];
+  this.branch_media = [];
 
   this.onload = function(xmodel, callback){
     //Load API Data
@@ -13,6 +14,7 @@ jsh.App[modelid] = new (function(){
     XForm.Get(emodelid, { branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.branch_pages = rslt.branch_pages;
+        _this.branch_media = rslt.branch_media;
         _this.render();
         if (onComplete) onComplete();
       }
@@ -76,6 +78,24 @@ jsh.App[modelid] = new (function(){
           jdiff.append($('<div class="'+xmodel.class+'_diff">'+branch_page.diff[key]+'</div>'));
         }
       }
+    });
+    _.each(_this.branch_media, function(branch_media){
+      jdiff.append($('<hr/>'));
+      var branch_media_action = branch_media.branch_media_action.toUpperCase();
+      var title_text = '';
+      if(branch_media_action=='ADD'){
+        title_text = 'ADD &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_media.new_media_path);
+      }
+      else if(branch_media_action=='DELETE'){
+        title_text = 'DELETE '+XExt.escapeHTML(branch_media.old_media_path);
+      }
+      else if(branch_media_action=='UPDATE'){
+        title_text = 'UPDATE '+XExt.escapeHTML(branch_media.new_media_path);
+        if(branch_media.new_media_path!=branch_media.old_media_path){
+          title_text += '<br/>RENAME TO ' + XExt.escapeHTML(branch_media.new_media_path);
+        }
+      }
+      jdiff.append($('<h4 class="'+xmodel.class+'_branch_media_path">'+title_text+'</h4>'));
     });
     jdiff.append($('<hr/>'));
   }

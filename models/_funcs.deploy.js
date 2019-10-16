@@ -26,6 +26,7 @@ var fs = require('fs');
 var async = require('async');
 var crypto = require('crypto');
 var wclib = require('jsharmony/WebConnect');
+var cheerio = require('cheerio');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -86,7 +87,7 @@ module.exports = exports = function(module, funcs){
     var sql = "\
       update "+(module.schema?module.schema+'.':'')+"deployment set deployment_sts='RUNNING' where deployment_id=@deployment_id;\
       select \
-        deployment_id, site_id, deployment_tag, deployment_target_name, deployment_target_path, deployment_target_params, deployment_target_sts, \
+        deployment_id, site_id, deployment_tag, deployment_target_name, deployment_target_path, deployment_target_params, deployment_target_sts, deployment_target_content_path, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt \
         from "+(module.schema?module.schema+'.':'')+"deployment d \
         inner join "+(module.schema?module.schema+'.':'')+"deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
@@ -106,6 +107,8 @@ module.exports = exports = function(module, funcs){
       var site_files = {};
 
       var template_body = {};
+      var page_keys = {};
+      var media_keys = {};
 
       //Git Commands
       var git_path = cms.Config.git.bin_path || '';
@@ -124,7 +127,72 @@ module.exports = exports = function(module, funcs){
         }, exec_options);
       }
 
+      function getPageRelativePath(page){
+        var page_fpath = page.page_path||'';
+        if(!page_fpath) return cb();
+        while(page_fpath.substr(0,1)=='/') page_fpath = page_fpath.substr(1);
+
+        var is_folder = (page_fpath[page_fpath.length-1]=='/');
+        if(is_folder) page_fpath += 'index.html';
+        if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
+        if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
+        return page_fpath;
+      }
+
+      function getMediaRelativePath(media){
+        var media_fpath = media.media_path||'';
+        if(!media_fpath) return cb();
+        while(media_fpath.substr(0,1)=='/') media_fpath = media_fpath.substr(1);
+
+        var is_folder = (media_fpath[media_fpath.length-1]=='/');
+        if(is_folder) throw new Error('Media path:'+media.media_path+' cannot be a folder');
+        if(path.isAbsolute(media_fpath)) throw new Error('Media path:'+media.media_path+' cannot be absolute');
+        if(media_fpath.indexOf('..') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
+        media_fpath = 'media/' + media_fpath;
+        return media_fpath;
+      }
+
+      function replaceBranchURLs(page_path, page_content){
+        var $ = cheerio.load(page_content);
+
+        function parseClasses(jobj,prop){
+          if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
+          var cssClassString = jobj.attr('class');
+          var cssClasses = cssClassString.split(' ');
+          for(var i=0;i<cssClasses.length;i++){
+            var cssClass = cssClasses[i].trim();
+            if(cssClass.indexOf('media_key_')==0){
+              var media_key = parseInt(cssClass.substr(10));
+              if(cssClass.substr(10)==(media_key||0).toString()){
+                //Apply Media Key
+                if(!(media_key in media_keys)) throw new Error('Page '+page_path+' links to missing Media ID # '+media_key.toString());
+                jobj.attr(prop, media_keys[media_key]);
+                jobj.removeClass('media_key_'+media_key);
+              }
+            }
+            else if(cssClass.indexOf('page_key_')==0){
+              var page_key = parseInt(cssClass.substr(9));
+              if(cssClass.substr(9)==(page_key||0).toString()){
+                //Apply Page Key
+                if(!(page_key in page_keys)) throw new Error('Page '+page_path+' links to missing Page ID # '+page_key.toString());
+                jobj.attr(prop, page_keys[page_key]);
+                jobj.removeClass('page_key_'+page_key);
+              }
+            }
+          }
+        }
+
+        $('a').each(function(obj_i,obj){
+          parseClasses($(obj),'href');
+        });
+        $('img').each(function(obj_i,obj){
+          parseClasses($(obj),'src');
+        });
+        return $.html();
+      }
+
       var farr = [];
+
       async.waterfall([
         //Create output folder if it does not exist
         function (cb){
@@ -200,8 +268,10 @@ module.exports = exports = function(module, funcs){
         function (cb){
           var wc = new wclib.WebConnect();
           async.eachOf(module.Templates, function(template, template_name, template_cb){
-            if(!template.remote_template && !template.remote_template.publish){
-              template_body[template_name] = template.body;
+            if(!template.remote_template || !template.remote_template.publish){
+              if('body' in template){
+                template_body[template_name] = template.body;
+              }
               return template_cb();
             }
             wc.req(template.remote_template.publish, 'GET', {}, {}, undefined, function(err, res, rslt){
@@ -210,6 +280,62 @@ module.exports = exports = function(module, funcs){
               return template_cb();
             });
           }, cb);
+        },
+
+        //Get list of all page_keys
+        function (cb){
+          var sql = 'select \
+            p.page_key,page_path \
+            from '+(module.schema?module.schema+'.':'')+'page p \
+            inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
+            inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id\
+            where p.page_file_id is not null'
+            ;
+          var sql_ptypes = [dbtypes.BigInt];
+          var sql_params = { deployment_id: deployment_id };
+          appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return cb(err); }
+            if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
+            _.each(rslt[0], function(page){
+
+              var page_fpath = '';
+              try{
+                page_fpath = (deployment.deployment_target_content_path||'/') + getPageRelativePath(page);
+              }
+              catch(ex){ }
+
+              if(page_fpath) page_keys[page.page_key] = page_fpath;
+            });
+            return cb();
+          });
+        },
+
+        //Get list of all media_keys
+        function (cb){
+          var sql = 'select \
+            m.media_key,media_file_id,media_path \
+            from '+(module.schema?module.schema+'.':'')+'media m \
+            inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
+            inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
+            where m.media_file_id is not null'
+            ;
+          var sql_ptypes = [dbtypes.BigInt];
+          var sql_params = { deployment_id: deployment_id };
+          appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return cb(err); }
+            if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
+            _.each(rslt[0], function(media){
+
+              var media_fpath = '';
+              try{
+                media_fpath = (deployment.deployment_target_content_path||'/') + getMediaRelativePath(media);
+              }
+              catch(ex){ }
+
+              if(media_fpath) media_keys[media.media_key] = media_fpath;
+            });
+            return cb();
+          });
         },
 
         //Get list of all pages
@@ -222,7 +348,8 @@ module.exports = exports = function(module, funcs){
             page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
             from '+(module.schema?module.schema+'.':'')+'page p \
             inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
-            inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id'
+            inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id\
+            where p.page_file_id is not null'
             ;
           var sql_ptypes = [dbtypes.BigInt];
           var sql_params = { deployment_id: deployment_id };
@@ -246,35 +373,89 @@ module.exports = exports = function(module, funcs){
                     js: (clientPage.template.js||'')+' '+(clientPage.page.js||''),
                     header: (clientPage.template.header||'')+' '+(clientPage.page.header||''),
                     body: clientPage.page.body,
-                    footer: (clientPage.template.footer||'')+(clientPage.page.footer||'')
+                    footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
+                    title: clientPage.page.title
                   }
                 };
-                var page_content = template_body[page.template_id]||'';
-                page_content = ejs.render(page_content, ejsparams);
+                var page_content = '';
+                if(page.template_id in template_body){
+                  page_content = template_body[page.template_id]||'';
+                  page_content = ejs.render(page_content, ejsparams);
+                  try{
+                    page_content = replaceBranchURLs(page.page_path, page_content);
+                  }
+                  catch(ex){
+                    return cb(ex);
+                  }  
+                }
+                else {
+                  //Raw Content
+                  page_content = ejsparams.page.body;
+                }
+                
+                var page_fpath = '';
+                try{
+                  page_fpath = getPageRelativePath(page);
+                }
+                catch(ex){
+                  return cb(ex);
+                }
 
-                var page_fpath = page.page_path||'';
-                if(!page_fpath) return cb();
-                while(page_fpath.substr(0,1)=='/') page_fpath = page_fpath.substr(1);
-
-                //var page_name = page_fpath;
-                //if(page_name.indexOf('/') >= 0) page_name = page_name.substr(page_name.lastIndexOf('/')+1);
-                //if(page_name && (page_name.indexOf('.') < 0)){ page_fpath += '/'; page_name = ''; }
-
-                var is_folder = (page_fpath[page_fpath.length-1]=='/');
-                if(is_folder) page_fpath += 'index.html';
-                if(path.isAbsolute(page_fpath)) return cb(new Error('Page path:'+page.page_path+' cannot be absolute'));
-                if(page_fpath.indexOf('..') >= 0) return cb(new Error('Page path:'+page.page_path+' cannot contain directory traversals'));
                 site_files[page_fpath] = {
                   md5: crypto.createHash('md5').update(page_content).digest("hex")
                 };
                 page_fpath = path.join(publish_path, page_fpath);
 
-                //Save template to file
-                //xxxxjsh.Log.info('Generating '+page_fpath);
                 //Create folders for path
                 HelperFS.createFolderRecursive(path.dirname(page_fpath), function(err){
                   if(err) return cb(err);
+                  //Save page to publish folder
                   fs.writeFile(page_fpath, page_content, 'utf8', cb);
+                });
+              });
+            }, cb);
+          });
+        },
+
+        //Get list of all media
+        //For each media
+        //  Save media to file
+        function (cb){
+          var sql = 'select \
+            m.media_key,media_file_id,media_path,media_ext \
+            from '+(module.schema?module.schema+'.':'')+'media m \
+            inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
+            inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
+            where m.media_file_id is not null'
+            ;
+          var sql_ptypes = [dbtypes.BigInt];
+          var sql_params = { deployment_id: deployment_id };
+          appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return cb(err); }
+            if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
+            async.eachSeries(rslt[0], function(media, cb){
+              var srcpath = funcs.getMediaFile(media.media_file_id, media.media_ext);
+              fs.readFile(srcpath, null, function(err, media_content){
+                if(err) return cb(err);
+
+                var media_fpath = '';
+                try{
+                  media_fpath = getMediaRelativePath(media);
+                }
+                catch(ex){
+                  return cb(ex);
+                }
+
+                site_files[media_fpath] = {
+                  md5: crypto.createHash('md5').update(media_content).digest("hex")
+                };
+                media_fpath = path.join(publish_path, media_fpath);
+
+                //Create folders for path
+                HelperFS.createFolderRecursive(path.dirname(media_fpath), function(err){
+                  if(err) return cb(err);
+                  //Save media to publish folder
+                  HelperFS.copyFile(srcpath, media_fpath, cb);
                 });
               });
             }, cb);
@@ -404,7 +585,7 @@ module.exports = exports = function(module, funcs){
         }
       ], function (err, rslt) {
         if (err) {
-          jsh.Log.error(err.toString() + '\n' + (new Error().stack));
+          jsh.Log.error(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
         }
       });
     });

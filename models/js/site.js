@@ -25,4 +25,49 @@
     });
   }
 
+  jsh.System.OpenPageEditor = function(page_key, page_name, template, rawEditorDialog){
+    if(template.editor){
+      //Open Editor
+      var url = template.editor;
+      url = XExt.ReplaceAll(url, '%%%page_key%%%', page_key);
+      window.open(url, '_blank', "width=1000,height=800");
+    }
+    else {
+      //Edit Raw Text
+
+      //Load content from server
+      var url = '../_funcs/page/'+page_key;
+      XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+        if ('_success' in rslt) {
+          var page = rslt.page;
+          //var template = rslt.template;
+          //var views = rslt.views;
+          //var authors = rslt.authors;
+          //var role = rslt.role;
+          
+          //Display Editor
+          var sel = rawEditorDialog;
+          XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
+            var jprompt = jsh.$root('.xdialogblock ' + sel);
+            jprompt.find('.edit_page_title').text('Edit: '+page_name);
+            jprompt.find('.page_content').val(page.body||'');
+          }, function (success) { //onAccept
+            //Save content to server
+            var jprompt = jsh.$root('.xdialogblock ' + sel);
+            page.body = jprompt.find('.page_content').val();
+            url = '../_funcs/page/'+page_key;
+            XExt.CallAppFunc(url, 'post', page, success, function (err) {
+            });
+          });
+        }
+        else{
+          if(onComplete) onComplete(new Error('Error Loading Page'));
+          XExt.Alert('Error loading page');
+        }
+      }, function (err) {
+        if(onComplete) onComplete(err);
+      });
+    }
+  }
+
 })(window.jshInstance);

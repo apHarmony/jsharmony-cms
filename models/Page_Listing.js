@@ -14,10 +14,8 @@ jsh.App[modelid] = new (function(){
 
     var template = jshInstance.globalparams.templates[template_id];
     if(!template) return XExt.Alert('Template is not defined');
-    
-    var url = template.editor;
-    url = XExt.ReplaceAll(url, '%%%page_key%%%', page_key);
-    window.open(url, '_blank', "width=1000,height=800");
+
+    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, '.'+xmodel.class+'_RawTextEditor');
   }
 
 })();
