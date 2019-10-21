@@ -35,7 +35,7 @@
        "unbound": 1, "always_editable":1,
        "default": "/",
        "lov": {
-         "sql": "select distinct null as code_id, null as code_parent_id, ifnull(media_folder, '/') as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_media order by media_folder",
+         "sql": "select distinct null as code_id, null as code_parent_id, $ifnull(media_folder, '/') as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_media order by $ifnull(media_folder, '/')",
          "post_process": "jsh.generateLOVTree(values, { new_code_val: function(patharr){ var rslt = patharr.join('/'); if(!rslt) return '/'; return '/'+rslt+'/'; } });"
         },
        "controlparams": {

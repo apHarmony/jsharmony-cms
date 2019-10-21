@@ -13,8 +13,7 @@
     ],
     "tabpanelstyle": "padding-top:15px;",
     "css":[
-      ".xform_title { display:none !important; }",
-      ".xactions a { margin-bottom:5px; }"
+      ".xform_title { display:none !important; }"
     ],
     "hide_system_buttons": ["delete","print","help"],
 	  "popup": [980, 600]
