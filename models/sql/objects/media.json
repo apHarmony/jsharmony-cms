@@ -104,8 +104,8 @@
           "media_mtstmp",
           "media_muser",
 
-          { "name": "media_uptstmp", "type": "datetime", "length": 7, "sqlselect": "(select media_etstmp from {schema}.media media_file where media_file.media_key = media.media_file_id )" },
-          { "name": "media_upuser", "type": "varchar", "length": 20, "sqlselect": "(select media_euser from {schema}.media media_file where media_file.media_key = media.media_file_id )" }
+          { "name": "media_uptstmp", "type": "datetime", "length": 7, "sqlselect": "(select media_etstmp from {schema}.media media_file where media_file.media_id = media.media_file_id )" },
+          { "name": "media_upuser", "type": "varchar", "length": 20, "sqlselect": "(select media_euser from {schema}.media media_file where media_file.media_id = media.media_file_id )" }
 
         ]
       },
