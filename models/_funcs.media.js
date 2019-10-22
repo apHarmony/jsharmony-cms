@@ -269,7 +269,7 @@ module.exports = exports = function(module, funcs){
               'media_height': media_height
             };
 
-            sql = 'insert into '+(module.schema?module.schema+'.':'')+'v_my_media(media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height) values(@media_desc, @media_path, @media_tags, @media_type, @media_ext, @media_size, @media_width, @media_height);select last_insert_rowid_override media_key from jsharmony_meta;';
+            sql = (module.schema?module.schema+'.':'')+'insert_media(@media_desc, @media_path, @media_tags, @media_type, @media_ext, @media_size, @media_width, @media_height);';
             
             var fields = [];
             var datalockstr = '';

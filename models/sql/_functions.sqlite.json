@@ -29,5 +29,11 @@
       "ifnull(replace((%%%PATH%%%), rtrim((%%%PATH%%%), replace((%%%PATH%%%), '/', '')), ''),'')"
     ]
   },
+  "{schema}.insert_media":{
+    "params": ["%%%media_desc%%%", "%%%media_path%%%", "%%%media_tags%%%", "%%%media_type%%%", "%%%media_ext%%%", "%%%media_size%%%", "%%%media_width%%%", "%%%media_height%%%"],
+    "sql": [
+      "insert into {schema}.v_my_media(media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height) values(%%%media_desc%%%, %%%media_path%%%, %%%media_tags%%%, %%%media_type%%%, %%%media_ext%%%, %%%media_size%%%, %%%media_width%%%, %%%media_height%%%);select last_insert_rowid_override media_key from jsharmony_meta;"
+    ]
+  },
   "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and strftime('%Y-%m-%dT%H:%M:%f',deployment_date) <= strftime('%Y-%m-%dT%H:%M:%f',%%%%%%jsh.map.timestamp%%%%%%) order by deployment_date asc;"
 }
