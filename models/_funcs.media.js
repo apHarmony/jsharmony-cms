@@ -128,7 +128,10 @@ module.exports = exports = function(module, funcs){
               if(!thumbnail_config) return Helper.GenError(req, res, -33, 'Media file not found.');
               //Generate thumbnail
               transformMedia(function(err){
-                if(err) return Helper.GenError(req, res, -99999, 'Error occurred during media processing operation (' + err.toString() + ')');
+                if(err){
+                  jsh.Log.error(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
+                  return Helper.GenError(req, res, -99999, 'Error occurred during media processing operation (' + err.toString() + ')');
+                }
                 //Try again to serve file
                 serveFile(function (err) {
                   if (err != null) {
@@ -290,7 +293,10 @@ module.exports = exports = function(module, funcs){
           },
 
         ], function(err){
-          if(err) return Helper.GenError(req, res, -99999, 'Error occurred during media processing operation (' + err.toString() + ')');
+          if(err){
+            jsh.Log.error(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
+            return Helper.GenError(req, res, -99999, 'Error occurred during media processing operation (' + err.toString() + ')');
+          }
           res.end(JSON.stringify({ '_success': 1, 'media_key': media_key }));
         });
       });

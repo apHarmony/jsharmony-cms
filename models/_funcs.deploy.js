@@ -115,6 +115,13 @@ module.exports = exports = function(module, funcs){
       var git_branch = 'site_'+deployment.site_id;
       function gitExec(git_cmd, params, cb, exec_options){
         var rslt = '';
+        var returned = false;
+        var orig_cb = cb;
+        cb = function(err, rslt){
+          if(returned) return;
+          returned = true;
+          return orig_cb(err, rslt);
+        }
         exec_options = _.extend({ cwd: publish_path }, exec_options);
         wclib.xlib.exec(path.join(git_path, git_cmd), params, function(err){ //cb
           if(err) return cb(err, rslt.trim());
@@ -207,8 +214,7 @@ module.exports = exports = function(module, funcs){
             //Initialize Git, if not initialized in publish folder
             function(git_cb){
               gitExec('git', ['rev-parse','--show-toplevel'], function(err, rslt){
-                if(err) return git_cb(err);
-                if(rslt && (path.normalize(rslt)==publish_path)) return git_cb();
+                if(!err && rslt && (path.normalize(rslt)==publish_path)) return git_cb();
                 //Initialize git for the first time
                 jsh.Log.info('Initializing git in publish path: '+publish_path);
                 gitExec('git', ['init','-q'], function(err, rslt){
