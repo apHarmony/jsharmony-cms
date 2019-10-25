@@ -4,6 +4,7 @@
     "table":"{schema}.category",
     "caption":["Category","Categories"],
     "menu":"jsHarmonyCMS/Category_Listing",
+    "roles": { "WEBMASTER": "BIUD" },
     "fields": [
       {"name":"category_name","caption":"Category","control":"textbox_M"},
       {"name":"category_sts","caption":"Status","control":"textbox_L"},

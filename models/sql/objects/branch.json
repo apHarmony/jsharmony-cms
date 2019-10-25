@@ -51,7 +51,7 @@
 
       { "name": "branch_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_review_sts": "code_val" } },
       { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
-      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "null" } } },
+      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
 
       { "name": "branch_sts_tstmp", "type": "datetime", "length": 7 },
       { "name": "branch_sts_user", "type": "varchar", "length": 20 },
@@ -79,6 +79,11 @@
           "setif(update(branch_review_sts),branch_review_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "setif(update(branch_review_sts),branch_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(inserted(branch_sts)='REVIEW' and inserted(branch_review_sts) is null,branch_review_sts,'PENDING');"
+        ]
+      },
+      {
+        "on": ["delete"], "exec": [
+          "update {schema}.branch set branch_parent_id = null where branch_parent_id = deleted(branch_id);"
         ]
       }
     ],
@@ -334,9 +339,9 @@
     "where": "jsharmony.sys_user.sys_user_id = jsharmony.my_sys_user_id()",
     "triggers": [
       {"on": ["update"], "exec": [
-          "errorif(not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id)),'User does not have access to branch')",
+          "errorif((inserted(new_branch_id) is not null) and (not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id))),'User does not have access to branch')",
           "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
-          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id)"
+          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id) where inserted(new_branch_id) is not null"
         ]
       },
       {"on": ["insert"], "exec": [

@@ -21,6 +21,7 @@ var _ = require('lodash');
 var path = require('path');
 var fs = require('fs');
 var urlparser = require('url');
+var cheerio = require('cheerio');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -71,6 +72,50 @@ module.exports = exports = function(module, funcs){
       });
     });
   }
+
+  exports.replaceBranchURLs = function(page_content, options){
+    options = _.extend({
+      getMediaURL: function(media_key){ return ''; },
+      getPageURL: function(page_key){ return ''; },
+      removeClass: false
+    }, options);
+    var $ = cheerio.load(page_content);
+
+    function parseClasses(jobj,prop){
+      if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
+      var cssClassString = jobj.attr('class');
+      var cssClasses = cssClassString.split(' ');
+      for(var i=0;i<cssClasses.length;i++){
+        var cssClass = cssClasses[i].trim();
+        if(cssClass.indexOf('media_key_')==0){
+          var media_key = parseInt(cssClass.substr(10));
+          if(cssClass.substr(10)==(media_key||0).toString()){
+            //Apply Media Key
+            var media_url = options.getMediaURL(media_key);
+            jobj.attr(prop, media_url);
+            if(options.removeClass) jobj.removeClass('media_key_'+media_key);
+          }
+        }
+        else if(cssClass.indexOf('page_key_')==0){
+          var page_key = parseInt(cssClass.substr(9));
+          if(cssClass.substr(9)==(page_key||0).toString()){
+            //Apply Page Key
+            var page_url = options.getPageURL(page_key);
+            jobj.attr(prop, page_url);
+            if(options.removeClass) jobj.removeClass('page_key_'+page_key);
+          }
+        }
+      }
+    }
+
+    $('a').each(function(obj_i,obj){
+      parseClasses($(obj),'href');
+    });
+    $('img').each(function(obj_i,obj){
+      parseClasses($(obj),'src');
+    });
+    return $.html();
+  }
   
   exports.page = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -117,15 +162,21 @@ module.exports = exports = function(module, funcs){
       //Get Page Template
       var template_id = page['template_id'];
       var template = module.Templates[template_id];
+
+      var baseurl = req.baseurl;
+      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
       
       //Globally accessible
       if(template.remote_template && template.remote_template.editor){
-        var urlparts = urlparser.parse(template.remote_template.editor, true);
-        var remote_origin = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-        res.setHeader('Access-Control-Allow-Origin', remote_origin);
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-        res.setHeader('Access-Control-Allow-Credentials', true);
+        var referer = req.get('Referer');
+        if(referer){
+          var urlparts = urlparser.parse(referer, true);
+          var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+          res.setHeader('Access-Control-Allow-Origin', remote_domain);
+          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+          res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+          res.setHeader('Access-Control-Allow-Credentials', true);
+        }
       }
       
       if (verb == 'get'){
@@ -154,6 +205,16 @@ module.exports = exports = function(module, funcs){
           //Return page
           funcs.getClientPage(page, function(err, clientPage){
             if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+            if(clientPage.page.body){
+              clientPage.page.body = funcs.replaceBranchURLs(clientPage.page.body, {
+                getMediaURL: function(media_key){
+                  return baseurl+'_funcs/media/'+media_key+'/';
+                },
+                getPageURL: function(page_key){
+                  return baseurl+'_funcs/pages/'+page_key+'/';
+                }
+              });
+            }
             res.end(JSON.stringify({ 
               '_success': 1,
               'page': clientPage.page,

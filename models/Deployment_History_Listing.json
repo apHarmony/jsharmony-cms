@@ -9,6 +9,7 @@
     "tablestyle":"min-width:450px;",
     "sqlwhere":"deployment_sts not in ('HOLD','PENDING','RUNNING')",
     "actions":"B",
+    "roles": {"PUBLISHER": "B"},
     "sort":["vdeployment_date"],
     "fields": [
       {"name":"deployment_tag","caption":"Tag","control":"label"},

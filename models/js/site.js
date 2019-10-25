@@ -29,6 +29,23 @@
     if(template.editor){
       //Open Editor
       var url = template.editor;
+
+      if(jsh.bcrumbs && jsh.bcrumbs.deployment_target_params){
+        var dtparams = null;
+        try{
+          dtparams = JSON.parse(jsh.bcrumbs.deployment_target_params);
+        }
+        catch(ex){
+          XExt.Alert('Error reading deployment target param.  Please make sure the JSON syntax is correct');
+          return;
+        }
+        if(dtparams){
+          for(var key in dtparams){
+            url = XExt.ReplaceAll(url, '%%%' + key + '%%%', dtparams[key]);
+          }
+        }
+      }
+
       url = XExt.ReplaceAll(url, '%%%page_key%%%', page_key);
       window.open(url, '_blank', "width=1000,height=800");
     }

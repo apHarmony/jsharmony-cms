@@ -26,7 +26,6 @@ var fs = require('fs');
 var async = require('async');
 var crypto = require('crypto');
 var wclib = require('jsharmony/WebConnect');
-var cheerio = require('cheerio');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -106,6 +105,15 @@ module.exports = exports = function(module, funcs){
       publish_path = path.normalize(publish_path);
       var site_files = {};
 
+      var publish_params = {};
+      try{
+        if(deployment.deployment_target_params) publish_params = JSON.parse(deployment.deployment_target_params);
+      }
+      catch(ex){
+        jsh.Log.error('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
+        return;
+      }
+
       var template_body = {};
       var page_keys = {};
       var media_keys = {};
@@ -157,45 +165,6 @@ module.exports = exports = function(module, funcs){
         if(media_fpath.indexOf('..') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
         media_fpath = 'media/' + media_fpath;
         return media_fpath;
-      }
-
-      function replaceBranchURLs(page_path, page_content){
-        var $ = cheerio.load(page_content);
-
-        function parseClasses(jobj,prop){
-          if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
-          var cssClassString = jobj.attr('class');
-          var cssClasses = cssClassString.split(' ');
-          for(var i=0;i<cssClasses.length;i++){
-            var cssClass = cssClasses[i].trim();
-            if(cssClass.indexOf('media_key_')==0){
-              var media_key = parseInt(cssClass.substr(10));
-              if(cssClass.substr(10)==(media_key||0).toString()){
-                //Apply Media Key
-                if(!(media_key in media_keys)) throw new Error('Page '+page_path+' links to missing Media ID # '+media_key.toString());
-                jobj.attr(prop, media_keys[media_key]);
-                jobj.removeClass('media_key_'+media_key);
-              }
-            }
-            else if(cssClass.indexOf('page_key_')==0){
-              var page_key = parseInt(cssClass.substr(9));
-              if(cssClass.substr(9)==(page_key||0).toString()){
-                //Apply Page Key
-                if(!(page_key in page_keys)) throw new Error('Page '+page_path+' links to missing Page ID # '+page_key.toString());
-                jobj.attr(prop, page_keys[page_key]);
-                jobj.removeClass('page_key_'+page_key);
-              }
-            }
-          }
-        }
-
-        $('a').each(function(obj_i,obj){
-          parseClasses($(obj),'href');
-        });
-        $('img').each(function(obj_i,obj){
-          parseClasses($(obj),'src');
-        });
-        return $.html();
       }
 
       var farr = [];
@@ -280,7 +249,11 @@ module.exports = exports = function(module, funcs){
               }
               return template_cb();
             }
-            wc.req(template.remote_template.publish, 'GET', {}, {}, undefined, function(err, res, rslt){
+            var publish_template_url = template.remote_template.publish;
+            for(var key in publish_params){
+              publish_template_url = Helper.ReplaceAll(publish_template_url, '%%%' + key + '%%%', publish_params[key]);
+            }
+            wc.req(publish_template_url, 'GET', {}, {}, undefined, function(err, res, rslt){
               if(err) return template_cb(err);
               template_body[template_name] = rslt;
               return template_cb();
@@ -388,7 +361,17 @@ module.exports = exports = function(module, funcs){
                   page_content = template_body[page.template_id]||'';
                   page_content = ejs.render(page_content, ejsparams);
                   try{
-                    page_content = replaceBranchURLs(page.page_path, page_content);
+                    page_content = funcs.replaceBranchURLs(page_content, {
+                      getMediaURL: function(media_key){
+                        if(!(media_key in media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
+                        return media_keys[media_key];
+                      },
+                      getPageURL: function(page_key){
+                        if(!(page_key in page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
+                        return page_keys[page_key];
+                      },
+                      removeClass: true
+                    });
                   }
                   catch(ex){
                     return cb(ex);

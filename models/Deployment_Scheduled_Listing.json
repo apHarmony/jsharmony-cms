@@ -8,6 +8,7 @@
     "noresultsmessage":"No scheduled deployments.",
     "tablestyle":"min-width:450px;",
     "actions":"BU",
+    "roles": {"PUBLISHER": "BU"},
     "sqlwhere":"deployment_sts in ('HOLD','PENDING','RUNNING')",
     "buttons":[{ "link":"Deployment_Add","icon":"add","text":"Add Deployment" }],
     "fields": [

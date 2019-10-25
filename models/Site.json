@@ -8,7 +8,7 @@
     },
     "caption":["Site","Sites"],
     "popup": [1260, 600],
-    "roles": { "publisher": "BIUD" },
+    "roles": { "WEBMASTER": "BIUD" },
     "fields": [
       {"name":"site_name","caption":"Site Name"},
       {"name":"site_sts","caption":"Status"},

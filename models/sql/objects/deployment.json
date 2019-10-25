@@ -20,7 +20,6 @@
       { "name": "deployment_target_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "deployment_target_path", "type": "varchar", "length": 2048 },
-      { "name": "deployment_target_preview_url", "type": "varchar", "length": 2048 },
       { "name": "deployment_target_content_path", "type": "varchar", "length": 2048 },
       { "name": "deployment_target_params", "type": "varchar", "length": -1 },
       
@@ -33,6 +32,11 @@
       { "on": ["update", "insert"], "exec": [
           "set(deployment_target_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(deployment_target_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      },
+      {
+        "on": ["delete"], "exec": [
+          "update {schema}.sys_user_site set sys_user_site_editor = null where sys_user_site_editor = deleted(deployment_target_id);"
         ]
       }
     ]
@@ -47,7 +51,7 @@
       { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false },
       { "name": "deployment_date", "type": "datetime", "length": 7 },
       { "name": "deployment_sts", "type": "varchar", "length": 32, "foreignkey": { "code_deployment_sts": "code_val" }, "null": false, "default": "HOLD" },
-      { "name": "deployment_target_id", "type": "varchar", "length": 1024, "foreignkey": { "deployment_target": "deployment_target_id" } },
+      { "name": "deployment_target_id", "type": "bigint", "foreignkey": { "deployment_target": "deployment_target_id" } },
       
       { "name": "deployment_sts_tstmp", "type": "datetime", "length": 7 },
       { "name": "deployment_sts_user", "type": "varchar", "length": 20 },

@@ -4,7 +4,7 @@
     "table":"{schema}.v_my_branch_desc",
     "actions":"B",
     "roles": {"*": "B"},
-    "sqlwhere":"branch_type='USER' and branch_sts='ACTIVE'",
+    "sqlwhere":"branch_type='USER' and branch_sts='ACTIVE' and (branch_user_id = jsharmony.my_sys_user_id())",
     "caption":["Branch","Branches"],
     "title":"My Branches",
     "hide_system_buttons":["search","export"],

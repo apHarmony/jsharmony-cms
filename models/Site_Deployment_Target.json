@@ -3,12 +3,12 @@
     "layout":"grid",
     "table":"{schema}.deployment_target",
     "actions":"BIUD",
+    "roles": { "WEBMASTER": "BIUD" },
     "caption":["Deployment Target","Deployment Targets"],
     "fields": [
       {"name":"deployment_target_name","caption":"Name"},
       {"name":"deployment_target_sts","caption":"Status"},
       {"name":"deployment_target_path","caption":"Path"},
-      {"name":"deployment_target_preview_url","caption":"Preview URL"},
       {"name":"deployment_target_content_path","caption":"CMS Content Path"},
       {"name":"deployment_target_params","caption":"Params"}
     ]

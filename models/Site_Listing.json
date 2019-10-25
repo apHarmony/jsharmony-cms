@@ -1,15 +1,18 @@
 {
   "Site_Listing": {
     "layout":"grid",
-    "table":"{schema}.site",
-    "actions":"B",
+    "table":"{schema}.v_my_site",
+    "actions":"BU",
+    "roles": { "*": "BU" },
     "caption":["Site","Sites"],
     "menu":"jsHarmonyCMS/Site_Listing",
     "buttons":[{ "link":"insert:Site","icon":"add","text":"Add Site" }],
     "fields": [
-      {"name":"site_name","caption":"Site Name","link":"update:Site"},
-      {"name":"site_sts","caption":"Status"},
-      {"control":"html","caption":"Edit","link":"update:Site","value":"<img src='/images/icon_edit.png' class='xicon' />"}
+      {"name":"site_id","caption":"Site ID","control":"hidden","key":true,"actions":"B"},
+      {"name":"site_name","caption":"Site Name","actions":"B","control":"label"},
+      {"name":"site_sts","caption":"Status","actions":"B","control":"label"},
+      {"name":"site_editor","caption":"Target Editor","control":"dropdown","lov":{ "parent":"site_id", "sql2": "select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.deployment_target where deployment_target_sts='ACTIVE' order by deployment_target_name" }},
+      {"control":"html","caption":"Edit","link":"update:Site","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }}
     ]
   }
 }

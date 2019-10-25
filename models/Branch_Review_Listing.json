@@ -3,6 +3,7 @@
     "layout":"grid",
     "table":"{schema}.branch",
     "actions":"B",
+    "roles": {"PUBLISHER": "B"},
     "caption":["Branch","Branches"],
     "title":"Branch Review",
     "menu":"jsHarmonyCMS/Branch_Review_Listing",

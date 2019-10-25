@@ -26,7 +26,8 @@ window.jsHarmonyCMS = new (function(){
   var $ = undefined;
 
   //Load jsHarmony
-  this._baseurl = 'http://localhost:3500/';
+  this._baseurl = <%-JSON.stringify(baseurl)%>;
+  this._cookie_suffix = <%-JSON.stringify(cookie_suffix)%>;
   this.page = null;
   this.page_key = null;
   this.template = null;
@@ -137,7 +138,7 @@ window.jsHarmonyCMS = new (function(){
         home_url: _this._baseurl,
         uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
         _instance: "jshInstance",
-        cookie_suffix: "_3500_main",
+        cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,
         onInit: function(){ _this.onready(); }

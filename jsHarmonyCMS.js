@@ -76,6 +76,10 @@ jsHarmonyCMS.prototype.Init = function(cb){
   HelperFS.createFolderIfNotExistsSync(path.join(this.jsh.Config.datadir,'page'));
   HelperFS.createFolderIfNotExistsSync(path.join(this.jsh.Config.datadir,'media'));
   HelperFS.createFolderIfNotExistsSync(path.join(this.jsh.Config.datadir,'menu'));
+
+  if(!_.isEmpty(_this.Config.media_thumbnails)){
+    _this.jsh.TestImageMagick('jsHarmonyCMS > Media Thumbnails');
+  }
   
   return cb();
 }
@@ -83,12 +87,13 @@ jsHarmonyCMS.prototype.Init = function(cb){
 //Load Client JS
 jsHarmonyCMS.prototype.LoadClientJS = function(){
   var _this = this;
-  _this.jsh.Cache['js/jsharmony-cms.js'] = fs.readFileSync(path.join(_this.basepath, 'public/js/jsharmony-cms.js'), 'utf8');
+  var editorjs = fs.readFileSync(path.join(_this.basepath, 'public/js/jsharmony-cms.js'), 'utf8');
   var modeldirs = _this.jsh.getModelDirs();
   for (var i = 0; i < modeldirs.length; i++) {
     var jspath = path.join(modeldirs[i].path, '../public/js/jsharmony-cms.local.js');
-    if (fs.existsSync(jspath)) _this.jsh.Cache['js/jsharmony-cms.js'] += '\r\n' + fs.readFileSync(jspath);
+    if (fs.existsSync(jspath)) editorjs += '\r\n' + fs.readFileSync(jspath);
   }
+  _this.jsh.Cache['js/jsharmony-cms.js'] = editorjs;
 }
 
 //Load Templates
@@ -160,13 +165,19 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
 
 jsHarmonyCMS.prototype.getFactoryConfig = function(){
   var _this = this;
+  var jsh = _this.jsh;
 
-  var configFactory = _this.jsh.Modules['jsHarmonyFactory'].Config;
+  var configFactory = jsh.Modules['jsHarmonyFactory'].Config;
 
-  _this.jsh.Modules['jsHarmonyFactory'].onCreateServer.push(function(server){
+  jsh.Modules['jsHarmonyFactory'].onCreateServer.push(function(server){
     server.app.use('/js/jsharmony-cms.js', function(req, res){
       if(_this.Config.debug_params.no_cache_client_js) _this.LoadClientJS();
-      return res.end(_this.jsh.Cache['js/jsharmony-cms.js']);
+      req.jshsite = jsh.Sites['main'];
+      var baseurl = req.jshsite.baseurl||'';
+      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+      var cookie_suffix = Helper.GetCookieSuffix(req, jsh);
+      var editorjs = ejs.render(jsh.Cache['js/jsharmony-cms.js'], { jsh: jsh, req: req, baseurl: baseurl, cookie_suffix: cookie_suffix, _: _ });
+      return res.end(editorjs);
     });
     server.app.use(jsHarmonyRouter.PublicRoot(path.join(__dirname, 'public')));
   });
