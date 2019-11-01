@@ -1,0 +1,28 @@
+{
+  "Redirect_Listing": {
+    "layout":"grid",
+    "table":"{schema}.v_my_redirect",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "caption":["Redirect","Redirects"],
+    "reselectafteredit": "row",
+    "sort":["^redirect_seq","^redirect_url"],
+    "menu":"jsHarmonyCMS/Redirect_Listing",
+    "rowlimit":250,
+    "breadcrumbs":{
+      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
+      "sql": "select branch_desc, deployment_target_content_path, deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()"
+    },
+    "oninit": "xmodel.controller.grid.OnLoadError = function(err){ if(err && err.Number==-14){ XExt.Alert('Please checkout a branch', function(){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true }) }); return true; } }",
+    "fields": [
+      {"name":"redirect_key","key":true,"control":"hidden"},
+      {"name":"redirect_seq","caption":"Seq #","control":"textbox_VS"},
+      {"name":"redirect_url_type","caption":"Match"},
+      {"name":"redirect_url","caption":"URL","control":"textbox_L"},
+      {"name":"redirect_dest","caption":"Destination","control":"textbox_L"},
+      {"name":"redirect_http_code","caption":"HTTP Code"},
+      {"name":"redirect_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"name":"redirect_muser","caption":"Modified By","actions":"B","control":"label","sqlselect":"jsharmony.my_db_user_fmt(redirect_muser)","cellstyle":"white-space:nowrap;"}
+    ]
+  }
+}

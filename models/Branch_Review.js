@@ -3,6 +3,7 @@ jsh.App[modelid] = new (function(){
 
   this.branch_pages = [];
   this.branch_media = [];
+  this.branch_redirects = [];
 
   this.onload = function(xmodel, callback){
     //Load API Data
@@ -15,6 +16,7 @@ jsh.App[modelid] = new (function(){
       if ('_success' in rslt) {
         _this.branch_pages = rslt.branch_pages;
         _this.branch_media = rslt.branch_media;
+        _this.branch_redirects = rslt.branch_redirects;
         _this.render();
         if (onComplete) onComplete();
       }
@@ -96,6 +98,24 @@ jsh.App[modelid] = new (function(){
         }
       }
       jdiff.append($('<h4 class="'+xmodel.class+'_branch_media_path">'+title_text+'</h4>'));
+    });
+    _.each(_this.branch_redirects, function(branch_redirect){
+      jdiff.append($('<hr/>'));
+      var branch_redirect_action = branch_redirect.branch_redirect_action.toUpperCase();
+      var title_text = '';
+      if(branch_redirect_action=='ADD'){
+        title_text = 'ADD &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_redirect.new_redirect_url);
+      }
+      else if(branch_redirect_action=='DELETE'){
+        title_text = 'DELETE '+XExt.escapeHTML(branch_redirect.old_redirect_url);
+      }
+      else if(branch_redirect_action=='UPDATE'){
+        title_text = 'UPDATE '+XExt.escapeHTML(branch_redirect.new_redirect_url);
+        if(branch_redirect.new_redirect_url!=branch_redirect.old_redirect_url){
+          title_text += '<br/>RENAME TO ' + XExt.escapeHTML(branch_redirect.new_redirect_url);
+        }
+      }
+      jdiff.append($('<h4 class="'+xmodel.class+'_branch_redirect_url">'+title_text+'</h4>'));
     });
     jdiff.append($('<hr/>'));
   }

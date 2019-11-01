@@ -95,7 +95,7 @@
 
   "v_my_page": {
     "type": "view",
-    "caption": ["Branch", "Branches"],
+    "caption": ["Page", "Pages"],
     "tables": {
       "page": {
         "columns": [

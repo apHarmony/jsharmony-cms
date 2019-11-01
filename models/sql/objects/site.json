@@ -69,7 +69,7 @@
       },
       "sys_user_site": {
         "columns": [
-          { "name":"site_editor", "type": "bigint", "sqlselect": "$ifnull(sys_user_site.sys_user_site_editor,(select top 1 deployment_target_id from {schema}.deployment_target where deployment_target.deployment_target_sts='ACTIVE' and deployment_target.site_id = site.site_id order by deployment_target_name))" },
+          { "name":"site_editor", "type": "bigint", "sqlselect": "$ifnull(sys_user_site.sys_user_site_editor,(select top1(deployment_target_id from {schema}.deployment_target where deployment_target.deployment_target_sts='ACTIVE' and deployment_target.site_id = site.site_id order by deployment_target_name)))" },
         ],
         "join_type": "left",
         "join_columns": {

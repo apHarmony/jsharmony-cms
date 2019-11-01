@@ -77,7 +77,7 @@
 
   "v_my_media": {
     "type": "view",
-    "caption": ["Branch", "Branches"],
+    "caption": ["Media", "Media"],
     "tables": {
       "media": {
         "columns": [

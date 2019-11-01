@@ -61,6 +61,7 @@ module.exports = exports = function(module, funcs){
 
       var branch_pages = [];
       var branch_media = [];
+      var branch_redirects = [];
       var pages = {};
 
       async.waterfall([
@@ -81,7 +82,23 @@ module.exports = exports = function(module, funcs){
           });
         },
 
-        //Get all branch_pages
+        //Get all branch_redirect
+        function(cb){
+          var sql = "select branch_redirect.redirect_key, branch_redirect.branch_redirect_action, branch_redirect.redirect_id, branch_redirect.redirect_orig_id, \
+              old_redirect.redirect_url old_redirect_url, old_redirect.redirect_dest old_redirect_dest,\
+              new_redirect.redirect_url new_redirect_url, new_redirect.redirect_dest new_redirect_dest\
+            from "+(module.schema?module.schema+'.':'')+"branch_redirect branch_redirect \
+              left outer join "+(module.schema?module.schema+'.':'')+"redirect old_redirect on old_redirect.redirect_id=branch_redirect.redirect_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"redirect new_redirect on new_redirect.redirect_id=branch_redirect.redirect_id \
+            where branch_id=@branch_id and branch_redirect_action is not null";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) branch_redirect = rslt[0];
+            return cb();
+          });
+        },
+
+        //Get all branch_page
         function(cb){
           var sql = "select branch_page.page_key, branch_page.branch_page_action, branch_page.page_id, branch_page.page_orig_id, \
               old_page.page_path old_page_path, old_page.page_title old_page_title, old_page.page_file_id old_page_file_id,\
@@ -157,6 +174,7 @@ module.exports = exports = function(module, funcs){
         res.end(JSON.stringify({
           '_success': 1,
           'branch_pages': branch_pages,
+          'branch_redirect': branch_redirect,
           'branch_media': branch_media
         }));
       });

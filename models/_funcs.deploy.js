@@ -117,6 +117,7 @@ module.exports = exports = function(module, funcs){
       var template_body = {};
       var page_keys = {};
       var media_keys = {};
+      var page_redirects = {};
 
       //Git Commands
       var git_path = cms.Config.git.bin_path || '';
@@ -278,12 +279,27 @@ module.exports = exports = function(module, funcs){
             _.each(rslt[0], function(page){
 
               var page_fpath = '';
+              var page_urlpath = '';
               try{
-                page_fpath = (deployment.deployment_target_content_path||'/') + getPageRelativePath(page);
+                var relativePath = getPageRelativePath(page);
+                page_urlpath = '/' + relativePath;
+                page_fpath = (deployment.deployment_target_content_path||'/') + relativePath;
               }
               catch(ex){ }
 
-              if(page_fpath) page_keys[page.page_key] = page_fpath;
+              if(page_fpath){
+                page_keys[page.page_key] = page_urlpath;
+                page_redirects[page_urlpath] = page_fpath;
+                if(path.basename(page_urlpath)=='index.html'){
+                  var page_dir = ((page_urlpath=='/index.html') ? '/' : path.dirname(page_urlpath)+'/');
+                  page_redirects[page_dir] = page_fpath;
+                }
+                else if(path.basename(page_urlpath).indexOf('.')<=0){
+                  if(page_urlpath[page_urlpath.length-1] != '/'){
+                    page_redirects[page_urlpath+'/'] = page_fpath;
+                  }
+                }
+              }
             });
             return cb();
           });
@@ -448,6 +464,98 @@ module.exports = exports = function(module, funcs){
                 });
               });
             }, cb);
+          });
+        },
+
+        //Get list of all redirects
+        //Generate redirect file and save to 
+        function (cb){
+          var sql = 'select \
+            r.redirect_key, r.redirect_url, r.redirect_url_type, r.redirect_dest, r.redirect_http_code \
+            from '+(module.schema?module.schema+'.':'')+'redirect r \
+            inner join '+(module.schema?module.schema+'.':'')+'branch_redirect br on br.redirect_id = r.redirect_id \
+            inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = br.branch_id and d.deployment_id=@deployment_id \
+            order by r.redirect_seq'
+            ;
+          var sql_ptypes = [dbtypes.BigInt];
+          var sql_params = { deployment_id: deployment_id };
+          appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return cb(err); }
+            if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment redirects')); }
+            var redirect_php_content = "<?php\n";
+            redirect_php_content += "return function($path=''){\n";
+            redirect_php_content += "  $upath = strtoupper($path);\n";
+            redirect_php_content += "  $rslt = '';\n";
+            redirect_php_content += "  if(0){}\n";
+            async.eachSeries(rslt[0], function(redirect, redirect_cb){
+              if((redirect.redirect_url_type||'').toUpperCase()=='BEGINS'){
+                redirect_php_content += "  else if(strpos($path,"+JSON.stringify((redirect.redirect_url||'').toString())+")===0)";
+                redirect_php_content += " $rslt = " + JSON.stringify(redirect.redirect_http_code.toUpperCase() + ' ' + redirect.redirect_dest) + ";\n";
+              }
+              else if((redirect.redirect_url_type||'').toUpperCase()=='REGEX'){
+                redirect_php_content += "  else if(preg_match('/'."+JSON.stringify((redirect.redirect_url||'').toString())+".'/', $path))";
+                redirect_php_content += " $rslt = " + JSON.stringify(redirect.redirect_http_code.toUpperCase() + ' ');
+                redirect_php_content += ".preg_replace('/'."+JSON.stringify((redirect.redirect_url||'').toString())+".'/', " + JSON.stringify(redirect.redirect_dest)+ ", $path);\n";
+              }
+              else{ //EXACT
+                redirect_php_content += "  else if($path=="+JSON.stringify((redirect.redirect_url||'').toString())+")";
+                redirect_php_content += " $rslt = " + JSON.stringify(redirect.redirect_http_code.toUpperCase() + ' ' + redirect.redirect_dest) + ";\n";
+              }
+              return redirect_cb();
+            }, function(err){
+              if(err) return cb(new Error('Error generating redirect file'));
+
+              for(var page_urlpath in page_redirects){
+                var page_fpath = page_redirects[page_urlpath];
+                redirect_php_content += "  else if($path=="+JSON.stringify((page_urlpath||'').toString())+")";
+                redirect_php_content += " $rslt = " + JSON.stringify('FILE ' + page_fpath) + ";\n";
+              }
+
+              redirect_php_content += "  return $rslt;\n";
+              redirect_php_content += "};\n";
+              redirect_php_content += "?>\n";
+
+              var redirect_files = {};
+              redirect_files['config/redirect.php'] = redirect_php_content;
+              redirect_files['config/redirectResolve.php'] = [
+                "<?php",
+                "if(!in_array(getenv('EC_ENV'), array('localdev','stg0','stg1'))) return;",
+                "$router = require('redirect.php');",
+                "if(isset($_GET['path'])) echo $router($_GET['path']);",
+                "return;",
+                "?>"
+              ].join('\n');
+              redirect_files['config/getFile.php'] = [
+                "<?php",
+                "if(!in_array(getenv('EC_ENV'), array('localdev','stg0','stg1'))){ return; }",
+                "if(!isset($_GET['path']) || !$_GET['path']) return;",
+                "$basePath = realpath(dirname(__DIR__));",
+                "$relativePath = $_GET['path'];",
+                "if($relativePath[0]=='/') return;",
+                "if(strlen($relativePath) > 512) return;",
+                "$path = $basePath.'/'.$relativePath;",
+                "if(realpath($path) !== $path) return;",
+                "if(preg_match('/[[:cntrl:]]/', $path)) return;",
+                "$fext = pathinfo($path, PATHINFO_EXTENSION);",
+                "if($fext !== 'html') return;",
+                "echo base64_encode(file_get_contents($path));",
+                "return;",
+                "?>"
+              ].join('\n');
+
+              async.eachOfSeries(redirect_files, function(fcontent, fpath, redirect_cb){
+                site_files[fpath] = {
+                  md5: crypto.createHash('md5').update(fcontent).digest("hex")
+                };
+                fpath = path.join(publish_path, fpath);
+
+                HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
+                  if(err) return redirect_cb(err);
+                  //Save redirect to publish folder
+                  fs.writeFile(fpath, fcontent, 'utf8', redirect_cb);
+                });
+              }, cb);
+            });
           });
         },
 

@@ -24,6 +24,7 @@
     "caption": ["Redirect","Redirects"],
     "columns": [
       { "name": "redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
       { "name": "redirect_url", "type": "varchar", "length": 1024, "null": false },
       { "name": "redirect_url_type", "type": "varchar", "length": 32, "foreignkey": { "code_redirect_url_type": "code_val" }, "null": false, "default": "EXACT" },
       { "name": "redirect_seq", "type": "int" },
@@ -33,12 +34,83 @@
       { "name": "redirect_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "redirect_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
       { "name": "redirect_mtstmp", "type": "datetime", "length": 7 },
-      { "name": "redirect_muser", "type": "varchar", "length": 20 }
+      { "name": "redirect_muser", "type": "varchar", "length": 20 },
+      { "name": "redirect_snotes", "type": "varchar", "length": -1 }
     ],
     "triggers": [
+      { "on": ["insert"], "exec": [
+          "setif(null(redirect.redirect_key),redirect_key,redirect.redirect_id);"
+        ]
+      },
+      { "on": ["validate_update"], "exec": [
+          "errorif(update(redirect_key) and (deleted(redirect_key) is not null),'Cannot update redirect_key');"
+        ]
+      },
       { "on": ["update", "insert"], "exec": [
           "set(redirect_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(redirect_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "v_my_redirect": {
+    "type": "view",
+    "caption": ["Redirect", "Redirects"],
+    "tables": {
+      "redirect": {
+        "columns": [
+          "redirect_id",
+          "redirect_key",
+          "redirect_url",
+          "redirect_url_type",
+          "redirect_seq",
+          "redirect_dest",
+          "redirect_http_code",
+    
+          "redirect_etstmp",
+          "redirect_euser",
+          "redirect_mtstmp",
+          "redirect_muser"
+        ]
+      },
+      "branch_redirect": {
+        "join_type": "inner",
+        "join_columns": {
+          "branch_redirect.redirect_id": "redirect.redirect_id",
+          "branch_redirect.branch_id": "{schema}.my_current_branch_id()"
+        }
+      }
+    },
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "with_insert_identity(redirect, redirect_id, ",
+            "  insert into redirect(redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
+            "  return_insert_key(redirect, redirect_key, (redirect_key=%%%INSERT_ID%%%));",
+            "  insert into branch_redirect(branch_id, redirect_key, redirect_id, branch_redirect_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "with_insert_identity(redirect, redirect_id, ",
+            "  insert into redirect(redirect_key, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(deleted(redirect_key), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
+            "  update branch_redirect set redirect_id=%%%INSERT_ID%%%,branch_redirect_action=(case branch_redirect_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key);",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "update branch_redirect set redirect_id=null,branch_redirect_action='DELETE' where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and ((branch_redirect_action is null) or (branch_redirect_action in ('UPDATE','DELETE')))",
+          "delete from branch_redirect where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and branch_redirect_action='ADD'",
+          "increment_changes()"
         ]
       }
     ]

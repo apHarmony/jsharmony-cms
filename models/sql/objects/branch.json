@@ -221,6 +221,43 @@
     ]
   },
 
+  "branch_redirect": {
+    "type": "table",
+    "caption": ["Branch Redirect", "Branch Redirects"],
+    "columns": [
+      { "name": "branch_redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" }, "null": false , "actions": ["prevent_update"]},
+      { "name": "redirect_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "branch_redirect_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "redirect_orig_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      
+      { "name": "branch_redirect_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_redirect_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_redirect_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_redirect_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","redirect_key"]
+    ],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_redirect_action)='DELETE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_redirect_action)='UPDATE' and null(inserted(redirect_id)),'redirect_id is required for UPDATE action');",
+          "errorif(inserted(branch_redirect_action)='UPDATE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_redirect_action)='ADD' and null(inserted(redirect_id)),'redirect_id is required for ADD action');",
+          "errorif(inserted(branch_redirect_action)='ADD' and not(null(inserted(redirect_orig_id))),'redirect_orig_id must be null for ADD action');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_redirect_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_redirect_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_redirect.branch_redirect_action='DELETE',redirect_id,null);"
+        ]
+      }
+    ]
+  },
+
   "sys_user_branch": {
     "type": "table",
     "caption": ["User Branch", "User Branches"],
@@ -357,10 +394,11 @@
           "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
           //Set user's current branch to cloned branch
           "update {schema}.sys_user_branch set branch_id = last_insert_identity()",
-          //Add all pages / media / menu from other branch
+          //Add all menu / pages / media / redirect from other branch
           "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and menu_id is not null",
+          "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and page_id is not null",
           "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, media_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and media_id is not null",
-          "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and page_id is not null"
+          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and redirect_id is not null"
         ]
       }
     ]

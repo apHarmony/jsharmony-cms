@@ -62,6 +62,7 @@
 
       { "menu_group": "S", "menu_id": 350, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 35000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
       { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35001, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
+      { "menu_group": "S", "menu_id": 35002, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Redirect_Listing", "menu_seq": 35002, "menu_desc": "Redirects", "menu_cmd": "jsHarmonyCMS/Redirect_Listing" },
 
       { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 40000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
       { "menu_group": "S", "menu_id": 40001, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/Media_Listing", "menu_seq": 40001, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
@@ -88,6 +89,7 @@
 
       { "menu_id": 350, "sys_role_name": "*" },
       { "menu_id": 35001, "sys_role_name": "*" },
+      { "menu_id": 35002, "sys_role_name": "*" },
 
       { "menu_id": 400, "sys_role_name": "*" },
       { "menu_id": 40001, "sys_role_name": "*" },
