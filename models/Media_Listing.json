@@ -17,7 +17,7 @@
     "grid_expand_search": true,
     "oninit": "xmodel.controller.grid.OnLoadError = function(err){ if(err && err.Number==-14){ XExt.Alert('Please checkout a branch', function(){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true }) }); return true; } }",
     "fields": [
-      {"name":"media_key","caption":"Key","control":"hidden"},
+      {"name":"media_key","caption":"Key","control":"hidden","key":true},
       {"name":"media_desc","caption":"Title","control":"textbox_M"},
       {"name":"media_path","caption":"Media Path","control":"textbox_L"},
       {"name":"media_type","caption":"Type"},
