@@ -21,14 +21,16 @@
   "jsharmony.param": {
     "data_keys": ["param_process","param_attrib"],
     "init_data": [
-      { "param_process": "CMS", "param_attrib": "PUBLISH_TGT", "param_desc": "Publish Target Folder", "param_type": "C", "is_param_app": true, "is_param_sys": false, "is_param_user": true }
+      { "param_process": "CMS", "param_attrib": "PUBLISH_TGT", "param_desc": "Publish Target Folder", "param_type": "C", "is_param_app": true, "is_param_sys": false, "is_param_user": true },
+      { "param_process": "CMS", "param_attrib": "DEFAULT_PAGE", "param_desc": "Directory Default Page", "param_type": "C", "is_param_app": true, "is_param_sys": false, "is_param_user": false }
     ]
   },
 
   "jsharmony.param_app": {
     "data_keys": ["param_app_process","param_app_attrib"],
     "init_data": [
-      { "param_app_process": "CMS", "param_app_attrib": "PUBLISH_TGT", "param_app_val": "publish" }
+      { "param_app_process": "CMS", "param_app_attrib": "PUBLISH_TGT", "param_app_val": "publish" },
+      { "param_app_process": "CMS", "param_app_attrib": "DEFAULT_PAGE", "param_app_val": "index.html" }
     ]
   },
 
@@ -60,12 +62,15 @@
       { "menu_group": "S", "menu_id": 30003, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_History_Public_Listing", "menu_seq": 30003, "menu_desc": "Public Branch History", "menu_cmd": "jsHarmonyCMS/Branch_History_Public_Listing" },
       { "menu_group": "S", "menu_id": 30004, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_User_Listing", "menu_seq": 30004, "menu_desc": "All User Branches", "menu_cmd": "jsHarmonyCMS/Branch_User_Listing" },
 
-      { "menu_group": "S", "menu_id": 350, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 35000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
-      { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35001, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Listing" },
+      { "menu_group": "S", "menu_id": 350, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 35000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Tree" },
+      { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35001, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Tree" },
       { "menu_group": "S", "menu_id": 35002, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Redirect_Listing", "menu_seq": 35002, "menu_desc": "Redirects", "menu_cmd": "jsHarmonyCMS/Redirect_Listing" },
 
       { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 40000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
       { "menu_group": "S", "menu_id": 40001, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/Media_Listing", "menu_seq": 40001, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
+
+      { "menu_group": "S", "menu_id": 450, "menu_id_parent": 1, "menu_name": "Menu", "menu_seq": 45000, "menu_desc": "Menu", "menu_cmd": "jsHarmonyCMS/Menu_Listing" },
+      { "menu_group": "S", "menu_id": 45001, "menu_id_parent": 450, "menu_name": "jsHarmonyCMS/Menu_Listing", "menu_seq": 45001, "menu_desc": "Menu", "menu_cmd": "jsHarmonyCMS/Menu_Listing" },
 
       { "menu_group": "S", "menu_id": 500, "menu_id_parent": 1, "menu_name": "Publish", "menu_seq": 50000, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Branch_Review_Listing" },
       { "menu_group": "S", "menu_id": 50001, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Branch_Review_Listing", "menu_seq": 50001, "menu_desc": "Branch Review", "menu_cmd": "jsHarmonyCMS/Branch_Review_Listing" },
@@ -93,6 +98,9 @@
 
       { "menu_id": 400, "sys_role_name": "*" },
       { "menu_id": 40001, "sys_role_name": "*" },
+
+      { "menu_id": 450, "sys_role_name": "*" },
+      { "menu_id": 45001, "sys_role_name": "*" },
 
       { "menu_id": 500, "sys_role_name": "PUBLISHER" },
       { "menu_id": 50001, "sys_role_name": "PUBLISHER" },

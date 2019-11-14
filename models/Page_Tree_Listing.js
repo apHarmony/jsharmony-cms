@@ -1,12 +1,44 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.openPageEditor = function(obj){
+  this.oninit = function(xmodel){
+    xmodel.controller.grid.OnLoadError = function(err){
+      if(err && err.Number==-14){
+        XExt.Alert('Please checkout a branch', function(){
+          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true });
+        });
+        return true;
+      }
+    }
+  }
+
+  this.onrowbind = function(xmodel,jobj,datarow){
+    var page_key = parseInt(datarow.page_key||0);
+    jobj.find('.page_filename').contextmenu(function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key);
+    });
+  }
+
+  this.openPageEditor = function(obj){ //obj || page_key
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing page');
 
-    var rowid = $(obj).closest('tr').data('id');
+    var rowid = undefined;
+    var page_key = undefined;
+    if(_.isNumber(obj)){
+      page_key = obj;
+      if(xmodel.controller.form && xmodel.controller.form.DataSet){
+        var rowid = -1;
+        for(var i=0;i<xmodel.controller.form.DataSet.length;i++){
+          if(xmodel.controller.form.DataSet[i]['page_key']==page_key) rowid = i;
+        }
+        if(rowid < 0) return XExt.Alert('Page key not found in grid');
+      }
+    }
+    else rowid = $(obj).closest('tr').data('id');
 
-    var page_key = xmodel.get('page_key', rowid);
+    page_key = xmodel.get('page_key', rowid);
     if(!page_key) return XExt.Alert('Please save page before editing');
 
     var template_id = xmodel.get('template_id', rowid);
@@ -46,8 +78,6 @@ jsh.App[modelid] = new (function(){
       if (page_filename.indexOf('/') >= 0) return XExt.Alert('File name cannot contain "/" character');
       if (XExt.cleanFileName(page_filename) != page_filename) return XExt.Alert('File name contains invalid characters');
 
-      if (!page_title) return XExt.Alert('Please enter a page title');
-
       if (!template_id) return XExt.Alert('Please select a template.');
 
       if (page_filename.indexOf('.') < 0) page_filename += '.html';
@@ -74,6 +104,70 @@ jsh.App[modelid] = new (function(){
       window.close();
     }
     else XExt.Alert('Parent editor not found');
+  }
+
+  this.getPage = function(page_key){
+    if(xmodel.controller.form && xmodel.controller.form.DataSet){
+      var rowid = -1;
+      for(var i=0;i<xmodel.controller.form.DataSet.length;i++){
+        var page = xmodel.controller.form.DataSet[i];
+        if(page['page_key']==page_key) return page;
+      }
+    }
+    return undefined;
+  }
+
+  this.renameFile = function(page_key){
+    var page = _this.getPage(page_key);
+    var page_path = page.page_path;
+    var page_filename = page.page_filename;
+    XExt.Prompt('Please enter a new file name', page_filename, function (rslt) {
+      if(rslt === null) return;
+      rslt = rslt.trim();
+      if(rslt == page_filename) return;
+      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename');
+
+      var params = {
+        page_path: page.page_folder + rslt,
+        page_title: page.page_title,
+        template_id: page.template_id
+      };
+      XForm.Post(xmodel.module_namespace+'Page_Tree_Listing', { page_key: page_key }, params, function(rslt){
+        //Refresh parent
+        jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
+      });
+    });
+  }
+
+  this.moveFile = function(page_key){
+    var page = _this.getPage(page_key);
+    var page_path = page.page_path;
+    XExt.Prompt('Please enter a new path', page_path, function (rslt) {
+      if(rslt === null) return;
+      rslt = rslt.trim();
+      if(rslt == page_path) return;
+      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"');
+
+      var params = {
+        page_path: rslt,
+        page_title: page.page_title,
+        template_id: page.template_id
+      };
+      XForm.Post(xmodel.module_namespace+'Page_Tree_Listing', { page_key: page_key }, params, function(rslt){
+        //Refresh parent
+        jsh.XPage.Select({ modelid: 'Page_Tree', onCancel: function(){} });
+      });
+    });
+  }
+
+  this.deleteFile = function(page_key){
+    var page = _this.getPage(page_key);
+    XExt.Confirm('Are you sure you want to delete "'+page.page_filename+'"?', function (rslt) {
+      XForm.Delete(xmodel.module_namespace+'Page_Tree_Listing', { page_key: page_key }, { }, function(rslt){
+        //Refresh parent
+        jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
+      });
+    });
   }
 
 })();

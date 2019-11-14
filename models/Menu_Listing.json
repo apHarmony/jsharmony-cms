@@ -1,20 +1,18 @@
 {
-  "Media_Listing": {
+  "Menu_Listing": {
     "layout":"grid",
-    "table":"{schema}.v_my_media",
-    "sqlwhere":"media_is_folder = 0",
+    "table":"{schema}.v_my_menu",
     "actions":"BUD",
     "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
-    "caption":["Media","Media"],
-    "title":"Media Search",
+    "caption":["Menu","Menus"],
+    "title":"Menus",
     "reselectafteredit": "row",
-    "sort":["^media_path"],
-    "menu":"Media",
+    "sort":["^menu_name"],
+    "menu":"jsHarmonyCMS/Menu_Listing",
     "breadcrumbs":{
       "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
       "sql": "select branch_desc, deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()"
     },
-    "grid_expand_search": true,
     "oninit": "xmodel.controller.grid.OnLoadError = function(err){ if(err && err.Number==-14){ XExt.Alert('Please checkout a branch', function(){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true }) }); return true; } }",
     "fields": [
       {"name":"media_key","caption":"Key","control":"hidden"},

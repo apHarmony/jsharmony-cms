@@ -24,3 +24,10 @@
     </div>
   </div>
 </div>
+
+<div class="xcontext_menu <%=model.class%>_file_context_menu">
+  <a onclick="<%-js('_this.openPageEditor(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Edit</a>
+  <a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a>
+  <a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a>
+  <a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a>
+</div>  

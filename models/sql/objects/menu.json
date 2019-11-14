@@ -5,8 +5,11 @@
     "columns": [
       { "name": "menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
-      { "name": "menu_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "menu_file_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "menu_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "menu_tag", "type": "varchar", "length": 256, "null": false, "unique": true },
       { "name": "menu_notes", "type": "varchar", "length": -1 },
+
       { "name": "menu_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
       { "name": "menu_lang", "type": "varchar", "length": 32, "foreignkey": { "code_lang": "code_val" } },
       
@@ -17,11 +20,13 @@
     ],
     "triggers": [
       { "on": ["insert"], "exec": [
-          "setif(null(menu.menu_key),menu_key,menu.menu_id);"
+          "setif(null(menu.menu_key),menu_key,menu.menu_id);",
+          "setif(null(menu.menu_file_id),menu_file_id,menu.menu_id);"
         ]
       },
       { "on": ["validate_update"], "exec": [
-          "errorif(update(menu_key) and (deleted(menu_key) is not null),'Cannot update menu_key');"
+          "errorif(update(menu_key) and (deleted(menu_key) is not null),'Cannot update menu_key');",
+          "errorif(update(menu_file_id) and (deleted(menu_file_id) is not null),'Cannot update menu_file_id');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -31,8 +36,71 @@
       }
     ],
     "sample_data": [
-      { "menu_name": "Site Menu" },
-      { "menu_name": "Footer Menu" }
+      { "menu_name": "Site Menu", "menu_tag": "site_menu", "_FILES": { "site_menu.json": "menu/{{menu_id}}.json" } },
+      { "menu_name": "Footer Menu", "menu_tag": "footer_menu", "_FILES": { "footer_menu.json": "menu/{{menu_id}}.json" } }
+    ]
+  },
+
+  "v_my_menu": {
+    "type": "view",
+    "caption": ["Menu", "Menus"],
+    "tables": {
+      "menu": {
+        "columns": [
+          "menu_id",
+          "menu_key",
+          "menu_file_id",
+          "menu_name",
+          "menu_tag",
+    
+          "menu_review_sts",
+          "menu_lang",
+          
+          "menu_etstmp",
+          "menu_euser",
+          "menu_mtstmp",
+          "menu_muser"
+        ]
+      },
+      "branch_menu": {
+        "join_type": "inner",
+        "join_columns": {
+          "branch_menu.menu_id": "menu.menu_id",
+          "branch_menu.branch_id": "{schema}.my_current_branch_id()"
+        }
+      }
+    },
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "with_insert_identity(menu, menu_id, ",
+            "  insert into menu(menu_name, menu_tag, menu_review_sts, menu_lang) values(inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
+            "  return_insert_key(menu, menu_key, (menu_key=%%%INSERT_ID%%%));",
+            "  insert into branch_menu(branch_id, menu_key, menu_id, branch_menu_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "with_insert_identity(menu, menu_id, ",
+            "  insert into menu(menu_key, menu_file_id, menu_name, menu_tag, menu_review_sts, menu_lang) values(deleted(menu_key), (case when inserted(menu_file_id) is null then null else deleted(menu_file_id) end), inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
+            "  update branch_menu set menu_id=%%%INSERT_ID%%%,branch_menu_action=(case branch_menu_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and menu_key = deleted(menu_key);",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "update branch_menu set menu_id=null,branch_menu_action='DELETE' where branch_id={schema}.my_current_branch_id() and menu_key = deleted(menu_key) and ((branch_menu_action is null) or (branch_menu_action in ('UPDATE','DELETE')))",
+          "delete from branch_menu where branch_id={schema}.my_current_branch_id() and menu_key = deleted(menu_key) and branch_menu_action='ADD'",
+          "increment_changes()"
+        ]
+      }
     ]
   }
 }

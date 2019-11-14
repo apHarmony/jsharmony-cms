@@ -1,0 +1,53 @@
+.xbody_<%=model.class%> {
+  width:100%; 
+  padding-right:20px; 
+  box-sizing:border-box; 
+  padding-bottom:0px;
+}
+.xbody_<%=model.class%> .bcrumbs {
+  width:100%; 
+  padding-right:20px; 
+  padding-bottom:15px;
+  box-sizing:border-box;
+}
+.<%=model.class%>_browser {
+  display:flex;
+  width:100%;
+  min-width:950px;
+  min-height:400px;
+  box-sizing:border-box;
+}
+.xelem<%=model.class%>.tree.page_folder {
+  height:auto;
+  min-height:400px;
+  box-sizing:border-box;
+  flex-shrink:0;
+}
+.xsubform.Page_Tree_Listing {
+  flex-grow:1;
+  margin-top:0px;
+  border-right:1px solid #aaa; 
+  border-bottom:1px solid #aaa; 
+  border-top:1px solid #aaa;
+  position:relative;
+}
+.xsubform.Page_Tree_Listing .xpanel {
+  border:0;
+  padding:0;
+  overflow-y:auto;
+  width:100%;
+  height:100%;
+  display:block;
+}
+.xsubform.Page_Tree_Listing .xtbl {
+  width:100%;
+  box-sizing:border-box;
+  border-collapse:separate;
+}
+.xsubform.Page_Tree_Listing .xtbl thead th {
+  border-left: 0px;
+  padding-right: 7px;
+}
+.xsubform.Page_Tree_Listing .xtbl tbody td {
+  border-left:0px;
+}

@@ -21,6 +21,7 @@ var _ = require('lodash');
 var async = require('async');
 var DiffMatchPatch = require('diff-match-patch');
 var diff2html = require("diff2html").Diff2Html;
+var prettyhtml = require('js-beautify').html;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -93,7 +94,7 @@ module.exports = exports = function(module, funcs){
             where branch_id=@branch_id and branch_redirect_action is not null";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]) branch_redirect = rslt[0];
+            if(rslt && rslt[0]) branch_redirects = rslt[0];
             return cb();
           });
         },
@@ -138,6 +139,16 @@ module.exports = exports = function(module, funcs){
               if(err) return page_cb(err);
               if(!clientPage) return page_cb(null); 
               page.compiled = clientPage.page;
+              if(page.compiled.body){
+                var pretty_params = {
+                  unformatted: ['code', 'pre'],
+                  indent_inner_html: true,
+                  indent_char: ' ',
+                  indent_size: 2,
+                  sep: '\n'
+                };
+                page.compiled.body = prettyhtml(clientPage.page.body, pretty_params);
+              }
               page.template_title = clientPage.template.title;
               return page_cb(null);
             });
@@ -174,7 +185,7 @@ module.exports = exports = function(module, funcs){
         res.end(JSON.stringify({
           '_success': 1,
           'branch_pages': branch_pages,
-          'branch_redirect': branch_redirect,
+          'branch_redirects': branch_redirects,
           'branch_media': branch_media
         }));
       });
@@ -194,7 +205,109 @@ module.exports = exports = function(module, funcs){
     var diff_lineArray = diff_lines.lineArray;
     var diff = dmp.diff_main(diff_lineText1, diff_lineText2, false);
     dmp.diff_charsToLines_(diff, diff_lineArray);
-    var patch = dmp.patch_toText(dmp.patch_make(a,diff));
+
+    //Generate patch
+    var patch_lines = [];
+    var source_line = 1;
+    var dest_line = 1;
+    var last_line = 0;
+    if(diff.length){
+      last_line = diff.length-1;
+      if(diff[last_line][0]==0){}
+      else{
+        if(diff.length > 1){
+          if((diff[last_line-1][0]==0)||(diff[last_line-1][0]==diff[last_line][0])){}
+          else last_line-=1;
+        }
+      }
+    }
+    
+    for(var i=0;i<diff.length;i++){
+      var diff_line = diff[i];
+      var diff_line_type = diff_line[0];
+      var diff_line_text = diff_line[1]||'';
+      if((i < last_line) && diff_line_text && (diff_line_text[diff_line_text.length-1]=='\n')) diff_line_text = diff_line_text.substr(0,diff_line_text.length-1);
+      var diff_lines = diff_line_text.split('\n');
+
+      var diff_line_prefix = ' ';
+      if(diff_line_type==-1) diff_line_prefix = '-';
+      else if(diff_line_type==1) diff_line_prefix = '+';
+      _.each(diff_lines, function(diff_line){ patch_lines.push(diff_line_prefix + diff_line); });
+
+      diff_line[2] = diff_lines;
+      diff_line[3] = source_line;
+      diff_line[4] = dest_line;
+      if(diff_line_type==0){
+        source_line += diff_lines.length;
+        dest_line += diff_lines.length;
+      }
+      else if(diff_line_type==-1){
+        source_line += diff_lines.length;
+      }
+      else if(diff_line_type==1){
+        dest_line += diff_lines.length;
+      }
+    }
+    //Create patch
+    var source_line = 0;
+    var dest_line = 0;
+    var patch_batches = [];
+    var cur_patch_batch = null;
+    for(var i=0;i<patch_lines.length;i++){
+      var patch_line = patch_lines[i];
+      if(patch_line[0]==' '){
+        source_line++;
+        dest_line++;
+      }
+      else if(patch_line[0]=='-') source_line++;
+      else if(patch_line[0]=='+') dest_line++;
+      if(patch_line[0]==' '){
+        if(!cur_patch_batch) continue;
+        else{
+          cur_patch_batch.lines.push(patch_line);
+        }
+      }
+      else {
+        if(cur_patch_batch){ cur_patch_batch.lines.push(patch_line); }
+        else {
+          //Start patch batch
+          cur_patch_batch = {
+            lines: [patch_line],
+            source_start_line: source_line+1,
+            source_end_line: undefined,
+            dest_start_line: dest_line+1,
+            dest_end_line: undefined,
+          };
+          if(patch_line[0]=='-') cur_patch_batch.source_start_line--;
+          if(patch_line[0]=='+') cur_patch_batch.dest_start_line--;
+          if(i>0){
+            cur_patch_batch.source_start_line--;
+            cur_patch_batch.dest_start_line--;
+            cur_patch_batch.lines.unshift(patch_lines[i-1]);
+          }
+          
+        }
+      }
+
+      //Check if at end of patch
+      if((i==(patch_lines.length-1)) || ((patch_line[0]==' ') && (patch_lines[i+1][0]==' '))){
+        //End patch batch
+        cur_patch_batch.source_end_line = source_line;
+        cur_patch_batch.dest_end_line = dest_line;
+        patch_batches.push(cur_patch_batch);
+        cur_patch_batch = null;
+      }
+    }
+
+    var patch = '';
+    for(var i=0;i<patch_batches.length;i++){
+      var patch_batch = patch_batches[i];
+      patch += '@@ -'+patch_batch.source_start_line+','+patch_batch.source_end_line+' +'+patch_batch.dest_start_line+','+patch_batch.dest_end_line+' @@\n';
+      patch += patch_batch.lines.join('\n')+'\n';;
+    }
+
+    /*
+    var patch = dmp.patch_toText(dmp.patch_make(a,diff));    
     var patchlines = patch.split(/\n/);
     for(var i=0;i<patchlines.length;i++){
       var patchline = patchlines[i];
@@ -208,6 +321,7 @@ module.exports = exports = function(module, funcs){
       patchlines[i] = patchline;
     }
     patch = patchlines.join('\n');
+    */
 
     patch = decodeURIComponent("--- compare\n+++ compare\n" + patch);
     return Diff2Html.getPrettyHtml(patch, {

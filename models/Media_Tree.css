@@ -54,6 +54,18 @@
   flex-shrink:1;
   flex-basis:150px;
 }
+.<%=model.class%>_file_tile_empty {
+  flex-grow:1;
+  padding-top:23px;
+  text-align:center;
+  color:#bbb;
+  font-size:20px;
+}
+.<%=model.class%>_file_tile_empty a {
+  font-size:13px;
+  display:inline-block;
+  padding-top:15px;
+}
 .<%=model.class%>_file_tile:hover {
   background-color:#f5f5ff;
 }
@@ -99,16 +111,26 @@
   border-top:1px solid transparent;
   border-bottom:1px solid transparent;
 }
-.<%=model.class%>_file_listing_tbl tbody tr:hover {
+.<%=model.class%>_file_listing_tbl tbody tr.<%=model.class%>_file_listing_row:hover {
   background-color:#f5f5ff;
 }
-.<%=model.class%>_file_listing_tbl tbody tr.selected td {
+.<%=model.class%>_file_listing_tbl tbody tr.<%=model.class%>_file_listing_row.selected td {
   background-color:#eeeeff;
   border-top:1px solid #ccccff;
   border-bottom:1px solid #ccccff;
 }
 .<%=model.class%>_file_listing_tbl tbody tr td {
   cursor:default;
+}
+.<%=model.class%>_file_listing_tbl tbody tr td.media_filename {
+  padding-left:24px;
+  position:relative;
+}
+.<%=model.class%>_file_listing_tbl tbody tr td.media_filename img {
+  position:absolute;
+  top:1px;
+  left:5px;
+  height:16px;
 }
 
 .<%=model.class%>_file_info {

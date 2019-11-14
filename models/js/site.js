@@ -7,7 +7,7 @@
     //Save Changes Before Executing
     if (jsh.XPage.GetChanges().length > 0) return XExt.Alert('Please save pending changes before continuing.');
 
-    XExt.Confirm('Are you sure you want to Archive this branch?',function(){
+    XExt.Confirm('Are you sure you want to Archive this branch?  Archived branches cannot be submitted for publishing.',function(){
       XForm.prototype.XExecutePost('{namespace}Branch_Archive', { branch_id: branch_id }, function(rslt){
         XPage.Refresh();
       });

@@ -48,11 +48,18 @@ module.exports = exports = function(module, funcs){
     
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-    var sql = "select (param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_path, (select deployment_id from "+(module.schema?module.schema+'.':'')+"deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc) deployment_id";
+    var sql = "select \
+      (param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_path,\
+      (param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') default_page,\
+      (select deployment_id from "+(module.schema?module.schema+'.':'')+"deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc) deployment_id";
     appsrv.ExecRow(req._DBContext, sql, [], {}, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       var publish_tgt = '';
-      if(rslt && rslt[0]) publish_tgt = rslt[0].publish_path;
+      var default_page = '';
+      if(rslt && rslt[0]){
+        publish_tgt = rslt[0].publish_path;
+        default_page = rslt[0].default_page;
+      }
       if(!publish_tgt) { Helper.GenError(req, res, -9, 'Publish Target parameter is not defined'); return; }
       var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
       publish_path = path.normalize(publish_path);
@@ -60,13 +67,13 @@ module.exports = exports = function(module, funcs){
       var template_body = {};
 
       if (verb == 'get') {
-        res.end(JSON.stringify({ '_success': 1, 'publish_path': publish_path }));
+        res.end(JSON.stringify({ '_success': 1, publish_path: publish_path, default_page: default_page }));
         return;
       }
       else if (verb == 'post') {
         if(rslt && rslt[0] && rslt[0].deployment_id){
           funcs.deploy(deployment_id, function(){
-            res.end(JSON.stringify({ '_success': 1, 'publish_path': publish_path }));
+            res.end(JSON.stringify({ '_success': 1, publish_path: publish_path, default_page: default_page }));
           });
         }
         else return Helper.GenError(req, res, -9, 'No scheduled deployments');
@@ -86,8 +93,9 @@ module.exports = exports = function(module, funcs){
     var sql = "\
       update "+(module.schema?module.schema+'.':'')+"deployment set deployment_sts='RUNNING' where deployment_id=@deployment_id;\
       select \
-        deployment_id, site_id, deployment_tag, deployment_target_name, deployment_target_path, deployment_target_params, deployment_target_sts, deployment_target_content_path, \
-        (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt \
+        deployment_id, site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_sts, \
+        (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
+        (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') default_page \
         from "+(module.schema?module.schema+'.':'')+"deployment d \
         inner join "+(module.schema?module.schema+'.':'')+"deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
         where deployment_sts='RUNNING' and deployment_id=@deployment_id\
@@ -103,6 +111,7 @@ module.exports = exports = function(module, funcs){
       if(deployment.deployment_target_sts.toUpperCase() != 'ACTIVE'){ jsh.Log.error('Deployment Target is not ACTIVE'); return; }
       var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
       publish_path = path.normalize(publish_path);
+      var default_page = deployment.default_page;
       var site_files = {};
 
       var publish_params = {};
@@ -113,16 +122,15 @@ module.exports = exports = function(module, funcs){
         jsh.Log.error('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
         return;
       }
+      publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
 
       var template_body = {};
       var page_keys = {};
       var media_keys = {};
       var page_redirects = {};
 
-      //Git Commands
-      var git_path = cms.Config.git.bin_path || '';
-      var git_branch = 'site_'+deployment.site_id;
-      function gitExec(git_cmd, params, cb, exec_options){
+      //Shell Commands
+      function shellExec(cmd, params, cb, exec_options){
         var rslt = '';
         var returned = false;
         var orig_cb = cb;
@@ -132,7 +140,7 @@ module.exports = exports = function(module, funcs){
           return orig_cb(err, rslt);
         }
         exec_options = _.extend({ cwd: publish_path }, exec_options);
-        wclib.xlib.exec(path.join(git_path, git_cmd), params, function(err){ //cb
+        wclib.xlib.exec(cmd, params, function(err){ //cb
           if(err) return cb(err, rslt.trim());
           return cb(null,rslt.trim());
         }, function(data){ //stdout
@@ -142,6 +150,12 @@ module.exports = exports = function(module, funcs){
           return cb(err, rslt.trim());
         }, exec_options);
       }
+      //Git Commands
+      var git_path = cms.Config.git.bin_path || '';
+      var git_branch = Helper.ReplaceAll(publish_params.git_branch, '%%%SITE_ID%%%', deployment.site_id);
+      function gitExec(git_cmd, params, cb, exec_options){
+        return shellExec(path.join(git_path, git_cmd), params, cb, exec_options);
+      }
 
       function getPageRelativePath(page){
         var page_fpath = page.page_path||'';
@@ -149,9 +163,10 @@ module.exports = exports = function(module, funcs){
         while(page_fpath.substr(0,1)=='/') page_fpath = page_fpath.substr(1);
 
         var is_folder = (page_fpath[page_fpath.length-1]=='/');
-        if(is_folder) page_fpath += 'index.html';
+        if(is_folder) page_fpath += default_page;
         if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
         if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
+        page_fpath = publish_params.page_subfolder + page_fpath;
         return page_fpath;
       }
 
@@ -164,7 +179,7 @@ module.exports = exports = function(module, funcs){
         if(is_folder) throw new Error('Media path:'+media.media_path+' cannot be a folder');
         if(path.isAbsolute(media_fpath)) throw new Error('Media path:'+media.media_path+' cannot be absolute');
         if(media_fpath.indexOf('..') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
-        media_fpath = 'media/' + media_fpath;
+        media_fpath = publish_params.media_subfolder + media_fpath;
         return media_fpath;
       }
 
@@ -278,25 +293,25 @@ module.exports = exports = function(module, funcs){
             if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
             _.each(rslt[0], function(page){
 
-              var page_fpath = '';
               var page_urlpath = '';
+              var page_cmspath = '';
               try{
                 var relativePath = getPageRelativePath(page);
-                page_urlpath = '/' + relativePath;
-                page_fpath = (deployment.deployment_target_content_path||'/') + relativePath;
+                page_cmspath = '/' + relativePath;
+                page_urlpath = publish_params.content_url + relativePath;
               }
               catch(ex){ }
 
-              if(page_fpath){
-                page_keys[page.page_key] = page_urlpath;
-                page_redirects[page_urlpath] = page_fpath;
-                if(path.basename(page_urlpath)=='index.html'){
-                  var page_dir = ((page_urlpath=='/index.html') ? '/' : path.dirname(page_urlpath)+'/');
-                  page_redirects[page_dir] = page_fpath;
+              if(page_urlpath){
+                page_keys[page.page_key] = page_cmspath;
+                page_redirects[page_cmspath] = page_urlpath;
+                if(path.basename(page_cmspath)==default_page){
+                  var page_dir = ((page_cmspath=='/'+default_page) ? '/' : path.dirname(page_cmspath)+'/');
+                  page_redirects[page_dir] = page_urlpath;
                 }
-                else if(path.basename(page_urlpath).indexOf('.')<=0){
-                  if(page_urlpath[page_urlpath.length-1] != '/'){
-                    page_redirects[page_urlpath+'/'] = page_fpath;
+                else if(path.basename(page_cmspath).indexOf('.')<=0){
+                  if(page_cmspath[page_cmspath.length-1] != '/'){
+                    page_redirects[page_cmspath+'/'] = page_urlpath;
                   }
                 }
               }
@@ -321,13 +336,13 @@ module.exports = exports = function(module, funcs){
             if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
             _.each(rslt[0], function(media){
 
-              var media_fpath = '';
+              var media_urlpath = '';
               try{
-                media_fpath = (deployment.deployment_target_content_path||'/') + getMediaRelativePath(media);
+                media_urlpath = publish_params.content_url + getMediaRelativePath(media);
               }
               catch(ex){ }
 
-              if(media_fpath) media_keys[media.media_key] = media_fpath;
+              if(media_urlpath) media_keys[media.media_key] = media_urlpath;
             });
             return cb();
           });
@@ -482,73 +497,27 @@ module.exports = exports = function(module, funcs){
           appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; return cb(err); }
             if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment redirects')); }
-            var redirect_php_content = "<?php\n";
-            redirect_php_content += "return function($path=''){\n";
-            redirect_php_content += "  $upath = strtoupper($path);\n";
-            redirect_php_content += "  $rslt = '';\n";
-            redirect_php_content += "  if(0){}\n";
-            async.eachSeries(rslt[0], function(redirect, redirect_cb){
-              if((redirect.redirect_url_type||'').toUpperCase()=='BEGINS'){
-                redirect_php_content += "  else if(strpos($path,"+JSON.stringify((redirect.redirect_url||'').toString())+")===0)";
-                redirect_php_content += " $rslt = " + JSON.stringify(redirect.redirect_http_code.toUpperCase() + ' ' + redirect.redirect_dest) + ";\n";
+            
+            var redirect_files = {};
+            async.waterfall([
+              function(redirect_cb){
+                if(_.isFunction(publish_params.generate_redirect_files)){
+                  publish_params.generate_redirect_files(jsh, rslt[0], page_redirects, function(err, generated_redirect_files){
+                    if(err) return redirect_cb(err);
+                    redirect_files = generated_redirect_files||{};
+                    return redirect_cb();
+                  });
+                }
+                else return redirect_cb();
               }
-              else if((redirect.redirect_url_type||'').toUpperCase()=='REGEX'){
-                redirect_php_content += "  else if(preg_match('/'."+JSON.stringify((redirect.redirect_url||'').toString())+".'/', $path))";
-                redirect_php_content += " $rslt = " + JSON.stringify(redirect.redirect_http_code.toUpperCase() + ' ');
-                redirect_php_content += ".preg_replace('/'."+JSON.stringify((redirect.redirect_url||'').toString())+".'/', " + JSON.stringify(redirect.redirect_dest)+ ", $path);\n";
-              }
-              else{ //EXACT
-                redirect_php_content += "  else if($path=="+JSON.stringify((redirect.redirect_url||'').toString())+")";
-                redirect_php_content += " $rslt = " + JSON.stringify(redirect.redirect_http_code.toUpperCase() + ' ' + redirect.redirect_dest) + ";\n";
-              }
-              return redirect_cb();
-            }, function(err){
-              if(err) return cb(new Error('Error generating redirect file'));
-
-              for(var page_urlpath in page_redirects){
-                var page_fpath = page_redirects[page_urlpath];
-                redirect_php_content += "  else if($path=="+JSON.stringify((page_urlpath||'').toString())+")";
-                redirect_php_content += " $rslt = " + JSON.stringify('FILE ' + page_fpath) + ";\n";
-              }
-
-              redirect_php_content += "  return $rslt;\n";
-              redirect_php_content += "};\n";
-              redirect_php_content += "?>\n";
-
-              var redirect_files = {};
-              redirect_files['config/redirect.php'] = redirect_php_content;
-              redirect_files['config/redirectResolve.php'] = [
-                "<?php",
-                "if(!in_array(getenv('EC_ENV'), array('localdev','stg0','stg1'))) return;",
-                "$router = require('redirect.php');",
-                "if(isset($_GET['path'])) echo $router($_GET['path']);",
-                "return;",
-                "?>"
-              ].join('\n');
-              redirect_files['config/getFile.php'] = [
-                "<?php",
-                "if(!in_array(getenv('EC_ENV'), array('localdev','stg0','stg1'))){ return; }",
-                "if(!isset($_GET['path']) || !$_GET['path']) return;",
-                "$basePath = realpath(dirname(__DIR__));",
-                "$relativePath = $_GET['path'];",
-                "if($relativePath[0]=='/') return;",
-                "if(strlen($relativePath) > 512) return;",
-                "$path = $basePath.'/'.$relativePath;",
-                "if(realpath($path) !== $path) return;",
-                "if(preg_match('/[[:cntrl:]]/', $path)) return;",
-                "$fext = pathinfo($path, PATHINFO_EXTENSION);",
-                "if($fext !== 'html') return;",
-                "echo base64_encode(file_get_contents($path));",
-                "return;",
-                "?>"
-              ].join('\n');
-
+            ], function(err){
+              if(err) return cb(err);
               async.eachOfSeries(redirect_files, function(fcontent, fpath, redirect_cb){
                 site_files[fpath] = {
                   md5: crypto.createHash('md5').update(fcontent).digest("hex")
                 };
                 fpath = path.join(publish_path, fpath);
-
+  
                 HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
                   if(err) return redirect_cb(err);
                   //Save redirect to publish folder
@@ -556,6 +525,19 @@ module.exports = exports = function(module, funcs){
                 });
               }, cb);
             });
+          });
+        },
+
+        //Exec Pre-Deployment Shell Command
+        function (cb) {
+          if(!publish_params.exec_pre_deployment) return cb();
+          shellExec(
+            publish_params.exec_pre_deployment.cmd,
+            publish_params.exec_pre_deployment.params, function(err, rslt){
+            if(err) return cb(err);
+            if(rslt) rslt = rslt.trim();
+            jsh.Log.info(rslt);
+            return cb();
           });
         },
 
@@ -580,91 +562,31 @@ module.exports = exports = function(module, funcs){
 
         //Deploy to target
         function (cb) {
-          var dpath = (deployment.deployment_target_path||'').toString();
-          if(!dpath) return cb(new Error('Invalid Deployment Target Path'));
+          var deploy_path = (deployment.deployment_target_publish_path||'').toString();
+          if(!deploy_path) return cb(new Error('Invalid Deployment Target Path'));
 
-          if(dpath.substr(0,5)=='s3://'){
+          if(deploy_path.indexOf('file://')==0){
+            //File Deployment
+            return funcs.deploy_fs(publish_path, deploy_path.substr(7), site_files, cb);
+          }
+          else if(deploy_path.indexOf('s3://')==0){
             //Amazon S3 Deployment
-            var s3url = url.parse(dpath);
-            var AWS = require('aws-sdk');
-            var s3 = new AWS.S3(cms.Config.aws_key);
-            var bucket = s3url.hostname;
-            var bucket_prefix = s3url.path.substr(1);
-            if(!bucket_prefix || (bucket_prefix[bucket_prefix.length-1]!='/')) bucket_prefix += '/';
-
-            var s3_files = {};
-            var s3_upload = [];
-            var s3_delete = [];
-
-            async.waterfall([
-              //Get list of all files
-              function(s3_cb){
-                var list_complete = false;
-                var next_token = undefined;
-                jsh.Log.info('Getting files from '+dpath);
-                async.until(function(){ return list_complete; }, function(list_cb){
-                  s3.listObjectsV2({ Bucket: bucket, Prefix: bucket_prefix, ContinuationToken: next_token }, function(err, rslt) {
-                    if(err) return list_cb(err);
-                    _.each(rslt.Contents, function(file){
-                      var fname = file.Key.substr(bucket_prefix.length);
-                      if(fname.substr(0,1)=='/') fname = fname.substr(1);
-                      if(fname) s3_files[fname] = file;
-                    });
-                    list_complete = !rslt.IsTruncated;
-                    next_token = rslt.NextContinuationToken;
-                    return list_cb();
-                  });
-                }, s3_cb);
-              },
-
-              //Decide which files need to be uploaded or deleted
-              function(s3_cb){
-                for(var fname in s3_files){
-                  if(fname in site_files){
-                    var site_md5 = site_files[fname].md5;
-                    var s3_md5 = s3_files[fname].ETag.replace(/"/g,'');
-                    if(site_md5 != s3_md5) s3_upload.push(fname);
-                  }
-                  else {
-                    s3_delete.push(fname);
-                  }
-                }
-                for(var fname in site_files){
-                  if(!(fname in s3_files)) s3_upload.push(fname);
-                }
-                if(!s3_delete.length && !s3_upload.length) jsh.Log.info('No changes required');
-                return s3_cb();
-              },
-
-              //Upload new files to S3
-              function(s3_cb){
-                async.eachSeries(s3_upload, function(page_path, page_cb){
-                  var page_bpath = bucket_prefix + page_path;
-                  var page_fpath = path.join(publish_path, page_path);
-                  var fstream = fs.createReadStream(page_fpath);
-                  jsh.Log.info('Uploading: '+page_path);
-                  s3.upload({ Bucket: bucket, Key: page_bpath, Body: fstream }, function(err, data){
-                    if(err) return page_cb(err);
-                    return page_cb();
-                  });
-                }, s3_cb);
-              },
-
-              //Delete removed files from S3
-              function(s3_cb){
-                async.eachSeries(s3_delete, function(page_path, page_cb){
-                  var page_bpath = bucket_prefix + page_path;
-                  jsh.Log.info('Deleting: '+page_path);
-                  s3.deleteObject({ Bucket: bucket, Key: page_bpath }, function(err, data){
-                    if(err) return page_cb(err);
-                    return page_cb();
-                  });
-                }, s3_cb);
-              }
-
-            ], cb);
+            return funcs.deploy_s3(publish_path, deploy_path, site_files, cb);
           }
           else return cb(new Error('Deployment Target path not supported'));
+        },
+
+        //Exec Post-Deployment Shell Command
+        function (cb) {
+          if(!publish_params.exec_post_deployment) return cb();
+          shellExec(
+            publish_params.exec_post_deployment.cmd,
+            publish_params.exec_post_deployment.params, function(err, rslt){
+            if(err) return cb(err);
+            if(rslt) rslt = rslt.trim();
+            jsh.Log.info(rslt);
+            return cb();
+          });
         },
 
         function (cb){
@@ -686,6 +608,171 @@ module.exports = exports = function(module, funcs){
         }
       });
     });
+  }
+
+  exports.deploy_fs = function(publish_path, deploy_path, site_files, cb){
+    var appsrv = this;
+    var jsh = module.jsh;
+
+    //Get list of folders
+    var folders = {};
+    var normalized_files = {};
+    for(var filename in site_files){
+      normalized_files[path.normalize(filename)] = filename;
+      var foldername = path.dirname(filename);
+      if((foldername=='.')||(foldername=='..')) continue;
+      while(!(foldername in folders)){
+        foldername = path.normalize(foldername);
+        folders[foldername] = true;
+        foldername = path.dirname(foldername);
+        if((foldername=='.')||(foldername=='..')) break;
+      }
+    }
+    
+    var found_files = {};
+    var found_folders = {};
+
+    async.waterfall([
+
+      //Delete extra files / folders
+      function(fs_cb){
+        HelperFS.funcRecursive(deploy_path, function (filepath, relativepath, file_cb) { //filefunc
+          var delfunc = function(){
+            jsh.Log.info('Deleting '+filepath);
+            fs.unlink(filepath, file_cb);
+          };
+          //Always delete destination files
+          if(relativepath in normalized_files){
+            HelperFS.fileHash(filepath, 'md5', function(err, hash){
+              if(err){ jsh.Log.info('Error generating file hash for '+filepath+': '+err.toString()); return delfunc(); }
+              if(hash != site_files[normalized_files[relativepath]].md5){
+                return file_cb();
+              }
+              found_files[relativepath] = true;
+              return file_cb();
+            });
+          }
+          else delfunc();
+        }, function (dirpath, relativepath, dir_cb) { //dirfunc
+          if(!relativepath) return dir_cb();
+          if(relativepath in folders){
+            found_folders[relativepath] = true;
+            return dir_cb();
+          }
+          jsh.Log.info('Deleting '+dirpath);
+          HelperFS.rmdirRecursive(dirpath, dir_cb);
+        }, { 
+          file_before_dir: true,
+        }, fs_cb);
+      },
+
+      //Create new folder structure
+      function(fs_cb){
+        var foldernames = _.keys(folders);
+        foldernames.sort();
+        async.eachSeries(foldernames, function(foldername, folder_cb){
+          if(foldername in found_folders) return folder_cb();
+          jsh.Log.info('Creating folder '+foldername);
+          HelperFS.createFolderRecursive(path.join(deploy_path, foldername), folder_cb);
+        }, fs_cb);
+      },
+
+      //Copy files
+      function(fs_cb){
+        async.eachOfSeries(normalized_files, function(val, fname, file_cb){
+          if(fname in found_files) return file_cb();
+          var srcpath = path.join(publish_path, fname);
+          var dstpath = path.join(deploy_path, fname);
+          jsh.Log.info('Copying file '+dstpath);
+          HelperFS.copyFile(srcpath, dstpath, file_cb);
+        }, fs_cb);
+      }
+    ], cb);
+  }
+
+  exports.deploy_s3 = function(publish_path, deploy_path, site_files, cb){
+    var appsrv = this;
+    var jsh = module.jsh;
+    var cms = jsh.Modules['jsHarmonyCMS'];
+
+    var s3url = url.parse(deploy_path);
+    var AWS = require('aws-sdk');
+    var s3 = new AWS.S3(cms.Config.aws_key);
+    var bucket = s3url.hostname;
+    var bucket_prefix = s3url.path.substr(1);
+    if(!bucket_prefix || (bucket_prefix[bucket_prefix.length-1]!='/')) bucket_prefix += '/';
+
+    var s3_files = {};
+    var s3_upload = [];
+    var s3_delete = [];
+
+    async.waterfall([
+      //Get list of all files
+      function(s3_cb){
+        var list_complete = false;
+        var next_token = undefined;
+        jsh.Log.info('Getting files from '+deploy_path);
+        async.until(function(){ return list_complete; }, function(list_cb){
+          s3.listObjectsV2({ Bucket: bucket, Prefix: bucket_prefix, ContinuationToken: next_token }, function(err, rslt) {
+            if(err) return list_cb(err);
+            _.each(rslt.Contents, function(file){
+              var fname = file.Key.substr(bucket_prefix.length);
+              if(fname.substr(0,1)=='/') fname = fname.substr(1);
+              if(fname) s3_files[fname] = file;
+            });
+            list_complete = !rslt.IsTruncated;
+            next_token = rslt.NextContinuationToken;
+            return list_cb();
+          });
+        }, s3_cb);
+      },
+
+      //Decide which files need to be uploaded or deleted
+      function(s3_cb){
+        for(var fname in s3_files){
+          if(fname in site_files){
+            var site_md5 = site_files[fname].md5;
+            var s3_md5 = s3_files[fname].ETag.replace(/"/g,'');
+            if(site_md5 != s3_md5) s3_upload.push(fname);
+          }
+          else {
+            s3_delete.push(fname);
+          }
+        }
+        for(var fname in site_files){
+          if(!(fname in s3_files)) s3_upload.push(fname);
+        }
+        if(!s3_delete.length && !s3_upload.length) jsh.Log.info('No changes required');
+        return s3_cb();
+      },
+
+      //Upload new files to S3
+      function(s3_cb){
+        async.eachSeries(s3_upload, function(page_path, page_cb){
+          var page_bpath = bucket_prefix + page_path;
+          var page_fpath = path.join(publish_path, page_path);
+          var fstream = fs.createReadStream(page_fpath);
+          jsh.Log.info('Uploading: '+page_path);
+          s3.upload({ Bucket: bucket, Key: page_bpath, Body: fstream }, function(err, data){
+            if(err) return page_cb(err);
+            return page_cb();
+          });
+        }, s3_cb);
+      },
+
+      //Delete removed files from S3
+      function(s3_cb){
+        async.eachSeries(s3_delete, function(page_path, page_cb){
+          var page_bpath = bucket_prefix + page_path;
+          jsh.Log.info('Deleting: '+page_path);
+          s3.deleteObject({ Bucket: bucket, Key: page_bpath }, function(err, data){
+            if(err) return page_cb(err);
+            return page_cb();
+          });
+        }, s3_cb);
+      }
+
+    ], cb);
   }
 
   return exports;

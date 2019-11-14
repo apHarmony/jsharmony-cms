@@ -1,4 +1,6 @@
-.<%=model.class%>_branch_page_path {
+.<%=model.class%>_branch_page_path,
+.<%=model.class%>_branch_media_path,
+.<%=model.class%>_branch_redirect_url {
   font-family:monospace;
 }
 .spacer_<%=model.class%> {

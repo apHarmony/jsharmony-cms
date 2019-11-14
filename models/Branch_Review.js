@@ -37,13 +37,13 @@ jsh.App[modelid] = new (function(){
       var branch_page_action = branch_page.branch_page_action.toUpperCase();
       var title_text = '';
       if(branch_page_action=='ADD'){
-        title_text = 'ADD &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_page.new_page_path);
+        title_text = 'ADD PAGE &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_page.new_page_path);
       }
       else if(branch_page_action=='DELETE'){
-        title_text = 'DELETE '+XExt.escapeHTML(branch_page.old_page_path);
+        title_text = 'DELETE PAGE '+XExt.escapeHTML(branch_page.old_page_path);
       }
       else if(branch_page_action=='UPDATE'){
-        title_text = 'UPDATE '+XExt.escapeHTML(branch_page.new_page_path);
+        title_text = 'UPDATE PAGE '+XExt.escapeHTML(branch_page.new_page_path);
         if(branch_page.new_page_path!=branch_page.old_page_path){
           title_text += '<br/>RENAME TO ' + XExt.escapeHTML(branch_page.new_page_path);
         }
@@ -86,13 +86,13 @@ jsh.App[modelid] = new (function(){
       var branch_media_action = branch_media.branch_media_action.toUpperCase();
       var title_text = '';
       if(branch_media_action=='ADD'){
-        title_text = 'ADD &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_media.new_media_path);
+        title_text = 'ADD MEDIA &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_media.new_media_path);
       }
       else if(branch_media_action=='DELETE'){
-        title_text = 'DELETE '+XExt.escapeHTML(branch_media.old_media_path);
+        title_text = 'DELETE MEDIA '+XExt.escapeHTML(branch_media.old_media_path);
       }
       else if(branch_media_action=='UPDATE'){
-        title_text = 'UPDATE '+XExt.escapeHTML(branch_media.new_media_path);
+        title_text = 'UPDATE MEDIA '+XExt.escapeHTML(branch_media.new_media_path);
         if(branch_media.new_media_path!=branch_media.old_media_path){
           title_text += '<br/>RENAME TO ' + XExt.escapeHTML(branch_media.new_media_path);
         }
@@ -104,15 +104,18 @@ jsh.App[modelid] = new (function(){
       var branch_redirect_action = branch_redirect.branch_redirect_action.toUpperCase();
       var title_text = '';
       if(branch_redirect_action=='ADD'){
-        title_text = 'ADD &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_redirect.new_redirect_url);
+        title_text = 'ADD REDIRECT &nbsp;&nbsp;&nbsp;'+XExt.escapeHTML(branch_redirect.new_redirect_url);
       }
       else if(branch_redirect_action=='DELETE'){
-        title_text = 'DELETE '+XExt.escapeHTML(branch_redirect.old_redirect_url);
+        title_text = 'DELETE REDIRECT '+XExt.escapeHTML(branch_redirect.old_redirect_url);
       }
       else if(branch_redirect_action=='UPDATE'){
-        title_text = 'UPDATE '+XExt.escapeHTML(branch_redirect.new_redirect_url);
+        title_text = 'UPDATE REDIRECT '+XExt.escapeHTML(branch_redirect.new_redirect_url);
         if(branch_redirect.new_redirect_url!=branch_redirect.old_redirect_url){
-          title_text += '<br/>RENAME TO ' + XExt.escapeHTML(branch_redirect.new_redirect_url);
+          title_text += '<br/>New URL: ' + XExt.escapeHTML(branch_redirect.new_redirect_url);
+        }
+        if(branch_redirect.new_redirect_dest!=branch_redirect.old_redirect_dest){
+          title_text += '<br/>New Destination: ' + XExt.escapeHTML(branch_redirect.new_redirect_dest);
         }
       }
       jdiff.append($('<h4 class="'+xmodel.class+'_branch_redirect_url">'+title_text+'</h4>'));

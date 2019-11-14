@@ -19,8 +19,7 @@
       { "name": "deployment_target_name", "type": "varchar", "length": 256, "null": false, "unique": true },
       { "name": "deployment_target_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
-      { "name": "deployment_target_path", "type": "varchar", "length": 2048 },
-      { "name": "deployment_target_content_path", "type": "varchar", "length": 2048 },
+      { "name": "deployment_target_publish_path", "type": "varchar", "length": 2048 },
       { "name": "deployment_target_params", "type": "varchar", "length": -1 },
       
       { "name": "deployment_target_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
@@ -109,6 +108,7 @@
           //Verify deployment_target site_id matches branch site_id
           "errorif(exists(select 1 where (select site_id from {schema}.branch where branch_id=inserted(branch_id))<>(select site_id from {schema}.deployment_target where deployment_target_id=inserted(deployment_target_id))),'Deployment Target and Branch Sites do not match')",
           //Insert branch
+          "clear_insert_identity()",
           "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_id), 'DEPLOYMENT', inserted(deployment_tag), 'ARCHIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_id)), null)",
           //Insert deployment
           "insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts) values(inserted(deployment_tag), last_insert_identity(), inserted(deployment_date), inserted(deployment_target_id), 'PENDING')",

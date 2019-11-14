@@ -2,6 +2,7 @@
   "Page_Tree_Listing": {
     "layout":"grid",
     "table":"{schema}.v_my_page",
+    "sqlwhere":"page_is_folder = 0",
     "actions":"BIUD",
     "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
     "caption":["Page","Pages"],
@@ -16,15 +17,19 @@
     "css":[
       ".xform<%=model.class%> .xtbl tbody td.xgrid_action_cell.delete { border-right:0px; }",
       ".xform<%=model.class%> .xgrid_action_thead.delete { border-right:0px; }",
+      ".xform<%=model.class%> td.page_filename { white-space:nowrap;width:100%;border-left:0; }",
+      ".xform<%=model.class%> td.page_filename img { position:relative; top:2px; margin-right:4px; }",
       ".xbodyhead.xelem<%=model.class%> { display:none !important; }"
     ],
-    "oninit": "xmodel.controller.grid.OnLoadError = function(err){ if(err && err.Number==-14){ XExt.Alert('Please checkout a branch', function(){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true }) }); return true; } }",
+    "noresultsmessage": "<a href='#' class='xgrid_norecords' onclick=\"<%-js('_this.addPage();')%>\"><img src='<%-jsh._PUBLICURL%>images/icon_insert.png' alt='Add' title='Add' />Add Page</a>",
+    "oninit": "_this.oninit(xmodel);",
+    "onrowbind": "_this.onrowbind(xmodel,jobj,datarow);",
     "fields": [
       {"name":"page_key","control":"hidden","actions":"B","key":true},
       {"name":"page_folder","control":"hidden","actions":"B"},
       {"name":"page_path","caption":"URL","control":"hidden","actions":"BIU"},
       {"name":"page_title","caption":"Title","control":"hidden","actions":"BIU"},
-      {"name":"page_filename","caption":"File","actions":"B","control":"label","cellstyle":"white-space:nowrap;width:100%;border-left:0;","link":"js:_this.openPageEditor(this)","captionstyle":"width:50%;"},
+      {"name":"page_filename","caption":"File","actions":"B","control":"html","value":"<img src='/images/icon_file.png' class='' /><%=data.page_filename%>","cellclass":"page_filename","link":"js:_this.openPageEditor(this)","captionstyle":"width:50%;"},
       {"name":"template_id","caption":"Template","control":"dropdown","lov":{ "values": "#CMS_TEMPLATES" },"actions":"BIU","validate":["Required"]},
       {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"},
       {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},

@@ -1,0 +1,14 @@
+.<%=model.class%>_Change_Status {
+  display: inline-block;
+}
+.<%=model.class%>_Change_Status input {
+  margin: 0 3px 0 0;
+  position:relative;
+  top:3px;
+}
+.<%=model.class%>_Change_Status td.head {
+  font-weight:bold;
+  padding-right:5px;
+  vertical-align:top;
+  padding-top:1px;
+}

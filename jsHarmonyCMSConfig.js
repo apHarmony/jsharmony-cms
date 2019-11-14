@@ -43,6 +43,22 @@ function jsHarmonyCMSConfig(){
     large: { resize: [2048, 1538] }
   }
 
+  this.deployment_target_params = { //Default deployment target parameters
+    page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
+    media_subfolder: '',  //Relative path from publish folder to media subfolder, ex. 'media/'
+    content_url: '/',     //Absolute path from website root to CMS publish folder, ex. '/content/'
+    exec_pre_deployment: undefined,  //Execute shell command after populating publish folder, before deployment
+                                     //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
+    exec_post_deployment: undefined, //Execute shell command after deployment
+                                     //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
+    generate_redirect_files: undefined, //Execute when generating redirect files
+                                        //function(jsh, redirects, page_redirects, redirects_cb){
+                                        //  var redirect_files = { file_path1: file_contents1, file_path2: file_contents2 };
+                                        //  return redirects_cb(err, redirect_files);
+                                        //}
+    git_branch: 'site_%%%SITE_ID%%%', //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
+  }
+
   this.deploymentJobDelay = (1000 * 60 * 60);
 
   this.debug_params = {
