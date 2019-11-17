@@ -483,7 +483,7 @@ module.exports = exports = function(module, funcs){
         },
 
         //Get list of all redirects
-        //Generate redirect file and save to 
+        //Generate redirect file and save to disk
         function (cb){
           var sql = 'select \
             r.redirect_key, r.redirect_url, r.redirect_url_type, r.redirect_dest, r.redirect_http_code \
@@ -522,6 +522,79 @@ module.exports = exports = function(module, funcs){
                   if(err) return redirect_cb(err);
                   //Save redirect to publish folder
                   fs.writeFile(fpath, fcontent, 'utf8', redirect_cb);
+                });
+              }, cb);
+            });
+          });
+        },
+
+        //Get all menus
+        //Generate menu files and save to disk
+        function (cb){
+          var sql = 'select \
+            m.menu_key, m.menu_file_id, m.menu_name, m.menu_tag \
+            from '+(module.schema?module.schema+'.':'')+'menu m \
+            inner join '+(module.schema?module.schema+'.':'')+'branch_menu bm on bm.menu_id = m.menu_id \
+            inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id'
+            ;
+          var sql_ptypes = [dbtypes.BigInt];
+          var sql_params = { deployment_id: deployment_id };
+          appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return cb(err); }
+            if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment menus')); }
+
+            var menus = rslt[0];
+            
+            var menu_output_files = {};
+            async.waterfall([
+              //Get menus from disk and replace URLs
+              function(menu_cb){
+                async.eachSeries(menus, function(menu, menu_file_cb){
+                  funcs.getClientMenu(menu, function(err, menu_content){
+                    if(err) return menu_file_cb(err);
+    
+                    //Replace URLs
+                    menu.menu_items = menu_content.menu_items;
+                    _.each(menu.menu_items, function(menu_item){
+                      if((menu_item.menu_item_link_type||'').toString()=='PAGE'){
+                        var page_key = parseInt(menu_item.menu_item_link_dest);
+                        if(!(page_key in page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
+                        menu_item.menu_item_link_dest = page_keys[page_key];
+                      }
+                      else if((menu_item.menu_item_link_type||'').toString()=='MEDIA'){
+                        var media_key = parseInt(menu_item.menu_item_link_dest);
+                        if(!(media_key in media_keys)) throw new Error('Menu '+menu.menu_tag+' links to missing Media ID # '+media_key.toString());
+                        menu_item.menu_item_link_dest = media_keys[media_key];
+                      }
+                    });
+                    return menu_file_cb();
+                  });
+                }, menu_cb);
+              },
+
+              //Generate menus
+              function(menu_cb){
+                if(_.isFunction(publish_params.generate_menu_files)){
+                  publish_params.generate_menu_files(jsh, menus, function(err, generated_menu_files){
+                    if(err) return menu_cb(err);
+                    menu_output_files = generated_menu_files||{};
+                    return menu_cb();
+                  });
+                }
+                else return menu_cb();
+              }
+            ], function(err){
+              if(err) return cb(err);
+              async.eachOfSeries(menu_output_files, function(fcontent, fpath, menu_cb){
+                site_files[fpath] = {
+                  md5: crypto.createHash('md5').update(fcontent).digest("hex")
+                };
+                fpath = path.join(publish_path, fpath);
+  
+                HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
+                  if(err) return menu_cb(err);
+                  //Save menu to publish folder
+                  fs.writeFile(fpath, fcontent, 'utf8', menu_cb);
                 });
               }, cb);
             });

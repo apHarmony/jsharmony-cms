@@ -11,6 +11,7 @@
       "(select site_name from {schema}.v_my_branch_desc where branch_id=@branch_id) source_site_name,",
       "(select branch_type from {schema}.v_my_branch_desc where branch_id=@branch_id) source_branch_type,",
       "'USER' new_branch_type,",
+      "'COPY' new_branch_changes,",
       "(select branch_name from {schema}.v_my_branch_desc where branch_id=@branch_id) new_branch_name"
     ],
     "sqlupdate":"insert into {schema}.v_my_current_branch(branch_parent_id, branch_type, branch_name, new_branch_changes) values(@branch_id, @new_branch_type, @new_branch_name, @new_branch_changes);",

@@ -139,7 +139,7 @@ module.exports = exports = function(module, funcs){
     if(!req.params || !req.params.page_key) return next();
     var page_key = req.params.page_key;
 
-    //Return updated LOV
+    //Get page
     sql_ptypes = [dbtypes.BigInt];
     sql_params = { 'page_key': page_key };
     validate = new XValidate();

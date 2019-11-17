@@ -8,19 +8,10 @@ jsh.App[modelid] = new (function(){
   this.state = _.extend({}, this.state_default);
 
   this.oninit = function(){
-    /*
-    xmodel.controller.grid.OnLoadError = function(err){
-      if(err && err.Number==-14){
-        XExt.Alert('Please checkout a branch', function(){
-          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true })
-        });
-        return true;
-      }
-    }
-    */
-    if(jsh._GET.CKEditor){
+    jsh.System.RequireBranch(xmodel);
+    if(jsh._GET.CKEditor) this.isInEditor = true;
+    if(this.isInEditor){
       jsh.$root('.xbody').addClass('InEditor');
-      this.isInEditor = true;
     }
 
     $(window).bind('resize', _this.onresize);

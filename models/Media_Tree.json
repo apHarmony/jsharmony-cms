@@ -8,10 +8,7 @@
     "caption":["Media","Media"],
     "unbound":true,
     "menu":"jsHarmonyCMS/Media_Listing",
-    "breadcrumbs":{
-      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
-      "sql": "select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"
-    },
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
       { "link":"js:_this.addFile();","icon":"add","text":"Add File" },
       { "link":"update:Media_Listing","icon":"search","text":"Search","bindings":{} },
@@ -114,7 +111,8 @@
       ".xbody_<%=model.class%> .bcrumbs { width: auto; display:inline-block; }",
       ".<%=model.class%>_file_info { display:none; }"
     ],
-    "popup": [980, 600]
+    "js": "jsh.App[modelid].isInEditor = true;",
+    "popup": [1000, 600]
   },
   "Media_Browser_Tab": {
     "inherits": "Media_Browser",

@@ -63,7 +63,12 @@ module.exports = exports = function(module, funcs){
       var branch_pages = [];
       var branch_media = [];
       var branch_redirects = [];
+      var branch_menus = [];
       var pages = {};
+      var media = {};
+      var menus = {};
+      var page_keys = {};
+      var media_keys = {};
 
       async.waterfall([
 
@@ -79,6 +84,24 @@ module.exports = exports = function(module, funcs){
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_media = rslt[0];
+            return cb();
+          });
+        },
+
+        //Get all media
+        function(cb){
+          var sql = "select media_id,media_key,media_file_id,media_desc,media_path \
+            from "+(module.schema?module.schema+'.':'')+"media media \
+            where media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action is not null) or \
+                  media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE')";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]){
+              _.each(rslt[0], function(media){
+                media[media.media_id] = media;
+                media_keys[media.media_key] = media;
+              });
+            }
             return cb();
           });
         },
@@ -126,13 +149,14 @@ module.exports = exports = function(module, funcs){
             if(rslt && rslt[0]){
               _.each(rslt[0], function(page){
                 pages[page.page_id] = page;
+                page_keys[page.page_key] = page;
               });
             }
             return cb();
           });
         },
 
-        //Get file content
+        //Get page file content
         function(cb){
           async.eachOfSeries(pages, function(page, page_id, page_cb){
             funcs.getClientPage(page, function(err, clientPage){
@@ -155,7 +179,7 @@ module.exports = exports = function(module, funcs){
           }, cb);
         },
 
-        //Perform diff
+        //Perform page diff
         function(cb){
 
           _.each(branch_pages, function(branch_page){
@@ -180,13 +204,77 @@ module.exports = exports = function(module, funcs){
           return cb();
         },
 
+        //Get all branch_menu
+        function(cb){
+          var sql = "select branch_menu.menu_key, branch_menu.branch_menu_action, branch_menu.menu_id, branch_menu.menu_orig_id, \
+              old_menu.menu_name old_menu_name, old_menu.menu_tag old_menu_tag, old_menu.menu_file_id old_menu_file_id,\
+              new_menu.menu_name new_menu_name, new_menu.menu_tag new_menu_tag, new_menu.menu_file_id new_menu_file_id\
+            from "+(module.schema?module.schema+'.':'')+"branch_menu branch_menu \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu old_menu on old_menu.menu_id=branch_menu.menu_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu new_menu on new_menu.menu_id=branch_menu.menu_id \
+            where branch_id=@branch_id and branch_menu_action is not null";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) branch_menus = rslt[0];
+            return cb();
+          });
+        },
+
+        //Get all menus
+        function(cb){
+          var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
+            from "+(module.schema?module.schema+'.':'')+"menu menu \
+            where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
+                  menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]){
+              _.each(rslt[0], function(menu){
+                menus[menu.menu_id] = menu;
+              });
+            }
+            return cb();
+          });
+        },
+
+        //Get menu file content
+        function(cb){
+          async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
+            funcs.getClientMenu(menu, function(err, menu_content){
+              if(err) return menu_cb(err);
+              if(!menu_content) return menu_cb(null);
+              menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, page_keys, media_keys);
+              return menu_cb();
+            });
+          }, cb);
+        },
+
+        //Perform menu diff
+        function(cb){
+          _.each(branch_menus, function(branch_menu){
+            if(branch_menu.branch_menu_action.toUpperCase()=='UPDATE'){
+              var old_menu = menus[branch_menu.menu_orig_id];
+              var new_menu = menus[branch_menu.menu_id];
+              
+              branch_menu.diff = {};
+              var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
+              if(menu_items_diff) branch_menu.diff.menu_items = menu_items_diff;
+              _.each(['menu_name','menu_tag'], function(key){
+                if(old_menu[key] != new_menu[key]) branch_menu.diff[key] = new_menu[key];
+              });
+            }
+          });
+          return cb();
+        },
+
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
           '_success': 1,
           'branch_pages': branch_pages,
           'branch_redirects': branch_redirects,
-          'branch_media': branch_media
+          'branch_media': branch_media,
+          'branch_menus': branch_menus
         }));
       });
       return;

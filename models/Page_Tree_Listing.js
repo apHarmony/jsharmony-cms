@@ -10,15 +10,24 @@ jsh.App[modelid] = new (function(){
         return true;
       }
     }
+
+    if(XExt.hasAction(xmodel.actions, 'IU')){
+      xmodel.controller.grid.NoResultsMessage = "<a href='#' class='xgrid_norecords' onclick=\""+jsh._instance+".App['"+xmodel.id+"'].addPage(); return false;\"><img src='<%-jsh._PUBLICURL%>images/icon_insert.png' alt='Add' title='Add' />Add Page</a>";
+    }
+    else {
+      xmodel.controller.grid.NoResultsMessage = 'Folder is empty';
+    }
   }
 
   this.onrowbind = function(xmodel,jobj,datarow){
-    var page_key = parseInt(datarow.page_key||0);
-    jobj.find('.page_filename').contextmenu(function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key);
-    });
+    if(XExt.hasAction(xmodel.actions, 'IU')){
+      var page_key = parseInt(datarow.page_key||0);
+      jobj.find('.page_filename').contextmenu(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key);
+      });
+    }
   }
 
   this.openPageEditor = function(obj){ //obj || page_key
@@ -98,12 +107,19 @@ jsh.App[modelid] = new (function(){
   this.sendToEditor = function(obj){
     var rowid = $(obj).closest('tr').data('id');
     var page_key = xmodel.get('page_key', rowid);
+    var page_title = xmodel.get('page_title', rowid);
+    var page_path = xmodel.get('page_path', rowid);
 
     if(window.opener && jsh._GET.CKEditor){
       window.opener.postMessage('ckeditor:'+JSON.stringify({ page_key: page_key, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
       window.close();
     }
-    else XExt.Alert('Parent editor not found');
+    else {
+      var openerJSH = XExt.getOpenerJSH();
+      if(!openerJSH) return XExt.Alert('Parent editor not found');
+      window.opener.postMessage('cms_link_browser:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path  }), '*');
+      window.close();
+    }
   }
 
   this.getPage = function(page_key){

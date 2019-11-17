@@ -56,6 +56,11 @@ function jsHarmonyCMSConfig(){
                                         //  var redirect_files = { file_path1: file_contents1, file_path2: file_contents2 };
                                         //  return redirects_cb(err, redirect_files);
                                         //}
+    generate_menu_files: undefined, //Execute when generating menu files
+                                    //function(jsh, menus, menus_cb){
+                                    //  var menu_files = { file_path1: file_contents1, file_path2: file_contents2 };
+                                    //  return menus_cb(err, menu_files);
+                                    //}
     git_branch: 'site_%%%SITE_ID%%%', //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
   }
 

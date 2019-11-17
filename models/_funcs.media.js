@@ -302,7 +302,7 @@ module.exports = exports = function(module, funcs){
       });
     }
     else if (verb == 'post'){
-      if (!Helper.hasModelAction(req, model, 'D')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
       if(!req.params || !req.params.media_key) return next();
       var media_key = req.params.media_key;

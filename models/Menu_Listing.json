@@ -2,23 +2,22 @@
   "Menu_Listing": {
     "layout":"grid",
     "table":"{schema}.v_my_menu",
-    "actions":"BUD",
-    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
     "caption":["Menu","Menus"],
     "title":"Menus",
     "reselectafteredit": "row",
     "sort":["^menu_name"],
     "menu":"jsHarmonyCMS/Menu_Listing",
-    "breadcrumbs":{
-      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
-      "sql": "select branch_desc, deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()"
-    },
-    "oninit": "xmodel.controller.grid.OnLoadError = function(err){ if(err && err.Number==-14){ XExt.Alert('Please checkout a branch', function(){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true }) }); return true; } }",
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "oninit": "jsh.System.RequireBranch(xmodel);",
     "fields": [
       {"name":"menu_key","caption":"Key","control":"hidden","key":true},
       {"name":"menu_name","caption":"Menu Name","control":"textbox_M"},
       {"name":"menu_tag","caption":"Tag","control":"textbox_M"},
-      {"name":"menu_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"}
+      {"name":"menu_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"name":"menu_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(menu_muser))","control":"label","actions":"B","cellstyle":"white-space:nowrap;"},
+      {"control":"html","caption":"Edit","link":"js:_this.openMenuEditor(this)","value":"<img src='/images/icon_edit.png' class='xicon' />"}
     ]
   }
 }

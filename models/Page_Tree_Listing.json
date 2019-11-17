@@ -21,7 +21,6 @@
       ".xform<%=model.class%> td.page_filename img { position:relative; top:2px; margin-right:4px; }",
       ".xbodyhead.xelem<%=model.class%> { display:none !important; }"
     ],
-    "noresultsmessage": "<a href='#' class='xgrid_norecords' onclick=\"<%-js('_this.addPage();')%>\"><img src='<%-jsh._PUBLICURL%>images/icon_insert.png' alt='Add' title='Add' />Add Page</a>",
     "oninit": "_this.oninit(xmodel);",
     "onrowbind": "_this.onrowbind(xmodel,jobj,datarow);",
     "fields": [

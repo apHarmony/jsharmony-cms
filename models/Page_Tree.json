@@ -8,10 +8,7 @@
     "caption":["Page","Pages"],
     "unbound":true,
     "menu":"jsHarmonyCMS/Page_Listing",
-    "breadcrumbs":{
-      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
-      "sql": "select branch_desc, deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()"
-    },
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
       { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
       { "link":"Page_Listing","icon":"search","text":"Search","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} }
@@ -56,11 +53,14 @@
     "inherits": "Page_Tree",
     "title": "",
     "buttons": [],
+    "actions":"B",
     "css": [
       ".xbody_<%=model.class%> .bcrumbs { width: auto; display:inline-block; }"
     ],
-    "popup": [980, 600],
+    "js": "jsh.App[modelid].isInEditor = true;",
+    "popup": [1000, 600],
     "fields":[
+      {"name":"page_folder","controlparams":{ "item_context_menu":[] } },
       {"name":"Page_Tree_Listing","target":"Page_Browser_Listing"}
     ]
   },

@@ -69,8 +69,8 @@
       { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 40000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
       { "menu_group": "S", "menu_id": 40001, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/Media_Listing", "menu_seq": 40001, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
 
-      { "menu_group": "S", "menu_id": 450, "menu_id_parent": 1, "menu_name": "Menu", "menu_seq": 45000, "menu_desc": "Menu", "menu_cmd": "jsHarmonyCMS/Menu_Listing" },
-      { "menu_group": "S", "menu_id": 45001, "menu_id_parent": 450, "menu_name": "jsHarmonyCMS/Menu_Listing", "menu_seq": 45001, "menu_desc": "Menu", "menu_cmd": "jsHarmonyCMS/Menu_Listing" },
+      { "menu_group": "S", "menu_id": 450, "menu_id_parent": 1, "menu_name": "Menus", "menu_seq": 45000, "menu_desc": "Menus", "menu_cmd": "jsHarmonyCMS/Menu_Listing" },
+      { "menu_group": "S", "menu_id": 45001, "menu_id_parent": 450, "menu_name": "jsHarmonyCMS/Menu_Listing", "menu_seq": 45001, "menu_desc": "Menus", "menu_cmd": "jsHarmonyCMS/Menu_Listing" },
 
       { "menu_group": "S", "menu_id": 500, "menu_id_parent": 1, "menu_name": "Publish", "menu_seq": 50000, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Branch_Review_Listing" },
       { "menu_group": "S", "menu_id": 50001, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Branch_Review_Listing", "menu_seq": 50001, "menu_desc": "Branch Review", "menu_cmd": "jsHarmonyCMS/Branch_Review_Listing" },
