@@ -34,9 +34,6 @@
       "delete from {schema}.branch_media where branch_id=@dst_branch_id and media_key in (select media_key from {schema}.branch_media where branch_id=@src_branch_id and branch_media_action='DELETE');",
       "delete from {schema}.branch_redirect where branch_id=@dst_branch_id and redirect_key in (select redirect_key from {schema}.branch_redirect where branch_id=@src_branch_id and branch_redirect_action='DELETE');",
       
-      
-      
-
       "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select @dst_branch_id, menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=@src_branch_id and (branch_menu_action='ADD' or branch_menu_action='UPDATE') and menu_key not in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id);",
       "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select @dst_branch_id, page_key, page_id, page_id from {schema}.branch_page where branch_id=@src_branch_id and (branch_page_action='ADD' or branch_page_action='UPDATE') and page_key not in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id);",
       "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select @dst_branch_id, media_key, media_id, media_id from {schema}.branch_media where branch_id=@src_branch_id and (branch_media_action='ADD' or branch_media_action='UPDATE') and media_key not in (select media_key from {schema}.branch_media where branch_id=@dst_branch_id);",

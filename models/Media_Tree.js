@@ -18,28 +18,19 @@ jsh.App[modelid] = new (function(){
   this.isInEditor = false;
 
   this.oninit = function(){
-    /*
-    xmodel.controller.grid.OnLoadError = function(err){
-      if(err && err.Number==-14){
-        XExt.Alert('Please checkout a branch', function(){
-          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true })
-        });
-        return true;
-      }
+    jsh.System.RequireBranch(xmodel);
+    if(jsh._GET.CKEditor) this.isInEditor = true;
+    if(this.isInEditor){
+      jsh.$root('.xbody').addClass('InEditor');
     }
-    */
-   if(jsh._GET.CKEditor){
-     jsh.$root('.xbody').addClass('InEditor');
-     this.isInEditor = true;
-   }
 
-   $(window).bind('resize', _this.onresize);
-   _this.refreshLayout();
-   _this.renderInfo();
-   jsh.$root('.'+xmodel.class+'_file_listing').on('dragenter', _this.file_listing_onDragEnter);
-   jsh.$root('.'+xmodel.class+'_file_listing').on('dragleave', _this.file_listing_onDragLeave);
-   jsh.$root('.'+xmodel.class+'_file_listing').on('dragover', _this.file_listing_onDragOver);
-   jsh.$root('.'+xmodel.class+'_file_listing').on('drop', _this.file_listing_onDrop);
+    $(window).bind('resize', _this.onresize);
+    _this.refreshLayout();
+    _this.renderInfo();
+    jsh.$root('.'+xmodel.class+'_file_listing').on('dragenter', _this.file_listing_onDragEnter);
+    jsh.$root('.'+xmodel.class+'_file_listing').on('dragleave', _this.file_listing_onDragLeave);
+    jsh.$root('.'+xmodel.class+'_file_listing').on('dragover', _this.file_listing_onDragOver);
+    jsh.$root('.'+xmodel.class+'_file_listing').on('drop', _this.file_listing_onDrop);
   }
 
   this.ondestroy = function(xmodel){
@@ -135,7 +126,7 @@ jsh.App[modelid] = new (function(){
           jsh.XExt.Alert('Error Uploading File: ' + JSON.stringify(jdata ? jdata : ''));
         }
       },
-      error: function (err) { jsh.xLoader.StopLoading(_this.loadobj); console.log(err); XExt.Alert('Error uploading file: '+XExt.stringify(err)); }
+      error: function (err) { jsh.xLoader.StopLoading(_this.loadobj); XExt.Alert('Error uploading file: '+XExt.stringify(err)); }
     });
   }
 
@@ -541,11 +532,18 @@ jsh.App[modelid] = new (function(){
   }
 
   this.sendToEditor = function(media_key){
+    var media_file = _this.getMediaFile(media_key);
+
     if(window.opener && jsh._GET.CKEditor){
       window.opener.postMessage('ckeditor:'+JSON.stringify({ media_key: media_key, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
       window.close();
     }
-    else XExt.Alert('Parent editor not found');
+    else{
+      var openerJSH = XExt.getOpenerJSH();
+      if(!openerJSH) return XExt.Alert('Parent editor not found');
+      window.opener.postMessage('cms_link_browser:'+JSON.stringify({ media_key: media_key, media_desc: media_file.media_desc, media_path: media_file.media_path }), '*');
+      window.close();
+    }
   }
 
 })();

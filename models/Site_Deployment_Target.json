@@ -8,8 +8,7 @@
     "fields": [
       {"name":"deployment_target_name","caption":"Name"},
       {"name":"deployment_target_sts","caption":"Status"},
-      {"name":"deployment_target_path","caption":"Path"},
-      {"name":"deployment_target_content_path","caption":"CMS Content Path"},
+      {"name":"deployment_target_publish_path","caption":"Publish Path"},
       {"name":"deployment_target_params","caption":"Params"}
     ]
   }

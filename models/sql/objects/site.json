@@ -94,7 +94,6 @@
       },
       "deployment_target": {
         "columns": [
-          "deployment_target_content_path",
           "deployment_target_params"
         ],
         "join_type": "left",
@@ -106,7 +105,8 @@
     "triggers": [
       {"on": ["update"], "exec": [
           "insert into {schema}.sys_user_site(sys_user_id,site_id) select jsharmony.my_sys_user_id(), inserted(site_id) where not exists(select * from {schema}.sys_user_site where sys_user_id=jsharmony.my_sys_user_id() and site_id=inserted(site_id))",
-          "update {schema}.sys_user_site set sys_user_site_editor = inserted(site_editor) where sys_user_id=jsharmony.my_sys_user_id() and site_id = inserted(site_id) and (inserted(site_editor) is not null or deleted(site_editor) is not null)"
+          "update {schema}.sys_user_site set sys_user_site_editor = inserted(site_editor) where sys_user_id=jsharmony.my_sys_user_id() and site_id = inserted(site_id) and (inserted(site_editor) is not null or deleted(site_editor) is not null)",
+          "increment_changes()"
         ]
       }
     ]

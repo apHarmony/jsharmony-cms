@@ -303,6 +303,10 @@ window.jsHarmonyCMS = new (function(){
         editor.on('blur', function(){
           $('#jsharmony_cms_body_toolbar').stop(true).fadeOut(300);
         });
+        editor.on('contentDom', function(){
+          var curbody = $('#jsharmony_cms_body').html();
+          if(_this.page && _this.page.body && curbody) _this.page.body = curbody;
+        });
       });
       window.CKEDITOR.inline('jsharmony_cms_body', {
         extraPlugins: 'sharedspace,sourcedialog,dragresize,pastetext',
@@ -557,6 +561,10 @@ window.jsHarmonyCMS = new (function(){
     return true;
   }
 
+  this.refreshParent = function(page_folder){
+    window.opener.postMessage('jsharmony-cms:refresh:'+page_folder, '*');
+  }
+
   this.save = function(){
     //Validate
     if(!this.validate()) return;
@@ -575,6 +583,7 @@ window.jsHarmonyCMS = new (function(){
           if(timeLeft > 0) window.setTimeout(function(){ _this.StopLoading(_this.loadObj); }, timeLeft);
           else _this.StopLoading(_this.loadObj);
         });
+        _this.refreshParent(rslt.page_folder);
       }
       else{
         _this.StopLoading(_this.loadObj);

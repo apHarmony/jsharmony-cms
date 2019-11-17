@@ -218,6 +218,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/media/:media_key/:thumbnail': _this.funcs.media,
         '/_funcs/media/:media_key/': _this.funcs.media,
         '/_funcs/media/': _this.funcs.media,
+        '/_funcs/menu/:menu_key/': _this.funcs.menu,
         '/_funcs/deploy': _this.funcs.deploy_req,
         '/_funcs/diff': _this.funcs.diff,
       }

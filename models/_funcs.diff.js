@@ -21,6 +21,7 @@ var _ = require('lodash');
 var async = require('async');
 var DiffMatchPatch = require('diff-match-patch');
 var diff2html = require("diff2html").Diff2Html;
+var prettyhtml = require('js-beautify').html;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -62,7 +63,12 @@ module.exports = exports = function(module, funcs){
       var branch_pages = [];
       var branch_media = [];
       var branch_redirects = [];
+      var branch_menus = [];
       var pages = {};
+      var media = {};
+      var menus = {};
+      var page_keys = {};
+      var media_keys = {};
 
       async.waterfall([
 
@@ -82,6 +88,24 @@ module.exports = exports = function(module, funcs){
           });
         },
 
+        //Get all media
+        function(cb){
+          var sql = "select media_id,media_key,media_file_id,media_desc,media_path \
+            from "+(module.schema?module.schema+'.':'')+"media media \
+            where media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action is not null) or \
+                  media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE')";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]){
+              _.each(rslt[0], function(media){
+                media[media.media_id] = media;
+                media_keys[media.media_key] = media;
+              });
+            }
+            return cb();
+          });
+        },
+
         //Get all branch_redirect
         function(cb){
           var sql = "select branch_redirect.redirect_key, branch_redirect.branch_redirect_action, branch_redirect.redirect_id, branch_redirect.redirect_orig_id, \
@@ -93,7 +117,7 @@ module.exports = exports = function(module, funcs){
             where branch_id=@branch_id and branch_redirect_action is not null";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]) branch_redirect = rslt[0];
+            if(rslt && rslt[0]) branch_redirects = rslt[0];
             return cb();
           });
         },
@@ -125,26 +149,37 @@ module.exports = exports = function(module, funcs){
             if(rslt && rslt[0]){
               _.each(rslt[0], function(page){
                 pages[page.page_id] = page;
+                page_keys[page.page_key] = page;
               });
             }
             return cb();
           });
         },
 
-        //Get file content
+        //Get page file content
         function(cb){
           async.eachOfSeries(pages, function(page, page_id, page_cb){
             funcs.getClientPage(page, function(err, clientPage){
               if(err) return page_cb(err);
               if(!clientPage) return page_cb(null); 
               page.compiled = clientPage.page;
+              if(page.compiled.body){
+                var pretty_params = {
+                  unformatted: ['code', 'pre'],
+                  indent_inner_html: true,
+                  indent_char: ' ',
+                  indent_size: 2,
+                  sep: '\n'
+                };
+                page.compiled.body = prettyhtml(clientPage.page.body, pretty_params);
+              }
               page.template_title = clientPage.template.title;
               return page_cb(null);
             });
           }, cb);
         },
 
-        //Perform diff
+        //Perform page diff
         function(cb){
 
           _.each(branch_pages, function(branch_page){
@@ -169,13 +204,77 @@ module.exports = exports = function(module, funcs){
           return cb();
         },
 
+        //Get all branch_menu
+        function(cb){
+          var sql = "select branch_menu.menu_key, branch_menu.branch_menu_action, branch_menu.menu_id, branch_menu.menu_orig_id, \
+              old_menu.menu_name old_menu_name, old_menu.menu_tag old_menu_tag, old_menu.menu_file_id old_menu_file_id,\
+              new_menu.menu_name new_menu_name, new_menu.menu_tag new_menu_tag, new_menu.menu_file_id new_menu_file_id\
+            from "+(module.schema?module.schema+'.':'')+"branch_menu branch_menu \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu old_menu on old_menu.menu_id=branch_menu.menu_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu new_menu on new_menu.menu_id=branch_menu.menu_id \
+            where branch_id=@branch_id and branch_menu_action is not null";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) branch_menus = rslt[0];
+            return cb();
+          });
+        },
+
+        //Get all menus
+        function(cb){
+          var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
+            from "+(module.schema?module.schema+'.':'')+"menu menu \
+            where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
+                  menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]){
+              _.each(rslt[0], function(menu){
+                menus[menu.menu_id] = menu;
+              });
+            }
+            return cb();
+          });
+        },
+
+        //Get menu file content
+        function(cb){
+          async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
+            funcs.getClientMenu(menu, function(err, menu_content){
+              if(err) return menu_cb(err);
+              if(!menu_content) return menu_cb(null);
+              menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, page_keys, media_keys);
+              return menu_cb();
+            });
+          }, cb);
+        },
+
+        //Perform menu diff
+        function(cb){
+          _.each(branch_menus, function(branch_menu){
+            if(branch_menu.branch_menu_action.toUpperCase()=='UPDATE'){
+              var old_menu = menus[branch_menu.menu_orig_id];
+              var new_menu = menus[branch_menu.menu_id];
+              
+              branch_menu.diff = {};
+              var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
+              if(menu_items_diff) branch_menu.diff.menu_items = menu_items_diff;
+              _.each(['menu_name','menu_tag'], function(key){
+                if(old_menu[key] != new_menu[key]) branch_menu.diff[key] = new_menu[key];
+              });
+            }
+          });
+          return cb();
+        },
+
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
           '_success': 1,
           'branch_pages': branch_pages,
-          'branch_redirect': branch_redirect,
-          'branch_media': branch_media
+          'branch_redirects': branch_redirects,
+          'branch_media': branch_media,
+          'branch_menus': branch_menus
         }));
       });
       return;
@@ -194,7 +293,109 @@ module.exports = exports = function(module, funcs){
     var diff_lineArray = diff_lines.lineArray;
     var diff = dmp.diff_main(diff_lineText1, diff_lineText2, false);
     dmp.diff_charsToLines_(diff, diff_lineArray);
-    var patch = dmp.patch_toText(dmp.patch_make(a,diff));
+
+    //Generate patch
+    var patch_lines = [];
+    var source_line = 1;
+    var dest_line = 1;
+    var last_line = 0;
+    if(diff.length){
+      last_line = diff.length-1;
+      if(diff[last_line][0]==0){}
+      else{
+        if(diff.length > 1){
+          if((diff[last_line-1][0]==0)||(diff[last_line-1][0]==diff[last_line][0])){}
+          else last_line-=1;
+        }
+      }
+    }
+    
+    for(var i=0;i<diff.length;i++){
+      var diff_line = diff[i];
+      var diff_line_type = diff_line[0];
+      var diff_line_text = diff_line[1]||'';
+      if((i < last_line) && diff_line_text && (diff_line_text[diff_line_text.length-1]=='\n')) diff_line_text = diff_line_text.substr(0,diff_line_text.length-1);
+      var diff_lines = diff_line_text.split('\n');
+
+      var diff_line_prefix = ' ';
+      if(diff_line_type==-1) diff_line_prefix = '-';
+      else if(diff_line_type==1) diff_line_prefix = '+';
+      _.each(diff_lines, function(diff_line){ patch_lines.push(diff_line_prefix + diff_line); });
+
+      diff_line[2] = diff_lines;
+      diff_line[3] = source_line;
+      diff_line[4] = dest_line;
+      if(diff_line_type==0){
+        source_line += diff_lines.length;
+        dest_line += diff_lines.length;
+      }
+      else if(diff_line_type==-1){
+        source_line += diff_lines.length;
+      }
+      else if(diff_line_type==1){
+        dest_line += diff_lines.length;
+      }
+    }
+    //Create patch
+    var source_line = 0;
+    var dest_line = 0;
+    var patch_batches = [];
+    var cur_patch_batch = null;
+    for(var i=0;i<patch_lines.length;i++){
+      var patch_line = patch_lines[i];
+      if(patch_line[0]==' '){
+        source_line++;
+        dest_line++;
+      }
+      else if(patch_line[0]=='-') source_line++;
+      else if(patch_line[0]=='+') dest_line++;
+      if(patch_line[0]==' '){
+        if(!cur_patch_batch) continue;
+        else{
+          cur_patch_batch.lines.push(patch_line);
+        }
+      }
+      else {
+        if(cur_patch_batch){ cur_patch_batch.lines.push(patch_line); }
+        else {
+          //Start patch batch
+          cur_patch_batch = {
+            lines: [patch_line],
+            source_start_line: source_line+1,
+            source_end_line: undefined,
+            dest_start_line: dest_line+1,
+            dest_end_line: undefined,
+          };
+          if(patch_line[0]=='-') cur_patch_batch.source_start_line--;
+          if(patch_line[0]=='+') cur_patch_batch.dest_start_line--;
+          if(i>0){
+            cur_patch_batch.source_start_line--;
+            cur_patch_batch.dest_start_line--;
+            cur_patch_batch.lines.unshift(patch_lines[i-1]);
+          }
+          
+        }
+      }
+
+      //Check if at end of patch
+      if((i==(patch_lines.length-1)) || ((patch_line[0]==' ') && (patch_lines[i+1][0]==' '))){
+        //End patch batch
+        cur_patch_batch.source_end_line = source_line;
+        cur_patch_batch.dest_end_line = dest_line;
+        patch_batches.push(cur_patch_batch);
+        cur_patch_batch = null;
+      }
+    }
+
+    var patch = '';
+    for(var i=0;i<patch_batches.length;i++){
+      var patch_batch = patch_batches[i];
+      patch += '@@ -'+patch_batch.source_start_line+','+patch_batch.source_end_line+' +'+patch_batch.dest_start_line+','+patch_batch.dest_end_line+' @@\n';
+      patch += patch_batch.lines.join('\n')+'\n';;
+    }
+
+    /*
+    var patch = dmp.patch_toText(dmp.patch_make(a,diff));    
     var patchlines = patch.split(/\n/);
     for(var i=0;i<patchlines.length;i++){
       var patchline = patchlines[i];
@@ -208,6 +409,7 @@ module.exports = exports = function(module, funcs){
       patchlines[i] = patchline;
     }
     patch = patchlines.join('\n');
+    */
 
     patch = decodeURIComponent("--- compare\n+++ compare\n" + patch);
     return Diff2Html.getPrettyHtml(patch, {

@@ -1,0 +1,23 @@
+{
+  "Menu_Listing": {
+    "layout":"grid",
+    "table":"{schema}.v_my_menu",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "caption":["Menu","Menus"],
+    "title":"Menus",
+    "reselectafteredit": "row",
+    "sort":["^menu_name"],
+    "menu":"jsHarmonyCMS/Menu_Listing",
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "oninit": "jsh.System.RequireBranch(xmodel);",
+    "fields": [
+      {"name":"menu_key","caption":"Key","control":"hidden","key":true},
+      {"name":"menu_name","caption":"Menu Name","control":"textbox_M"},
+      {"name":"menu_tag","caption":"Tag","control":"textbox_M"},
+      {"name":"menu_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"name":"menu_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(menu_muser))","control":"label","actions":"B","cellstyle":"white-space:nowrap;"},
+      {"control":"html","caption":"Edit","link":"js:_this.openMenuEditor(this)","value":"<img src='/images/icon_edit.png' class='xicon' />"}
+    ]
+  }
+}

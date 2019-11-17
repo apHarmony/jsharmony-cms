@@ -365,7 +365,8 @@
           "site_name",
           "branch_access",
           "branch_desc",
-          { "name":"new_branch_id", "type": "bigint", "sqlselect": "sys_user_branch.branch_id" }
+          { "name":"new_branch_id", "type": "bigint", "sqlselect": "sys_user_branch.branch_id" },
+          { "name":"new_branch_changes", "type": "varchar", "length": 8, "sqlselect": "null" }
         ],
         "join_type": "left",
         "join_columns": {
@@ -391,14 +392,21 @@
           //Add user branch, if not defined
           "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
           //Insert branch
+          "clear_insert_identity()",
           "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
           //Set user's current branch to cloned branch
           "update {schema}.sys_user_branch set branch_id = last_insert_identity()",
           //Add all menu / pages / media / redirect from other branch
-          "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and menu_id is not null",
-          "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and page_id is not null",
-          "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, media_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and media_id is not null",
-          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and redirect_id is not null"
+          //*Copy New Branch Changes*
+          "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, branch_menu_action, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, branch_menu_action, menu_orig_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
+          "insert into {schema}.branch_page(branch_id, page_key, page_id, branch_page_action, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, branch_page_action, page_orig_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
+          "insert into {schema}.branch_media(branch_id, media_key, media_id, branch_media_action, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, branch_media_action, media_orig_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
+          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, branch_redirect_action, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, branch_redirect_action, redirect_orig_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
+          //*Reset New Branch Changes*
+          "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and menu_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
+          "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and page_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
+          "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, media_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and media_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
+          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and redirect_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'"
         ]
       }
     ]

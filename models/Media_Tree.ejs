@@ -9,6 +9,11 @@
           <span><#=media_file.media_filename#></span>
         </div>
       <# }); #>
+      <# if(!media_files.length){ #>
+        <div class="<%=model.class%>_file_tile_empty">
+          No media files in this folder
+        </div>
+      <# } #>
     </div>
   </div>
   <div class="<%=model.class%>_drop_overlay"><div class="<%=model.class%>_drop_overlay_body">Drop files here</div></div>
@@ -19,7 +24,7 @@
     <table class="<%=model.class%>_file_listing_tbl" cellspacing="0">
       <thead>
         <tr>
-          <th align="left" width="30%" data-sort="filename" class="sortable">File Name</th>
+          <th align="left" width="30%" data-sort="filename" class="sortable">Name</th>
           <th align="left" width="50%" data-sort="description" class="sortable">Description</th>
           <th align="right" width="70" data-sort="size" class="sortable">Size</th>
           <th align="center" width="70">Edit</th>
@@ -28,14 +33,23 @@
       </thead>
       <tbody>
         <# _.each(media_files, function(media_file){ #>
-          <tr data-key="<#=media_file.media_key#>">
-            <td align="left"><a href="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile" target="<%=jsh._instance%>_xfileproxy"><#=media_file.media_filename#></a></td>
+          <tr class="<%=model.class%>_file_listing_row" data-key="<#=media_file.media_key#>">
+            <td align="left" class="media_filename"><a href="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile" target="<%=jsh._instance%>_xfileproxy"><img src='/images/icon_file.png' class='' /><#=media_file.media_filename#></a></td>
             <td align="left"><#=media_file.media_desc#></td>
             <td align="right" style="white-space:nowrap;"><#=jsh.XFormat.bytes(media_file.media_size)#></td>
             <td align="center"><a href="#" class="<%=model.class%>_edit_media" data-media_key="<#=media_file.media_key#>"><img src="/images/icon_edit.png" class="icon" title="Edit"></a></td>
             <td align="center"><a href="#" class="<%=model.class%>_delete_media" data-media_key="<#=media_file.media_key#>"><img src="/images/icon_delete.png" class="icon" title="Delete"></a></td>
           </tr>
         <# }); #>
+        <# if(!media_files.length){ #>
+          <tr>
+            <td colspan="5">
+              <div class="<%=model.class%>_file_tile_empty">
+                No media files in this folder
+              </div>
+            </td>
+          </tr>
+        <# } #>
       </tbody>
     </table>
   </div>

@@ -8,34 +8,32 @@
     "caption":["Page","Pages"],
     "unbound":true,
     "menu":"jsHarmonyCMS/Page_Listing",
-    "breadcrumbs":{
-      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
-      "sql": "select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"
-    },
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
-      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } }
+      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
+      { "link":"Page_Listing","icon":"search","text":"Search","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} }
     ],
     "hide_system_buttons" : ["print","export"], 
     "oninit": "_this.oninit();",
     "onload": "_this.onload();",
-    "css": [
-      ".xbody_<%=model.class%> { width:100%; padding-right:20px; box-sizing:border-box; padding-bottom:0px; }",
-      ".xbody_<%=model.class%> .bcrumbs { width:100%; padding-right:20px; box-sizing:border-box; }",
-    ],
+    "ongetstate": "return _this.ongetstate(xmodel);",
+    "onloadstate": "_this.onloadstate(xmodel, state);",
     "fields":[
-	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser' style='display:flex;width:100%;min-width:950px;box-sizing:border-box;'>" },
+	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
       {"name": "page_folder", "actions": "B","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
        "default": "/",
-       "controlstyle": "height:auto;min-height:400px;",
        "lov": {
-         "sql": "select distinct null as code_id, null as code_parent_id, page_folder as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_page order by page_folder",
-         "post_process": "jsh.generateLOVTree(values, { new_code_val: function(patharr){ var rslt = patharr.join('/'); if(!rslt) return '/'; return '/'+rslt+'/'; } });"
+         "sql": "select distinct null as code_id, null as code_parent_id, $ifnull(page_folder, '/') as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_page order by $ifnull(page_folder, '/')",
+         "post_process": "jsh.generateLOVTree(values, { root_txt: '%%%ROOT%%%', new_code_val: function(patharr){ var rslt = patharr.join('/'); if(!rslt) return '/'; return '/'+rslt+'/'; } });"
         },
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
-            { "icon": "download", "text": "Download Folder", "command": "var url = '/client/_funcs/FCERT_ARCHIVE?FCERT_ID='+context_item; jsh.getFileProxy().prop('src', url);", "actions": "B" }
+            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);", "actions": "I" },
+            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);", "actions": "U" },
+            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);", "actions": "U" },
+            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);", "actions": "D" }
           ]
         },
         "onchange": "_this.page_folder_onchange(obj,newval);"
@@ -43,9 +41,7 @@
       {
         "name": "Page_Tree_Listing",
         "control": "subform",
-        "controlstyle": "flex-grow:1;margin-top:0px;border-right:1px solid #aaa; border-bottom:1px solid #aaa; border-top:1px solid #aaa;padding-bottom:1px;",
         "target": "Page_Tree_Listing",
-        "controlparams":{ "panelstyle": "border:0;padding:0;" },
         "bindings": { "page_folder": "page_folder" },
         "caption": "",
         "actions": "BIUD"
@@ -57,11 +53,14 @@
     "inherits": "Page_Tree",
     "title": "",
     "buttons": [],
+    "actions":"B",
     "css": [
       ".xbody_<%=model.class%> .bcrumbs { width: auto; display:inline-block; }"
     ],
-    "popup": [980, 600],
+    "js": "jsh.App[modelid].isInEditor = true;",
+    "popup": [1000, 600],
     "fields":[
+      {"name":"page_folder","controlparams":{ "item_context_menu":[] } },
       {"name":"Page_Tree_Listing","target":"Page_Browser_Listing"}
     ]
   },
@@ -69,6 +68,47 @@
     "inherits": "Page_Browser",
     "fields": [
       {"control":"html","value":"<h1>Pages</h1>","__AFTER__":"__START__"}
+    ]
+  },
+  "Page_Tree_Folder_Add": {
+    "layout": "exec",
+    "title": "Add Page Folder",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      "insert into {schema}.v_my_page(page_path,page_is_folder) values(@page_path,1);"
+    ],
+    "fields": [
+      {"name":"page_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"}
+    ]
+  },
+  "Page_Tree_Folder_Move": {
+    "layout": "exec",
+    "title": "Move Page Folder",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      [
+        "update {schema}.v_my_page set page_path = concat(@new_page_folder,substr(page_path,length(@old_page_folder)+1)) where page_folder like concat(@old_page_folder,'%');"
+      ]
+    ],
+    "fields": [
+      {"name":"old_page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"},
+      {"name":"new_page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"}
+    ]
+  },
+  "Page_Tree_Folder_Delete": {
+    "layout": "exec",
+    "title": "Delete Page Folder",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      [
+        "delete from {schema}.v_my_page where page_folder like concat(@page_folder,'%');"
+      ]
+    ],
+    "fields": [
+      {"name":"page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"}
     ]
   }
 }

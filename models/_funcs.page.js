@@ -27,6 +27,7 @@ module.exports = exports = function(module, funcs){
   var exports = {};
 
   exports.getPageFile = function(page_file_id){
+    if(!page_file_id) throw new Error('Invalid page_file_id');
     return path.join(path.join(module.jsh.Config.datadir,'page'),page_file_id.toString()+'.json');
   }
 
@@ -138,7 +139,7 @@ module.exports = exports = function(module, funcs){
     if(!req.params || !req.params.page_key) return next();
     var page_key = req.params.page_key;
 
-    //Return updated LOV
+    //Get page
     sql_ptypes = [dbtypes.BigInt];
     sql_params = { 'page_key': page_key };
     validate = new XValidate();
@@ -291,7 +292,7 @@ module.exports = exports = function(module, funcs){
           page_lang: client_page.lang
         };
         sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_page set page_file_id=null,'+_.map(sql_params, function(val, key){ return key + '=@' + key }).join(',')+' where page_key=@page_key;';
-        sql += 'select page_file_id from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key;';
+        sql += 'select page_file_id, page_path, page_folder from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key;';
         sql_params.page_key = page_key;
 
         fields = [];
@@ -305,9 +306,10 @@ module.exports = exports = function(module, funcs){
           if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
           if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length || !rslt[0][0]) return Helper.GenError(req, res, -99999, 'Invalid database result');
           page.page_file_id = rslt[0][0].page_file_id;
+          page.page_folder = rslt[0][0].page_folder;
           //Save to disk
           fs.writeFile(funcs.getPageFile(page.page_file_id), JSON.stringify(client_page), 'utf8', function(err){
-            res.end(JSON.stringify({ '_success': 1 }));
+            res.end(JSON.stringify({ '_success': 1, page_folder: page.page_folder }));
           });
         });
 

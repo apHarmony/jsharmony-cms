@@ -1,0 +1,41 @@
+{
+  "Menu_Tree_Info": {
+    "layout":"form",
+    "table":"",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "unbound":true,
+    "title":"Edit Menu Item",
+    "caption":["Menu Item","Menu Items"],
+    "hide_system_buttons" : ["print","export","help","delete"], 
+    "buttons":[
+      { "link":"js:jsh.App[xmodel.parent].deleteMenuItem(xmodel.get('menu_item_id'));","icon":"delete","text":"Delete","actions":"D" }
+    ],
+    "oninit": "_this.oninit();",
+    "onload": "_this.onload();",
+    "fields":[
+      {"name":"menu_item_id","control":"hidden","key":true},
+      {"name":"menu_item_parent_id","control":"hidden"},
+      {"name":"menu_item_path","control":"hidden"},
+      {"name":"menu_item_type","control":"dropdown","caption":"Type","default":"TEXT","lov":{ "blank": false, "values": { "TEXT": "Text", "HTML": "HTML" } }, "captionstyle":"width:68px;"},
+      {"name":"menu_item_text","control":"textbox_M","caption":"Text","validate":["Required"],"nl":true,"onchange":"_this.menu_item_text_onchange(obj,newval);"},
+      {"name":"menu_item_link_type","control":"dropdown","caption":"Link Type","lov":{ "blank": "(No Link)", "values": { "JS": "JavaScript", "MEDIA": "Media", "PAGE": "Page", "URL": "URL" } }, "onchange":"_this.menu_item_link_type_onchange(obj, newval);","nl":true},
+      {"name":"menu_item_link_target","control":"dropdown","caption":"Target","lov":{ "blank": "Same Window", "values": { "NEWWIN": "New Window" } }},
+
+      {"name":"menu_item_link_dest","control":"textbox_L","caption":"Link Destination","controlstyle":"width:300px;","nl":true,
+        "validate":[{"function":"js:if((_obj.menu_item_link_type=='URL') && !_obj.menu_item_link_dest) return 'Link URL is required'; if((_obj.menu_item_link_type=='JS') && !_obj.menu_item_link_dest) return 'Link JS is required';"}]},
+
+      {"name":"menu_item_link_page","control":"textbox_M","caption":"Link Page","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
+        "validate":[{"function":"js:if((_obj.menu_item_link_type=='PAGE') && !_obj.menu_item_link_dest) return 'Link Page is required';"}]},
+      {"name":"menu_item_link_page_browse","control":"button","value":"Browse","onclick":"js:_this.browsePage();","actions":"IU"},
+
+      {"name":"menu_item_link_media","control":"textbox_M","caption":"Link Media","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
+        "validate":[{"function":"js:if((_obj.menu_item_link_type=='MEDIA') && !_obj.menu_item_link_dest) return 'Link Media is required';"}]},
+      {"name":"menu_item_link_media_browse","control":"button","value":"Browse","onclick":"js:_this.browseMedia();","actions":"IU"},
+
+      {"name":"menu_item_class","control":"textbox_M","caption":"CSS Class","nl":true},
+      {"name":"menu_item_style","control":"textbox_L","caption":"CSS Style","controlstyle":"width:300px;","nl":true},
+      {"name":"menu_item_tag","control":"textbox_L","caption":"Tag","controlstyle":"width:300px;","nl":true}
+	  ]
+  }
+}

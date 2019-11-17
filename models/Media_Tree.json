@@ -8,10 +8,7 @@
     "caption":["Media","Media"],
     "unbound":true,
     "menu":"jsHarmonyCMS/Media_Listing",
-    "breadcrumbs":{
-      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><#=bcrumbs.branch_desc#></div>",
-      "sql": "select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"
-    },
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
       { "link":"js:_this.addFile();","icon":"add","text":"Add File" },
       { "link":"update:Media_Listing","icon":"search","text":"Search","bindings":{} },
@@ -36,7 +33,7 @@
        "default": "/",
        "lov": {
          "sql": "select distinct null as code_id, null as code_parent_id, $ifnull(media_folder, '/') as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_media order by $ifnull(media_folder, '/')",
-         "post_process": "jsh.generateLOVTree(values, { new_code_val: function(patharr){ var rslt = patharr.join('/'); if(!rslt) return '/'; return '/'+rslt+'/'; } });"
+         "post_process": "jsh.generateLOVTree(values, { root_txt: '%%%ROOT%%%', new_code_val: function(patharr){ var rslt = patharr.join('/'); if(!rslt) return '/'; return '/'+rslt+'/'; } });"
         },
        "controlparams": {
           "expand_all": true,
@@ -72,7 +69,7 @@
     "actions": "U",
     "roles": {"AUTHOR": "U","PUBLISHER": "U"},
     "sqlexec": [
-      "insert into {schema}.v_my_media(media_path) values(@media_path);"
+      "insert into {schema}.v_my_media(media_path,media_is_folder) values(@media_path,1);"
     ],
     "fields": [
       {"name":"media_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
@@ -114,7 +111,8 @@
       ".xbody_<%=model.class%> .bcrumbs { width: auto; display:inline-block; }",
       ".<%=model.class%>_file_info { display:none; }"
     ],
-    "popup": [980, 600]
+    "js": "jsh.App[modelid].isInEditor = true;",
+    "popup": [1000, 600]
   },
   "Media_Browser_Tab": {
     "inherits": "Media_Browser",
