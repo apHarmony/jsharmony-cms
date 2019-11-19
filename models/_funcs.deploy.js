@@ -64,8 +64,6 @@ module.exports = exports = function(module, funcs){
       var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
       publish_path = path.normalize(publish_path);
 
-      var template_body = {};
-
       if (verb == 'get') {
         res.end(JSON.stringify({ '_success': 1, publish_path: publish_path, default_page: default_page }));
         return;
@@ -124,7 +122,8 @@ module.exports = exports = function(module, funcs){
       }
       publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
 
-      var template_body = {};
+      var page_template_body = {};
+      var menu_template_body = {};
       var page_keys = {};
       var media_keys = {};
       var page_redirects = {};
@@ -181,6 +180,19 @@ module.exports = exports = function(module, funcs){
         if(media_fpath.indexOf('..') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
         media_fpath = publish_params.media_subfolder + media_fpath;
         return media_fpath;
+      }
+
+      function getMenuRelativePath(menu){
+        var menu_fpath = menu.menu_path||'';
+        if(!menu_fpath) return cb();
+        while(menu_fpath.substr(0,1)=='/') menu_fpath = menu_fpath.substr(1);
+
+        var is_folder = (menu_fpath[menu_fpath.length-1]=='/');
+        if(is_folder) throw new Error('Menu path:'+menu.menu_path+' must be a file, not a folder');
+        if(path.isAbsolute(menu_fpath)) throw new Error('Menu path:'+menu.menu_path+' cannot be absolute');
+        if(menu_fpath.indexOf('..') >= 0) throw new Error('Menu path:'+menu.menu_path+' cannot contain directory traversals');
+        menu_fpath = publish_params.menu_subfolder + menu_fpath;
+        return menu_fpath;
       }
 
       var farr = [];
@@ -258,23 +270,29 @@ module.exports = exports = function(module, funcs){
         //Load remote templates
         function (cb){
           var wc = new wclib.WebConnect();
-          async.eachOf(module.Templates, function(template, template_name, template_cb){
-            if(!template.remote_template || !template.remote_template.publish){
-              if('body' in template){
-                template_body[template_name] = template.body;
+          var downloadTemplate = function(templates, template_body, download_cb){
+            async.eachOf(templates, function(template, template_name, template_cb){
+              if(!template.remote_template || !template.remote_template.publish){
+                if('body' in template){
+                  template_body[template_name] = template.body;
+                }
+                return template_cb();
               }
-              return template_cb();
-            }
-            var publish_template_url = template.remote_template.publish;
-            for(var key in publish_params){
-              publish_template_url = Helper.ReplaceAll(publish_template_url, '%%%' + key + '%%%', publish_params[key]);
-            }
-            wc.req(publish_template_url, 'GET', {}, {}, undefined, function(err, res, rslt){
-              if(err) return template_cb(err);
-              template_body[template_name] = rslt;
-              return template_cb();
-            });
-          }, cb);
+              var publish_template_url = template.remote_template.publish;
+              for(var key in publish_params){
+                publish_template_url = Helper.ReplaceAll(publish_template_url, '%%%' + key + '%%%', publish_params[key]);
+              }
+              wc.req(publish_template_url, 'GET', {}, {}, undefined, function(err, res, rslt){
+                if(err) return template_cb(err);
+                template_body[template_name] = rslt;
+                return template_cb();
+              });
+            }, download_cb);
+          }
+          async.waterfall([
+            function(download_cb){ downloadTemplate(module.PageTemplates, page_template_body, download_cb); },
+            function(download_cb){ downloadTemplate(module.MenuTemplates, menu_template_body, download_cb); },
+          ], cb);
         },
 
         //Get list of all page_keys
@@ -354,7 +372,7 @@ module.exports = exports = function(module, funcs){
         //  Save template to file
         function (cb){
           var sql = 'select \
-            p.page_key,page_file_id,page_title,page_path,page_tags,page_author,template_id, \
+            p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id, \
             page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
             from '+(module.schema?module.schema+'.':'')+'page p \
             inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
@@ -385,11 +403,13 @@ module.exports = exports = function(module, funcs){
                     body: clientPage.page.body,
                     footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
                     title: clientPage.page.title
-                  }
+                  },
+                  _: _,
+                  Helper: Helper
                 };
                 var page_content = '';
-                if(page.template_id in template_body){
-                  page_content = template_body[page.template_id]||'';
+                if(page.page_template_id in page_template_body){
+                  page_content = page_template_body[page.page_template_id]||'';
                   page_content = ejs.render(page_content, ejsparams);
                   try{
                     page_content = funcs.replaceBranchURLs(page_content, {
@@ -532,7 +552,7 @@ module.exports = exports = function(module, funcs){
         //Generate menu files and save to disk
         function (cb){
           var sql = 'select \
-            m.menu_key, m.menu_file_id, m.menu_name, m.menu_tag \
+            m.menu_key, m.menu_file_id, m.menu_name, m.menu_tag, m.menu_template_id, m.menu_path \
             from '+(module.schema?module.schema+'.':'')+'menu m \
             inner join '+(module.schema?module.schema+'.':'')+'branch_menu bm on bm.menu_id = m.menu_id \
             inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id'
@@ -567,6 +587,19 @@ module.exports = exports = function(module, funcs){
                         menu_item.menu_item_link_dest = media_keys[media_key];
                       }
                     });
+
+                    //Generate menu item tree
+                    var menu_item_ids = {};
+                    _.each(menu.menu_items, function(menu_item){
+                      menu_item.menu_item_children = [];
+                      menu_item_ids[menu_item.menu_item_id] = menu_item;
+                    });
+                    menu.menu_item_tree = [];
+                    _.each(menu.menu_items, function(menu_item){
+                      if(!menu_item.menu_item_parent_id) menu.menu_item_tree.push(menu_item);
+                      else menu_item_ids[menu_item.menu_item_parent_id].menu_item_children.push(menu_item);
+                    });
+
                     return menu_file_cb();
                   });
                 }, menu_cb);
@@ -581,7 +614,34 @@ module.exports = exports = function(module, funcs){
                     return menu_cb();
                   });
                 }
-                else return menu_cb();
+                else{
+                  async.eachSeries(menus, function(menu, menu_file_cb){
+                    //Merge content with template
+                    var ejsparams = {
+                      menu: menu,
+                      _: _,
+                      Helper: Helper
+                    };
+                    var menu_content = '';
+                    if(menu.menu_template_id in menu_template_body){
+                      menu_content = menu_template_body[menu.menu_template_id]||'';
+                      menu_content = ejs.render(menu_content, ejsparams);
+                    }
+                    else {
+                      menu_content = 'Error: Menu template not found';
+                    }
+
+                    var menu_fpath = '';
+                    try{
+                      menu_fpath = getMenuRelativePath(menu);
+                    }
+                    catch(ex){
+                      return cb(ex);
+                    }
+                    menu_output_files[menu_fpath] = menu_content;
+                    return menu_file_cb();
+                  }, menu_cb);
+                }
               }
             ], function(err){
               if(err) return cb(err);

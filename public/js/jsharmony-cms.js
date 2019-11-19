@@ -288,6 +288,7 @@ window.jsHarmonyCMS = new (function(){
       window.CKEDITOR.disableAutoInline = true;
       //window.CKEDITOR.config.startupFocus = true;
       window.CKEDITOR.disableAutoInline = true;
+      window.CKEDITOR.config.allowedContent = true
       window.CKEDITOR.config.disableNativeSpellChecker = false;
       window.CKEDITOR.config.filebrowserBrowseUrl = _this._baseurl+'jsHarmonyCMS/Link_Browser';
       window.CKEDITOR.config.filebrowserImageBrowseUrl = _this._baseurl+'jsHarmonyCMS/Media_Browser';
@@ -306,6 +307,13 @@ window.jsHarmonyCMS = new (function(){
         editor.on('contentDom', function(){
           var curbody = $('#jsharmony_cms_body').html();
           if(_this.page && _this.page.body && curbody) _this.page.body = curbody;
+        });
+        editor.on('dialogHide', function(){
+          var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+          var restoreScroll = function(){ window.scrollTo(scrollLeft, scrollTop); };
+          $(window).on('scroll', restoreScroll);
+          window.setTimeout(function(){ $(window).off('scroll', restoreScroll); }, 250);
         });
       });
       window.CKEDITOR.inline('jsharmony_cms_body', {
@@ -540,7 +548,7 @@ window.jsHarmonyCMS = new (function(){
 
     //Validate
     var validation = new XValidate(jsh);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_title', '_obj.title', 'Page Title', 'U', [ XValidate._v_Required(), XValidate._v_MaxLength(1024) ]);
+    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_title', '_obj.title', 'Page Title', 'U', [ XValidate._v_MaxLength(1024) ]);
     validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_tags', '_obj.tags', 'Tags', 'U', [ ]);
     validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_author', '_obj.author', 'Author', 'U', [ XValidate._v_Required() ]);
     validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title', '_obj.seo.title', 'SEO Title Tag', 'U', [ XValidate._v_MaxLength(2048) ]);

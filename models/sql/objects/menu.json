@@ -8,6 +8,8 @@
       { "name": "menu_file_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "menu_name", "type": "varchar", "length": 256, "null": false },
       { "name": "menu_tag", "type": "varchar", "length": 256, "null": false },
+      { "name": "menu_template_id", "type": "varchar", "length": 255, "null": false },
+      { "name": "menu_path", "type": "varchar", "length": 2048 },
       { "name": "menu_notes", "type": "varchar", "length": -1 },
 
       { "name": "menu_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
@@ -26,7 +28,11 @@
       },
       { "on": ["validate_update"], "exec": [
           "errorif(update(menu_key) and (deleted(menu_key) is not null),'Cannot update menu_key');",
-          "errorif(update(menu_file_id) and (deleted(menu_file_id) is not null),'Cannot update menu_file_id');"
+          "errorif(update(menu_file_id) and (deleted(menu_file_id) is not null),'Cannot update menu_file_id');",
+          "errorif(update(menu_name) and (deleted(menu_name) is not null),'Cannot update menu_name');",
+          "errorif(update(menu_tag) and (deleted(menu_tag) is not null),'Cannot update menu_tag');",
+          "errorif(update(menu_template_id) and (deleted(menu_template_id) is not null),'Cannot update menu_template_id');",
+          "errorif(update(menu_path) and (deleted(menu_path) is not null),'Cannot update menu_path');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -36,8 +42,8 @@
       }
     ],
     "sample_data": [
-      { "menu_name": "Site Menu", "menu_tag": "site_menu", "_FILES": { "menu_site.json": "menu/{{menu_id}}.json" } },
-      { "menu_name": "Footer Menu", "menu_tag": "footer_menu", "_FILES": { "menu_footer.json": "menu/{{menu_id}}.json" } }
+      { "menu_name": "Site Menu", "menu_tag": "site_menu", "menu_template_id": "basic_list", "menu_path": "/menu/site_menu.html", "_FILES": { "menu_site.json": "menu/{{menu_id}}.json" } },
+      { "menu_name": "Footer Menu", "menu_tag": "footer_menu", "menu_template_id": "basic_list", "menu_path": "/menu/footer_menu.html", "_FILES": { "menu_footer.json": "menu/{{menu_id}}.json" } }
     ]
   },
 
@@ -52,6 +58,8 @@
           "menu_file_id",
           "menu_name",
           "menu_tag",
+          "menu_template_id",
+          "menu_path",
     
           "menu_review_sts",
           "menu_lang",
@@ -77,7 +85,7 @@
             "errorif(exists(select * from {schema}.v_my_menu where menu_name=inserted(menu_name)),'Menu name already exists');",
             "errorif(exists(select * from {schema}.v_my_menu where menu_tag=inserted(menu_tag)),'Menu tag already exists');",
             "with_insert_identity(menu, menu_id, ",
-            "  insert into menu(menu_name, menu_tag, menu_review_sts, menu_lang) values(inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
+            "  insert into menu(menu_name, menu_tag, menu_template_id, menu_path, menu_review_sts, menu_lang) values(inserted(menu_name), inserted(menu_tag), inserted(menu_template_id), inserted(menu_path), inserted(menu_review_sts), inserted(menu_lang)),",
             "  return_insert_key(menu, menu_key, (menu_key=%%%INSERT_ID%%%));",
             "  insert into branch_menu(branch_id, menu_key, menu_id, branch_menu_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
             "  increment_changes()",
@@ -91,7 +99,7 @@
             "errorif(exists(select * from {schema}.v_my_menu where menu_name=inserted(menu_name) and menu_key<>deleted(menu_key)),'Menu name already exists');",
             "errorif(exists(select * from {schema}.v_my_menu where menu_tag=inserted(menu_tag) and menu_key<>deleted(menu_key)),'Menu tag already exists');",
             "with_insert_identity(menu, menu_id, ",
-            "  insert into menu(menu_key, menu_file_id, menu_name, menu_tag, menu_review_sts, menu_lang) values(deleted(menu_key), (case when inserted(menu_file_id) is null then null else deleted(menu_file_id) end), inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
+            "  insert into menu(menu_key, menu_file_id, menu_name, menu_tag, menu_template_id, menu_path, menu_review_sts, menu_lang) values(deleted(menu_key), (case when inserted(menu_file_id) is null then null else deleted(menu_file_id) end), inserted(menu_name), inserted(menu_tag), inserted(menu_template_id), inserted(menu_path), inserted(menu_review_sts), inserted(menu_lang)),",
             "  update branch_menu set menu_id=%%%INSERT_ID%%%,branch_menu_action=(case branch_menu_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and menu_key = deleted(menu_key);",
             "  increment_changes()",
             ")"

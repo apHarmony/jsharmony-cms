@@ -80,7 +80,7 @@ module.exports = exports = function(module, funcs){
             from "+(module.schema?module.schema+'.':'')+"branch_media branch_media \
               left outer join "+(module.schema?module.schema+'.':'')+"media old_media on old_media.media_id=branch_media.media_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"media new_media on new_media.media_id=branch_media.media_id \
-            where branch_id=@branch_id and branch_media_action is not null";
+            where branch_id=@branch_id and branch_media_action is not null and (old_media.media_is_folder=0 or new_media.media_is_folder=0)";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_media = rslt[0];
@@ -92,8 +92,10 @@ module.exports = exports = function(module, funcs){
         function(cb){
           var sql = "select media_id,media_key,media_file_id,media_desc,media_path \
             from "+(module.schema?module.schema+'.':'')+"media media \
-            where media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action is not null) or \
-                  media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE')";
+            where media_is_folder=0 and (\
+                    media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action is not null) or \
+                    media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE') \
+                  )";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]){
@@ -130,7 +132,7 @@ module.exports = exports = function(module, funcs){
             from "+(module.schema?module.schema+'.':'')+"branch_page branch_page \
               left outer join "+(module.schema?module.schema+'.':'')+"page old_page on old_page.page_id=branch_page.page_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page new_page on new_page.page_id=branch_page.page_id \
-            where branch_id=@branch_id and branch_page_action is not null";
+            where branch_id=@branch_id and branch_page_action is not null and (old_page.page_is_folder=0 or new_page.page_is_folder=0)";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_pages = rslt[0];
@@ -140,10 +142,12 @@ module.exports = exports = function(module, funcs){
 
         //Get all pages
         function(cb){
-          var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+          var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
             from "+(module.schema?module.schema+'.':'')+"page page \
-            where page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action is not null) or \
-                  page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action = 'UPDATE')";
+            where page_is_folder = 0 and (\
+                    page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action is not null) or \
+                    page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action = 'UPDATE') \
+                  )";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]){
@@ -222,7 +226,7 @@ module.exports = exports = function(module, funcs){
 
         //Get all menus
         function(cb){
-          var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
+          var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
             from "+(module.schema?module.schema+'.':'')+"menu menu \
             where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
                   menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
@@ -244,6 +248,7 @@ module.exports = exports = function(module, funcs){
               if(err) return menu_cb(err);
               if(!menu_content) return menu_cb(null);
               menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, page_keys, media_keys);
+              menu.template_title = menu_content.template.title;
               return menu_cb();
             });
           }, cb);
@@ -259,7 +264,7 @@ module.exports = exports = function(module, funcs){
               branch_menu.diff = {};
               var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
               if(menu_items_diff) branch_menu.diff.menu_items = menu_items_diff;
-              _.each(['menu_name','menu_tag'], function(key){
+              _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
                 if(old_menu[key] != new_menu[key]) branch_menu.diff[key] = new_menu[key];
               });
             }

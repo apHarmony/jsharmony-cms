@@ -44,8 +44,10 @@ function jsHarmonyCMS(name, options){
   _this.basepath = path.dirname(module.filename);
   _this.schema = options.schema;
 
-  _this.Templates = {};
-  _this.DefaultTemplate = undefined;
+  _this.PageTemplates = {};
+  _this.MenuTemplates = {};
+  _this.defaultPageTemplate = undefined;
+  _this.defaultMenuTemplate = undefined;
   _this.Layouts = {};
   _this.Elements = {};
   _this.funcs = new funcs(_this);
@@ -108,7 +110,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     }
   }
 
-  function LoadTemplatesFolder(dpath){
+  function LoadTemplatesFolder(templateType, dpath){
     if (!fs.existsSync(dpath)) return;
     var files = fs.readdirSync(dpath);
     for (var i = 0; i < files.length; i++) {
@@ -119,48 +121,72 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
       var tmplname = files[i].substr(0,idx_lastdot);
       var tmplbasepath = dpath + tmplname;
       if(fext=='json'){
-        _this.jsh.LogInit_INFO('Loading ' + tmplname);
-        var tmpl = _this.jsh.ParseJSON(fpath, _this.name, 'Template ' + tmplname);
-        prependPropFile(tmpl, 'body', tmplbasepath + '.ejs');
-        prependPropFile(tmpl, 'header', tmplbasepath + '.header.ejs');
-        prependPropFile(tmpl, 'footer', tmplbasepath + '.footer.ejs');
-        prependPropFile(tmpl, 'css', tmplbasepath + '.css');
-        prependPropFile(tmpl, 'js', tmplbasepath + '.js');
+        _this.jsh.LogInit_INFO('Loading ' + templateType + ' template: ' + tmplname);
+        var tmpl = _this.jsh.ParseJSON(fpath, _this.name, templateType + ' template ' + tmplname);
         if(!tmpl.title) tmpl.title = tmplname;
-        _this.Templates[tmplname] = tmpl;
+        if(templateType=='page'){
+          prependPropFile(tmpl, 'body', tmplbasepath + '.ejs');
+          prependPropFile(tmpl, 'header', tmplbasepath + '.header.ejs');
+          prependPropFile(tmpl, 'footer', tmplbasepath + '.footer.ejs');
+          prependPropFile(tmpl, 'css', tmplbasepath + '.css');
+          prependPropFile(tmpl, 'js', tmplbasepath + '.js');
+          _this.PageTemplates[tmplname] = tmpl;
+        }
+        else if(templateType=='menu'){
+          prependPropFile(tmpl, 'body', tmplbasepath + '.ejs');
+          _this.MenuTemplates[tmplname] = tmpl;
+        }
       }
     }
   }
 
   var modeldirs = this.jsh.getModelDirs();
   for (var i = 0; i < modeldirs.length; i++ ) {
-    var dpath = path.normalize(modeldirs[i].path + '../views/templates/');
-    LoadTemplatesFolder(dpath);
+    LoadTemplatesFolder('page', path.normalize(modeldirs[i].path + '../views/templates/page/'));
+    LoadTemplatesFolder('menu', path.normalize(modeldirs[i].path + '../views/templates/menu/'));
   }
-  _this.Templates['<Raw Text>'] = {
-    title: '<Raw Text>'
+  _this.PageTemplates['<Raw Text>'] = {
+    title: '<Raw Text>',
+    raw: true,
   };
 
-  this.jsh.Config.macros.CMS_TEMPLATES = [];
-  var client_templates = {};
-  for(var tmplname in this.Templates){
-    var tmpl = this.Templates[tmplname];
-    if(typeof _this.DefaultTemplate == 'undefined') _this.DefaultTemplate = tmplname;
-    var tmpl_lov = { "code_val": tmplname, "code_txt": tmpl.title };
-    this.jsh.Config.macros.CMS_TEMPLATES.push(tmpl_lov);
+  this.jsh.Config.macros.CMS_PAGE_TEMPLATES = [];
+  var frontend_PageTemplates = {};
+  for(var tmplname in this.PageTemplates){
+    var tmpl = this.PageTemplates[tmplname];
+    if(typeof _this.defaultPageTemplate == 'undefined') _this.defaultPageTemplate = tmplname;
+    this.jsh.Config.macros.CMS_PAGE_TEMPLATES.push({ "code_val": tmplname, "code_txt": tmpl.title });
 
-    var client_template = {
+    var frontend_template = {
       editor: undefined,
       publish: undefined
     };
     if(tmpl.remote_template){
-      if('editor' in tmpl.remote_template) client_template.editor = tmpl.remote_template.editor;
-      if('publish' in tmpl.remote_template) client_template.publish = tmpl.remote_template.publish;
+      if('editor' in tmpl.remote_template) frontend_template.editor = tmpl.remote_template.editor;
+      if('publish' in tmpl.remote_template) frontend_template.publish = tmpl.remote_template.publish;
     }
-    client_templates[tmplname] = client_template;
+    frontend_PageTemplates[tmplname] = frontend_template;
   }
-  this.jsh.Sites['main'].globalparams.templates = client_templates;
-  this.jsh.Sites['main'].globalparams.default_template = _this.DefaultTemplate;
+  this.jsh.Sites['main'].globalparams.PageTemplates = frontend_PageTemplates;
+  this.jsh.Sites['main'].globalparams.defaultPageTemplate = _this.defaultPageTemplate;
+
+  this.jsh.Config.macros.CMS_MENU_TEMPLATES = [];
+  var frontend_MenuTemplates = {};
+  for(var tmplname in this.MenuTemplates){
+    var tmpl = this.MenuTemplates[tmplname];
+    if(typeof _this.defaultMenuTemplate == 'undefined') _this.defaultMenuTemplate = tmplname;
+    this.jsh.Config.macros.CMS_MENU_TEMPLATES.push({ "code_val": tmplname, "code_txt": tmpl.title });
+
+    var frontend_template = {
+      publish: undefined
+    };
+    if(tmpl.remote_template){
+      if('publish' in tmpl.remote_template) frontend_template.publish = tmpl.remote_template.publish;
+    }
+    frontend_MenuTemplates[tmplname] = frontend_template;
+  }
+  this.jsh.Sites['main'].globalparams.MenuTemplates = frontend_MenuTemplates;
+  this.jsh.Sites['main'].globalparams.defaultMenuTemplate = _this.defaultMenuTemplate;
 }
 
 jsHarmonyCMS.prototype.getFactoryConfig = function(){
@@ -199,7 +225,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
 
   return {
     globalparams: {
-      'templates': {}
+      'PageTemplates': {},
+      'MenuTemplates': {}
     },
     public_apps: [
       { '*':  express.static(path.join(_this.basepath, 'public')) },

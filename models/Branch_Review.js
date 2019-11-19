@@ -158,10 +158,12 @@ jsh.App[modelid] = new (function(){
       if(branch_menu.diff){
         var diff_map = {
           'menu_name': 'Menu Name',
+          'template_title': 'Template',
+          'menu_path': 'Menu File Path',
           'menu_items': 'Menu Items'
         }
         for(var key in branch_menu.diff){
-          if(_.includes(['menu_name'],key)){
+          if(_.includes(['menu_name','template_title','menu_path'],key)){
             jdiff.append($('<div class="'+xmodel.class+'_diff_item"><b>New '+(diff_map[key]||key)+'</b>: '+branch_menu.diff[key]+'</div>'));
           }
         }

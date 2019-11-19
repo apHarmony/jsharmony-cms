@@ -28,11 +28,11 @@
     "async": "^2.6.2",
     "cheerio": "^1.0.0-rc.3",
     "diff-match-patch": "^1.0.4",
-    "diff2html": "^2.11.3",
-    "ejs": "^2.6.1",
+    "diff2html": "^2.12.1",
+    "ejs": "^2.7.2",
     "js-beautify": "^1.10.2",
-    "jsharmony": "^1.1.84",
-    "jsharmony-factory": "^1.1.42",
+    "jsharmony": "^1.1.135",
+    "jsharmony-factory": "^1.1.76",
     "lodash": "^4.17.14"
   }
 }

@@ -35,9 +35,9 @@ module.exports = exports = function(module, funcs){
     var appsrv = this;
 
     var page_file_id = page.page_file_id;
-    var template_id = page['template_id'];
-    if(!template_id) template_id = module.DefaultTemplate;
-    var template = module.Templates[template_id];
+    var page_template_id = page.page_template_id;
+    if(!page_template_id) page_template_id = module.defaultPageTemplate;
+    var template = module.PageTemplates[page_template_id];
 
     //Load Page Content from disk
     module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_content){
@@ -65,6 +65,7 @@ module.exports = exports = function(module, funcs){
         header: template.header||'',
         footer: template.footer||'',
         js: template.js||'',
+        raw: template.raw||false
       };
       
       return cb(null,{
@@ -84,7 +85,7 @@ module.exports = exports = function(module, funcs){
 
     function parseClasses(jobj,prop){
       if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
-      var cssClassString = jobj.attr('class');
+      var cssClassString = jobj.attr('class')||'';
       var cssClasses = cssClassString.split(' ');
       for(var i=0;i<cssClasses.length;i++){
         var cssClass = cssClasses[i].trim();
@@ -145,7 +146,7 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.page_key', 'Page Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select page_key,page_file_id,page_title,page_path,page_tags,page_author,template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+    sql = 'select page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
     
     var fields = [];
     var datalockstr = '';
@@ -161,14 +162,14 @@ module.exports = exports = function(module, funcs){
       var page = rslt[0][0];
 
       //Get Page Template
-      var template_id = page['template_id'];
-      var template = module.Templates[template_id];
+      var page_template_id = page.page_template_id;
+      var page_template = module.PageTemplates[page_template_id];
 
       var baseurl = req.baseurl;
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
       
       //Globally accessible
-      if(template.remote_template && template.remote_template.editor){
+      if(page_template.remote_template && page_template.remote_template.editor){
         var referer = req.get('Referer');
         if(referer){
           var urlparts = urlparser.parse(referer, true);
@@ -206,7 +207,7 @@ module.exports = exports = function(module, funcs){
           //Return page
           funcs.getClientPage(page, function(err, clientPage){
             if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-            if(clientPage.page.body){
+            if(clientPage.page.body && !clientPage.template.raw){
               clientPage.page.body = funcs.replaceBranchURLs(clientPage.page.body, {
                 getMediaURL: function(media_key){
                   return baseurl+'_funcs/media/'+media_key+'/';

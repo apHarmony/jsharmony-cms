@@ -34,10 +34,17 @@ module.exports = exports = function(module, funcs){
     var appsrv = this;
 
     var menu_file_id = menu.menu_file_id;
+    var menu_template_id = menu.menu_template_id;
+    if(!menu_template_id) menu_template_id = module.defaultMenuTemplate;
+    var template = module.MenuTemplates[menu_template_id];
 
     //Load Menu Content from disk
     module.jsh.ParseJSON(funcs.getMenuFile(menu_file_id), module.name, 'Menu File ID#'+menu_file_id, function(err, menu_content){
-      menu_content = menu_content || { menu_items: [] };      
+      menu_content = menu_content || { menu_items: [] };
+      menu_content.template = {
+        title: template.title||'',
+        body: template.body||'',
+      }; 
       return cb(null,menu_content);
     });
   }
@@ -67,7 +74,7 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.menu_key', 'Menu Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select menu_key,menu_file_id from '+(module.schema?module.schema+'.':'')+'v_my_menu where menu_key=@menu_key';
+    sql = 'select menu_key,menu_file_id,menu_template_id,menu_path from '+(module.schema?module.schema+'.':'')+'v_my_menu where menu_key=@menu_key';
     
     var fields = [];
     var datalockstr = '';

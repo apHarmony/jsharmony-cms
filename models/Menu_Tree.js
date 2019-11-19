@@ -268,7 +268,6 @@ jsh.App[modelid] = new (function(){
     xdataInfo._is_dirty = false;
     xdataInfo._is_deleted = false;
     xdataInfo._orig = null;
-    xformInfo.ApplyUnboundDefaults(xdataInfo);
     xformInfo.Render();
 
     _this.orig_current_menu_item = _.extend({}, xdataInfo);
@@ -398,8 +397,9 @@ jsh.App[modelid] = new (function(){
     window.setTimeout(function(){
       jsh.$root('.menu_item_text.xelem'+_this.getModelInfo().class).focus();
       //Scroll menu to item
-      var jselected = jsh.$root('.menu_item_id.xelem'+xmodel.class).find('.tree_item.selected').first();
-      if(jselected.length) jselected[0].scrollIntoView();
+      var jtree = jsh.$root('.menu_item_id.xelem'+xmodel.class);
+      var jselected = jtree.find('.tree_item.selected').first();
+      if(jselected.length) XExt.scrollObjIntoView(jtree, jselected);
     },1);
   }
 
