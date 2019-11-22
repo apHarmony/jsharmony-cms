@@ -17,7 +17,7 @@
       { "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
     ],
     "fields":[
-      {"name":"menu_key","control":"hidden","type":"bigint"},
+      {"name":"menu_key","control":"hidden","type":"bigint","key":true},
 	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
       {"name": "menu_item_id", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
