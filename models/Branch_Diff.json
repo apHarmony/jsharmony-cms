@@ -1,0 +1,19 @@
+{
+  "Branch_Diff": {
+    "layout":"form",
+    "table":"{schema}.branch",
+    "onecolumn":true,
+    "roles": {"PUBLISHER": "B"},
+    "actions":"B",
+    "caption":["Branch","Branches"],
+    "title":"Branch Diff",
+    "onload":"_this.onload(xmodel, callback);",
+    "fields": [
+      {"name":"branch_desc","caption":"Branch","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
+      {"name":"branch_user_id_fmt","caption":"Author","control":"label","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))"},
+      {"name":"branch_mtstmp","caption":"Last Modified","control":"label","format":["date","MM/DD/YYYY h:mm a"]},
+      {"name":"dst_branch_id","control":"hidden","unbound":true,
+        "lov": { "sql": "select branch_id code_val,branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' and site_id=(select site_id from {schema}.branch where branch_id=@branch_id) order by branch_desc", "blank": 1} },
+    ]
+  }
+}

@@ -178,40 +178,4 @@ jsh.App[modelid] = new (function(){
     //Closing Line
     jdiff.append($('<hr/>'));
   }
-
-  this.rejectBranch = function(){
-    XForm.Post(xmodel.module_namespace+'Branch_Review_Reject', { }, { branch_id: xmodel.get('branch_id') }, function(rslt){
-      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
-    });
-  }
-
-  this.approveBranch = function(){
-    var xform = xmodel.controller.form;
-    var sel = '.'+xmodel.class+'_Merge';
-
-    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
-
-      XExt.RenderLOV(xform.Data, jsh.$root('.xdialogblock ' + sel + ' .dst_branch_id'), xform.LOVs.dst_branch_id);
-
-      //Clear Values / Set Defaults
-      jprompt.find('.dst_branch_id').val('');
-    }, function (success) { //onAccept
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
-
-      //Validate File Selected
-      if (!jprompt.find('.dst_branch_id').val()) return XExt.Alert('Please select a target branch for the merge.');
-
-      var params = {
-        src_branch_id: xmodel.get('branch_id'),
-        dst_branch_id: jprompt.find('.dst_branch_id').val()
-      };
-
-      XForm.Post(xmodel.module_namespace+'Branch_Review_Approve', { }, params, function(rslt){
-        success();
-        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
-      });
-    });
-  }
-
 })();
