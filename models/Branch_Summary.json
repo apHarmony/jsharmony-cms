@@ -1,11 +1,19 @@
 {
   "Branch_Summary": {
-    "inherits": "Branch_Diff",
+    "layout":"form",
+    "table":"{schema}.branch",
+    "onecolumn":true,
+    "roles": {"PUBLISHER": "B"},
+    "actions":"B",
+    "caption":["Branch","Branches"],
     "title":"Branch Summary",
     "buttons":[
       { "link":"update:Branch_Clone","icon":"copy","text":"Clone" },
       { "link":"update:Branch_Checkout","icon":"edit","text":"Checkout / Edit Branch","class":"Branch_Summary_buttonCheckout" },
       { "link":"js:jsh.System.PublishBranch(xmodel.get('branch_id', this))","icon":"ok","text":"Publish","class":"Branch_Summary_buttonPublish"}
+    ],
+    "fields": [
+      { "control":"subform","target":"Branch_Diff","actions":"BU","controlclass":"Branch_Diff_subform"}
     ]
   }
 }
