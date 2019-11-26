@@ -329,7 +329,7 @@ window.jsHarmonyCMS = new (function(){
         });
       });
       window.CKEDITOR.inline('jsharmony_cms_body', {
-        extraPlugins: 'sharedspace,sourcedialog,dragresize,pastetext',
+        extraPlugins: 'sharedspace,sourcedialog,dragresize,pastetext,youtube',
         removePlugins: 'floatingspace,maximize,resize',
         sharedSpaces: {
           top: 'jsharmony_cms_body_toolbar'
@@ -338,7 +338,7 @@ window.jsHarmonyCMS = new (function(){
           ['Styles', 'Format', 'Font', 'FontSize'],
           ['Bold', 'Italic', 'Underline', 'StrikeThrough', '-', 'Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'PasteText', 'Find', 'Replace', '-', 'Outdent', 'Indent', '-', 'Print'],
           ['NumberedList', 'BulletedList', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-          ['Image', 'Table', 'HorizontalRule', '-', 'Link', 'Smiley', 'TextColor', 'BGColor', 'Source', 'Maximize'],
+          ['Image', 'Youtube', 'Table', 'HorizontalRule', '-', 'Link', 'Smiley', 'TextColor', 'BGColor', 'Source', 'Maximize'],
           ['Sourcedialog']
         ]
       });
