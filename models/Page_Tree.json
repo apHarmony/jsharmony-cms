@@ -20,7 +20,7 @@
     "onloadstate": "_this.onloadstate(xmodel, state);",
     "fields":[
 	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
-      {"name": "page_folder", "actions": "B","foreignkey":1,"caption": "","control": "tree",
+      {"name": "page_folder", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
        "default": "/",
        "lov": {
@@ -30,10 +30,10 @@
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
-            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
+            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);","actions":"I" },
+            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);","actions":"U" },
+            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);","actions":"U" },
+            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);","actions":"D" }
           ]
         },
         "onchange": "_this.page_folder_onchange(obj,newval);"

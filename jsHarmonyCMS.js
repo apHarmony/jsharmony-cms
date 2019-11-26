@@ -218,6 +218,9 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         _this.funcs.deploy.call(_this.jsh.AppSrv, deployment.deployment_id);
       }
     }),
+    options: {
+      quiet: true
+    },
     when: function (curdt, lastdt) {  //return true if the job should run
       return (curdt.getTime() - lastdt.getTime() > _this.Config.deploymentJobDelay);
     }
