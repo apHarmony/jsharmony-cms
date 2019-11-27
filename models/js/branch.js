@@ -54,6 +54,12 @@
     });
   }
 
+  var getMergeType = function(xmodel) {
+    var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
+    if(checked_option.length) return checked_option.val();
+    return 'CHANGES';
+  }
+
   jsh.System.ApproveBranch = function(xmodel){
     var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_Merge';
@@ -71,12 +77,14 @@
       //Validate File Selected
       if (!jprompt.find('.dst_branch_id').val()) return XExt.Alert('Please select a target branch for the merge.');
 
+      var mergeType = getMergeType(xmodel);
+
       var params = {
         src_branch_id: xmodel.get('branch_id'),
         dst_branch_id: jprompt.find('.dst_branch_id').val()
       };
 
-      XForm.Post(xmodel.module_namespace+'Branch_Review_Approve', { }, params, function(rslt){
+      XForm.Post(xmodel.module_namespace+'Branch_Review_Approve_'+mergeType, { }, params, function(rslt){
         success();
         XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
       });
