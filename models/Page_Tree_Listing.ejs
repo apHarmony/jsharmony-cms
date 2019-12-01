@@ -1,12 +1,13 @@
 <div style="display:none;">
-  <div class="<%=model.class%>_AddPage xdialogbox xpromptbox" style="min-width:350px;">
+  <div class="<%=model.class%>_AddPage xdialogbox xpromptbox" style="min-width:470px;">
     <h3>Add Page</h3>
     <div align="left" style="padding-top:15px;">
-      <div style="display: inline-block; width: 100px;margin-bottom:10px;">File Name:</div>
-      <input class="page_filename default_focus" style="width:200px;" type="text" maxlength="254"><br/>
+      <div style="display: inline-block; width: 100px; margin-bottom:10px;">File Name:</div>
+      <input class="page_filename default_focus" style="width:200px;" type="text" maxlength="254" />
+      <label style="display:inline-block; font-weight:normal; margin-bottom:7px; font-size:14px;"><input class="page_filename_default_document" style="position:relative;top:2px;" type="checkbox" /> Default Document</label><br/>
 
       <div style="display: inline-block; width: 100px;margin-bottom:10px;">Page Title:</div>
-      <input class="page_title" style="width:200px;" type="text" maxlength="1024"><br/>
+      <input class="page_title" style="width:300px;" type="text" maxlength="1024" /><br/>
 
       <div style="display: inline-block; width: 100px;margin-bottom:10px;">Template:</div>
       <select class="page_template_id dropdown"></select><br/>
@@ -27,6 +28,7 @@
 
 <div class="xcontext_menu <%=model.class%>_file_context_menu">
   <a onclick="<%-js('_this.openPageEditor(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Edit</a>
+  <a onclick="<%-js('_this.duplicateFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_copy.png" />Duplicate</a>
   <a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a>
   <a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a>
   <a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a>

@@ -18,6 +18,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
+var async = require('async');
 var path = require('path');
 var fs = require('fs');
 var urlparser = require('url');
@@ -191,44 +192,73 @@ module.exports = exports = function(module, funcs){
         else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
         else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
 
-        
-        //Get authors
-        if(Helper.HasRole(req, 'PUBLISHER')){
-          sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from jsharmony.sys_user_role where sys_role_name in ('PUBLISHER','AUTHOR')) order by code_txt";
-        }
-        else {
-          sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"v_my_page where page_key=@page_key) order by code_txt";
-        }
-        appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-          if(!rslt || !rslt.length || !rslt[0]){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
-          var authors = rslt[0];
+        var authors = null;
+        var clientPage = null;
+        var media_file_ids = {};
 
-          //Return page
-          funcs.getClientPage(page, function(err, clientPage){
-            if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-            if(clientPage.page.body && !clientPage.template.raw){
-              clientPage.page.body = funcs.replaceBranchURLs(clientPage.page.body, {
-                getMediaURL: function(media_key){
-                  return baseurl+'_funcs/media/'+media_key+'/';
-                },
-                getPageURL: function(page_key){
-                  return baseurl+'_funcs/pages/'+page_key+'/';
-                }
-              });
+        async.waterfall([
+
+          //Get authors
+          function(cb){
+            if(Helper.HasRole(req, 'PUBLISHER')){
+              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from jsharmony.sys_user_role where sys_role_name in ('PUBLISHER','AUTHOR')) order by code_txt";
             }
-            res.end(JSON.stringify({ 
-              '_success': 1,
-              'page': clientPage.page,
-              'template': clientPage.template,
-              'authors': authors,
-              'role': page_role,
-              'views': {
-                'jsh_cms_editor.css': (jsh.getEJS('jsh_cms_editor.css')||'')+(jsh.getEJS('jsh_cms_editor.css.ext')||''),
-                'jsh_cms_editor': jsh.getEJS('jsh_cms_editor')
+            else {
+              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"v_my_page where page_key=@page_key) order by code_txt";
+            }
+
+            appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+              if(!rslt || !rslt.length || !rslt[0]){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
+              authors = rslt[0];
+              return cb();
+            });
+          },
+
+          //Get media
+          function(cb){
+            appsrv.ExecRecordset(req._DBContext, "select media_key, media_file_id from "+(module.schema?module.schema+'.':'')+"v_my_media where (media_file_id is not null) and (media_is_folder = 0)", [], {}, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+              _.each(rslt[0], function(media){
+                media_file_ids[media.media_key] = media.media_file_id;
+              });
+              return cb();
+            });
+          },
+
+          //Get page
+          function(cb){
+            funcs.getClientPage(page, function(err, _clientPage){
+              if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+              clientPage = _clientPage;
+              if(clientPage.page.body && !clientPage.template.raw){
+                clientPage.page.body = funcs.replaceBranchURLs(clientPage.page.body, {
+                  getMediaURL: function(media_key){
+                    return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
+                  },
+                  getPageURL: function(page_key){
+                    return baseurl+'_funcs/pages/'+page_key+'/';
+                  }
+                });
               }
-            }));
-          });
+              return cb();
+            });
+          }
+        ], function(err){
+          if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
+
+          res.end(JSON.stringify({ 
+            '_success': 1,
+            'page': clientPage.page,
+            'template': clientPage.template,
+            'authors': authors,
+            'role': page_role,
+            'views': {
+              'jsh_cms_editor.css': (jsh.getEJS('jsh_cms_editor.css')||'')+(jsh.getEJS('jsh_cms_editor.css.ext')||''),
+              'jsh_cms_editor': jsh.getEJS('jsh_cms_editor')
+            }
+          }));
         });
       }
       else if(verb == 'post'){

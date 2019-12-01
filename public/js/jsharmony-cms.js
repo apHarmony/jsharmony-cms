@@ -177,7 +177,7 @@ window.jsHarmonyCMS = new (function(){
       var jdata = JSON.parse(data);
       if(jdata.media_key){
         var newClass = 'media_key_'+jdata.media_key;
-        window.CKEDITOR.tools.callFunction( jdata.CKEditorFuncNum, _this._baseurl+'_funcs/media/'+jdata.media_key+'/', function(){
+        window.CKEDITOR.tools.callFunction( jdata.CKEditorFuncNum, _this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id, function(){
           var dialog = this.getDialog();
           var element = dialog.getContentElement('advanced', 'advCSSClasses' );
           if(!element) element = dialog.getContentElement('advanced', 'txtGenClass');
@@ -275,7 +275,7 @@ window.jsHarmonyCMS = new (function(){
     jsh.XExt.RenderLOV(null, $('#jsharmony_cms_editor_bar .page_settings_author'), authors);
     _.each(['title','tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).val(_this.page[key]||''); });
     _.each(['title','keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
-    _this.TagControlRender($('#jsharmony_cms_editor_bar .page_settings_tags_control'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
+    XExt.TagBox_Refresh($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
   }
 
   this.setCKEditorContent = function(val){
@@ -300,11 +300,12 @@ window.jsHarmonyCMS = new (function(){
       window.CKEDITOR.disableAutoInline = true;
       //window.CKEDITOR.config.startupFocus = true;
       window.CKEDITOR.disableAutoInline = true;
-      window.CKEDITOR.config.allowedContent = true
+      window.CKEDITOR.config.allowedContent = true;
       window.CKEDITOR.config.disableNativeSpellChecker = false;
       window.CKEDITOR.config.filebrowserBrowseUrl = _this._baseurl+'jsHarmonyCMS/Link_Browser';
       window.CKEDITOR.config.filebrowserImageBrowseUrl = _this._baseurl+'jsHarmonyCMS/Media_Browser';
       window.CKEDITOR.config.removeDialogTabs = 'link:upload;image:Upload;image:Link';
+      window.CKEDITOR.config.skin = 'moono-lisa';
       window.CKEDITOR.on('instanceCreated', function(event){
         var editor = event.editor;
         editor.on('configLoaded', function(){
@@ -335,10 +336,10 @@ window.jsHarmonyCMS = new (function(){
           top: 'jsharmony_cms_body_toolbar'
         },
         toolbar: [
-          ['Styles', 'Format', 'Font', 'FontSize'],
-          ['Bold', 'Italic', 'Underline', 'StrikeThrough', '-', 'Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'PasteText', 'Find', 'Replace', '-', 'Outdent', 'Indent', '-', 'Print'],
+          ['Format'],
+          ['Bold', 'Italic', 'Underline', '-', 'Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'PasteText', 'Find', 'Replace', '-', 'Outdent', 'Indent', '-', 'Print'],
           ['NumberedList', 'BulletedList', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-          ['Image', 'Youtube', 'Table', 'HorizontalRule', '-', 'Link', 'Smiley', 'TextColor', 'BGColor', 'Source', 'Maximize'],
+          ['Link', 'Image', 'Youtube', 'Table', 'Styles'],
           ['Sourcedialog']
         ]
       });
@@ -361,7 +362,7 @@ window.jsHarmonyCMS = new (function(){
     _.each(['title','keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
 
     //Initialize Tag Control
-    _this.TagControlInit($('#jsharmony_cms_editor_bar .page_settings_tags_control'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
+    XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
 
     $(window).on('resize', function(){ _this.refreshLayout(); });
     $(window).on('scroll', function(){ _this.refreshLayout(); });
@@ -390,123 +391,6 @@ window.jsHarmonyCMS = new (function(){
     */
    var toolbarTop = 37;
     $('#jsharmony_cms_body_toolbar').css('top', toolbarTop+'px');
-  }
-
-  this.TagControlRender = function(jctrl, jbase){
-    jctrl.find('span').remove();
-    _this.TagControlAddTags(jctrl, jbase, jbase.val().split(','));
-  }
-
-  this.TagControlUpdateBase = function(jctrl, jbase){
-    var tags = [];
-    jctrl.children('span').each(function(){
-      tags.push($(this).data('val'));
-    });
-    var prevval = jbase.val();
-    jbase.val(tags.join(', '));
-    if(jbase.val()!=prevval) jbase.trigger('input');
-  }
-
-  this.TagControlAddTags = function(jctrl, jbase, new_tags){
-
-    var addTag = function(val){
-      val = val.trim();
-      if(!val.length) return;
-      var jnew = $('<span class="notextselect">'+XExt.escapeHTML(val)+'	&#8203;<div class="xtag_remove">✕</div></span>');
-      jnew.data('val', val)
-      jctrl.find('.xtag_input').before(jnew);
-
-      jnew.find('.xtag_remove').on('click', function(){
-        jctrl.find('.xtag_input').blur();
-        $(this).closest('span').remove();
-        _this.TagControlUpdateBase(jctrl, jbase);
-      });
-    }
-
-    _.each(new_tags, function(tag){ addTag(tag); });
-    _this.TagControlUpdateBase(jctrl, jbase);
-  }
-
-  this.TagControlInit = function(jctrl, jbase){
-    jbase.hide();
-    jctrl.show();
-    jctrl.append('<input class="xtag_input" />');
-
-    jctrl.on('click', function(){
-      var jinput = jctrl.find('.xtag_input');
-      if(!jinput.is(':visible')){
-        jinput.val('');
-        jinput[0].parentNode.insertBefore(jinput[0], null);
-        jinput.show().focus();
-      }
-    });
-
-    jctrl.find('.xtag_input').on('input', function(e){
-      var val = $(this).val();
-      if(val.indexOf(',')>=0){ $(this).val(''); _this.TagControlAddTags(jctrl, jbase, val.split(',')); }
-      $(this).attr('size',Math.round(($(this).val()||'').toString().length/.87));
-    });
-
-    var isMovingInput = false;
-
-    jctrl.find('.xtag_input').on('keydown', function(e){
-      var obj = this;
-      var jobj = $(obj);
-      var handled = false;
-      isMovingInput = false;
-
-      var cursorpos = 0;
-      var sel = XExt.getSelection(obj);
-      if(sel) cursorpos = sel.start;
-
-      if(e.which==39){ //Right
-        if(jobj.next().length && (cursorpos==jobj.val().length)){
-          handled = true;
-          var objnextnext = null;
-          if(jobj.next().next().length) objnextnext = jobj.next().next()[0];
-          isMovingInput = true;
-          jobj[0].parentNode.insertBefore(jobj[0], objnextnext);
-          //jobj.insertAfter(jobj.next());
-          jobj.focus();
-          isMovingInput = false;
-        }
-      }
-      else if(e.which==37){ //Left
-        if(jobj.prev().length && (cursorpos==0)){
-          handled = true;
-          var objprev = jobj.prev()[0];
-          isMovingInput = true;
-          jobj[0].parentNode.insertBefore(jobj[0], objprev);
-          jobj.focus();
-          isMovingInput = false;
-        }
-      }
-      else if(e.which==8){ //Backspace
-        if(jobj.prev().length && (cursorpos==0)){
-          handled = true;
-          jobj.prev().remove();
-          _this.TagControlUpdateBase(jctrl, jbase);
-        }
-      }
-      else if(e.which==13){ //Backspace
-        var val = $(this).val();
-        $(this).val('');
-        _this.TagControlAddTags(jctrl, jbase, [val]);
-      }
-      if(handled){
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }
-    });
-
-    jctrl.find('.xtag_input').on('focusout', function(){
-      if(isMovingInput) return;
-      var val = $(this).val();
-      $(this).val('');
-      _this.TagControlAddTags(jctrl, jbase, [val]);
-      $(this).hide();
-    });
   }
 
   this.onEditorContentLoaded = function(f){

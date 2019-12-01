@@ -12,18 +12,20 @@
     "menu":"Media",
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "grid_expand_search": true,
+    "commitlevel": "row",
     "oninit": "jsh.System.RequireBranch(xmodel);",
     "fields": [
       {"name":"media_key","caption":"Key","control":"hidden","key":true},
-      {"name":"media_desc","caption":"Title","control":"textbox_M"},
-      {"name":"media_path","caption":"Media Path","control":"textbox_L"},
-      {"name":"media_type","caption":"Type"},
+      {"name":"media_file_id","caption":"File ID","control":"hidden"},
+      {"name":"media_desc","caption":"Title","control":"label"},
+      {"name":"media_path","caption":"Media Path","control":"label"},
+      {"name":"media_type","caption":"Type","control":"label"},
       {"name":"media_tags","caption":"Tags","control":"label"},
       {"name":"media_size","caption":"Size","control":"label","format":"bytes","cellstyle":"white-space:nowrap;"},
       {"name":"media_width","caption":"Width","control":"label"},
       {"name":"media_height","caption":"Height","control":"label"},
       {"name":"media_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
-      {"control":"html","cellstyle":"text-align:center;","value":"<a class='xgrid_action' href='#' onclick='<%=jsh._instance%>.getFileProxy().prop(\"src\",\"<%=jsh._BASEURL%>_funcs/media/<#=data.media_key#>/?download\");'><img height='14' src='/images/icon_download.png' /></a>"},
+      {"control":"html","cellstyle":"text-align:center;","value":"<a class='xgrid_action' href='#' onclick='<%=jsh._instance%>.getFileProxy().prop(\"src\",\"<%=jsh._BASEURL%>_funcs/media/<#=data.media_key#>/?download&media_file_id=<#=data.media_file_id#>\");'><img height='14' src='/images/icon_download.png' /></a>"},
     ]
   }
 }

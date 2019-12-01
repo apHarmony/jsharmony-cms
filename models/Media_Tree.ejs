@@ -4,7 +4,7 @@
       <# _.each(media_files, function(media_file){ #>
         <div class="<%=model.class%>_file_tile" data-key="<#=media_file.media_key#>">
           
-          <# if(media_file.media_width && media_file.media_height){ #><img src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile" />
+          <# if(media_file.media_width && media_file.media_height){ #><img src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile?media_file_id=<#=media_file.media_file_id#>" />
           <# } else { #><img src="<%=jsh._BASEURL%>images/icon_file.svg" /><# } #>
           <span><#=media_file.media_filename#></span>
         </div>
@@ -27,18 +27,14 @@
           <th align="left" width="30%" data-sort="filename" class="sortable">Name</th>
           <th align="left" width="50%" data-sort="description" class="sortable">Description</th>
           <th align="right" width="70" data-sort="size" class="sortable">Size</th>
-          <th align="center" width="70">Edit</th>
-          <th align="center" width="70">Delete</th>
         </tr>
       </thead>
       <tbody>
         <# _.each(media_files, function(media_file){ #>
           <tr class="<%=model.class%>_file_listing_row" data-key="<#=media_file.media_key#>">
-            <td align="left" class="media_filename"><a href="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile" target="<%=jsh._instance%>_xfileproxy"><img src='/images/icon_file.png' class='' /><#=media_file.media_filename#></a></td>
+            <td align="left" class="media_filename"><a href="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile?media_file_id=<#=media_file.media_file_id#>" target="<%=jsh._instance%>_xfileproxy"><img src='/images/icon_file.png' class='' /><#=media_file.media_filename#></a></td>
             <td align="left"><#=media_file.media_desc#></td>
             <td align="right" style="white-space:nowrap;"><#=jsh.XFormat.bytes(media_file.media_size)#></td>
-            <td align="center"><a href="#" class="<%=model.class%>_edit_media" data-media_key="<#=media_file.media_key#>"><img src="/images/icon_edit.png" class="icon" title="Edit"></a></td>
-            <td align="center"><a href="#" class="<%=model.class%>_delete_media" data-media_key="<#=media_file.media_key#>"><img src="/images/icon_delete.png" class="icon" title="Delete"></a></td>
           </tr>
         <# }); #>
         <# if(!media_files.length){ #>
@@ -59,15 +55,20 @@
 <script type="text/x-jsharmony-template" class="<%=model.class%>_file_info_template">
   <div class="<%=model.class%>_file_info_header">Media Information</div>
   <# if(media_file){ #>
-    <# if(media_file.media_width && media_file.media_height){ #><img class="<%=model.class%>_file_info_preview" src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_preview" />
+    <# if(media_file.media_width && media_file.media_height){ #><img class="<%=model.class%>_file_info_preview" src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_preview?media_file_id=<#=media_file.media_file_id#>" />
     <# } else { #><img class="<%=model.class%>_file_info_preview" src="<%=jsh._BASEURL%>images/icon_file.svg" /><# } #>
     <div class="<%=model.class%>_file_info_actions">
       <a class="<%=model.class%>_file_info_download" href="#"><img src="/images/icon_download.png" /> Download</a>
+      <a class="<%=model.class%>_file_info_replace" href="#"><img src="/images/icon_new.png" /> Replace</a>
       <a class="<%=model.class%>_file_info_delete" href="#"><img src="/images/icon_delete.png" /> Delete</a>
     </div>
     <div class="<%=model.class%>_file_info_items">
       <div class="<%=model.class%>_file_info_item"><label>File Name:</label><span class="media_filename"><#=media_file.media_filename#></span> <a class="<%=model.class%>_file_info_rename" href="#"><img src="/images/icon_edit.png" /></a></div>
       <div class="<%=model.class%>_file_info_item"><label>Path:</label><span class="media_path"><#=media_file.media_path#></span></div>
+      <div class="<%=model.class%>_file_info_item" style="display:none;"><a href="#" class="save_changes"><img src="/images/icon_save.png"/> Save Changes</a></div>
+      <div class="<%=model.class%>_file_info_item"><label>Title:</label><input class="media_desc" /></div>
+      <div class="<%=model.class%>_file_info_item"><label>Type:</label><select class="media_type"></select></div>
+      <div class="<%=model.class%>_file_info_item" style="align-items:flex-start;"><label style="padding-top:8px;">Tags:</label><div class="media_tags_editor xtagbox"></div><input type="text" class="media_tags xtagbox_base" value="<#=media_file.media_tags#>" /></div>
       <div class="<%=model.class%>_file_info_item"><label>Size:</label><span class="media_size"><#=jsh.XFormat.bytes(media_file.media_size)#> (<#=jsh.XFormat.comma(media_file.media_size)#> bytes)</span></div>
       <# if(media_file.media_width){ #><div class="<%=model.class%>_file_info_item"><label>Width:</label><span class="media_width"><#=media_file.media_width#> pixels</span></div><# } #>
       <# if(media_file.media_height){ #><div class="<%=model.class%>_file_info_item"><label>Height:</label><span class="media_height"><#=media_file.media_height#> pixels</span></div><# } #>
@@ -86,6 +87,14 @@
       <div class="<%=model.class%>_drop_overlay_body">
         Drop files here<br/>
         <input type="file" class="media_upload" multiple accept="image/*" onchange="" />
+      </div>
+    </div>
+  </div>
+  <div class="<%=model.class%>_ReplaceMedia xdialogbox xpromptbox" style="min-width:350px;height:200px;">
+    <div style="position:relative;width:100%;height:200px;">
+      <div class="<%=model.class%>_drop_overlay_body">
+        Drop file here<br/>
+        <input type="file" class="media_upload" accept="image/*" onchange="" />
       </div>
     </div>
   </div>

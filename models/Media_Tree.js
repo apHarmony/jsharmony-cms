@@ -7,6 +7,7 @@ jsh.App[modelid] = new (function(){
 
   this.media_files = [];
   this.selected_media_key = null;
+  this.selected_media_file = null;
   this.state_default = {
     media_folder: null,
     file_view: 'tiles',
@@ -27,10 +28,11 @@ jsh.App[modelid] = new (function(){
     $(window).bind('resize', _this.onresize);
     _this.refreshLayout();
     _this.renderInfo();
-    jsh.$root('.'+xmodel.class+'_file_listing').on('dragenter', _this.file_listing_onDragEnter);
-    jsh.$root('.'+xmodel.class+'_file_listing').on('dragleave', _this.file_listing_onDragLeave);
-    jsh.$root('.'+xmodel.class+'_file_listing').on('dragover', _this.file_listing_onDragOver);
-    jsh.$root('.'+xmodel.class+'_file_listing').on('drop', _this.file_listing_onDrop);
+    var jFileListing = jsh.$root('.'+xmodel.class+'_file_listing');
+    jFileListing.on('dragenter', _this.file_listing_onDragEnter);
+    jFileListing.on('dragleave', _this.file_listing_onDragLeave);
+    jFileListing.on('dragover', _this.file_listing_onDragOver);
+    jFileListing.on('drop', _this.file_listing_onDrop.bind(jFileListing[0], null));
   }
 
   this.ondestroy = function(xmodel){
@@ -63,7 +65,7 @@ jsh.App[modelid] = new (function(){
     e.stopPropagation();
   }
 
-  this.file_listing_onDrop = function(e){
+  this.file_listing_onDrop = function(replace_media_key, e){
     var jobj = $(this);
     _this.file_listing_dragCounter = 0;
     jobj.removeClass('dragOver');
@@ -72,7 +74,12 @@ jsh.App[modelid] = new (function(){
 
     var srcevent = e.originalEvent;
     if(srcevent && srcevent.dataTransfer && srcevent.dataTransfer.files){
-      _this.uploadFiles(srcevent.dataTransfer.files);
+      if(replace_media_key){
+        _this.uploadReplacementFile(replace_media_key, srcevent.dataTransfer.files);
+      }
+      else{
+        _this.uploadFiles(srcevent.dataTransfer.files);
+      }
     }
   }
 
@@ -121,6 +128,52 @@ jsh.App[modelid] = new (function(){
         }
         else if ((jdata instanceof Object) && ('_success' in jdata)) {
           if (cb) cb(null, jdata);
+        }
+        else {
+          jsh.XExt.Alert('Error Uploading File: ' + JSON.stringify(jdata ? jdata : ''));
+        }
+      },
+      error: function (err) { jsh.xLoader.StopLoading(_this.loadobj); XExt.Alert('Error uploading file: '+XExt.stringify(err)); }
+    });
+  }
+
+  this.uploadReplacementFile = function(media_key, files, cb){
+    if(files.length==0) return XExt.Alert('Please select a file for upload');
+    XExt.clearDialogs();
+    if(files.length > 1) return XExt.Alert('Please select only one file for for upload');
+
+    var file = files[0];
+    var fd = new FormData();
+    fd.append('media_file', file, file.name);
+
+    jsh.xLoader.StartLoading(_this.loadobj);
+    $.ajax({
+      url: jsh._BASEURL + '_funcs/media/' + media_key + '/',
+      data: fd,
+      processData: false,
+      contentType: false,
+      type: 'POST',
+      dataType: 'json',
+      xhrFields: {
+        withCredentials: true
+      },
+      success: function(jdata){
+        jsh.xLoader.StopLoading(_this.loadobj);
+        if ((jdata instanceof Object) && ('_error' in jdata)) {
+          if (jsh.DefaultErrorHandler(jdata._error.Number, jdata._error.Message)) { }
+          else if ((jdata._error.Number == -9) || (jdata._error.Number == -5)) { jsh.XExt.Alert(jdata._error.Message); }
+          else { jsh.XExt.Alert('Error #' + jdata._error.Number + ': ' + jdata._error.Message); }
+          return;
+        }
+        else if ((jdata instanceof Object) && ('_success' in jdata)) {
+          var rslt = jdata;
+          //Merge data back in to local file
+          var existing_media_file = _this.getMediaFile(media_key);
+          if(existing_media_file){
+            existing_media_file = _.extend(existing_media_file, _.pick(rslt, ['media_ext','media_path','media_filename','media_width','media_height','media_size','media_file_id']));
+          }
+          //Refresh images & listing
+          _this.renderListing();
         }
         else {
           jsh.XExt.Alert('Error Uploading File: ' + JSON.stringify(jdata ? jdata : ''));
@@ -208,11 +261,12 @@ jsh.App[modelid] = new (function(){
         _this.media_files = rslt[emodelid];
         _.each(_this.media_files, function(media_file){
           media_file.media_uptstmp_raw = moment(media_file.media_uptstmp).valueOf();
+          media_file._is_dirty = false;
         });
-        _this.selected_media_key = null;
         var newScroll = 0;
         if(sameFolder) newScroll = $('.'+xmodel.class+'_file_listing_scroll').scrollTop();
-        _this.renderListing();
+        _this.renderListing({ refresh_sidebar: false });
+        _this.selectFile(null);
         $('.'+xmodel.class+'_file_listing_scroll').scrollTop(newScroll);
         if (onComplete) onComplete();
       }
@@ -220,7 +274,9 @@ jsh.App[modelid] = new (function(){
     }, function (err) { });
   }
 
-  this.renderListing = function(){
+  this.renderListing = function(options){
+    options = _.extend({ refresh_sidebar: true }, options);
+
     //Sort Files
     var sorted_media_files = [].concat(_this.media_files);
     var sort_key = _this.SORT_KEY[_this.state.file_sort.substr(1)];
@@ -238,7 +294,7 @@ jsh.App[modelid] = new (function(){
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
     jcontainer.html(XExt.renderClientEJS(tmpl, { media_files: sorted_media_files, _: _, jsh: jsh }));
     _this.bindEventsListing();
-    _this.selectFile(_this.selected_media_key);
+    if(options.refresh_sidebar) _this.selectFile(_this.selected_media_key);
 
     //Update group buttons
     jsh.$root('.xform_button_group_SortBy .xform_button_caption').text('Sort By: '+_this.SORT[_this.state.file_sort.substr(1)]);
@@ -301,8 +357,20 @@ jsh.App[modelid] = new (function(){
   }
 
   this.selectFile = function(media_key, options){
-    options = _.extend({ scrollIntoView: undefined }, options);
+    options = _.extend({ scrollIntoView: undefined, force: false }, options);
+    if((media_key != _this.selected_media_key) && _this.selected_media_file && !options.force){
+      if(_this.selected_media_file._is_dirty){
+        return XExt.Confirm('Save changes to previous media file information?', function(){ //Yes
+          _this.saveMediaFileInfo(_this.selected_media_file, function(){
+            _this.selectFile(media_key, options);
+          });
+        }, function(){ //No
+          _this.selectFile(media_key, _.extend(options, { force: true }));
+        });
+      }
+    }
     _this.selected_media_key = media_key||null;
+    _this.selected_media_file = (media_key ? _.extend({}, _this.getMediaFile(media_key)) : null);
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
     jcontainer.find('.selected').removeClass('selected');
     if(_this.state.file_view=='tiles'){
@@ -311,12 +379,7 @@ jsh.App[modelid] = new (function(){
     else if(_this.state.file_view=='details'){
       if(media_key) jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr[data-key='+media_key+']').addClass('selected');
     }
-    var media_file = _this.getMediaFile(media_key);
-    if(media_file){
-      //if((typeof options.scrollIntoView == 'undefined') && !_this.isSidebarVisible()) options.scrollIntoView = true;
-      //_this.toggleSidebar(true);
-    }
-    _this.renderInfo(media_file);
+    _this.renderInfo(_this.selected_media_file);
     if(options.scrollIntoView){
       var jselected = jcontainer.find('.selected');
       if(jselected.length) jselected[0].scrollIntoView();
@@ -334,6 +397,15 @@ jsh.App[modelid] = new (function(){
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_info');
 
     jcontainer.html(XExt.renderClientEJS(tmpl, { media_file: media_file, _: _, jsh: jsh }));
+
+    if(media_file){
+      jcontainer.find('.media_desc').val(media_file.media_desc);
+      XExt.RenderLOV(null, jcontainer.find('.media_type'), xmodel.controller.form.LOVs.media_type);
+      jcontainer.find('.media_type').val(media_file.media_type);
+      XExt.TagBox_Render(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
+      jcontainer.find('.media_tags').val(media_file.media_tags);
+      XExt.TagBox_Refresh(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
+    }
     _this.bindEventsInfo();
   }
 
@@ -352,10 +424,10 @@ jsh.App[modelid] = new (function(){
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_info');
 
     var jpreview = jsh.$root('.'+xmodel.class+'_file_info_preview');
-    jpreview.on('click', function(){
-      var media_file = _this.getMediaFile(_this.selected_media_key);
+    jpreview.on('click', function(e){
+      var media_file = _this.selected_media_file;
       if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.pdf'], media_file.media_ext.toLowerCase())){
-        var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/';
+        var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?media_file_id='+media_file.media_file_id;
         var ww = 800;
         var wh = 600;
         if(media_file.media_width && media_file.media_height){
@@ -370,41 +442,157 @@ jsh.App[modelid] = new (function(){
         window.open(url,'_blank',"height="+wh+", width="+ww);
       }
       else {
-        var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download';
+        var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
         jsh.getFileProxy().prop('src', url);
       }
+      e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_download').on('click', function(){
+    jsh.$root('.'+xmodel.class+'_file_info_download').on('click', function(e){
       _this.downloadFile(_this.selected_media_key);
+      e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_delete').on('click', function(){
+    jsh.$root('.'+xmodel.class+'_file_info_replace').on('click', function(e){
+      _this.replaceFile(_this.selected_media_key);
+      e.preventDefault();
+    });
+
+    jsh.$root('.'+xmodel.class+'_file_info_delete').on('click', function(e){
       _this.deleteFile(_this.selected_media_key);
+      e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_rename').on('click', function(){
+    jsh.$root('.'+xmodel.class+'_file_info_rename').on('click', function(e){
       _this.renameFile(_this.selected_media_key);
+      e.preventDefault();
     });
+
+    jcontainer.find('.media_desc').on('input', function(){
+      _this.setMediaProp('media_desc', $(this).val());
+    });
+
+    jcontainer.find('.media_type').on('input', function(){
+      _this.setMediaProp('media_type', $(this).val());
+    });
+
+    jcontainer.find('.media_tags').on('input', function(){
+      _this.setMediaProp('media_tags', $(this).val());
+    });
+
+    jcontainer.find('.save_changes').on('click', function(e){
+      _this.saveMediaFileInfo();
+      e.preventDefault();
+    });
+  }
+
+  var saveMediaFileInfo_lock = false;
+  this.saveMediaFileInfo = function(media_file, onComplete){
+    if(!media_file) media_file = _this.selected_media_file;
+    if(!onComplete) onComplete = function(rslt){};
+    if(!media_file) return;
+    if(!media_file._is_dirty) return;
+    if(saveMediaFileInfo_lock) return;
+    saveMediaFileInfo_lock = true;
+    var params = {
+      media_path: media_file.media_path,
+      media_desc: media_file.media_desc,
+      media_type: media_file.media_type,
+      media_tags: media_file.media_tags
+    };
+    XForm.Post(xmodel.namespace+'Media_Tree_Info', { media_key: media_file.media_key }, params, function(rslt){
+      saveMediaFileInfo_lock = false;
+      _this.setInfoDirty(media_file, false);
+      _this.renderListing({ refresh_sidebar: false });
+      var existing_media_file = _this.getMediaFile(media_file.media_key);
+      if(existing_media_file && (existing_media_file !== media_file)) existing_media_file = _.extend(existing_media_file, media_file);
+      onComplete(rslt);
+    }, function(err){
+      saveMediaFileInfo_lock = false;
+    });
+  }
+
+  this.setInfoDirty = function(media_file, isDirty){
+    media_file._is_dirty = isDirty;
+    if(media_file == _this.selected_media_file){
+      var jSaveChanges = jsh.$root('.'+xmodel.class+'_file_info .save_changes');
+      if(jSaveChanges.is(':visible')){
+        //Hide "Save Changes"
+        if(!isDirty) jSaveChanges.parent().stop(true).slideUp();
+      }
+      else{
+        //Show "Save Changes"
+        if(isDirty) jSaveChanges.parent().stop(true).slideDown();
+      }
+    }
+  }
+
+  this.setMediaProp = function(key, val){
+    if(!_this.selected_media_file) return;
+    if(_this.selected_media_file[key] == val) return;
+    _this.selected_media_file[key] = val;
+    _this.setInfoDirty(_this.selected_media_file, true);
   }
 
   this.downloadFile = function(media_key){
-    var url = jsh._BASEURL+'_funcs/media/'+media_key+'/?download';
+    var media_file = _this.getMediaFile(media_key);
+    var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
     jsh.getFileProxy().prop('src', url);
   }
 
+  this.replaceFile = function(media_key){
+    //Save any pending changes to a media file before replacing
+    if((media_key == _this.selected_media_key) && _this.selected_media_file){
+      if(_this.selected_media_file._is_dirty){
+        return XExt.Confirm('Save changes to current media file information?', function(){ //Yes
+          _this.saveMediaFileInfo(_this.selected_media_file, function(){
+            _this.selectFile(media_key);
+            _this.replaceFile(media_key);
+          });
+        }, function(){ //No
+          _this.selectFile(media_key, { force: true });
+          _this.replaceFile(media_key);
+        });
+      }
+    }
+
+    var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
+    var xform = xmodel.controller.form;
+    var sel = '.'+xmodel.class+'_ReplaceMedia';
+
+    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
+      var jprompt = jsh.$root('.xdialogblock ' + sel);
+
+      jprompt.off('.file_upload');
+      jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
+      jprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
+      jprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
+      jprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(jprompt[0], media_key));
+      jprompt.find('.media_upload').off('change');
+      XExt.clearFileInput(jprompt.find('.media_upload')[0]);
+      jprompt.find('.media_upload').on('change', function(e){
+        _this.uploadReplacementFile(media_key, this.files);
+      });
+    }, function (success) { //onAccept
+    }, undefined, undefined, { backgroundClose: true });
+  }
+
   this.renameFile = function(media_key){
-    var media_file = _this.getMediaFile(media_key);
+    var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
     var media_path = media_file.media_path;
     var media_ext = media_file.media_ext;
     var base_filename = media_file.media_filename;
     base_filename = base_filename.substr(0, base_filename.length - media_ext.length).trim();
+    var retry = function(){ _this.renameFile(media_key); };
     XExt.Prompt('Please enter a new file name', base_filename, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == base_filename) return;
-      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename');
-      XForm.Post(jsh._BASEURL+'_funcs/media/'+media_file.media_key,{},{ media_path: media_file.media_folder + rslt + media_ext }, function(){
+      if(!rslt) return XExt.Alert('Please enter a file name', retry);
+      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename', retry);
+      media_file.media_path = media_file.media_folder + rslt + media_ext;
+      media_file._is_dirty = true;
+      _this.saveMediaFileInfo(media_file, function(){
         _this.getMediaFileListing({ force: true }, function(){
           _this.selectFile(media_file.media_key, { scrollIntoView: true });
         });
@@ -413,17 +601,21 @@ jsh.App[modelid] = new (function(){
   }
 
   this.moveFile = function(media_key){
-    var media_file = _this.getMediaFile(media_key);
+    var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
     var media_path = media_file.media_path;
     var media_ext = media_file.media_ext;
     //base_path = base_path.substr(0, base_path.length - media_file.media_ext.length);
+    var retry = function(){ _this.moveFile(media_key); };
     XExt.Prompt('Please enter a new path', media_path, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == media_path) return;
-      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"');
-      if((rslt.length < media_ext.length) || (rslt.substr(rslt.length-media_ext.length) != media_ext)) return XExt.Alert('Cannot modify file extension');
-      XForm.Post(jsh._BASEURL+'_funcs/media/'+media_file.media_key,{},{ media_path: rslt }, function(){
+      if(!rslt) return XExt.Alert('Please enter a file path', retry);
+      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
+      if((rslt.length < media_ext.length) || (rslt.substr(rslt.length-media_ext.length) != media_ext)) return XExt.Alert('Cannot modify file extension', retry);
+      media_file.media_path = rslt;
+      media_file._is_dirty = true;
+      _this.saveMediaFileInfo(media_file, function(){
         _this.getMediaFileListing({ force: true }, function(){
           jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} }, function(){
             _this.selectFile(media_file.media_key, { scrollIntoView: true });
@@ -435,6 +627,7 @@ jsh.App[modelid] = new (function(){
 
   this.deleteFile = function(media_key){
     var media_file = _this.getMediaFile(media_key);
+    if(!media_file) return XExt.Alert('Media file not found');
     XExt.Confirm('Are you sure you want to delete "'+media_file.media_filename+'"?', function (rslt) {
       XForm.Delete(jsh._BASEURL+'_funcs/media/'+media_file.media_key,{},{}, function(){
         _this.getMediaFileListing({ force: true });
@@ -456,7 +649,7 @@ jsh.App[modelid] = new (function(){
       jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
       jprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
       jprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
-      jprompt.on('drop.file_upload', _this.file_listing_onDrop);
+      jprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(jprompt[0], null));
       jprompt.find('.media_upload').off('change');
       XExt.clearFileInput(jprompt.find('.media_upload')[0]);
       jprompt.find('.media_upload').on('change', function(e){
@@ -469,10 +662,13 @@ jsh.App[modelid] = new (function(){
   this.addFolder = function(parent_media_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding a folder');
 
+    var retry = function(){ _this.addFolder(parent_media_folder); };
     XExt.Prompt('Please enter the subfolder name', '', function (rslt) {
-      if(!rslt || !rslt.trim()) return;
+      if(rslt === null) return;
+      rslt = rslt.trim();
+      if(!rslt) return XExt.Alert('Please enter a folder name', retry);
       var media_path = parent_media_folder + rslt.trim() + '/';
-      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename');
+      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid folder name');
       XForm.Post(xmodel.namespace+'Media_Tree_Folder_Add',{},{ media_path: media_path }, function(){
         _this.setFolderBeforeLoad(media_path);
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
@@ -485,10 +681,12 @@ jsh.App[modelid] = new (function(){
     var base_folder_name = XExt.basename(media_folder);
     if(!base_folder_name) return XExt.Alert('Cannot rename this folder');
     //Update all paths to new paths
+    var retry = function(){ _this.renameFolder(media_folder); };
     XExt.Prompt('Please enter a new folder name', base_folder_name, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == base_folder_name) return;
+      if(!rslt) return XExt.Alert('Please enter a folder name', retry);
       if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid folder name');
 
       var new_media_folder = XExt.dirname(media_folder) + '/' + rslt + '/';
@@ -502,10 +700,12 @@ jsh.App[modelid] = new (function(){
   this.moveFolder = function(media_folder){
     //Get new folder name
     //Update all paths to new paths
+    var retry = function(){ _this.moveFolder(media_folder); };
     XExt.Prompt('Please enter a new path', media_folder, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == media_folder) return;
+      if(!rslt) return XExt.Alert('Please enter a folder path', retry);
       if(rslt[0] != '/') return XExt.Alert('Path must start with "/"');
       if(rslt.indexOf('//') >=0 ) return XExt.Alert('Invalid path');
       if(rslt.indexOf('/./') >=0 ) return XExt.Alert('Invalid path');
@@ -535,13 +735,13 @@ jsh.App[modelid] = new (function(){
     var media_file = _this.getMediaFile(media_key);
 
     if(window.opener && jsh._GET.CKEditor){
-      window.opener.postMessage('ckeditor:'+JSON.stringify({ media_key: media_key, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
+      window.opener.postMessage('ckeditor:'+JSON.stringify({ media_key: media_key, media_file_id: media_file.media_file_id, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
       window.close();
     }
     else{
       var openerJSH = XExt.getOpenerJSH();
       if(!openerJSH) return XExt.Alert('Parent editor not found');
-      window.opener.postMessage('cms_link_browser:'+JSON.stringify({ media_key: media_key, media_desc: media_file.media_desc, media_path: media_file.media_path }), '*');
+      window.opener.postMessage('cms_link_browser:'+JSON.stringify({ media_key: media_key, media_file_id: media_file.media_file_id, media_desc: media_file.media_desc, media_path: media_file.media_path }), '*');
       window.close();
     }
   }
