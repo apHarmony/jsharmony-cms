@@ -107,8 +107,8 @@
       { "menu_id": 50002, "sys_role_name": "PUBLISHER" },
       { "menu_id": 50003, "sys_role_name": "PUBLISHER" },
 
-      { "menu_id": 600, "sys_role_name": "WEBMASTER" },
-      { "menu_id": 60001, "sys_role_name": "WEBMASTER" },
+      { "menu_id": 600, "sys_role_name": "*" },
+      { "menu_id": 60001, "sys_role_name": "*" },
       { "menu_id": 60002, "sys_role_name": "WEBMASTER" }
     ]
   }
