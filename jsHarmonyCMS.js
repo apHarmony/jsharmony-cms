@@ -31,6 +31,8 @@ var ejs = require('ejs');
 var funcs = require('./models/_funcs.js');
 var jsHarmonyRouter = require('jsharmony/jsHarmonyRouter');
 
+var jsHarmonyCMSTransform = require('./jsHarmonyCMSTransform.js');
+
 
 function jsHarmonyCMS(name, options){
   options = _.extend({
@@ -51,6 +53,7 @@ function jsHarmonyCMS(name, options){
   _this.Layouts = {};
   _this.Elements = {};
   _this.funcs = new funcs(_this);
+  _this.transform = new jsHarmonyCMSTransform(_this);
 }
 
 jsHarmonyCMS.prototype = new jsHarmonyModule();
@@ -218,6 +221,9 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         _this.funcs.deploy.call(_this.jsh.AppSrv, deployment.deployment_id);
       }
     }),
+    options: {
+      quiet: true
+    },
     when: function (curdt, lastdt) {  //return true if the job should run
       return (curdt.getTime() - lastdt.getTime() > _this.Config.deploymentJobDelay);
     }

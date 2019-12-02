@@ -54,13 +54,14 @@ jsh.App[modelid] = new (function(){
     var page_template_id = xmodel.get('page_template_id', rowid);
     if(!page_template_id) return XExt.Alert('Please select a template before editing');
 
-    var template = jshInstance.globalparams.PageTemplates[page_template_id];
+    var template = jsh.globalparams.PageTemplates[page_template_id];
     if(!template) return XExt.Alert('Template is not defined');
     
     jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, '.'+xmodel.class+'_RawTextEditor');
   }
 
   this.addPage = function(page_folder){
+    var orig_page_folder = page_folder;
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding a page');
 
     if(typeof page_folder == 'undefined') page_folder = xmodel.get('page_folder');
@@ -75,7 +76,21 @@ jsh.App[modelid] = new (function(){
       //Clear Values / Set Defaults
       jprompt.find('.page_filename').val('');
       jprompt.find('.page_title').val('');
-      jprompt.find('.page_template_id').val(jshInstance.globalparams.defaultPageTemplate);
+      jprompt.find('.page_template_id').val(jsh.globalparams.defaultPageTemplate);
+
+      var jfilename = jprompt.find('.page_filename');
+      jprompt.find('.page_filename_default_document').off('click').on('click', function(){
+        if($(this).is(':checked')){
+          jfilename.prop('readonly', true);
+          jfilename.val(jsh.App[xmodel.parent].getDefaultPage());
+          jfilename.addClass('uneditable');
+        }
+        else{
+          jfilename.prop('readonly', false);
+          jfilename.val('');
+          jfilename.removeClass('uneditable');
+        }
+      });
     }, function (success) { //onAccept
       var jprompt = jsh.$root('.xdialogblock ' + sel);
 
@@ -100,7 +115,13 @@ jsh.App[modelid] = new (function(){
 
       XForm.Put(xmodel.module_namespace+'Page_Tree_Listing', { }, params, function(rslt){
         //Refresh parent
-        jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} }, success);
+        if(orig_page_folder){
+          jsh.App[xmodel.parent].setFolderBeforeLoad(orig_page_folder);
+          jsh.XPage.Select({ modelid: xmodel.parent, onCancel: function(){} }, success);
+        }
+        else{
+          jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} }, success);
+        }
       });
     });
   }
@@ -134,15 +155,39 @@ jsh.App[modelid] = new (function(){
     return undefined;
   }
 
+  this.duplicateFile = function(page_key){
+    var page = _this.getPage(page_key);
+    var page_path = page.page_path;
+    var page_filename = page.page_filename;
+    var retry = function(){ _this.duplicateFile(page_key); };
+    XExt.Prompt('Please enter the new file name', page_filename, function (rslt) {
+      if(rslt === null) return;
+      rslt = rslt.trim();
+      if(!rslt) return XExt.Alert('Please enter a file name', retry);
+      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename', retry);
+
+      var params = {
+        page_key: page_key,
+        page_path: page.page_folder + rslt
+      };
+      XForm.Post(xmodel.module_namespace+'Page_Tree_File_Duplicate', {}, params, function(rslt){
+        //Refresh parent
+        jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
+      });
+    });
+  }
+
   this.renameFile = function(page_key){
     var page = _this.getPage(page_key);
     var page_path = page.page_path;
     var page_filename = page.page_filename;
-    XExt.Prompt('Please enter a new file name', page_filename, function (rslt) {
+    var retry = function(){ _this.renameFile(page_key); };
+    XExt.Prompt('Please enter the new file name', page_filename, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == page_filename) return;
-      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename');
+      if(!rslt){ return XExt.Alert('Please enter a file name', retry); }
+      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename', retry);
 
       var params = {
         page_path: page.page_folder + rslt,
@@ -159,20 +204,26 @@ jsh.App[modelid] = new (function(){
   this.moveFile = function(page_key){
     var page = _this.getPage(page_key);
     var page_path = page.page_path;
+    var retry = function(){ _this.moveFile(page_key); };
     XExt.Prompt('Please enter a new path', page_path, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == page_path) return;
-      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"');
+      if(!rslt) return XExt.Alert('Please enter a file name', retry);
+      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
+      var new_page_path = rslt;
 
       var params = {
-        page_path: rslt,
+        page_path: new_page_path,
         page_title: page.page_title,
         page_template_id: page.page_template_id
       };
       XForm.Post(xmodel.module_namespace+'Page_Tree_Listing', { page_key: page_key }, params, function(rslt){
         //Refresh parent
-        jsh.XPage.Select({ modelid: 'Page_Tree', onCancel: function(){} });
+        var page_folder = XExt.dirname(new_page_path) + '/';
+        if(new_page_path[new_page_path.length-1] == '/') page_folder = new_page_path;
+        jsh.App[xmodel.parent].setFolderBeforeLoad(page_folder);
+        jsh.XPage.Select({ modelid: xmodel.parent, onCancel: function(){} });
       });
     });
   }

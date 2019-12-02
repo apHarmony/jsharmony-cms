@@ -28,7 +28,7 @@
     "onloadstate": "_this.onloadstate(xmodel, state);",
     "fields":[
 	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
-      {"name": "media_folder", "actions": "BIU","foreignkey":1,"caption": "","control": "tree",
+      {"name": "media_folder", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
        "default": "/",
        "lov": {
@@ -38,29 +38,30 @@
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
-            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);", "actions": "B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);", "actions": "B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);", "actions": "B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);", "actions": "B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
+            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);", "actions": "I" },
+            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);", "actions": "U" },
+            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);", "actions": "U" },
+            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);", "actions": "D" }
           ]
         },
         "onchange": "_this.media_folder_onchange(obj,newval);"
       },
       {"control":"html","value":"<div class='<%=model.class%>_file_listing'></div>"},
       {"control":"html","value":"<div class='<%=model.class%>_file_info'></div>"},
-      {"control":"html", "value": "</div>"}
+      {"control":"html", "value": "</div>"},
+      {"control":"hidden", "name": "media_type", "lov": { "code": "media_type", "schema": "{schema}", "blank": true } }
 	  ]
   },
   "Media_Tree_File_Listing": {
     "layout": "exec",
-    "title": "Reject Branch",
+    "title": "Media File Listing",
     "actions": "U",
     "roles": {"AUTHOR": "U","PUBLISHER": "U","VIEWER":"U"},
     "sqlexec": [
       "select media_key, media_file_id, media_id, media_desc, media_path, media_folder, media_filename, media_tags, media_type, media_ext, media_size, media_width, media_height, media_uptstmp, jsharmony.my_db_user_fmt(media_upuser) media_upuser_fmt, media_mtstmp, jsharmony.my_db_user_fmt(media_muser) media_muser_fmt from {schema}.v_my_media where media_folder=@media_folder and media_file_id is not null order by media_filename, media_key"
     ],
     "fields": [
-      {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+      {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder", "validate": ["Required"]}
     ]
   },
   "Media_Tree_Folder_Add": {
@@ -72,7 +73,7 @@
       "insert into {schema}.v_my_media(media_path,media_is_folder) values(@media_path,1);"
     ],
     "fields": [
-      {"name":"media_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+      {"name":"media_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder", "validate": ["Required"]}
     ]
   },
   "Media_Tree_Folder_Move": {
@@ -86,8 +87,8 @@
       ]
     ],
     "fields": [
-      {"name":"old_media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"},
-      {"name":"new_media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+      {"name":"old_media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder", "validate": ["Required"]},
+      {"name":"new_media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder", "validate": ["Required"]}
     ]
   },
   "Media_Tree_Folder_Delete": {
@@ -101,7 +102,7 @@
       ]
     ],
     "fields": [
-      {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder"}
+      {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder", "validate": ["Required"]}
     ]
   },
   "Media_Browser": {

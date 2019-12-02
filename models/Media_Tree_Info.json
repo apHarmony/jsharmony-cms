@@ -1,0 +1,18 @@
+{
+  "Media_Tree_Info": {
+    "layout":"form",
+    "table":"{schema}.v_my_media",
+    "actions":"BU",
+    "roles": {"AUTHOR": "BU","PUBLISHER": "BU","VIEWER":"B"},
+    "title":"Media",
+    "caption":["Media","Media"],
+    "onecolumn":true,
+    "fields":[
+      {"name":"media_key","caption":"Key","key":true},
+      {"name":"media_path","caption":"Path","validate":["Required","MaxLength:2048"]},
+      {"name":"media_desc","caption":"Title","validate":["MaxLength:256"]},
+      {"name":"media_type","caption":"Type","validate":["MaxLength:32"]},
+      {"name":"media_tags","caption":"Tags","control":"tagbox"}
+	  ]
+  }
+}

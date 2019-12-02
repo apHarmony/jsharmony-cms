@@ -76,10 +76,13 @@ jsh.App[modelid] = new (function(){
   this.addFolder = function(parent_page_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding a folder');
 
+    var retry = function(){ _this.addFolder(parent_page_folder); };
     XExt.Prompt('Please enter the subfolder name', '', function (rslt) {
-      if(!rslt || !rslt.trim()) return;
+      if(rslt === null) return;
+      rslt = rslt.trim();
+      if(!rslt) return XExt.Alert('Please enter a folder name', retry);
       var page_path = parent_page_folder + rslt.trim() + '/';
-      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename');
+      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid filename', retry);
       XForm.Post(xmodel.namespace+'Page_Tree_Folder_Add',{},{ page_path: page_path }, function(){
         _this.setFolderBeforeLoad(page_path);
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
@@ -92,11 +95,13 @@ jsh.App[modelid] = new (function(){
     var base_folder_name = XExt.basename(page_folder);
     if(!base_folder_name) return XExt.Alert('Cannot rename this folder');
     //Update all paths to new paths
+    var retry = function(){ _this.renameFolder(page_folder); };
     XExt.Prompt('Please enter a new folder name', base_folder_name, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == base_folder_name) return;
-      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid folder name');
+      if(!rslt) return XExt.Alert('Please enter a folder name', retry);
+      if(XExt.cleanFileName(rslt) != rslt) return XExt.Alert('Please enter a valid folder name', retry);
 
       var new_page_folder = XExt.dirname(page_folder) + '/' + rslt + '/';
       XForm.Post(xmodel.namespace+'Page_Tree_Folder_Move',{},{ old_page_folder:page_folder, new_page_folder: new_page_folder }, function(){
@@ -109,14 +114,16 @@ jsh.App[modelid] = new (function(){
   this.moveFolder = function(page_folder){
     //Get new folder name
     //Update all paths to new paths
+    var retry = function(){ _this.moveFolder(page_folder); };
     XExt.Prompt('Please enter a new path', page_folder, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == page_folder) return;
-      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"');
-      if(rslt.indexOf('//') >=0 ) return XExt.Alert('Invalid path');
-      if(rslt.indexOf('/./') >=0 ) return XExt.Alert('Invalid path');
-      if(rslt.indexOf('/../') >=0 ) return XExt.Alert('Invalid path');
+      if(!rslt) return XExt.Alert('Please enter a folder path', retry);
+      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
+      if(rslt.indexOf('//') >=0 ) return XExt.Alert('Invalid path', retry);
+      if(rslt.indexOf('/./') >=0 ) return XExt.Alert('Invalid path', retry);
+      if(rslt.indexOf('/../') >=0 ) return XExt.Alert('Invalid path', retry);
       if(rslt[rslt.length-1] != '/') rslt += '/';
       XForm.Post(xmodel.namespace+'Page_Tree_Folder_Move',{},{ old_page_folder:page_folder, new_page_folder: rslt }, function(){
         _this.setFolderBeforeLoad(rslt);
@@ -136,6 +143,11 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
+  }
+
+  this.getDefaultPage = function(){
+    if(xmodel.controller.form.LOVs.default_page && xmodel.controller.form.LOVs.default_page[0]) return xmodel.controller.form.LOVs.default_page[0].param_cur_val;
+    return '';
   }
 
 })();

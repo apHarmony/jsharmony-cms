@@ -6,7 +6,7 @@
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
     "sqlexec": "update {schema}.branch set branch_sts='ARCHIVE' where branch_id=@branch_id and (({schema}.my_user_is_publisher() = 1) or (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_type='USER' and branch_sts='ACTIVE' and branch_access='RW')))",
     "fields": [
-      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID"}
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
     ]
   }
 }

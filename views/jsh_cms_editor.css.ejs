@@ -116,11 +116,18 @@
   padding-right:6px;
 }
 
-#jsharmony_cms_editor_bar .page_settings input {
+#jsharmony_cms_editor_bar .page_settings input.page_settings_ctrl {
   box-sizing:border-box;
   width:100%;
   font-size:1.1em;
   padding:2px 5px;
+}
+
+#jsharmony_cms_editor_bar .page_settings .page_settings_tags_editor {
+  width:100%;
+}
+#jsharmony_cms_editor_bar .page_settings .page_settings_tags_editor input {
+  font-size:1.1em;
 }
 
 
@@ -142,54 +149,15 @@
   background-color:#3c89ef;
 }
 
-.jsharmony_cms .xtagcontrol {
-  display:none;
-  border:1px solid #bfbfbf;
-  box-shadow: 0 1px rgba(0,0,0,0.1) inset;
-  box-sizing: border-box;
-  width:100%;
-  cursor: text;
-  padding:1px 3px;
-  min-height:35px;
-}
-.jsharmony_cms .xtagcontrol span {
-  display:inline-block;
-  vertical-align:top;
-  background-color:#999;
-  color:#fff;
-  border-radius:5px;
-  padding:3px 6px 2px 8px;
-  margin:3px 3px;
-  box-shadow: 0 1px rgba(0,0,0,0.1);
-  cursor:default;
-}
-.jsharmony_cms .xtag_remove {
-  display:inline-block;
-  position:relative;
-  font-size:7px !important;
-  top:-6px;
-  left:2px;
-  cursor: pointer;
-}
-#jsharmony_cms_editor_bar.jsharmony_cms .page_settings .xtag_input {
-  display:none;
-  vertical-align:top;
-  border:none;
-  box-shadow:none;
-  border-width:0;
-  width:auto;
-  margin:6px 3px 2px 3px;
-  padding:0 0 0 5px;
-}
-#jsharmony_cms_editor_bar.jsharmony_cms .page_settings .xtag_input:focus {
-  outline: none;
-}
 #jsharmony_cms_body_toolbar {
   position:fixed;
   z-index: 9999;
   top:40px;
   display:none;
   width:100%;
+}
+#jsharmony_cms_body_toolbar .cke_top {
+  padding-top:10px;
 }
 #jsharmony_cms_body:after {
   content: "";

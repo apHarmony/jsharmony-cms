@@ -47,8 +47,8 @@
       "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id;"
     ],
     "fields": [
-      {"name":"src_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Source Branch ID"},
-      {"name":"dst_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Destination Branch ID"}
+      {"name":"src_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Source Branch ID", "validate": ["Required"]},
+      {"name":"dst_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Destination Branch ID", "validate": ["Required"]}
     ]
   },
   "Branch_Review_Reject": {
@@ -60,7 +60,7 @@
       "update {schema}.branch set branch_sts='ACTIVE',branch_review_sts='REJECTED' where branch_id=@branch_id"
     ],
     "fields": [
-      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID"}
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
     ]
   }
 }

@@ -20,7 +20,7 @@
     "onloadstate": "_this.onloadstate(xmodel, state);",
     "fields":[
 	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
-      {"name": "page_folder", "actions": "B","foreignkey":1,"caption": "","control": "tree",
+      {"name": "page_folder", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
        "default": "/",
        "lov": {
@@ -30,10 +30,11 @@
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
-            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);","actions":"B", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
+            { "icon": "add", "text": "Add Page", "command": "jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage(context_item);","actions":"I" },
+            { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);","actions":"I" },
+            { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);","actions":"U" },
+            { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);","actions":"U" },
+            { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);","actions":"D" }
           ]
         },
         "onchange": "_this.page_folder_onchange(obj,newval);"
@@ -46,7 +47,8 @@
         "caption": "",
         "actions": "BIUD"
       },
-      {"control":"html", "value": "</div>"}
+      {"control":"html", "value": "</div>"},
+      {"control":"hidden", "name": "default_page", "lov": { "sql": "select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE'" } }
 	  ]
   },
   "Page_Browser": {
@@ -70,6 +72,19 @@
       {"control":"html","value":"<h1>Pages</h1>","__AFTER__":"__START__"}
     ]
   },
+  "Page_Tree_File_Duplicate": {
+    "layout": "exec",
+    "title": "Duplicate File",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select @page_path, page_file_id, page_title, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=@page_key;"
+    ],
+    "fields": [
+      {"name":"page_key", "actions":"U", "type":"bigint", "caption":"Page Key", "validate": ["Required"]},
+      {"name":"page_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder", "validate": ["Required"]}
+    ]
+  },
   "Page_Tree_Folder_Add": {
     "layout": "exec",
     "title": "Add Page Folder",
@@ -79,7 +94,7 @@
       "insert into {schema}.v_my_page(page_path,page_is_folder) values(@page_path,1);"
     ],
     "fields": [
-      {"name":"page_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"}
+      {"name":"page_path", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder", "validate": ["Required"]}
     ]
   },
   "Page_Tree_Folder_Move": {
@@ -93,8 +108,8 @@
       ]
     ],
     "fields": [
-      {"name":"old_page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"},
-      {"name":"new_page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"}
+      {"name":"old_page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder", "validate": ["Required"]},
+      {"name":"new_page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder", "validate": ["Required"]}
     ]
   },
   "Page_Tree_Folder_Delete": {
@@ -108,7 +123,7 @@
       ]
     ],
     "fields": [
-      {"name":"page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder"}
+      {"name":"page_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Page Folder", "validate": ["Required"]}
     ]
   }
 }

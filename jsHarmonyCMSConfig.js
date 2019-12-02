@@ -40,7 +40,8 @@ function jsHarmonyCMSConfig(){
     file_preview: { resize: [300, 300] },
     small: { resize: [512, 384] },
     medium: { resize: [1024, 768] },
-    large: { resize: [2048, 1538] }
+    large: { resize: [2048, 1538] },
+    //maximum: { resize: [2048, 1538] }
   }
 
   this.deployment_target_params = { //Default deployment target parameters

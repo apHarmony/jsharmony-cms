@@ -12,7 +12,7 @@ jsh.App[modelid] = new (function(){
     var page_template_id = xmodel.get('page_template_id', rowid);
     if(!page_template_id) return XExt.Alert('Please select a template before editing');
 
-    var template = jshInstance.globalparams.PageTemplates[page_template_id];
+    var template = jsh.globalparams.PageTemplates[page_template_id];
     if(!template) return XExt.Alert('Template is not defined');
 
     jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, '.'+xmodel.class+'_RawTextEditor');

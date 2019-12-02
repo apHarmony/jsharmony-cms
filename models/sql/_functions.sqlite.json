@@ -30,7 +30,7 @@
     ]
   },
   "{schema}.insert_media":{
-    "params": ["%%%media_desc%%%", "%%%media_path%%%", "%%%media_tags%%%", "%%%media_type%%%", "%%%media_ext%%%", "%%%media_size%%%", "%%%media_width%%%", "%%%media_height%%%"],
+    "params": ["media_desc", "media_path", "media_tags", "media_type", "media_ext", "media_size", "media_width", "media_height"],
     "sql": [
       "insert into {schema}.v_my_media(media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height) values(%%%media_desc%%%, %%%media_path%%%, %%%media_tags%%%, %%%media_type%%%, %%%media_ext%%%, %%%media_size%%%, %%%media_width%%%, %%%media_height%%%);select last_insert_rowid_override media_key from jsharmony_meta;"
     ]

@@ -135,7 +135,7 @@
 
 .<%=model.class%>_file_info {
   flex-shrink:0;
-  width:250px;
+  width:280px;
   margin-top:0px;
   border-right:1px solid #aaa; 
   border-bottom:1px solid #aaa;
@@ -176,12 +176,31 @@
   margin-right:3px;
   white-space:nowrap;
 }
-.<%=model.class%>_file_info span {
+.<%=model.class%>_file_info_item > span {
   display:block;
 }
-.<%=model.class%>_file_info .<%=model.class%>_file_info_item input {
+.<%=model.class%>_file_info .<%=model.class%>_file_info_item > input {
   margin:0;
   flex-grow:1;
+}
+.<%=model.class%>_file_info .save_changes {
+  background-color:#faf8c2;
+  flex-grow: 1;
+  padding:3px 3px;
+  color:#333;
+  text-align:center;
+}
+.<%=model.class%>_file_info .save_changes img {
+  height: 14px;
+  position:relative;
+  top:2px;
+  margin-right: 3px;
+}
+.<%=model.class%>_file_info .media_tags_editor {
+  width:100%;;
+}
+.<%=model.class%>_file_info .media_tags_editor .xtag_input {
+  width:50px;
 }
 .<%=model.class%>_file_info_actions { display:flex; justify-content: space-evenly; margin-bottom:4px;  }
 .<%=model.class%>_file_info_actions a { color:#000; }
@@ -222,7 +241,8 @@
   margin-top:50px;
   width:200px;
 }
-.<%=model.class%>_AddMedia.dragOver {
+.<%=model.class%>_AddMedia.dragOver,
+.<%=model.class%>_ReplaceMedia.dragOver {
   background-color:#f5f5ff;
 }
 .<%=model.class%>_file_context_menu .select { display:none; }

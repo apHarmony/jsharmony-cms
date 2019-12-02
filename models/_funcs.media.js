@@ -73,6 +73,12 @@ module.exports = exports = function(module, funcs){
       verrors = {};
       validate.AddValidator('_obj.media_key', 'Media Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
       sql = 'select media_key,media_file_id,media_filename,media_path,media_ext from '+(module.schema?module.schema+'.':'')+'v_my_media where media_key=@media_key';
+      if(Q.media_file_id){
+        sql_ptypes.push(dbtypes.BigInt);
+        sql_params.media_file_id = Q.media_file_id;
+        validate.AddValidator('_obj.media_file_id', 'Media File ID', 'B', [XValidate._v_IsNumeric()]);
+        sql += ' and media_file_id=@media_file_id';
+      }
       
       var fields = [];
       var datalockstr = '';
@@ -89,7 +95,7 @@ module.exports = exports = function(module, funcs){
       
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|width','|height','|download'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|width','|height','|download','|media_file_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //XValidate
         if(!thumbnail_config && (Q.width || Q.height)){
@@ -258,6 +264,26 @@ module.exports = exports = function(module, funcs){
             });
           },
 
+          //Apply maximum image size, if applicable
+          function(cb){
+            var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
+            if(!media_width || !media_height) return cb();
+            if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
+              HelperImg.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
+                if(err) return cb(err);
+                media_height = null;
+                media_width = null;
+                HelperImg.size(tmp_file_path, function(err, size){
+                  if(err || !size || !size.width || !size.height) return cb();
+                  media_width = size.width;
+                  media_height = size.height;
+                  return cb();
+                });
+              });
+            }
+            else return cb();
+          },
+
           //Insert into database
           function(cb){
             sql_ptypes = [dbtypes.VarChar(256),dbtypes.VarChar(2048),dbtypes.VarChar(-1),dbtypes.VarChar(32),dbtypes.VarChar(16),dbtypes.Int,dbtypes.Int,dbtypes.Int];
@@ -327,52 +353,129 @@ module.exports = exports = function(module, funcs){
         if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
         if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Media ID'); }
         var media = rslt[0][0];
-      
-        //Validate parameters
-        if (!appsrv.ParamCheck('P', P, ['|media_desc', '|media_path', '|media_tags', '|media_type'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if(_.keys(P).length==0) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-        validate = new XValidate();
-        verrors = {};
-        sql_ptypes = [];
-        sql_params = {};
-        for(var param in P){
-          if(param == 'media_desc'){
-            validate.AddValidator('_obj.media_desc', 'Description', 'B', [ XValidate._v_MaxLength(256) ]);
-            sql_ptypes.push(dbtypes.VarChar(256));
-            sql_params['media_desc'] = P.media_desc;
+        var public_folder = jsh.Config.datadir + 'temp/public/';
+        var form = new multiparty.Form({ maxFilesSize: jsh.Config.max_filesize, uploadDir: (public_folder) });
+        form.parse(req, function (err, fields, files) {
+          //Handle Error
+          if (err != null) {
+            if (('code' in err) && (err.code == 'ETOOBIG')) { return Helper.GenError(req, res, -31, 'Upload file exceeded maximum file size.'); }
+            jsh.Log.error(err);
+            return Helper.GenError(req, res, -30, 'Invalid file upload request.');
           }
-          else if(param == 'media_path'){
-            validate.AddValidator('_obj.media_path', 'Path', 'B', [ XValidate._v_MaxLength(2048), XValidate._v_Required() ]);
-            sql_ptypes.push(dbtypes.VarChar(2048));
-            var base_path = path.dirname(P.media_path);
-            if(base_path[base_path.length - 1]!='/') base_path += '/';
-            var media_filename = HelperFS.cleanFileName(path.basename(P.media_path));
-            var media_path = base_path + media_filename;
-            sql_params['media_path'] = media_path;
-          }
-          else if(param == 'media_tags'){
-            validate.AddValidator('_obj.media_tags', 'Tags', 'B', [ ]);
-            sql_ptypes.push(dbtypes.VarChar(-1));
-            sql_params['media_tags'] = P.media_tags;
-          }
-          else if(param == 'media_type'){
-            validate.AddValidator('_obj.media_type', 'Type', 'B', [ XValidate._v_MaxLength(32) ]);
-            sql_ptypes.push(dbtypes.VarChar(32));
-            sql_params['media_type'] = P.media_type;
-          }
-        }
-        var sql_update = _.keys(sql_params).map(function(val){ return val + '=@' + val; }).join(' and ');
-        sql_ptypes.push(dbtypes.BigInt);
-        sql_params['media_key'] = media_key;
 
-        verrors = _.merge(verrors, validate.Validate('B', P));
-        if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+          P = {};
+          for(var field_name in fields){
+            var field = fields[field_name];
+            if(_.isArray(field) && field.length) field = field[0];
+            P[field_name] = field;
+          }
+          
+          if (files == null) { return Helper.GenError(req, res, -30, 'Invalid file upload request.'); }
+          if (!('media_file' in files)) { return Helper.GenError(req, res, -30, 'Invalid file upload request.'); }
+          if (files.media_file.length != 1) { return Helper.GenError(req, res, -30, 'Invalid file upload request.'); }
+          
+          var media_file = files.media_file[0];
+          var media_size = media_file.size;
+          var media_file_orig_name = path.basename(media_file.originalFilename);
+          var tmp_file_path = media_file.path;
+          var media_ext = path.extname(path.basename(media_file_orig_name)).toLowerCase()||'.'; //Get extension
+          if (!_.includes(jsh.Config.valid_extensions, media_ext)) { return Helper.GenError(req, res, -32, 'File extension is not supported.'); }
 
-        appsrv.ExecCommand(req._DBContext, 'update '+(module.schema?module.schema+'.':'')+'v_my_media set '+sql_update+' where media_key=@media_key', sql_ptypes, sql_params, function (err, rslt) {
-          if(err) return Helper.GenError(req, res, -99999, 'Error updating file (' + err.toString() + ')');
-          res.end(JSON.stringify({ '_success': 1 }));
+          //Get new media_path base on media_ext
+          var media_path = media.media_path.substr(0, media.media_path.length - media.media_ext.length) + media_ext;
+          
+          //Validate parameters
+          if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+          //Calculate extension, size, width, height
+          var media_file_id = null;
+          var media_filename = null;
+          var media_height = null;
+          var media_width = null;
+
+          async.waterfall([
+
+            //Clear temp files
+            function(cb){
+              HelperFS.clearFiles(public_folder, jsh.Config.public_temp_expiration, -1, function(err){
+                if (_.isObject(err) && ('number' in err) && (err.number == -36)) return Helper.GenError(req, res, -36, 'User exceeded max temp folder size');
+                return cb();
+              });
+            },
+            
+            //Get image width / height
+            function(cb){
+              HelperImg.size(tmp_file_path, function(err, size){
+                if(err || !size || !size.width || !size.height) return cb();
+                media_width = size.width;
+                media_height = size.height;
+                return cb();
+              });
+            },
+            
+            //Apply maximum image size, if applicable
+            function(cb){
+              var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
+              if(!media_width || !media_height) return cb();
+              if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
+                HelperImg.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
+                  if(err) return cb(err);
+                  media_height = null;
+                  media_width = null;
+                  HelperImg.size(tmp_file_path, function(err, size){
+                    if(err || !size || !size.width || !size.height) return cb();
+                    media_width = size.width;
+                    media_height = size.height;
+                    return cb();
+                  });
+                });
+              }
+              else return cb();
+            },
+
+            //Update database
+            function(cb){
+              sql_ptypes = [dbtypes.BigInt,dbtypes.VarChar(16),dbtypes.VarChar(2048),dbtypes.Int,dbtypes.Int,dbtypes.Int];
+              sql_params = {
+                media_key: media_key,
+                media_ext: media_ext,
+                media_path: media_path,
+                media_size: media_size,
+                media_width: media_width,
+                media_height: media_height
+              };
+
+              sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_media set media_file_id=null,media_ext=@media_ext, media_path=@media_path, media_size=@media_size, media_width=@media_width, media_height=@media_height where media_key = @media_key; select media_filename, media_file_id from '+(module.schema?module.schema+'.':'')+'v_my_media where media_key=@media_key;';
+              
+              var fields = [];
+              var datalockstr = '';
+              appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
+              sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
+
+              appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Media ID'); }
+
+                media_file_id = rslt[0][0].media_file_id;
+                media_filename = rslt[0][0].media_filename;
+                return cb();
+              });
+            },
+
+            //Copy file
+            function (cb) {
+              HelperFS.rename(tmp_file_path, funcs.getMediaFile(media_file_id, media_ext), cb);
+            },
+
+          ], function(err){
+            if(err){
+              jsh.Log.error(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
+              return Helper.GenError(req, res, -99999, 'Error occurred during media processing operation (' + err.toString() + ')');
+            }
+            res.end(JSON.stringify({ '_success': 1, media_ext: media_ext, media_path: media_path, media_filename: media_filename, media_width: media_width, media_height: media_height, media_size: media_size, media_file_id: media_file_id }));
+          });
         });
         return;
       });

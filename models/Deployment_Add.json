@@ -22,18 +22,18 @@
   },
   "Deployment_Add_Exec": {
     "layout": "exec",
-    "title": "Reject Branch",
+    "title": "Add Deployment",
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
       "insert into {schema}.v_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag) values(@site_id, @deployment_target_id, @branch_id, @deployment_date, @deployment_tag) "
     ],
     "fields": [
-      {"name":"site_id", "actions":"BU", "type":"bigint", "caption":"Site ID"},
-      {"name":"deployment_target_id", "actions":"BU", "type":"bigint", "caption":"Deployment Target ID"},
-      {"name":"branch_id", "actions":"BU", "type":"bigint", "caption":"Branch ID"},
-      {"name":"deployment_date", "actions":"BU", "type": "datetime", "length": 7, "caption":"Deployment Date"},
-      {"name":"deployment_tag", "actions":"BU", "type":"varchar", "length": 256, "caption":"Deployment Tag"}
+      {"name":"site_id", "actions":"BU", "type":"bigint", "caption":"Site ID", "validate": ["Required"]},
+      {"name":"deployment_target_id", "actions":"BU", "type":"bigint", "caption":"Deployment Target ID", "validate": ["Required"]},
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"deployment_date", "actions":"BU", "type": "datetime", "length": 7, "caption":"Deployment Date", "validate": ["Required"]},
+      {"name":"deployment_tag", "actions":"BU", "type":"varchar", "length": 256, "caption":"Deployment Tag", "validate": ["Required"]}
     ]
   }
 }

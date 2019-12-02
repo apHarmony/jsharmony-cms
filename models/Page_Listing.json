@@ -13,6 +13,7 @@
     "rowlimit":250,
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "grid_expand_search": true,
+    "commitlevel": "row",
     "oninit": "jsh.System.RequireBranch(xmodel);",
     "fields": [
       {"name":"page_key","key":true,"control":"hidden"},
