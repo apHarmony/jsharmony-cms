@@ -49,7 +49,11 @@
       {"control":"html","value":"<div class='<%=model.class%>_file_listing'></div>"},
       {"control":"html","value":"<div class='<%=model.class%>_file_info'></div>"},
       {"control":"html", "value": "</div>"},
-      {"control":"hidden", "name": "media_type", "lov": { "code": "media_type", "schema": "{schema}", "blank": true } }
+      {"name": "media_type", "control":"hidden", "lov": { "code": "media_type", "schema": "{schema}", "blank": true } },
+      {"name": "revision_media_key", "control":"hidden"},
+      {"name": "revision_media","unbound":true,"control":"hidden","bindings":{"revision_media_key":"revision_media_key"},
+        "popuplov": {"target": "Media_Revision_Listing", "code_val": "media_id", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
+      }
 	  ]
   },
   "Media_Tree_File_Listing": {
@@ -62,6 +66,19 @@
     ],
     "fields": [
       {"name":"media_folder", "actions":"U", "type":"varchar", "length": 2048, "caption":"Media Folder", "validate": ["Required"]}
+    ]
+  },
+  "Media_Revision_Update": {
+    "layout": "exec",
+    "title": "Update Media Revision",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      "update {schema}.branch_media set media_id=@media_id,branch_media_action=(case branch_media_action when 'ADD' then 'ADD' else 'UPDATE' end) where media_key=@media_key and branch_id={schema}.my_current_branch_id();"
+    ],
+    "fields": [
+      {"name":"media_key", "actions":"U", "type":"bigint", "caption":"Media Key", "validate": ["Required"]},
+      {"name":"media_id", "actions":"U", "type":"bigint", "caption":"Media ID", "validate": ["Required"]}
     ]
   },
   "Media_Tree_Folder_Add": {

@@ -80,6 +80,9 @@
   margin-right:auto;
   margin-bottom:5px;
 } 
+.<%=model.class%>_file_tile img.default {
+  height:65px;
+}
 .<%=model.class%>_file_tile span {
   display:block;
   text-align:center;
@@ -202,9 +205,10 @@
 .<%=model.class%>_file_info .media_tags_editor .xtag_input {
   width:50px;
 }
-.<%=model.class%>_file_info_actions { display:flex; justify-content: space-evenly; margin-bottom:4px;  }
+.<%=model.class%>_file_info_actions { display:flex; justify-content: space-evenly; margin-bottom:5px; margin-top:3px;  }
 .<%=model.class%>_file_info_actions a { color:#000; }
-.<%=model.class%>_file_info_actions a img { height:14px; position:relative; top:3px; margin-right: 4px; }
+.<%=model.class%>_file_info_actions a img,
+a.<%=model.class%>_file_info_view_revisions img { height:14px; position:relative; top:2px; margin-right: 6px; }
 .<%=model.class%>_file_info_rename img { height:14px; position:relative; top:2px; margin-left:7px; }
 
 .<%=model.class%>_drop_overlay {

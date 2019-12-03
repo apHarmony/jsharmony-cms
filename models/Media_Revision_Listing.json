@@ -1,0 +1,29 @@
+{
+  "Media_Revision_Listing": {
+    "layout":"grid",
+    "table":"{schema}.media",
+    "sqlwhere":"media_is_folder = 0",
+    "actions":"B",
+    "roles": {"AUTHOR": "B","PUBLISHER": "B","VIEWER":"B"},
+    "caption":["Media","Media"],
+    "title":"Revision History",
+    "reselectafteredit": "row",
+    "sort":["vmedia_mtstmp"],
+    "grid_expand_search": true,
+    "hide_system_buttons" : ["clear"],
+    "fields": [
+      {"name":"media_id","caption":"ID","control":"hidden","key":true},
+      {"name":"revision_media_key","caption":"Revision Key","control":"hidden","sqlwhere":"media_key=@revision_media_key","sqlselect":"media_key"},
+      {"name":"media_key","caption":"Key","control":"hidden"},
+      {"name":"media_file_id","caption":"File ID","control":"hidden"},
+      {"name":"media_ext","caption":"Extension","control":"hidden"},
+      {"control":"html","caption":"","cellstyle":"text-align:center;","link":"js:jsh.App[xmodel.parent].previewFile(xmodel.controller.form.DataSet[jsh.XExt.XModel.GetRowID(modelid, this)]);","value":"<img height='14' src='/images/icon_browse.png' class='xicon' />"},
+      {"name":"media_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"name":"media_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(media_muser))","control":"label","actions":"B"},
+      {"name":"media_desc","caption":"Title","control":"label"},
+      {"name":"media_path","caption":"Path","control":"label"},
+      {"name":"media_type","caption":"Type","control":"label"},
+      {"name":"media_tags","caption":"Tags","control":"label"}
+    ]
+  }
+}

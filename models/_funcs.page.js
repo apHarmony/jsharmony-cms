@@ -136,7 +136,7 @@ module.exports = exports = function(module, funcs){
     var validate = null;
     var model = jsh.getModel(req, module.namespace + 'Page_Editor');
     
-    if (!Helper.hasModelAction(req, model, 'IUD')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     if(!req.params || !req.params.page_key) return next();
     var page_key = req.params.page_key;
@@ -147,7 +147,20 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.page_key', 'Page Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+    sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang';
+
+    if(Q.page_id){
+      sql_ptypes.push(dbtypes.BigInt);
+      sql_params.page_id = Q.page_id;
+      validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
+      sql += ' from '+(module.schema?module.schema+'.':'')+'page where page_key=@page_key and page_id=@page_id';
+    }
+    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+
+    var page_role = '';
+    if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
+    else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
+    else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
     
     var fields = [];
     var datalockstr = '';
@@ -183,14 +196,11 @@ module.exports = exports = function(module, funcs){
       }
       
       if (verb == 'get'){
+        if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-
-        var page_role = '';
-        if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
-        else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
-        else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
+        if (!appsrv.ParamCheck('Q', Q, ['|page_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var authors = null;
         var clientPage = null;
@@ -204,10 +214,10 @@ module.exports = exports = function(module, funcs){
               sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from jsharmony.sys_user_role where sys_role_name in ('PUBLISHER','AUTHOR')) order by code_txt";
             }
             else {
-              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"v_my_page where page_key=@page_key) order by code_txt";
+              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"page where page_id=@page_id) order by code_txt";
             }
 
-            appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            appsrv.ExecRecordset(req._DBContext, sql, [dbtypes.BigInt], { page_id: page.page_id }, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
               if(!rslt || !rslt.length || !rslt[0]){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
               authors = rslt[0];
@@ -262,6 +272,7 @@ module.exports = exports = function(module, funcs){
         });
       }
       else if(verb == 'post'){
+        if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
         /*
           var client_page = {
             title: page.page_title||'',

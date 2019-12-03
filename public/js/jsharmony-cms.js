@@ -34,6 +34,7 @@ window.jsHarmonyCMS = new (function(){
   this.views = {};
   this.authors = [];
   this.role = '';
+  this.readonly = false;
   this.origMarginTop = undefined;
   this.editorBarDocked = false;
   this.hasChanges = false;
@@ -162,7 +163,7 @@ window.jsHarmonyCMS = new (function(){
   this.onready = function(){
     $('#jsharmony_cms_body').prop('contenteditable','true');
     if(jsh._GET['page_key']){
-      this.loadPage(jsh._GET['page_key'], function(err){ _this.StopLoading(_this.loadObj); });
+      this.loadPage(jsh._GET['page_key'], jsh._GET['page_id'], function(err){ _this.StopLoading(_this.loadObj); });
     }
     else{
       _this.StopLoading(_this.loadObj);
@@ -214,9 +215,10 @@ window.jsHarmonyCMS = new (function(){
     }
   }
 
-  this.loadPage = function(page_key, onComplete){
+  this.loadPage = function(page_key, page_id, onComplete){
     _this.page_key = page_key;
     var url = '../_funcs/page/'+_this.page_key;
+    if(page_id) url += '?page_id=' + page_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         //Populate arrays + create editor
@@ -227,6 +229,7 @@ window.jsHarmonyCMS = new (function(){
         _this.views = rslt.views;
         _this.authors = rslt.authors;
         _this.role = rslt.role;
+        _this.readonly = (_this.role=='VIEWER')||(page_id);
         if(!_this.isInitialized) _this.createEditor();
         _this.renderEditor();
         if(!_this.isInitialized){
@@ -247,10 +250,11 @@ window.jsHarmonyCMS = new (function(){
   this.renderEditor = function(){
     if(!_this.page) return;
     document.title = _this.page.title;
+    var jeditorbar = $('#jsharmony_cms_editor_bar');
 
     //Title
     $('#jsharmony_cms_title').html(_this.page.title);
-    $('#jsharmony_cms_editor_bar .title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
+    jeditorbar.find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
 
     //Body
     _this.setCKEditorContent(_this.page.body)
@@ -272,10 +276,30 @@ window.jsHarmonyCMS = new (function(){
     //Page Settings
     var authors = [].concat(_this.authors);
     if(_this.role=='PUBLISHER') authors.unshift({ code_val: '', code_txt: 'Please select...' });
-    jsh.XExt.RenderLOV(null, $('#jsharmony_cms_editor_bar .page_settings_author'), authors);
-    _.each(['title','tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).val(_this.page[key]||''); });
-    _.each(['title','keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
-    XExt.TagBox_Refresh($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
+    jsh.XExt.RenderLOV(null, jeditorbar.find('.page_settings_author'), authors);
+    _.each(['title','tags','author','css','header','footer'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_'+key).val(_this.page[key]||''); });
+    _.each(['title','keywords','metadesc','canonical_url'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
+    XExt.TagBox_Refresh(jeditorbar.find('.page_settings_tags_editor'), jeditorbar.find('.page_settings_tags'));
+
+    
+    if(_this.readonly){
+      jeditorbar.find('.save').hide();
+      jeditorbar.find('.readonly').show();
+      jeditorbar.find('.page_settings_ctrl,textarea,select').each(function(){ _this.disableControl($(this)); });
+    }
+  }
+
+  this.disableControl = function(jctrl){
+    jctrl.removeClass('editable');
+    jctrl.addClass('uneditable');
+
+    if (jctrl.hasClass('dropdown')) jctrl.prop('disabled', true);
+    else if (jctrl.hasClass('checkbox')) jctrl.prop('disabled', true);
+    else if(jctrl.hasClass('xtagbox_base')){
+      jctrl.prev().addClass('uneditable');
+      jctrl.prev().find('input').prop('disabled', true);
+    }
+    else jctrl.prop('readonly', true);
   }
 
   this.setCKEditorContent = function(val){
@@ -293,65 +317,71 @@ window.jsHarmonyCMS = new (function(){
   this.createEditor = function(){
     if(!_this.page) return;
 
-    $('<div id="jsharmony_cms_body_toolbar"></div>').prependTo('body');
+    if(_this.readonly){
+      $('#jsharmony_cms_body').prop('contenteditable', false);
+    }
+    else {
+      $('<div id="jsharmony_cms_body_toolbar"></div>').prependTo('body');
 
-    //Initialize Editor
-    XExt.CKEditor('', undefined, function(){
-      window.CKEDITOR.disableAutoInline = true;
-      //window.CKEDITOR.config.startupFocus = true;
-      window.CKEDITOR.disableAutoInline = true;
-      window.CKEDITOR.config.allowedContent = true;
-      window.CKEDITOR.config.disableNativeSpellChecker = false;
-      window.CKEDITOR.config.filebrowserBrowseUrl = _this._baseurl+'jsHarmonyCMS/Link_Browser';
-      window.CKEDITOR.config.filebrowserImageBrowseUrl = _this._baseurl+'jsHarmonyCMS/Media_Browser';
-      window.CKEDITOR.config.removeDialogTabs = 'link:upload;image:Upload;image:Link';
-      window.CKEDITOR.config.skin = 'moono-lisa';
-      window.CKEDITOR.on('instanceCreated', function(event){
-        var editor = event.editor;
-        editor.on('configLoaded', function(){
+      //Initialize Editor
+      XExt.CKEditor('', undefined, function(){
+        window.CKEDITOR.disableAutoInline = true;
+        //window.CKEDITOR.config.startupFocus = true;
+        window.CKEDITOR.disableAutoInline = true;
+        window.CKEDITOR.config.allowedContent = true;
+        window.CKEDITOR.config.disableNativeSpellChecker = false;
+        window.CKEDITOR.config.filebrowserBrowseUrl = _this._baseurl+'jsHarmonyCMS/Link_Browser';
+        window.CKEDITOR.config.filebrowserImageBrowseUrl = _this._baseurl+'jsHarmonyCMS/Media_Browser';
+        window.CKEDITOR.config.removeDialogTabs = 'link:upload;image:Upload;image:Link';
+        window.CKEDITOR.config.skin = 'moono-lisa';
+        window.CKEDITOR.on('instanceCreated', function(event){
+          var editor = event.editor;
+          editor.on('configLoaded', function(){
+          });
+          editor.on('focus', function(){
+            $('#jsharmony_cms_body_toolbar').stop(true).fadeIn(300);
+            _this.refreshLayout();
+          });
+          editor.on('blur', function(){
+            $('#jsharmony_cms_body_toolbar').stop(true).fadeOut(300);
+          });
+          editor.on('contentDom', function(){
+            var curbody = _this.getCKEditorContent();
+            if(_this.page && _this.page.body && curbody) _this.page.body = curbody;
+          });
+          editor.on('dialogHide', function(){
+            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+            var restoreScroll = function(){ window.scrollTo(scrollLeft, scrollTop); };
+            $(window).on('scroll', restoreScroll);
+            window.setTimeout(function(){ $(window).off('scroll', restoreScroll); }, 250);
+          });
         });
-        editor.on('focus', function(){
-          $('#jsharmony_cms_body_toolbar').stop(true).fadeIn(300);
-          _this.refreshLayout();
-        });
-        editor.on('blur', function(){
-          $('#jsharmony_cms_body_toolbar').stop(true).fadeOut(300);
-        });
-        editor.on('contentDom', function(){
-          var curbody = _this.getCKEditorContent();
-          if(_this.page && _this.page.body && curbody) _this.page.body = curbody;
-        });
-        editor.on('dialogHide', function(){
-          var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-          var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-          var restoreScroll = function(){ window.scrollTo(scrollLeft, scrollTop); };
-          $(window).on('scroll', restoreScroll);
-          window.setTimeout(function(){ $(window).off('scroll', restoreScroll); }, 250);
+        window.CKEDITOR.inline('jsharmony_cms_body', {
+          extraPlugins: 'sharedspace,sourcedialog,dragresize,pastetext,youtube',
+          removePlugins: 'floatingspace,maximize,resize',
+          sharedSpaces: {
+            top: 'jsharmony_cms_body_toolbar'
+          },
+          toolbar: [
+            ['Format'],
+            ['Bold', 'Italic', 'Underline', '-', 'Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'PasteText', 'Find', 'Replace', '-', 'Outdent', 'Indent', '-', 'Print'],
+            ['NumberedList', 'BulletedList', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Link', 'Image', 'Youtube', 'Table', 'Styles'],
+            ['Sourcedialog']
+          ]
         });
       });
-      window.CKEDITOR.inline('jsharmony_cms_body', {
-        extraPlugins: 'sharedspace,sourcedialog,dragresize,pastetext,youtube',
-        removePlugins: 'floatingspace,maximize,resize',
-        sharedSpaces: {
-          top: 'jsharmony_cms_body_toolbar'
-        },
-        toolbar: [
-          ['Format'],
-          ['Bold', 'Italic', 'Underline', '-', 'Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'PasteText', 'Find', 'Replace', '-', 'Outdent', 'Indent', '-', 'Print'],
-          ['NumberedList', 'BulletedList', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-          ['Link', 'Image', 'Youtube', 'Table', 'Styles'],
-          ['Sourcedialog']
-        ]
-      });
-    });
-    $('#jsharmony_cms_body').on('input',function(){ if(!_this.hasChanges) _this.getValues(); });
+      $('#jsharmony_cms_body').on('input',function(){ if(!_this.hasChanges) _this.getValues(); });
 
-    //Initialize Toolbar
+      $(window).bind('beforeunload', function(){
+        _this.getValues();
+        if(_this.hasChanges) return 'You have unsaved changes.  Are you sure you want to leave this page?';
+      });
+    }
+
+    //Initialize Page Toolbar
     this.createEditorBar();
-    $(window).bind('beforeunload', function(){
-      _this.getValues();
-      if(_this.hasChanges) return 'You have unsaved changes.  Are you sure you want to leave this page?';
-    });
 
     //Template JS
     var js = (_this.template.js||'');

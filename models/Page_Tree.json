@@ -10,7 +10,7 @@
     "menu":"jsHarmonyCMS/Page_Listing",
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
-      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
+      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addFile();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
       { "link":"Page_Listing","icon":"search","text":"Search","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} }
     ],
     "hide_system_buttons" : ["print","export"], 
@@ -30,7 +30,7 @@
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
-            { "icon": "add", "text": "Add Page", "command": "jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage(context_item);","actions":"I" },
+            { "icon": "add", "text": "Add Page", "command": "jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addFile(context_item);","actions":"I" },
             { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);","actions":"I" },
             { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);","actions":"U" },
             { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);","actions":"U" },
@@ -70,6 +70,19 @@
     "inherits": "Page_Browser",
     "fields": [
       {"control":"html","value":"<h1>Pages</h1>","__AFTER__":"__START__"}
+    ]
+  },
+  "Page_Revision_Update": {
+    "layout": "exec",
+    "title": "Update Page Revision",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      "update {schema}.branch_page set page_id=@page_id,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where page_key=@page_key and branch_id={schema}.my_current_branch_id();"
+    ],
+    "fields": [
+      {"name":"page_key", "actions":"U", "type":"bigint", "caption":"Page Key", "validate": ["Required"]},
+      {"name":"page_id", "actions":"U", "type":"bigint", "caption":"Page ID", "validate": ["Required"]}
     ]
   },
   "Page_Tree_File_Duplicate": {

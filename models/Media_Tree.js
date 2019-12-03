@@ -166,11 +166,10 @@ jsh.App[modelid] = new (function(){
           return;
         }
         else if ((jdata instanceof Object) && ('_success' in jdata)) {
-          var rslt = jdata;
           //Merge data back in to local file
           var existing_media_file = _this.getMediaFile(media_key);
           if(existing_media_file){
-            existing_media_file = _.extend(existing_media_file, _.pick(rslt, ['media_ext','media_path','media_filename','media_width','media_height','media_size','media_file_id']));
+            existing_media_file = _.extend(existing_media_file, jdata.media);
           }
           //Refresh images & listing
           _this.renderListing();
@@ -306,11 +305,13 @@ jsh.App[modelid] = new (function(){
     if(_this.state.file_view=='tiles'){
       var jfiles = jcontainer.find('.'+xmodel.class+'_file_tile');
       jfiles.on('click', function(e){ 
+        XExt.HideContextMenu();
         _this.selectFile($(this).data('key'));
         e.preventDefault();
         e.stopImmediatePropagation();
       });
       if(_this.isInEditor) jfiles.on('dblclick', function(e){
+        XExt.HideContextMenu();
         _this.sendToEditor($(this).data('key'));
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -425,26 +426,7 @@ jsh.App[modelid] = new (function(){
 
     var jpreview = jsh.$root('.'+xmodel.class+'_file_info_preview');
     jpreview.on('click', function(e){
-      var media_file = _this.selected_media_file;
-      if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.pdf'], media_file.media_ext.toLowerCase())){
-        var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?media_file_id='+media_file.media_file_id;
-        var ww = 800;
-        var wh = 600;
-        if(media_file.media_width && media_file.media_height){
-          var wwr = media_file.media_width / ww;
-          var whr = media_file.media_height / wh;
-          if((wwr <=1) && (whr <= 1)){ ww = media_file.media_width; wh = media_file.media_height; }
-          else if(wwr > whr) wh = media_file.media_height / wwr;
-          else ww = media_file.media_width / whr;
-        }
-        ww = Math.floor(ww);
-        wh = Math.floor(wh);
-        window.open(url,'_blank',"height="+wh+", width="+ww);
-      }
-      else {
-        var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
-        jsh.getFileProxy().prop('src', url);
-      }
+      _this.previewFile(_this.selected_media_file);
       e.preventDefault();
     });
 
@@ -465,6 +447,11 @@ jsh.App[modelid] = new (function(){
 
     jsh.$root('.'+xmodel.class+'_file_info_rename').on('click', function(e){
       _this.renameFile(_this.selected_media_key);
+      e.preventDefault();
+    });
+
+    jsh.$root('.'+xmodel.class+'_file_info_view_revisions').on('click', function(e){
+      _this.viewRevisions(_this.selected_media_key);
       e.preventDefault();
     });
 
@@ -502,29 +489,42 @@ jsh.App[modelid] = new (function(){
     };
     XForm.Post(xmodel.namespace+'Media_Tree_Info', { media_key: media_file.media_key }, params, function(rslt){
       saveMediaFileInfo_lock = false;
-      _this.setInfoDirty(media_file, false);
-      _this.renderListing({ refresh_sidebar: false });
-      var existing_media_file = _this.getMediaFile(media_file.media_key);
-      if(existing_media_file && (existing_media_file !== media_file)) existing_media_file = _.extend(existing_media_file, media_file);
-      onComplete(rslt);
+      _this.setInfoDirty(media_file, false, function(){
+        //Get new data from database
+        _this.loadInfo(media_file.media_key, onComplete);
+      });
     }, function(err){
       saveMediaFileInfo_lock = false;
     });
   }
 
-  this.setInfoDirty = function(media_file, isDirty){
+  this.loadInfo = function(media_key, onComplete){
+    var infoModel = xmodel.namespace+'Media_Tree_Info';
+    XForm.Get(infoModel, { media_key: media_key }, {}, function(rslt){
+      if(rslt && rslt[infoModel]){
+        var existing_media_file = _this.getMediaFile(media_key);
+        existing_media_file = _.extend(existing_media_file, rslt[infoModel]);
+      }
+      _this.renderListing();
+      if(onComplete) onComplete(rslt);
+    });
+  }
+
+  this.setInfoDirty = function(media_file, isDirty, cb){
+    if(!cb) cb = function(){};
     media_file._is_dirty = isDirty;
     if(media_file == _this.selected_media_file){
       var jSaveChanges = jsh.$root('.'+xmodel.class+'_file_info .save_changes');
       if(jSaveChanges.is(':visible')){
         //Hide "Save Changes"
-        if(!isDirty) jSaveChanges.parent().stop(true).slideUp();
+        if(!isDirty) return jSaveChanges.parent().stop(true).slideUp(400, cb);
       }
       else{
         //Show "Save Changes"
-        if(isDirty) jSaveChanges.parent().stop(true).slideDown();
+        if(isDirty) return jSaveChanges.parent().stop(true).slideDown(400, cb);
       }
     }
+    return cb();
   }
 
   this.setMediaProp = function(key, val){
@@ -534,27 +534,71 @@ jsh.App[modelid] = new (function(){
     _this.setInfoDirty(_this.selected_media_file, true);
   }
 
+  this.previewFile = function(media_file){ /* { media_ext, media_file_id, media_width, media_height, media_key } */
+    if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.pdf'], media_file.media_ext.toLowerCase())){
+      var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?media_file_id='+media_file.media_file_id;
+      var ww = 800;
+      var wh = 600;
+      if(media_file.media_width && media_file.media_height){
+        var wwr = media_file.media_width / ww;
+        var whr = media_file.media_height / wh;
+        if((wwr <=1) && (whr <= 1)){ ww = media_file.media_width; wh = media_file.media_height; }
+        else if(wwr > whr) wh = media_file.media_height / wwr;
+        else ww = media_file.media_width / whr;
+      }
+      ww = Math.floor(ww);
+      wh = Math.floor(wh);
+      window.open(url,'_blank',"height="+wh+", width="+ww);
+    }
+    else {
+      var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
+      jsh.getFileProxy().prop('src', url);
+    }
+  }
+
   this.downloadFile = function(media_key){
     var media_file = _this.getMediaFile(media_key);
     var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
     jsh.getFileProxy().prop('src', url);
   }
 
-  this.replaceFile = function(media_key){
-    //Save any pending changes to a media file before replacing
-    if((media_key == _this.selected_media_key) && _this.selected_media_file){
+  this.viewRevisions = function(media_key){
+    if(!_this.checkChangesInfo(media_key, function(){ _this.replaceFile(media_key) })) return;
+
+    xmodel.set('revision_media_key', media_key);
+    jsh.XExt.popupShow(xmodel.namespace + 'Media_Revision_Listing','revision_media','Revisions',undefined,jsh.$root('.xform'+xmodel.class+' .revision_media_xlookup')[0],{
+      OnControlUpdate:function(obj, rslt){
+        if(rslt && rslt.result){
+          var media_id = rslt.result;
+          XForm.Post(xmodel.namespace+'Media_Revision_Update',{},{ media_key: media_key, media_id: media_id }, function(){
+            _this.loadInfo(media_key);
+          });
+        }
+      }
+    });
+  }
+
+  this.checkChangesInfo = function(new_media_key, retry){
+    if((new_media_key == _this.selected_media_key) && _this.selected_media_file){
       if(_this.selected_media_file._is_dirty){
-        return XExt.Confirm('Save changes to current media file information?', function(){ //Yes
+        XExt.Confirm('Save changes to current media file information?', function(){ //Yes
           _this.saveMediaFileInfo(_this.selected_media_file, function(){
-            _this.selectFile(media_key);
-            _this.replaceFile(media_key);
+            _this.selectFile(_this.selected_media_key);
+            retry();
           });
         }, function(){ //No
-          _this.selectFile(media_key, { force: true });
-          _this.replaceFile(media_key);
+          _this.selectFile(_this.selected_media_key, { force: true });
+          retry();
         });
+        return false;
       }
     }
+    return true;
+  }
+
+  this.replaceFile = function(media_key){
+    //Save any pending changes to a media file before replacing
+    if(!_this.checkChangesInfo(media_key, function(){ _this.replaceFile(media_key) })) return;
 
     var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
     var xform = xmodel.controller.form;
