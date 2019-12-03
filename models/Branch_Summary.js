@@ -6,6 +6,7 @@ jsh.App[modelid] = new (function(){
       jsh.$('.Branch_Summary_buttonPublish').hide();
     }
     if (xmodel.get('branch_is_checked_out') == 1) {
+      jsh.$('.Branch_Summary_buttonMerge').hide();
       jsh.$('.Branch_Summary_buttonCheckout').hide();
     }
   }

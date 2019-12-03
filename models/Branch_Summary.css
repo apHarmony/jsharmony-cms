@@ -1,0 +1,20 @@
+.<%=model.class%>_Merge .plain {
+  font-weight: normal;
+  font-size: 13px;
+}
+.<%=model.class%>_Merge div.head {
+  display: inline-block;
+  width: 90px;
+  margin-bottom:10px;
+}
+.<%=model.class%>_Merge div.plain {
+  display: inline-block;
+}
+.<%=model.class%>_Merge td.head {
+  xwidth: 200px;
+  white-space: nowrap;
+  vertical-align: top;
+  padding-right: 0.5em;
+  top: -3px;
+  position: relative;
+}

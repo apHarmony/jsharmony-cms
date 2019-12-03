@@ -91,4 +91,30 @@
     });
   }
 
+  jsh.System.MergeFromBranch = function(xmodel){
+    var xform = xmodel.controller.form;
+    var sel = '.'+xmodel.class+'_Merge';
+
+    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
+      var jprompt = jsh.$root('.xdialogblock ' + sel);
+
+      jsh.$root('.xdialogblock ' + sel + ' .src_branch_desc').html(xform.Data.src_branch_desc);
+      jsh.$root('.xdialogblock ' + sel + ' .dst_branch_desc').html(xform.Data.dst_branch_desc);
+    }, function (success) { //onAccept
+      var jprompt = jsh.$root('.xdialogblock ' + sel);
+
+      var mergeType = getMergeType(xmodel);
+
+      var params = {
+        src_branch_id: xmodel.get('branch_id'),
+        dst_branch_id: xmodel.get('dst_branch_id'),
+      };
+
+      XForm.Post(xmodel.module_namespace+'Branch_Summary_Merge_'+mergeType, { }, params, function(rslt){
+        success();
+        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
+      });
+    });
+  }
+
 })(window.jshInstance);
