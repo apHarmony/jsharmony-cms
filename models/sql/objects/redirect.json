@@ -86,6 +86,7 @@
       { "on": ["insert"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "with_insert_identity(redirect, redirect_id, ",
             "  insert into redirect(redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
             "  return_insert_key(redirect, redirect_key, (redirect_key=%%%INSERT_ID%%%));",
@@ -98,6 +99,7 @@
       { "on": ["update"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "with_insert_identity(redirect, redirect_id, ",
             "  insert into redirect(redirect_key, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(deleted(redirect_key), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
             "  update branch_redirect set redirect_id=%%%INSERT_ID%%%,branch_redirect_action=(case branch_redirect_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key);",
@@ -108,6 +110,7 @@
       },
       { "on": ["delete"], "exec": [
           "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
           "update branch_redirect set redirect_id=null,branch_redirect_action='DELETE' where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and ((branch_redirect_action is null) or (branch_redirect_action in ('UPDATE','DELETE')))",
           "delete from branch_redirect where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and branch_redirect_action='ADD'",
           "increment_changes()"

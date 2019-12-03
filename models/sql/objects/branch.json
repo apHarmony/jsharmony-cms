@@ -52,6 +52,7 @@
       { "name": "branch_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_review_sts": "code_val" } },
       { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
       { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
+      { "name": "branch_merge_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
 
       { "name": "branch_sts_tstmp", "type": "datetime", "length": 7 },
       { "name": "branch_sts_user", "type": "varchar", "length": 20 },
@@ -68,7 +69,8 @@
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
-          "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');"
+          "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');",
+          "errorif(inserted(branch_merge_id)=inserted(branch_id),'Branch cannot merge with itself');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -78,6 +80,10 @@
           "setif(update(branch_sts),branch_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(update(branch_review_sts),branch_review_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "setif(update(branch_review_sts),branch_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
+          "update branch_page set page_merge_id=null,branch_page_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
+          "update branch_media set media_merge_id=null,branch_media_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
+          "update branch_menu set menu_merge_id=null,branch_menu_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
+          "update branch_redirect set redirect_merge_id=null,branch_redirect_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
           "setif(inserted(branch_sts)='REVIEW' and inserted(branch_review_sts) is null,branch_review_sts,'PENDING');"
         ]
       },
@@ -103,6 +109,8 @@
       { "name": "menu_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "branch_menu_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "menu_orig_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "menu_merge_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "branch_menu_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       
       { "name": "branch_menu_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "branch_menu_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -118,7 +126,8 @@
           "errorif(inserted(branch_menu_action)='UPDATE' and null(inserted(menu_id)),'menu_id is required for UPDATE action');",
           "errorif(inserted(branch_menu_action)='UPDATE' and null(inserted(menu_orig_id)),'menu_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_menu_action)='ADD' and null(inserted(menu_id)),'menu_id is required for ADD action');",
-          "errorif(inserted(branch_menu_action)='ADD' and not(null(inserted(menu_orig_id))),'menu_orig_id must be null for ADD action');"
+          "errorif(inserted(branch_menu_action)='ADD' and not(null(inserted(menu_orig_id))),'menu_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_menu_merge_action) is not null or inserted(menu_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -152,6 +161,8 @@
       { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "branch_page_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "page_orig_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "page_merge_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "branch_page_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       
       { "name": "branch_page_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "branch_page_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -172,7 +183,8 @@
           "errorif(inserted(branch_page_action)='UPDATE' and null(inserted(page_id)),'page_id is required for UPDATE action');",
           "errorif(inserted(branch_page_action)='UPDATE' and null(inserted(page_orig_id)),'page_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_page_action)='ADD' and null(inserted(page_id)),'page_id is required for ADD action');",
-          "errorif(inserted(branch_page_action)='ADD' and not(null(inserted(page_orig_id))),'page_orig_id must be null for ADD action');"
+          "errorif(inserted(branch_page_action)='ADD' and not(null(inserted(page_orig_id))),'page_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_page_merge_action) is not null or inserted(page_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -194,6 +206,8 @@
       { "name": "media_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
       { "name": "branch_media_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "media_orig_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "media_merge_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "branch_media_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       
       { "name": "branch_media_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "branch_media_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -209,7 +223,8 @@
           "errorif(inserted(branch_media_action)='UPDATE' and null(inserted(media_id)),'media_id is required for UPDATE action');",
           "errorif(inserted(branch_media_action)='UPDATE' and null(inserted(media_orig_id)),'media_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_media_action)='ADD' and null(inserted(media_id)),'media_id is required for ADD action');",
-          "errorif(inserted(branch_media_action)='ADD' and not(null(inserted(media_orig_id))),'media_orig_id must be null for ADD action');"
+          "errorif(inserted(branch_media_action)='ADD' and not(null(inserted(media_orig_id))),'media_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_media_merge_action) is not null or inserted(media_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -231,6 +246,8 @@
       { "name": "redirect_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
       { "name": "branch_redirect_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "redirect_orig_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "redirect_merge_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "branch_redirect_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       
       { "name": "branch_redirect_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "branch_redirect_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -246,7 +263,8 @@
           "errorif(inserted(branch_redirect_action)='UPDATE' and null(inserted(redirect_id)),'redirect_id is required for UPDATE action');",
           "errorif(inserted(branch_redirect_action)='UPDATE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_redirect_action)='ADD' and null(inserted(redirect_id)),'redirect_id is required for ADD action');",
-          "errorif(inserted(branch_redirect_action)='ADD' and not(null(inserted(redirect_orig_id))),'redirect_orig_id must be null for ADD action');"
+          "errorif(inserted(branch_redirect_action)='ADD' and not(null(inserted(redirect_orig_id))),'redirect_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_redirect_merge_action) is not null or inserted(redirect_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
