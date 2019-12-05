@@ -160,7 +160,7 @@ jsh.App[modelid] = new (function(){
 
   this.getPage = function(page_key){
     var page_index = _this.getPageIndex(page_key);
-    if(page_index) return xmodel.controller.form.DataSet[page_index];
+    if(typeof page_index !== 'undefined') return xmodel.controller.form.DataSet[page_index];
     return undefined;
   }
 
@@ -169,7 +169,7 @@ jsh.App[modelid] = new (function(){
       var rowid = -1;
       for(var i=0;i<xmodel.controller.form.DataSet.length;i++){
         var page = xmodel.controller.form.DataSet[i];
-        if(page['page_key']==page_key) return i;
+        if(page.page_key==page_key) return i;
       }
     }
     return undefined;
@@ -179,6 +179,7 @@ jsh.App[modelid] = new (function(){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before duplicating a file');
 
     var page = _this.getPage(page_key);
+    if(!page) return XExt.Alert('Invalid page');
     var page_path = page.page_path;
     var page_filename = page.page_filename;
     var retry = function(){ _this.duplicateFile(page_key); };
@@ -202,8 +203,11 @@ jsh.App[modelid] = new (function(){
   this.viewRevisions = function(page_key){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before viewing revisions');
 
-    xmodel.set('revision_page_key', page_key, _this.getPageIndex(page_key));
-    jsh.XExt.popupShow(xmodel.namespace + 'Page_Revision_Listing','revision_page','Revisions',undefined,jsh.$root('.xform'+xmodel.class+' .revision_page_xlookup')[0],{
+    var page = _this.getPage(page_key);
+
+    jsh.App[xmodel.parent].revision_page_key = page_key;
+    jsh.App[xmodel.parent].revision_page_id = page.page_id;
+    jsh.XExt.popupShow(xmodel.namespace + 'Page_Revision_Listing','revision_page','Revisions',undefined,jsh.$root('.xform'+jsh.XModels[xmodel.parent].class+' .revision_page_xlookup')[0],{
       OnControlUpdate:function(obj, rslt){
         if(rslt && rslt.result){
           var page_id = rslt.result;

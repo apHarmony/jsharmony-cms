@@ -112,7 +112,9 @@ module.exports = exports = function(module, funcs){
       var default_page = deployment.default_page;
       var site_files = {};
 
-      var publish_params = {};
+      var publish_params = {
+        timestamp: (Date.now()).toString()
+      };
       try{
         if(deployment.deployment_target_params) publish_params = JSON.parse(deployment.deployment_target_params);
       }

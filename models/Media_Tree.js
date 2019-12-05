@@ -72,6 +72,9 @@ jsh.App[modelid] = new (function(){
     e.preventDefault();
     e.stopPropagation();
 
+    if(!XExt.hasAction(xmodel.actions, 'I')){
+      return XExt.Alert('Upload permission denied');
+    }
     var srcevent = e.originalEvent;
     if(srcevent && srcevent.dataTransfer && srcevent.dataTransfer.files){
       if(replace_media_key){
@@ -400,12 +403,19 @@ jsh.App[modelid] = new (function(){
     jcontainer.html(XExt.renderClientEJS(tmpl, { media_file: media_file, _: _, jsh: jsh }));
 
     if(media_file){
-      jcontainer.find('.media_desc').val(media_file.media_desc);
-      XExt.RenderLOV(null, jcontainer.find('.media_type'), xmodel.controller.form.LOVs.media_type);
-      jcontainer.find('.media_type').val(media_file.media_type);
-      XExt.TagBox_Render(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
-      jcontainer.find('.media_tags').val(media_file.media_tags);
-      XExt.TagBox_Refresh(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
+      if(XExt.hasAction(xmodel.actions, 'U')){
+        jcontainer.find('.media_desc').val(media_file.media_desc);
+        XExt.RenderLOV(null, jcontainer.find('.media_type'), xmodel.controller.form.LOVs.media_type);
+        jcontainer.find('.media_type').val(media_file.media_type);
+        XExt.TagBox_Render(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
+        jcontainer.find('.media_tags').val(media_file.media_tags);
+        XExt.TagBox_Refresh(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
+      }
+      else {
+        jcontainer.find('.media_desc').text(media_file.media_desc);
+        jcontainer.find('.media_type').text(XExt.getLOVTxt(xmodel.controller.form.LOVs.media_type, media_file.media_type));
+        jcontainer.find('.media_tags').text(media_file.media_tags);
+      }
     }
     _this.bindEventsInfo();
   }
@@ -564,8 +574,10 @@ jsh.App[modelid] = new (function(){
 
   this.viewRevisions = function(media_key){
     if(!_this.checkChangesInfo(media_key, function(){ _this.replaceFile(media_key) })) return;
+    var media_file = _this.getMediaFile(media_key);
 
     xmodel.set('revision_media_key', media_key);
+    xmodel.set('revision_media_id', media_file.media_id);
     jsh.XExt.popupShow(xmodel.namespace + 'Media_Revision_Listing','revision_media','Revisions',undefined,jsh.$root('.xform'+xmodel.class+' .revision_media_xlookup')[0],{
       OnControlUpdate:function(obj, rslt){
         if(rslt && rslt.result){

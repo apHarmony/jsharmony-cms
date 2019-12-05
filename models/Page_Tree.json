@@ -48,7 +48,10 @@
         "actions": "BIUD"
       },
       {"control":"html", "value": "</div>"},
-      {"control":"hidden", "name": "default_page", "lov": { "sql": "select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE'" } }
+      {"control":"hidden", "name": "default_page", "lov": { "sql": "select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE'" } },
+      {"name":"revision_page","unbound":true,"control":"hidden","bindings":{"revision_page_key":"js:if(xmodel) return jsh.App[xmodel.id].revision_page_key;"},
+        "popuplov": {"target": "Page_Revision_Listing", "code_val": "page_id", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
+      }
 	  ]
   },
   "Page_Browser": {

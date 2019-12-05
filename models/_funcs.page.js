@@ -141,6 +141,16 @@ module.exports = exports = function(module, funcs){
     if(!req.params || !req.params.page_key) return next();
     var page_key = req.params.page_key;
 
+    var referer = req.get('Referer');
+    if(referer){
+      var urlparts = urlparser.parse(referer, true);
+      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+      res.setHeader('Access-Control-Allow-Origin', remote_domain);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+      res.setHeader('Access-Control-Allow-Credentials', true);
+    }
+
     //Get page
     sql_ptypes = [dbtypes.BigInt];
     sql_params = { 'page_key': page_key };
@@ -181,19 +191,6 @@ module.exports = exports = function(module, funcs){
 
       var baseurl = req.baseurl;
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
-      
-      //Globally accessible
-      if(page_template.remote_template && page_template.remote_template.editor){
-        var referer = req.get('Referer');
-        if(referer){
-          var urlparts = urlparser.parse(referer, true);
-          var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-          res.setHeader('Access-Control-Allow-Origin', remote_domain);
-          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-          res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-          res.setHeader('Access-Control-Allow-Credentials', true);
-        }
-      }
       
       if (verb == 'get'){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }

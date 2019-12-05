@@ -26,17 +26,14 @@
     "fields": [
       {"name":"page_key","control":"hidden","actions":"B","key":true},
       {"name":"page_folder","control":"hidden","actions":"B"},
+      {"name":"page_id","control":"hidden","actions":"B"},
       {"name":"page_path","caption":"URL","control":"hidden","actions":"BIU"},
       {"name":"page_title","caption":"Title","control":"hidden","actions":"BIU"},
       {"name":"page_filename","caption":"File","actions":"B","control":"html","value":"<img src='/images/icon_file.png' class='' /><%=data.page_filename%>","cellclass":"page_filename","link":"js:_this.editFile(this)","captionstyle":"width:50%;"},
       {"name":"page_template_id","caption":"Template","control":"dropdown","lov":{ "values": "#CMS_PAGE_TEMPLATES" },"actions":"BIU","validate":["Required"]},
       {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"},
       {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
-      {"name":"page_edit","caption":"Edit","link":"js:_this.editFile(this)","control":"html","value":"<img data-rowid='<%=rowid%>' src='/images/icon_edit.png' height=12 class='xicon' />","cellstyle": "text-align:center;" },
-      {"name":"revision_page_key","control":"hidden","unbound":true,"actions":"B"},
-      {"name":"revision_page","unbound":true,"control":"hidden","bindings":{"revision_page_key":"revision_page_key"},
-        "popuplov": {"target": "Page_Revision_Listing", "code_val": "page_id", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
-      }
+      {"name":"page_edit","caption":"Edit","link":"js:_this.editFile(this)","control":"html","value":"<img data-rowid='<%=rowid%>' src='/images/icon_edit.png' height=12 class='xicon' />","cellstyle": "text-align:center;" }
     ]
   },
   "Page_Browser_Listing": {

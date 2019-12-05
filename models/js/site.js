@@ -55,24 +55,29 @@
       //Open Editor
       var url = template.editor;
 
+      var dtparams = {
+        timestamp: (Date.now()).toString()
+      };
+
       if(jsh.bcrumbs && jsh.bcrumbs.deployment_target_params){
-        var dtparams = null;
         try{
-          dtparams = JSON.parse(jsh.bcrumbs.deployment_target_params);
+          dtparams = _.extend(dtparams, JSON.parse(jsh.bcrumbs.deployment_target_params));
         }
         catch(ex){
           XExt.Alert('Error reading deployment target param.  Please make sure the JSON syntax is correct');
           return;
         }
-        if(dtparams){
-          for(var key in dtparams){
-            url = XExt.ReplaceAll(url, '%%%' + key + '%%%', dtparams[key]);
-          }
-        }
       }
 
-      url = XExt.ReplaceAll(url, '%%%page_key%%%', page_key);
-      url = XExt.ReplaceAll(url, '%%%page_id%%%', (options.page_id||''));
+      dtparams = _.extend(dtparams, {
+        page_key: page_key,
+        page_id: (options.page_id||'')
+      });
+
+      for(var key in dtparams){
+        url = XExt.ReplaceAll(url, '%%%' + key + '%%%', dtparams[key]);
+      }
+
       window.open(url, '_blank', "width=1000,height=800");
     }
     else {

@@ -512,7 +512,7 @@ window.jsHarmonyCMS = new (function(){
       if ('_success' in rslt) {
         _this.page.body = _this.getCKEditorContent();
         _this.hasChanges = false;
-        _this.loadPage(_this.page_key, function(err){
+        _this.loadPage(_this.page_key, null, function(err){
           var timeLeft = 500-(Date.now()-startTime);
           if(timeLeft > 0) window.setTimeout(function(){ _this.StopLoading(_this.loadObj); }, timeLeft);
           else _this.StopLoading(_this.loadObj);

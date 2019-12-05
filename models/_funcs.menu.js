@@ -74,7 +74,15 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.menu_key', 'Menu Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select menu_key,menu_file_id,menu_template_id,menu_path from '+(module.schema?module.schema+'.':'')+'v_my_menu where menu_key=@menu_key';
+    sql = 'select menu_key,menu_file_id,menu_template_id,menu_path';
+
+    if(Q.menu_id){
+      sql_ptypes.push(dbtypes.BigInt);
+      sql_params.menu_id = Q.menu_id;
+      validate.AddValidator('_obj.menu_id', 'Menu ID', 'B', [XValidate._v_IsNumeric()]);
+      sql += ' from '+(module.schema?module.schema+'.':'')+'menu where menu_key=@menu_key and menu_id=@menu_id';
+    }
+    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_menu where menu_key=@menu_key';
     
     var fields = [];
     var datalockstr = '';
@@ -92,7 +100,7 @@ module.exports = exports = function(module, funcs){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|menu_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //Return menu
         funcs.getClientMenu(menu, function(err, clientMenu){

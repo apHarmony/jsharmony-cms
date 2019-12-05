@@ -10,7 +10,7 @@
     "menu":"jsHarmonyCMS/Media_Listing",
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
-      { "link":"js:_this.addFile();","icon":"add","text":"Add File" },
+      { "link":"js:_this.addFile();","icon":"add","text":"Add File", "roles": {"AUTHOR": "I","PUBLISHER": "I"} },
       { "link":"update:Media_Listing","icon":"search","text":"Search","bindings":{} },
       { "link":"js:_this.toggleSidebar();","icon":"sidebar","text":"Toggle Sidebar" },
       { "link":"js:_this.setSort('filename');","icon":"bullet","text":"File Name","group":"Sort By" },
@@ -51,6 +51,7 @@
       {"control":"html", "value": "</div>"},
       {"name": "media_type", "control":"hidden", "lov": { "code": "media_type", "schema": "{schema}", "blank": true } },
       {"name": "revision_media_key", "control":"hidden"},
+      {"name": "revision_media_id", "control":"hidden"},
       {"name": "revision_media","unbound":true,"control":"hidden","bindings":{"revision_media_key":"revision_media_key"},
         "popuplov": {"target": "Media_Revision_Listing", "code_val": "media_id", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
       }

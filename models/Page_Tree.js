@@ -1,5 +1,8 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
+  
+  _this.revision_page_key = undefined;
+  _this.revision_page_id = undefined;
 
   this.isInEditor = false;
   this.state_default = {

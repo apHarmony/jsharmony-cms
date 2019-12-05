@@ -11,6 +11,7 @@
     "sort":["vpage_mtstmp"],
     "grid_expand_search": true,
     "hide_system_buttons" : ["clear"],
+    "rowclass":"<%=xejs.iif(datarow['page_id']==jsh.App[xmodel.parent].revision_page_id,'active_revision')%>",
     "fields": [
       {"name":"page_id","caption":"ID","control":"hidden","key":true},
       {"name":"revision_page_key","caption":"Revision Key","control":"hidden","sqlwhere":"page_key=@revision_page_key","sqlselect":"page_key"},
