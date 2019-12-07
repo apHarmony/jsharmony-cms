@@ -22,6 +22,7 @@
       {"name":"branch_review_sts","caption":"Review Sts","control":"label","actions":"B"},
       {"name":"branch_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]},
       {"name":"branch_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(branch_muser))","control":"label","actions":"B"},
+      {"caption":"Summary","control":"linkbutton","link":"update:Branch_Summary","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
       {"caption":"Checkout","control":"linkbutton","link":"update:Branch_Checkout&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;",
         "controlstyle":"<%=xejs.iif(datarow['branch_is_checked_out']==1,'display:none;')%>"},
       {"caption":"Clone","control":"linkbutton","link":"update:Branch_Clone&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*","AUTHOR":"*"}}
