@@ -128,15 +128,23 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
         var tmpl = _this.jsh.ParseJSON(fpath, _this.name, templateType + ' template ' + tmplname);
         if(!tmpl.title) tmpl.title = tmplname;
         if(templateType=='page'){
-          prependPropFile(tmpl, 'body', tmplbasepath + '.ejs');
           prependPropFile(tmpl, 'header', tmplbasepath + '.header.ejs');
           prependPropFile(tmpl, 'footer', tmplbasepath + '.footer.ejs');
           prependPropFile(tmpl, 'css', tmplbasepath + '.css');
           prependPropFile(tmpl, 'js', tmplbasepath + '.js');
+          if(!tmpl.content_elements) tmpl.content_elements = { body: 'htmleditor' };
+          if(!tmpl.content) tmpl.content = {};
+          var reserved_content_element_names = ['header', 'footer', 'css', 'js'];
+          for(var content_element_name in tmpl.content_elements){
+            if(_.includes(reserved_content_element_names, content_element_name)) _this.jsh.LogInit_ERROR('Template '+tmplname+' content_element ' + content_element_name + ': Invalid content_element name, cannot be any of the following: '+reserved_content_element_names.join(', '));
+            if(content_element_name != Helper.escapeCSSClass(content_element_name)) _this.jsh.LogInit_ERROR('Template '+tmplname+' content_element ' + content_element_name + ': Invalid content_element name, can only contain alpha-numeric characters, underscores, or dashes');
+            else prependPropFile(tmpl.content, content_element_name, tmplbasepath + '.' + content_element_name + '.ejs');
+          }
           _this.PageTemplates[tmplname] = tmpl;
         }
         else if(templateType=='menu'){
-          prependPropFile(tmpl, 'body', tmplbasepath + '.ejs');
+          if(!tmpl.content) tmpl.content = {};
+          prependPropFile(tmpl.content, 'body', tmplbasepath + '.ejs');
           _this.MenuTemplates[tmplname] = tmpl;
         }
       }
@@ -151,6 +159,8 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   _this.PageTemplates['<Raw Text>'] = {
     title: '<Raw Text>',
     raw: true,
+    content_elements: { body: 'texteditor' },
+    content: {}
   };
 
   this.jsh.Config.macros.CMS_PAGE_TEMPLATES = [];

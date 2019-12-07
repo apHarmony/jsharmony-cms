@@ -41,20 +41,25 @@ module.exports = exports = function(module, funcs){
     var template = module.PageTemplates[page_template_id];
 
     //Load Page Content from disk
-    module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_content){
-      page_content = page_content || { body: template.default_body };
-      if(!page_content.seo) page_content.seo = {};
+    module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
+      var page_file_content = JSON.parse(JSON.stringify(template.default_content));
+      page_file = page_file || {};
+      for(var key in template.content_elements){
+        if(key in page_file.content) page_file_content[key] = page_file.content[key];
+      }
+      page_file.content = page_file_content;
+      if(!page_file.seo) page_file.seo = {};
       var client_page = {
         title: page.page_title||'',
-        css: page_content.css||'',
-        header: page_content.header||'',
-        footer: page_content.footer||'',
-        body: page_content.body||'',
+        css: page_file.css||'',
+        header: page_file.header||'',
+        footer: page_file.footer||'',
+        content: page_file.content||{},
         seo: {
-          title: page_content.seo.title||'',
-          keywords: page_content.seo.keywords||'',
-          metadesc: page_content.seo.metadesc||'',
-          canonical_url: page_content.seo.canonical_url||'',
+          title: page_file.seo.title||'',
+          keywords: page_file.seo.keywords||'',
+          metadesc: page_file.seo.metadesc||'',
+          canonical_url: page_file.seo.canonical_url||'',
         },
         lang: page.page_lang||'',
         tags: page.page_tags||'',
@@ -66,6 +71,7 @@ module.exports = exports = function(module, funcs){
         header: template.header||'',
         footer: template.footer||'',
         js: template.js||'',
+        content_elements: template.content_elements||{},
         raw: template.raw||false
       };
       
@@ -76,13 +82,13 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.replaceBranchURLs = function(page_content, options){
+  exports.replaceBranchURLs = function(content, options){
     options = _.extend({
       getMediaURL: function(media_key){ return ''; },
       getPageURL: function(page_key){ return ''; },
       removeClass: false
     }, options);
-    var $ = cheerio.load(page_content);
+    var $ = cheerio.load(content, { xmlMode: true });
 
     function parseClasses(jobj,prop){
       if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
@@ -239,15 +245,18 @@ module.exports = exports = function(module, funcs){
             funcs.getClientPage(page, function(err, _clientPage){
               if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
               clientPage = _clientPage;
-              if(clientPage.page.body && !clientPage.template.raw){
-                clientPage.page.body = funcs.replaceBranchURLs(clientPage.page.body, {
-                  getMediaURL: function(media_key){
-                    return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
-                  },
-                  getPageURL: function(page_key){
-                    return baseurl+'_funcs/pages/'+page_key+'/';
-                  }
-                });
+              if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
+              if(clientPage.page.content && !clientPage.template.raw){
+                for(var key in clientPage.page.content){
+                  clientPage.page.content[key] = funcs.replaceBranchURLs(clientPage.page.content[key], {
+                    getMediaURL: function(media_key){
+                      return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
+                    },
+                    getPageURL: function(page_key){
+                      return baseurl+'_funcs/pages/'+page_key+'/';
+                    }
+                  });
+                }
               }
               return cb();
             });
@@ -273,14 +282,14 @@ module.exports = exports = function(module, funcs){
         /*
           var client_page = {
             title: page.page_title||'',
-            css: page_content.css||'',
-            header: page_content.header||'',
-            footer: page_content.footer||'',
-            body: page_content.body||'',
-            seo_title: page_content.seo_title||'',
-            seo_keywords: page_content.seo_keywords||'',
-            seo_metadesc: page_content.seo_metadesc||'',
-            seo_canonical_url: page_content.seo_canonical_url||'',
+            css: page_file.css||'',
+            header: page_file.header||'',
+            footer: page_file.footer||'',
+            content: page_file.content||{},
+            seo_title: page_file.seo_title||'',
+            seo_keywords: page_file.seo_keywords||'',
+            seo_metadesc: page_file.seo_metadesc||'',
+            seo_canonical_url: page_file.seo_canonical_url||'',
             lang: page.page_lang||'',
             tags: page.page_tags||'',
             author: page.page_author,
@@ -288,7 +297,7 @@ module.exports = exports = function(module, funcs){
         */
 
         //Validate parameters
-        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&body','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
         if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //XValidate
@@ -299,7 +308,7 @@ module.exports = exports = function(module, funcs){
         validate.AddValidator('_obj.css', 'CSS', 'B', []);
         validate.AddValidator('_obj.header', 'Header', 'B', []);
         validate.AddValidator('_obj.footer', 'Footer', 'B', []);
-        validate.AddValidator('_obj.body', 'Body', 'B', []);
+        validate.AddValidator('_obj.content', 'Content', 'B', []);
         validate.AddValidator('_obj.seo.title', 'SEO Title', 'B', [XValidate._v_MaxLength(2048)]);
         validate.AddValidator('_obj.seo.keywords', 'SEO Keywords', 'B', []);
         validate.AddValidator('_obj.seo.metadesc', 'SEO Meta Description', 'B', []);

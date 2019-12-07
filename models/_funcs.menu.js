@@ -43,7 +43,9 @@ module.exports = exports = function(module, funcs){
       menu_content = menu_content || { menu_items: [] };
       menu_content.template = {
         title: template.title||'',
-        body: template.body||'',
+        content: {
+          body: template.content.body||'',
+        }
       }; 
       return cb(null,menu_content);
     });

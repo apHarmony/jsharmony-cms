@@ -101,7 +101,7 @@
           XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
             var jprompt = jsh.$root('.xdialogblock ' + sel);
             jprompt.find('.edit_page_title').text('Edit: '+page_name);
-            jprompt.find('.page_content').val(page.body||'');
+            jprompt.find('.page_content').val(page.content.body||'');
             jprompt.find('.page_content').prop('readonly', readonly);
             jprompt.find('.button_ok').val(readonly?'Close':'Save');
             jprompt.find('.button_cancel').toggle(!readonly);
@@ -109,7 +109,7 @@
             if(readonly) return success();
             //Save content to server
             var jprompt = jsh.$root('.xdialogblock ' + sel);
-            page.body = jprompt.find('.page_content').val();
+            page.content.body = jprompt.find('.page_content').val();
             url = '../_funcs/page/'+page_key;
             XExt.CallAppFunc(url, 'post', page, success, function (err) { });
           });

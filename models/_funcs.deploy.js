@@ -275,7 +275,7 @@ module.exports = exports = function(module, funcs){
           var downloadTemplate = function(templates, template_body, download_cb){
             async.eachOf(templates, function(template, template_name, template_cb){
               if(!template.remote_template || !template.remote_template.publish){
-                if('body' in template){
+                if('body' in template.content){
                   template_body[template_name] = template.body;
                 }
                 return template_cb();
