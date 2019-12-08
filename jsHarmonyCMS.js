@@ -132,13 +132,14 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
           prependPropFile(tmpl, 'footer', tmplbasepath + '.footer.ejs');
           prependPropFile(tmpl, 'css', tmplbasepath + '.css');
           prependPropFile(tmpl, 'js', tmplbasepath + '.js');
-          if(!tmpl.content_elements) tmpl.content_elements = { body: 'htmleditor' };
+          if(!tmpl.content_elements) tmpl.content_elements = { body: { type: 'htmleditor', title: 'Body' } };
           if(!tmpl.content) tmpl.content = {};
           var reserved_content_element_names = ['header', 'footer', 'css', 'js'];
           for(var content_element_name in tmpl.content_elements){
             if(_.includes(reserved_content_element_names, content_element_name)) _this.jsh.LogInit_ERROR('Template '+tmplname+' content_element ' + content_element_name + ': Invalid content_element name, cannot be any of the following: '+reserved_content_element_names.join(', '));
             if(content_element_name != Helper.escapeCSSClass(content_element_name)) _this.jsh.LogInit_ERROR('Template '+tmplname+' content_element ' + content_element_name + ': Invalid content_element name, can only contain alpha-numeric characters, underscores, or dashes');
             else prependPropFile(tmpl.content, content_element_name, tmplbasepath + '.' + content_element_name + '.ejs');
+            if(!('title' in tmpl.content_elements[content_element_name])) tmpl.content_elements[content_element_name].title = content_element_name;
           }
           _this.PageTemplates[tmplname] = tmpl;
         }
@@ -159,7 +160,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   _this.PageTemplates['<Raw Text>'] = {
     title: '<Raw Text>',
     raw: true,
-    content_elements: { body: 'texteditor' },
+    content_elements: { body: { type: 'texteditor', title: 'Body' } },
     content: {}
   };
 

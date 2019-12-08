@@ -66,7 +66,6 @@ jsh.App[modelid] = new (function(){
           'css': 'CSS',
           'header': 'Header Code',
           'footer': 'Footer Code',
-          'body': 'Content',
           'page_title': 'Page Title',
           'template_title': 'Template'
         }
@@ -79,10 +78,13 @@ jsh.App[modelid] = new (function(){
           jdiff.append($('<div class="'+xmodel.class+'_diff_item"><b>New SEO '+(seo_map[key]||key)+'</b>: '+branch_page.diff.seo[key]+'</div>'));
         }
         for(var key in branch_page.diff){
-          if(key=='seo') continue;
-          if(_.includes(['page_title','template_title'],key)) continue;
+          if(_.includes(['seo','content','content_elements','page_title','template_title'],key)) continue;
           jdiff.append($('<div class="'+xmodel.class+'_diff_head">'+(diff_map[key]||key)+'</div>'));
           jdiff.append($('<div class="'+xmodel.class+'_diff">'+branch_page.diff[key]+'</div>'));
+        }
+        for(var key in branch_page.diff.content){
+          jdiff.append($('<div class="'+xmodel.class+'_diff_head">Content - '+branch_page.diff.content_elements[key]+'</div>'));
+          jdiff.append($('<div class="'+xmodel.class+'_diff">'+branch_page.diff.content[key]+'</div>'));
         }
       }
     });

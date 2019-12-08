@@ -167,7 +167,8 @@ module.exports = exports = function(module, funcs){
               if(err) return page_cb(err);
               if(!clientPage) return page_cb(null); 
               page.compiled = clientPage.page;
-              if(page.compiled.body){
+              page.template = clientPage.template;
+              if(page.compiled.content){
                 var pretty_params = {
                   unformatted: ['code', 'pre'],
                   indent_inner_html: true,
@@ -175,7 +176,9 @@ module.exports = exports = function(module, funcs){
                   indent_size: 2,
                   sep: '\n'
                 };
-                page.compiled.body = prettyhtml(clientPage.page.body, pretty_params);
+                for(var key in page.compiled.content){
+                  page.compiled.content[key] = prettyhtml(page.compiled.content[key], pretty_params);
+                }
               }
               page.template_title = clientPage.template.title;
               return page_cb(null);
@@ -192,10 +195,24 @@ module.exports = exports = function(module, funcs){
               var new_page = pages[branch_page.page_id];
               
               branch_page.diff = {};
-              _.each(['css','header','footer','body'], function(key){
+              _.each(['css','header','footer'], function(key){
                 var diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
                 if(diff) branch_page.diff[key] = diff;
               });
+              var old_content_keys = _.keys(old_page.compiled.content);
+              var new_content_keys = _.keys(new_page.compiled.content);
+              for(var key in old_page.compiled.content){ if(!(key in new_page.compiled.content)) new_page.compiled.content[key] = ''; }
+              for(var key in new_page.compiled.content){ if(!(key in old_page.compiled.content)) old_page.compiled.content[key] = ''; }
+
+              branch_page.diff.content_elements = {};
+              for(var key in old_page.template.content_elements){ branch_page.diff.content_elements[key] = old_page.template.content_elements[key].title; }
+              for(var key in new_page.template.content_elements){ branch_page.diff.content_elements[key] = new_page.template.content_elements[key].title; }
+              
+              branch_page.diff.content = {};
+              for(var key in old_page.compiled.content){
+                var diff = funcs.diffHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
+                branch_page.diff.content[key] = diff;
+              }
               _.each(['page_title','template_title'], function(key){
                 if(old_page[key] != new_page[key]) branch_page.diff[key] = new_page[key];
               });

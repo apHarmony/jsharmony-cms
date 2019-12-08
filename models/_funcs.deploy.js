@@ -124,8 +124,8 @@ module.exports = exports = function(module, funcs){
       }
       publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
 
-      var page_template_body = {};
-      var menu_template_body = {};
+      var page_template_html = {};
+      var menu_template_html = {};
       var page_keys = {};
       var media_keys = {};
       var page_redirects = {};
@@ -272,11 +272,11 @@ module.exports = exports = function(module, funcs){
         //Load remote templates
         function (cb){
           var wc = new wclib.WebConnect();
-          var downloadTemplate = function(templates, template_body, download_cb){
+          var downloadTemplate = function(templates, template_html, download_cb){
             async.eachOf(templates, function(template, template_name, template_cb){
               if(!template.remote_template || !template.remote_template.publish){
                 if('body' in template.content){
-                  template_body[template_name] = template.body;
+                  template_html[template_name] = template.body;
                 }
                 return template_cb();
               }
@@ -286,14 +286,14 @@ module.exports = exports = function(module, funcs){
               }
               wc.req(publish_template_url, 'GET', {}, {}, undefined, function(err, res, rslt){
                 if(err) return template_cb(err);
-                template_body[template_name] = rslt;
+                template_html[template_name] = rslt;
                 return template_cb();
               });
             }, download_cb);
           }
           async.waterfall([
-            function(download_cb){ downloadTemplate(module.PageTemplates, page_template_body, download_cb); },
-            function(download_cb){ downloadTemplate(module.MenuTemplates, menu_template_body, download_cb); },
+            function(download_cb){ downloadTemplate(module.PageTemplates, page_template_html, download_cb); },
+            function(download_cb){ downloadTemplate(module.MenuTemplates, menu_template_html, download_cb); },
           ], cb);
         },
 
@@ -402,7 +402,7 @@ module.exports = exports = function(module, funcs){
                     css: (clientPage.template.css||'')+' '+(clientPage.page.css||''),
                     js: (clientPage.template.js||'')+' '+(clientPage.page.js||''),
                     header: (clientPage.template.header||'')+' '+(clientPage.page.header||''),
-                    body: clientPage.page.body,
+                    content: clientPage.page.content||{},
                     footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
                     title: clientPage.page.title
                   },
@@ -410,8 +410,8 @@ module.exports = exports = function(module, funcs){
                   Helper: Helper
                 };
                 var page_content = '';
-                if(page.page_template_id in page_template_body){
-                  page_content = page_template_body[page.page_template_id]||'';
+                if(page.page_template_id in page_template_html){
+                  page_content = page_template_html[page.page_template_id]||'';
                   page_content = ejs.render(page_content, ejsparams);
                   try{
                     page_content = funcs.replaceBranchURLs(page_content, {
@@ -432,7 +432,7 @@ module.exports = exports = function(module, funcs){
                 }
                 else {
                   //Raw Content
-                  page_content = ejsparams.page.body;
+                  page_content = ejsparams.page.content.body||'';
                 }
                 
                 var page_fpath = '';
@@ -580,7 +580,7 @@ module.exports = exports = function(module, funcs){
                     _.each(menu.menu_items, function(menu_item){
                       if((menu_item.menu_item_link_type||'').toString()=='PAGE'){
                         var page_key = parseInt(menu_item.menu_item_link_dest);
-                        if(!(page_key in page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
+                        if(!(page_key in page_keys)) throw new Error('Menu  '+menu.menu_tag+' links to missing Page ID # '+page_key.toString());
                         menu_item.menu_item_link_dest = page_keys[page_key];
                       }
                       else if((menu_item.menu_item_link_type||'').toString()=='MEDIA'){
@@ -625,8 +625,8 @@ module.exports = exports = function(module, funcs){
                       Helper: Helper
                     };
                     var menu_content = '';
-                    if(menu.menu_template_id in menu_template_body){
-                      menu_content = menu_template_body[menu.menu_template_id]||'';
+                    if(menu.menu_template_id in menu_template_html){
+                      menu_content = menu_template_html[menu.menu_template_id]||'';
                       menu_content = ejs.render(menu_content, ejsparams);
                     }
                     else {

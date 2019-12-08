@@ -249,7 +249,7 @@ module.exports = exports = function(module, funcs){
     });
 
     //Clone menu_items
-    menu_items = JSON.parse(JSON.stringify(menu_items));
+    menu_items = JSON.parse(JSON.stringify(menu_items||[]));
 
     _.each(menu_items, function(menu_item){
       //Delete non-essential info
