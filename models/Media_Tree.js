@@ -20,7 +20,6 @@ jsh.App[modelid] = new (function(){
 
   this.oninit = function(){
     jsh.System.RequireBranch(xmodel);
-    if(jsh._GET.CKEditor) this.isInEditor = true;
     if(this.isInEditor){
       jsh.$root('.xbody').addClass('InEditor');
     }
@@ -795,9 +794,8 @@ jsh.App[modelid] = new (function(){
       window.close();
     }
     else{
-      var openerJSH = XExt.getOpenerJSH();
-      if(!openerJSH) return XExt.Alert('Parent editor not found');
-      window.opener.postMessage('cms_link_browser:'+JSON.stringify({ media_key: media_key, media_file_id: media_file.media_file_id, media_desc: media_file.media_desc, media_path: media_file.media_path }), '*');
+      if(!window.opener) return XExt.Alert('Parent editor not found');
+      window.opener.postMessage('cms_file_picker:'+JSON.stringify({ media_key: media_key, media_file_id: media_file.media_file_id, media_desc: media_file.media_desc, media_path: media_file.media_path }), '*');
       window.close();
     }
   }

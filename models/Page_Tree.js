@@ -12,7 +12,6 @@ jsh.App[modelid] = new (function(){
 
   this.oninit = function(){
     jsh.System.RequireBranch(xmodel);
-    if(jsh._GET.CKEditor) this.isInEditor = true;
     if(this.isInEditor){
       jsh.$root('.xbody').addClass('InEditor');
     }

@@ -154,16 +154,21 @@
   background-color:#3c89ef;
 }
 
+body .tox-tinymce-inline {
+  z-index: 9999;
+}
+body .tox-tinymce-aux {
+  z-index: 10003;
+}
+
 #jsharmony_cms_content_editor_toolbar {
   position:fixed;
   z-index: 9999;
   top:40px;
-  display:none;
   width:100%;
+  opacity:0;
 }
-#jsharmony_cms_content_editor_toolbar .cke_top {
-  padding-top:10px;
-}
+
 .jsharmony_cms_content:after {
   content: "";
   display: table;

@@ -13,8 +13,8 @@ jsh.App[modelid] = new (function(){
 
   this.onmessage = function(data){
     var data = (data || '').toString();
-    if(data.indexOf('cms_link_browser:')==0){
-      data = data.substr(17);
+    if(data.indexOf('cms_file_picker:')==0){
+      data = data.substr(16);
       var jdata = JSON.parse(data);
       if(jdata.media_key){
         xmodel.set('menu_item_link_dest',jdata.media_key);

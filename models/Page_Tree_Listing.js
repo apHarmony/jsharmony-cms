@@ -151,9 +151,8 @@ jsh.App[modelid] = new (function(){
       window.close();
     }
     else {
-      var openerJSH = XExt.getOpenerJSH();
-      if(!openerJSH) return XExt.Alert('Parent editor not found');
-      window.opener.postMessage('cms_link_browser:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path  }), '*');
+      if(!window.opener) return XExt.Alert('Parent editor not found');
+      window.opener.postMessage('cms_file_picker:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path  }), '*');
       window.close();
     }
   }

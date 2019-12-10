@@ -96,39 +96,39 @@ module.exports = exports = function(module, funcs){
     }, options);
     var $ = cheerio.load(content, { xmlMode: true });
 
-    function parseClasses(jobj,prop){
+    function parseURLs(jobj,prop){
       if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
-      var cssClassString = jobj.attr('class')||'';
-      var cssClasses = cssClassString.split(' ');
-      for(var i=0;i<cssClasses.length;i++){
-        var cssClass = cssClasses[i].trim();
-        if(cssClass.indexOf('media_key_')==0){
-          var media_key = parseInt(cssClass.substr(10));
-          if(cssClass.substr(10)==(media_key||0).toString()){
-            //Apply Media Key
-            var media_url = options.getMediaURL(media_key);
-            jobj.attr(prop, media_url);
-            if(options.removeClass) jobj.removeClass('media_key_'+media_key);
-          }
+      if(jobj.hasClass('cms-no-replace-url')) return;
+      var url = jobj.attr(prop);
+      if(!url) return;
+      var urlparts = urlparser.parse(url, true);
+      if(!urlparts.path) return;
+      var patharr = (urlparts.path||'').split('/');
+
+      if((urlparts.path.indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
+        var media_key = patharr[3];
+        if(parseInt(media_key).toString()==media_key){
+          var media_url = options.getMediaURL(media_key);
+          jobj.attr(prop, media_url);
         }
-        else if(cssClass.indexOf('page_key_')==0){
-          var page_key = parseInt(cssClass.substr(9));
-          if(cssClass.substr(9)==(page_key||0).toString()){
-            //Apply Page Key
-            var page_url = options.getPageURL(page_key);
-            jobj.attr(prop, page_url);
-            if(options.removeClass) jobj.removeClass('page_key_'+page_key);
-          }
+      }
+      if((urlparts.path.indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
+        var page_key = patharr[3];
+        if(parseInt(page_key).toString()==page_key){
+          var page_url = options.getPageURL(page_key);
+          jobj.attr(prop, page_url);
         }
       }
     }
 
     $('a').each(function(obj_i,obj){
-      parseClasses($(obj),'href');
+      parseURLs($(obj),'href');
     });
     $('img').each(function(obj_i,obj){
-      parseClasses($(obj),'src');
+      parseURLs($(obj),'src');
     });
+    //Prevent auto-closing HTML elements
+    $('div,iframe,span,script').filter(function(idx,elem){ return !elem.children.length; }).text('');
     return $.html();
   }
   
@@ -259,7 +259,7 @@ module.exports = exports = function(module, funcs){
                       return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
                     },
                     getPageURL: function(page_key){
-                      return baseurl+'_funcs/pages/'+page_key+'/';
+                      return baseurl+'_funcs/page/'+page_key+'/';
                     }
                   });
                 }

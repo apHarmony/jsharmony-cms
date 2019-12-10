@@ -16,6 +16,6 @@
       ".xform_title { display:none !important; }"
     ],
     "hide_system_buttons": ["delete","print","help"],
-	  "popup": [980, 600]
+	  "popup": [1100, 600]
 	}
 }
