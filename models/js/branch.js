@@ -54,7 +54,7 @@
     });
   }
 
-  var getMergeType = function(xmodel) {
+  function getMergeType(xmodel) {
     var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
     if(checked_option.length) return checked_option.val();
     return 'CHANGES';

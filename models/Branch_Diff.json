@@ -3,7 +3,7 @@
     "layout":"form",
     "table":"{schema}.branch",
     "onecolumn":true,
-    "roles": {"PUBLISHER": "B"},
+    "roles": {"PUBLISHER": "B","AUTHOR": "B", "VIEWER": "B"},
     "actions":"B",
     "caption":["Branch","Branches"],
     "title":"",

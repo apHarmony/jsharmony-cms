@@ -43,7 +43,7 @@ module.exports = exports = function(module, funcs){
     var XValidate = jsh.XValidate;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Review');
+    var model = jsh.getModel(req, module.namespace + 'Branch_Diff');
     
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
