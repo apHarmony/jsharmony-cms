@@ -1,7 +1,4 @@
-.<%=model.class%>_branch_page_path,
-.<%=model.class%>_branch_media_path,
-.<%=model.class%>_branch_menu_tag,
-.<%=model.class%>_branch_redirect_url {
+.<%=model.class%>_branch_diff_item_header {
   font-family:monospace;
 }
 .spacer_<%=model.class%> {

@@ -3,7 +3,7 @@
     "layout":"form",
     "table":"{schema}.branch",
     "onecolumn":true,
-    "roles": {"AUTHOR": "B", "VIEWER": "B"},
+    "roles": {"PUBLISHER": "B", "AUTHOR": "B", "VIEWER": "B"},
     "actions":"B",
     "caption":["Branch","Branches"],
     "title":"Branch Summary",
@@ -18,8 +18,8 @@
       { "name":"branch_sts","control":"hidden"},
       { "name":"branch_is_checked_out","control":"hidden","sqlselect":"(select branch_is_checked_out from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
       { "name":"src_branch_desc","control":"hidden","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
-      { "name":"dst_branch_desc","control":"hidden","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_is_checked_out == 1)"},
-      { "name":"dst_branch_id","control":"hidden","sqlselect":"(select branch_id from {schema}.v_my_branch_desc where branch_is_checked_out == 1)"},
+      { "name":"dst_branch_desc","control":"hidden","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_is_checked_out = 1)"},
+      { "name":"dst_branch_id","control":"hidden","sqlselect":"(select branch_id from {schema}.v_my_branch_desc where branch_is_checked_out = 1)"},
       { "control":"subform","target":"Branch_Diff","actions":"BU","controlparams":{"panelstyle":"border:none;padding:0"}},
     ]
   },
@@ -27,7 +27,7 @@
     "layout": "exec",
     "title": "Merge Branch",
     "actions": "U",
-    "roles": {"AUTHOR": "BU", "VIEWER": "BU"},
+    "roles": {"PUBLISHER": "BU", "AUTHOR": "BU", "VIEWER": "BU"},
     "sqlexec": [
       "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id, branch_menu_action) select @dst_branch_id, menu_key, menu_id, menu_orig_id, branch_menu_action from {schema}.branch_menu where branch_id=@src_branch_id and (branch_menu_action='ADD' or branch_menu_action='UPDATE' or branch_menu_action='DELETE') and menu_key not in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id);",
       "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id, branch_page_action) select @dst_branch_id, page_key, page_id, page_orig_id, branch_page_action from {schema}.branch_page where branch_id=@src_branch_id and (branch_page_action='ADD' or branch_page_action='UPDATE' or branch_page_action='DELETE') and page_key not in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id);",
@@ -61,7 +61,7 @@
     "layout": "exec",
     "title": "Merge Branch",
     "actions": "U",
-    "roles": {"AUTHOR": "BU", "VIEWER": "BU"},
+    "roles": {"PUBLISHER": "BU", "AUTHOR": "BU", "VIEWER": "BU"},
     "sqlexec": [
       // unmodified/deleted items missing new new base
       "delete from {schema}.branch_menu where branch_id=@dst_branch_id and (branch_menu_action is null or branch_menu_action='DELETE') and menu_key not in (select menu_key from {schema}.branch_menu where branch_id=@src_branch_id);",

@@ -49,7 +49,8 @@ module.exports = exports = function(module, funcs){
       catch(ex){
         module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_content);
       }
-      page_file = page_file || { content: {} };
+      page_file = page_file || { };
+      if(!('content' in page_file)) page_file.content = {};
       for(var key in template.content_elements){
         if(key in page_file.content) page_file_content[key] = page_file.content[key];
       }
