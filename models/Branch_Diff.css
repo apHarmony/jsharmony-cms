@@ -30,3 +30,7 @@
 .<%=model.class%>_diff .d2h-file-diff {
   overflow-y: visible;
 }
+.Branch_Diff_subform > .xpanel {
+  border: none;
+  padding: 0;
+}

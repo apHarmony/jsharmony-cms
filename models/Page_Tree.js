@@ -1,5 +1,8 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
+  
+  _this.revision_page_key = undefined;
+  _this.revision_page_id = undefined;
 
   this.isInEditor = false;
   this.state_default = {
@@ -9,7 +12,6 @@ jsh.App[modelid] = new (function(){
 
   this.oninit = function(){
     jsh.System.RequireBranch(xmodel);
-    if(jsh._GET.CKEditor) this.isInEditor = true;
     if(this.isInEditor){
       jsh.$root('.xbody').addClass('InEditor');
     }

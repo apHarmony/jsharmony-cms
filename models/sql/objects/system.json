@@ -88,7 +88,8 @@
     "init_data": [
       { "menu_id": 300, "sys_role_name": "*" },
       { "menu_id": 30001, "sys_role_name": "*" },
-      { "menu_id": 30002, "sys_role_name": "*" },
+      { "menu_id": 30002, "sys_role_name": "PUBLISHER" },
+      { "menu_id": 30002, "sys_role_name": "AUTHOR" },
       { "menu_id": 30003, "sys_role_name": "PUBLISHER" },
       { "menu_id": 30004, "sys_role_name": "PUBLISHER" },
 

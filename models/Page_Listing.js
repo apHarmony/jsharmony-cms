@@ -1,7 +1,7 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.openPageEditor = function(obj){
+  this.editFile = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing page');
 
     var rowid = $(obj).closest('tr').data('id');
@@ -15,7 +15,7 @@ jsh.App[modelid] = new (function(){
     var template = jsh.globalparams.PageTemplates[page_template_id];
     if(!template) return XExt.Alert('Template is not defined');
 
-    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, '.'+xmodel.class+'_RawTextEditor');
+    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' });
   }
 
 })();

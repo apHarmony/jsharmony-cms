@@ -2,6 +2,7 @@ jsh.App[modelid] = new (function(){
   var _this = this;
 
   this.menu_key = null;
+  this.menu_id = null;
   this.menu_items = [];
   this.selected_menu_item_id = null;
   this.loadobj = {};
@@ -28,6 +29,7 @@ jsh.App[modelid] = new (function(){
   this.oninit = function(){
     //jsh.System.RequireBranch(xmodel);
     this.menu_key = jsh._GET.menu_key;
+    if(jsh._GET.menu_id) this.menu_id = jsh._GET.menu_id;
     $(window).bind('resize', _this.onresize);
     _this.refreshLayout();
     xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); }
@@ -115,6 +117,7 @@ jsh.App[modelid] = new (function(){
     if(!_this.menu_key){ XExt.Alert('Missing menu key'); return; }
 
     var url = '../_funcs/menu/'+_this.menu_key;
+    if(_this.menu_id) url += '?menu_id=' + _this.menu_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var menu = rslt.menu;
@@ -404,6 +407,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.save = function(){
+    if(_this.menu_id){ XExt.Alert('Cannot save when previewing a revision'); return; }
     if(!_this.menu_key){ XExt.Alert('Missing menu key'); return; }
     if(!_this.commitInfo()) return;
 

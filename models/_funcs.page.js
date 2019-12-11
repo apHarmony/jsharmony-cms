@@ -41,20 +41,31 @@ module.exports = exports = function(module, funcs){
     var template = module.PageTemplates[page_template_id];
 
     //Load Page Content from disk
-    module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_content){
-      page_content = page_content || { body: template.default_body };
-      if(!page_content.seo) page_content.seo = {};
+    module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
+      var page_file_content = '';
+      try{
+        page_file_content = JSON.parse(JSON.stringify(template.default_content||'')) || {};
+      }
+      catch(ex){
+        module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_content);
+      }
+      page_file = page_file || { content: {} };
+      for(var key in template.content_elements){
+        if(key in page_file.content) page_file_content[key] = page_file.content[key];
+      }
+      page_file.content = page_file_content;
+      if(!page_file.seo) page_file.seo = {};
       var client_page = {
         title: page.page_title||'',
-        css: page_content.css||'',
-        header: page_content.header||'',
-        footer: page_content.footer||'',
-        body: page_content.body||'',
+        css: page_file.css||'',
+        header: page_file.header||'',
+        footer: page_file.footer||'',
+        content: page_file.content||{},
         seo: {
-          title: page_content.seo.title||'',
-          keywords: page_content.seo.keywords||'',
-          metadesc: page_content.seo.metadesc||'',
-          canonical_url: page_content.seo.canonical_url||'',
+          title: page_file.seo.title||'',
+          keywords: page_file.seo.keywords||'',
+          metadesc: page_file.seo.metadesc||'',
+          canonical_url: page_file.seo.canonical_url||'',
         },
         lang: page.page_lang||'',
         tags: page.page_tags||'',
@@ -66,6 +77,7 @@ module.exports = exports = function(module, funcs){
         header: template.header||'',
         footer: template.footer||'',
         js: template.js||'',
+        content_elements: template.content_elements||{},
         raw: template.raw||false
       };
       
@@ -76,47 +88,47 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.replaceBranchURLs = function(page_content, options){
+  exports.replaceBranchURLs = function(content, options){
     options = _.extend({
       getMediaURL: function(media_key){ return ''; },
       getPageURL: function(page_key){ return ''; },
       removeClass: false
     }, options);
-    var $ = cheerio.load(page_content);
+    var $ = cheerio.load(content, { xmlMode: true });
 
-    function parseClasses(jobj,prop){
+    function parseURLs(jobj,prop){
       if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
-      var cssClassString = jobj.attr('class')||'';
-      var cssClasses = cssClassString.split(' ');
-      for(var i=0;i<cssClasses.length;i++){
-        var cssClass = cssClasses[i].trim();
-        if(cssClass.indexOf('media_key_')==0){
-          var media_key = parseInt(cssClass.substr(10));
-          if(cssClass.substr(10)==(media_key||0).toString()){
-            //Apply Media Key
-            var media_url = options.getMediaURL(media_key);
-            jobj.attr(prop, media_url);
-            if(options.removeClass) jobj.removeClass('media_key_'+media_key);
-          }
+      if(jobj.hasClass('cms-no-replace-url')) return;
+      var url = jobj.attr(prop);
+      if(!url) return;
+      var urlparts = urlparser.parse(url, true);
+      if(!urlparts.path) return;
+      var patharr = (urlparts.path||'').split('/');
+
+      if((urlparts.path.indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
+        var media_key = patharr[3];
+        if(parseInt(media_key).toString()==media_key){
+          var media_url = options.getMediaURL(media_key);
+          jobj.attr(prop, media_url);
         }
-        else if(cssClass.indexOf('page_key_')==0){
-          var page_key = parseInt(cssClass.substr(9));
-          if(cssClass.substr(9)==(page_key||0).toString()){
-            //Apply Page Key
-            var page_url = options.getPageURL(page_key);
-            jobj.attr(prop, page_url);
-            if(options.removeClass) jobj.removeClass('page_key_'+page_key);
-          }
+      }
+      if((urlparts.path.indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
+        var page_key = patharr[3];
+        if(parseInt(page_key).toString()==page_key){
+          var page_url = options.getPageURL(page_key);
+          jobj.attr(prop, page_url);
         }
       }
     }
 
     $('a').each(function(obj_i,obj){
-      parseClasses($(obj),'href');
+      parseURLs($(obj),'href');
     });
     $('img').each(function(obj_i,obj){
-      parseClasses($(obj),'src');
+      parseURLs($(obj),'src');
     });
+    //Prevent auto-closing HTML elements
+    $('div,iframe,span,script').filter(function(idx,elem){ return !elem.children.length; }).text('');
     return $.html();
   }
   
@@ -136,10 +148,20 @@ module.exports = exports = function(module, funcs){
     var validate = null;
     var model = jsh.getModel(req, module.namespace + 'Page_Editor');
     
-    if (!Helper.hasModelAction(req, model, 'IUD')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     if(!req.params || !req.params.page_key) return next();
     var page_key = req.params.page_key;
+
+    var referer = req.get('Referer');
+    if(referer){
+      var urlparts = urlparser.parse(referer, true);
+      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+      res.setHeader('Access-Control-Allow-Origin', remote_domain);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+      res.setHeader('Access-Control-Allow-Credentials', true);
+    }
 
     //Get page
     sql_ptypes = [dbtypes.BigInt];
@@ -147,7 +169,20 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.page_key', 'Page Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+    sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang';
+
+    if(Q.page_id){
+      sql_ptypes.push(dbtypes.BigInt);
+      sql_params.page_id = Q.page_id;
+      validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
+      sql += ' from '+(module.schema?module.schema+'.':'')+'page where page_key=@page_key and page_id=@page_id';
+    }
+    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+
+    var page_role = '';
+    if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
+    else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
+    else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
     
     var fields = [];
     var datalockstr = '';
@@ -169,28 +204,12 @@ module.exports = exports = function(module, funcs){
       var baseurl = req.baseurl;
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
       
-      //Globally accessible
-      if(page_template.remote_template && page_template.remote_template.editor){
-        var referer = req.get('Referer');
-        if(referer){
-          var urlparts = urlparser.parse(referer, true);
-          var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-          res.setHeader('Access-Control-Allow-Origin', remote_domain);
-          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-          res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-          res.setHeader('Access-Control-Allow-Credentials', true);
-        }
-      }
-      
       if (verb == 'get'){
+        if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-
-        var page_role = '';
-        if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
-        else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
-        else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
+        if (!appsrv.ParamCheck('Q', Q, ['|page_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var authors = null;
         var clientPage = null;
@@ -204,10 +223,10 @@ module.exports = exports = function(module, funcs){
               sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from jsharmony.sys_user_role where sys_role_name in ('PUBLISHER','AUTHOR')) order by code_txt";
             }
             else {
-              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"v_my_page where page_key=@page_key) order by code_txt";
+              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"page where page_id=@page_id) order by code_txt";
             }
 
-            appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            appsrv.ExecRecordset(req._DBContext, sql, [dbtypes.BigInt], { page_id: page.page_id }, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
               if(!rslt || !rslt.length || !rslt[0]){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
               authors = rslt[0];
@@ -232,15 +251,18 @@ module.exports = exports = function(module, funcs){
             funcs.getClientPage(page, function(err, _clientPage){
               if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
               clientPage = _clientPage;
-              if(clientPage.page.body && !clientPage.template.raw){
-                clientPage.page.body = funcs.replaceBranchURLs(clientPage.page.body, {
-                  getMediaURL: function(media_key){
-                    return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
-                  },
-                  getPageURL: function(page_key){
-                    return baseurl+'_funcs/pages/'+page_key+'/';
-                  }
-                });
+              if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
+              if(clientPage.page.content && !clientPage.template.raw){
+                for(var key in clientPage.page.content){
+                  clientPage.page.content[key] = funcs.replaceBranchURLs(clientPage.page.content[key], {
+                    getMediaURL: function(media_key){
+                      return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
+                    },
+                    getPageURL: function(page_key){
+                      return baseurl+'_funcs/page/'+page_key+'/';
+                    }
+                  });
+                }
               }
               return cb();
             });
@@ -262,17 +284,18 @@ module.exports = exports = function(module, funcs){
         });
       }
       else if(verb == 'post'){
+        if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
         /*
           var client_page = {
             title: page.page_title||'',
-            css: page_content.css||'',
-            header: page_content.header||'',
-            footer: page_content.footer||'',
-            body: page_content.body||'',
-            seo_title: page_content.seo_title||'',
-            seo_keywords: page_content.seo_keywords||'',
-            seo_metadesc: page_content.seo_metadesc||'',
-            seo_canonical_url: page_content.seo_canonical_url||'',
+            css: page_file.css||'',
+            header: page_file.header||'',
+            footer: page_file.footer||'',
+            content: page_file.content||{},
+            seo_title: page_file.seo_title||'',
+            seo_keywords: page_file.seo_keywords||'',
+            seo_metadesc: page_file.seo_metadesc||'',
+            seo_canonical_url: page_file.seo_canonical_url||'',
             lang: page.page_lang||'',
             tags: page.page_tags||'',
             author: page.page_author,
@@ -280,7 +303,7 @@ module.exports = exports = function(module, funcs){
         */
 
         //Validate parameters
-        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&body','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
         if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //XValidate
@@ -291,7 +314,7 @@ module.exports = exports = function(module, funcs){
         validate.AddValidator('_obj.css', 'CSS', 'B', []);
         validate.AddValidator('_obj.header', 'Header', 'B', []);
         validate.AddValidator('_obj.footer', 'Footer', 'B', []);
-        validate.AddValidator('_obj.body', 'Body', 'B', []);
+        validate.AddValidator('_obj.content', 'Content', 'B', []);
         validate.AddValidator('_obj.seo.title', 'SEO Title', 'B', [XValidate._v_MaxLength(2048)]);
         validate.AddValidator('_obj.seo.keywords', 'SEO Keywords', 'B', []);
         validate.AddValidator('_obj.seo.metadesc', 'SEO Meta Description', 'B', []);

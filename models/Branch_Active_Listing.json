@@ -9,7 +9,7 @@
     "menu":"jsHarmonyCMS/Branch_Active_Listing",
     "nokey":true,
     "fields": [
-      {"control":"subform","target":"Branch_Active_User_Listing","bindings":{},"controlclass":"no-border"},
+      {"control":"subform","target":"Branch_Active_User_Listing","bindings":{},"controlclass":"no-border","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
       {"control":"subform","target":"Branch_Active_Public_Listing","bindings":{},"controlclass":"no-border"}
     ]
   }

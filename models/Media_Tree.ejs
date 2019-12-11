@@ -5,7 +5,7 @@
         <div class="<%=model.class%>_file_tile" data-key="<#=media_file.media_key#>">
           
           <# if(media_file.media_width && media_file.media_height){ #><img src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile?media_file_id=<#=media_file.media_file_id#>" />
-          <# } else { #><img src="<%=jsh._BASEURL%>images/icon_file.svg" /><# } #>
+          <# } else { #><img src="<%=jsh._BASEURL%>images/icon_file.svg" class="default" /><# } #>
           <span><#=media_file.media_filename#></span>
         </div>
       <# }); #>
@@ -58,17 +58,25 @@
     <# if(media_file.media_width && media_file.media_height){ #><img class="<%=model.class%>_file_info_preview" src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_preview?media_file_id=<#=media_file.media_file_id#>" />
     <# } else { #><img class="<%=model.class%>_file_info_preview" src="<%=jsh._BASEURL%>images/icon_file.svg" /><# } #>
     <div class="<%=model.class%>_file_info_actions">
-      <a class="<%=model.class%>_file_info_download" href="#"><img src="/images/icon_download.png" /> Download</a>
-      <a class="<%=model.class%>_file_info_replace" href="#"><img src="/images/icon_new.png" /> Replace</a>
-      <a class="<%=model.class%>_file_info_delete" href="#"><img src="/images/icon_delete.png" /> Delete</a>
+      <a class="<%=model.class%>_file_info_download" href="#"><img src="/images/icon_download.png" />Download</a>
+      <% if(XExt.hasAction(model.actions, 'U')){ %><a class="<%=model.class%>_file_info_replace" href="#"><img src="/images/icon_new.png" />Replace</a><% } %>
+      <% if(XExt.hasAction(model.actions, 'D')){ %><a class="<%=model.class%>_file_info_delete" href="#"><img src="/images/icon_delete.png" />Delete</a><% } %>
     </div>
     <div class="<%=model.class%>_file_info_items">
-      <div class="<%=model.class%>_file_info_item"><label>File Name:</label><span class="media_filename"><#=media_file.media_filename#></span> <a class="<%=model.class%>_file_info_rename" href="#"><img src="/images/icon_edit.png" /></a></div>
-      <div class="<%=model.class%>_file_info_item"><label>Path:</label><span class="media_path"><#=media_file.media_path#></span></div>
-      <div class="<%=model.class%>_file_info_item" style="display:none;"><a href="#" class="save_changes"><img src="/images/icon_save.png"/> Save Changes</a></div>
-      <div class="<%=model.class%>_file_info_item"><label>Title:</label><input class="media_desc" /></div>
-      <div class="<%=model.class%>_file_info_item"><label>Type:</label><select class="media_type"></select></div>
-      <div class="<%=model.class%>_file_info_item" style="align-items:flex-start;"><label style="padding-top:8px;">Tags:</label><div class="media_tags_editor xtagbox"></div><input type="text" class="media_tags xtagbox_base" value="<#=media_file.media_tags#>" /></div>
+      <% if(XExt.hasAction(model.actions, 'U')){ %>
+        <div class="<%=model.class%>_file_info_item"><label>File Name:</label><span class="media_filename"><#=media_file.media_filename#></span> <a class="<%=model.class%>_file_info_rename" href="#"><img src="/images/icon_edit.png" /></a></div>
+        <div class="<%=model.class%>_file_info_item"><label>Path:</label><span class="media_path"><#=media_file.media_path#></span></div>
+        <div class="<%=model.class%>_file_info_item" style="display:none;"><a href="#" class="save_changes"><img src="/images/icon_save.png"/> Save Changes</a></div>
+        <div class="<%=model.class%>_file_info_item"><label>Title:</label><input class="media_desc" /></div>
+        <div class="<%=model.class%>_file_info_item"><label>Type:</label><select class="media_type"></select></div>
+        <div class="<%=model.class%>_file_info_item" style="align-items:flex-start;"><label style="padding-top:8px;">Tags:</label><div class="media_tags_editor xtagbox"></div><input type="text" class="media_tags xtagbox_base" value="<#=media_file.media_tags#>" /></div>
+      <% } else { %>
+        <div class="<%=model.class%>_file_info_item"><label>File Name:</label><span class="media_filename"><#=media_file.media_filename#></span></div>
+        <div class="<%=model.class%>_file_info_item"><label>Path:</label><span class="media_path"><#=media_file.media_path#></span></div>
+        <div class="<%=model.class%>_file_info_item"><label>Title:</label><span class="media_desc" /></span></div>
+        <div class="<%=model.class%>_file_info_item"><label>Type:</label><span class="media_type"></span></div>
+        <div class="<%=model.class%>_file_info_item"><label>Tags:</label><span class="media_tags"></span></div>
+      <% } %>
       <div class="<%=model.class%>_file_info_item"><label>Size:</label><span class="media_size"><#=jsh.XFormat.bytes(media_file.media_size)#> (<#=jsh.XFormat.comma(media_file.media_size)#> bytes)</span></div>
       <# if(media_file.media_width){ #><div class="<%=model.class%>_file_info_item"><label>Width:</label><span class="media_width"><#=media_file.media_width#> pixels</span></div><# } #>
       <# if(media_file.media_height){ #><div class="<%=model.class%>_file_info_item"><label>Height:</label><span class="media_height"><#=media_file.media_height#> pixels</span></div><# } #>
@@ -77,6 +85,10 @@
       <div class="<%=model.class%>_file_info_item"><label>Modified By:</label><span class="media_muser_fmt"><#=media_file.media_muser_fmt#></span></div>
       <div class="<%=model.class%>_file_info_item"><label>Uploaded:</label><span class="media_uptstmp"><#=jsh.moment(media_file.media_uptstmp).format('YYYY-MM-DD h:mm a')#></span></div>
       <div class="<%=model.class%>_file_info_item"><label>Uploaded By:</label><span class="media_upuser_fmt"><#=media_file.media_upuser_fmt#></span></div>
+      <% if(XExt.hasAction(model.actions, 'U')){ %>
+        <div style="padding-top:10px;"></div>
+        <div class="<%=model.class%>_file_info_item"><a class="<%=model.class%>_file_info_view_revisions" href="#"><img src="/images/icon_refresh.png" />View Revisions</a></div>
+      <% } %>
     </div>
   <# } #>
 </script>
@@ -86,7 +98,7 @@
     <div style="position:relative;width:100%;height:200px;">
       <div class="<%=model.class%>_drop_overlay_body">
         Drop files here<br/>
-        <input type="file" class="media_upload" multiple accept="image/*" onchange="" />
+        <input type="file" class="media_upload default_focus" multiple accept="image/*" onchange="" />
       </div>
     </div>
   </div>
@@ -94,7 +106,7 @@
     <div style="position:relative;width:100%;height:200px;">
       <div class="<%=model.class%>_drop_overlay_body">
         Drop file here<br/>
-        <input type="file" class="media_upload" accept="image/*" onchange="" />
+        <input type="file" class="media_upload default_focus" accept="image/*" onchange="" />
       </div>
     </div>
   </div>
@@ -104,7 +116,8 @@
   <a class="select" onclick="<%-js('_this.sendToEditor(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_ok.png" />Select File</a>
   <a onclick="<%-js('_this.viewFileDetails(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_browse.png" />View Details</a>
   <a onclick="<%-js('_this.downloadFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_download.png" />Download</a>
-  <a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a>
-  <a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a>
-  <a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a>
+  <% if(XExt.hasAction(model.actions, 'U')){ %><a onclick="<%-js('_this.viewRevisions(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_refresh.png" />View Revisions</a><% } %>
+  <% if(XExt.hasAction(model.actions, 'U')){ %><a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a><% } %>
+  <% if(XExt.hasAction(model.actions, 'U')){ %><a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a><% } %>
+  <% if(XExt.hasAction(model.actions, 'D')){ %><a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a><% } %>
 </div>  

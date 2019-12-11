@@ -10,7 +10,7 @@
     "menu":"jsHarmonyCMS/Page_Listing",
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
-      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
+      { "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addFile();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
       { "link":"Page_Listing","icon":"search","text":"Search","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} }
     ],
     "hide_system_buttons" : ["print","export"], 
@@ -30,7 +30,7 @@
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
-            { "icon": "add", "text": "Add Page", "command": "jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addPage(context_item);","actions":"I" },
+            { "icon": "add", "text": "Add Page", "command": "jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addFile(context_item);","actions":"I" },
             { "icon": "add", "text": "Add Subfolder", "command": "_this.addFolder(context_item);","actions":"I" },
             { "icon": "edit", "text": "Rename Folder", "command": "_this.renameFolder(context_item);","actions":"U" },
             { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);","actions":"U" },
@@ -48,7 +48,10 @@
         "actions": "BIUD"
       },
       {"control":"html", "value": "</div>"},
-      {"control":"hidden", "name": "default_page", "lov": { "sql": "select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE'" } }
+      {"control":"hidden", "name": "default_page", "lov": { "sql": "select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE'" } },
+      {"name":"revision_page","unbound":true,"control":"hidden","bindings":{"revision_page_key":"js:if(xmodel) return jsh.App[xmodel.id].revision_page_key;"},
+        "popuplov": {"target": "Page_Revision_Listing", "code_val": "page_id", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
+      }
 	  ]
   },
   "Page_Browser": {
@@ -70,6 +73,19 @@
     "inherits": "Page_Browser",
     "fields": [
       {"control":"html","value":"<h1>Pages</h1>","__AFTER__":"__START__"}
+    ]
+  },
+  "Page_Revision_Update": {
+    "layout": "exec",
+    "title": "Update Page Revision",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      "update {schema}.branch_page set page_id=@page_id,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where page_key=@page_key and branch_id={schema}.my_current_branch_id();"
+    ],
+    "fields": [
+      {"name":"page_key", "actions":"U", "type":"bigint", "caption":"Page Key", "validate": ["Required"]},
+      {"name":"page_id", "actions":"U", "type":"bigint", "caption":"Page ID", "validate": ["Required"]}
     ]
   },
   "Page_Tree_File_Duplicate": {

@@ -24,6 +24,7 @@ window.jsHarmonyCMS = new (function(){
   var XForm = undefined;
   var XValidate = undefined;
   var $ = undefined;
+  var async = undefined;
 
   //Load jsHarmony
   this._baseurl = <%-JSON.stringify(baseurl)%>;
@@ -34,6 +35,7 @@ window.jsHarmonyCMS = new (function(){
   this.views = {};
   this.authors = [];
   this.role = '';
+  this.readonly = false;
   this.origMarginTop = undefined;
   this.editorBarDocked = false;
   this.hasChanges = false;
@@ -41,6 +43,8 @@ window.jsHarmonyCMS = new (function(){
   this.isLoading = false;
   this.loadQueue = [];
   this.loadObj = {main:1};
+
+  this.filePickerCallback = null;
 
   this.StartLoading = function(obj){
     var foundObj = false;
@@ -150,6 +154,7 @@ window.jsHarmonyCMS = new (function(){
       XForm = jsh.XForm;
       XValidate = jsh.XValidate;
       $ = jsh.$;
+      async = jsh.async;
     });
     _this.loadCSS(_this._baseurl+'jsharmony.css');
     _this.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
@@ -160,9 +165,9 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.onready = function(){
-    $('#jsharmony_cms_body').prop('contenteditable','true');
+    $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['page_key']){
-      this.loadPage(jsh._GET['page_key'], function(err){ _this.StopLoading(_this.loadObj); });
+      this.loadPage(jsh._GET['page_key'], jsh._GET['page_id'], function(err){ _this.StopLoading(_this.loadObj); });
     }
     else{
       _this.StopLoading(_this.loadObj);
@@ -170,53 +175,39 @@ window.jsHarmonyCMS = new (function(){
     }
   }
 
+  this.openLinkPicker = function(cb, value, meta){
+    _this.filePickerCallback = cb;
+    XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', {}, { width: 1100, height: 600 });
+  }
+
+  this.openMediaPicker = function(cb, value, meta){
+    _this.filePickerCallback = cb;
+    XExt.popupForm('jsHarmonyCMS/Media_Browser', 'browse', {}, { width: 1100, height: 600 });
+  }
+
   this.onmessage = function(event){
     var data = (event.data || '').toString();
-    if(data.indexOf('ckeditor:')==0){
-      data = data.substr(9);
+    if(data.indexOf('cms_file_picker:')==0){
+      if(!_this.filePickerCallback) return;
+      data = data.substr(16);
       var jdata = JSON.parse(data);
       if(jdata.media_key){
         var newClass = 'media_key_'+jdata.media_key;
-        window.CKEDITOR.tools.callFunction( jdata.CKEditorFuncNum, _this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id, function(){
-          var dialog = this.getDialog();
-          var element = dialog.getContentElement('advanced', 'advCSSClasses' );
-          if(!element) element = dialog.getContentElement('advanced', 'txtGenClass');
-          if(element){
-            var cssClassString = (element.getValue()||'');
-            var cssClasses = cssClassString.split(' ');
-            var foundClass = false;
-            for(var i=0;i<cssClasses.length;i++){
-              var cssClass = cssClasses[i].trim();
-              if(cssClass==newClass) foundClass = true;
-            }
-            if(!foundClass) element.setValue((cssClassString.trim()+' '+newClass).trim());
-          }
-        });
+        _this.filePickerCallback(_this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id);
       }
       else if(jdata.page_key){
         var newClass = 'page_key_'+jdata.page_key;
-        window.CKEDITOR.tools.callFunction( jdata.CKEditorFuncNum, _this._baseurl+'_funcs/pages/'+jdata.page_key+'/', function(){
-          var dialog = this.getDialog();
-          var element = dialog.getContentElement('advanced', 'advCSSClasses' );
-          if(element){
-            var cssClassString = (element.getValue()||'');
-            var cssClasses = cssClassString.split(' ');
-            var foundClass = false;
-            for(var i=0;i<cssClasses.length;i++){
-              var cssClass = cssClasses[i].trim();
-              if(cssClass==newClass) foundClass = true;
-            }
-            if(!foundClass) element.setValue((cssClassString.trim()+' '+newClass).trim());
-          }
-        });
+        _this.filePickerCallback(_this._baseurl+'_funcs/page/'+jdata.page_key+'/');
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
+      _this.filePickerCallback = null;
     }
   }
 
-  this.loadPage = function(page_key, onComplete){
+  this.loadPage = function(page_key, page_id, onComplete){
     _this.page_key = page_key;
     var url = '../_funcs/page/'+_this.page_key;
+    if(page_id) url += '?page_id=' + page_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         //Populate arrays + create editor
@@ -227,13 +218,17 @@ window.jsHarmonyCMS = new (function(){
         _this.views = rslt.views;
         _this.authors = rslt.authors;
         _this.role = rslt.role;
-        if(!_this.isInitialized) _this.createEditor();
-        _this.renderEditor();
-        if(!_this.isInitialized){
-          _this.onEditorContentLoaded(function(){ if(onComplete) onComplete(); });
-          _this.isInitialized = true;
-        }
-        else{ if(onComplete) onComplete(); }
+        _this.readonly = (_this.role=='VIEWER')||(page_id);
+        XExt.execif(!_this.isInitialized, function(f){
+          _this.createEditor(f);
+        }, function(){
+          _this.renderEditor();
+          if(!_this.isInitialized){
+            _this.onEditorContentLoaded(function(){ if(onComplete) onComplete(); });
+            _this.isInitialized = true;
+          }
+          else{ if(onComplete) onComplete(); }
+        });
       }
       else{
         if(onComplete) onComplete(new Error('Error Loading Page'));
@@ -244,17 +239,36 @@ window.jsHarmonyCMS = new (function(){
     });
   };
 
+  this.setHTML = function(jobj, html){
+    try{
+      jobj.html(html);
+    }
+    catch(ex){
+      console.log(ex);
+    }
+  }
+
+  this.appendHTML = function(jobj, html){
+    try{
+      jobj.append(html);
+    }
+    catch(ex){
+      console.log(ex);
+    }
+  }
+
   this.renderEditor = function(){
     if(!_this.page) return;
-    document.title = _this.page.title;
+    var jeditorbar = $('#jsharmony_cms_editor_bar');
 
     //Title
-    $('#jsharmony_cms_title').html(_this.page.title);
-    $('#jsharmony_cms_editor_bar .title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
+    _this.renderTitle();
 
-    //Body
-    _this.setCKEditorContent(_this.page.body)
-    _this.page.body = _this.getCKEditorContent();
+    //Content
+    for(var key in _this.template.content_elements){
+      _this.setEditorContent(key, _this.page.content[key])
+      _this.page.content[key] = _this.getEditorContent(key);
+    }
 
     //CSS
     _this.removeStyle('jsharmony_cms_template_style');
@@ -264,102 +278,92 @@ window.jsHarmonyCMS = new (function(){
     
     //Header
     var header = (_this.template.header||'')+(_this.page.header||'');
-    if(header) $('head').append(header);
+    if(header) _this.appendHTML($('head'), header);
     
     //Footer
-    $('#jsharmony_cms_footer').html((_this.template.footer||'')+(_this.page.footer||''));
+    _this.setHTML($('#jsharmony_cms_footer'), (_this.template.footer||'')+(_this.page.footer||''));
 
     //Page Settings
     var authors = [].concat(_this.authors);
     if(_this.role=='PUBLISHER') authors.unshift({ code_val: '', code_txt: 'Please select...' });
-    jsh.XExt.RenderLOV(null, $('#jsharmony_cms_editor_bar .page_settings_author'), authors);
-    _.each(['title','tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).val(_this.page[key]||''); });
-    _.each(['title','keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
-    XExt.TagBox_Refresh($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
+    jsh.XExt.RenderLOV(null, jeditorbar.find('.page_settings_author'), authors);
+    _.each(['title','tags','author','css','header','footer'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_'+key).val(_this.page[key]||''); });
+    _.each(['title','keywords','metadesc','canonical_url'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
+    XExt.TagBox_Refresh(jeditorbar.find('.page_settings_tags_editor'), jeditorbar.find('.page_settings_tags'));
+
+    
+    if(_this.readonly){
+      jeditorbar.find('.save').hide();
+      jeditorbar.find('.readonly').show();
+      jeditorbar.find('.page_settings_ctrl,textarea,select').each(function(){ _this.disableControl($(this)); });
+    }
   }
 
-  this.setCKEditorContent = function(val){
-    $('#jsharmony_cms_body').html(val);
-    //if(!window.CKEDITOR || !window.CKEDITOR.instances || !window.CKEDITOR.instances.jsharmony_cms_body) return;
-    //return window.CKEDITOR.instances.jsharmony_cms_body.setData(val);
+  this.disableControl = function(jctrl){
+    jctrl.removeClass('editable');
+    jctrl.addClass('uneditable');
+
+    if (jctrl.hasClass('dropdown')) jctrl.prop('disabled', true);
+    else if (jctrl.hasClass('checkbox')) jctrl.prop('disabled', true);
+    else if(jctrl.hasClass('xtagbox_base')){
+      jctrl.prev().addClass('uneditable');
+      jctrl.prev().find('input').prop('disabled', true);
+    }
+    else jctrl.prop('readonly', true);
   }
 
-  this.getCKEditorContent = function(){
-    return $('#jsharmony_cms_body').html();
-    //if(!window.CKEDITOR || !window.CKEDITOR.instances || !window.CKEDITOR.instances.jsharmony_cms_body) return '';
-    //return window.CKEDITOR.instances.jsharmony_cms_body.getData();
+  this.setEditorContent = function(id, val){
+    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(!_this.isInitialized) editor.undoManager.clear();
+    editor.setContent(val);
+    if(!_this.isInitialized) editor.undoManager.add();
   }
 
-  this.createEditor = function(){
+  this.getEditorContent = function(id){
+    return window.tinymce.get('jsharmony_cms_content_'+id).getContent();
+  }
+
+  this.renderTitle = function(src){
+    var jsrc = $(src);
+    if(!src || (src.id != 'jsharmony_cms_title')) window.tinymce.get('jsharmony_cms_title').setContent(_this.page.title);
+    if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val(_this.page.title);
+    if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
+    $('#jsharmony_cms_editor_bar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
+    document.title = (_this.page.seo.title ? _this.page.seo.title : _this.page.title);
+    var titleIsVisible = $('#jsharmony_cms_title').is(':visible');
+    if(titleIsVisible && !_this.page.title) $('#jsharmony_cms_title').hide();
+    else if(!titleIsVisible && _this.page.title) $('#jsharmony_cms_title').show();
+  }
+
+  this.onTitleUpdate = function(src, val){
+    var prev_hasChanges = _this.hasChanges;
+    var new_page_title = _this.page.title;
+    var new_seo_title = _this.page.seo.title;
+    var jsrc = $(src);
+    if(src.id=='jsharmony_cms_title') new_page_title = window.tinymce.get('jsharmony_cms_title').getContent();
+    else if(jsrc.hasClass('page_settings_title')) new_page_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val();
+    else if(jsrc.hasClass('page_settings_seo_title')) new_seo_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val();
+    if(new_page_title != _this.page.title){ _this.page.title = new_page_title; _this.hasChanges = true; }
+    if(new_seo_title != _this.page.seo.title){ _this.page.seo.title = new_seo_title; _this.hasChanges = true; }
+    _this.renderTitle(src);
+    if(_this.hasChanges && !prev_hasChanges) _this.getValues();
+  }
+
+  this.createEditor = function(cb){
     if(!_this.page) return;
 
-    $('<div id="jsharmony_cms_body_toolbar"></div>').prependTo('body');
-
-    //Initialize Editor
-    XExt.CKEditor('', undefined, function(){
-      window.CKEDITOR.disableAutoInline = true;
-      //window.CKEDITOR.config.startupFocus = true;
-      window.CKEDITOR.disableAutoInline = true;
-      window.CKEDITOR.config.allowedContent = true;
-      window.CKEDITOR.config.disableNativeSpellChecker = false;
-      window.CKEDITOR.config.filebrowserBrowseUrl = _this._baseurl+'jsHarmonyCMS/Link_Browser';
-      window.CKEDITOR.config.filebrowserImageBrowseUrl = _this._baseurl+'jsHarmonyCMS/Media_Browser';
-      window.CKEDITOR.config.removeDialogTabs = 'link:upload;image:Upload;image:Link';
-      window.CKEDITOR.config.skin = 'moono-lisa';
-      window.CKEDITOR.on('instanceCreated', function(event){
-        var editor = event.editor;
-        editor.on('configLoaded', function(){
-        });
-        editor.on('focus', function(){
-          $('#jsharmony_cms_body_toolbar').stop(true).fadeIn(300);
-          _this.refreshLayout();
-        });
-        editor.on('blur', function(){
-          $('#jsharmony_cms_body_toolbar').stop(true).fadeOut(300);
-        });
-        editor.on('contentDom', function(){
-          var curbody = _this.getCKEditorContent();
-          if(_this.page && _this.page.body && curbody) _this.page.body = curbody;
-        });
-        editor.on('dialogHide', function(){
-          var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-          var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-          var restoreScroll = function(){ window.scrollTo(scrollLeft, scrollTop); };
-          $(window).on('scroll', restoreScroll);
-          window.setTimeout(function(){ $(window).off('scroll', restoreScroll); }, 250);
-        });
-      });
-      window.CKEDITOR.inline('jsharmony_cms_body', {
-        extraPlugins: 'sharedspace,sourcedialog,dragresize,pastetext,youtube',
-        removePlugins: 'floatingspace,maximize,resize',
-        sharedSpaces: {
-          top: 'jsharmony_cms_body_toolbar'
-        },
-        toolbar: [
-          ['Format'],
-          ['Bold', 'Italic', 'Underline', '-', 'Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'PasteText', 'Find', 'Replace', '-', 'Outdent', 'Indent', '-', 'Print'],
-          ['NumberedList', 'BulletedList', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-          ['Link', 'Image', 'Youtube', 'Table', 'Styles'],
-          ['Sourcedialog']
-        ]
-      });
-    });
-    $('#jsharmony_cms_body').on('input',function(){ if(!_this.hasChanges) _this.getValues(); });
-
-    //Initialize Toolbar
+    //Initialize Page Toolbar
     this.createEditorBar();
-    $(window).bind('beforeunload', function(){
-      _this.getValues();
-      if(_this.hasChanges) return 'You have unsaved changes.  Are you sure you want to leave this page?';
-    });
 
     //Template JS
     var js = (_this.template.js||'');
-    if(js) $('head').append('<script type="text/javascript">'+js+'</script>');
+    if(js) _this.appendHTML($('head'), '<script type="text/javascript">'+js+'</script>');
 
     //Initialize Settings Controls
-    _.each(['title','tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
-    _.each(['title','keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
+    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
+    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
+    $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').on('input', function(){ _this.onTitleUpdate(this); });
+    $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').on('input', function(){ _this.onTitleUpdate(this); });
 
     //Initialize Tag Control
     XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
@@ -367,6 +371,112 @@ window.jsHarmonyCMS = new (function(){
     $(window).on('resize', function(){ _this.refreshLayout(); });
     $(window).on('scroll', function(){ _this.refreshLayout(); });
     _this.refreshLayout();
+
+    if(_this.readonly){
+      $('.jsharmony_cms_content').prop('contenteditable', false);
+      if(cb) return cb();
+    }
+    else {
+      //Initialize Editor
+      $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
+      XExt.TinyMCE('', undefined, function(){
+
+        //Change text labels
+        tinymce.addI18n('en', {
+          'Media...': 'Video...',
+          'Insert / Edit': 'Video...',
+          'Insert/edit media': 'Insert/edit video',
+          'Insert/Edit Media': 'Insert/Edit Video',
+        });
+
+        //Initialize each content editor
+        var editorConfig = {
+          inline: true,
+          branding: false,
+          browser_spellcheck: true,
+          valid_elements: '+*[*]',
+          entity_encoding: 'numeric',
+          plugins: [
+            'advlist autolink autoresize lists link image charmap anchor',
+            'searchreplace visualblocks code fullscreen wordcount template',
+            'insertdatetime media table contextmenu paste code textcolor'
+          ],
+          toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen',
+          removed_menuitems: 'newdocument',
+          image_advtab: true,
+          menu: {
+            edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
+            view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+            insert: { title: 'Insert', items: 'image link media template codesample inserttable | charmap emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
+            format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | forecolor backcolor | removeformat' },
+            tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
+            table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
+            help: { title: 'Help', items: 'help' }
+          },
+          templates: '/vcommon/cms/templates/content/index.html',
+          file_picker_types: 'file image',
+          file_picker_callback: function(cb, value, meta) {
+            // Provide file and text for the link dialog
+            if (meta.filetype == 'file') _this.openLinkPicker(cb, value, meta);
+            else if (meta.filetype == 'image') _this.openMediaPicker(cb, value, meta);
+          },
+          relative_urls: false,
+          urlconverter_callback: function(url, node, on_save, name){
+            var urlparts = document.createElement('a');
+            var urlparts_editor = document.createElement('a');
+            urlparts.href = url;
+            urlparts_editor.href = document.location;
+            if(urlparts.host == urlparts_editor.host){
+              url = url.replace(/^[^:]*\:\/{2}[^/]*\/(.*)/, '/$1');
+            }
+            url = url;
+            return url;
+          },
+          fixed_toolbar_container: '#jsharmony_cms_content_editor_toolbar',
+        };
+        async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
+          var jobj = $(elem);
+          if(!jobj.data('id')) XExt.Alert('jsharmony_cms_content area missing data-id attribute');
+          if(!elem.id) elem.id = 'jsharmony_cms_content_' + jobj.data('id');
+          window.tinymce.init(_.extend({
+            selector: '#' + elem.id,
+            init_instance_callback: function(editor){
+              editor.on('focus', function(){
+                $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:1 },300);
+                _this.refreshLayout();
+              });
+              editor.on('blur', function(){
+                $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:0 },300);
+              });
+              editor_cb();
+            }
+          }, editorConfig));
+        }, function(){
+          //Initialize the title editor
+          window.tinymce.init({
+            selector: '#jsharmony_cms_title',
+            init_instance_callback: function(editor){ if(cb) cb(); },
+            inline: true,
+            branding: false,
+            toolbar: '',
+            valid_elements: '',
+            valid_styles: {
+              '*': ''
+            },
+            menubar: false,
+            browser_spellcheck: true
+          });
+        });
+      });
+
+      $('.jsharmony_cms_content').on('input',function(){ if(!_this.hasChanges) _this.getValues(); });
+      $('#jsharmony_cms_title').on('input',function(){ _this.onTitleUpdate(this); });
+
+      $(window).bind('beforeunload', function(){
+        _this.getValues();
+        if(_this.hasChanges) return 'You have unsaved changes.  Are you sure you want to leave this page?';
+      });
+    }
   }
 
   this.refreshLayout = function(){ 
@@ -381,16 +491,8 @@ window.jsHarmonyCMS = new (function(){
     var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
     $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
 
-    /*
-    var contentTop = $('#jsharmony_cms_title').offset().top;
-    var toolbarHeight = $('#jsharmony_cms_body_toolbar').height();
-    var toolbarTop = (contentTop-toolbarHeight)-10;
-    var toolbarMinTop = 37;
-    if(stop > (toolbarTop-toolbarMinTop)) toolbarTop = toolbarMinTop;
-    else toolbarTop -= stop;
-    */
-   var toolbarTop = 37;
-    $('#jsharmony_cms_body_toolbar').css('top', toolbarTop+'px');
+    var toolbarTop = 37;
+    $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
   }
 
   this.onEditorContentLoaded = function(f){
@@ -420,16 +522,18 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.getValues = function(){
-    var editorContent = _this.getCKEditorContent();
-    if(editorContent != _this.page.body){
-      _this.page.body = editorContent;
-      _this.hasChanges = true;
+    for(var key in _this.template.content_elements){
+      var editorContent = _this.getEditorContent(key);
+      if(editorContent != _this.page.content[key]){
+        _this.page.content[key] = editorContent;
+        _this.hasChanges = true;
+      }
     }
-    _.each(['title','tags','author','css','header','footer'], function(key){
+    _.each(['tags','author','css','header','footer'], function(key){
       var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).val();
       if(val != (_this.page[key]||'')){ _this.page[key] = val; _this.hasChanges = true; }
     });
-    _.each(['title','keywords','metadesc','canonical_url'], function(key){
+    _.each(['keywords','metadesc','canonical_url'], function(key){
       var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val();
       if(val != (_this.page.seo[key]||'')){ _this.page.seo[key] = val; _this.hasChanges = true; }
     });
@@ -466,7 +570,7 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.refreshParent = function(page_folder){
-    window.opener.postMessage('jsharmony-cms:refresh:'+page_folder, '*');
+    if(window.opener) window.opener.postMessage('jsharmony-cms:refresh:'+page_folder, '*');
   }
 
   this.save = function(){
@@ -480,9 +584,8 @@ window.jsHarmonyCMS = new (function(){
     _this.hideSettings(true);
     XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.page.body = _this.getCKEditorContent();
         _this.hasChanges = false;
-        _this.loadPage(_this.page_key, function(err){
+        _this.loadPage(_this.page_key, null, function(err){
           var timeLeft = 500-(Date.now()-startTime);
           if(timeLeft > 0) window.setTimeout(function(){ _this.StopLoading(_this.loadObj); }, timeLeft);
           else _this.StopLoading(_this.loadObj);

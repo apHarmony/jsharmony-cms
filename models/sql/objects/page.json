@@ -143,6 +143,7 @@
       { "on": ["insert"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "errorif(exists(select * from {schema}.v_my_page where (page_path=(case when page_is_folder=1 then inserted(page_path) when {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),(select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE')) else inserted(page_path) end))),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end)))),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
@@ -157,6 +158,7 @@
       { "on": ["update"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "errorif(exists(select * from {schema}.v_my_page where (page_path=(case when page_is_folder=1 then inserted(page_path) when {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),(select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE')) else inserted(page_path) end)) and page_key<>deleted(page_key)),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end))) and page_key<>deleted(page_key)),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
@@ -169,6 +171,7 @@
       },
       { "on": ["delete"], "exec": [
           "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
           "update branch_page set page_id=null,branch_page_action='DELETE' where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and ((branch_page_action is null) or (branch_page_action in ('UPDATE','DELETE')))",
           "delete from branch_page where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and branch_page_action='ADD'",
           "increment_changes()"

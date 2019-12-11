@@ -1,5 +1,5 @@
 <div style="display:none;">
-  <div class="<%=model.class%>_AddPage xdialogbox xpromptbox" style="min-width:470px;">
+  <div class="<%=model.class%>_AddFile xdialogbox xpromptbox" style="min-width:470px;">
     <h3>Add Page</h3>
     <div align="left" style="padding-top:15px;">
       <div style="display: inline-block; width: 100px; margin-bottom:10px;">File Name:</div>
@@ -19,7 +19,7 @@
   <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90%;box-sizing:border-box;display:flex;flex-direction:column;">
     <h3 class="edit_page_title">Edit Page</h3>
     <div align="left" style="padding-top:15px;display:flex;flex-direction:column;flex-grow:1;">
-      <textarea class="page_content" style="width:100%;box-sizing:border-box;flex-grow:1;"></textarea>
+      <textarea class="page_content default_focus" style="width:100%;box-sizing:border-box;flex-grow:1;"></textarea>
 
       <div style="text-align:center;"><input type="button" value="Save" class="button_ok" style="margin-right:15px;margin-top:18px;" /> <input type="button" value="Cancel" class="button_cancel" style="margin-top:18px;" /></div>
     </div>
@@ -27,8 +27,9 @@
 </div>
 
 <div class="xcontext_menu <%=model.class%>_file_context_menu">
-  <a onclick="<%-js('_this.openPageEditor(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Edit</a>
+  <a onclick="<%-js('_this.editFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Edit</a>
   <a onclick="<%-js('_this.duplicateFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_copy.png" />Duplicate</a>
+  <a onclick="<%-js('_this.viewRevisions(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_refresh.png" />View Revisions</a>
   <a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a>
   <a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a>
   <a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a>

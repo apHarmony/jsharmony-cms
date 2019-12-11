@@ -127,6 +127,7 @@
       { "on": ["insert"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "errorif(exists(select * from {schema}.v_my_media where (media_path=inserted(media_path))),'Media file name already exists');",
             "errorif(exists(select * from {schema}.v_my_media where ((media_folder like (case when inserted(media_is_folder)=1 and {schema}.filename(inserted(media_path)) = '' then concat(inserted(media_path),'%') else concat(inserted(media_path),'/%') end)))),'Existing folder with the same name already exists');",
             "with_insert_identity(media, media_id, ",
@@ -141,6 +142,7 @@
       { "on": ["update"], "exec": [
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "errorif(exists(select * from {schema}.v_my_media where (media_path=inserted(media_path)) and media_key<>deleted(media_key)),'Media file name already exists');",
             "errorif(exists(select * from {schema}.v_my_media where ((media_folder like (case when inserted(media_is_folder)=1 and {schema}.filename(inserted(media_path)) = '' then concat(inserted(media_path),'%') else concat(inserted(media_path),'/%') end))) and media_key<>deleted(media_key)),'Existing folder with the same name already exists');",
             "with_insert_identity(media, media_id, ",
@@ -153,6 +155,7 @@
       },
       { "on": ["delete"], "exec": [
           "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
           "update branch_media set media_id=null,branch_media_action='DELETE' where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and ((branch_media_action is null) or (branch_media_action in ('UPDATE','DELETE')))",
           "delete from branch_media where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and branch_media_action='ADD'",
           "increment_changes()"
