@@ -54,12 +54,12 @@ function jsHarmonyCMSConfig(){
     exec_post_deployment: undefined, //Execute shell command after deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     generate_redirect_files: undefined, //Execute when generating redirect files
-                                        //function(jsh, redirects, page_redirects, redirects_cb){
+                                        //function(jsh, deployment, redirects, page_redirects, redirects_cb){
                                         //  var redirect_files = { file_path1: file_contents1, file_path2: file_contents2 };
                                         //  return redirects_cb(err, redirect_files);
                                         //}
     generate_menu_files: undefined, //Execute when generating menu files
-                                    //function(jsh, menus, menus_cb){
+                                    //function(jsh, deployment, menus, menus_cb){
                                     //  var menu_files = { file_path1: file_contents1, file_path2: file_contents2 };
                                     //  return menus_cb(err, menu_files);
                                     //}

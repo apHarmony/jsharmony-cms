@@ -123,6 +123,7 @@ module.exports = exports = function(module, funcs){
         return;
       }
       publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
+      deployment.publish_params = publish_params;
 
       var page_template_html = {};
       var menu_template_html = {};
@@ -524,7 +525,7 @@ module.exports = exports = function(module, funcs){
             async.waterfall([
               function(redirect_cb){
                 if(_.isFunction(publish_params.generate_redirect_files)){
-                  publish_params.generate_redirect_files(jsh, rslt[0], page_redirects, function(err, generated_redirect_files){
+                  publish_params.generate_redirect_files(jsh, deployment, rslt[0], page_redirects, function(err, generated_redirect_files){
                     if(err) return redirect_cb(err);
                     redirect_files = generated_redirect_files||{};
                     return redirect_cb();
@@ -610,7 +611,7 @@ module.exports = exports = function(module, funcs){
               //Generate menus
               function(menu_cb){
                 if(_.isFunction(publish_params.generate_menu_files)){
-                  publish_params.generate_menu_files(jsh, menus, function(err, generated_menu_files){
+                  publish_params.generate_menu_files(jsh, deployment, menus, function(err, generated_menu_files){
                     if(err) return menu_cb(err);
                     menu_output_files = generated_menu_files||{};
                     return menu_cb();
