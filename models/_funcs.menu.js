@@ -250,8 +250,9 @@ module.exports = exports = function(module, funcs){
         type: menu_item.menu_item_type,
       };
       var link_type = (menu_item.menu_item_link_type||'').toUpperCase();
-      var link_text = link_type + ' :: ' + menu_item.menu_item_link_dest;
+      var link_text = '';
       if(link_type){
+        link_text = link_type + ' :: ' + menu_item.menu_item_link_dest;
         if(link_type=='PAGE'){
           var page_key = parseInt(menu_item.menu_item_link_dest);
           if(page_key in page_keys) link_text = 'PAGE :: ' + page_keys[page_key].page_path;
