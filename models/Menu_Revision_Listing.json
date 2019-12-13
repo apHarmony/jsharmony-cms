@@ -22,7 +22,7 @@
       {"name":"menu_name","caption":"Menu Name","control":"label"},
       {"name":"menu_tag","caption":"Tag","control":"label"},
       {"name":"menu_template_id","caption":"Template","control":"label","lov":{ "values": "#CMS_MENU_TEMPLATES" }},
-      {"name":"menu_path","caption":"Path","control":"label"}
+      {"name":"menu_path","caption":"Path","control":"label","format":"js:return (val||'').toString().replace(/\\//g,'/\\u200B');"}
     ]
   }
 }

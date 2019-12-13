@@ -543,26 +543,8 @@ jsh.App[modelid] = new (function(){
     _this.setInfoDirty(_this.selected_media_file, true);
   }
 
-  this.previewFile = function(media_file){ /* { media_ext, media_file_id, media_width, media_height, media_key } */
-    if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.pdf'], media_file.media_ext.toLowerCase())){
-      var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?media_file_id='+media_file.media_file_id;
-      var ww = 800;
-      var wh = 600;
-      if(media_file.media_width && media_file.media_height){
-        var wwr = media_file.media_width / ww;
-        var whr = media_file.media_height / wh;
-        if((wwr <=1) && (whr <= 1)){ ww = media_file.media_width; wh = media_file.media_height; }
-        else if(wwr > whr) wh = media_file.media_height / wwr;
-        else ww = media_file.media_width / whr;
-      }
-      ww = Math.floor(ww);
-      wh = Math.floor(wh);
-      window.open(url,'_blank',"height="+wh+", width="+ww);
-    }
-    else {
-      var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
-      jsh.getFileProxy().prop('src', url);
-    }
+  this.previewFile = function(media_file){ /* { media_ext, media_id, media_width, media_height, media_key } */
+    jsh.System.PreviewMedia(media_file.media_key, undefined, media_file.media_id, media_file.media_ext, media_file.media_width, media_file.media_height);
   }
 
   this.downloadFile = function(media_key){

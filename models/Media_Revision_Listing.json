@@ -22,7 +22,7 @@
       {"name":"media_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
       {"name":"media_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(media_muser))","control":"label","actions":"B"},
       {"name":"media_desc","caption":"Title","control":"label"},
-      {"name":"media_path","caption":"Path","control":"label"},
+      {"name":"media_path","caption":"Path","control":"label","format":"js:return (val||'').toString().replace(/\\//g,'/\\u200B');"},
       {"name":"media_type","caption":"Type","control":"label"},
       {"name":"media_tags","caption":"Tags","control":"label"}
     ]
