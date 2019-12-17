@@ -14,6 +14,7 @@
   display:inline-block;
   color:#000;
 }
+<%-(rootcss)%> .bcrumbs_branch_body a { color:#000; }
 <%-(rootcss)%> body .xtbl tbody tr.active_revision {
   background-color:#c2ffb8;
 }

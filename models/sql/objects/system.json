@@ -56,6 +56,9 @@
     "init_data": [
       { "sql": "update jsharmony.menu set menu_cmd='jsHarmonyCMS/Dashboard' where menu_name='Dashboard' and menu_id=3;" },
 
+      { "sql": "delete from jsharmony.sys_menu_role where menu_id in (300,30001,30002,30003,30004,350,35001,35002,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },
+      { "sql": "delete from jsharmony.menu where menu_id in (300,30001,30002,30003,30004,350,35001,35002,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },
+
       { "menu_group": "S", "menu_id": 300, "menu_id_parent": 1, "menu_name": "Branches", "menu_seq": 30000, "menu_desc": "Branches", "menu_cmd": "jsHarmonyCMS/Branch_Active_Listing" },
       { "menu_group": "S", "menu_id": 30001, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_Active_Listing", "menu_seq": 30001, "menu_desc": "Active Branches", "menu_cmd": "jsHarmonyCMS/Branch_Active_Listing" },
       { "menu_group": "S", "menu_id": 30002, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_History_User_Listing", "menu_seq": 30002, "menu_desc": "My Branch History", "menu_cmd": "jsHarmonyCMS/Branch_History_User_Listing" },
@@ -74,8 +77,8 @@
 
       { "menu_group": "S", "menu_id": 500, "menu_id_parent": 1, "menu_name": "Publish", "menu_seq": 50000, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Branch_Review_Listing" },
       { "menu_group": "S", "menu_id": 50001, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Branch_Review_Listing", "menu_seq": 50001, "menu_desc": "Branch Review", "menu_cmd": "jsHarmonyCMS/Branch_Review_Listing" },
-      { "menu_group": "S", "menu_id": 50002, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Deployment_Scheduled_Listing", "menu_seq": 50002, "menu_desc": "Scheduled Depoyments", "menu_cmd": "jsHarmonyCMS/Deployment_Scheduled_Listing" },
-      { "menu_group": "S", "menu_id": 50003, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Deployment_History_Listing", "menu_seq": 50003, "menu_desc": "Deployment History", "menu_cmd": "jsHarmonyCMS/Deployment_History_Listing" },
+      { "menu_group": "S", "menu_id": 50002, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Publish_Listing", "menu_seq": 50002, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Publish_Listing" },
+      { "menu_group": "S", "menu_id": 50003, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Publish_History_Listing", "menu_seq": 50003, "menu_desc": "Publish History", "menu_cmd": "jsHarmonyCMS/Publish_History_Listing" },
 
       { "menu_group": "S", "menu_id": 600, "menu_id_parent": 1, "menu_name": "Site", "menu_seq": 60000, "menu_desc": "Site", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
       { "menu_group": "S", "menu_id": 60001, "menu_id_parent": 600, "menu_name": "jsHarmonyCMS/Site_Listing", "menu_seq": 60001, "menu_desc": "Sites", "menu_cmd": "jsHarmonyCMS/Site_Listing" },

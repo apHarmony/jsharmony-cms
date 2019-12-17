@@ -72,6 +72,7 @@ jsh.App[modelid] = new (function(){
       _: _,
       jsh: jsh,
       branch_diff: this,
+      branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
       XExt: XExt,
       map: map
     }));

@@ -5,9 +5,9 @@
     "init_data": [
       { "code_val": "CANCEL", "code_txt": "Canceled", "code_seq": 1 },
       { "code_val": "COMPLETE", "code_txt": "Complete", "code_seq": 2 },
-      { "code_val": "HOLD", "code_txt": "On Hold", "code_seq": 3 },
       { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 4 },
-      { "code_val": "RUNNING", "code_txt": "Running", "code_seq": 5 }
+      { "code_val": "RUNNING", "code_txt": "Running", "code_seq": 5 },
+      { "code_val": "FAILED", "code_txt": "Failed", "code_seq": 6 }
     ]
   },
 
@@ -47,10 +47,11 @@
     "columns": [
       { "name": "deployment_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "deployment_tag", "type": "varchar", "length": 256, "null": false, "actions": ["prevent_update"] },
-      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false },
-      { "name": "deployment_date", "type": "datetime", "length": 7 },
-      { "name": "deployment_sts", "type": "varchar", "length": 32, "foreignkey": { "code_deployment_sts": "code_val" }, "null": false, "default": "HOLD" },
-      { "name": "deployment_target_id", "type": "bigint", "foreignkey": { "deployment_target": "deployment_target_id" } },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "deployment_date", "type": "datetime", "length": 7, "null": false },
+      { "name": "deployment_sts", "type": "varchar", "length": 32, "foreignkey": { "code_deployment_sts": "code_val" }, "null": false, "default": "PENDING" },
+      { "name": "deployment_target_id", "type": "bigint", "null": false, "foreignkey": { "deployment_target": "deployment_target_id" }, "actions": ["prevent_update"] },
+      { "name": "deployment_git_revision", "type": "varchar", "length": 1024 },
       
       { "name": "deployment_sts_tstmp", "type": "datetime", "length": 7 },
       { "name": "deployment_sts_user", "type": "varchar", "length": 20 },
@@ -60,11 +61,13 @@
       { "name": "deployment_muser", "type": "varchar", "length": 20 }
     ],
     "triggers": [
-      { "on": ["validate_update", "validate_insert"], "exec": [
-          "errorif(inserted(deployment_sts)='PENDING' and null(inserted(deployment_date)),'deployment_sts PENDING requires deployment_date');",
-          "errorif(inserted(deployment_sts)='PENDING' and null(inserted(deployment_target_id)),'deployment_sts PENDING requires deployment_target_id');",
-          "errorif(inserted(deployment_sts)='COMPLETE' and null(inserted(deployment_date)),'deployment_sts PENDING requires deployment_date');",
-          "errorif(inserted(deployment_sts)='COMPLETE' and null(inserted(deployment_target_id)),'deployment_sts PENDING requires deployment_target_id');"
+      { "on": ["validate_update"], "exec": [
+          "errorif((deleted(deployment_sts)<>'PENDING') and update(deployment_date),'Can only change deployment_date for deployment_sts PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='PENDING'),'Cannot change deployment_sts back to PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='CANCEL') and (deleted(deployment_sts)<>'PENDING'),'Can only set deployment_sts to CANCEL from PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='COMPLETE') and (deleted(deployment_sts)<>'RUNNING'),'Can only set deployment_sts to COMPLETE from RUNNING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='RUNNING') and (deleted(deployment_sts)<>'PENDING'),'Can only set deployment_sts to RUNNING from PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='FAILED') and (deleted(deployment_sts)<>'RUNNING'),'Can only set deployment_sts to FAILED from RUNNING');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -87,7 +90,8 @@
           "deployment_tag",
           "branch_id",
           "deployment_date",
-          "deployment_target_id"
+          "deployment_target_id",
+          "deployment_git_revision"
         ]
       },
       "deployment_target": {
@@ -111,7 +115,7 @@
           "clear_insert_identity()",
           "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_id), 'DEPLOYMENT', inserted(deployment_tag), 'ARCHIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_id)), null)",
           //Insert deployment
-          "insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts) values(inserted(deployment_tag), last_insert_identity(), inserted(deployment_date), inserted(deployment_target_id), 'PENDING')",
+          "insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts, deployment_git_revision) values(inserted(deployment_tag), last_insert_identity(), inserted(deployment_date), inserted(deployment_target_id), 'PENDING', inserted(deployment_git_revision))",
           //Add all menu / pages / media / redirect from other branch
           "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_id) and menu_id is not null",
           "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_id) and page_id is not null",

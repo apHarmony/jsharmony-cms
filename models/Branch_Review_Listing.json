@@ -11,6 +11,7 @@
     "sqlwhere":"branch_sts='REVIEW' and branch_review_sts='PENDING'",
     "tablestyle":"min-width:400px;",
     "fields": [
+      {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site where {schema}.site.site_id={schema}.branch.site_id)"},
       {"name":"branch_desc","caption":"Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)","link":"update:Branch_Review"},
       {"name":"branch_user_id_fmt","caption":"Author","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))","control":"label","actions":"B"},
       {"name":"branch_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]}

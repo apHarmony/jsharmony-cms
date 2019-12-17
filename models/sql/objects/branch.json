@@ -64,13 +64,17 @@
       { "name": "branch_muser", "type": "varchar", "length": 20 }
     ],
     "unique": [
-      ["branch_name","branch_user_id"]
+      ["branch_name","branch_user_id","site_id"]
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
           "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');",
           "errorif(inserted(branch_merge_id)=inserted(branch_id),'Branch cannot merge with itself');"
+        ]
+      },
+      { "on": ["validate_update"], "exec": [
+        "errorif(update(branch_name) and exists(select * from {schema}.branch b2 where b2.branch_name=inserted(branch_name) and $ifnull(b2.branch_user_id,0)=$ifnull(inserted(branch_user_id),0) and b2.site_id=inserted(site_id)),'Another branch with the same name already exists');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -402,7 +406,7 @@
       },
       {"on": ["insert"], "exec": [
           //Verify access to source branch
-          "errorif(not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(branch_parent_id)),'User does not have access to source branch')",
+          "errorif((inserted(branch_parent_id) is not null) and not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(branch_parent_id)),'User does not have access to source branch')",
           //Verify non-duplicate branch name
           "errorif(exists(select * from {schema}.branch where {schema}.branch.branch_type=inserted(branch_type) and {schema}.branch.branch_name=inserted(branch_name) and ({schema}.branch.branch_type='PUBLIC' or ({schema}.branch.branch_user_id=jsharmony.my_sys_user_id()))),'The target branch name already exists')",
           //Verify access to target branch type
@@ -411,7 +415,7 @@
           "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
           //Insert branch
           "clear_insert_identity()",
-          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
+          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', $ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
           //Set user's current branch to cloned branch
           "update {schema}.sys_user_branch set branch_id = last_insert_identity()",
           //Add all menu / pages / media / redirect from other branch

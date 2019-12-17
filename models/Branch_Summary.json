@@ -1,26 +1,47 @@
 {
   "Branch_Summary": {
     "layout":"form",
-    "table":"{schema}.branch",
+    "table":"{schema}.v_my_branch_desc",
     "onecolumn":true,
     "roles": {"PUBLISHER": "B", "AUTHOR": "B", "VIEWER": "B"},
     "actions":"B",
+    "menu":"Branches",
     "caption":["Branch","Branches"],
     "title":"Branch Summary",
     "onload":"_this.oninit(xmodel);",
     "buttons":[
-      { "link":"js:jsh.System.MergeFromBranch(xmodel);","icon":"sidebar","text":"Merge Into Current Branch","class":"Branch_Summary_buttonMerge" },
-      { "link":"update:Branch_Clone","icon":"copy","text":"Clone" },
-      { "link":"update:Branch_Checkout","icon":"edit","text":"Checkout / Edit Branch","class":"Branch_Summary_buttonCheckout" },
-      { "link":"js:jsh.System.PublishBranch(xmodel.get('branch_id', this))","icon":"ok","text":"Publish","class":"Branch_Summary_buttonPublish"}
+      { "group": "Actions", "link":"js:jsh.System.MergeFromBranch(xmodel);","icon":"sidebar","text":"Merge Into Current Branch","class":"Branch_Summary_buttonMerge", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "link":"update:Branch_Clone","icon":"copy","text":"Clone", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "link":"update:Branch_Checkout","icon":"edit","text":"Checkout / Edit Branch","class":"Branch_Summary_buttonCheckout" },
+      { "group": "Actions", "link":"js:_this.renameBranch(xmodel.get('branch_id', this))","icon":"edit","text":"Rename","class":"Branch_Summary_buttonRename", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "link":"js:jsh.System.PublishBranch(xmodel.get('branch_id', this))","icon":"ok","text":"Publish","class":"Branch_Summary_buttonPublish", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "link":"update:Publish_Add_Branch&branch_id","icon":"target","text":"Deploy", "roles": { "PUBLISHER": "B" } },
+      { "group": "Actions", "link":"js:jsh.System.ArchiveBranch(xmodel.get('branch_id', this))","icon":"lock","text":"Archive","class":"Branch_Summary_buttonArchive", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "link":"update:Branch_Delete&branch_id","icon":"delete","text":"Delete","class":"Branch_Summary_buttonDelete", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
     ],
     "fields": [
+      { "name":"branch_id","control":"hidden","key":true},
       { "name":"branch_sts","control":"hidden"},
-      { "name":"branch_is_checked_out","control":"hidden","sqlselect":"(select branch_is_checked_out from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
-      { "name":"src_branch_desc","control":"hidden","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
+      { "name":"branch_name","control":"hidden"},
+      { "name":"branch_is_checked_out","control":"hidden"},
+      { "name":"branch_access","control":"hidden"},
+      { "name":"src_branch_desc","control":"hidden","sqlselect":"branch_desc"},
       { "name":"dst_branch_desc","control":"hidden","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_is_checked_out = 1)"},
       { "name":"dst_branch_id","control":"hidden","sqlselect":"(select branch_id from {schema}.v_my_branch_desc where branch_is_checked_out = 1)"},
-      { "control":"subform","target":"Branch_Diff","actions":"BU","controlparams":{"panelstyle":"border:none;padding:0"}},
+      { "control":"subform","target":"Branch_Diff","actions":"BU","controlparams":{"panelstyle":"border:none;padding:0"}}
+    ]
+  },
+  "Branch_Rename": {
+    "layout": "exec",
+    "title": "Rename Branch",
+    "actions": "U",
+    "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
+    "sqlexec": [
+      "update {schema}.branch set branch_name=@branch_name where branch_id = (select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access='RW');"
+    ],
+    "fields": [
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"branch_name", "actions":"BU", "type":"varchar", "length":256 , "caption":"Branch Name", "validate": ["Required"]}
     ]
   },
   "Branch_Summary_Merge_CHANGES": {

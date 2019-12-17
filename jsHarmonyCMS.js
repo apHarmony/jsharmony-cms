@@ -77,14 +77,23 @@ jsHarmonyCMS.Application = function(){ return (new jsHarmonyCMS()).Application()
 
 jsHarmonyCMS.prototype.Init = function(cb){ 
   var _this = this;
+  var jsh = _this.jsh;
 
-  HelperFS.createFolderIfNotExistsSync(path.join(this.jsh.Config.datadir,'page'));
-  HelperFS.createFolderIfNotExistsSync(path.join(this.jsh.Config.datadir,'media'));
-  HelperFS.createFolderIfNotExistsSync(path.join(this.jsh.Config.datadir,'menu'));
+  HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'page'));
+  HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'media'));
+  HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'menu'));
+  HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'publish_log'));
 
   if(!_.isEmpty(_this.Config.media_thumbnails)){
-    _this.jsh.TestImageMagick('jsHarmonyCMS > Media Thumbnails');
+    jsh.TestImageMagick('jsHarmonyCMS > Media Thumbnails');
   }
+
+  jsh.Config.onServerReady.push(function (cb, servers){
+    jsh.AppSrv.ExecCommand('system', "update "+(_this.schema?_this.schema+'.':'')+"deployment set deployment_sts='FAILED' where deployment_sts='RUNNING'", [], { }, function (err, rslt) {
+      if (err) { jsh.Log.error(err); }
+      return cb();
+    });
+  });
   
   return cb();
 }
@@ -264,6 +273,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/media/': _this.funcs.media,
         '/_funcs/menu/:menu_key/': _this.funcs.menu,
         '/_funcs/deploy': _this.funcs.deploy_req,
+        '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/diff': _this.funcs.diff,
       }
     ]

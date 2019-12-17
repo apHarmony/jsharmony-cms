@@ -1,5 +1,5 @@
 {
-  "Deployment_Add": {
+  "Publish_Add": {
     "layout":"form",
     "unbound":true,
     "title":"Schedule Deployment",
@@ -7,7 +7,6 @@
     "actions":"BIU",
     "roles": {"PUBLISHER": "BIU"},
     "onecolumn":true,
-    //"onload":"XForm.prototype.XExecute('../_funcs/deploy', {}, function(rslt){ jsh.$root('.publish_target').text(rslt.publish_path); });",
     "fields": [
       {"name":"site_id","control":"dropdown","caption":"Site","validate":["Required"],
         "lov":{"sql":"select site_id code_val, site_name code_txt from {schema}.site where site_sts='ACTIVE'"}},
@@ -16,11 +15,11 @@
       {"name":"branch_id","control":"dropdown","caption":"Branch","validate":["Required"],
         "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, branch_id code_val, branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' order by site_id,branch_desc"}},
       {"name":"deployment_date","control":"textbox","caption":"Publish Date", "validate":["Required","IsDate"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;"},
-      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"]},
-      {"control":"button","value":"Schedule Deployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; XForm.Post(xmodel.module_namespace+'Deployment_Add_Exec', {}, _.pick(xmodel.controller.form.Data,['site_id','branch_id','deployment_target_id','deployment_date','deployment_tag']), function(rslt){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Deployment_Scheduled_Listing'); });"}
+      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"default":"js:jsh.moment().format('YYYY-MM-DD')+' Release'"},
+      {"control":"button","value":"Schedule Deployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; XForm.Post(xmodel.module_namespace+'Publish_Add_Exec', {}, _.pick(xmodel.controller.form.Data,['site_id','branch_id','deployment_target_id','deployment_date','deployment_tag']), function(rslt){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Listing'); });"}
     ]
   },
-  "Deployment_Add_Exec": {
+  "Publish_Add_Exec": {
     "layout": "exec",
     "title": "Add Deployment",
     "actions": "U",

@@ -19,6 +19,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var _ = require('lodash');
 
 function ModuleFunctions(module){
+  this.deploymentQueue = undefined;
+  
   _.extend(this, require('./_funcs.page.js')(module, this));
   _.extend(this, require('./_funcs.media.js')(module, this));
   _.extend(this, require('./_funcs.menu.js')(module, this));

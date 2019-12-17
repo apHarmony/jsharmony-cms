@@ -1,0 +1,28 @@
+{
+  "Publish_History_Listing": {
+    "layout":"grid",
+    "table":"{schema}.deployment",
+    "caption":["Deployment","Deployments"],
+    "title":"Publish History",
+    "menu":"jsHarmonyCMS/Publish_History_Listing",
+    "noresultsmessage":"No publish history.",
+    "tablestyle":"min-width:450px;",
+    "sqlwhere":"deployment_sts not in ('PENDING','RUNNING')",
+    "actions":"B",
+    "roles": {"PUBLISHER": "B"},
+    "sort":["vdeployment_date"],
+    "fields": [
+      {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.deployment.deployment_target_id)"},
+      {"name":"deployment_target_name","caption":"Deployment Target","sqlselect":"(select deployment_target_name from {schema}.deployment_target where {schema}.deployment_target.deployment_target_id={schema}.deployment.deployment_target_id)"},
+      {"name":"deployment_tag","caption":"Tag","control":"label"},
+      {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","type":"datetime"},
+      {"name":"deployment_sts","caption":"Status"},
+      {"name":"branch_id","control":"hidden"},
+      {"name":"branch_desc","caption":"Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.deployment.branch_id)","link":"update:Branch_Summary&branch_id"},
+      {"name":"deployment_etstmp","caption":"Entered","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]},
+      {"name":"deployment_euser_fmt","caption":"Entered By","sqlselect":"(jsharmony.my_db_user_fmt(deployment_euser))","control":"label","actions":"B"},
+      {"caption":"Log","control":"linkbutton","link":"update:Publish_Log","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
+      {"caption":"Redeploy","control":"linkbutton","link":"update:Publish_Redeploy&deployment_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;"}
+    ]
+  }
+}

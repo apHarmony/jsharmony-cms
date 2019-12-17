@@ -1,7 +1,7 @@
 {
   "Branch_Diff": {
     "layout":"form",
-    "table":"{schema}.branch",
+    "table":"{schema}.v_my_branch_desc",
     "onecolumn":true,
     "roles": {"PUBLISHER": "B","AUTHOR": "B", "VIEWER": "B"},
     "actions":"B",
@@ -9,9 +9,12 @@
     "title":"",
     "onload":"_this.onload(xmodel, callback);",
     "fields": [
-      {"name":"branch_desc","caption":"Branch","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)"},
+      {"name":"branch_id","control":"hidden","key":true},
+      {"name":"branch_desc","caption":"Branch","control":"label","captionstyle":"font-weight:bold;text-align:right;"},
       {"name":"branch_user_id_fmt","caption":"Author","control":"label","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))"},
-      {"name":"branch_mtstmp","caption":"Last Modified","control":"label","format":["date","MM/DD/YYYY h:mm a"]}
+      {"name":"branch_sts","caption":"Status","control":"label"},
+      {"name":"branch_mtstmp","caption":"Last Modified","control":"label","format":["date","MM/DD/YYYY h:mm a"]},
+      {"name":"branch_type","control":"hidden"}
     ]
   }
 }

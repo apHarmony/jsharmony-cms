@@ -12,7 +12,13 @@
   <!-- ---------- -->
   <# if(!branch_diff.branch_pages.length && !branch_diff.branch_media.length && !branch_diff.branch_menus.length && !branch_diff.branch_redirects.length){ #>
     <hr/>
-    <h4 class="<%=model.class%>_branch_diff_item_header">No changes in this branch</h4>
+    <h4 class="<%=model.class%>_branch_diff_item_header">
+      <# if(branch_type=='USER'){ #>
+        No changes in this branch
+      <# } else { #>
+        <#=branch_type#> branches do not store a change history.  Checkout branch to view its contents.
+      <# } #>
+    </h4>
   <# } #>
 
 

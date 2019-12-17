@@ -9,7 +9,8 @@
     "sqlselect": [
       "select ",
       "(select txt_body from jsharmony.txt where txt_process='CMS' and txt_attrib='Dashboard') as motd,",
-      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No branch currently checked out)') branch_desc",
+      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No branch currently checked out)') branch_desc,",
+      "(select {schema}.my_current_branch_id()) branch_id",
       "from jsharmony.single"
     ],
     "nokey": 1,
@@ -17,9 +18,9 @@
     "fields":[
       {"name":"motd","type":"varchar","actions":"B","control":"hidden","caption":""},
       {"control":"html","value":"<div class='clear Dashboard_MOTD' style='margin-top:10px;'></div>"},
-      {"name":"branch_desc","type":"varchar","control":"label","caption":"Current Branch",
+      {"name":"branch_desc","type":"varchar","control":"label","caption":"Current Branch","link":"update:Branch_Summary&branch_id",
         "captionstyle":"border:1px solid #333;color:white;background-color:#333;padding:4px 11px;display:inline-block;",
-        "controlstyle":"border:1px solid #333;padding:4px 11px;display:inline-block;"},
+        "controlstyle":"border:1px solid #333;padding:4px 11px;display:inline-block;color:#000;"},
       {"name":"qnssl","control":"subform","target":"jsHarmonyFactory/Dashboard_Note_Listing","bindings":{"note_scope":"'S'","note_type":"'S'"},"actions": "BIUD",
       "caption":"System Notifications","controlstyle":"width:820px;float:left;margin-right:10px;margin-top:25px;","nl":true},
       {"control":"html","value":"<div class='clear'></div>"}
