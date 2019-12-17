@@ -64,6 +64,7 @@ module.exports = exports = function(module, funcs){
       var branch_media = [];
       var branch_redirects = [];
       var branch_menus = [];
+      var deployment_target_params = '';
       var pages = {};
       var media = {};
       var menus = {};
@@ -72,11 +73,21 @@ module.exports = exports = function(module, funcs){
 
       async.waterfall([
 
+        //Get deployment target params
+        function(cb){
+          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) deployment_target_params = rslt[0];
+            return cb();
+          });
+        },
+
         //Get all branch_media
         function(cb){
           var sql = "select branch_media.media_key, branch_media.branch_media_action, branch_media.media_id, branch_media.media_orig_id, \
-              old_media.media_path old_media_path, old_media.media_file_id old_media_file_id,\
-              new_media.media_path new_media_path, new_media.media_file_id new_media_file_id\
+              old_media.media_path old_media_path, old_media.media_file_id old_media_file_id, old_media.media_ext old_media_ext, old_media.media_width old_media_width, old_media.media_height old_media_height,\
+              new_media.media_path new_media_path, new_media.media_file_id new_media_file_id, new_media.media_ext new_media_ext, new_media.media_width new_media_width, new_media.media_height new_media_height\
             from "+(module.schema?module.schema+'.':'')+"branch_media branch_media \
               left outer join "+(module.schema?module.schema+'.':'')+"media old_media on old_media.media_id=branch_media.media_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"media new_media on new_media.media_id=branch_media.media_id \
@@ -127,8 +138,8 @@ module.exports = exports = function(module, funcs){
         //Get all branch_page
         function(cb){
           var sql = "select branch_page.page_key, branch_page.branch_page_action, branch_page.page_id, branch_page.page_orig_id, \
-              old_page.page_path old_page_path, old_page.page_title old_page_title, old_page.page_file_id old_page_file_id,\
-              new_page.page_path new_page_path, new_page.page_title new_page_title, new_page.page_file_id new_page_file_id\
+              old_page.page_path old_page_path, old_page.page_title old_page_title, old_page.page_file_id old_page_file_id, old_page.page_filename old_page_filename, old_page.page_template_id old_page_template_id,\
+              new_page.page_path new_page_path, new_page.page_title new_page_title, new_page.page_file_id new_page_file_id, new_page.page_filename new_page_filename, new_page.page_template_id new_page_template_id\
             from "+(module.schema?module.schema+'.':'')+"branch_page branch_page \
               left outer join "+(module.schema?module.schema+'.':'')+"page old_page on old_page.page_id=branch_page.page_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page new_page on new_page.page_id=branch_page.page_id \
@@ -292,11 +303,12 @@ module.exports = exports = function(module, funcs){
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
-          '_success': 1,
-          'branch_pages': branch_pages,
-          'branch_redirects': branch_redirects,
-          'branch_media': branch_media,
-          'branch_menus': branch_menus
+          _success: 1,
+          deployment_target_params: deployment_target_params,
+          branch_pages: branch_pages,
+          branch_redirects: branch_redirects,
+          branch_media: branch_media,
+          branch_menus: branch_menus
         }));
       });
       return;

@@ -3,7 +3,7 @@
   var _ = jsh._;
 
   jsh.System.OpenPageEditor = function(page_key, page_name, template, options){
-    options = _.extend({ rawEditorDialog: '', page_id: undefined }, options);
+    options = _.extend({ rawEditorDialog: '', page_id: undefined, deployment_target_params: undefined }, options);
     if(template.editor){
       //Open Editor
       var url = template.editor;
@@ -12,12 +12,15 @@
         timestamp: (Date.now()).toString()
       };
 
-      if(jsh.bcrumbs && jsh.bcrumbs.deployment_target_params){
+      var dtparamsstr = '';
+      if(options.deployment_target_params) dtparamsstr = options.deployment_target_params;
+      else if(jsh.bcrumbs && jsh.bcrumbs.deployment_target_params) dtparamsstr = jsh.bcrumbs.deployment_target_params;
+      if(dtparamsstr){
         try{
-          dtparams = _.extend(dtparams, JSON.parse(jsh.bcrumbs.deployment_target_params));
+          dtparams = _.extend(dtparams, JSON.parse(dtparamsstr));
         }
         catch(ex){
-          XExt.Alert('Error reading deployment target param.  Please make sure the JSON syntax is correct');
+          XExt.Alert('Error reading deployment_target_params.  Please make sure the JSON syntax is correct');
           return;
         }
       }
@@ -74,6 +77,31 @@
       }, function (err) {
         if(onComplete) onComplete(err);
       });
+    }
+  }
+
+  jsh.System.PreviewMedia = function(media_key, media_file_id, media_id, media_ext, media_width, media_height){
+    var qs = '';
+    if(media_id) qs = 'media_id='+media_id;
+    else if(media_file_id) qs = 'media_file_id='+media_file_id;
+    if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.pdf'], media_ext.toLowerCase())){
+      var url = jsh._BASEURL+'_funcs/media/'+media_key+'/'+(qs?'?'+qs:'');
+      var ww = 800;
+      var wh = 600;
+      if(media_width && media_height){
+        var wwr = media_width / ww;
+        var whr = media_height / wh;
+        if((wwr <=1) && (whr <= 1)){ ww = media_width; wh = media_height; }
+        else if(wwr > whr) wh = media_height / wwr;
+        else ww = media_width / whr;
+      }
+      ww = Math.floor(ww);
+      wh = Math.floor(wh);
+      window.open(url,'_blank',"height="+wh+", width="+ww);
+    }
+    else {
+      var url = jsh._BASEURL+'_funcs/media/'+media_key+'/?download'+(qs?'&'+qs:'');
+      jsh.getFileProxy().prop('src', url);
     }
   }
 

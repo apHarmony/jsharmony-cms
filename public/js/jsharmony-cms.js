@@ -267,7 +267,7 @@ window.jsHarmonyCMS = new (function(){
     //Content
     for(var key in _this.template.content_elements){
       _this.setEditorContent(key, _this.page.content[key])
-      _this.page.content[key] = _this.getEditorContent(key);
+      if(!_this.readonly) _this.page.content[key] = _this.getEditorContent(key);
     }
 
     //CSS
@@ -313,10 +313,16 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.setEditorContent = function(id, val){
-    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-    if(!_this.isInitialized) editor.undoManager.clear();
-    editor.setContent(val);
-    if(!_this.isInitialized) editor.undoManager.add();
+    if(_this.readonly){
+      //Delay load, so that errors in the HTML do not stop the page loading process
+      window.setTimeout(function(){ $('#jsharmony_cms_content_'+id).html(val); },1);
+    }
+    else {
+      var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+      if(!_this.isInitialized) editor.undoManager.clear();
+      editor.setContent(val);
+      if(!_this.isInitialized) editor.undoManager.add();
+    }
   }
 
   this.getEditorContent = function(id){
@@ -325,7 +331,10 @@ window.jsHarmonyCMS = new (function(){
 
   this.renderTitle = function(src){
     var jsrc = $(src);
-    if(!src || (src.id != 'jsharmony_cms_title')) window.tinymce.get('jsharmony_cms_title').setContent(_this.page.title);
+    if(!src || (src.id != 'jsharmony_cms_title')){
+      if(_this.readonly) $('#jsharmony_cms_title').text(_this.page.title);
+      else window.tinymce.get('jsharmony_cms_title').setContent(_this.page.title);
+    }
     if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val(_this.page.title);
     if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
     $('#jsharmony_cms_editor_bar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
@@ -336,6 +345,7 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.onTitleUpdate = function(src, val){
+    if(_this.readonly) return;
     var prev_hasChanges = _this.hasChanges;
     var new_page_title = _this.page.title;
     var new_seo_title = _this.page.seo.title;
@@ -371,6 +381,12 @@ window.jsHarmonyCMS = new (function(){
     $(window).on('resize', function(){ _this.refreshLayout(); });
     $(window).on('scroll', function(){ _this.refreshLayout(); });
     _this.refreshLayout();
+
+    _.each($('.jsharmony_cms_content'), function(obj){
+      var jobj = $(obj);
+      if(!jobj.data('id')) XExt.Alert('jsharmony_cms_content area missing data-id attribute');
+      if(!obj.id) obj.id = 'jsharmony_cms_content_' + jobj.data('id');
+    });
 
     if(_this.readonly){
       $('.jsharmony_cms_content').prop('contenteditable', false);
@@ -435,9 +451,6 @@ window.jsHarmonyCMS = new (function(){
           fixed_toolbar_container: '#jsharmony_cms_content_editor_toolbar',
         };
         async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
-          var jobj = $(elem);
-          if(!jobj.data('id')) XExt.Alert('jsharmony_cms_content area missing data-id attribute');
-          if(!elem.id) elem.id = 'jsharmony_cms_content_' + jobj.data('id');
           window.tinymce.init(_.extend({
             selector: '#' + elem.id,
             init_instance_callback: function(editor){
@@ -522,6 +535,8 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.getValues = function(){
+    if(_this.readonly) return;
+
     for(var key in _this.template.content_elements){
       var editorContent = _this.getEditorContent(key);
       if(editorContent != _this.page.content[key]){
