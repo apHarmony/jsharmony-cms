@@ -416,24 +416,7 @@ module.exports = exports = function(module, funcs){
       patch += patch_batch.lines.join('\n')+'\n';;
     }
 
-    /*
-    var patch = dmp.patch_toText(dmp.patch_make(a,diff));    
-    var patchlines = patch.split(/\n/);
-    for(var i=0;i<patchlines.length;i++){
-      var patchline = patchlines[i];
-      var patchsplit = patchline.split(/%0A/);
-      for(var j=1;j<patchsplit.length;j++){
-        if((j < (patchsplit.length-1)) || patchsplit[j]){
-          patchsplit[j] = patchsplit[0][0] + patchsplit[j];
-        }
-      }
-      patchline = patchsplit.join('%0A');
-      patchlines[i] = patchline;
-    }
-    patch = patchlines.join('\n');
-    */
-
-    patch = decodeURIComponent("--- compare\n+++ compare\n" + patch);
+    patch = "--- compare\n+++ compare\n" + patch;
     return Diff2Html.getPrettyHtml(patch, {
       inputFormat: "diff",
       matching: "lines"

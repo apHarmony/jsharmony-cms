@@ -413,7 +413,7 @@
           "clear_insert_identity()",
           "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
           //Set user's current branch to cloned branch
-          "update {schema}.sys_user_branch set branch_id = last_insert_identity()",
+          "update {schema}.sys_user_branch set branch_id = last_insert_identity() where sys_user_id = jsharmony.my_sys_user_id()",
           //Add all menu / pages / media / redirect from other branch
           //*Copy New Branch Changes*
           "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, branch_menu_action, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, branch_menu_action, menu_orig_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
