@@ -56,8 +56,8 @@
 
   function getMergeType(xmodel) {
     var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
-    if(checked_option.length) return checked_option.val();
-    return 'CHANGES';
+    if(checked_option.length) return checked_option.val().toLowerCase();
+    return 'changes';
   }
 
   jsh.System.ApproveBranch = function(xmodel){
@@ -84,7 +84,7 @@
         dst_branch_id: jprompt.find('.dst_branch_id').val()
       };
 
-      XForm.Post(xmodel.module_namespace+'Branch_Review_Approve_'+mergeType, { }, params, function(rslt){
+      XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
         success();
         XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
       });
@@ -110,7 +110,7 @@
         dst_branch_id: xmodel.get('dst_branch_id'),
       };
 
-      XForm.Post(xmodel.module_namespace+'Branch_Summary_Merge_'+mergeType, { }, params, function(rslt){
+      XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
         success();
         XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
       });
