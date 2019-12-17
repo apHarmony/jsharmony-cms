@@ -62,7 +62,7 @@
 
     <# _.each(_.omit(branch_page.diff,['seo','content','content_elements','page_title','template_title']), function(val, key){ #>
       <div class="<%=model.class%>_diff_head"><#=map(key,'page')#></div>
-      <div class="<%=model.class%>_diff"><#=val#></div>
+      <div class="<%=model.class%>_diff"><#-val#></div>
     <# }); #>
 
     <# _.each(branch_page.diff && branch_page.diff.content, function(val, key){ if(val){ #>
