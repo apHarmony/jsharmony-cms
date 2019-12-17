@@ -13,8 +13,8 @@ jsh.App[modelid] = new (function(){
   }
 
   this.loadData = function(onComplete){
-    var emodelid = '../_funcs/diff';
-    XForm.Get(emodelid, { branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
+    var emodelid = '../_funcs/conflict';
+    XForm.Get(emodelid, { src_branch_id: xmodel.get('src_branch_id'), dst_branch_id: xmodel.get('dst_branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.deployment_target_params = rslt.deployment_target_params;
         _this.branch_pages = rslt.branch_pages;

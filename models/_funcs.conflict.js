@@ -19,16 +19,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
 var async = require('async');
-var DiffMatchPatch = require('diff-match-patch');
-var diff2html = require("diff2html").Diff2Html;
 var prettyhtml = require('js-beautify').html;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
   
-  var dmp = new DiffMatchPatch();
-
-  exports.diff = function (req, res, next) {
+  exports.conflict = function (req, res, next) {
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
     
@@ -48,15 +44,17 @@ module.exports = exports = function(module, funcs){
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     if (verb == 'get') {
-      var branch_id = req.query.branch_id;
-      
+      var dst_branch_id = req.query.dst_branch_id;
+      var src_branch_id = req.query.src_branch_id;
+
       //Check if Asset is defined
-      var sql_ptypes = [dbtypes.BigInt];
-      var sql_params = { 'branch_id': branch_id };
+      var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
+      var sql_params = { 'dst_branch_id': dst_branch_id, 'src_branch_id': src_branch_id };
       var validate = new XValidate();
       var verrors = {};
-      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      
+      validate.AddValidator('_obj.dst_branch_id', 'Destination Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.src_branch_id', 'Source Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+ 
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
@@ -75,14 +73,14 @@ module.exports = exports = function(module, funcs){
 
         //Get deployment target params
         function(cb){
-          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@branch_id";
+          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@dst_branch_id";
           appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) deployment_target_params = rslt[0];
             return cb();
           });
         },
-
+/*
         //Get all branch_media
         function(cb){
           var sql = "select branch_media.media_key, branch_media.branch_media_action, branch_media.media_id, branch_media.media_orig_id, \
@@ -134,18 +132,22 @@ module.exports = exports = function(module, funcs){
             return cb();
           });
         },
-
+*/
         //Get all branch_page
         function(cb){
-          var sql = "select branch_page.page_key, branch_page.branch_page_action, branch_page.page_id, branch_page.page_orig_id, \
+          var sql = "select src_branch_page.page_key, src_branch_page.branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id, dst_branch_page.page_id as dst_page_id, \
               old_page.page_path old_page_path, old_page.page_title old_page_title, old_page.page_file_id old_page_file_id, old_page.page_filename old_page_filename, old_page.page_template_id old_page_template_id,\
-              new_page.page_path new_page_path, new_page.page_title new_page_title, new_page.page_file_id new_page_file_id, new_page.page_filename new_page_filename, new_page.page_template_id new_page_template_id\
-            from "+(module.schema?module.schema+'.':'')+"branch_page branch_page \
-              left outer join "+(module.schema?module.schema+'.':'')+"page old_page on old_page.page_id=branch_page.page_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"page new_page on new_page.page_id=branch_page.page_id \
-            where branch_id=@branch_id and branch_page_action is not null and (old_page.page_is_folder=0 or new_page.page_is_folder=0)";
+              src_page.page_path src_page_path, src_page.page_title src_page_title, src_page.page_file_id src_page_file_id, src_page.page_filename src_page_filename, src_page.page_template_id src_page_template_id,\
+              dst_page.page_path dst_page_path, dst_page.page_title dst_page_title, dst_page.page_file_id dst_page_file_id, dst_page.page_filename dst_page_filename, dst_page.page_template_id src_page_template_id\
+            from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page \
+              inner join "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page on dst_branch_page.page_key=src_branch_page.page_key and dst_branch_page.branch_id=@dst_branch_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"page old_page on old_page.page_id=src_branch_page.page_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"page src_page on src_page.page_id=src_branch_page.page_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"page dst_page on dst_page.page_id=dst_branch_page.page_id \
+            where src_branch_page.branch_id=@src_branch_id and src_branch_page.branch_page_action is not null and (old_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            console.log(rslt);
             if(rslt && rslt[0]) branch_pages = rslt[0];
             return cb();
           });
@@ -156,8 +158,9 @@ module.exports = exports = function(module, funcs){
           var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
             from "+(module.schema?module.schema+'.':'')+"page page \
             where page_is_folder = 0 and (\
-                    page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action is not null) or \
-                    page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action = 'UPDATE') \
+                    page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action is not null) or \
+                    page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action = 'UPDATE') or \
+                    page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and dst_branch_page.page_key in (select page_key from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and branch_page_action is not null)) \
                   )";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
@@ -202,12 +205,13 @@ module.exports = exports = function(module, funcs){
 
           _.each(branch_pages, function(branch_page){
             if(branch_page.branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.diff = funcs.twoWayDiff(pages[branch_page.page_orig_id], pages[branch_page.page_id]);
+              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.page_orig_id], pages[branch_page.src_page_id]);
+              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.page_orig_id], pages[branch_page.dst_page_id]);
             }
           });
           return cb();
         },
-
+/*
         //Get all branch_menu
         function(cb){
           var sql = "select branch_menu.menu_key, branch_menu.branch_menu_action, branch_menu.menu_id, branch_menu.menu_orig_id, \
@@ -271,7 +275,7 @@ module.exports = exports = function(module, funcs){
           });
           return cb();
         },
-
+*/
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
@@ -288,172 +292,6 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
-  }
-
-  exports.twoWayDiff = function(old_page, new_page){
-    var diff = {};
-    _.each(['css','header','footer'], function(key){
-      var key_diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
-      if(key_diff) diff[key] = key_diff;
-    });
-    var old_content_keys = _.keys(old_page.compiled.content);
-    var new_content_keys = _.keys(new_page.compiled.content);
-    for(var key in old_page.compiled.content){ if(!(key in new_page.compiled.content)) new_page.compiled.content[key] = ''; }
-    for(var key in new_page.compiled.content){ if(!(key in old_page.compiled.content)) old_page.compiled.content[key] = ''; }
-
-    diff.content_elements = {};
-    for(var key in old_page.template.content_elements){ diff.content_elements[key] = old_page.template.content_elements[key].title; }
-    for(var key in new_page.template.content_elements){ diff.content_elements[key] = new_page.template.content_elements[key].title; }
-
-    diff.content = {};
-    for(var key in old_page.compiled.content){
-      var content_diff = funcs.diffHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
-      diff.content[key] = content_diff;
-    }
-    _.each(['page_title','template_title'], function(key){
-      if(old_page[key] != new_page[key]) diff[key] = new_page[key];
-    });
-    diff.seo = {};
-    _.each(['title','keywords','metadesc','canonical_url'], function(key){
-      if(old_page.compiled.seo[key] != new_page.compiled.seo[key]) diff.seo[key] = new_page.compiled.seo[key];
-    });
-    return diff;
-  }
-
-  exports.diffHTML = function(a, b){
-    if(a==b) return '';
-
-    var diff_lines = dmp.diff_linesToChars_(a, b);
-    var diff_lineText1 = diff_lines.chars1;
-    var diff_lineText2 = diff_lines.chars2;
-    var diff_lineArray = diff_lines.lineArray;
-    var diff = dmp.diff_main(diff_lineText1, diff_lineText2, false);
-    dmp.diff_charsToLines_(diff, diff_lineArray);
-
-    //Generate patch
-    var patch_lines = [];
-    var source_line = 1;
-    var dest_line = 1;
-    var last_line = 0;
-    if(diff.length){
-      last_line = diff.length-1;
-      if(diff[last_line][0]==0){}
-      else{
-        if(diff.length > 1){
-          if((diff[last_line-1][0]==0)||(diff[last_line-1][0]==diff[last_line][0])){}
-          else last_line-=1;
-        }
-      }
-    }
-    
-    for(var i=0;i<diff.length;i++){
-      var diff_line = diff[i];
-      var diff_line_type = diff_line[0];
-      var diff_line_text = diff_line[1]||'';
-      if((i < last_line) && diff_line_text && (diff_line_text[diff_line_text.length-1]=='\n')) diff_line_text = diff_line_text.substr(0,diff_line_text.length-1);
-      var diff_lines = diff_line_text.split('\n');
-
-      var diff_line_prefix = ' ';
-      if(diff_line_type==-1) diff_line_prefix = '-';
-      else if(diff_line_type==1) diff_line_prefix = '+';
-      _.each(diff_lines, function(diff_line){ patch_lines.push(diff_line_prefix + diff_line); });
-
-      diff_line[2] = diff_lines;
-      diff_line[3] = source_line;
-      diff_line[4] = dest_line;
-      if(diff_line_type==0){
-        source_line += diff_lines.length;
-        dest_line += diff_lines.length;
-      }
-      else if(diff_line_type==-1){
-        source_line += diff_lines.length;
-      }
-      else if(diff_line_type==1){
-        dest_line += diff_lines.length;
-      }
-    }
-    //Create patch
-    var source_line = 0;
-    var dest_line = 0;
-    var patch_batches = [];
-    var cur_patch_batch = null;
-    for(var i=0;i<patch_lines.length;i++){
-      var patch_line = patch_lines[i];
-      if(patch_line[0]==' '){
-        source_line++;
-        dest_line++;
-      }
-      else if(patch_line[0]=='-') source_line++;
-      else if(patch_line[0]=='+') dest_line++;
-      if(patch_line[0]==' '){
-        if(!cur_patch_batch) continue;
-        else{
-          cur_patch_batch.lines.push(patch_line);
-        }
-      }
-      else {
-        if(cur_patch_batch){ cur_patch_batch.lines.push(patch_line); }
-        else {
-          //Start patch batch
-          cur_patch_batch = {
-            lines: [patch_line],
-            source_start_line: source_line+1,
-            source_end_line: undefined,
-            dest_start_line: dest_line+1,
-            dest_end_line: undefined,
-          };
-          if(patch_line[0]=='-') cur_patch_batch.source_start_line--;
-          if(patch_line[0]=='+') cur_patch_batch.dest_start_line--;
-          if(i>0){
-            cur_patch_batch.source_start_line--;
-            cur_patch_batch.dest_start_line--;
-            cur_patch_batch.lines.unshift(patch_lines[i-1]);
-          }
-          
-        }
-      }
-
-      //Check if at end of patch
-      if((i==(patch_lines.length-1)) || ((patch_line[0]==' ') && (patch_lines[i+1][0]==' '))){
-        //End patch batch
-        cur_patch_batch.source_end_line = source_line;
-        cur_patch_batch.dest_end_line = dest_line;
-        patch_batches.push(cur_patch_batch);
-        cur_patch_batch = null;
-      }
-    }
-
-    var patch = '';
-    for(var i=0;i<patch_batches.length;i++){
-      var patch_batch = patch_batches[i];
-      patch += '@@ -'+patch_batch.source_start_line+','+patch_batch.source_end_line+' +'+patch_batch.dest_start_line+','+patch_batch.dest_end_line+' @@\n';
-      patch += patch_batch.lines.join('\n')+'\n';;
-    }
-
-    patch = "--- compare\n+++ compare\n" + patch;
-    return Diff2Html.getPrettyHtml(patch, {
-      inputFormat: "diff",
-      matching: "lines"
-    });
-    
-  }
-
-  exports.formatDiff = function(diff){
-    var html = [];
-    for (var x = 0; x < diff.length; x++) {
-      var op = diff[x][0];
-      var text = Helper.escapeHTMLBR(diff[x][1]);
-      if(op==DiffMatchPatch.DIFF_INSERT){
-        html[x] = '<ins style="background:#e6ffe6;">' + text + '</ins>';
-      }
-      else if(op==DiffMatchPatch.DIFF_DELETE){
-        html[x] = '<del style="background:#ffe6e6;">' + text + '</del>';
-      }
-      else if(op==DiffMatchPatch.DIFF_EQUAL){
-        html[x] = '<span>' + text + '</span>';
-      }
-    }
-    return html.join('');
   }
 
   return exports;

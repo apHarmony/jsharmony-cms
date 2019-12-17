@@ -275,6 +275,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deploy': _this.funcs.deploy_req,
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/diff': _this.funcs.diff,
+        '/_funcs/conflict': _this.funcs.conflict,
         '/_funcs/merge/:merge_type': _this.funcs.merge,
       }
     ]
