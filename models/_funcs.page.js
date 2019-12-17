@@ -93,44 +93,77 @@ module.exports = exports = function(module, funcs){
     options = _.extend({
       getMediaURL: function(media_key){ return ''; },
       getPageURL: function(page_key){ return ''; },
-      removeClass: false
-    }, options);
-    var $ = cheerio.load(content, { xmlMode: true });
+      removeClass: false,
+      HTMLParser: false,
+    }, options);    
 
-    function parseURLs(jobj,prop){
-      if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
-      if(jobj.hasClass('cms-no-replace-url')) return;
-      var url = jobj.attr(prop);
-      if(!url) return;
+    function replaceURL(url){
+      if(!url) return url;
+      if(!url) return url;
       var urlparts = urlparser.parse(url, true);
-      if(!urlparts.path) return;
+      if(!urlparts.path) return url;
       var patharr = (urlparts.path||'').split('/');
 
       if((urlparts.path.indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
         var media_key = patharr[3];
         if(parseInt(media_key).toString()==media_key){
           var media_url = options.getMediaURL(media_key);
-          jobj.attr(prop, media_url);
+          return media_url;
         }
       }
       if((urlparts.path.indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
         var page_key = patharr[3];
         if(parseInt(page_key).toString()==page_key){
           var page_url = options.getPageURL(page_key);
-          jobj.attr(prop, page_url);
+          return page_url;
         }
       }
+      
+      return url;
     }
 
-    $('a').each(function(obj_i,obj){
-      parseURLs($(obj),'href');
-    });
-    $('img').each(function(obj_i,obj){
-      parseURLs($(obj),'src');
-    });
-    //Prevent auto-closing HTML elements
-    $('div,iframe,span,script').filter(function(idx,elem){ return !elem.children.length; }).text('');
-    return $.html();
+    function parseURLs(jobj,prop){
+      if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
+      if(jobj.hasClass('cms-no-replace-url')) return;
+      var url = jobj.attr(prop);
+      var newURL = replaceURL(url);
+      if(newURL && (newURL!=url)) jobj.attr(prop, newURL);
+    }
+
+    if(options.HTMLParser){
+      var $ = cheerio.load(content, { xmlMode: true });
+      $('a').each(function(obj_i,obj){
+        parseURLs($(obj),'href');
+      });
+      $('img').each(function(obj_i,obj){
+        parseURLs($(obj),'src');
+      });
+      //Prevent auto-closing HTML elements
+      $('div,iframe,span,script').filter(function(idx,elem){ return !elem.children.length; }).text('');
+
+      content = $.html();
+    }
+
+    var rtag = '#@JSHCMS';
+    var rtagidx = content.indexOf(rtag);
+    while(rtagidx >= 0){
+      var startofstr = rtagidx;
+      var endofstr = rtagidx;
+      var urlchar = /[a-zA-Z0-9\/_#\-:=?@%&]/;
+      do{ if(!urlchar.test(content[startofstr])) break; } while(--startofstr >= 0);
+      do{ if(!urlchar.test(content[endofstr])) break; } while(++endofstr < content.length);
+      startofstr++;
+      endofstr--;
+      var url = content.substr(startofstr, endofstr - startofstr + 1);
+      var newURL = replaceURL(url);
+      if(true || newURL && (newURL!=url)){
+        content = content.substr(0, startofstr) + newURL + content.substr(endofstr + 1);
+        rtagidx = endofstr;
+      }
+      rtagidx = content.indexOf(rtag, rtagidx + 1);
+    }
+
+    return content;
   }
   
   exports.page = function (req, res, next) {
@@ -249,21 +282,31 @@ module.exports = exports = function(module, funcs){
 
           //Get page
           function(cb){
+
+            function replaceURLs(content, options){
+              var rslt = funcs.replaceBranchURLs(content, _.extend(options, {
+                getMediaURL: function(media_key){
+                  return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
+                },
+                getPageURL: function(page_key){
+                  return baseurl+'_funcs/page/'+page_key+'/#@JSHCMS';
+                }
+              }));
+              return rslt;
+            }
+
             funcs.getClientPage(page, function(err, _clientPage){
               if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
               clientPage = _clientPage;
               if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
-              if(clientPage.page.content && !clientPage.template.raw){
-                for(var key in clientPage.page.content){
-                  clientPage.page.content[key] = funcs.replaceBranchURLs(clientPage.page.content[key], {
-                    getMediaURL: function(media_key){
-                      return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
-                    },
-                    getPageURL: function(page_key){
-                      return baseurl+'_funcs/page/'+page_key+'/';
-                    }
-                  });
-                }
+              if(!clientPage.template.raw){
+                if(clientPage.page.content) for(var key in clientPage.page.content){ clientPage.page.content[key] = replaceURLs(clientPage.page.content[key]); }
+                _.each(['css','header','footer'], function(key){
+                  if(clientPage.page[key]) clientPage.page[key] = replaceURLs(clientPage.page[key], { HTMLParser: false });
+                });
+              }
+              else if(clientPage.template.raw) {
+                if(clientPage.page.content && clientPage.page.content.body) clientPage.page.content.body = replaceURLs(clientPage.page.content.body);
               }
               return cb();
             });

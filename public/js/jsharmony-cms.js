@@ -193,11 +193,11 @@ window.jsHarmonyCMS = new (function(){
       var jdata = JSON.parse(data);
       if(jdata.media_key){
         var newClass = 'media_key_'+jdata.media_key;
-        _this.filePickerCallback(_this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id);
+        _this.filePickerCallback(_this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS');
       }
       else if(jdata.page_key){
         var newClass = 'page_key_'+jdata.page_key;
-        _this.filePickerCallback(_this._baseurl+'_funcs/page/'+jdata.page_key+'/');
+        _this.filePickerCallback(_this._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS');
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
       _this.filePickerCallback = null;
@@ -345,6 +345,7 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.onTitleUpdate = function(src, val){
+    console.log('zzzzzzzzzz');
     if(_this.readonly) return;
     var prev_hasChanges = _this.hasChanges;
     var new_page_title = _this.page.title;
@@ -370,10 +371,10 @@ window.jsHarmonyCMS = new (function(){
     if(js) _this.appendHTML($('head'), '<script type="text/javascript">'+js+'</script>');
 
     //Initialize Settings Controls
-    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
-    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').on('input', function(){ _this.onTitleUpdate(this); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').on('input', function(){ _this.onTitleUpdate(this); });
+    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); }); });
+    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); }); });
+    $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
+    $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
 
     //Initialize Tag Control
     XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
@@ -482,8 +483,8 @@ window.jsHarmonyCMS = new (function(){
         });
       });
 
-      $('.jsharmony_cms_content').on('input',function(){ if(!_this.hasChanges) _this.getValues(); });
-      $('#jsharmony_cms_title').on('input',function(){ _this.onTitleUpdate(this); });
+      $('.jsharmony_cms_content').on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
+      $('#jsharmony_cms_title').on('input keyup',function(){ _this.onTitleUpdate(this); });
 
       $(window).bind('beforeunload', function(){
         _this.getValues();

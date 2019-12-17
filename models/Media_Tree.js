@@ -464,15 +464,15 @@ jsh.App[modelid] = new (function(){
       e.preventDefault();
     });
 
-    jcontainer.find('.media_desc').on('input', function(){
+    jcontainer.find('.media_desc').on('input keyup', function(){
       _this.setMediaProp('media_desc', $(this).val());
     });
 
-    jcontainer.find('.media_type').on('input', function(){
+    jcontainer.find('.media_type').on('input keyup', function(){
       _this.setMediaProp('media_type', $(this).val());
     });
 
-    jcontainer.find('.media_tags').on('input', function(){
+    jcontainer.find('.media_tags').on('input keyup', function(){
       _this.setMediaProp('media_tags', $(this).val());
     });
 
