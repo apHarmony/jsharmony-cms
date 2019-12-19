@@ -27,7 +27,8 @@
             { "icon": "add", "text": "Add Submenu Item", "command": "_this.addMenuItem(context_item);", "actions": "I" },
             { "icon": "delete", "text": "Delete", "command": "_this.deleteMenuItem(context_item);", "actions": "D" }
           ],
-          "onmove": "return _this.menu_item_id_onmove(dragval, dropval, anchor, e);"
+          "onmove": "return _this.menu_item_id_onmove(dragval, dropval, anchor, e);",
+          "drag_anchor_settings": { "anchors": ["top","bottom","full"] }
         },
         "onchange": "_this.menu_item_id_onchange(obj, newval, undoChange, e);"
       },

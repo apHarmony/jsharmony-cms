@@ -34,3 +34,6 @@
   <a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a>
   <a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a>
 </div>  
+<div class="xcontext_menu <%=model.class%>_file_container_context_menu">
+  <% if(XExt.hasAction(model.actions, 'I')){ %><a onclick="<%-js('_this.addFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_add.png" />Add Page</a><% } %>
+</div>

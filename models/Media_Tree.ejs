@@ -2,7 +2,7 @@
   <div class="<%=model.class%>_file_listing_scroll">
     <div class="<%=model.class%>_file_tile_container">
       <# _.each(media_files, function(media_file){ #>
-        <div class="<%=model.class%>_file_tile" data-key="<#=media_file.media_key#>">
+        <div class="<%=model.class%>_file_tile" data-key="<#=media_file.media_key#>" data-value="media_key:<#=media_file.media_key#>">
           
           <# if(media_file.media_width && media_file.media_height){ #><img src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile?media_file_id=<#=media_file.media_file_id#>" />
           <# } else { #><img src="<%=jsh._BASEURL%>images/icon_file.svg" class="default" /><# } #>
@@ -32,9 +32,9 @@
       <tbody>
         <# _.each(media_files, function(media_file){ #>
           <tr class="<%=model.class%>_file_listing_row" data-key="<#=media_file.media_key#>">
-            <td align="left" class="media_filename"><a href="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile?media_file_id=<#=media_file.media_file_id#>" target="<%=jsh._instance%>_xfileproxy"><img src='/images/icon_file.png' class='' /><#=media_file.media_filename#></a></td>
-            <td align="left"><#=media_file.media_desc#></td>
-            <td align="right" style="white-space:nowrap;"><#=jsh.XFormat.bytes(media_file.media_size)#></td>
+            <td valign="top" align="left" class="media_filename"><a href="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile?media_file_id=<#=media_file.media_file_id#>" target="<%=jsh._instance%>_xfileproxy" data-value="media_key:<#=media_file.media_key#>"><img src='/images/icon_file.png' class='' /><#=media_file.media_filename#></a></td>
+            <td valign="top" align="left"><#=media_file.media_desc#></td>
+            <td valign="top" align="right" style="white-space:nowrap;"><#=jsh.XFormat.bytes(media_file.media_size)#></td>
           </tr>
         <# }); #>
         <# if(!media_files.length){ #>
@@ -122,4 +122,7 @@
   <% if(XExt.hasAction(model.actions, 'U')){ %><a onclick="<%-js('_this.renameFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Rename</a><% } %>
   <% if(XExt.hasAction(model.actions, 'U')){ %><a onclick="<%-js('_this.moveFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_export.png" />Move</a><% } %>
   <% if(XExt.hasAction(model.actions, 'D')){ %><a onclick="<%-js('_this.deleteFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_delete.png" />Delete</a><% } %>
-</div>  
+</div>
+<div class="xcontext_menu <%=model.class%>_file_container_context_menu">
+  <% if(XExt.hasAction(model.actions, 'I')){ %><a onclick="<%-js('_this.addFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_add.png" />Add File</a><% } %>
+</div>

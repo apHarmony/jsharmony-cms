@@ -86,15 +86,15 @@ jsh.App[modelid] = new (function(){
 
     _this.menu_items.splice(dragitemidx, 1);
     var dropitemidx = _.indexOf(_this.menu_items, dropitem);
-    if(anchor == 'full'){
+    if(anchor[1] == 'full'){
       dragitem.menu_item_parent_id = dropitem.menu_item_id;
       _this.menu_items.splice(dropitemidx + 1, 0, dragitem);
     }
-    else if(anchor == 'top'){
+    else if(anchor[1] == 'top'){
       dragitem.menu_item_parent_id = dropitem.menu_item_parent_id;
       _this.menu_items.splice(dropitemidx, 0, dragitem);
     }
-    else if(anchor == 'bottom'){
+    else if(anchor[1] == 'bottom'){
       dragitem.menu_item_parent_id = dropitem.menu_item_parent_id;
       _this.menu_items.splice(dropitemidx + 1, 0, dragitem);
     }

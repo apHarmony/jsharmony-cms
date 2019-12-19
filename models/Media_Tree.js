@@ -80,16 +80,16 @@ jsh.App[modelid] = new (function(){
         _this.uploadReplacementFile(replace_media_key, srcevent.dataTransfer.files);
       }
       else{
-        _this.uploadFiles(srcevent.dataTransfer.files);
+        _this.uploadFiles(_this._current_media_folder, srcevent.dataTransfer.files);
       }
     }
   }
 
-  this.uploadFiles = function(files, cb){
+  this.uploadFiles = function(media_folder, files, cb){
     XExt.clearDialogs();
     var media_keys = [];
     jsh.async.eachSeries(files, function(file, file_cb){
-      _this.uploadFile(file, function(err, rslt){
+      _this.uploadFile(media_folder, file, function(err, rslt){
         if(rslt && rslt.media_key) media_keys.push(rslt.media_key);
         return file_cb();
       });
@@ -104,10 +104,10 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.uploadFile = function(file, cb){
+  this.uploadFile = function(media_folder, file, cb){
     var fd = new FormData();
     fd.append('media_file', file, file.name);
-    fd.append('media_path', this.state.media_folder + file.name);
+    fd.append('media_path', media_folder + file.name);
 
     jsh.xLoader.StartLoading(_this.loadobj);
     $.ajax({
@@ -318,11 +318,12 @@ jsh.App[modelid] = new (function(){
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      jfiles.contextmenu(function (e) {
+      jfiles.contextmenu(function(e){
         e.preventDefault();
         e.stopPropagation();
         XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', $(this).data('key'));
       });
+      XExt.bindDragSource(jfiles);
     }
     else if(_this.state.file_view=='details'){
       var jfiles = jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr');
@@ -346,9 +347,15 @@ jsh.App[modelid] = new (function(){
         e.preventDefault();
         e.stopImmediatePropagation();
       });
+      XExt.bindDragSource(jfiles.find('.media_filename a'));
     }
     jcontainer.on('click', function(e){
       _this.selectFile(null);
+    });
+    jcontainer.off('contextmenu').on('contextmenu',function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      XExt.ShowContextMenu('.'+xmodel.class+'_file_container_context_menu', _this._current_media_folder);
     });
   }
 
@@ -637,29 +644,40 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.moveFile = function(media_key){
+  this.moveFile = function(media_key, new_media_path){
+    new_media_path = new_media_path||'';
     var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
     var media_path = media_file.media_path;
     var media_ext = media_file.media_ext;
     //base_path = base_path.substr(0, base_path.length - media_file.media_ext.length);
-    var retry = function(){ _this.moveFile(media_key); };
-    XExt.Prompt('Please enter a new path', media_path, function (rslt) {
-      if(rslt === null) return;
-      rslt = rslt.trim();
-      if(rslt == media_path) return;
-      if(!rslt) return XExt.Alert('Please enter a file path', retry);
-      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
-      if((rslt.length < media_ext.length) || (rslt.substr(rslt.length-media_ext.length) != media_ext)) return XExt.Alert('Cannot modify file extension', retry);
-      media_file.media_path = rslt;
-      media_file._is_dirty = true;
-      _this.saveMediaFileInfo(media_file, function(){
-        _this.getMediaFileListing({ force: true }, function(){
-          jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} }, function(){
-            _this.selectFile(media_file.media_key, { scrollIntoView: true });
+
+    XExt.execif(!new_media_path,
+      function(f){
+        var retry = function(){ _this.moveFile(media_key); };
+        XExt.Prompt('Please enter a new path', media_path, function (rslt) {
+          if(rslt === null) return;
+          rslt = rslt.trim();
+          if(rslt == media_path) return;
+          if(!rslt) return XExt.Alert('Please enter a file path', retry);
+          if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
+          if((rslt.length < media_ext.length) || (rslt.substr(rslt.length-media_ext.length) != media_ext)) return XExt.Alert('Cannot modify file extension', retry);
+          new_media_path = rslt;
+          f();
+        });
+      },
+      function(){
+        media_file.media_path = new_media_path;
+        media_file._is_dirty = true;
+        _this.saveMediaFileInfo(media_file, function(){
+          _this.getMediaFileListing({ force: true }, function(){
+            _this.setFolderBeforeLoad(_this._current_media_folder);
+            jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} }, function(){
+              _this.selectFile(media_file.media_key, { scrollIntoView: true });
+            });
           });
         });
-      });
-    });
+      }
+    );
   }
 
   this.deleteFile = function(media_key){
@@ -672,7 +690,7 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.addFile = function(){
+  this.addFile = function(media_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding media');
 
     //if(typeof page_folder == 'undefined') page_folder = xmodel.get('page_folder');
@@ -690,7 +708,7 @@ jsh.App[modelid] = new (function(){
       jprompt.find('.media_upload').off('change');
       XExt.clearFileInput(jprompt.find('.media_upload')[0]);
       jprompt.find('.media_upload').on('change', function(e){
-        _this.uploadFiles(this.files);
+        _this.uploadFiles(media_folder, this.files);
       });
     }, function (success) { //onAccept
     }, undefined, undefined, { backgroundClose: true });
@@ -734,25 +752,35 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.moveFolder = function(media_folder){
-    //Get new folder name
-    //Update all paths to new paths
-    var retry = function(){ _this.moveFolder(media_folder); };
-    XExt.Prompt('Please enter a new path', media_folder, function (rslt) {
-      if(rslt === null) return;
-      rslt = rslt.trim();
-      if(rslt == media_folder) return;
-      if(!rslt) return XExt.Alert('Please enter a folder path', retry);
-      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"');
-      if(rslt.indexOf('//') >=0 ) return XExt.Alert('Invalid path');
-      if(rslt.indexOf('/./') >=0 ) return XExt.Alert('Invalid path');
-      if(rslt.indexOf('/../') >=0 ) return XExt.Alert('Invalid path');
-      if(rslt[rslt.length-1] != '/') rslt += '/';
-      XForm.Post(xmodel.namespace+'Media_Tree_Folder_Move',{},{ old_media_folder:media_folder, new_media_folder: rslt }, function(){
-        _this.setFolderBeforeLoad(rslt);
-        jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
-      });
-    });
+  this.moveFolder = function(old_media_folder, new_media_folder){
+    new_media_folder = new_media_folder||'';
+
+    XExt.execif(!new_media_folder,
+      function(f){
+        //Get new folder name
+        //Update all paths to new paths
+        var retry = function(){ _this.moveFolder(old_media_folder); };
+        XExt.Prompt('Please enter a new path', old_media_folder, function (rslt) {
+          if(rslt === null) return;
+          rslt = rslt.trim();
+          if(rslt == old_media_folder) return;
+          if(!rslt) return XExt.Alert('Please enter a folder path', retry);
+          if(rslt[0] != '/') return XExt.Alert('Path must start with "/"');
+          if(rslt.indexOf('//') >=0 ) return XExt.Alert('Invalid path');
+          if(rslt.indexOf('/./') >=0 ) return XExt.Alert('Invalid path');
+          if(rslt.indexOf('/../') >=0 ) return XExt.Alert('Invalid path');
+          if(rslt[rslt.length-1] != '/') rslt += '/';
+          new_media_folder = rslt;
+          f();
+        });
+      },
+      function(){
+        XForm.Post(xmodel.namespace+'Media_Tree_Folder_Move',{},{ old_media_folder: old_media_folder, new_media_folder: new_media_folder }, function(){
+          _this.setFolderBeforeLoad(new_media_folder);
+          jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
+        });
+      }
+    );
   }
 
   this.deleteFolder = function(media_folder){
@@ -779,6 +807,49 @@ jsh.App[modelid] = new (function(){
       if(!window.opener) return XExt.Alert('Parent editor not found');
       window.opener.postMessage('cms_file_picker:'+JSON.stringify({ media_key: media_key, media_file_id: media_file.media_file_id, media_desc: media_file.media_desc, media_path: media_file.media_path }), '*');
       window.close();
+    }
+  }
+
+  this.media_folder_ondrop = function(dropval, anchor, e) {
+    if(!XExt.hasAction(xmodel.actions,'U')) return;
+    if(!dropval) return;
+
+    var media_folder = dropval;
+
+    var srcevent = e.originalEvent;
+    if(srcevent && srcevent.dataTransfer && srcevent.dataTransfer.files){
+      _this.uploadFiles(media_folder, srcevent.dataTransfer.files, function(){
+        _this.setFolderBeforeLoad(media_folder);
+        jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
+      });
+    }
+  }
+  
+  this.media_folder_onmove = function(dragval, dropval, anchor, e) {
+    if(!XExt.hasAction(xmodel.actions,'U')) return;
+    if(!dragval || !dropval) return;
+    dragval = dragval.toString();
+    dropval = dropval.toString();
+
+    if(dragval=='/') return XExt.Alert('Cannot move root folder');
+
+    if(dragval.indexOf('media_key:')==0){
+      //Moving file
+      var media_key = parseInt(dragval.substr(10));
+      var media_file = _this.getMediaFile(media_key);
+      var new_media_path = dropval + media_file.media_filename;
+      _this.moveFile(media_key, new_media_path);
+    }
+    else {
+      //Moving folder
+      var old_media_folder = dragval;
+      var old_media_folder_name = XExt.basename(old_media_folder);
+      if(!old_media_folder_name) return;
+      var new_media_folder = dropval + old_media_folder_name + '/';
+  
+      XExt.Confirm('Move "'+old_media_folder+'" to "'+ new_media_folder + '"?', function(){
+        _this.moveFolder(old_media_folder, new_media_folder);
+      });
     }
   }
 
