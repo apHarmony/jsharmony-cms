@@ -248,7 +248,8 @@ module.exports = exports = function(module, funcs){
   }
 
   var begin_merge_sql = [
-    "update {schema}.branch set branch_merge_id=@src_branch_id where branch_id=@dst_branch_id;"
+    "update {schema}.branch set branch_merge_id=@src_branch_id where branch_id=@dst_branch_id and branch_merge_id is null;",
+    "select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id",
   ];
 
   exports.begin_merge = function(context, sql_params, callback) {
@@ -259,8 +260,9 @@ module.exports = exports = function(module, funcs){
 
     var sql = begin_merge_sql.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
-    appsrv.ExecCommand(context, sql, sql_ptypes, sql_params, function (err, rslt) {
+    appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
+      if (rslt[0] != sql_params.src_branch_id) { callback(	Helper.NewError('Branch already has an in-progress merge',-9)); return; }
       callback(null);
     });
   }
