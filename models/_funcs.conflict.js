@@ -144,7 +144,9 @@ module.exports = exports = function(module, funcs){
               left outer join "+(module.schema?module.schema+'.':'')+"page old_page on old_page.page_id=src_branch_page.page_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page src_page on src_page.page_id=src_branch_page.page_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page dst_page on dst_page.page_id=dst_branch_page.page_id \
-            where src_branch_page.branch_id=@src_branch_id and src_branch_page.branch_page_action is not null and (old_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)";
+            where src_branch_page.branch_id=@src_branch_id and src_branch_page.branch_page_action is not null\
+              and (old_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)\
+              and dst_branch_page.page_id<>src_branch_page.page_orig_id";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             console.log(rslt);

@@ -10,7 +10,7 @@
     "title":"Branch Summary",
     "onload":"_this.oninit(xmodel);",
     "buttons":[
-      { "group": "Actions", "link":"js:jsh.System.MergeFromBranch(xmodel);","icon":"sidebar","text":"Merge Into Current Branch","class":"Branch_Summary_buttonMerge", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "link":"js:jsh.System.BeginMergeFromBranch(xmodel);","icon":"sidebar","text":"Merge Into Current Branch","class":"Branch_Summary_buttonMerge", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
       { "group": "Actions", "link":"update:Branch_Clone","icon":"copy","text":"Clone", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
       { "group": "Actions", "link":"update:Branch_Checkout","icon":"edit","text":"Checkout / Edit Branch","class":"Branch_Summary_buttonCheckout" },
       { "group": "Actions", "link":"js:_this.renameBranch(xmodel.get('branch_id', this))","icon":"edit","text":"Rename","class":"Branch_Summary_buttonRename", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },

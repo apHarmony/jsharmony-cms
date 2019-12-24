@@ -23,7 +23,7 @@ var async = require('async');
 module.exports = exports = function(module, funcs){
   var exports = {};
   
-  exports.merge = function (req, res, next) {
+  exports.req_merge = function (req, res, next) {
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
 
@@ -194,11 +194,74 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256), dbtypes.VarChar(8)];
 
     var sql = clone_sql.join('\n');
-    sql = sql + archive_sql.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
       callback(null, rslt);
+    });
+  }
+
+  exports.req_begin_merge = function (req, res, next) {
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+
+    var Q = req.query;
+    var P = {};
+    if (req.body && ('data' in req.body)){
+      try{ P = JSON.parse(req.body.data); }
+      catch(ex){ Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    }
+    var appsrv = this;
+    var jsh = module.jsh;
+    var XValidate = jsh.XValidate;
+
+    var model = jsh.getModel(req, module.namespace + 'Branch_Review');
+
+    // error codes: jsharmony errors document
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    if (verb == 'post') {
+      var src_branch_id = req.body.src_branch_id;
+      var dst_branch_id = req.body.dst_branch_id;
+
+      //Check if Asset is defined
+      var sql_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
+      var validate = new XValidate();
+      var verrors = {};
+      validate.AddValidator('_obj.src_branch_id', 'Source Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.dst_branch_id', 'Destination Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      // look at ParamCheck
+
+      verrors = _.merge(verrors, validate.Validate('B', sql_params));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+      exports.begin_merge(req._DBContext, sql_params, function(err) {
+        if (err != null) { appsrv.AppDBError(req, res, err); return; }
+        res.end(JSON.stringify({
+          '_success': 1,
+        }));
+      });
+    }
+    else {
+      return next();
+    }
+  }
+
+  var begin_merge_sql = [
+    "update {schema}.branch set branch_merge_id=@src_branch_id where branch_id=@dst_branch_id;"
+  ];
+
+  exports.begin_merge = function(context, sql_params, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
+
+    var sql = begin_merge_sql.join('\n');
+    sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
+    appsrv.ExecCommand(context, sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; callback(err); return; }
+      callback(null);
     });
   }
 

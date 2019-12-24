@@ -8,7 +8,7 @@
     "caption":["Branch","Branches"],
     "title":"Branch Review",
     "buttons":[
-      { "link":"js:jsh.System.ApproveBranch(xmodel);","icon":"ok","text":"Approve" },
+      { "link":"js:jsh.System.BeginApproveBranch(xmodel);","icon":"ok","text":"Approve" },
       { "link":"js:jsh.System.RejectBranch(xmodel);","icon":"delete","text":"Reject" },
       { "link":"update:Branch_Summary&branch_id","icon":"browse","text":"Branch Summary" }
     ],

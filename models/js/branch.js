@@ -60,7 +60,7 @@
     return 'changes';
   }
 
-  jsh.System.ApproveBranch = function(xmodel){
+  jsh.System.BeginApproveBranch = function(xmodel){
     var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_Merge';
 
@@ -84,14 +84,20 @@
         dst_branch_id: jprompt.find('.dst_branch_id').val()
       };
 
-      XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
+      XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
         success();
-        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
+          '?action=update'+
+          '&branch_id='+xmodel.get('branch_id')+
+          '&src_branch_id='+xmodel.get('branch_id')+
+          '&dst_branch_id='+jprompt.find('.dst_branch_id').val()+
+          '&merge_type='+mergeType
+        );
       });
     });
   }
 
-  jsh.System.MergeFromBranch = function(xmodel){
+  jsh.System.BeginMergeFromBranch = function(xmodel){
     var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_Merge';
 
@@ -110,9 +116,15 @@
         dst_branch_id: xmodel.get('dst_branch_id'),
       };
 
-      XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
+      XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
         success();
-        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
+        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
+          '?action=update'+
+          '&branch_id='+xmodel.get('branch_id')+
+          '&src_branch_id='+xmodel.get('branch_id')+
+          '&dst_branch_id='+xmodel.get('dst_branch_id')+
+          '&merge_type='+mergeType
+        );
       });
     });
   }
