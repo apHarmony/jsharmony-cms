@@ -18,5 +18,20 @@
       {"name":"branch_mtstmp","caption":"Last Modified","control":"label","format":["date","MM/DD/YYYY h:mm a"]},
       {"name":"branch_type","control":"hidden"}
     ]
+  },
+  "Branch_Conflict_Resolve_Page": {
+    "layout":"form",
+    "table":"{schema}.branch_page",
+    "onecolumn":true,
+    "roles": {"PUBLISHER": "BU","AUTHOR": "BU", "VIEWER": "B"},
+    "actions":"BU",
+    "caption":["Branch","Branches"],
+    "title":"",
+    "fields": [
+      {"name":"branch_id","control":"hidden","key":true},
+      {"name":"page_key","control":"hidden","key":true},
+      {"name":"page_merge_id","caption":"Picked Page ID"},
+      {"name":"branch_page_merge_action","caption":"Picked Action"}
+    ]
   }
 }

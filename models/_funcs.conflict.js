@@ -138,7 +138,7 @@ module.exports = exports = function(module, funcs){
           var sql = "select src_branch_page.page_key, src_branch_page.branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id, dst_branch_page.page_id as dst_page_id, \
               old_page.page_path old_page_path, old_page.page_title old_page_title, old_page.page_file_id old_page_file_id, old_page.page_filename old_page_filename, old_page.page_template_id old_page_template_id,\
               src_page.page_path src_page_path, src_page.page_title src_page_title, src_page.page_file_id src_page_file_id, src_page.page_filename src_page_filename, src_page.page_template_id src_page_template_id,\
-              dst_page.page_path dst_page_path, dst_page.page_title dst_page_title, dst_page.page_file_id dst_page_file_id, dst_page.page_filename dst_page_filename, dst_page.page_template_id src_page_template_id\
+              dst_page.page_path dst_page_path, dst_page.page_title dst_page_title, dst_page.page_file_id dst_page_file_id, dst_page.page_filename dst_page_filename, dst_page.page_template_id dst_page_template_id\
             from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page \
               inner join "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page on dst_branch_page.page_key=src_branch_page.page_key and dst_branch_page.branch_id=@dst_branch_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page old_page on old_page.page_id=src_branch_page.page_orig_id \

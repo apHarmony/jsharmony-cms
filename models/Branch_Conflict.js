@@ -77,8 +77,11 @@ jsh.App[modelid] = new (function(){
       map: map
     }));
 
-    jdiff.find('.new_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    jdiff.find('.src_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    jdiff.find('.dst_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
     jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    jdiff.find('.button_pick_src_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
+    jdiff.find('.button_pick_dst_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
 
     jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
     jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
@@ -99,6 +102,23 @@ jsh.App[modelid] = new (function(){
     if(!page_template) return XExt.Alert('Template is not defined');
 
     jsh.System.OpenPageEditor(page_key, page_filename, page_template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
+  }
+
+  this.pickPage = function(obj){
+    var jobj = $(obj);
+
+    var query = {
+      branch_id: xmodel.get('dst_branch_id'),
+      page_key: jobj.data('page_key'),
+    };
+    var params = {
+      page_merge_id: jobj.data('page_id'),
+      branch_page_merge_action: jobj.data('branch_page_action'),
+    };
+
+    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Page', query, params, function(rslt){
+      window.location.reload();
+    });
   }
 
   this.previewMedia = function(obj){
