@@ -28,85 +28,112 @@
   <# _.each(branch_diff.branch_pages, function(branch_page){ #>
     <hr/>
 
-    <h4 class="branch_diff_item_header">
-      <# if(branch_page.branch_page_action=='ADD'){ #>
-        <i class="material-icons branch_action_icon add">add_circle</i>
-        ADDED PAGE &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.src_page_path)#>
-        <a href="#" class="preview src_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.new_page_template_id#>" data-page_filename="<#=branch_page.src_page_filename#>" data-page_id="<#=branch_page.src_page_id#>"><img src="/images/icon_browse.png" />New</a>
-      <# } #>
-      <# if(branch_page.branch_page_action=='DELETE'){ #>
-        <i class="material-icons branch_action_icon delete">remove_circle</i>
-        DELETED PAGE <#-XExt.escapeHTML(branch_page.old_page_path)#>
-        <a href="#" class="preview previous_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.old_page_template_id#>" data-page_filename="<#=branch_page.old_page_filename#>" data-page_id="<#=branch_page.page_orig_id#>"><img src="/images/icon_browse.png" />Prev</a>
-      <# } #>
-      <# if(branch_page.branch_page_action=='UPDATE'){ #>
-        <i class="material-icons branch_action_icon update">create</i>
-        UPDATED PAGE <#-XExt.escapeHTML(branch_page.old_page_path)#>
-        <a href="#" class="preview previous_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.old_page_template_id#>" data-page_filename="<#=branch_page.old_page_filename#>" data-page_id="<#=branch_page.page_orig_id#>"><img src="/images/icon_browse.png" />Prev</a>
-      <# } #>
-    </h4>
+    <# if(branch_page.branch_page_merge_action!=null || branch_page.page_merge_id!=null){ #>
+      <h4 class="branch_diff_item_header">
+        <# if(branch_page.branch_page_merge_action=='ADD'){ #>
+          <i class="material-icons branch_action_icon add">add_circle</i>
+          ADDED PAGE &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.src_page_path)#>
+          <a href="#" class="preview src_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.new_page_template_id#>" data-page_filename="<#=branch_page.src_page_filename#>" data-page_id="<#=branch_page.page_merge_id#>"><img src="/images/icon_browse.png" />New</a>
+        <# } #>
+        <# if(branch_page.branch_page_merge_action=='DELETE'){ #>
+          <i class="material-icons branch_action_icon delete">remove_circle</i>
+          DELETED PAGE <#-XExt.escapeHTML(branch_page.old_page_path)#>
+          <a href="#" class="preview previous_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.old_page_template_id#>" data-page_filename="<#=branch_page.old_page_filename#>" data-page_id="<#=branch_page.page_orig_id#>"><img src="/images/icon_browse.png" />Prev</a>
+        <# } #>
+        <# if(branch_page.branch_page_merge_action=='UPDATE'){ #>
+          <i class="material-icons branch_action_icon update">create</i>
+          UPDATED PAGE <#-XExt.escapeHTML(branch_page.old_page_path)#>
+          <a href="#" class="preview previous_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.old_page_template_id#>" data-page_filename="<#=branch_page.old_page_filename#>" data-page_id="<#=branch_page.page_orig_id#>"><img src="/images/icon_browse.png" />Prev</a>
+          <a href="#" class="preview src_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.src_page_template_id#>" data-page_filename="<#=branch_page.src_page_filename#>" data-page_id="<#=branch_page.page_merge_id#>"><img src="/images/icon_browse.png" />New</a>
+        <# } #>
+        <# if(branch_page.branch_page_merge_action==null){ #>
+          <i class="material-icons branch_action_icon cancel">cancel</i>
+          CHANGE SKIPPED <#-XExt.escapeHTML(branch_page.dst_page_path)#>
+          <a href="#" class="preview dst_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.dst_page_template_id#>" data-page_filename="<#=branch_page.dst_page_filename#>" data-page_id="<#=branch_page.dst_page_id#>"><img src="/images/icon_browse.png" />View</a>
+        <# } #>
+        <input type="button" value="Unresolve" class="button_unresolve_page" data-page_key="<#=branch_page.page_key#>"  data-page_id="<#=null#>" data-branch_page_action="<#=null#>" />
+      </h4>
+    <# } else { #>
+      <h4 class="branch_diff_item_header">
+        <# if(branch_page.branch_page_action=='ADD'){ #>
+          <i class="material-icons branch_action_icon add">add_circle</i>
+          ADDED PAGE &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.src_page_path)#>
+          <a href="#" class="preview src_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.new_page_template_id#>" data-page_filename="<#=branch_page.src_page_filename#>" data-page_id="<#=branch_page.src_page_id#>"><img src="/images/icon_browse.png" />New</a>
+        <# } #>
+        <# if(branch_page.branch_page_action=='DELETE'){ #>
+          <i class="material-icons branch_action_icon delete">remove_circle</i>
+          DELETED PAGE <#-XExt.escapeHTML(branch_page.old_page_path)#>
+          <a href="#" class="preview previous_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.old_page_template_id#>" data-page_filename="<#=branch_page.old_page_filename#>" data-page_id="<#=branch_page.page_orig_id#>"><img src="/images/icon_browse.png" />Prev</a>
+        <# } #>
+        <# if(branch_page.branch_page_action=='UPDATE'){ #>
+          <i class="material-icons branch_action_icon update">create</i>
+          UPDATED PAGE <#-XExt.escapeHTML(branch_page.old_page_path)#>
+          <a href="#" class="preview previous_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.old_page_template_id#>" data-page_filename="<#=branch_page.old_page_filename#>" data-page_id="<#=branch_page.page_orig_id#>"><img src="/images/icon_browse.png" />Prev</a>
+        <# } #>
+      </h4>
 
-    <div class="branch_diff_comparison">
-      <div class="branch_diff_comparison_src">
-        <h4 class="branch_diff_item_header">
-          <# if((branch_page.branch_page_action=='UPDATE') && (branch_page.src_page_path!=branch_page.old_page_path)){ #>
-            <br/>
-            <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
-            RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.src_page_path)#>
-          <# } #>
-          <a href="#" class="preview src_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.src_page_template_id#>" data-page_filename="<#=branch_page.src_page_filename#>" data-page_id="<#=branch_page.src_page_id#>"><img src="/images/icon_browse.png" />Source</a>
-          <input type="button" value="Pick" class="button_pick_src_page" data-page_key="<#=branch_page.page_key#>" data-page_id="<#=branch_page.src_page_id#>" data-branch_page_action="<#=branch_page.branch_page_action#>" />
-        </h4>
+      <div class="branch_diff_comparison">
+        <div class="branch_diff_comparison_src">
+          <h4 class="branch_diff_item_header">
+            <# if((branch_page.branch_page_action=='UPDATE') && (branch_page.src_page_path!=branch_page.old_page_path)){ #>
+              <br/>
+              <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
+              RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.src_page_path)#>
+            <# } #>
+            <a href="#" class="preview src_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.src_page_template_id#>" data-page_filename="<#=branch_page.src_page_filename#>" data-page_id="<#=branch_page.src_page_id#>"><img src="/images/icon_browse.png" />Source</a>
+            <input type="button" value="Pick" class="button_pick_src_page" data-page_key="<#=branch_page.page_key#>" data-page_id="<#=branch_page.src_page_id#>" data-branch_page_action="<#=branch_page.branch_page_action#>" />
+          </h4>
 
-        <# _.each(_.pick(branch_page.src_diff,['page_title','template_title']), function(val, key){ #>
-          <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
-        <# }); #>
+          <# _.each(_.pick(branch_page.src_diff,['page_title','template_title']), function(val, key){ #>
+            <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
+          <# }); #>
 
-        <# _.each(branch_page.src_diff && branch_page.src_diff.seo, function(val, key){ #>
-          <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
-        <# }); #>
+          <# _.each(branch_page.src_diff && branch_page.src_diff.seo, function(val, key){ #>
+            <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
+          <# }); #>
 
-        <# _.each(_.omit(branch_page.src_diff,['seo','content','content_elements','page_title','template_title']), function(val, key){ #>
-          <div class="diff_head"><#=map(key,'page')#></div>
-          <div class="diff"><#-val#></div>
-        <# }); #>
+          <# _.each(_.omit(branch_page.src_diff,['seo','content','content_elements','page_title','template_title']), function(val, key){ #>
+            <div class="diff_head"><#=map(key,'page')#></div>
+            <div class="diff"><#-val#></div>
+          <# }); #>
 
-        <# _.each(branch_page.src_diff && branch_page.src_diff.content, function(val, key){ if(val){ #>
-          <div class="diff_head">Content - <#=branch_page.src_diff.content_elements[key]#></div>
-          <div class="diff"><#-val#></div>
-        <# } }); #>
+          <# _.each(branch_page.src_diff && branch_page.src_diff.content, function(val, key){ if(val){ #>
+            <div class="diff_head">Content - <#=branch_page.src_diff.content_elements[key]#></div>
+            <div class="diff"><#-val#></div>
+          <# } }); #>
+        </div>
+
+        <div class="branch_diff_comparison_dst">
+          <h4 class="branch_diff_item_header">
+            <# if((branch_page.branch_page_action=='UPDATE') && (branch_page.dst_page_path!=branch_page.old_page_path)){ #>
+              <br/>
+              <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
+              RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.dst_page_path)#>
+            <# } #>
+            <a href="#" class="preview dst_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.dst_page_template_id#>" data-page_filename="<#=branch_page.dst_page_filename#>" data-page_id="<#=branch_page.dst_page_id#>"><img src="/images/icon_browse.png" />Destination</a>
+            <input type="button" value="Pick" class="button_pick_dst_page" data-page_key="<#=branch_page.page_key#>" data-page_id="<#=branch_page.dst_page_id#>" data-branch_page_action="<#=null#>" />
+          </h4>
+
+          <# _.each(_.pick(branch_page.dst_diff,['page_title','template_title']), function(val, key){ #>
+            <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
+          <# }); #>
+
+          <# _.each(branch_page.dst_diff && branch_page.dst_diff.seo, function(val, key){ #>
+            <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
+          <# }); #>
+
+          <# _.each(_.omit(branch_page.dst_diff,['seo','content','content_elements','page_title','template_title']), function(val, key){ #>
+            <div class="diff_head"><#=map(key,'page')#></div>
+            <div class="diff"><#-val#></div>
+          <# }); #>
+
+          <# _.each(branch_page.dst_diff && branch_page.dst_diff.content, function(val, key){ if(val){ #>
+            <div class="diff_head">Content - <#=branch_page.dst_diff.content_elements[key]#></div>
+            <div class="diff"><#-val#></div>
+          <# } }); #>
+        </div>
       </div>
-
-      <div class="branch_diff_comparison_dst">
-        <h4 class="branch_diff_item_header">
-          <# if((branch_page.branch_page_action=='UPDATE') && (branch_page.dst_page_path!=branch_page.old_page_path)){ #>
-            <br/>
-            <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
-            RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.dst_page_path)#>
-          <# } #>
-          <a href="#" class="preview dst_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.dst_page_template_id#>" data-page_filename="<#=branch_page.dst_page_filename#>" data-page_id="<#=branch_page.dst_page_id#>"><img src="/images/icon_browse.png" />Destination</a>
-          <input type="button" value="Pick" class="button_pick_dst_page" data-page_key="<#=branch_page.page_key#>" data-page_id="<#=branch_page.dst_page_id#>" />
-        </h4>
-
-        <# _.each(_.pick(branch_page.dst_diff,['page_title','template_title']), function(val, key){ #>
-          <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
-        <# }); #>
-
-        <# _.each(branch_page.dst_diff && branch_page.dst_diff.seo, function(val, key){ #>
-          <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
-        <# }); #>
-
-        <# _.each(_.omit(branch_page.dst_diff,['seo','content','content_elements','page_title','template_title']), function(val, key){ #>
-          <div class="diff_head"><#=map(key,'page')#></div>
-          <div class="diff"><#-val#></div>
-        <# }); #>
-
-        <# _.each(branch_page.dst_diff && branch_page.dst_diff.content, function(val, key){ if(val){ #>
-          <div class="diff_head">Content - <#=branch_page.dst_diff.content_elements[key]#></div>
-          <div class="diff"><#-val#></div>
-        <# } }); #>
-      </div>
-    </div>
+    <# } #>
 
   <# }); #>
 

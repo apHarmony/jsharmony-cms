@@ -82,6 +82,7 @@ jsh.App[modelid] = new (function(){
     jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
     jdiff.find('.button_pick_src_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
     jdiff.find('.button_pick_dst_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
+    jdiff.find('.button_unresolve_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
 
     jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
     jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
