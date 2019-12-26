@@ -231,7 +231,7 @@ module.exports = exports = function(module, funcs){
     _.each(menu_items, function(menu_item){
       menu_items_by_id[menu_item.menu_item_id] = menu_item;
       if(!menu_item.menu_item_parent_id){
-        menu_item.menu_item_path_text = '/' + Helper.StripTags(menu_item.menu_item_text) + '/';
+        menu_item.menu_item_path_text = '/' + Helper.StripTags(menu_item.menu_item_text).trim() + '/';
       }
     });
 
@@ -240,16 +240,18 @@ module.exports = exports = function(module, funcs){
       if(!menu_item) return '';
       if(!menu_item.menu_item_path_text){
         menu_item.menu_item_parents = getTextPath(menu_items_by_id[menu_item.menu_item_parent_id]);
-        menu_item.menu_item_path_text = menu_item.menu_item_parents + Helper.StripTags(menu_item.menu_item_text) + '/';
+        menu_item.menu_item_path_text = menu_item.menu_item_parents + Helper.StripTags(menu_item.menu_item_text).trim() + '/';
       }
       return menu_item.menu_item_path_text;
     }
-    _.each(menu_items, function(menu_item){
-      getTextPath(menu_item);
-    });
 
     //Clone menu_items
     menu_items = JSON.parse(JSON.stringify(menu_items||[]));
+
+    //Get text paths
+    _.each(menu_items, function(menu_item){
+      getTextPath(menu_item);
+    });
 
     _.each(menu_items, function(menu_item){
       //Delete non-essential info

@@ -630,7 +630,8 @@ module.exports = exports = function(module, funcs){
                           title: clientPage.page.title
                         },
                         _: _,
-                        Helper: Helper
+                        Helper: Helper,
+                        renderComponent: function(id){ return '***'+id+'***'; /* return funcs.renderComponent(id); */ }
                       };
                       var page_content = '';
                       if(page.page_template_id in page_template_html){

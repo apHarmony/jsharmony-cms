@@ -226,7 +226,7 @@ module.exports = exports = function(module, funcs){
     _.each(sitemap_items, function(sitemap_item){
       sitemap_items_by_id[sitemap_item.sitemap_item_id] = sitemap_item;
       if(!sitemap_item.sitemap_item_parent_id){
-        sitemap_item.sitemap_item_path_text = '/' + Helper.StripTags(sitemap_item.sitemap_item_text) + '/';
+        sitemap_item.sitemap_item_path_text = '/' + Helper.StripTags(sitemap_item.sitemap_item_text).trim() + '/';
       }
     });
 
@@ -235,16 +235,18 @@ module.exports = exports = function(module, funcs){
       if(!sitemap_item) return '';
       if(!sitemap_item.sitemap_item_path_text){
         sitemap_item.sitemap_item_parents = getTextPath(sitemap_items_by_id[sitemap_item.sitemap_item_parent_id]);
-        sitemap_item.sitemap_item_path_text = sitemap_item.sitemap_item_parents + Helper.StripTags(sitemap_item.sitemap_item_text) + '/';
+        sitemap_item.sitemap_item_path_text = sitemap_item.sitemap_item_parents + Helper.StripTags(sitemap_item.sitemap_item_text).trim() + '/';
       }
       return sitemap_item.sitemap_item_path_text;
     }
-    _.each(sitemap_items, function(sitemap_item){
-      getTextPath(sitemap_item);
-    });
 
     //Clone sitemap_items
     sitemap_items = JSON.parse(JSON.stringify(sitemap_items||[]));
+
+    //Get text paths
+    _.each(sitemap_items, function(sitemap_item){
+      getTextPath(sitemap_item);
+    });
 
     _.each(sitemap_items, function(sitemap_item){
       //Delete non-essential info
@@ -274,8 +276,8 @@ module.exports = exports = function(module, funcs){
       if(sitemap_item.sitemap_item_tag) print_item.tag = sitemap_item.sitemap_item_tag;
       if(sitemap_item.sitemap_item_style) print_item.css_style = sitemap_item.sitemap_item_style;
       if(sitemap_item.sitemap_item_class) print_item.css_class = sitemap_item.sitemap_item_class;
-      if(sitemap_item.sitemap_item_exclude_from_breadcrumbs) print_item.exclude_from_breadcrumbs = sitemap_item.sitemap_item_exclude_from_breadcrumbs;
-      if(sitemap_item.sitemap_item_exclude_from_parent_menu) print_item.exclude_from_parent_menu = sitemap_item.sitemap_item_exclude_from_parent_menu;
+      if(sitemap_item.sitemap_item_exclude_from_breadcrumbs && (sitemap_item.sitemap_item_exclude_from_breadcrumbs!='0')) print_item.exclude_from_breadcrumbs = sitemap_item.sitemap_item_exclude_from_breadcrumbs;
+      if(sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_exclude_from_parent_menu!='0')) print_item.exclude_from_parent_menu = sitemap_item.sitemap_item_exclude_from_parent_menu;
       //Generate text
       rslt += '  { ';
       var first_key = true;

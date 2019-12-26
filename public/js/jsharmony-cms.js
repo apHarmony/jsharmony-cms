@@ -25,6 +25,7 @@ window.jsHarmonyCMS = new (function(){
   var XValidate = undefined;
   var $ = undefined;
   var async = undefined;
+  var ejs = undefined;
 
   //Load jsHarmony
   this._baseurl = <%-JSON.stringify(baseurl)%>;
@@ -158,6 +159,7 @@ window.jsHarmonyCMS = new (function(){
       XValidate = jsh.XValidate;
       $ = jsh.$;
       async = jsh.async;
+      ejs = jsh.ejs;
     });
     _this.loadCSS(_this._baseurl+'jsharmony.css');
     _this.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
@@ -319,9 +321,12 @@ window.jsHarmonyCMS = new (function(){
       else{
         component_content = ejs.render(_this.components[component_id].content || '', {
           _: _,
+          ejsext: XExt.xejs,
           page: _this.page,
           template: _this.template,
           sitemap: _this.sitemap,
+          getSitemapURL: function(sitemap_item){ return '#'; },
+          isInEditor: true,
         });
       }
       jobj.html(component_content);
@@ -418,7 +423,6 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.onTitleUpdate = function(src, val){
-    console.log('zzzzzzzzzz');
     if(_this.readonly) return;
     var prev_hasChanges = _this.hasChanges;
     var new_page_title = _this.page.title;
