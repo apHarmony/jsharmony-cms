@@ -4,7 +4,7 @@
     "table":"{schema}.menu",
     "actions":"B",
     "roles": {"AUTHOR": "B","PUBLISHER": "B","VIEWER":"B"},
-    "caption":["Menu","Menu"],
+    "caption":["Menu","Menus"],
     "title":"Revision History",
     "reselectafteredit": "row",
     "sort":["vmenu_mtstmp"],

@@ -56,8 +56,8 @@
     "init_data": [
       { "sql": "update jsharmony.menu set menu_cmd='jsHarmonyCMS/Dashboard' where menu_name='Dashboard' and menu_id=3;" },
 
-      { "sql": "delete from jsharmony.sys_menu_role where menu_id in (300,30001,30002,30003,30004,350,35001,35002,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },
-      { "sql": "delete from jsharmony.menu where menu_id in (300,30001,30002,30003,30004,350,35001,35002,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },
+      { "sql": "delete from jsharmony.sys_menu_role where menu_id in (300,30001,30002,30003,30004,350,35001,35002,35003,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },
+      { "sql": "delete from jsharmony.menu where menu_id in (300,30001,30002,30003,30004,350,35001,35002,35003,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },
 
       { "menu_group": "S", "menu_id": 300, "menu_id_parent": 1, "menu_name": "Branches", "menu_seq": 30000, "menu_desc": "Branches", "menu_cmd": "jsHarmonyCMS/Branch_Active_Listing" },
       { "menu_group": "S", "menu_id": 30001, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_Active_Listing", "menu_seq": 30001, "menu_desc": "Active Branches", "menu_cmd": "jsHarmonyCMS/Branch_Active_Listing" },
@@ -65,9 +65,10 @@
       { "menu_group": "S", "menu_id": 30003, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_History_Public_Listing", "menu_seq": 30003, "menu_desc": "Public Branch History", "menu_cmd": "jsHarmonyCMS/Branch_History_Public_Listing" },
       { "menu_group": "S", "menu_id": 30004, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_User_Listing", "menu_seq": 30004, "menu_desc": "All User Branches", "menu_cmd": "jsHarmonyCMS/Branch_User_Listing" },
 
-      { "menu_group": "S", "menu_id": 350, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 35000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Tree" },
-      { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35001, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Tree" },
-      { "menu_group": "S", "menu_id": 35002, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Redirect_Listing", "menu_seq": 35002, "menu_desc": "Redirects", "menu_cmd": "jsHarmonyCMS/Redirect_Listing" },
+      { "menu_group": "S", "menu_id": 350, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 35000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Sitemap_Listing_Redirect" },
+      { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Sitemap_Listing", "menu_seq": 35001, "menu_desc": "Sitemap", "menu_cmd": "jsHarmonyCMS/Sitemap_Listing_Redirect" },
+      { "menu_group": "S", "menu_id": 35002, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35002, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Tree" },
+      { "menu_group": "S", "menu_id": 35003, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Redirect_Listing", "menu_seq": 35003, "menu_desc": "Redirects", "menu_cmd": "jsHarmonyCMS/Redirect_Listing" },
 
       { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 40000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
       { "menu_group": "S", "menu_id": 40001, "menu_id_parent": 400, "menu_name": "jsHarmonyCMS/Media_Listing", "menu_seq": 40001, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },
@@ -99,6 +100,7 @@
       { "menu_id": 350, "sys_role_name": "*" },
       { "menu_id": 35001, "sys_role_name": "*" },
       { "menu_id": 35002, "sys_role_name": "*" },
+      { "menu_id": 35003, "sys_role_name": "*" },
 
       { "menu_id": 400, "sys_role_name": "*" },
       { "menu_id": 40001, "sys_role_name": "*" },

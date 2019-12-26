@@ -32,7 +32,7 @@ module.exports = exports = function(module, funcs){
     return path.join(path.join(module.jsh.Config.datadir,'page'),page_file_id.toString()+'.json');
   }
 
-  exports.getClientPage = function(page, cb){
+  exports.getClientPage = function(page, sitemaps, cb){
     var appsrv = this;
 
     var page_file_id = page.page_file_id;
@@ -84,9 +84,72 @@ module.exports = exports = function(module, funcs){
       
       return cb(null,{
         page: client_page,
-        template: client_template
+        template: client_template,
+        sitemap: funcs.getPageSitemapInfo(sitemaps, page.page_key)
       });
     });
+  }
+
+  exports.getPageSitemapInfo = function(sitemaps, page_key){
+    if(!sitemaps || !sitemaps.PRIMARY || !page_key) return {};
+    var sitemap = sitemaps.PRIMARY;
+    var sitemap_items = sitemap.sitemap_items || [];
+    page_key = page_key.toString();
+
+    var sitemap_items_by_id = {};
+    for(var i=0;i<sitemap_items.length;i++){
+      var sitemap_item = sitemap_items[i];
+      sitemap_item.sitemap_item_id = (sitemap_item.sitemap_item_id||'').toString();
+      sitemap_item.sitemap_item_link_dest = (sitemap_item.sitemap_item_link_dest||'').toString();
+      sitemap_item.sitemap_item_parent_id = (sitemap_item.sitemap_item_parent_id||'').toString();
+      sitemap_items_by_id[sitemap_item.sitemap_item_id.toString()] = sitemap_item;
+      sitemap_item.sitemap_item_exclude_from_breadcrumbs = ((sitemap_item.sitemap_item_exclude_from_breadcrumbs||'').toString()=='1');
+      sitemap_item.sitemap_item_exclude_from_parent_menu = ((sitemap_item.sitemap_item_exclude_from_parent_menu||'').toString()=='1');
+    }
+
+    //Get sitemap item
+    var item = null;
+    for(var i=0;i<sitemap_items.length;i++){
+      var sitemap_item = sitemap_items[i];
+      if((sitemap_item.sitemap_item_link_type=='PAGE') && (sitemap_item.sitemap_item_link_dest==page_key)){ item = sitemap_item; break; }
+    }
+
+    var parents = null;
+    var children = null;
+    var siblings = null;
+    if(item){
+      //Get parents
+      parents = [];
+      var curParent = sitemap_items_by_id[item.sitemap_item_parent_id];
+      while(curParent){
+        parents.push(curParent);
+        curParent = sitemap_items_by_id[curParent.sitemap_item_parent_id];
+      }
+
+      //Get children
+      children = [];
+      for(var i=0;i<sitemap_items.length;i++){
+        var sitemap_item = sitemap_items[i];
+        if(sitemap_item.sitemap_item_parent_id==item.sitemap_item_id){ children.push(sitemap_item); }
+      }
+
+      //Get siblings
+      siblings = [];
+      if(parents.length){
+        for(var i=0;i<sitemap_items.length;i++){
+          var sitemap_item = sitemap_items[i];
+          if(sitemap_item.sitemap_item_parent_id==parents[0].sitemap_item_id){ siblings.push(sitemap_item); }
+        }
+      }
+    }
+
+    var rslt = {
+      item: item,
+      parents: parents,
+      children: children,
+      siblings: siblings
+    };
+    return rslt;
   }
 
   exports.replaceBranchURLs = function(content, options){
@@ -164,6 +227,102 @@ module.exports = exports = function(module, funcs){
     }
 
     return content;
+  }
+
+  exports.components = function(req, res, next){
+    var verb = req.method.toLowerCase();
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var XValidate = jsh.XValidate;
+    var cms = jsh.Modules['jsHarmonyCMS'];
+
+    if(!req.params || !req.params.branch_id) return next();
+    var branch_id = req.params.branch_id;
+
+    var referer = req.get('Referer');
+    if(referer){
+      var urlparts = urlparser.parse(referer, true);
+      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+      res.setHeader('Access-Control-Allow-Origin', remote_domain);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+      res.setHeader('Access-Control-Allow-Credentials', true);
+    }
+
+    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    //Get page
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { 'branch_id': branch_id };
+    var validate = new XValidate();
+    var verrors = {};
+    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+    var deployment_target_params = '';
+
+    if (verb == 'get'){
+
+      var components = JSON.parse(JSON.stringify(module.Components));
+
+      async.waterfall([
+
+        //Check if branch exists
+        function(cb){
+          var sql = "select branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this branch'); }
+            return cb();
+          });
+        },
+
+        //Get deployment_target_params for branch
+        function(cb){
+          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) deployment_target_params = rslt[0];
+            return cb();
+          });
+        },
+
+        //Generate components
+        function(cb){
+          var publish_params = {
+            timestamp: (Date.now()).toString()
+          };
+          try{
+            if(deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment_target_params));
+          }
+          catch(ex){
+            return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
+          }
+          publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
+    
+          //Resolve Remote Templates
+          _.each(components, function(component){
+            if(component.remote_template && component.remote_template.publish){
+              for(var key in publish_params){
+                component.remote_template.publish = Helper.ReplaceAll(component.remote_template.publish, '%%%' + key + '%%%', publish_params[key]);
+              }
+            }
+          });
+
+          return cb();
+        },
+      ], function(err){
+        if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+
+        res.end(JSON.stringify({ 
+          '_success': 1,
+          'components': components
+        }));
+      });
+    }
+    else return next();
   }
   
   exports.page = function (req, res, next) {
@@ -248,6 +407,7 @@ module.exports = exports = function(module, funcs){
         var authors = null;
         var clientPage = null;
         var media_file_ids = {};
+        var sitemaps = {};
 
         async.waterfall([
 
@@ -280,6 +440,25 @@ module.exports = exports = function(module, funcs){
             });
           },
 
+          //Get sitemaps
+          function(cb){
+            appsrv.ExecRecordset(req._DBContext, "select sitemap_key, sitemap_file_id, sitemap_type from "+(module.schema?module.schema+'.':'')+"v_my_sitemap where (sitemap_file_id is not null)", [], {}, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+              _.each(rslt[0], function(sitemap){
+                sitemaps[sitemap.sitemap_type] = sitemap;
+              });
+              async.eachOfSeries(sitemaps, function(sitemap, sitemap_type, sitemap_cb){
+                funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+                  if(err) return sitemap_cb(err);
+                  if(!sitemap_content) return sitemap_cb(null);
+                  sitemap.sitemap_items = sitemap_content.sitemap_items;
+                  return sitemap_cb();
+                });
+              }, cb);
+            });
+          },
+
           //Get page
           function(cb){
 
@@ -295,7 +474,7 @@ module.exports = exports = function(module, funcs){
               return rslt;
             }
 
-            funcs.getClientPage(page, function(err, _clientPage){
+            funcs.getClientPage(page, sitemaps, function(err, _clientPage){
               if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
               clientPage = _clientPage;
               if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
@@ -318,6 +497,7 @@ module.exports = exports = function(module, funcs){
             '_success': 1,
             'page': clientPage.page,
             'template': clientPage.template,
+            'sitemap': clientPage.sitemap,
             'authors': authors,
             'role': page_role,
             'views': {

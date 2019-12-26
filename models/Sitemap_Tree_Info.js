@@ -17,36 +17,36 @@ jsh.App[modelid] = new (function(){
       data = data.substr(16);
       var jdata = JSON.parse(data);
       if(jdata.media_key){
-        xmodel.set('menu_item_link_dest',jdata.media_key);
-        xmodel.set('menu_item_link_media',jdata.media_path);
+        xmodel.set('sitemap_item_link_dest',jdata.media_key);
+        xmodel.set('sitemap_item_link_media',jdata.media_path);
       }
       else if(jdata.page_key){
-        xmodel.set('menu_item_link_dest',jdata.page_key);
-        xmodel.set('menu_item_link_page',jdata.page_path);
+        xmodel.set('sitemap_item_link_dest',jdata.page_key);
+        xmodel.set('sitemap_item_link_page',jdata.page_path);
       }
     }
   }
 
-  this.menu_item_link_type_onchange = function(obj, newval, undoChange){
-    XExt.execif(xmodel.get('menu_item_link_dest'),
+  this.sitemap_item_link_type_onchange = function(obj, newval, undoChange){
+    XExt.execif(xmodel.get('sitemap_item_link_dest'),
       function(f){
         XExt.Confirm('Changing the link type will clear the current link.  Continue?', f, undoChange);
       },
       function(){
         if(newval != 'PAGE'){
-          if(xmodel.get('menu_item_link_page')){
-            xmodel.set('menu_item_link_dest','');
-            xmodel.set('menu_item_link_page','');
+          if(xmodel.get('sitemap_item_link_page')){
+            xmodel.set('sitemap_item_link_dest','');
+            xmodel.set('sitemap_item_link_page','');
           }
         }
         if(newval != 'MEDIA'){
-          if(xmodel.get('menu_item_link_media')){
-            xmodel.set('menu_item_link_dest','');
-            xmodel.set('menu_item_link_media','');
+          if(xmodel.get('sitemap_item_link_media')){
+            xmodel.set('sitemap_item_link_dest','');
+            xmodel.set('sitemap_item_link_media','');
           }
         }
         if(!newval){
-          xmodel.set('menu_item_link_dest','');
+          xmodel.set('sitemap_item_link_dest','');
         }
         _this.updateEnabledState();
         _this.prev_link_type = newval;
@@ -54,24 +54,24 @@ jsh.App[modelid] = new (function(){
     );
   }
 
-  this.menu_item_text_onchange = function(obj, newval){
+  this.sitemap_item_text_onchange = function(obj, newval){
     jsh.App[xmodel.parent].commitInfo();
   }
 
   this.updateEnabledState = function(){
-    var menu_item_link_type = xmodel.get('menu_item_link_type');
+    var sitemap_item_link_type = xmodel.get('sitemap_item_link_type');
 
-    var jtarget = $('.menu_item_link_target.xelem'+xmodel.class);
+    var jtarget = $('.sitemap_item_link_target.xelem'+xmodel.class);
     var jtarget_group = jtarget.add(jtarget.prevUntil('.xelem'+xmodel.class));
 
-    var jdest = $('.menu_item_link_dest.xelem'+xmodel.class);
+    var jdest = $('.sitemap_item_link_dest.xelem'+xmodel.class);
     var jdestcaption = jdest.prev();
     var jdest_group = jdest.add(jdest.prevUntil('.xelem'+xmodel.class));
 
-    var jdest_page = $('.menu_item_link_page.xelem'+xmodel.class);
+    var jdest_page = $('.sitemap_item_link_page.xelem'+xmodel.class);
     var jdest_page_group = jdest_page.add(jdest_page.prevUntil('.xelem'+xmodel.class)).add(jdest_page.next('.xelem'+xmodel.class));
 
-    var jdest_media = $('.menu_item_link_media.xelem'+xmodel.class);
+    var jdest_media = $('.sitemap_item_link_media.xelem'+xmodel.class);
     var jdest_media_group = jdest_media.add(jdest_media.prevUntil('.xelem'+xmodel.class)).add(jdest_media.next('.xelem'+xmodel.class));
 
     var enable_target = true;
@@ -80,21 +80,21 @@ jsh.App[modelid] = new (function(){
     var enable_dest_media = false;
 
     var jdestcaptiontext = 'URL:';
-    if(!menu_item_link_type){
+    if(!sitemap_item_link_type){
       enable_target = false;
     }
-    else if(menu_item_link_type=='URL'){
+    else if(sitemap_item_link_type=='URL'){
       enable_dest = true;
     }
-    else if(menu_item_link_type=='PAGE'){
+    else if(sitemap_item_link_type=='PAGE'){
       enable_dest_page = true;
       jdestcaptiontext = 'Page:';
     }
-    else if(menu_item_link_type=='MEDIA'){
+    else if(sitemap_item_link_type=='MEDIA'){
       enable_dest_media = true;
       jdestcaptiontext = 'Media:';
     }
-    else if(menu_item_link_type=='JS'){
+    else if(sitemap_item_link_type=='JS'){
       enable_target = false;
       enable_dest = true;
       jdestcaptiontext = 'JS:';

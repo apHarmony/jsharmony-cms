@@ -32,6 +32,8 @@ window.jsHarmonyCMS = new (function(){
   this.page = null;
   this.page_key = null;
   this.template = null;
+  this.sitemap = {};
+  this.components = null;
   this.views = {};
   this.authors = [];
   this.role = '';
@@ -40,6 +42,7 @@ window.jsHarmonyCMS = new (function(){
   this.editorBarDocked = false;
   this.hasChanges = false;
   this.isInitialized = false;
+  this.isComponentsInitialized = false;
   this.isLoading = false;
   this.loadQueue = [];
   this.loadObj = {main:1};
@@ -166,12 +169,19 @@ window.jsHarmonyCMS = new (function(){
 
   this.onready = function(){
     $('.jsharmony_cms_content').prop('contenteditable','true');
+    if(jsh._GET['branch_id']){
+      this.loadComponents(jsh._GET['branch_id']);
+    }
+    else{
+      _this.StopLoading(_this.loadObj);
+      XExt.Alert('Site ID not defined in querystring');
+    }
     if(jsh._GET['page_key']){
       this.loadPage(jsh._GET['page_key'], jsh._GET['page_id'], function(err){ _this.StopLoading(_this.loadObj); });
     }
     else{
       _this.StopLoading(_this.loadObj);
-      XExt.Alert('Page Key not defined');
+      XExt.Alert('Page Key not defined in querystring');
     }
   }
 
@@ -204,36 +214,78 @@ window.jsHarmonyCMS = new (function(){
     }
   }
 
+  this.loadComponents = function(branch_id, onComplete){
+    var url = '../_funcs/components/'+branch_id;
+    XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+      if ('_success' in rslt) {
+        _this.components = rslt.components;
+        async.eachOf(_this.components, function(component, component_id, component_cb){
+          if(component.remote_template && component.remote_template.publish){
+            var loadObj = {};
+            jsh.xLoader.StartLoading(loadObj);
+            $.ajax({
+              type: 'GET',
+              cache: false,
+              url: component.remote_template.publish,
+              xhrFields: { withCredentials: true },
+              success: function(data){
+                jsh.xLoader.StopLoading(loadObj);
+                component.content = data;
+                return component_cb();
+              },
+              error: component_cb
+            });
+          }
+          else return component_cb();
+        }, function(err){
+          _this.isComponentsInitialized = true;
+        });
+      }
+      else{
+        if(onComplete) onComplete(new Error('Error Loading Components'));
+        XExt.Alert('Error loading components');
+      }
+    }, function (err) {
+      if(onComplete) onComplete(err);
+    });
+  }
+
   this.loadPage = function(page_key, page_id, onComplete){
     _this.page_key = page_key;
     var url = '../_funcs/page/'+_this.page_key;
     if(page_id) url += '?page_id=' + page_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
-      if ('_success' in rslt) {
-        //Populate arrays + create editor
-        _this.hasChanges = false;
-        $('#jsharmony_cms_editor_bar a.button.save').toggleClass('hasChanges', false);
-        _this.page = rslt.page;
-        _this.template = rslt.template;
-        _this.views = rslt.views;
-        _this.authors = rslt.authors;
-        _this.role = rslt.role;
-        _this.readonly = (_this.role=='VIEWER')||(page_id);
-        XExt.execif(!_this.isInitialized, function(f){
-          _this.createEditor(f);
-        }, function(){
-          _this.renderEditor();
-          if(!_this.isInitialized){
-            _this.onEditorContentLoaded(function(){ if(onComplete) onComplete(); });
-            _this.isInitialized = true;
+      XExt.waitUntil(
+        function(){ return (_this.isComponentsInitialized); },
+        function(){
+          if ('_success' in rslt) {
+            //Populate arrays + create editor
+            _this.hasChanges = false;
+            $('#jsharmony_cms_editor_bar a.button.save').toggleClass('hasChanges', false);
+            _this.page = rslt.page;
+            _this.template = rslt.template;
+            _this.sitemap = rslt.sitemap;
+            _this.views = rslt.views;
+            _this.authors = rslt.authors;
+            _this.role = rslt.role;
+            _this.readonly = (_this.role=='VIEWER')||(page_id);
+            XExt.execif(!_this.isInitialized, function(f){
+              _this.createEditor(f);
+            }, function(){
+              _this.renderEditor();
+              if(!_this.isInitialized){
+                _this.onEditorContentLoaded(function(){ if(onComplete) onComplete(); });
+                _this.isInitialized = true;
+              }
+              else{ if(onComplete) onComplete(); }
+            });
           }
-          else{ if(onComplete) onComplete(); }
-        });
-      }
-      else{
-        if(onComplete) onComplete(new Error('Error Loading Page'));
-        XExt.Alert('Error loading page');
-      }
+          else{
+            if(onComplete) onComplete(new Error('Error Loading Page'));
+            XExt.Alert('Error loading page');
+          }
+        }
+      );
     }, function (err) {
       if(onComplete) onComplete(err);
     });
@@ -257,6 +309,25 @@ window.jsHarmonyCMS = new (function(){
     }
   }
 
+  this.renderComponents = function(){
+    $('.jsharmony_cms_component').addClass('mceNonEditable').each(function(){
+      var jobj = $(this);
+      var component_id = jobj.data('id');
+      var component_content = '';
+      if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
+      else if(!(component_id in _this.components)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
+      else{
+        component_content = ejs.render(_this.components[component_id].content || '', {
+          _: _,
+          page: _this.page,
+          template: _this.template,
+          sitemap: _this.sitemap,
+        });
+      }
+      jobj.html(component_content);
+    });
+  }
+
   this.renderEditor = function(){
     if(!_this.page) return;
     var jeditorbar = $('#jsharmony_cms_editor_bar');
@@ -269,6 +340,8 @@ window.jsHarmonyCMS = new (function(){
       _this.setEditorContent(key, _this.page.content[key])
       if(!_this.readonly) _this.page.content[key] = _this.getEditorContent(key);
     }
+
+    _this.renderComponents();
 
     //CSS
     _this.removeStyle('jsharmony_cms_template_style');
@@ -416,7 +489,7 @@ window.jsHarmonyCMS = new (function(){
           plugins: [
             'advlist autolink autoresize lists link image charmap anchor',
             'searchreplace visualblocks code fullscreen wordcount template',
-            'insertdatetime media table contextmenu paste code textcolor'
+            'insertdatetime media table contextmenu paste code textcolor noneditable'
           ],
           toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen',
           removed_menuitems: 'newdocument',

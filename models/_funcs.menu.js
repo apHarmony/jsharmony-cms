@@ -147,11 +147,11 @@ module.exports = exports = function(module, funcs){
                 var menu_item_link_type = (menu_item.menu_item_link_type||'').toUpperCase();
                 if(menu_item_link_type=='PAGE'){
                   var page_key = parseInt(menu_item.menu_item_link_dest);
-                  if(page_key in page_keys) menu_item.menu_item_link_page = 'Page :: ' + page_keys[page_key];
+                  if(page_key in page_keys) menu_item.menu_item_link_page = page_keys[page_key];
                 }
                 else if(menu_item_link_type=='MEDIA'){
                   var media_key = parseInt(menu_item.menu_item_link_dest);
-                  if(media_key in media_keys) menu_item.menu_item_link_media = 'Media :: ' + media_keys[media_key];
+                  if(media_key in media_keys) menu_item.menu_item_link_media = media_keys[media_key];
                 }
               }
               return menu_cb(null);

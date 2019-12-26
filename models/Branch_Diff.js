@@ -5,6 +5,7 @@ jsh.App[modelid] = new (function(){
   this.branch_media = [];
   this.branch_redirects = [];
   this.branch_menus = [];
+  this.branch_sitemaps = [];
   this.deployment_target_params = {};
 
   this.onload = function(xmodel, callback){
@@ -21,6 +22,7 @@ jsh.App[modelid] = new (function(){
         _this.branch_media = rslt.branch_media;
         _this.branch_redirects = rslt.branch_redirects;
         _this.branch_menus = rslt.branch_menus;
+        _this.branch_sitemaps = rslt.branch_sitemaps;
 
         _this.processData();
         _this.render();
@@ -37,6 +39,7 @@ jsh.App[modelid] = new (function(){
     _.each(_this.branch_media, function(branch_media){ branch_media.branch_media_action = (branch_media.branch_media_action||'').toString().toUpperCase(); });
     _.each(_this.branch_menus, function(branch_menu){ branch_menu.branch_menu_action = (branch_menu.branch_menu_action||'').toString().toUpperCase(); });
     _.each(_this.branch_redirects, function(branch_redirect){ branch_redirect.branch_redirect_action = (branch_redirect.branch_redirect_action||'').toString().toUpperCase(); });
+    _.each(_this.branch_sitemaps, function(branch_sitemap){ branch_sitemap.branch_sitemap_action = (branch_sitemap.branch_sitemap_action||'').toString().toUpperCase(); });
   }
 
   this.render = function(){
@@ -62,6 +65,10 @@ jsh.App[modelid] = new (function(){
       'menu_path': 'Menu File Path',
       'menu_items': 'Menu Items'
     }
+    mapping.sitemap = {
+      'sitemap_name': 'Sitemap Name',
+      'sitemap_items': 'Sitemap Items'
+    }
     var map = function(key, dict){
       if(mapping[dict] && (key in mapping[dict])) return mapping[dict][key];
       return key;
@@ -85,6 +92,9 @@ jsh.App[modelid] = new (function(){
 
     jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
     jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+
+    jdiff.find('.new_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    jdiff.find('.previous_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
   }
 
   this.previewPage = function(obj){
@@ -98,7 +108,7 @@ jsh.App[modelid] = new (function(){
     var page_template = jsh.globalparams.PageTemplates[page_template_id];
     if(!page_template) return XExt.Alert('Template is not defined');
 
-    jsh.System.OpenPageEditor(page_key, page_filename, page_template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template, { branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
   }
 
   this.previewMedia = function(obj){
@@ -116,6 +126,13 @@ jsh.App[modelid] = new (function(){
     var menu_key = jobj.data('menu_key');
     var menu_id = jobj.data('menu_id');
     XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id })
+  }
+
+  this.previewSitemap = function(obj){
+    var jobj = $(obj);
+    var sitemap_key = jobj.data('sitemap_key');
+    var sitemap_id = jobj.data('sitemap_id');
+    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id })
   }
 
 })();

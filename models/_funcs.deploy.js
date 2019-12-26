@@ -173,7 +173,7 @@ module.exports = exports = function(module, funcs){
             timestamp: (Date.now()).toString()
           };
           try{
-            if(deployment.deployment_target_params) publish_params = JSON.parse(deployment.deployment_target_params);
+            if(deployment.deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment.deployment_target_params));
           }
           catch(ex){
             return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
@@ -186,6 +186,7 @@ module.exports = exports = function(module, funcs){
           var page_keys = {};
           var media_keys = {};
           var page_redirects = {};
+          var sitemaps = {};
 
           //Shell Commands
           function shellExec(cmd, params, cb, exec_options){
@@ -487,6 +488,34 @@ module.exports = exports = function(module, funcs){
                 ], cb);
               },
 
+              //Get all sitemaps
+              function (cb){
+                var sql = 'select \
+                  s.sitemap_key,s.sitemap_file_id, s.sitemap_type \
+                  from '+(module.schema?module.schema+'.':'')+'sitemap s \
+                  inner join '+(module.schema?module.schema+'.':'')+'branch_sitemap bs on bs.sitemap_id = s.sitemap_id\
+                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bs.branch_id and d.deployment_id=@deployment_id\
+                  where s.sitemap_file_id is not null'
+                  ;
+                var sql_ptypes = [dbtypes.BigInt];
+                var sql_params = { deployment_id: deployment_id };
+                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+                  if (err != null) { err.sql = sql; return cb(err); }
+                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment sitemaps')); }
+                  _.each(rslt[0], function(sitemap){
+                    sitemaps[sitemap.sitemap_type] = sitemap;
+                  });
+                  async.eachOfSeries(sitemaps, function(sitemap, sitemap_type, sitemap_cb){
+                    funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+                      if(err) return sitemap_cb(err);
+                      if(!sitemap_content) return sitemap_cb(null);
+                      sitemap.sitemap_items = sitemap_content.sitemap_items;
+                      return sitemap_cb();
+                    });
+                  }, cb);
+                });
+              },
+
               //Get list of all page_keys
               function (cb){
                 var sql = 'select \
@@ -519,8 +548,9 @@ module.exports = exports = function(module, funcs){
                       if(path.basename(page_cmspath)==default_page){
                         var page_dir = ((page_cmspath=='/'+default_page) ? '/' : path.dirname(page_cmspath)+'/');
                         page_redirects[page_dir] = page_urlpath;
+                        page_keys[page.page_key] = page_dir;
                       }
-                      else if(path.basename(page_cmspath).indexOf('.')<=0){
+                      else if(path.basename(page_cmspath).indexOf('.')<0){
                         if(page_cmspath[page_cmspath.length-1] != '/'){
                           page_redirects[page_cmspath+'/'] = page_urlpath;
                         }
@@ -580,7 +610,7 @@ module.exports = exports = function(module, funcs){
                   if (err != null) { err.sql = sql; return cb(err); }
                   if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
                   async.eachSeries(rslt[0], function(page, cb){
-                    funcs.getClientPage(page, function(err, clientPage){
+                    funcs.getClientPage(page, sitemaps, function(err, clientPage){
                       if(err) return cb(err);
 
                       //Merge content with template

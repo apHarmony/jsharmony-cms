@@ -1,0 +1,53 @@
+{
+  "Sitemap_Tree": {
+    "layout":"form",
+    "table":"",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "title": { "sql": "select concat('Sitemap :: ',sitemap_name) from {schema}.v_my_sitemap where sitemap_key=@sitemap_key" },
+    "caption":["Sitemap","Sitemaps"],
+    "unbound":true,
+    "menu":"jsHarmonyCMS/Sitemap_Listing",
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "hide_system_buttons" : ["print","export","help","delete"], 
+    "oninit": "_this.oninit();",
+    "onload": "_this.onload();",
+    "buttons":[
+      { "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "WEBMASTER": "U" } },
+      { "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
+    ],
+    "fields":[
+      {"name":"sitemap_key","control":"hidden","type":"bigint","key":true},
+	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
+      {"name": "sitemap_item_id", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
+       "unbound": 1, "always_editable":1,
+       "controlparams": {
+          "expand_all": true,
+          "item_context_menu": [
+            { "icon": "add", "text": "Add Child Page", "command": "_this.addSitemapPage(context_item);", "actions": "I" },
+            { "icon": "add", "text": "Add Child Link", "command": "_this.addSitemapItem(context_item);", "actions": "I" },
+            { "icon": "delete", "text": "Delete", "command": "_this.deleteSitemapItem(context_item);", "actions": "D" }
+          ],
+          "onmove": "return _this.sitemap_item_id_onmove(dragval, dropval, anchor, e);",
+          "drag_anchor_settings": { "anchors": ["top","bottom","full"] }
+        },
+        "onchange": "_this.sitemap_item_id_onchange(obj, newval, undoChange, e);"
+      },
+      {
+        "name": "Sitemap_Tree_Info",
+        "control": "subform",
+        "target": "Sitemap_Tree_Info",
+        "bindings": { "sitemap_item_id": "sitemap_item_id" },
+        "caption": "",
+        "actions": "BIUD"
+      },
+      {"control":"html", "value": "</div>"},
+      {"control":"hidden", "name":"page_template_id", "lov":{ "values": "#CMS_PAGE_TEMPLATES" } },
+      {"control":"hidden", "name": "default_page", "lov": { "sql": "select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE'" } }	  ]
+  },
+  "Sitemap_Tree_Browse": {
+    "inherits": "Sitemap_Tree",
+    "actions": "B",
+    "popup": [1000, 600]
+  }
+}

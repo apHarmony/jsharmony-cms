@@ -3,7 +3,7 @@
   var _ = jsh._;
 
   jsh.System.OpenPageEditor = function(page_key, page_name, template, options){
-    options = _.extend({ rawEditorDialog: '', page_id: undefined, deployment_target_params: undefined }, options);
+    options = _.extend({ branch_id: undefined, rawEditorDialog: '', page_id: undefined, deployment_target_params: undefined }, options);
     if(template.editor){
       //Open Editor
       var url = template.editor;
@@ -24,6 +24,8 @@
           return;
         }
       }
+
+      if(jsh.bcrumbs && jsh.bcrumbs.branch_id) dtparams.branch_id = jsh.bcrumbs.branch_id;
 
       dtparams = _.extend(dtparams, {
         page_key: page_key,
