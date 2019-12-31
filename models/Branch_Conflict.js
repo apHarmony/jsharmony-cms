@@ -161,4 +161,14 @@ jsh.App[modelid] = new (function(){
       XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
     });
   }
+
+  this.abortMerge = function(obj){
+    var params = {
+      branch_id: xmodel.get('dst_branch_id'),
+    };
+
+    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Abort', {}, params, function(rslt){
+      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+    });
+  }
 })();

@@ -8,6 +8,9 @@
     "caption":["Branch","Branches"],
     "title":"",
     "onload":"_this.onload(xmodel, callback);",
+    "buttons":[
+      { "link":"js:_this.abortMerge(this)","icon":"delete","text":"Abort","class":"Branch_Conflict_buttonAbort", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
+    ],
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"src_branch_id","control":"hidden","unbound":true},
@@ -33,6 +36,16 @@
       {"name":"page_key","control":"hidden","key":true},
       {"name":"page_merge_id","caption":"Picked Page ID"},
       {"name":"branch_page_merge_action","caption":"Picked Action"}
+    ]
+  },
+  "Branch_Conflict_Abort": {
+    "layout": "exec",
+    "title": "Abort Merge",
+    "actions": "U",
+    "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
+    "sqlexec": "update {schema}.branch set branch_merge_id=null where branch_id=@branch_id",
+    "fields": [
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
     ]
   }
 }
