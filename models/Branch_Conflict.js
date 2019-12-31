@@ -6,6 +6,9 @@ jsh.App[modelid] = new (function(){
   this.branch_redirects = [];
   this.branch_menus = [];
   this.deployment_target_params = {};
+  this.conflicts = 0;
+  this.resolved = 0;
+  this.unresolved = 0;
 
   this.onload = function(xmodel, callback){
     //Load API Data
@@ -18,9 +21,13 @@ jsh.App[modelid] = new (function(){
       if ('_success' in rslt) {
         _this.deployment_target_params = rslt.deployment_target_params;
         _this.branch_pages = rslt.branch_pages;
+        _this.conflicts = _this.conflicts + rslt.branch_pages.length;
+        _this.unresolved = _this.unresolved + rslt.branch_pages.filter(function(bp) {return bp.page_merge_id == null && bp.branch_page_merge_action == null;}).length;
         _this.branch_media = rslt.branch_media;
         _this.branch_redirects = rslt.branch_redirects;
         _this.branch_menus = rslt.branch_menus;
+
+        _this.resolved = _this.conflicts - _this.unresolved;
 
         _this.processData();
         _this.render();
@@ -89,6 +96,8 @@ jsh.App[modelid] = new (function(){
 
     jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
     jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+
+    jdiff.find('.button_execute_merge').on('click', function(e){ _this.executeMerge(this); e.preventDefault(); });
   }
 
   this.previewPage = function(obj){
@@ -139,4 +148,17 @@ jsh.App[modelid] = new (function(){
     XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id })
   }
 
+  this.executeMerge = function(obj){
+    if (_this.unresolved > 0) return XExt.Alert('Please resolve all conflicts first.');
+
+    var params = {
+      src_branch_id: xmodel.get('src_branch_id'),
+      dst_branch_id: xmodel.get('dst_branch_id')
+    };
+    var mergeType = xmodel.get('merge_type');
+
+    XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
+      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+    });
+  }
 })();

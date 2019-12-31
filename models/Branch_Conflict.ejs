@@ -1,10 +1,10 @@
 <hr/>
 <link rel="stylesheet" type="text/css" href="/css/diff2html.min.css">
-<h3>Branch Changes</h3>
 <div class='clear diff_display' style='margin-top:10px;margin-bottom:20px;'></div>
 <div class='spacer_diff'></div>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Changes_Listing">
+  <h3>Branch Changes (<#= branch_diff.resolved #>/<#= branch_diff.conflicts #> conflicts resolved)</h3>
   <div class="clear"></div>
 
   <!-- ---------- -->
@@ -256,6 +256,13 @@
   <# }); #>
 
   <hr/>
+
+  <# if (branch_diff.unresolved > 0) { #>
+    <h3>Unresolved Conflicts: <#= branch_diff.unresolved #></h3>
+  <# } else { #>
+    <h3>All Conflicts Resolved</h3>
+    <input type="button" value="Merge" class="button_execute_merge" style="margin-right:15px;" />
+  <# } #>
 </script>
 <div style="display:none;">
   <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90vh;box-sizing:border-box;display:flex;flex-direction:column;">

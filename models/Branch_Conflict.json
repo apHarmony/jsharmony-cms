@@ -12,6 +12,7 @@
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"src_branch_id","control":"hidden","unbound":true},
       {"name":"dst_branch_id","control":"hidden","unbound":true},
+      {"name":"merge_type","control":"hidden","unbound":true},
       {"name":"branch_desc","caption":"Branch","control":"label","captionstyle":"font-weight:bold;text-align:right;"},
       {"name":"branch_user_id_fmt","caption":"Author","control":"label","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))"},
       {"name":"branch_sts","caption":"Status","control":"label"},
