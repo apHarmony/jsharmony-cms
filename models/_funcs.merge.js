@@ -94,6 +94,38 @@ module.exports = exports = function(module, funcs){
     'rebase',
   ];
 
+  var fill_merge_columns =
+      // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
+      "update {schema}.branch_%%%OBJECT%%%\
+      set\
+        %%%OBJECT%%%_merge_id=\
+          (select %%%OBJECT%%%_id\
+            from\
+              (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+                from {schema}.branch_%%%OBJECT%%%\
+                where branch_id=@src_branch_id\
+              ) tbl\
+            where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+          ),\
+        branch_%%%OBJECT%%%_merge_action=\
+          (select branch_%%%OBJECT%%%_action\
+            from\
+              (select branch_%%%OBJECT%%%_action,%%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+                from {schema}.branch_%%%OBJECT%%%\
+                where branch_id=@src_branch_id\
+              ) tbl\
+            where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+          )\
+      where branch_id=@dst_branch_id\
+        and %%%OBJECT%%%_merge_id is null\
+        and branch_%%%OBJECT%%%_merge_action is null\
+        and %%%OBJECT%%%_key in\
+          (select %%%OBJECT%%%_key\
+            from {schema}.branch_%%%OBJECT%%%\
+            where branch_id=@src_branch_id\
+              and (branch_%%%OBJECT%%%_action is not null)\
+          );";
+
   var overwrite_sql = expand([
     // not in source branch
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id);",
@@ -107,9 +139,11 @@ module.exports = exports = function(module, funcs){
   ]);
 
   var apply_sql = expand([
-    "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and branch_%%%OBJECT%%%_action='DELETE');",
+    fill_merge_columns,
 
-    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=(select %%%OBJECT%%%_id from (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) tbl where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key) where branch_id=@dst_branch_id and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action='UPDATE'));",
+    "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='DELETE';",
+
+    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=%%%OBJECT%%%_merge_id where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE';",
 
     "insert into {schema}.branch_%%%OBJECT%%%(branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_id from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action='UPDATE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);

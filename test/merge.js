@@ -52,6 +52,11 @@ describe('Merges', function() {
           cb();
         });
       },
+      function(cb){
+        jsh.Modules.jsHarmonyCMS.funcs.begin_merge('S1', {dst_branch_id: results.master_branch_id, src_branch_id: results.edit_branch_id}, function(err, id, stats) {
+          cb();
+        });
+      },
     ], function(err){
       if(err) console.log(err);
       done(err, results);
