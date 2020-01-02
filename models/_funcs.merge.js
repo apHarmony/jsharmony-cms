@@ -182,7 +182,8 @@ module.exports = exports = function(module, funcs){
   ]);
 
   var archive_sql = [
-    "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id;"
+    "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id;",
+    "update {schema}.branch set branch_merge_id=null where branch_id=@dst_branch_id;",
   ];
 
   var merge = function(sql, context, sql_params, callback) {
