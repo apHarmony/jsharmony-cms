@@ -25,7 +25,7 @@
           "expand_all": true,
           "item_context_menu": [
             { "icon": "add", "text": "Add Child Page", "command": "_this.addSitemapPage(context_item);", "actions": "I" },
-            { "icon": "add", "text": "Add Child Link", "command": "_this.addSitemapItem(context_item);", "actions": "I" },
+            { "icon": "add", "text": "Add Child Menu Item", "command": "_this.addSitemapItem(context_item);", "actions": "I" },
             { "icon": "delete", "text": "Delete", "command": "_this.deleteSitemapItem(context_item);", "actions": "D" }
           ],
           "onmove": "return _this.sitemap_item_id_onmove(dragval, dropval, anchor, e);",

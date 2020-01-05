@@ -150,6 +150,7 @@
             "  insert into page(page_file_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(inserted(page_file_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
             "  return_insert_key(page, page_key, (page_key=%%%INSERT_ID%%%));",
             "  insert into branch_page(branch_id, page_key, page_id, branch_page_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
+            "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = %%%INSERT_ID%%% and {schema}.my_current_branch_is_versioned()=0;",
             "  increment_changes()",
             ")"
           ]
@@ -164,6 +165,7 @@
             "with_insert_identity(page, page_id, ",
             "  insert into page(page_key, page_file_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
             "  update branch_page set page_id=%%%INSERT_ID%%%,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key);",
+            "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  increment_changes()",
             ")"
           ]
@@ -173,7 +175,7 @@
           "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
           "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
           "update branch_page set page_id=null,branch_page_action='DELETE' where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and ((branch_page_action is null) or (branch_page_action in ('UPDATE','DELETE')))",
-          "delete from branch_page where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and branch_page_action='ADD'",
+          "delete from branch_page where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and (branch_page_action='ADD' or {schema}.my_current_branch_is_versioned()=0)",
           "increment_changes()"
         ]
       }

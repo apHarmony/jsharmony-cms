@@ -183,6 +183,7 @@ module.exports = exports = function(module, funcs){
 
           var page_template_html = {};
           var menu_template_html = {};
+          var component_html = {};
           var page_keys = {};
           var media_keys = {};
           var page_redirects = {};
@@ -466,9 +467,10 @@ module.exports = exports = function(module, funcs){
                 var downloadTemplate = function(templates, template_html, download_cb){
                   async.eachOf(templates, function(template, template_name, template_cb){
                     if(!template.remote_template || !template.remote_template.publish){
-                      if('body' in template.content){
+                      if(template.content && ('body' in template.content)){
                         template_html[template_name] = template.body;
                       }
+                      else if(_.isString(template.content)) template_html[template_name] = template.content;
                       return template_cb();
                     }
                     var publish_template_url = template.remote_template.publish;
@@ -485,6 +487,7 @@ module.exports = exports = function(module, funcs){
                 async.waterfall([
                   function(download_cb){ downloadTemplate(module.PageTemplates, page_template_html, download_cb); },
                   function(download_cb){ downloadTemplate(module.MenuTemplates, menu_template_html, download_cb); },
+                  function(download_cb){ downloadTemplate(module.Components, component_html, download_cb); },
                 ], cb);
               },
 
@@ -631,7 +634,36 @@ module.exports = exports = function(module, funcs){
                         },
                         _: _,
                         Helper: Helper,
-                        renderComponent: function(id){ return '***'+id+'***'; /* return funcs.renderComponent(id); */ }
+                        renderComponent: function(id){
+                          if(!id) return '';
+                          if(!(id in component_html)) return '<!-- Component '+Helper.escapeHTML(id)+' not found -->';
+                          var rslt = ejs.render(component_html[id] || '', {
+                            _: _,
+                            escapeHTML: Helper.escapeHTML,
+                            page: clientPage.page,
+                            template: clientPage.template,
+                            sitemap: clientPage.sitemap,
+                            getSitemapURL: function(sitemap_item){
+                              if((sitemap_item.sitemap_item_link_type||'').toString()=='PAGE'){
+                                var page_key = parseInt(sitemap_item.sitemap_item_link_dest);
+                                if(!(page_key in page_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item  '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Page ID # '+page_key.toString()); return '#'; }
+                                return page_keys[page_key];
+                              }
+                              else if((sitemap_item.sitemap_item_link_type||'').toString()=='MEDIA'){
+                                var media_key = parseInt(sitemap_item.sitemap_item_link_dest);
+                                if(!(media_key in media_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Media ID # '+media_key.toString()); return '#'; }
+                                return media_keys[media_key];
+                              }
+                              return sitemap_item.sitemap_item_link_dest;
+                            },
+                            isInEditor: false
+                          });
+                          if(page.page_key==14){
+                            //console.log(rslt);
+                            //console.log(JSON.stringify(clientPage.sitemap,null,2));
+                          }
+                          return rslt;
+                        }
                       };
                       var page_content = '';
                       if(page.page_template_id in page_template_html){

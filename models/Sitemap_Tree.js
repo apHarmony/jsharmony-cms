@@ -21,6 +21,9 @@ jsh.App[modelid] = new (function(){
     sitemap_item_class: undefined,
     sitemap_item_exclude_from_breadcrumbs: 0,
     sitemap_item_exclude_from_parent_menu: 0,
+    sitemap_item_hide_menu_parents: 0,
+    sitemap_item_hide_menu_siblings: 0,
+    sitemap_item_hide_menu_children: 0,
     sitemap_item_link_type: undefined, //PAGE,MEDIA,URL,JS
     sitemap_item_link_dest: undefined,
     sitemap_item_link_page: undefined,
@@ -339,9 +342,20 @@ jsh.App[modelid] = new (function(){
       'sitemap_item_style',
       'sitemap_item_exclude_from_breadcrumbs',
       'sitemap_item_exclude_from_parent_menu',
+      'sitemap_item_hide_menu_parents',
+      'sitemap_item_hide_menu_siblings',
+      'sitemap_item_hide_menu_children',
       'sitemap_item_tag'
     ], function(key){
-      if((xmodelInfo.get(key)||'') != (_this.orig_current_sitemap_item[key]||'')){
+      var oldval = _this.orig_current_sitemap_item[key];
+      if(XExt.isNullUndefined(oldval)) oldval = '';
+      oldval = oldval.toString();
+
+      var newval = xmodelInfo.get(key);
+      if(XExt.isNullUndefined(newval)) newval = '';
+      newval = newval.toString();
+
+      if(oldval != newval){
         _this.has_changes = true;
       }
     });
@@ -368,6 +382,9 @@ jsh.App[modelid] = new (function(){
       'sitemap_item_style',
       'sitemap_item_exclude_from_breadcrumbs',
       'sitemap_item_exclude_from_parent_menu',
+      'sitemap_item_hide_menu_parents',
+      'sitemap_item_hide_menu_siblings',
+      'sitemap_item_hide_menu_children',
       'sitemap_item_tag'
     ], function(key){
       if(key in xdataInfo){
@@ -591,6 +608,9 @@ jsh.App[modelid] = new (function(){
         'sitemap_item_class',
         'sitemap_item_exclude_from_breadcrumbs',
         'sitemap_item_exclude_from_parent_menu',
+        'sitemap_item_hide_menu_parents',
+        'sitemap_item_hide_menu_siblings',
+        'sitemap_item_hide_menu_children',
         'sitemap_item_link_type',
         'sitemap_item_link_dest',
         'sitemap_item_link_target',

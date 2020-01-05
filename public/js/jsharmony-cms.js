@@ -47,6 +47,7 @@ window.jsHarmonyCMS = new (function(){
   this.isLoading = false;
   this.loadQueue = [];
   this.loadObj = {main:1};
+  this.editorDefaultConfig = {};
 
   this.filePickerCallback = null;
 
@@ -235,7 +236,11 @@ window.jsHarmonyCMS = new (function(){
                 component.content = data;
                 return component_cb();
               },
-              error: component_cb
+              error: function(xhr, status, err){
+                jsh.xLoader.StopLoading(loadObj);
+                component.content = '*** COMPONENT NOT FOUND ***';
+                return component_cb();
+              }
             });
           }
           else return component_cb();
@@ -255,7 +260,14 @@ window.jsHarmonyCMS = new (function(){
   this.loadPage = function(page_key, page_id, onComplete){
     _this.page_key = page_key;
     var url = '../_funcs/page/'+_this.page_key;
-    if(page_id) url += '?page_id=' + page_id;
+
+    //Add querystring parameters
+    var qs = {};
+    if(page_id) qs.page_id = page_id;
+    if(jsh._GET.branch_id) qs.branch_id = jsh._GET.branch_id;
+    if(jsh._GET.page_template_id) qs.page_template_id = jsh._GET.page_template_id;
+    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+    
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       XExt.waitUntil(
         function(){ return (_this.isComponentsInitialized); },
@@ -321,7 +333,7 @@ window.jsHarmonyCMS = new (function(){
       else{
         component_content = ejs.render(_this.components[component_id].content || '', {
           _: _,
-          ejsext: XExt.xejs,
+          escapeHTML: XExt.xejs.escapeHTML,
           page: _this.page,
           template: _this.template,
           sitemap: _this.sitemap,
@@ -484,7 +496,7 @@ window.jsHarmonyCMS = new (function(){
         });
 
         //Initialize each content editor
-        var editorConfig = {
+        var editorConfig = _.extend({}, {
           inline: true,
           branding: false,
           browser_spellcheck: true,
@@ -507,7 +519,6 @@ window.jsHarmonyCMS = new (function(){
             table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
             help: { title: 'Help', items: 'help' }
           },
-          templates: '/vcommon/cms/templates/content/index.html',
           file_picker_types: 'file image',
           file_picker_callback: function(cb, value, meta) {
             // Provide file and text for the link dialog
@@ -527,7 +538,7 @@ window.jsHarmonyCMS = new (function(){
             return url;
           },
           fixed_toolbar_container: '#jsharmony_cms_content_editor_toolbar',
-        };
+        }, _this.editorDefaultConfig);
         async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
           window.tinymce.init(_.extend({
             selector: '#' + elem.id,
@@ -674,6 +685,13 @@ window.jsHarmonyCMS = new (function(){
     var startTime = Date.now();
     _this.StartLoading(_this.loadObj);
     var url = '../_funcs/page/'+_this.page_key;
+
+    //Add querystring parameters
+    var qs = {};
+    if(jsh._GET.branch_id) qs.branch_id = jsh._GET.branch_id;
+    if(jsh._GET.page_template_id) qs.page_template_id = jsh._GET.page_template_id;
+    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+
     _this.hideSettings(true);
     XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
       if ('_success' in rslt) {

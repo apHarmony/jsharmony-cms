@@ -182,7 +182,10 @@ module.exports = exports = function(module, funcs){
         validate.AddValidator('_obj.sitemap_item_link_dest', 'Link Destination', 'B', [XValidate._v_MaxLength(2048)]);
         validate.AddValidator('_obj.sitemap_item_link_target', 'Link Target', 'B', [XValidate._v_InArray(['NEWWIN'])]);
         validate.AddValidator('_obj.sitemap_item_exclude_from_breadcrumbs', 'Exclude from Breadcrumbs', 'B', [XValidate._v_IsNumeric(true),XValidate._v_InArray([0,1])]);
-        validate.AddValidator('_obj.sitemap_item_exclude_from_parent_menu', 'Exclude from Parent Menu', 'B', [XValidate._v_IsNumeric(true),XValidate._v_InArray([0,1])]);
+        validate.AddValidator('_obj.sitemap_item_exclude_from_parent_menu', 'Exclude from Parent / Sibling Menus', 'B', [XValidate._v_IsNumeric(true),XValidate._v_InArray([0,1])]);
+        validate.AddValidator('_obj.sitemap_item_hide_menu_parents', 'Menu: Hide Parents', 'B', [XValidate._v_IsNumeric(true),XValidate._v_InArray([0,1])]);
+        validate.AddValidator('_obj.sitemap_item_hide_menu_siblings', 'Menu: Hide Siblings', 'B', [XValidate._v_IsNumeric(true),XValidate._v_InArray([0,1])]);
+        validate.AddValidator('_obj.sitemap_item_hide_menu_children', 'Menu: Hide Children', 'B', [XValidate._v_IsNumeric(true),XValidate._v_InArray([0,1])]);
         for(var i=0;i<sitemap_content.sitemap_items.length;i++){
           var sitemap_item = sitemap_content.sitemap_items[i];
           verrors = _.merge(verrors, validate.Validate('B', sitemap_item));
@@ -278,6 +281,9 @@ module.exports = exports = function(module, funcs){
       if(sitemap_item.sitemap_item_class) print_item.css_class = sitemap_item.sitemap_item_class;
       if(sitemap_item.sitemap_item_exclude_from_breadcrumbs && (sitemap_item.sitemap_item_exclude_from_breadcrumbs!='0')) print_item.exclude_from_breadcrumbs = sitemap_item.sitemap_item_exclude_from_breadcrumbs;
       if(sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_exclude_from_parent_menu!='0')) print_item.exclude_from_parent_menu = sitemap_item.sitemap_item_exclude_from_parent_menu;
+      if(sitemap_item.sitemap_item_hide_menu_parents && (sitemap_item.sitemap_item_hide_menu_parents!='0')) print_item.hide_menu_parents = sitemap_item.sitemap_item_hide_menu_parents;
+      if(sitemap_item.sitemap_item_hide_menu_siblings && (sitemap_item.sitemap_item_hide_menu_siblings!='0')) print_item.hide_menu_siblings = sitemap_item.sitemap_item_hide_menu_siblings;
+      if(sitemap_item.sitemap_item_hide_menu_children && (sitemap_item.sitemap_item_hide_menu_children!='0')) print_item.hide_menu_children = sitemap_item.sitemap_item_hide_menu_children;
       //Generate text
       rslt += '  { ';
       var first_key = true;

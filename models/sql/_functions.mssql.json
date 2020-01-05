@@ -17,6 +17,12 @@
       "$ifnull((select case branch_access when 'RW' then 1 else 0 end is_editable from {schema}.v_my_branch_access where branch_id={schema}.my_current_branch_id()),0)"
     ]
   },
+  "{schema}.my_current_branch_is_versioned":{
+    "params": [],
+    "sql": [
+      "$ifnull((select case branch_type when 'USER' then 1 else 0 end is_versioned from {schema}.v_my_branch_access where branch_id={schema}.my_current_branch_id()),0)"
+    ]
+  },
   "{schema}.my_current_branch_is_merging":{
     "params": [],
     "sql": [

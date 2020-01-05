@@ -105,10 +105,8 @@ jsh.App[modelid] = new (function(){
     var page_id = jobj.data('page_id');
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
-    var page_template = jsh.globalparams.PageTemplates[page_template_id];
-    if(!page_template) return XExt.Alert('Template is not defined');
 
-    jsh.System.OpenPageEditor(page_key, page_filename, page_template, { branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
   }
 
   this.previewMedia = function(obj){

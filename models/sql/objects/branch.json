@@ -145,12 +145,14 @@
       { 
         "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
         "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Site Menu'))"},
-        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"}
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"},
+        "menu_orig_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"}
       },
       { 
         "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
         "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Footer Menu'))"},
-        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"}
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"},
+        "menu_orig_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"}
       }
     ]
   },
@@ -221,6 +223,7 @@
     "unique": [
       ["branch_id","media_key"]
     ],
+    "data_keys": ["branch_id","media_key"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_media_action)='DELETE' and null(inserted(media_orig_id)),'media_orig_id is required for DELETE action');",
@@ -261,6 +264,7 @@
     "unique": [
       ["branch_id","redirect_key"]
     ],
+    "data_keys": ["branch_id","redirect_key"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_redirect_action)='DELETE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for DELETE action');",
@@ -301,6 +305,7 @@
     "unique": [
       ["branch_id","sitemap_key"]
     ],
+    "data_keys": ["branch_id","sitemap_key"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_sitemap_action)='DELETE' and null(inserted(sitemap_orig_id)),'sitemap_orig_id is required for DELETE action');",
@@ -322,7 +327,8 @@
       { 
         "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
         "sitemap_key": {"sql":"(select top1(sitemap_key from {schema}.sitemap where sitemap_name='Primary Sitemap'))"},
-        "sitemap_id": {"sql":"(select top1(sitemap_id from {schema}.sitemap where sitemap_name='Primary Sitemap'))"}
+        "sitemap_id": {"sql":"(select top1(sitemap_id from {schema}.sitemap where sitemap_name='Primary Sitemap'))"},
+        "sitemap_orig_id": {"sql":"(select top1(sitemap_id from {schema}.sitemap where sitemap_name='Primary Sitemap'))"}
       }
     ]
   },

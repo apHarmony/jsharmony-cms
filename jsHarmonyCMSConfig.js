@@ -42,7 +42,7 @@ function jsHarmonyCMSConfig(){
     medium: { resize: [1024, 768] },
     large: { resize: [2048, 1538] },
     //maximum: { resize: [2048, 1538] }
-  }
+  };
 
   this.deployment_target_params = { //Default deployment target parameters
     page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
@@ -64,7 +64,7 @@ function jsHarmonyCMSConfig(){
                                     //  return menus_cb(err, menu_files);
                                     //}
     git_branch: 'site_%%%SITE_ID%%%', //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
-  }
+  };
 
   this.deploymentJobDelay = (1000 * 60 * 60);
 

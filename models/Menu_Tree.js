@@ -297,7 +297,15 @@ jsh.App[modelid] = new (function(){
       'menu_item_style',
       'menu_item_tag'
     ], function(key){
-      if((xmodelInfo.get(key)||'') != (_this.orig_current_menu_item[key]||'')){
+      var oldval = _this.orig_current_menu_item[key];
+      if(XExt.isNullUndefined(oldval)) oldval = '';
+      oldval = oldval.toString();
+
+      var newval = xmodelInfo.get(key);
+      if(XExt.isNullUndefined(newval)) newval = '';
+      newval = newval.toString();
+
+      if(oldval != newval){
         _this.has_changes = true;
       }
     });

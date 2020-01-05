@@ -63,10 +63,7 @@ jsh.App[modelid] = new (function(){
     var page_template_id = xmodel.get('page_template_id', rowid);
     if(!page_template_id) return XExt.Alert('Please select a template before editing');
 
-    var template = jsh.globalparams.PageTemplates[page_template_id];
-    if(!template) return XExt.Alert('Template is not defined');
-    
-    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' });
+    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), page_template_id, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' });
   }
 
   this.previewFile = function(page_file){
@@ -77,10 +74,7 @@ jsh.App[modelid] = new (function(){
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    var template = jsh.globalparams.PageTemplates[page_template_id];
-    if(!template) return XExt.Alert('Template is not defined');
-
-    jsh.System.OpenPageEditor(page_key, page_filename, template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id });
   }
 
   this.addFile = function(page_folder){

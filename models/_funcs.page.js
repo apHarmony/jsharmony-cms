@@ -96,6 +96,13 @@ module.exports = exports = function(module, funcs){
     var sitemap_items = sitemap.sitemap_items || [];
     page_key = page_key.toString();
 
+    function parseSitemapBool(val){
+      if(typeof val == 'undefined') return false;
+      if(val === '1') return true;
+      if(val === true) return true;
+      return false;
+    }
+
     var sitemap_items_by_id = {};
     for(var i=0;i<sitemap_items.length;i++){
       var sitemap_item = sitemap_items[i];
@@ -103,9 +110,13 @@ module.exports = exports = function(module, funcs){
       sitemap_item.sitemap_item_link_dest = (sitemap_item.sitemap_item_link_dest||'').toString();
       sitemap_item.sitemap_item_parent_id = (sitemap_item.sitemap_item_parent_id||'').toString();
       sitemap_items_by_id[sitemap_item.sitemap_item_id.toString()] = sitemap_item;
-      sitemap_item.sitemap_item_exclude_from_breadcrumbs = ((sitemap_item.sitemap_item_exclude_from_breadcrumbs||'').toString()=='1');
-      sitemap_item.sitemap_item_exclude_from_parent_menu = ((sitemap_item.sitemap_item_exclude_from_parent_menu||'').toString()=='1');
+      sitemap_item.sitemap_item_exclude_from_breadcrumbs = parseSitemapBool(sitemap_item.sitemap_item_exclude_from_breadcrumbs);
+      sitemap_item.sitemap_item_exclude_from_parent_menu = parseSitemapBool(sitemap_item.sitemap_item_exclude_from_parent_menu);
+      sitemap_item.sitemap_item_hide_menu_parents = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_parents);
+      sitemap_item.sitemap_item_hide_menu_siblings = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_siblings);
+      sitemap_item.sitemap_item_hide_menu_children = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_children);
     }
+    if(sitemap_item.sitemap_item_hide_menu_parents) console.log(sitemap_item);
 
     function getParents(sitemap_item){
       var rslt = [];
@@ -162,11 +173,27 @@ module.exports = exports = function(module, funcs){
         }
 
         //Get siblings
-        if(sitemap_item.sitemap_item_parent_id==item.sitemap_item_parent_id){ item.sitemap_item_siblings.push(parseSibling(sitemap_item)); }
+        if(!sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_parent_id==item.sitemap_item_parent_id)){ item.sitemap_item_siblings.push(parseSibling(sitemap_item)); }
         for(var j=0;j<parents.length;j++){
-          if(sitemap_item.sitemap_item_parent_id==parents[j].sitemap_item_parent_id){ parents[j].sitemap_item_siblings.push(parseSibling(sitemap_item)); }
+          if(!sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_parent_id==parents[j].sitemap_item_parent_id)){ parents[j].sitemap_item_siblings.push(parseSibling(sitemap_item)); }
         }
       }
+
+      if(item.sitemap_item_hide_menu_children) children = [];
+      if(item.sitemap_item_hide_menu_siblings || !item.sitemap_item_siblings.length) item.sitemap_item_siblings = [parseSibling(item)];
+      for(var i=0;i<parents.length;i++){
+        var parent = parents[i];
+        if(parent.sitemap_item_hide_menu_siblings || !parent.sitemap_item_siblings.length) parent.sitemap_item_siblings = [parseSibling(parent)];
+      }
+      if(item.sitemap_item_hide_menu_parents) parents = [];
+      for(var i=parents.length-1;i>=0;i--){
+        var parent = parents[i];
+        if(parent.sitemap_item_hide_menu_parents){
+          parents.splice(0, i);
+          break;
+        }
+      }
+
     }
 
     var rslt = {
@@ -395,7 +422,10 @@ module.exports = exports = function(module, funcs){
       validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
       sql += ' from '+(module.schema?module.schema+'.':'')+'page where page_key=@page_key and page_id=@page_id';
     }
-    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+    else{
+      sql += ',(select '+(module.schema?module.schema+'.':'')+'my_current_branch_id()) branch_id';
+      sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+    }
 
     var page_role = '';
     if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
@@ -421,13 +451,22 @@ module.exports = exports = function(module, funcs){
 
       var baseurl = req.baseurl;
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+
+      if(!Q.page_id){
+        if(Q.branch_id){
+          if(Q.branch_id.toString()!=(page.branch_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The branch has changed.'); }
+        }
+        if(Q.page_template_id){
+          if(Q.page_template_id.toString()!=(page.page_template_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The template has changed.'); }
+        }
+      }
       
       if (verb == 'get'){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|page_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var authors = null;
         var clientPage = null;
