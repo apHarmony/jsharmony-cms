@@ -505,7 +505,7 @@ window.jsHarmonyCMS = new (function(){
           plugins: [
             'advlist autolink autoresize lists link image charmap anchor',
             'searchreplace visualblocks code fullscreen wordcount template',
-            'insertdatetime media table contextmenu paste code textcolor noneditable'
+            'insertdatetime media table paste code noneditable'
           ],
           toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen',
           removed_menuitems: 'newdocument',
