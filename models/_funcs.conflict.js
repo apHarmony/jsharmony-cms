@@ -214,15 +214,16 @@ module.exports = exports = function(module, funcs){
         function(cb){
 
           _.each(branch_pages, function(branch_page){
-            if(branch_page.src_branch_page_action.toUpperCase()=='UPDATE' && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
+            if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'
+            && branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
               branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
               branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
             }
-            else if(branch_page.src_branch_page_action.toUpperCase()=='UPDATE'){
+            else if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'){
               branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
               branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.dst_page_id]);
             }
-            else if(branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
+            else if(branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
               branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.src_page_id]);
               branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
             }
