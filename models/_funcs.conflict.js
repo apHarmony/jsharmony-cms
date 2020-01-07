@@ -135,18 +135,24 @@ module.exports = exports = function(module, funcs){
 */
         //Get all branch_page
         function(cb){
-          var sql = "select src_branch_page.page_key, src_branch_page.branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id, dst_branch_page.page_id as dst_page_id, dst_branch_page.page_merge_id, dst_branch_page.branch_page_merge_action, \
-              old_page.page_path old_page_path, old_page.page_title old_page_title, old_page.page_file_id old_page_file_id, old_page.page_filename old_page_filename, old_page.page_template_id old_page_template_id,\
+          var sql = "select src_branch_page.page_key,\
+              src_branch_page.branch_page_action as src_branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id as src_page_orig_id,\
+              dst_branch_page.branch_page_action as dst_branch_page_action, dst_branch_page.page_id as dst_page_id, dst_branch_page.page_orig_id as dst_page_orig_id,\
+              dst_branch_page.page_merge_id, dst_branch_page.branch_page_merge_action, \
+              src_orig_page.page_path src_orig_page_path, src_orig_page.page_title src_orig_page_title, src_orig_page.page_file_id src_orig_page_file_id, src_orig_page.page_filename src_orig_page_filename, src_orig_page.page_template_id src_orig_page_template_id,\
+              dst_orig_page.page_path dst_orig_page_path, dst_orig_page.page_title dst_orig_page_title, dst_orig_page.page_file_id dst_orig_page_file_id, dst_orig_page.page_filename dst_orig_page_filename, dst_orig_page.page_template_id dst_orig_page_template_id,\
               src_page.page_path src_page_path, src_page.page_title src_page_title, src_page.page_file_id src_page_file_id, src_page.page_filename src_page_filename, src_page.page_template_id src_page_template_id,\
               dst_page.page_path dst_page_path, dst_page.page_title dst_page_title, dst_page.page_file_id dst_page_file_id, dst_page.page_filename dst_page_filename, dst_page.page_template_id dst_page_template_id\
             from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page \
               inner join "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page on dst_branch_page.page_key=src_branch_page.page_key and dst_branch_page.branch_id=@dst_branch_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"page old_page on old_page.page_id=src_branch_page.page_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"page src_orig_page on src_orig_page.page_id=src_branch_page.page_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"page dst_orig_page on dst_orig_page.page_id=dst_branch_page.page_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page src_page on src_page.page_id=src_branch_page.page_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page dst_page on dst_page.page_id=dst_branch_page.page_id \
-            where src_branch_page.branch_id=@src_branch_id and src_branch_page.branch_page_action is not null\
-              and (old_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)\
-              and dst_branch_page.page_id<>src_branch_page.page_orig_id";
+            where src_branch_page.branch_id=@src_branch_id\
+              and (src_orig_page.page_is_folder=0 or dst_orig_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)\
+              and ((src_branch_page.branch_page_action is not null and src_branch_page.page_orig_id<>dst_branch_page.page_id)\
+               or  (dst_branch_page.branch_page_action is not null and dst_branch_page.page_orig_id<>src_branch_page.page_id))";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             console.log(rslt);
@@ -162,6 +168,8 @@ module.exports = exports = function(module, funcs){
             where page_is_folder = 0 and (\
                     page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action is not null) or \
                     page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action = 'UPDATE') or \
+                    page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id and branch_page_action is not null) or \
+                    page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id and branch_page_action = 'UPDATE') or \
                     page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and dst_branch_page.page_key in (select page_key from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and branch_page_action is not null)) \
                   )";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -206,9 +214,17 @@ module.exports = exports = function(module, funcs){
         function(cb){
 
           _.each(branch_pages, function(branch_page){
-            if(branch_page.branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.page_orig_id], pages[branch_page.src_page_id]);
-              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.page_orig_id], pages[branch_page.dst_page_id]);
+            if(branch_page.src_branch_page_action.toUpperCase()=='UPDATE' && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
+              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
+              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
+            }
+            else if(branch_page.src_branch_page_action.toUpperCase()=='UPDATE'){
+              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
+              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.dst_page_id]);
+            }
+            else if(branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
+              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.src_page_id]);
+              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
             }
           });
           return cb();
