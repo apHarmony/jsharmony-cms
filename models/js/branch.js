@@ -95,9 +95,7 @@
           success();
           XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
             '?action=update'+
-            '&branch_id='+xmodel.get('branch_id')+
-            '&src_branch_id='+xmodel.get('branch_id')+
-            '&dst_branch_id='+jprompt.find('.dst_branch_id').val()+
+            '&branch_id='+jprompt.find('.dst_branch_id').val()+
             '&merge_type='+mergeType
           );
         });
@@ -128,9 +126,7 @@
         success();
         XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
           '?action=update'+
-          '&branch_id='+xmodel.get('branch_id')+
-          '&src_branch_id='+xmodel.get('branch_id')+
-          '&dst_branch_id='+xmodel.get('dst_branch_id')+
+          '&branch_id='+xmodel.get('dst_branch_id')+
           '&merge_type='+mergeType
         );
       });

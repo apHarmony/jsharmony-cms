@@ -17,7 +17,7 @@ jsh.App[modelid] = new (function(){
 
   this.loadData = function(onComplete){
     var emodelid = '../_funcs/conflict';
-    XForm.Get(emodelid, { src_branch_id: xmodel.get('src_branch_id'), dst_branch_id: xmodel.get('dst_branch_id') }, { }, function (rslt) { //On Success
+    XForm.Get(emodelid, { src_branch_id: xmodel.get('branch_merge_id'), dst_branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.deployment_target_params = rslt.deployment_target_params;
         _this.branch_pages = rslt.branch_pages;
@@ -118,7 +118,7 @@ jsh.App[modelid] = new (function(){
     var jobj = $(obj);
 
     var query = {
-      branch_id: xmodel.get('dst_branch_id'),
+      branch_id: xmodel.get('branch_id'),
       page_key: jobj.data('page_key'),
     };
     var params = {
@@ -152,8 +152,8 @@ jsh.App[modelid] = new (function(){
     if (_this.unresolved > 0) return XExt.Alert('Please resolve all conflicts first.');
 
     var params = {
-      src_branch_id: xmodel.get('src_branch_id'),
-      dst_branch_id: xmodel.get('dst_branch_id')
+      src_branch_id: xmodel.get('branch_merge_id'),
+      dst_branch_id: xmodel.get('branch_id')
     };
     var mergeType = xmodel.get('merge_type');
 
@@ -164,7 +164,7 @@ jsh.App[modelid] = new (function(){
 
   this.abortMerge = function(obj){
     var params = {
-      branch_id: xmodel.get('dst_branch_id'),
+      branch_id: xmodel.get('branch_id'),
     };
 
     XForm.Post(xmodel.module_namespace+'Branch_Conflict_Abort', {}, params, function(rslt){
