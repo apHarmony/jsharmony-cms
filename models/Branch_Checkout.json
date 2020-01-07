@@ -16,7 +16,7 @@
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
       {"name":"prev_branch_name","control":"label","caption":"Previous Branch","captionstyle":"text-align:right;font-weight:bold;"},
       {"name":"new_branch_name","control":"label","caption":"New Branch","captionstyle":"text-align:right;font-weight:bold;"},
-      {"control":"button","value":"Checkout","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "XForm.prototype.XExecutePost(xmodel.id+'/?branch_id='+xmodel.get('branch_id'), { }, function(rslt){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Page_Tree'); });"}
+      {"control":"button","value":"Checkout","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "XForm.prototype.XExecutePost(xmodel.id+'/?branch_id='+xmodel.get('branch_id'), { }, function(rslt){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Listing_Redirect'); });"}
     ]
   }
 }
