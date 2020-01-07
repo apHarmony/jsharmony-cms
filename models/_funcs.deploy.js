@@ -658,10 +658,6 @@ module.exports = exports = function(module, funcs){
                             },
                             isInEditor: false
                           });
-                          if(page.page_key==14){
-                            //console.log(rslt);
-                            //console.log(JSON.stringify(clientPage.sitemap,null,2));
-                          }
                           return rslt;
                         }
                       };

@@ -17,14 +17,14 @@ jsh.App[modelid] = new (function(){
     }
 
     $(window).bind('resize', _this.onresize);
-    jsh.on('jsh_message', function(event, data){ _this.onMessage(data); });
+    jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
     _this.refreshLayout();
   }
 
-  this.onMessage = function(data){
+  this.onmessage = function(data){
     data = (data || '').toString();
-    if(data.indexOf('jsharmony-cms:refresh:')==0){
-      var refresh_folder = data.substr(22);
+    if(data.indexOf('jsharmony-cms:refresh_page_folder:')==0){
+      var refresh_folder = data.substr(34);
       if(_this.state.page_folder == refresh_folder){
         jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
       }
@@ -44,7 +44,7 @@ jsh.App[modelid] = new (function(){
 
   this.onloadstate = function(xmodel, state){
     _this.state = _.extend({}, _this.state_default, _this.state, state);
-    this.setFolderBeforeLoad(state.page_folder);
+    if(_this.state.page_folder !== null) this.setFolderBeforeLoad(_this.state.page_folder);
   }
 
   this.setFolderBeforeLoad = function(page_folder){
@@ -72,6 +72,10 @@ jsh.App[modelid] = new (function(){
     _this.state.page_folder = newval;
     jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
     XPage.AddHistory(undefined, undefined, historyParams);
+  }
+
+  this.previewPage = function(page_file){
+    jsh.App[xmodel.namespace+'Page_Tree_Listing'].previewFile(page_file);
   }
 
   this.addFolder = function(parent_page_folder){

@@ -41,7 +41,7 @@
     "actions":"B",
     "fields":[
       {"name":"page_filename","value":"<a href='#' onclick='<%=jsh._instance%>.App[<%-JSON.stringify(xmodel.id)%>].sendToEditor(this);return false;' class='xform_link' data-value='page_key:<%=data.page_key%>'><img src='/images/icon_file.png' class='' /><%=data.page_filename%></a>"},
-      {"name":"page_template_id","control":"label"},
+      {"name":"page_template_id","control":"label","cellstyle":"white-space:nowrap;"},
       {"name":"page_edit","actions":""},
       {"name":"page_select","caption":"Select","link":"js:_this.sendToEditor(this)","control":"html","value":"Select","cellstyle": "text-align:center;", "__AFTER__":"page_edit" }
     ]

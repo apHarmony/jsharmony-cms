@@ -116,7 +116,6 @@ module.exports = exports = function(module, funcs){
       sitemap_item.sitemap_item_hide_menu_siblings = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_siblings);
       sitemap_item.sitemap_item_hide_menu_children = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_children);
     }
-    if(sitemap_item.sitemap_item_hide_menu_parents) console.log(sitemap_item);
 
     function getParents(sitemap_item){
       var rslt = [];
@@ -592,7 +591,7 @@ module.exports = exports = function(module, funcs){
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //XValidate
         var client_page = P;

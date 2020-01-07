@@ -107,11 +107,11 @@ jsh.App[modelid] = new (function(){
   }
 
   this.browsePage = function(){
-    XExt.popupForm(xmodel.namespace+'Page_Browser');
+    XExt.popupForm(xmodel.namespace+'Page_Browser', '', { init_page_key: xmodel.get('menu_item_link_dest') });
   }
 
   this.browseMedia = function(){
-    XExt.popupForm(xmodel.namespace+'Media_Browser');
+    XExt.popupForm(xmodel.namespace+'Media_Browser', '', { init_media_key: xmodel.get('menu_item_link_dest') });
   }
 
 })();

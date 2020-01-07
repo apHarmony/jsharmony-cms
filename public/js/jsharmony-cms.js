@@ -188,14 +188,39 @@ window.jsHarmonyCMS = new (function(){
     }
   }
 
+  this.parseLinkURL = function(url){
+    url = (url||'').toString();
+    if(url.indexOf('#@JSHCMS') >= 0){
+      var urlparts = document.createElement('a');
+      urlparts.href = url;
+      var patharr = (urlparts.pathname||'').split('/');
+      if(((urlparts.pathname||'').indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
+        var media_key = parseInt(patharr[3]);
+        if(media_key.toString()==patharr[3]) return { media_key: media_key };
+      }
+      if(((urlparts.pathname||'').indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
+        var page_key = parseInt(patharr[3]);
+        if(page_key.toString()==patharr[3]) return { page_key: page_key };
+      }
+    }
+    return {};
+  }
+
   this.openLinkPicker = function(cb, value, meta){
     _this.filePickerCallback = cb;
-    XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', {}, { width: 1100, height: 600 });
+    var qs = { };
+    var linkurl = _this.parseLinkURL(value);
+    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
+    else if(linkurl.page_key) qs.init_page_key = linkurl.page_key;
+    XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
 
   this.openMediaPicker = function(cb, value, meta){
     _this.filePickerCallback = cb;
-    XExt.popupForm('jsHarmonyCMS/Media_Browser', 'browse', {}, { width: 1100, height: 600 });
+    var qs = { };
+    var linkurl = _this.parseLinkURL(value);
+    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
+    XExt.popupForm('jsHarmonyCMS/Media_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
 
   this.onmessage = function(event){
@@ -674,7 +699,10 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.refreshParent = function(page_folder){
-    if(window.opener) window.opener.postMessage('jsharmony-cms:refresh:'+page_folder, '*');
+    if(window.opener){
+      window.opener.postMessage('jsharmony-cms:refresh_page_folder:'+page_folder, '*');
+      if(_this.page_key) window.opener.postMessage('jsharmony-cms:refresh_page_key:'+_this.page_key, '*');
+    }
   }
 
   this.save = function(){

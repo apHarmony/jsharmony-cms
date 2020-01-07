@@ -195,7 +195,7 @@ jsh.App[modelid] = new (function(){
 
   this.onloadstate = function(xmodel, state){
     _this.state = _.extend({}, _this.state_default, _this.state, state);
-    this.setFolderBeforeLoad(state.media_folder);
+    if(_this.state.media_folder !== null) this.setFolderBeforeLoad(_this.state.media_folder);
   }
 
   this.setFolderBeforeLoad = function(media_folder){
