@@ -146,16 +146,115 @@ module.exports = exports = function(module, funcs){
   ]);
 
   var changes_sql = expand([
-    "insert into {schema}.branch_%%%OBJECT%%%(branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id, branch_%%%OBJECT%%%_action) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id, branch_%%%OBJECT%%%_action from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action='UPDATE' or branch_%%%OBJECT%%%_action='DELETE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
+    "insert into {schema}.branch_%%%OBJECT%%%(\
+      branch_id,\
+      %%%OBJECT%%%_key,\
+      %%%OBJECT%%%_id,\
+      %%%OBJECT%%%_orig_id,\
+      branch_%%%OBJECT%%%_action\
+    ) select\
+      @dst_branch_id,\
+      %%%OBJECT%%%_key,\
+      %%%OBJECT%%%_id,\
+      %%%OBJECT%%%_orig_id,\
+      branch_%%%OBJECT%%%_action\
+    from {schema}.branch_%%%OBJECT%%%\
+    where branch_id=@src_branch_id\
+      and (branch_%%%OBJECT%%%_action='ADD'\
+        or branch_%%%OBJECT%%%_action='UPDATE'\
+        or branch_%%%OBJECT%%%_action='DELETE')\
+      and %%%OBJECT%%%_key not in\
+        (select %%%OBJECT%%%_key\
+         from {schema}.branch_%%%OBJECT%%%\
+         where branch_id=@dst_branch_id);",
 
     // UPDATE/DELETE: use src branch
-    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=(select %%%OBJECT%%%_id from (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) tbl where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key), branch_%%%OBJECT%%%_action=(select branch_%%%OBJECT%%%_action from (select branch_%%%OBJECT%%%_action,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) tbl where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key), %%%OBJECT%%%_orig_id=(select %%%OBJECT%%%_orig_id from (select %%%OBJECT%%%_orig_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) tbl where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key) where branch_id=@dst_branch_id and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='DELETE' or branch_%%%OBJECT%%%_action='UPDATE'));",
+    "update {schema}.branch_%%%OBJECT%%% set\
+      %%%OBJECT%%%_id=(\
+        select %%%OBJECT%%%_id\
+        from (\
+          select\
+            %%%OBJECT%%%_id,\
+            %%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+          from {schema}.branch_%%%OBJECT%%%\
+          where branch_id=@src_branch_id\
+        ) tbl\
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+      ),\
+      branch_%%%OBJECT%%%_action=(\
+        select branch_%%%OBJECT%%%_action\
+        from (\
+          select\
+            branch_%%%OBJECT%%%_action,\
+            %%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+          from {schema}.branch_%%%OBJECT%%%\
+          where branch_id=@src_branch_id\
+        ) tbl\
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+      ),\
+      %%%OBJECT%%%_orig_id=(\
+        select %%%OBJECT%%%_orig_id\
+        from (\
+          select\
+            %%%OBJECT%%%_orig_id,\
+            %%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+          from {schema}.branch_%%%OBJECT%%%\
+          where branch_id=@src_branch_id\
+        ) tbl\
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+      )\
+    where branch_id=@dst_branch_id\
+      and %%%OBJECT%%%_key in (\
+        select %%%OBJECT%%%_key\
+        from {schema}.branch_%%%OBJECT%%%\
+        where branch_id=@src_branch_id\
+          and (branch_%%%OBJECT%%%_action='DELETE' or branch_%%%OBJECT%%%_action='UPDATE')\
+      );",
 
     // ADD on UPDATE/DELETE: UPDATE with dst orig
-    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=(select %%%OBJECT%%%_id from (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) tbl where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key), branch_%%%OBJECT%%%_action='UPDATE' where branch_id=@dst_branch_id and (branch_%%%OBJECT%%%_action='DELETE' or branch_%%%OBJECT%%%_action='UPDATE') and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='ADD'));",
+    "update {schema}.branch_%%%OBJECT%%% set\
+      %%%OBJECT%%%_id=(\
+        select %%%OBJECT%%%_id\
+        from (\
+          select\
+            %%%OBJECT%%%_id,\
+            %%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+          from {schema}.branch_%%%OBJECT%%%\
+          where branch_id=@src_branch_id\
+        ) tbl\
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+      ),\
+      branch_%%%OBJECT%%%_action='UPDATE'\
+      where branch_id=@dst_branch_id\
+        and (branch_%%%OBJECT%%%_action='DELETE' or branch_%%%OBJECT%%%_action='UPDATE')\
+        and %%%OBJECT%%%_key in (\
+          select %%%OBJECT%%%_key\
+          from {schema}.branch_%%%OBJECT%%%\
+          where branch_id=@src_branch_id\
+            and branch_%%%OBJECT%%%_action='ADD'\
+        );",
 
     // ADD on noop/ADD: ADD src
-    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=(select %%%OBJECT%%%_id from (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) tbl where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key), branch_%%%OBJECT%%%_action='ADD' where branch_id=@dst_branch_id and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action is null) and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='ADD'));",
+    "update {schema}.branch_%%%OBJECT%%% set\
+      %%%OBJECT%%%_id=(\
+        select %%%OBJECT%%%_id\
+        from (\
+          select\
+            %%%OBJECT%%%_id,\
+            %%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+          from {schema}.branch_%%%OBJECT%%%\
+          where branch_id=@src_branch_id\
+        ) tbl\
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+      ),\
+      branch_%%%OBJECT%%%_action='ADD'\
+    where branch_id=@dst_branch_id\
+      and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action is null)\
+      and %%%OBJECT%%%_key in (\
+        select %%%OBJECT%%%_key\
+        from {schema}.branch_%%%OBJECT%%%\
+        where branch_id=@src_branch_id\
+          and branch_%%%OBJECT%%%_action='ADD');",
   ]);
 
   var rebase_sql = expand([
