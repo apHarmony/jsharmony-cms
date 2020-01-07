@@ -84,16 +84,24 @@
         dst_branch_id: jprompt.find('.dst_branch_id').val()
       };
 
-      XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
-        success();
-        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
-          '?action=update'+
-          '&branch_id='+xmodel.get('branch_id')+
-          '&src_branch_id='+xmodel.get('branch_id')+
-          '&dst_branch_id='+jprompt.find('.dst_branch_id').val()+
-          '&merge_type='+mergeType
-        );
-      });
+      if (mergeType == 'overwrite') {
+        // no conflicts possible
+        XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
+          success();
+          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+        });
+      } else {
+        XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
+          success();
+          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
+            '?action=update'+
+            '&branch_id='+xmodel.get('branch_id')+
+            '&src_branch_id='+xmodel.get('branch_id')+
+            '&dst_branch_id='+jprompt.find('.dst_branch_id').val()+
+            '&merge_type='+mergeType
+          );
+        });
+      }
     });
   }
 
