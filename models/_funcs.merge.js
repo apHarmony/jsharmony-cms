@@ -94,38 +94,6 @@ module.exports = exports = function(module, funcs){
     'rebase',
   ];
 
-  var fill_merge_columns =
-      // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
-      "update {schema}.branch_%%%OBJECT%%%\
-      set\
-        %%%OBJECT%%%_merge_id=\
-          (select %%%OBJECT%%%_id\
-            from\
-              (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key\
-                from {schema}.branch_%%%OBJECT%%%\
-                where branch_id=@src_branch_id\
-              ) tbl\
-            where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
-          ),\
-        branch_%%%OBJECT%%%_merge_action=\
-          (select branch_%%%OBJECT%%%_action\
-            from\
-              (select branch_%%%OBJECT%%%_action,%%%OBJECT%%%_key src_%%%OBJECT%%%_key\
-                from {schema}.branch_%%%OBJECT%%%\
-                where branch_id=@src_branch_id\
-              ) tbl\
-            where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
-          )\
-      where branch_id=@dst_branch_id\
-        and %%%OBJECT%%%_merge_id is null\
-        and branch_%%%OBJECT%%%_merge_action is null\
-        and %%%OBJECT%%%_key in\
-          (select %%%OBJECT%%%_key\
-            from {schema}.branch_%%%OBJECT%%%\
-            where branch_id=@src_branch_id\
-              and (branch_%%%OBJECT%%%_action is not null)\
-          );";
-
   var overwrite_sql = expand([
     // not in source branch
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id);",
@@ -139,7 +107,36 @@ module.exports = exports = function(module, funcs){
   ]);
 
   var apply_sql = expand([
-    fill_merge_columns,
+    // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
+    "update {schema}.branch_%%%OBJECT%%%\
+    set\
+      %%%OBJECT%%%_merge_id=\
+        (select %%%OBJECT%%%_id\
+          from\
+            (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+              from {schema}.branch_%%%OBJECT%%%\
+              where branch_id=@src_branch_id\
+            ) tbl\
+          where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+        ),\
+      branch_%%%OBJECT%%%_merge_action=\
+        (select branch_%%%OBJECT%%%_action\
+          from\
+            (select branch_%%%OBJECT%%%_action,%%%OBJECT%%%_key src_%%%OBJECT%%%_key\
+              from {schema}.branch_%%%OBJECT%%%\
+              where branch_id=@src_branch_id\
+            ) tbl\
+          where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key\
+        )\
+    where branch_id=@dst_branch_id\
+      and %%%OBJECT%%%_merge_id is null\
+      and branch_%%%OBJECT%%%_merge_action is null\
+      and %%%OBJECT%%%_key in\
+        (select %%%OBJECT%%%_key\
+          from {schema}.branch_%%%OBJECT%%%\
+          where branch_id=@src_branch_id\
+            and (branch_%%%OBJECT%%%_action is not null)\
+        );",
 
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='DELETE';",
 
@@ -162,6 +159,15 @@ module.exports = exports = function(module, funcs){
   ]);
 
   var rebase_sql = expand([
+    // edit branch is the one being changed, so just copy merge conflict over to edit columns and continue as normal
+    "update {schema}.branch_%%%OBJECT%%%\
+    set\
+      %%%OBJECT%%%_id=%%%OBJECT%%%_merge_id,\
+      branch_%%%OBJECT%%%_action=branch_%%%OBJECT%%%_merge_action\
+    where branch_id=@dst_branch_id\
+      and (%%%OBJECT%%%_merge_id is not null\
+        or branch_%%%OBJECT%%%_merge_action is not null);",
+
     // unmodified/deleted items missing new base
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and (branch_%%%OBJECT%%%_action is null or branch_%%%OBJECT%%%_action='DELETE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id);",
 
