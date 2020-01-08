@@ -16,7 +16,7 @@
       {"name":"branch_merge_id","control":"hidden"},
       {"name":"merge_type","control":"hidden","unbound":true},
       {"name":"src_branch_desc","caption":"Merge From","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc src where src.branch_id = branch_merge_id)"},
-      {"name":"dst_branch_desc","caption":"Merge To","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc dst where dst.branch_id = branch_id)"},
+      {"name":"dst_branch_desc","caption":"Merge To","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc dst where dst.branch_id = @branch_id)"},
       {"name":"branch_type","control":"hidden"}
     ]
   },
