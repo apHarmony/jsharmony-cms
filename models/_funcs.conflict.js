@@ -129,23 +129,35 @@ module.exports = exports = function(module, funcs){
             return cb();
           });
         },
-
+*/
         //Get all branch_redirect
         function(cb){
-          var sql = "select branch_redirect.redirect_key, branch_redirect.branch_redirect_action, branch_redirect.redirect_id, branch_redirect.redirect_orig_id, \
-              old_redirect.redirect_url old_redirect_url, old_redirect.redirect_dest old_redirect_dest,\
-              new_redirect.redirect_url new_redirect_url, new_redirect.redirect_dest new_redirect_dest\
-            from "+(module.schema?module.schema+'.':'')+"branch_redirect branch_redirect \
-              left outer join "+(module.schema?module.schema+'.':'')+"redirect old_redirect on old_redirect.redirect_id=branch_redirect.redirect_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"redirect new_redirect on new_redirect.redirect_id=branch_redirect.redirect_id \
-            where branch_id=@branch_id and branch_redirect_action is not null";
-          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          var sql = "select src_branch_redirect.redirect_key,\
+              src_branch_redirect.branch_redirect_action as src_branch_redirect_action, src_branch_redirect.redirect_id as src_redirect_id, src_branch_redirect.redirect_orig_id as src_redirect_orig_id, \
+              dst_branch_redirect.branch_redirect_action as dst_branch_redirect_action, dst_branch_redirect.redirect_id as dst_redirect_id, dst_branch_redirect.redirect_orig_id as dst_redirect_orig_id, \
+              dst_branch_redirect.redirect_merge_id, dst_branch_redirect.redirect_merge_id as merge_redirect_id, dst_branch_redirect.branch_redirect_merge_action, \
+              src_orig_redirect.redirect_url src_orig_redirect_url, src_orig_redirect.redirect_dest src_orig_redirect_dest,\
+              dst_orig_redirect.redirect_url dst_orig_redirect_url, dst_orig_redirect.redirect_dest dst_orig_redirect_dest,\
+              src_redirect.redirect_url src_redirect_url, src_redirect.redirect_dest src_redirect_dest,\
+              dst_redirect.redirect_url dst_redirect_url, dst_redirect.redirect_dest dst_redirect_dest,\
+              merge_redirect.redirect_url merge_redirect_url, merge_redirect.redirect_dest merge_redirect_dest\
+            from "+(module.schema?module.schema+'.':'')+"branch_redirect src_branch_redirect \
+              inner join "+(module.schema?module.schema+'.':'')+"branch_redirect dst_branch_redirect on dst_branch_redirect.redirect_key=src_branch_redirect.redirect_key and dst_branch_redirect.branch_id=@dst_branch_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"redirect src_orig_redirect on src_orig_redirect.redirect_id=src_branch_redirect.redirect_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"redirect dst_orig_redirect on dst_orig_redirect.redirect_id=dst_branch_redirect.redirect_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"redirect src_redirect on src_redirect.redirect_id=src_branch_redirect.redirect_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"redirect dst_redirect on dst_redirect.redirect_id=dst_branch_redirect.redirect_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"redirect merge_redirect on merge_redirect.redirect_id=dst_branch_redirect.redirect_merge_id \
+            where src_branch_redirect.branch_id=@src_branch_id\
+              and ((src_branch_redirect.branch_redirect_action is not null and src_branch_redirect.redirect_orig_id<>dst_branch_redirect.redirect_id)\
+               or  (dst_branch_redirect.branch_redirect_action is not null and dst_branch_redirect.redirect_orig_id<>src_branch_redirect.redirect_id))";
+       appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_redirects = rslt[0];
             return cb();
           });
         },
-*/
+
         //Get all branch_page
         function(cb){
           var sql = "select src_branch_page.page_key,\

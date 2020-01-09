@@ -25,8 +25,10 @@ jsh.App[modelid] = new (function(){
         _this.unresolved = _this.unresolved + rslt.branch_pages.filter(function(bp) {return bp.page_merge_id == null && bp.branch_page_merge_action == null;}).length;
         _this.branch_media = rslt.branch_media;
         _this.conflicts = _this.conflicts + rslt.branch_media.length;
-        _this.unresolved = _this.unresolved + rslt.branch_media.filter(function(bp) {return bp.media_merge_id == null && bp.branch_media_merge_action == null;}).length;
+        _this.unresolved = _this.unresolved + rslt.branch_media.filter(function(bm) {return bm.media_merge_id == null && bm.branch_media_merge_action == null;}).length;
         _this.branch_redirects = rslt.branch_redirects;
+        _this.conflicts = _this.conflicts + rslt.branch_redirects.length;
+        _this.unresolved = _this.unresolved + rslt.branch_redirects.filter(function(br) {return br.redirect_merge_id == null && br.branch_redirect_merge_action == null;}).length;
         _this.branch_menus = rslt.branch_menus;
 
         _this.resolved = _this.conflicts - _this.unresolved;
@@ -71,7 +73,15 @@ jsh.App[modelid] = new (function(){
       collect(branch_media, 'merge_media');
     });
     _.each(_this.branch_menus, function(branch_menu){ branch_menu.branch_menu_action = (branch_menu.branch_menu_action||'').toString().toUpperCase(); });
-    _.each(_this.branch_redirects, function(branch_redirect){ branch_redirect.branch_redirect_action = (branch_redirect.branch_redirect_action||'').toString().toUpperCase(); });
+    _.each(_this.branch_redirects, function(branch_redirect){
+      branch_redirect.src_branch_redirect_action = (branch_redirect.src_branch_redirect_action||'').toString().toUpperCase();
+      branch_redirect.dst_branch_redirect_action = (branch_redirect.dst_branch_redirect_action||'').toString().toUpperCase();
+      collect(branch_redirect, 'src_redirect');
+      collect(branch_redirect, 'dst_redirect');
+      collect(branch_redirect, 'src_orig_redirect');
+      collect(branch_redirect, 'dst_orig_redirect');
+      collect(branch_redirect, 'merge_redirect');
+    });
   }
 
   this.render = function(){
@@ -140,6 +150,9 @@ jsh.App[modelid] = new (function(){
     jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
     jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
 
+    jdiff.find('.button_pick_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
+    jdiff.find('.button_unresolve_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
+
     jdiff.find('.button_execute_merge').on('click', function(e){ _this.executeMerge(this); e.preventDefault(); });
   }
 
@@ -204,6 +217,23 @@ jsh.App[modelid] = new (function(){
     };
 
     XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Media', query, params, function(rslt){
+      window.location.reload();
+    });
+  }
+
+  this.pickRedirect = function(obj){
+    var jobj = $(obj);
+
+    var query = {
+      branch_id: xmodel.get('branch_id'),
+      redirect_key: jobj.data('redirect_key'),
+    };
+    var params = {
+      redirect_merge_id: jobj.data('redirect_id'),
+      branch_redirect_merge_action: jobj.data('branch_redirect_action'),
+    };
+
+    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Redirect', query, params, function(rslt){
       window.location.reload();
     });
   }

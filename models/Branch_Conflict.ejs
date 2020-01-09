@@ -117,6 +117,48 @@
   </div>
 </script>
 
+<script type="text/x-jsharmony-template" class="<%=model.class%>_Redirect_Diff_Header">
+  <# if(branch_redirect_action=='ADD'){ #>
+    <i class="material-icons branch_action_icon add">add_circle</i>
+    ADDED REDIRECT &nbsp;&nbsp;<#-XExt.escapeHTML(new_redirect.url)#>
+  <# } #>
+  <# if(branch_redirect_action=='DELETE'){ #>
+    <i class="material-icons branch_action_icon delete">remove_circle</i>
+    DELETED REDIRECT <#-XExt.escapeHTML(old_redirect.url)#>
+  <# } #>
+  <# if(branch_redirect_action=='UPDATE'){ #>
+    <i class="material-icons branch_action_icon update">create</i>
+    UPDATED REDIRECT <#-XExt.escapeHTML(old_redirect.url)#>
+  <# } #>
+  <# if(branch_redirect_action==null || branch_redirect_action==''){ #>
+    <i class="material-icons branch_action_icon cancel">cancel</i>
+    NO CHANGE <#-XExt.escapeHTML(new_redirect.url)#>
+  <# } #>
+  <br/>
+  <# if(branch_redirect_action=='UPDATE'){ #>
+    <# if(new_redirect.url!=old_redirect.url){ #>New URL: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<#-XExt.escapeHTML(new_redirect.url)#><# } #>
+    <# if(new_redirect.dest!=old_redirect.dest){ #><br/>New Destination: <#-XExt.escapeHTML(new_redirect.dest)#><# } #>
+  <# } #>
+</script>
+
+<script type="text/x-jsharmony-template" class="<%=model.class%>_Redirect_Diff_Comparison">
+  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header">
+    <#- include('Redirect_Diff_Header', {
+      branch_redirect_action: branch_redirect_action,
+      redirect_key: redirect_key,
+      new_redirect: new_redirect,
+      old_redirect: old_redirect}) #>
+    <input type="button" value="Pick" class="button_pick_redirect" data-redirect_key="<#=redirect_key#>" data-redirect_id="<#=new_redirect.id#>" data-branch_redirect_action="<#=branch_redirect_action#>" />
+  </h4>
+
+  <div>
+    URL: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<#-XExt.escapeHTML(new_redirect.url)#>
+    <br/>
+    Destination: <#-XExt.escapeHTML(new_redirect.dest)#>
+  </div>
+</script>
+
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Changes_Listing">
   <h3>Branch Changes (<#= branch_diff.resolved #>/<#= branch_diff.conflicts #> conflicts resolved)</h3>
   <div class="clear"></div>
@@ -266,24 +308,36 @@
   <# _.each(branch_diff.branch_redirects, function(branch_redirect){ #>
     <hr/>
 
-    <h4 class="branch_diff_item_header">
-      <# if(branch_redirect.branch_redirect_action=='ADD'){ #>
-        <i class="material-icons branch_action_icon add">add_circle</i>
-        ADDED REDIRECT &nbsp;&nbsp;<#-XExt.escapeHTML(branch_redirect.new_redirect_url)#>
-      <# } #>
-      <# if(branch_redirect.branch_redirect_action=='DELETE'){ #>
-        <i class="material-icons branch_action_icon delete">remove_circle</i>
-        DELETED REDIRECT <#-XExt.escapeHTML(branch_redirect.old_redirect_url)#>
-      <# } #>
-      <# if(branch_redirect.branch_redirect_action=='UPDATE'){ #>
-        <i class="material-icons branch_action_icon update">create</i>
-        UPDATED REDIRECT <#-XExt.escapeHTML(branch_redirect.old_redirect_url)#>
-      <# } #>
-      <# if(branch_redirect.branch_redirect_action=='UPDATE'){ #>
-         <# if(branch_redirect.new_redirect_url!=branch_redirect.old_redirect_url){ #><br/>New URL: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<#-XExt.escapeHTML(branch_redirect.new_redirect_url)#><# } #>
-         <# if(branch_redirect.new_redirect_dest!=branch_redirect.old_redirect_dest){ #><br/>New Destination: <#-XExt.escapeHTML(branch_redirect.new_redirect_dest)#><# } #>
-      <# } #>
-    </h4>
+    <# if(branch_redirect.branch_redirect_merge_action!=null || branch_redirect.redirect_merge_id!=null){ #>
+      <h4 class="branch_diff_item_header">
+        <#- include('Redirect_Diff_Header', {
+          branch_redirect_action: branch_redirect.branch_redirect_merge_action,
+          redirect_key: branch_redirect.redirect_key,
+          new_redirect: branch_redirect.merge_redirect,
+          old_redirect: branch_redirect.dst_redirect}) #>
+        <input type="button" value="Unresolve" class="button_unresolve_redirect" data-redirect_key="<#=branch_redirect.redirect_key#>"  data-redirect_id="<#=null#>" data-branch_redirect_action="<#=null#>" />
+      </h4>
+    <# } else { #>
+      <div class="branch_diff_comparison">
+        <div class="branch_diff_comparison_src">
+          <#- include('Redirect_Diff_Comparison', {
+            branch_redirect_action: branch_redirect.src_branch_redirect_action,
+            redirect_key: branch_redirect.redirect_key,
+            title: 'Source',
+            new_redirect: branch_redirect.src_redirect,
+            old_redirect: branch_redirect.src_orig_redirect}) #>
+        </div>
+
+        <div class="branch_diff_comparison_dst">
+          <#- include('Redirect_Diff_Comparison', {
+            branch_redirect_action: branch_redirect.dst_branch_redirect_action,
+            redirect_key: branch_redirect.redirect_key,
+            title: 'Destination',
+            new_redirect: branch_redirect.dst_redirect,
+            old_redirect: branch_redirect.dst_orig_redirect}) #>
+        </div>
+      </div>
+    <# } #>
 
   <# }); #>
 
