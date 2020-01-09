@@ -922,6 +922,8 @@ module.exports = exports = function(module, funcs){
               //Exec Pre-Deployment Shell Command
               function (cb) {
                 if(!publish_params.exec_pre_deployment) return cb();
+                funcs.deploy_log_info(deployment_id, 'Running pre-deployment task');
+                funcs.deploy_log_info(deployment_id, publish_params.exec_pre_deployment.cmd + ' ' + (publish_params.exec_pre_deployment.params||[]).join(' '));
                 shellExec(
                   publish_params.exec_pre_deployment.cmd,
                   publish_params.exec_pre_deployment.params, function(err, rslt){
@@ -967,9 +969,9 @@ module.exports = exports = function(module, funcs){
               //Deploy to target
               function (cb) {
                 var deploy_path = (deployment.deployment_target_publish_path||'').toString();
-                if(!deploy_path) return cb(new Error('Invalid Deployment Target Path'));
 
-                if(deploy_path.indexOf('file://')==0){
+                if(!deploy_path){ return cb(); }
+                else if(deploy_path.indexOf('file://')==0){
                   //File Deployment
                   return funcs.deploy_fs(deployment, publish_path, deploy_path.substr(7), site_files, cb);
                 }
@@ -983,12 +985,14 @@ module.exports = exports = function(module, funcs){
               //Exec Post-Deployment Shell Command
               function (cb) {
                 if(!publish_params.exec_post_deployment) return cb();
+                funcs.deploy_log_info(deployment_id, 'Running post-deployment task');
+                funcs.deploy_log_info(deployment_id, publish_params.exec_post_deployment.cmd + ' ' + (publish_params.exec_post_deployment.params||[]).join(' '));
                 shellExec(
                   publish_params.exec_post_deployment.cmd,
                   publish_params.exec_post_deployment.params, function(err, rslt){
-                  if(err) return cb(err);
                   if(rslt) rslt = rslt.trim();
                   funcs.deploy_log_info(deployment_id, rslt);
+                  if(err) return cb(err);
                   return cb();
                 });
               },

@@ -48,6 +48,7 @@ window.jsHarmonyCMS = new (function(){
   this.loadQueue = [];
   this.loadObj = {main:1};
   this.editorDefaultConfig = {};
+  this.onInit = null;
 
   this.filePickerCallback = null;
 
@@ -171,6 +172,7 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.onready = function(){
+    if(_this.onInit) _this.onInit(jsh);
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       this.loadComponents(jsh._GET['branch_id']);

@@ -3,15 +3,16 @@
     "layout":"grid",
     "table":"{schema}.deployment_target",
     "actions":"BD",
+    "sort": ["^deployment_target_name"],
     "roles": { "WEBMASTER": "BD" },
     "caption":["Deployment Target","Deployment Targets"],
-    "buttons":[{ "link":"insert:Site_Deployment_Target","icon":"add","text":"Add Deployment Target" }],
+    "buttons":[{ "link":"insert:Site_Deployment_Target_Tabs&site_id","icon":"add","text":"Add Deployment Target" }],
     "fields": [
       {"name":"site_id","actions":"BI","foreignkey":1,"control":"hidden"},
-      {"name":"deployment_target_name","caption":"Name","control":"label","link":"update:Site_Deployment_Target"},
+      {"name":"deployment_target_name","caption":"Name","control":"label","link":"update:Site_Deployment_Target_Tabs"},
       {"name":"deployment_target_sts","caption":"Status","control":"label"},
       {"name":"deployment_target_publish_path","caption":"Path","control":"label"},
-      {"control":"html","caption":"Edit","link":"update:Site_Deployment_Target","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }}
+      {"control":"html","caption":"Edit","link":"update:Site_Deployment_Target_Tabs","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }}
     ]
   }
 }

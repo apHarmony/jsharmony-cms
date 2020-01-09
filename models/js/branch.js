@@ -37,7 +37,7 @@
     });
   }
 
-  jsh.System.PublishBranch = function(branch_id) {
+  jsh.System.SubmitBranch = function(branch_id) {
     //Save Changes Before Executing
     if (jsh.XPage.GetChanges().length > 0) return XExt.Alert('Please save pending changes before continuing.');
 

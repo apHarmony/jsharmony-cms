@@ -6,6 +6,7 @@
       { "name": "site_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "site_name", "type": "varchar", "length": 256, "null": false, "unique": true },
       { "name": "site_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
+      { "name": "site_default_editor", "type": "bigint" },
       
       { "name": "site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -13,6 +14,11 @@
       { "name": "site_muser", "type": "varchar", "length": 20 }
     ],
     "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif((inserted(site_default_editor) is not null and inserted(site_default_editor) not in (select deployment_target_id from {schema}.deployment_target where deployment_target.site_id = inserted(site_id))),'Target Editor not available for this site')",
+          "errorif((inserted(site_default_editor) is not null and inserted(site_default_editor) not in (select deployment_target_id from {schema}.deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')"
+        ]
+      },
       { "on": ["update", "insert"], "exec": [
           "set(site_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(site_muser,%%%%%%jsh.map.current_user%%%%%%);"
@@ -43,8 +49,8 @@
     ],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
-          "errorif((inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.deployment_target where site_id = inserted(site_id))),'Target Editor not available for this site')",
-          "errorif((inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')"
+          "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and site_id = inserted(site_id))),'Target Editor not available for this site')",
+          "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')"
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -69,7 +75,8 @@
       },
       "sys_user_site": {
         "columns": [
-          { "name":"site_editor", "type": "bigint", "sqlselect": "$ifnull(sys_user_site.sys_user_site_editor,(select top1(deployment_target_id from {schema}.deployment_target where deployment_target.deployment_target_sts='ACTIVE' and deployment_target.site_id = site.site_id order by deployment_target_name)))" },
+          "sys_user_site_editor",
+          { "name":"site_editor", "type": "bigint", "sqlselect": "$ifnull($ifnull(sys_user_site.sys_user_site_editor,site_default_editor),(select top1(deployment_target_id from {schema}.v_my_deployment_target dt where deployment_target_can_editor = 1 and dt.deployment_target_sts='ACTIVE' and dt.site_id = site.site_id order by deployment_target_name)))" },
         ],
         "join_type": "left",
         "join_columns": {
@@ -89,23 +96,25 @@
           "site_id",
           "site_name",
           "site_sts",
+          "sys_user_site_editor",
           "site_editor"
         ]
       },
-      "deployment_target": {
+      "v_my_deployment_target": {
         "columns": [
           "deployment_target_params"
         ],
         "join_type": "left",
         "join_columns": {
-          "v_my_site_editor.site_editor": "deployment_target.deployment_target_id"
+          "v_my_site_editor.site_editor": "v_my_deployment_target.deployment_target_id",
+          "deployment_target_can_editor": "1"
         }
       }
     },
     "triggers": [
       {"on": ["update"], "exec": [
           "insert into {schema}.sys_user_site(sys_user_id,site_id) select jsharmony.my_sys_user_id(), inserted(site_id) where not exists(select * from {schema}.sys_user_site where sys_user_id=jsharmony.my_sys_user_id() and site_id=inserted(site_id))",
-          "update {schema}.sys_user_site set sys_user_site_editor = inserted(site_editor) where sys_user_id=jsharmony.my_sys_user_id() and site_id = inserted(site_id) and (inserted(site_editor) is not null or deleted(site_editor) is not null)",
+          "update {schema}.sys_user_site set sys_user_site_editor = inserted(sys_user_site_editor) where sys_user_id=jsharmony.my_sys_user_id() and site_id = inserted(site_id)",
           "increment_changes()"
         ]
       }

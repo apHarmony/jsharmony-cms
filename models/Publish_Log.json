@@ -1,7 +1,7 @@
 {
   "Publish_Log": {
     "layout":"form",
-    "table":"{schema}.deployment",
+    "table":"{schema}.v_my_deployment",
     "title":"Publish Log",
     "menu":"Publish",
     "actions":"B",
@@ -13,8 +13,8 @@
       "#<%=model.class%>_deployment_log { padding-top:3px; padding-left:3px; margin-top:0; background-color:#fff; }"
     ],
     "fields": [
-      {"name":"deployment_id","caption":"Deployment ID","control":"label","captionstyle":"font-weight:bold;"},
-      {"name":"site_name","caption":"Site","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.deployment.deployment_target_id)","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
+      {"name":"deployment_id","caption":"Deployment ID","control":"label","captionstyle":"font-weight:bold;","key":true},
+      {"name":"site_name","caption":"Site","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_tag","caption":"Tag","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_git_revision","caption":"Revision","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","control":"label"},

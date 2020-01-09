@@ -7,17 +7,7 @@
     "actions":"BIUD",
     "roles": { "WEBMASTER": "BIUD" },
     "caption":["Deployment Target","Deployment Targets"],
-    "breadcrumbs": {
-      "parents": ["Site_Listing","<a href='Site?action=update&site_id=<#=bcrumbs.site_id#>'><#=bcrumbs.site_name#></a>"],
-      "insert":{
-        "title":"New Deployment Target",
-        "sql":"select site_name from {schema}.site where site_id=@site_id"
-      },
-      "browse":{
-        "title":"<#=bcrumbs.deployment_target_name#>",
-        "sql":"select site_name,site.site_id,deployment_target_name from {schema}.deployment_target inner join {schema}.site on deployment_target.site_id=site.site_id where deployment_target_id=@deployment_target_id"
-      }
-    },
+    "title":"",
     "fields": [
       {"name":"site_id","actions":"BIU","foreignkey":1,"control":"hidden"},
       {"name":"deployment_target_name","caption":"Name"},
