@@ -24,6 +24,8 @@ jsh.App[modelid] = new (function(){
         _this.conflicts = _this.conflicts + rslt.branch_pages.length;
         _this.unresolved = _this.unresolved + rslt.branch_pages.filter(function(bp) {return bp.page_merge_id == null && bp.branch_page_merge_action == null;}).length;
         _this.branch_media = rslt.branch_media;
+        _this.conflicts = _this.conflicts + rslt.branch_media.length;
+        _this.unresolved = _this.unresolved + rslt.branch_media.filter(function(bp) {return bp.media_merge_id == null && bp.branch_media_merge_action == null;}).length;
         _this.branch_redirects = rslt.branch_redirects;
         _this.branch_menus = rslt.branch_menus;
 
@@ -39,9 +41,35 @@ jsh.App[modelid] = new (function(){
     });
   }
 
+  function collect(obj, sub) {
+    var prefix = sub + '_'
+    obj[sub] = {};
+    _.forOwn(obj, function(value, key) {
+      if (_.startsWith(key, prefix)) {
+        obj[sub][key.replace(prefix, '')] = value;
+      }
+    });
+  }
+
   this.processData = function(){
-    _.each(_this.branch_pages, function(branch_page){ branch_page.branch_page_action = (branch_page.branch_page_action||'').toString().toUpperCase(); });
-    _.each(_this.branch_media, function(branch_media){ branch_media.branch_media_action = (branch_media.branch_media_action||'').toString().toUpperCase(); });
+    _.each(_this.branch_pages, function(branch_page){
+      branch_page.src_branch_page_action = (branch_page.src_branch_page_action||'').toString().toUpperCase();
+      branch_page.dst_branch_page_action = (branch_page.dst_branch_page_action||'').toString().toUpperCase();
+      collect(branch_page, 'src_page');
+      collect(branch_page, 'dst_page');
+      collect(branch_page, 'src_orig_page');
+      collect(branch_page, 'dst_orig_page');
+      collect(branch_page, 'merge_page');
+    });
+    _.each(_this.branch_media, function(branch_media){
+      branch_media.src_branch_media_action = (branch_media.src_branch_media_action||'').toString().toUpperCase();
+      branch_media.dst_branch_media_action = (branch_media.dst_branch_media_action||'').toString().toUpperCase();
+      collect(branch_media, 'src_media');
+      collect(branch_media, 'dst_media');
+      collect(branch_media, 'src_orig_media');
+      collect(branch_media, 'dst_orig_media');
+      collect(branch_media, 'merge_media');
+    });
     _.each(_this.branch_menus, function(branch_menu){ branch_menu.branch_menu_action = (branch_menu.branch_menu_action||'').toString().toUpperCase(); });
     _.each(_this.branch_redirects, function(branch_redirect){ branch_redirect.branch_redirect_action = (branch_redirect.branch_redirect_action||'').toString().toUpperCase(); });
   }
@@ -75,24 +103,39 @@ jsh.App[modelid] = new (function(){
     }
 
     var tmpl = jsh.$root('.'+xmodel.class+'_Changes_Listing').html();
-    jdiff.html(XExt.renderClientEJS(tmpl, {
+
+    var ejsenv = {
       _: _,
       jsh: jsh,
+      XExt: XExt,
+    };
+
+    function render(t, data) {
+      return jsh.ejs.compile(t, {client: true, delimiter: '#'})(_.assign(data, ejsenv), null, include);
+    }
+
+    function include(path, data) {
+      var t = jsh.$root('.'+xmodel.class+'_'+path).html();
+      if (t) {
+        return render(t, data);
+      } else {
+        throw "Template '"+path+"' not found";
+      }
+    }
+
+    jdiff.html(render(tmpl, {
       branch_diff: this,
       branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
-      XExt: XExt,
-      map: map
+      map,
     }));
 
-    jdiff.find('.src_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-    jdiff.find('.dst_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-    jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-    jdiff.find('.button_pick_src_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
-    jdiff.find('.button_pick_dst_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
+    jdiff.find('.preview_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    jdiff.find('.button_pick_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
     jdiff.find('.button_unresolve_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
 
-    jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-    jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+    jdiff.find('.preview_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+    jdiff.find('.button_pick_media').on('click', function(e){ _this.pickMedia(this); e.preventDefault(); });
+    jdiff.find('.button_unresolve_media').on('click', function(e){ _this.pickMedia(this); e.preventDefault(); });
 
     jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
     jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
@@ -114,6 +157,23 @@ jsh.App[modelid] = new (function(){
     jsh.System.OpenPageEditor(page_key, page_filename, page_template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
   }
 
+  this.previewMedia = function(obj){
+    var jobj = $(obj);
+    var media_key = jobj.data('media_key');
+    var media_id = jobj.data('media_id');
+    var media_ext = jobj.data('media_ext');
+    var media_width = jobj.data('media_width');
+    var media_height = jobj.data('media_height');
+    jsh.System.PreviewMedia(media_key, undefined, media_id, media_ext, media_width, media_height);
+  }
+
+  this.previewMenu = function(obj){
+    var jobj = $(obj);
+    var menu_key = jobj.data('menu_key');
+    var menu_id = jobj.data('menu_id');
+    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id })
+  }
+
   this.pickPage = function(obj){
     var jobj = $(obj);
 
@@ -131,21 +191,21 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.previewMedia = function(obj){
+  this.pickMedia = function(obj){
     var jobj = $(obj);
-    var media_key = jobj.data('media_key');
-    var media_id = jobj.data('media_id');
-    var media_ext = jobj.data('media_ext');
-    var media_width = jobj.data('media_width');
-    var media_height = jobj.data('media_height');
-    jsh.System.PreviewMedia(media_key, undefined, media_id, media_ext, media_width, media_height);
-  }
 
-  this.previewMenu = function(obj){
-    var jobj = $(obj);
-    var menu_key = jobj.data('menu_key');
-    var menu_id = jobj.data('menu_id');
-    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id })
+    var query = {
+      branch_id: xmodel.get('branch_id'),
+      media_key: jobj.data('media_key'),
+    };
+    var params = {
+      media_merge_id: jobj.data('media_id'),
+      branch_media_merge_action: jobj.data('branch_media_action'),
+    };
+
+    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Media', query, params, function(rslt){
+      window.location.reload();
+    });
   }
 
   this.executeMerge = function(obj){

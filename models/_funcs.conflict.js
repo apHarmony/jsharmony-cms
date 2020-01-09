@@ -80,23 +80,36 @@ module.exports = exports = function(module, funcs){
             return cb();
           });
         },
-/*
+
         //Get all branch_media
         function(cb){
-          var sql = "select branch_media.media_key, branch_media.branch_media_action, branch_media.media_id, branch_media.media_orig_id, \
-              old_media.media_path old_media_path, old_media.media_file_id old_media_file_id, old_media.media_ext old_media_ext, old_media.media_width old_media_width, old_media.media_height old_media_height,\
-              new_media.media_path new_media_path, new_media.media_file_id new_media_file_id, new_media.media_ext new_media_ext, new_media.media_width new_media_width, new_media.media_height new_media_height\
-            from "+(module.schema?module.schema+'.':'')+"branch_media branch_media \
-              left outer join "+(module.schema?module.schema+'.':'')+"media old_media on old_media.media_id=branch_media.media_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"media new_media on new_media.media_id=branch_media.media_id \
-            where branch_id=@branch_id and branch_media_action is not null and (old_media.media_is_folder=0 or new_media.media_is_folder=0)";
+          var sql = "select src_branch_media.media_key,\
+              src_branch_media.branch_media_action as src_branch_media_action, src_branch_media.media_id as src_media_id, src_branch_media.media_orig_id as src_media_orig_id,\
+              dst_branch_media.branch_media_action as dst_branch_media_action, dst_branch_media.media_id as dst_media_id, dst_branch_media.media_orig_id as dst_media_orig_id,\
+              dst_branch_media.media_merge_id, dst_branch_media.media_merge_id as merge_media_id, dst_branch_media.branch_media_merge_action, \
+              src_orig_media.media_path src_orig_media_path, src_orig_media.media_file_id src_orig_media_file_id, src_orig_media.media_ext src_orig_media_ext, src_orig_media.media_width src_orig_media_width, src_orig_media.media_height src_orig_media_height,\
+              dst_orig_media.media_path dst_orig_media_path, dst_orig_media.media_file_id dst_orig_media_file_id, dst_orig_media.media_ext dst_orig_media_ext, dst_orig_media.media_width dst_orig_media_width, dst_orig_media.media_height dst_orig_media_height,\
+              src_media.media_path src_media_path, src_media.media_file_id src_media_file_id, src_media.media_ext src_media_ext, src_media.media_width src_media_width, src_media.media_height src_media_height,\
+              dst_media.media_path dst_media_path, dst_media.media_file_id dst_media_file_id, dst_media.media_ext dst_media_ext, dst_media.media_width dst_media_width, dst_media.media_height dst_media_height,\
+              merge_media.media_path merge_media_path, merge_media.media_file_id merge_media_file_id, merge_media.media_ext merge_media_ext, merge_media.media_width merge_media_width, merge_media.media_height merge_media_height\
+            from "+(module.schema?module.schema+'.':'')+"branch_media src_branch_media \
+              inner join "+(module.schema?module.schema+'.':'')+"branch_media dst_branch_media on dst_branch_media.media_key=src_branch_media.media_key and dst_branch_media.branch_id=@dst_branch_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"media src_orig_media on src_orig_media.media_id=src_branch_media.media_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"media dst_orig_media on dst_orig_media.media_id=dst_branch_media.media_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"media src_media on src_media.media_id=src_branch_media.media_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"media dst_media on dst_media.media_id=dst_branch_media.media_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"media merge_media on merge_media.media_id=dst_branch_media.media_merge_id \
+            where src_branch_media.branch_id=@src_branch_id\
+              and (src_orig_media.media_is_folder=0 or dst_orig_media.media_is_folder=0 or src_media.media_is_folder=0 or dst_media.media_is_folder=0)\
+              and ((src_branch_media.branch_media_action is not null and src_branch_media.media_orig_id<>dst_branch_media.media_id)\
+               or  (dst_branch_media.branch_media_action is not null and dst_branch_media.media_orig_id<>src_branch_media.media_id))";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_media = rslt[0];
             return cb();
           });
         },
-
+/*
         //Get all media
         function(cb){
           var sql = "select media_id,media_key,media_file_id,media_desc,media_path \
@@ -138,24 +151,25 @@ module.exports = exports = function(module, funcs){
           var sql = "select src_branch_page.page_key,\
               src_branch_page.branch_page_action as src_branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id as src_page_orig_id,\
               dst_branch_page.branch_page_action as dst_branch_page_action, dst_branch_page.page_id as dst_page_id, dst_branch_page.page_orig_id as dst_page_orig_id,\
-              dst_branch_page.page_merge_id, dst_branch_page.branch_page_merge_action, \
+              dst_branch_page.page_merge_id, dst_branch_page.page_merge_id merge_page_id, dst_branch_page.branch_page_merge_action, \
               src_orig_page.page_path src_orig_page_path, src_orig_page.page_title src_orig_page_title, src_orig_page.page_file_id src_orig_page_file_id, src_orig_page.page_filename src_orig_page_filename, src_orig_page.page_template_id src_orig_page_template_id,\
               dst_orig_page.page_path dst_orig_page_path, dst_orig_page.page_title dst_orig_page_title, dst_orig_page.page_file_id dst_orig_page_file_id, dst_orig_page.page_filename dst_orig_page_filename, dst_orig_page.page_template_id dst_orig_page_template_id,\
               src_page.page_path src_page_path, src_page.page_title src_page_title, src_page.page_file_id src_page_file_id, src_page.page_filename src_page_filename, src_page.page_template_id src_page_template_id,\
-              dst_page.page_path dst_page_path, dst_page.page_title dst_page_title, dst_page.page_file_id dst_page_file_id, dst_page.page_filename dst_page_filename, dst_page.page_template_id dst_page_template_id\
+              dst_page.page_path dst_page_path, dst_page.page_title dst_page_title, dst_page.page_file_id dst_page_file_id, dst_page.page_filename dst_page_filename, dst_page.page_template_id dst_page_template_id,\
+              merge_page.page_path merge_page_path, merge_page.page_title merge_page_title, merge_page.page_file_id merge_page_file_id, merge_page.page_filename merge_page_filename, merge_page.page_template_id merge_page_template_id\
             from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page \
               inner join "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page on dst_branch_page.page_key=src_branch_page.page_key and dst_branch_page.branch_id=@dst_branch_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page src_orig_page on src_orig_page.page_id=src_branch_page.page_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page dst_orig_page on dst_orig_page.page_id=dst_branch_page.page_orig_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page src_page on src_page.page_id=src_branch_page.page_id \
               left outer join "+(module.schema?module.schema+'.':'')+"page dst_page on dst_page.page_id=dst_branch_page.page_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"page merge_page on merge_page.page_id=dst_branch_page.page_merge_id \
             where src_branch_page.branch_id=@src_branch_id\
               and (src_orig_page.page_is_folder=0 or dst_orig_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)\
               and ((src_branch_page.branch_page_action is not null and src_branch_page.page_orig_id<>dst_branch_page.page_id)\
                or  (dst_branch_page.branch_page_action is not null and dst_branch_page.page_orig_id<>src_branch_page.page_id))";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            console.log(rslt);
             if(rslt && rslt[0]) branch_pages = rslt[0];
             return cb();
           });
@@ -168,6 +182,7 @@ module.exports = exports = function(module, funcs){
             where page_is_folder = 0 and (\
                     page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action is not null) or \
                     page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action = 'UPDATE') or \
+                    page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and src_branch_page.page_key in (select page_key from "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and branch_page_action is not null)) or \
                     page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id and branch_page_action is not null) or \
                     page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id and branch_page_action = 'UPDATE') or \
                     page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and dst_branch_page.page_key in (select page_key from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and branch_page_action is not null)) \
