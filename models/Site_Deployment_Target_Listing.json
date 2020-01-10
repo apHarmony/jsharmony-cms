@@ -2,9 +2,9 @@
   "Site_Deployment_Target_Listing": {
     "layout":"grid",
     "table":"{schema}.deployment_target",
-    "actions":"BD",
+    "actions":"B",
     "sort": ["^deployment_target_name"],
-    "roles": { "WEBMASTER": "BD" },
+    "roles": { "WEBMASTER": "B" },
     "caption":["Deployment Target","Deployment Targets"],
     "buttons":[{ "link":"insert:Site_Deployment_Target_Tabs&site_id","icon":"add","text":"Add Deployment Target" }],
     "fields": [

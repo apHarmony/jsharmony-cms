@@ -1,10 +1,13 @@
 {
-  "Branch_Publish": {
+  "Branch_Submit_Review": {
     "layout": "exec",
-    "title": "Publish Branch",
+    "title": "Submit Branch for Review",
     "actions": "U",
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
-    "sqlexec": "update {schema}.branch set branch_sts='REVIEW',branch_review_sts='PENDING' where branch_id=@branch_id and (({schema}.my_user_is_publisher() = 1) or (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_type='USER' and branch_sts='ACTIVE' and branch_access='RW')))",
+    "sqlexec": [
+      "update {schema}.branch set branch_sts='REVIEW',branch_review_sts='PENDING' where branch_id=@branch_id and (({schema}.my_user_is_publisher() = 1) or (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_type='USER' and branch_sts='ACTIVE' and branch_access='RW')));",
+      "update {schema}.v_my_current_branch set new_branch_id = null where branch_id = @branch_id;"
+    ],
     "fields": [
       {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
     ]

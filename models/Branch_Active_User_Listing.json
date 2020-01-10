@@ -23,7 +23,7 @@
         "controlstyle":"<%=xejs.iif(datarow['branch_is_checked_out']==1,'display:none;')%>"},
       {"caption":"Clone","control":"linkbutton","link":"update:Branch_Clone&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
       {"caption":"Archive","control":"linkbutton","link":"js:jsh.System.ArchiveBranch(xmodel.get('branch_id', this))","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
-      {"caption":"Submit for Review","control":"linkbutton","link":"js:jsh.System.SubmitBranch(xmodel.get('branch_id', this))","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
+      {"caption":"Submit for Review","control":"linkbutton","link":"js:jsh.System.SubmitBranch(xmodel, xmodel.get('branch_id', this))","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
       {"caption":"Delete","control":"linkbutton","link":"update:Branch_Delete&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*","AUTHOR":"*"}}
     ]
   }

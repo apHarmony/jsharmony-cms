@@ -14,7 +14,7 @@
       { "group": "Actions", "link":"update:Branch_Clone","icon":"copy","text":"Clone", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
       { "group": "Actions", "link":"update:Branch_Checkout","icon":"edit","text":"Checkout / Edit Branch","class":"Branch_Summary_buttonCheckout" },
       { "group": "Actions", "link":"js:_this.renameBranch(xmodel.get('branch_id', this))","icon":"edit","text":"Rename","class":"Branch_Summary_buttonRename", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
-      { "group": "Actions", "link":"js:jsh.System.SubmitBranch(xmodel.get('branch_id', this))","icon":"ok","text":"Submit for Review","class":"Branch_Summary_buttonPublish", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "link":"js:jsh.System.SubmitBranch(xmodel, xmodel.get('branch_id', this))","icon":"ok","text":"Submit for Review","class":"Branch_Summary_buttonPublish", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
       { "group": "Actions", "link":"update:Publish_Add_Branch&branch_id","icon":"target","text":"Publish", "roles": { "PUBLISHER": "B" } },
       { "group": "Actions", "link":"js:jsh.System.ArchiveBranch(xmodel.get('branch_id', this))","icon":"lock","text":"Archive","class":"Branch_Summary_buttonArchive", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
       { "group": "Actions", "link":"update:Branch_Delete&branch_id","icon":"delete","text":"Delete","class":"Branch_Summary_buttonDelete", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
