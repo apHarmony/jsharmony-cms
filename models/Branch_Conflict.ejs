@@ -27,7 +27,9 @@
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
     RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
   <# } #>
-  <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" /><#= title #></a>
+  <# if(new_page.id!=null){ #>
+    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" /><#= title #></a>
+  <# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Page_Diff_Comparison">
@@ -86,7 +88,9 @@
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
     RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(new_media.path)#>
   <# } #>
-  <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>"><img src="/images/icon_browse.png" /><#=title#></a>
+  <# if(new_media.id!=null){ #>
+    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>"><img src="/images/icon_browse.png" /><#=title#></a>
+  <# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Media_Diff_Comparison">
@@ -142,7 +146,9 @@
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
     RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
   <# } #>
-  <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
+  <# if(new_menu.id!=null){ #>
+    <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
+  <# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Menu_Diff_Comparison">
