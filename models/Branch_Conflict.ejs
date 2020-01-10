@@ -117,6 +117,56 @@
   </div>
 </script>
 
+<script type="text/x-jsharmony-template" class="<%=model.class%>_Menu_Diff_Header">
+  <# if(branch_menu_action=='ADD'){ #>
+    <i class="material-icons branch_action_icon add">add_circle</i>
+    ADDED MENU &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
+  <# } #>
+  <# if(branch_menu_action=='DELETE'){ #>
+    <i class="material-icons branch_action_icon delete">remove_circle</i>
+    DELETED MENU <#-XExt.escapeHTML(old_menu.tag)#>
+    <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=old_menu.id#>"><img src="/images/icon_browse.png" />Prev</a>
+  <# } #>
+  <# if(branch_menu_action=='UPDATE'){ #>
+    <i class="material-icons branch_action_icon update">create</i>
+    UPDATED MENU <#-XExt.escapeHTML(old_menu.tag)#>
+    <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=old_menu.id#>"><img src="/images/icon_browse.png" />Prev</a>
+  <# } #>
+  <# if(branch_menu_action==null || branch_menu_action==''){ #>
+    <i class="material-icons branch_action_icon cancel">cancel</i>
+    NO CHANGE <#-XExt.escapeHTML(new_menu.tag)#>
+  <# } #>
+  <br/>
+  <# if((branch_menu_action=='UPDATE') && (new_menu.tag!=old_menu.tag)){ #>
+    <br/>
+    <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
+    RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
+  <# } #>
+  <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
+</script>
+
+<script type="text/x-jsharmony-template" class="<%=model.class%>_Menu_Diff_Comparison">
+  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header">
+    <#- include('Menu_Diff_Header', {
+      branch_menu_action: branch_menu_action,
+      menu_key: menu_key,
+      title: title,
+      new_menu: new_menu,
+      old_menu: old_menu}) #>
+    <input type="button" value="Pick" class="button_pick_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>" data-branch_menu_action="<#=branch_menu_action#>" />
+  </h4>
+
+  <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
+    <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
+  <# }); #>
+
+  <# _.each(_.pick(diff,['menu_items']), function(val, key){ if(val){ #>
+    <div class="diff_head">Content - <#=map(key,'menu')#></div>
+    <div class="diff"><#-val#></div>
+  <# } }); #>
+</script>
+
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Redirect_Diff_Header">
   <# if(branch_redirect_action=='ADD'){ #>
     <i class="material-icons branch_action_icon add">add_circle</i>
@@ -266,38 +316,41 @@
   <# _.each(branch_diff.branch_menus, function(branch_menu){ #>
     <hr/>
 
-    <h4 class="branch_diff_item_header">
-      <# if(branch_menu.branch_menu_action=='ADD'){ #>
-        <i class="material-icons branch_action_icon add">add_circle</i>
-        ADDED MENU &nbsp;&nbsp;<#-XExt.escapeHTML(branch_menu.new_menu_tag)#>
-        <a href="#" class="preview new"><img src="/images/icon_browse.png" />New</a>
-      <# } #>
-      <# if(branch_menu.branch_menu_action=='DELETE'){ #>
-        <i class="material-icons branch_action_icon delete">remove_circle</i>
-        DELETED MENU <#-XExt.escapeHTML(branch_menu.old_menu_tag)#>
-        <a href="#" class="preview previous"><img src="/images/icon_browse.png" />Prev</a>
-      <# } #>
-      <# if(branch_menu.branch_menu_action=='UPDATE'){ #>
-        <i class="material-icons branch_action_icon update">create</i>
-        UPDATED MENU <#-XExt.escapeHTML(branch_menu.old_menu_tag)#>
-        <a href="#" class="preview previous_menu" data-menu_key="<#=branch_menu.menu_key#>" data-menu_id="<#=branch_menu.menu_orig_id#>"><img src="/images/icon_browse.png" />Prev</a>
-        <a href="#" class="preview new_menu" data-menu_key="<#=branch_menu.menu_key#>" data-menu_id="<#=branch_menu.menu_id#>"><img src="/images/icon_browse.png" />New</a>
-      <# } #>
-      <# if((branch_menu.branch_menu_action=='UPDATE') && (branch_menu.new_menu_tag!=branch_menu.old_menu_tag)){ #>
-        <br/>
-        <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
-        RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(branch_menu.new_menu_tag)#>
-      <# } #>
-    </h4>
+    <# if(branch_menu.branch_menu_merge_action!=null || branch_menu.menu_merge_id!=null){ #>
+      <h4 class="branch_diff_item_header">
+        <#- include('Menu_Diff_Header', {
+          branch_menu_action: branch_menu.branch_menu_merge_action,
+          menu_key: branch_menu.menu_key,
+          title: 'View',
+          new_menu: branch_menu.merge_menu,
+          old_menu: branch_menu.dst_menu}) #>
+        <input type="button" value="Unresolve" class="button_unresolve_menu" data-menu_key="<#=branch_menu.menu_key#>"  data-menu_id="<#=null#>" data-branch_menu_action="<#=null#>" />
+      </h4>
+    <# } else { #>
+      <div class="branch_diff_comparison">
+        <div class="branch_diff_comparison_src">
+          <#- include('Menu_Diff_Comparison', {
+            branch_menu_action: branch_menu.src_branch_menu_action,
+            menu_key: branch_menu.menu_key,
+            title: 'Source',
+            diff: branch_menu.src_diff,
+            map: map,
+            new_menu: branch_menu.src_menu,
+            old_menu: branch_menu.src_orig_menu}) #>
+        </div>
 
-    <# _.each(_.pick(branch_menu.diff,['menu_name','template_title','menu_path']), function(val, key){ #>
-      <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
-    <# }); #>
-
-    <# _.each(_.pick(branch_menu.diff,['menu_items']), function(val, key){ if(val){ #>
-      <div class="diff_head">Content - <#=map(key,'menu')#></div>
-      <div class="diff"><#-val#></div>
-    <# } }); #>
+        <div class="branch_diff_comparison_dst">
+          <#- include('Menu_Diff_Comparison', {
+            branch_menu_action: branch_menu.dst_branch_menu_action,
+            menu_key: branch_menu.menu_key,
+            title: 'Destination',
+            diff: branch_menu.dst_diff,
+            map: map,
+            new_menu: branch_menu.dst_menu,
+            old_menu: branch_menu.dst_orig_menu}) #>
+        </div>
+      </div>
+    <# } #>
 
   <# }); #>
 

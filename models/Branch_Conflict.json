@@ -50,6 +50,21 @@
       {"name":"branch_media_merge_action","caption":"Picked Action"}
     ]
   },
+  "Branch_Conflict_Resolve_Menu": {
+    "layout":"form",
+    "table":"{schema}.branch_menu",
+    "onecolumn":true,
+    "roles": {"PUBLISHER": "BU","AUTHOR": "BU", "VIEWER": "B"},
+    "actions":"BU",
+    "caption":["Branch","Branches"],
+    "title":"",
+    "fields": [
+      {"name":"branch_id","control":"hidden","key":true},
+      {"name":"menu_key","control":"hidden","key":true},
+      {"name":"menu_merge_id","caption":"Picked Menu ID"},
+      {"name":"branch_menu_merge_action","caption":"Picked Action"}
+    ]
+  },
   "Branch_Conflict_Resolve_Redirect": {
     "layout":"form",
     "table":"{schema}.branch_redirect",

@@ -30,6 +30,8 @@ jsh.App[modelid] = new (function(){
         _this.conflicts = _this.conflicts + rslt.branch_redirects.length;
         _this.unresolved = _this.unresolved + rslt.branch_redirects.filter(function(br) {return br.redirect_merge_id == null && br.branch_redirect_merge_action == null;}).length;
         _this.branch_menus = rslt.branch_menus;
+        _this.conflicts = _this.conflicts + rslt.branch_menus.length;
+        _this.unresolved = _this.unresolved + rslt.branch_menus.filter(function(bm) {return bm.menu_merge_id == null && bm.branch_menu_merge_action == null;}).length;
 
         _this.resolved = _this.conflicts - _this.unresolved;
 
@@ -72,7 +74,15 @@ jsh.App[modelid] = new (function(){
       collect(branch_media, 'dst_orig_media');
       collect(branch_media, 'merge_media');
     });
-    _.each(_this.branch_menus, function(branch_menu){ branch_menu.branch_menu_action = (branch_menu.branch_menu_action||'').toString().toUpperCase(); });
+    _.each(_this.branch_menus, function(branch_menu){
+      branch_menu.src_branch_menu_action = (branch_menu.src_branch_menu_action||'').toString().toUpperCase();
+      branch_menu.dst_branch_menu_action = (branch_menu.dst_branch_menu_action||'').toString().toUpperCase();
+      collect(branch_menu, 'src_menu');
+      collect(branch_menu, 'dst_menu');
+      collect(branch_menu, 'src_orig_menu');
+      collect(branch_menu, 'dst_orig_menu');
+      collect(branch_menu, 'merge_menu');
+    });
     _.each(_this.branch_redirects, function(branch_redirect){
       branch_redirect.src_branch_redirect_action = (branch_redirect.src_branch_redirect_action||'').toString().toUpperCase();
       branch_redirect.dst_branch_redirect_action = (branch_redirect.dst_branch_redirect_action||'').toString().toUpperCase();
@@ -147,8 +157,9 @@ jsh.App[modelid] = new (function(){
     jdiff.find('.button_pick_media').on('click', function(e){ _this.pickMedia(this); e.preventDefault(); });
     jdiff.find('.button_unresolve_media').on('click', function(e){ _this.pickMedia(this); e.preventDefault(); });
 
-    jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-    jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+    jdiff.find('.preview_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+    jdiff.find('.button_pick_menu').on('click', function(e){ _this.pickMenu(this); e.preventDefault(); });
+    jdiff.find('.button_unresolve_menu').on('click', function(e){ _this.pickMenu(this); e.preventDefault(); });
 
     jdiff.find('.button_pick_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
     jdiff.find('.button_unresolve_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
@@ -217,6 +228,23 @@ jsh.App[modelid] = new (function(){
     };
 
     XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Media', query, params, function(rslt){
+      window.location.reload();
+    });
+  }
+
+  this.pickMenu = function(obj){
+    var jobj = $(obj);
+
+    var query = {
+      branch_id: xmodel.get('branch_id'),
+      menu_key: jobj.data('menu_key'),
+    };
+    var params = {
+      menu_merge_id: jobj.data('menu_id'),
+      branch_menu_merge_action: jobj.data('branch_menu_action'),
+    };
+
+    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Menu', query, params, function(rslt){
       window.location.reload();
     });
   }

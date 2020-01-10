@@ -202,7 +202,7 @@ module.exports = exports = function(module, funcs){
 
           _.each(branch_pages, function(branch_page){
             if(branch_page.branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.diff = funcs.twoWayDiff(pages[branch_page.page_orig_id], pages[branch_page.page_id]);
+              branch_page.diff = funcs.pageDiff(pages[branch_page.page_orig_id], pages[branch_page.page_id]);
             }
           });
           return cb();
@@ -258,15 +258,7 @@ module.exports = exports = function(module, funcs){
         function(cb){
           _.each(branch_menus, function(branch_menu){
             if(branch_menu.branch_menu_action.toUpperCase()=='UPDATE'){
-              var old_menu = menus[branch_menu.menu_orig_id];
-              var new_menu = menus[branch_menu.menu_id];
-              
-              branch_menu.diff = {};
-              var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
-              if(menu_items_diff) branch_menu.diff.menu_items = menu_items_diff;
-              _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
-                if(old_menu[key] != new_menu[key]) branch_menu.diff[key] = new_menu[key];
-              });
+              branch_menu.diff = funcs.menuDiff(menus[branch_menu.menu_orig_id], menus[branch_menu.menu_id]);
             }
           });
           return cb();
@@ -290,7 +282,7 @@ module.exports = exports = function(module, funcs){
     }
   }
 
-  exports.twoWayDiff = function(old_page, new_page){
+  exports.pageDiff = function(old_page, new_page){
     var diff = {};
     _.each(['css','header','footer'], function(key){
       var key_diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
@@ -316,6 +308,16 @@ module.exports = exports = function(module, funcs){
     diff.seo = {};
     _.each(['title','keywords','metadesc','canonical_url'], function(key){
       if(old_page.compiled.seo[key] != new_page.compiled.seo[key]) diff.seo[key] = new_page.compiled.seo[key];
+    });
+    return diff;
+  }
+
+  exports.menuDiff = function(old_menu, new_menu){
+    var diff = {};
+    var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
+    if(menu_items_diff) diff.menu_items = menu_items_diff;
+    _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
+      if(old_menu[key] != new_menu[key]) diff[key] = new_menu[key];
     });
     return diff;
   }

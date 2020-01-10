@@ -243,30 +243,42 @@ module.exports = exports = function(module, funcs){
           _.each(branch_pages, function(branch_page){
             if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'
             && branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
-              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
+              branch_page.src_diff = funcs.pageDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
+              branch_page.dst_diff = funcs.pageDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
             }
             else if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
-              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.src_page_orig_id], pages[branch_page.dst_page_id]);
+              branch_page.src_diff = funcs.pageDiff(pages[branch_page.src_page_orig_id], pages[branch_page.src_page_id]);
+              branch_page.dst_diff = funcs.pageDiff(pages[branch_page.src_page_orig_id], pages[branch_page.dst_page_id]);
             }
             else if(branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.src_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.src_page_id]);
-              branch_page.dst_diff = funcs.twoWayDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
+              branch_page.src_diff = funcs.pageDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.src_page_id]);
+              branch_page.dst_diff = funcs.pageDiff(pages[branch_page.dst_page_orig_id], pages[branch_page.dst_page_id]);
             }
           });
           return cb();
         },
-/*
+
         //Get all branch_menu
         function(cb){
-          var sql = "select branch_menu.menu_key, branch_menu.branch_menu_action, branch_menu.menu_id, branch_menu.menu_orig_id, \
-              old_menu.menu_name old_menu_name, old_menu.menu_tag old_menu_tag, old_menu.menu_file_id old_menu_file_id,\
-              new_menu.menu_name new_menu_name, new_menu.menu_tag new_menu_tag, new_menu.menu_file_id new_menu_file_id\
-            from "+(module.schema?module.schema+'.':'')+"branch_menu branch_menu \
-              left outer join "+(module.schema?module.schema+'.':'')+"menu old_menu on old_menu.menu_id=branch_menu.menu_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"menu new_menu on new_menu.menu_id=branch_menu.menu_id \
-            where branch_id=@branch_id and branch_menu_action is not null";
+          var sql = "select src_branch_menu.menu_key,\
+              src_branch_menu.branch_menu_action as src_branch_menu_action, src_branch_menu.menu_id as src_menu_id, src_branch_menu.menu_orig_id as src_menu_orig_id, \
+              dst_branch_menu.branch_menu_action as dst_branch_menu_action, dst_branch_menu.menu_id as dst_menu_id, dst_branch_menu.menu_orig_id as dst_menu_orig_id, \
+              dst_branch_menu.menu_merge_id, dst_branch_menu.menu_merge_id merge_menu_id, dst_branch_menu.branch_menu_merge_action, \
+              src_orig_menu.menu_name src_orig_menu_name, src_orig_menu.menu_tag src_orig_menu_tag, src_orig_menu.menu_file_id src_orig_menu_file_id,\
+              dst_orig_menu.menu_name dst_orig_menu_name, dst_orig_menu.menu_tag dst_orig_menu_tag, dst_orig_menu.menu_file_id dst_orig_menu_file_id,\
+              src_menu.menu_name src_menu_name, src_menu.menu_tag src_menu_tag, src_menu.menu_file_id src_menu_file_id,\
+              dst_menu.menu_name dst_menu_name, dst_menu.menu_tag dst_menu_tag, dst_menu.menu_file_id dst_menu_file_id,\
+              merge_menu.menu_name merge_menu_name, merge_menu.menu_tag merge_menu_tag, merge_menu.menu_file_id merge_menu_file_id\
+            from "+(module.schema?module.schema+'.':'')+"branch_menu src_branch_menu \
+              inner join "+(module.schema?module.schema+'.':'')+"branch_menu dst_branch_menu on dst_branch_menu.menu_key=src_branch_menu.menu_key and dst_branch_menu.branch_id=@dst_branch_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu src_orig_menu on src_orig_menu.menu_id=src_branch_menu.menu_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu dst_orig_menu on dst_orig_menu.menu_id=dst_branch_menu.menu_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu src_menu on src_menu.menu_id=src_branch_menu.menu_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu dst_menu on dst_menu.menu_id=dst_branch_menu.menu_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"menu merge_menu on merge_menu.menu_id=dst_branch_menu.menu_merge_id \
+            where src_branch_menu.branch_id=@src_branch_id\
+              and ((src_branch_menu.branch_menu_action is not null and src_branch_menu.menu_orig_id<>dst_branch_menu.menu_id)\
+               or  (dst_branch_menu.branch_menu_action is not null and dst_branch_menu.menu_orig_id<>src_branch_menu.menu_id))";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_menus = rslt[0];
@@ -278,8 +290,13 @@ module.exports = exports = function(module, funcs){
         function(cb){
           var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
             from "+(module.schema?module.schema+'.':'')+"menu menu \
-            where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
-                  menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
+            where\
+                  menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@src_branch_id and branch_menu_action is not null) or \
+                  menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@src_branch_id and branch_menu_action = 'UPDATE') or\
+                  menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu src_branch_menu where src_branch_menu.branch_id=@src_branch_id and src_branch_menu.menu_key in (select menu_key from "+(module.schema?module.schema+'.':'')+"branch_menu dst_branch_menu where dst_branch_menu.branch_id=@dst_branch_id and branch_menu_action is not null)) or \
+                  menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@dst_branch_id and branch_menu_action is not null) or \
+                  menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@dst_branch_id and branch_menu_action = 'UPDATE') or\
+                  menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu dst_branch_menu where dst_branch_menu.branch_id=@dst_branch_id and dst_branch_menu.menu_key in (select menu_key from "+(module.schema?module.schema+'.':'')+"branch_menu src_branch_menu where src_branch_menu.branch_id=@src_branch_id and branch_menu_action is not null))";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]){
@@ -307,21 +324,23 @@ module.exports = exports = function(module, funcs){
         //Perform menu diff
         function(cb){
           _.each(branch_menus, function(branch_menu){
-            if(branch_menu.branch_menu_action.toUpperCase()=='UPDATE'){
-              var old_menu = menus[branch_menu.menu_orig_id];
-              var new_menu = menus[branch_menu.menu_id];
-              
-              branch_menu.diff = {};
-              var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
-              if(menu_items_diff) branch_menu.diff.menu_items = menu_items_diff;
-              _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
-                if(old_menu[key] != new_menu[key]) branch_menu.diff[key] = new_menu[key];
-              });
+            if(branch_menu.src_branch_menu_action && branch_menu.src_branch_menu_action.toUpperCase()=='UPDATE'
+            && branch_menu.dst_branch_menu_action && branch_menu.dst_branch_menu_action.toUpperCase()=='UPDATE'){
+              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_menu_orig_id], menus[branch_menu.src_menu_id]);
+              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_menu_orig_id], menus[branch_menu.dst_menu_id]);
+            }
+            else if(branch_menu.src_branch_menu_action && branch_menu.src_branch_menu_action.toUpperCase()=='UPDATE'){
+              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_menu_orig_id], menus[branch_menu.src_menu_id]);
+              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.src_menu_orig_id], menus[branch_menu.dst_menu_id]);
+            }
+            else if(branch_menu.dst_branch_menu_action && branch_menu.dst_branch_menu_action.toUpperCase()=='UPDATE'){
+              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.dst_menu_orig_id], menus[branch_menu.src_menu_id]);
+              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_menu_orig_id], menus[branch_menu.dst_menu_id]);
             }
           });
           return cb();
         },
-*/
+
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
