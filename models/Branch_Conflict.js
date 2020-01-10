@@ -123,6 +123,7 @@ jsh.App[modelid] = new (function(){
     }
 
     var tmpl = jsh.$root('.'+xmodel.class+'_Changes_Listing').html();
+    var templates = {};
 
     var ejsenv = {
       _: _,
@@ -135,7 +136,10 @@ jsh.App[modelid] = new (function(){
     }
 
     function include(path, data) {
-      var t = jsh.$root('.'+xmodel.class+'_'+path).html();
+      var t = templates[path];
+      if (!t) {
+        t = templates[path] = jsh.$root('.'+xmodel.class+'_'+path).html();
+      }
       if (t) {
         return render(t, data);
       } else {
