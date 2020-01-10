@@ -85,7 +85,7 @@
     "title": "Abort Merge",
     "actions": "U",
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
-    "sqlexec": "update {schema}.branch set branch_merge_id=null where branch_id=@branch_id",
+    "sqlexec": "update {schema}.branch set branch_merge_id=null where branch_id=@branch_id and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'))",
     "fields": [
       {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
     ]

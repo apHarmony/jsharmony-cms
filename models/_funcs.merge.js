@@ -346,7 +346,7 @@ module.exports = exports = function(module, funcs){
   }
 
   var begin_merge_sql = [
-    "update {schema}.branch set branch_merge_id=@src_branch_id where branch_id=@dst_branch_id and branch_merge_id is null;",
+    "update {schema}.branch set branch_merge_id=@src_branch_id where branch_id=@dst_branch_id and branch_merge_id is null and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'));",
     "select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id",
   ];
 
