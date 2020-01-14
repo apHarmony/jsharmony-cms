@@ -89,8 +89,8 @@ module.exports = exports = function(module, funcs){
         //Get all branch_media
         function(cb){
           var sql = "select src_branch_media.media_key,\
-              src_branch_media.branch_media_action as src_branch_media_action, src_branch_media.media_id as src_media_id, src_branch_media.media_orig_id as src_media_orig_id,\
-              dst_branch_media.branch_media_action as dst_branch_media_action, dst_branch_media.media_id as dst_media_id, dst_branch_media.media_orig_id as dst_media_orig_id,\
+              src_branch_media.branch_media_action as src_branch_media_action, src_branch_media.media_id as src_media_id, src_branch_media.media_orig_id as src_media_orig_id, src_branch_media.media_orig_id as src_orig_media_id,\
+              dst_branch_media.branch_media_action as dst_branch_media_action, dst_branch_media.media_id as dst_media_id, dst_branch_media.media_orig_id as dst_media_orig_id, dst_branch_media.media_orig_id as dst_orig_media_id,\
               dst_branch_media.media_merge_id, dst_branch_media.media_merge_id as merge_media_id, dst_branch_media.branch_media_merge_action, \
               src_orig_media.media_path src_orig_media_path, src_orig_media.media_file_id src_orig_media_file_id, src_orig_media.media_ext src_orig_media_ext, src_orig_media.media_width src_orig_media_width, src_orig_media.media_height src_orig_media_height,\
               dst_orig_media.media_path dst_orig_media_path, dst_orig_media.media_file_id dst_orig_media_file_id, dst_orig_media.media_ext dst_orig_media_ext, dst_orig_media.media_width dst_orig_media_width, dst_orig_media.media_height dst_orig_media_height,\
@@ -149,8 +149,8 @@ module.exports = exports = function(module, funcs){
         //Get all branch_redirect
         function(cb){
           var sql = "select src_branch_redirect.redirect_key,\
-              src_branch_redirect.branch_redirect_action as src_branch_redirect_action, src_branch_redirect.redirect_id as src_redirect_id, src_branch_redirect.redirect_orig_id as src_redirect_orig_id, \
-              dst_branch_redirect.branch_redirect_action as dst_branch_redirect_action, dst_branch_redirect.redirect_id as dst_redirect_id, dst_branch_redirect.redirect_orig_id as dst_redirect_orig_id, \
+              src_branch_redirect.branch_redirect_action as src_branch_redirect_action, src_branch_redirect.redirect_id as src_redirect_id, src_branch_redirect.redirect_orig_id as src_redirect_orig_id, src_branch_redirect.redirect_orig_id as src_orig_redirect_id, \
+              dst_branch_redirect.branch_redirect_action as dst_branch_redirect_action, dst_branch_redirect.redirect_id as dst_redirect_id, dst_branch_redirect.redirect_orig_id as dst_redirect_orig_id, dst_branch_redirect.redirect_orig_id as dst_orig_redirect_id,\
               dst_branch_redirect.redirect_merge_id, dst_branch_redirect.redirect_merge_id as merge_redirect_id, dst_branch_redirect.branch_redirect_merge_action, \
               src_orig_redirect.redirect_url src_orig_redirect_url, src_orig_redirect.redirect_dest src_orig_redirect_dest,\
               dst_orig_redirect.redirect_url dst_orig_redirect_url, dst_orig_redirect.redirect_dest dst_orig_redirect_dest,\
@@ -177,8 +177,8 @@ module.exports = exports = function(module, funcs){
         //Get all branch_page
         function(cb){
           var sql = "select src_branch_page.page_key,\
-              src_branch_page.branch_page_action as src_branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id as src_page_orig_id,\
-              dst_branch_page.branch_page_action as dst_branch_page_action, dst_branch_page.page_id as dst_page_id, dst_branch_page.page_orig_id as dst_page_orig_id,\
+              src_branch_page.branch_page_action as src_branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id as src_page_orig_id, src_branch_page.page_orig_id as src_orig_page_id,\
+              dst_branch_page.branch_page_action as dst_branch_page_action, dst_branch_page.page_id as dst_page_id, dst_branch_page.page_orig_id as dst_page_orig_id, dst_branch_page.page_orig_id as dst_orig_page_id,\
               dst_branch_page.page_merge_id, dst_branch_page.page_merge_id merge_page_id, dst_branch_page.branch_page_merge_action, \
               src_orig_page.page_path src_orig_page_path, src_orig_page.page_title src_orig_page_title, src_orig_page.page_file_id src_orig_page_file_id, src_orig_page.page_filename src_orig_page_filename, src_orig_page.page_template_id src_orig_page_template_id,\
               dst_orig_page.page_path dst_orig_page_path, dst_orig_page.page_title dst_orig_page_title, dst_orig_page.page_file_id dst_orig_page_file_id, dst_orig_page.page_filename dst_orig_page_filename, dst_orig_page.page_template_id dst_orig_page_template_id,\
@@ -308,8 +308,8 @@ module.exports = exports = function(module, funcs){
         //Get all branch_menu
         function(cb){
           var sql = "select src_branch_menu.menu_key,\
-              src_branch_menu.branch_menu_action as src_branch_menu_action, src_branch_menu.menu_id as src_menu_id, src_branch_menu.menu_orig_id as src_menu_orig_id, \
-              dst_branch_menu.branch_menu_action as dst_branch_menu_action, dst_branch_menu.menu_id as dst_menu_id, dst_branch_menu.menu_orig_id as dst_menu_orig_id, \
+              src_branch_menu.branch_menu_action as src_branch_menu_action, src_branch_menu.menu_id as src_menu_id, src_branch_menu.menu_orig_id as src_menu_orig_id, src_branch_menu.menu_orig_id as src_orig_menu_id,\
+              dst_branch_menu.branch_menu_action as dst_branch_menu_action, dst_branch_menu.menu_id as dst_menu_id, dst_branch_menu.menu_orig_id as dst_menu_orig_id, dst_branch_menu.menu_orig_id as dst_orig_menu_id,\
               dst_branch_menu.menu_merge_id, dst_branch_menu.menu_merge_id merge_menu_id, dst_branch_menu.branch_menu_merge_action, \
               src_orig_menu.menu_name src_orig_menu_name, src_orig_menu.menu_tag src_orig_menu_tag, src_orig_menu.menu_file_id src_orig_menu_file_id,\
               dst_orig_menu.menu_name dst_orig_menu_name, dst_orig_menu.menu_tag dst_orig_menu_tag, dst_orig_menu.menu_file_id dst_orig_menu_file_id,\
@@ -391,8 +391,8 @@ module.exports = exports = function(module, funcs){
         //Get all branch_sitemap
         function(cb){
           var sql = "select src_branch_sitemap.sitemap_key,\
-              src_branch_sitemap.branch_sitemap_action as src_branch_sitemap_action, src_branch_sitemap.sitemap_id as src_sitemap_id, src_branch_sitemap.sitemap_orig_id as src_sitemap_orig_id, \
-              dst_branch_sitemap.branch_sitemap_action as dst_branch_sitemap_action, dst_branch_sitemap.sitemap_id as dst_sitemap_id, dst_branch_sitemap.sitemap_orig_id as dst_sitemap_orig_id, \
+              src_branch_sitemap.branch_sitemap_action as src_branch_sitemap_action, src_branch_sitemap.sitemap_id as src_sitemap_id, src_branch_sitemap.sitemap_orig_id as src_sitemap_orig_id, src_branch_sitemap.sitemap_orig_id as src_orig_sitemap_id,\
+              dst_branch_sitemap.branch_sitemap_action as dst_branch_sitemap_action, dst_branch_sitemap.sitemap_id as dst_sitemap_id, dst_branch_sitemap.sitemap_orig_id as dst_sitemap_orig_id, dst_branch_sitemap.sitemap_orig_id as dst_orig_sitemap_id,\
               dst_branch_sitemap.sitemap_merge_id, dst_branch_sitemap.sitemap_merge_id merge_sitemap_id, dst_branch_sitemap.branch_sitemap_merge_action, \
               src_orig_sitemap.sitemap_name src_orig_sitemap_name, src_orig_sitemap.sitemap_type src_orig_sitemap_type, src_orig_sitemap.sitemap_file_id src_orig_sitemap_file_id,\
               dst_orig_sitemap.sitemap_name dst_orig_sitemap_name, dst_orig_sitemap.sitemap_type dst_orig_sitemap_type, dst_orig_sitemap.sitemap_file_id dst_orig_sitemap_file_id,\
