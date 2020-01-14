@@ -39,7 +39,7 @@ module.exports = exports = function(module, funcs){
     var XValidate = jsh.XValidate;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Diff');
+    var model = jsh.getModel(req, module.namespace + 'Branch_Conflict');
     
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
@@ -71,6 +71,10 @@ module.exports = exports = function(module, funcs){
       var media_keys = {};
 
       async.waterfall([
+
+        function(cb){
+          funcs.check_merge_permissions(req._DBContext, sql_params, cb);
+        },
 
         //Get deployment target params
         function(cb){

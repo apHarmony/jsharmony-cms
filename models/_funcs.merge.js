@@ -37,16 +37,12 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Review');
-
-    // error codes: jsharmony errors document
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
     if (verb == 'post') {
       var src_branch_id = req.body.src_branch_id;
       var dst_branch_id = req.body.dst_branch_id;
       var merge_type = req.params.merge_type;
 
+      // error codes: jsharmony errors document
       if (merge_types.indexOf(merge_type) == -1) { Helper.GenError(req, res, -4, 'Merge Type Not Supported'); return; }
 
       //Check if Asset is defined
@@ -60,11 +56,14 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      exports[merge_type](req._DBContext, sql_params, function(err) {
-        if (err != null) { appsrv.AppDBError(req, res, err); return; }
-        res.end(JSON.stringify({
-          '_success': 1,
-        }));
+      exports.check_merge_permissions(req._DBContext, sql_params, function(accessErr) {
+        if (accessErr != null) { appsrv.AppDBError(req, res, accessErr); return; }
+        exports[merge_type](req._DBContext, sql_params, function(err) {
+          if (err != null) { appsrv.AppDBError(req, res, err); return; }
+          res.end(JSON.stringify({
+            '_success': 1,
+          }));
+        });
       });
     }
     else {
@@ -314,11 +313,6 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Review');
-
-    // error codes: jsharmony errors document
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
     if (verb == 'post') {
       var src_branch_id = req.body.src_branch_id;
       var dst_branch_id = req.body.dst_branch_id;
@@ -334,11 +328,14 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      exports.begin_merge(req._DBContext, sql_params, function(err) {
-        if (err != null) { appsrv.AppDBError(req, res, err); return; }
-        res.end(JSON.stringify({
-          '_success': 1,
-        }));
+      exports.check_merge_permissions(req._DBContext, sql_params, function(accessErr) {
+        if (accessErr != null) { appsrv.AppDBError(req, res, accessErr); return; }
+        exports.begin_merge(req._DBContext, sql_params, function(err) {
+          if (err != null) { appsrv.AppDBError(req, res, err); return; }
+          res.end(JSON.stringify({
+            '_success': 1,
+          }));
+        });
       });
     }
     else {
@@ -362,6 +359,21 @@ module.exports = exports = function(module, funcs){
     appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
       if (rslt[0] != sql_params.src_branch_id) { callback(	Helper.NewError('Branch already has an in-progress merge',-9)); return; }
+      callback(null);
+    });
+  }
+
+  exports.check_merge_permissions = function(context, sql_params, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
+
+    var sql = "select branch_id from {schema}.v_my_branch_access where (branch_id=@dst_branch_id and branch_access='RW') or (branch_id=@src_branch_id and branch_access like 'R%');"
+    sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
+    appsrv.ExecRecordset(context, sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; callback(err); return; }
+      if (rslt[0].length!=2) { callback( Helper.NewError('You dont have access to those branches (or they dont exist)',-11)); return; }
       callback(null);
     });
   }
