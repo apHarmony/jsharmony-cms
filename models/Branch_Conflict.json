@@ -28,6 +28,7 @@
     "actions":"BU",
     "caption":["Branch","Branches"],
     "title":"",
+    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"page_key","control":"hidden","key":true},
@@ -43,6 +44,7 @@
     "actions":"BU",
     "caption":["Branch","Branches"],
     "title":"",
+    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"media_key","control":"hidden","key":true},
@@ -58,6 +60,7 @@
     "actions":"BU",
     "caption":["Branch","Branches"],
     "title":"",
+    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"menu_key","control":"hidden","key":true},
@@ -73,6 +76,7 @@
     "actions":"BU",
     "caption":["Branch","Branches"],
     "title":"",
+    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"sitemap_key","control":"hidden","key":true},
@@ -88,6 +92,7 @@
     "actions":"BU",
     "caption":["Branch","Branches"],
     "title":"",
+    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"redirect_key","control":"hidden","key":true},
