@@ -81,9 +81,13 @@ module.exports = exports = function(module, funcs){
 
   var expand = function(sqls) {
     return sqls.flatMap(function(line) {
-      return objects.map(function(object) {
-        return Helper.ReplaceAll(line, '%%%OBJECT%%%', object);
-      });
+      if(line.match('%%%OBJECT%%%')) {
+        return objects.map(function(object) {
+          return Helper.ReplaceAll(line, '%%%OBJECT%%%', object);
+        });
+      } else {
+        return line;
+      }
     });
   }
 
@@ -143,7 +147,7 @@ module.exports = exports = function(module, funcs){
 
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='DELETE';",
 
-    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=%%%OBJECT%%%_merge_id where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE';",
+    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=%%%OBJECT%%%_merge_id where branch_id=@dst_branch_id and (branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE');",
 
     "insert into {schema}.branch_%%%OBJECT%%%(branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_id from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action='UPDATE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);
@@ -244,10 +248,13 @@ module.exports = exports = function(module, funcs){
     "insert into {schema}.branch_%%%OBJECT%%% (branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_id from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);
 
-  var archive_sql = [
-    "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id;",
+  var archive_sql = expand([
+    "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='DELETE' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
+    "update {schema}.branch_%%%OBJECT%%% set branch_%%%OBJECT%%%_action=null,%%%OBJECT%%%_orig_id=%%%OBJECT%%%_id where branch_id=@dst_branch_id and (branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE') and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
+
+    "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id and branch_sts='REVIEW' and branch_review_sts='PENDING' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
     "update {schema}.branch set branch_merge_id=null where branch_id=@dst_branch_id;",
-  ];
+  ]);
 
   var merge = function(sql, context, sql_params, callback) {
     var jsh = module.jsh;
