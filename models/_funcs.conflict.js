@@ -214,7 +214,7 @@ module.exports = exports = function(module, funcs){
         //Get page file content
         function(cb){
           async.eachOfSeries(pages, function(page, page_id, page_cb){
-            funcs.getClientPage(page, function(err, clientPage){
+            funcs.getClientPage(page, null, function(err, clientPage){
               if(err) return page_cb(err);
               if(!clientPage) return page_cb(null); 
               page.compiled = clientPage.page;

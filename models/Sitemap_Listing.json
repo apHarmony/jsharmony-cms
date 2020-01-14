@@ -1,0 +1,45 @@
+{
+  "Sitemap_Listing": {
+    "layout":"grid",
+    "table":"{schema}.v_my_sitemap",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "caption":["Sitemap","Sitemaps"],
+    "title":"Sitemaps",
+    "reselectafteredit": "row",
+    "sort":["^sitemap_name"],
+    "menu":"jsHarmonyCMS/Sitemap_Listing",
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "oninit": "jsh.System.RequireBranch(xmodel);",
+    "fields": [
+      {"name":"sitemap_key","caption":"Key","control":"hidden","key":true},
+      {"name":"sitemap_id","caption":"ID","control":"hidden"},
+      {"name":"sitemap_name","caption":"Sitemap Name","control":"textbox_M"},
+      {"control":"html","caption":"Edit","link":"js:_this.openSitemapEditor(this)","value":"<img src='/images/icon_edit.png' class='xicon' />"},
+      {"name":"sitemap_type","caption":"Type","control":"dropdown"},
+      {"name":"sitemap_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"control":"html","caption":"Revisions","link":"js:_this.viewRevisions(this)","value":"<img src='/images/icon_browse.png' class='xicon' />","roles":{"PUBLISHER":"*"}},
+      {"name":"revision_sitemap","unbound":true,"control":"hidden","bindings":{"revision_sitemap_key":"js:if(xmodel) return jsh.App[xmodel.id].revision_sitemap_key;"},
+        "popuplov": {"target": "Sitemap_Revision_Listing", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
+      }
+    ]
+  },
+  "Sitemap_Listing_Redirect": {
+    "inherits": "Sitemap_Listing",
+    "menu":"jsHarmonyCMS/Sitemap_Listing",
+    "onload": "if(xmodel.controller.grid.RowCount==1){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Tree?action=update&sitemap_key='+xmodel.get('sitemap_key', 0)); return false; }"
+  },
+  "Sitemap_Revision_Update": {
+    "layout": "exec",
+    "title": "Update Sitemap Revision",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U"},
+    "sqlexec": [
+      "update {schema}.branch_sitemap set sitemap_id=@sitemap_id,branch_sitemap_action=(case branch_sitemap_action when 'ADD' then 'ADD' else 'UPDATE' end) where sitemap_key=@sitemap_key and branch_id={schema}.my_current_branch_id();"
+    ],
+    "fields": [
+      {"name":"sitemap_key", "actions":"U", "type":"bigint", "caption":"Sitemap Key", "validate": ["Required"]},
+      {"name":"sitemap_id", "actions":"U", "type":"bigint", "caption":"Sitemap ID", "validate": ["Required"]}
+    ]
+  }
+}

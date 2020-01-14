@@ -25,6 +25,7 @@ window.jsHarmonyCMS = new (function(){
   var XValidate = undefined;
   var $ = undefined;
   var async = undefined;
+  var ejs = undefined;
 
   //Load jsHarmony
   this._baseurl = <%-JSON.stringify(baseurl)%>;
@@ -32,6 +33,8 @@ window.jsHarmonyCMS = new (function(){
   this.page = null;
   this.page_key = null;
   this.template = null;
+  this.sitemap = {};
+  this.components = null;
   this.views = {};
   this.authors = [];
   this.role = '';
@@ -40,9 +43,12 @@ window.jsHarmonyCMS = new (function(){
   this.editorBarDocked = false;
   this.hasChanges = false;
   this.isInitialized = false;
+  this.isComponentsInitialized = false;
   this.isLoading = false;
   this.loadQueue = [];
   this.loadObj = {main:1};
+  this.editorDefaultConfig = {};
+  this.onInit = null;
 
   this.filePickerCallback = null;
 
@@ -155,6 +161,7 @@ window.jsHarmonyCMS = new (function(){
       XValidate = jsh.XValidate;
       $ = jsh.$;
       async = jsh.async;
+      ejs = jsh.ejs;
     });
     _this.loadCSS(_this._baseurl+'jsharmony.css');
     _this.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
@@ -165,24 +172,57 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.onready = function(){
+    if(_this.onInit) _this.onInit(jsh);
     $('.jsharmony_cms_content').prop('contenteditable','true');
+    if(jsh._GET['branch_id']){
+      this.loadComponents(jsh._GET['branch_id']);
+    }
+    else{
+      _this.StopLoading(_this.loadObj);
+      XExt.Alert('Site ID not defined in querystring');
+    }
     if(jsh._GET['page_key']){
       this.loadPage(jsh._GET['page_key'], jsh._GET['page_id'], function(err){ _this.StopLoading(_this.loadObj); });
     }
     else{
       _this.StopLoading(_this.loadObj);
-      XExt.Alert('Page Key not defined');
+      XExt.Alert('Page Key not defined in querystring');
     }
+  }
+
+  this.parseLinkURL = function(url){
+    url = (url||'').toString();
+    if(url.indexOf('#@JSHCMS') >= 0){
+      var urlparts = document.createElement('a');
+      urlparts.href = url;
+      var patharr = (urlparts.pathname||'').split('/');
+      if(((urlparts.pathname||'').indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
+        var media_key = parseInt(patharr[3]);
+        if(media_key.toString()==patharr[3]) return { media_key: media_key };
+      }
+      if(((urlparts.pathname||'').indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
+        var page_key = parseInt(patharr[3]);
+        if(page_key.toString()==patharr[3]) return { page_key: page_key };
+      }
+    }
+    return {};
   }
 
   this.openLinkPicker = function(cb, value, meta){
     _this.filePickerCallback = cb;
-    XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', {}, { width: 1100, height: 600 });
+    var qs = { };
+    var linkurl = _this.parseLinkURL(value);
+    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
+    else if(linkurl.page_key) qs.init_page_key = linkurl.page_key;
+    XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
 
   this.openMediaPicker = function(cb, value, meta){
     _this.filePickerCallback = cb;
-    XExt.popupForm('jsHarmonyCMS/Media_Browser', 'browse', {}, { width: 1100, height: 600 });
+    var qs = { };
+    var linkurl = _this.parseLinkURL(value);
+    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
+    XExt.popupForm('jsHarmonyCMS/Media_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
 
   this.onmessage = function(event){
@@ -193,47 +233,100 @@ window.jsHarmonyCMS = new (function(){
       var jdata = JSON.parse(data);
       if(jdata.media_key){
         var newClass = 'media_key_'+jdata.media_key;
-        _this.filePickerCallback(_this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id);
+        _this.filePickerCallback(_this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS');
       }
       else if(jdata.page_key){
         var newClass = 'page_key_'+jdata.page_key;
-        _this.filePickerCallback(_this._baseurl+'_funcs/page/'+jdata.page_key+'/');
+        _this.filePickerCallback(_this._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS');
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
       _this.filePickerCallback = null;
     }
   }
 
-  this.loadPage = function(page_key, page_id, onComplete){
-    _this.page_key = page_key;
-    var url = '../_funcs/page/'+_this.page_key;
-    if(page_id) url += '?page_id=' + page_id;
+  this.loadComponents = function(branch_id, onComplete){
+    var url = '../_funcs/components/'+branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        //Populate arrays + create editor
-        _this.hasChanges = false;
-        $('#jsharmony_cms_editor_bar a.button.save').toggleClass('hasChanges', false);
-        _this.page = rslt.page;
-        _this.template = rslt.template;
-        _this.views = rslt.views;
-        _this.authors = rslt.authors;
-        _this.role = rslt.role;
-        _this.readonly = (_this.role=='VIEWER')||(page_id);
-        XExt.execif(!_this.isInitialized, function(f){
-          _this.createEditor(f);
-        }, function(){
-          _this.renderEditor();
-          if(!_this.isInitialized){
-            _this.onEditorContentLoaded(function(){ if(onComplete) onComplete(); });
-            _this.isInitialized = true;
+        _this.components = rslt.components;
+        async.eachOf(_this.components, function(component, component_id, component_cb){
+          if(component.remote_template && component.remote_template.publish){
+            var loadObj = {};
+            jsh.xLoader.StartLoading(loadObj);
+            $.ajax({
+              type: 'GET',
+              cache: false,
+              url: component.remote_template.publish,
+              xhrFields: { withCredentials: true },
+              success: function(data){
+                jsh.xLoader.StopLoading(loadObj);
+                component.content = data;
+                return component_cb();
+              },
+              error: function(xhr, status, err){
+                jsh.xLoader.StopLoading(loadObj);
+                component.content = '*** COMPONENT NOT FOUND ***';
+                return component_cb();
+              }
+            });
           }
-          else{ if(onComplete) onComplete(); }
+          else return component_cb();
+        }, function(err){
+          _this.isComponentsInitialized = true;
         });
       }
       else{
-        if(onComplete) onComplete(new Error('Error Loading Page'));
-        XExt.Alert('Error loading page');
+        if(onComplete) onComplete(new Error('Error Loading Components'));
+        XExt.Alert('Error loading components');
       }
+    }, function (err) {
+      if(onComplete) onComplete(err);
+    });
+  }
+
+  this.loadPage = function(page_key, page_id, onComplete){
+    _this.page_key = page_key;
+    var url = '../_funcs/page/'+_this.page_key;
+
+    //Add querystring parameters
+    var qs = {};
+    if(page_id) qs.page_id = page_id;
+    if(jsh._GET.branch_id) qs.branch_id = jsh._GET.branch_id;
+    if(jsh._GET.page_template_id) qs.page_template_id = jsh._GET.page_template_id;
+    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+    
+    XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+      XExt.waitUntil(
+        function(){ return (_this.isComponentsInitialized); },
+        function(){
+          if ('_success' in rslt) {
+            //Populate arrays + create editor
+            _this.hasChanges = false;
+            $('#jsharmony_cms_editor_bar a.button.save').toggleClass('hasChanges', false);
+            _this.page = rslt.page;
+            _this.template = rslt.template;
+            _this.sitemap = rslt.sitemap;
+            _this.views = rslt.views;
+            _this.authors = rslt.authors;
+            _this.role = rslt.role;
+            _this.readonly = (_this.role=='VIEWER')||(page_id);
+            XExt.execif(!_this.isInitialized, function(f){
+              _this.createEditor(f);
+            }, function(){
+              _this.renderEditor();
+              if(!_this.isInitialized){
+                _this.onEditorContentLoaded(function(){ if(onComplete) onComplete(); });
+                _this.isInitialized = true;
+              }
+              else{ if(onComplete) onComplete(); }
+            });
+          }
+          else{
+            if(onComplete) onComplete(new Error('Error Loading Page'));
+            XExt.Alert('Error loading page');
+          }
+        }
+      );
     }, function (err) {
       if(onComplete) onComplete(err);
     });
@@ -257,6 +350,28 @@ window.jsHarmonyCMS = new (function(){
     }
   }
 
+  this.renderComponents = function(){
+    $('.jsharmony_cms_component').addClass('mceNonEditable').each(function(){
+      var jobj = $(this);
+      var component_id = jobj.data('id');
+      var component_content = '';
+      if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
+      else if(!(component_id in _this.components)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
+      else{
+        component_content = ejs.render(_this.components[component_id].content || '', {
+          _: _,
+          escapeHTML: XExt.xejs.escapeHTML,
+          page: _this.page,
+          template: _this.template,
+          sitemap: _this.sitemap,
+          getSitemapURL: function(sitemap_item){ return '#'; },
+          isInEditor: true,
+        });
+      }
+      jobj.html(component_content);
+    });
+  }
+
   this.renderEditor = function(){
     if(!_this.page) return;
     var jeditorbar = $('#jsharmony_cms_editor_bar');
@@ -269,6 +384,8 @@ window.jsHarmonyCMS = new (function(){
       _this.setEditorContent(key, _this.page.content[key])
       if(!_this.readonly) _this.page.content[key] = _this.getEditorContent(key);
     }
+
+    _this.renderComponents();
 
     //CSS
     _this.removeStyle('jsharmony_cms_template_style');
@@ -370,10 +487,10 @@ window.jsHarmonyCMS = new (function(){
     if(js) _this.appendHTML($('head'), '<script type="text/javascript">'+js+'</script>');
 
     //Initialize Settings Controls
-    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
-    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input',function(){ if(!_this.hasChanges) _this.getValues(); }); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').on('input', function(){ _this.onTitleUpdate(this); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').on('input', function(){ _this.onTitleUpdate(this); });
+    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); }); });
+    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); }); });
+    $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
+    $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
 
     //Initialize Tag Control
     XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
@@ -406,7 +523,7 @@ window.jsHarmonyCMS = new (function(){
         });
 
         //Initialize each content editor
-        var editorConfig = {
+        var editorConfig = _.extend({}, {
           inline: true,
           branding: false,
           browser_spellcheck: true,
@@ -415,7 +532,7 @@ window.jsHarmonyCMS = new (function(){
           plugins: [
             'advlist autolink autoresize lists link image charmap anchor',
             'searchreplace visualblocks code fullscreen wordcount template',
-            'insertdatetime media table contextmenu paste code textcolor'
+            'insertdatetime media table paste code noneditable'
           ],
           toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen',
           removed_menuitems: 'newdocument',
@@ -429,7 +546,6 @@ window.jsHarmonyCMS = new (function(){
             table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
             help: { title: 'Help', items: 'help' }
           },
-          templates: '/vcommon/cms/templates/content/index.html',
           file_picker_types: 'file image',
           file_picker_callback: function(cb, value, meta) {
             // Provide file and text for the link dialog
@@ -449,7 +565,7 @@ window.jsHarmonyCMS = new (function(){
             return url;
           },
           fixed_toolbar_container: '#jsharmony_cms_content_editor_toolbar',
-        };
+        }, _this.editorDefaultConfig);
         async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
           window.tinymce.init(_.extend({
             selector: '#' + elem.id,
@@ -482,8 +598,8 @@ window.jsHarmonyCMS = new (function(){
         });
       });
 
-      $('.jsharmony_cms_content').on('input',function(){ if(!_this.hasChanges) _this.getValues(); });
-      $('#jsharmony_cms_title').on('input',function(){ _this.onTitleUpdate(this); });
+      $('.jsharmony_cms_content').on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
+      $('#jsharmony_cms_title').on('input keyup',function(){ _this.onTitleUpdate(this); });
 
       $(window).bind('beforeunload', function(){
         _this.getValues();
@@ -585,7 +701,10 @@ window.jsHarmonyCMS = new (function(){
   }
 
   this.refreshParent = function(page_folder){
-    if(window.opener) window.opener.postMessage('jsharmony-cms:refresh:'+page_folder, '*');
+    if(window.opener){
+      window.opener.postMessage('jsharmony-cms:refresh_page_folder:'+page_folder, '*');
+      if(_this.page_key) window.opener.postMessage('jsharmony-cms:refresh_page_key:'+_this.page_key, '*');
+    }
   }
 
   this.save = function(){
@@ -596,6 +715,13 @@ window.jsHarmonyCMS = new (function(){
     var startTime = Date.now();
     _this.StartLoading(_this.loadObj);
     var url = '../_funcs/page/'+_this.page_key;
+
+    //Add querystring parameters
+    var qs = {};
+    if(jsh._GET.branch_id) qs.branch_id = jsh._GET.branch_id;
+    if(jsh._GET.page_template_id) qs.page_template_id = jsh._GET.page_template_id;
+    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+
     _this.hideSettings(true);
     XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
       if ('_success' in rslt) {

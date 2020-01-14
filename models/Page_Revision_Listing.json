@@ -18,7 +18,7 @@
       {"name":"page_key","caption":"Key","control":"hidden"},
       {"name":"page_file_id","caption":"File ID","control":"hidden"},
       {"name":"page_filename","caption":"File Name","control":"hidden"},
-      {"control":"html","caption":"","cellstyle":"text-align:center;","link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].previewFile(xmodel.controller.form.DataSet[jsh.XExt.XModel.GetRowID(modelid, this)]);","value":"<img height='14' src='/images/icon_browse.png' class='xicon' />"},
+      {"control":"html","caption":"","cellstyle":"text-align:center;","link":"js:jsh.App[xmodel.parent].previewPage(xmodel.controller.form.DataSet[jsh.XExt.XModel.GetRowID(modelid, this)]);","value":"<img height='14' src='/images/icon_browse.png' class='xicon' />"},
       {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
       {"name":"page_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(page_muser))","control":"label","actions":"B"},
       {"name":"page_title","caption":"Title","control":"label"},

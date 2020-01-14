@@ -18,6 +18,14 @@ jsh.App[modelid] = new (function(){
       xmodel.controller.grid.NoResultsMessage = 'Folder is empty';
     }
     xmodel.controller.grid.NoDataMessage = xmodel.controller.grid.NoResultsMessage;
+
+    if(XExt.hasAction(xmodel.actions, 'IU')){
+      jsh.$root('.xtbl.xform'+xmodel.class).closest('.xsubform').off('contextmenu').on('contextmenu',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        XExt.ShowContextMenu('.'+xmodel.class+'_file_container_context_menu', xmodel.get('page_folder'));
+      });
+    }
   }
 
   this.onrowbind = function(xmodel,jobj,datarow){
@@ -28,6 +36,7 @@ jsh.App[modelid] = new (function(){
         e.stopPropagation();
         XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key);
       });
+      XExt.bindDragSource(jobj.find('.page_filename a'));
     }
   }
 
@@ -54,10 +63,7 @@ jsh.App[modelid] = new (function(){
     var page_template_id = xmodel.get('page_template_id', rowid);
     if(!page_template_id) return XExt.Alert('Please select a template before editing');
 
-    var template = jsh.globalparams.PageTemplates[page_template_id];
-    if(!template) return XExt.Alert('Template is not defined');
-    
-    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' });
+    jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), page_template_id, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' });
   }
 
   this.previewFile = function(page_file){
@@ -68,10 +74,7 @@ jsh.App[modelid] = new (function(){
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    var template = jsh.globalparams.PageTemplates[page_template_id];
-    if(!template) return XExt.Alert('Template is not defined');
-
-    jsh.System.OpenPageEditor(page_key, page_filename, template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id });
   }
 
   this.addFile = function(page_folder){
@@ -242,31 +245,48 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.moveFile = function(page_key){
+  this.moveFile = function(page_key, new_page_path){
+    new_page_path = new_page_path||'';
     var page = _this.getPage(page_key);
     var page_path = page.page_path;
-    var retry = function(){ _this.moveFile(page_key); };
-    XExt.Prompt('Please enter a new path', page_path, function (rslt) {
-      if(rslt === null) return;
-      rslt = rslt.trim();
-      if(rslt == page_path) return;
-      if(!rslt) return XExt.Alert('Please enter a file name', retry);
-      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
-      var new_page_path = rslt;
 
-      var params = {
-        page_path: new_page_path,
-        page_title: page.page_title,
-        page_template_id: page.page_template_id
-      };
-      XForm.Post(xmodel.module_namespace+'Page_Tree_Listing', { page_key: page_key }, params, function(rslt){
-        //Refresh parent
-        var page_folder = XExt.dirname(new_page_path) + '/';
-        if(new_page_path[new_page_path.length-1] == '/') page_folder = new_page_path;
-        jsh.App[xmodel.parent].setFolderBeforeLoad(page_folder);
-        jsh.XPage.Select({ modelid: xmodel.parent, onCancel: function(){} });
-      });
-    });
+    XExt.execif(!new_page_path,
+      function(f){
+        var retry = function(){ _this.moveFile(page_key); };
+        XExt.Prompt('Please enter a new path', page_path, function (rslt) {
+          if(rslt === null) return;
+          rslt = rslt.trim();
+          if(rslt == page_path) return;
+          if(!rslt) return XExt.Alert('Please enter a file name', retry);
+          if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
+          new_page_path = rslt;
+          f();
+          
+        });
+      },
+      function(){
+        var params = {
+          page_path: new_page_path,
+          page_title: page.page_title,
+          page_template_id: page.page_template_id
+        };
+        XForm.Post(xmodel.module_namespace+'Page_Tree_Listing', { page_key: page_key }, params, function(rslt){
+          //Refresh parent
+          //var page_folder = XExt.dirname(new_page_path) + '/';
+          //if(new_page_path[new_page_path.length-1] == '/') page_folder = new_page_path;
+          _this.reloadParent(xmodel.get('page_folder'), function(){
+            if(!xmodel.get('page_folder')){
+              _this.reloadParent('/');
+            }
+          });
+        });
+      }
+    );
+  }
+
+  this.reloadParent = function(page_folder, cb){
+    jsh.App[xmodel.parent].setFolderBeforeLoad(page_folder);
+    jsh.XPage.Select({ modelid: xmodel.parent, onCancel: function(){} }, cb);
   }
 
   this.deleteFile = function(page_key){

@@ -18,36 +18,43 @@ jsh.App[modelid] = new (function(){
       var jdata = JSON.parse(data);
       if(jdata.media_key){
         xmodel.set('menu_item_link_dest',jdata.media_key);
-        xmodel.set('menu_item_link_media','Media :: '+jdata.media_path);
+        xmodel.set('menu_item_link_media',jdata.media_path);
       }
       else if(jdata.page_key){
         xmodel.set('menu_item_link_dest',jdata.page_key);
-        xmodel.set('menu_item_link_page','Page :: '+jdata.page_path);
+        xmodel.set('menu_item_link_page',jdata.page_path);
       }
     }
   }
 
-  this.menu_item_link_type_onchange = function(obj, newval){
-    if(newval != 'PAGE'){
-      if(xmodel.get('menu_item_link_page')){
-        xmodel.set('menu_item_link_dest','');
-        xmodel.set('menu_item_link_page','');
+  this.menu_item_link_type_onchange = function(obj, newval, undoChange){
+    XExt.execif(xmodel.get('menu_item_link_dest'),
+      function(f){
+        XExt.Confirm('Changing the link type will clear the current link.  Continue?', f, undoChange);
+      },
+      function(){
+        if(newval != 'PAGE'){
+          if(xmodel.get('menu_item_link_page')){
+            xmodel.set('menu_item_link_dest','');
+            xmodel.set('menu_item_link_page','');
+          }
+        }
+        if(newval != 'MEDIA'){
+          if(xmodel.get('menu_item_link_media')){
+            xmodel.set('menu_item_link_dest','');
+            xmodel.set('menu_item_link_media','');
+          }
+        }
+        if(!newval){
+          xmodel.set('menu_item_link_dest','');
+        }
+        _this.updateEnabledState();
+        _this.prev_link_type = newval;
       }
-    }
-    if(newval != 'MEDIA'){
-      if(xmodel.get('menu_item_link_media')){
-        xmodel.set('menu_item_link_dest','');
-        xmodel.set('menu_item_link_media','');
-      }
-    }
-    if(!newval){
-      xmodel.set('menu_item_link_dest','');
-    }
-    _this.updateEnabledState();
-    _this.prev_link_type = newval;
+    );
   }
 
-  this.menu_item_text_onchange = function(obj,newval){
+  this.menu_item_text_onchange = function(obj, newval){
     jsh.App[xmodel.parent].commitInfo();
   }
 
@@ -72,7 +79,7 @@ jsh.App[modelid] = new (function(){
     var enable_dest_page = false;
     var enable_dest_media = false;
 
-    var jdestcaptiontext = 'Link URL:';
+    var jdestcaptiontext = 'URL:';
     if(!menu_item_link_type){
       enable_target = false;
     }
@@ -81,16 +88,16 @@ jsh.App[modelid] = new (function(){
     }
     else if(menu_item_link_type=='PAGE'){
       enable_dest_page = true;
-      jdestcaptiontext = 'Link Page:';
+      jdestcaptiontext = 'Page:';
     }
     else if(menu_item_link_type=='MEDIA'){
       enable_dest_media = true;
-      jdestcaptiontext = 'Link Media:';
+      jdestcaptiontext = 'Media:';
     }
     else if(menu_item_link_type=='JS'){
       enable_target = false;
       enable_dest = true;
-      jdestcaptiontext = 'Link JS:';
+      jdestcaptiontext = 'JS:';
     }
     jtarget_group.toggle(enable_target);
     jdest_group.toggle(enable_dest);
@@ -100,11 +107,11 @@ jsh.App[modelid] = new (function(){
   }
 
   this.browsePage = function(){
-    XExt.popupForm(xmodel.namespace+'Page_Browser');
+    XExt.popupForm(xmodel.namespace+'Page_Browser', '', { init_page_key: xmodel.get('menu_item_link_dest') });
   }
 
   this.browseMedia = function(){
-    XExt.popupForm(xmodel.namespace+'Media_Browser');
+    XExt.popupForm(xmodel.namespace+'Media_Browser', '', { init_media_key: xmodel.get('menu_item_link_dest') });
   }
 
 })();

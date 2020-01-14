@@ -14,7 +14,7 @@
       if(menu_item.menu_item_link_type.toString().toUpperCase()=='JS'){
         %><a href="#" onclick="<%=menu_item.menu_item_link_dest%>; return false;"><%-menu_item_html%></a><%
       } else {
-        %><a href="<%=menu_item.menu_item_link_dest%>"<%if((menu_item.menu_item_target||'').toUpperCase()=='NEWWIN'){%> target="_blank"<%}%>><%-menu_item_html%></a><%
+        %><a href="<%=menu_item.menu_item_link_dest%>"<%if((menu_item.menu_item_link_target||'').toUpperCase()=='NEWWIN'){%> target="_blank"<%}%>><%-menu_item_html%></a><%
       }
     } else {
       if(menu_item.menu_item_children.length){

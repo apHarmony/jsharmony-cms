@@ -30,7 +30,7 @@
       {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"Branch Name"},
       {"control":"html","value":"<div class='<%=model.class%>_Change_Status'></div>","caption":"Change Status","captionstyle":"vertical-align:top;font-weight:bold;padding-top:3px;"},
       {"name":"new_branch_changes","control":"hidden","type":"varchar","length":8,"actions":"BU","ongetvalue":"return _this.Change_Status_getvalue(val,field,xmodel);"},
-      {"control":"button","value":"Clone","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; XForm.prototype.XExecutePost(xmodel.id+'/?branch_id='+xmodel.get('branch_id'), { new_branch_type: xmodel.get('new_branch_type'), new_branch_name: xmodel.get('new_branch_name'), new_branch_changes: xmodel.get('new_branch_changes')  }, function(rslt){ xmodel.controller.form.ResetDirty(); XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Page_Tree'); });"}
+      {"control":"button","value":"Clone","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; XForm.prototype.XExecutePost(xmodel.id+'/?branch_id='+xmodel.get('branch_id'), { new_branch_type: xmodel.get('new_branch_type'), new_branch_name: xmodel.get('new_branch_name'), new_branch_changes: xmodel.get('new_branch_changes')  }, function(rslt){ xmodel.controller.form.ResetDirty(); XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Listing_Redirect'); });"}
     ]
   }
 }

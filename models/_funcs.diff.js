@@ -64,10 +64,11 @@ module.exports = exports = function(module, funcs){
       var branch_media = [];
       var branch_redirects = [];
       var branch_menus = [];
+      var branch_sitemaps = [];
       var deployment_target_params = '';
-      var pages = {};
-      var media = {};
+      var updated_pages = {};
       var menus = {};
+      var sitemaps = {};
       var page_keys = {};
       var media_keys = {};
 
@@ -101,18 +102,21 @@ module.exports = exports = function(module, funcs){
 
         //Get all media
         function(cb){
-          var sql = "select media_id,media_key,media_file_id,media_desc,media_path \
-            from "+(module.schema?module.schema+'.':'')+"media media \
-            where media_is_folder=0 and (\
-                    media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action is not null) or \
-                    media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE') \
-                  )";
+          var sql = "\
+            select 'NEW' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
+              from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id)\
+            union all \
+            select 'PREV' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
+              from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id)\
+          ";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]){
               _.each(rslt[0], function(media){
-                media[media.media_id] = media;
-                media_keys[media.media_key] = media;
+                if(
+                  (media.branch_diff_type=='NEW') ||
+                  (media.branch_diff_type=='PREV' && !(media.media_key in media_keys))
+                  ) media_keys[media.media_key] = media;
               });
             }
             return cb();
@@ -153,6 +157,30 @@ module.exports = exports = function(module, funcs){
 
         //Get all pages
         function(cb){
+          var sql = "\
+            select 'NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+              from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
+            union all \
+            select 'NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+              from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
+          ";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]){
+              _.each(rslt[0], function(page){
+                page_keys[page.page_key] = page;
+                if(
+                  (page.branch_diff_type=='NEW') ||
+                  (page.branch_diff_type=='PREV' && !(page.page_key in page_keys))
+                  ) page_keys[page.page_key] = page;
+              });
+            }
+            return cb();
+          });
+        },
+
+        //Get updated pages
+        function(cb){
           var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
             from "+(module.schema?module.schema+'.':'')+"page page \
             where page_is_folder = 0 and (\
@@ -163,8 +191,7 @@ module.exports = exports = function(module, funcs){
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]){
               _.each(rslt[0], function(page){
-                pages[page.page_id] = page;
-                page_keys[page.page_key] = page;
+                updated_pages[page.page_id] = page;
               });
             }
             return cb();
@@ -173,8 +200,8 @@ module.exports = exports = function(module, funcs){
 
         //Get page file content
         function(cb){
-          async.eachOfSeries(pages, function(page, page_id, page_cb){
-            funcs.getClientPage(page, function(err, clientPage){
+          async.eachOfSeries(updated_pages, function(page, page_id, page_cb){
+            funcs.getClientPage(page, null, function(err, clientPage){
               if(err) return page_cb(err);
               if(!clientPage) return page_cb(null); 
               page.compiled = clientPage.page;
@@ -202,7 +229,7 @@ module.exports = exports = function(module, funcs){
 
           _.each(branch_pages, function(branch_page){
             if(branch_page.branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.diff = funcs.pageDiff(pages[branch_page.page_orig_id], pages[branch_page.page_id]);
+              branch_page.diff = funcs.pageDiff(updated_pages[branch_page.page_orig_id], updated_pages[branch_page.page_id]);
             }
           });
           return cb();
@@ -264,6 +291,69 @@ module.exports = exports = function(module, funcs){
           return cb();
         },
 
+        //Get all branch_sitemap
+        function(cb){
+          var sql = "select branch_sitemap.sitemap_key, branch_sitemap.branch_sitemap_action, branch_sitemap.sitemap_id, branch_sitemap.sitemap_orig_id, \
+              old_sitemap.sitemap_name old_sitemap_name, old_sitemap.sitemap_type old_sitemap_type, old_sitemap.sitemap_file_id old_sitemap_file_id,\
+              new_sitemap.sitemap_name new_sitemap_name, new_sitemap.sitemap_type new_sitemap_type, new_sitemap.sitemap_file_id new_sitemap_file_id\
+            from "+(module.schema?module.schema+'.':'')+"branch_sitemap branch_sitemap \
+              left outer join "+(module.schema?module.schema+'.':'')+"sitemap old_sitemap on old_sitemap.sitemap_id=branch_sitemap.sitemap_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"sitemap new_sitemap on new_sitemap.sitemap_id=branch_sitemap.sitemap_id \
+            where branch_id=@branch_id and branch_sitemap_action is not null";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) branch_sitemaps = rslt[0];
+            return cb();
+          });
+        },
+
+        //Get all sitemaps
+        function(cb){
+          var sql = "select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
+            from "+(module.schema?module.schema+'.':'')+"sitemap sitemap \
+            where sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id and branch_sitemap_action is not null) or \
+                  sitemap.sitemap_id in (select sitemap_orig_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id and branch_sitemap_action = 'UPDATE')";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]){
+              _.each(rslt[0], function(sitemap){
+                sitemaps[sitemap.sitemap_id] = sitemap;
+              });
+            }
+            return cb();
+          });
+        },
+
+        //Get sitemap file content
+        function(cb){
+          async.eachOfSeries(sitemaps, function(sitemap, sitemap_id, sitemap_cb){
+            funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+              if(err) return sitemap_cb(err);
+              if(!sitemap_content) return sitemap_cb(null);
+              sitemap.sitemap_items_text = funcs.prettySitemap(sitemap_content.sitemap_items, page_keys, media_keys);
+              return sitemap_cb();
+            });
+          }, cb);
+        },
+
+        //Perform sitemap diff
+        function(cb){
+          _.each(branch_sitemaps, function(branch_sitemap){
+            if(branch_sitemap.branch_sitemap_action.toUpperCase()=='UPDATE'){
+              var old_sitemap = sitemaps[branch_sitemap.sitemap_orig_id];
+              var new_sitemap = sitemaps[branch_sitemap.sitemap_id];
+              
+              branch_sitemap.diff = {};
+              var sitemap_items_diff = funcs.diffHTML(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
+              if(sitemap_items_diff) branch_sitemap.diff.sitemap_items = sitemap_items_diff;
+              _.each(['sitemap_name','sitemap_type'], function(key){
+                if(old_sitemap[key] != new_sitemap[key]) branch_sitemap.diff[key] = new_sitemap[key];
+              });
+            }
+          });
+          return cb();
+        },
+
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
@@ -272,7 +362,8 @@ module.exports = exports = function(module, funcs){
           branch_pages: branch_pages,
           branch_redirects: branch_redirects,
           branch_media: branch_media,
-          branch_menus: branch_menus
+          branch_menus: branch_menus,
+          branch_sitemaps: branch_sitemaps
         }));
       });
       return;

@@ -2,14 +2,19 @@
   var XExt = jsh.XExt;
   var _ = jsh._;
 
-  jsh.System.OpenPageEditor = function(page_key, page_name, template, options){
-    options = _.extend({ rawEditorDialog: '', page_id: undefined, deployment_target_params: undefined }, options);
+  jsh.System.OpenPageEditor = function(page_key, page_name, page_template_id, options){
+    var template = jsh.globalparams.PageTemplates[page_template_id];
+    if(!template) return XExt.Alert('Template is not defined');
+
+    options = _.extend({ branch_id: undefined, rawEditorDialog: '', page_id: undefined, deployment_target_params: undefined }, options);
+
     if(template.editor){
       //Open Editor
       var url = template.editor;
 
       var dtparams = {
-        timestamp: (Date.now()).toString()
+        timestamp: (Date.now()).toString(),
+        branch_id: (options.branch_id||'')
       };
 
       var dtparamsstr = '';
@@ -25,7 +30,10 @@
         }
       }
 
+      if(jsh.bcrumbs && jsh.bcrumbs.branch_id) dtparams.branch_id = jsh.bcrumbs.branch_id;
+
       dtparams = _.extend(dtparams, {
+        page_template_id: page_template_id,
         page_key: page_key,
         page_id: (options.page_id||'')
       });

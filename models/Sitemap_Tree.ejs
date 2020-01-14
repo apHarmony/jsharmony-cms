@@ -1,0 +1,80 @@
+<div style="display:none;">
+  <div class="<%=model.class%>_AddPage xdialogbox xpromptbox" style="min-width:470px;">
+    <h3>Add Page</h3>
+    <div align="left" style="padding-top:15px;">
+
+      <div style="display: inline-block; width: 100px;margin-bottom:10px;">Page Title:</div>
+      <input class="page_title default_focus" style="width:350px;" type="text" maxlength="1024" /><br/>
+
+      <div style="display: inline-block; width: 100px;margin-bottom:10px;">Template:</div>
+      <select class="page_template_id dropdown"></select><br/>
+
+      <div style="display: inline-block; width: 100px; margin-bottom:10px;">Page URL:</div>
+      <input class="page_path" style="width:270px;" type="text" maxlength="2048" />
+      <label style="display:inline-block; font-weight:normal; margin-bottom:7px; font-size:14px;"><input class="page_path_default" style="position:relative;top:2px;" type="checkbox" /> Default</label><br/>
+
+      <div style="display: inline-block; width: 100px; margin-bottom:10px;">Sitemap Text:</div>
+      <input class="sitemap_item_text" style="width:270px;" type="text" maxlength="254" />
+      <label style="display:inline-block; font-weight:normal; margin-bottom:7px; font-size:14px;"><input class="sitemap_item_text_default" style="position:relative;top:2px;" type="checkbox" /> Default</label><br/>
+
+      <div style="text-align:center;"><input type="button" value="Add" class="button_ok" style="margin-right:15px;" /> <input type="button" value="Cancel" class="button_cancel" /></div>
+    </div>
+  </div>
+
+  <div class="<%=model.class%>_DuplicatePage xdialogbox xpromptbox" style="min-width:495px;">
+    <h3>Duplicate Page</h3>
+    <div align="left" style="padding-top:15px;">
+
+      <div style="display: inline-block; width: 125px; margin-bottom:10px;">Source Page URL:</div>
+      <input class="source_page_path uneditable" readonly="readonly" style="width:270px;" type="text" maxlength="2048" />
+
+      <div style="display: inline-block; width: 125px;margin-bottom:10px;">New Page Title:</div>
+      <input class="page_title default_focus" style="width:350px;" type="text" maxlength="1024" /><br/>
+
+      <div style="display: inline-block; width: 125px; margin-bottom:10px;">New Page URL:</div>
+      <input class="page_path" style="width:270px;" type="text" maxlength="2048" />
+      <label style="display:inline-block; font-weight:normal; margin-bottom:7px; font-size:14px;"><input class="page_path_default" style="position:relative;top:2px;" type="checkbox" /> Default</label><br/>
+
+      <div style="display: inline-block; width: 125px; margin-bottom:10px;">Sitemap Text:</div>
+      <input class="sitemap_item_text" style="width:270px;" type="text" maxlength="254" />
+      <label style="display:inline-block; font-weight:normal; margin-bottom:7px; font-size:14px;"><input class="sitemap_item_text_default" style="position:relative;top:2px;" type="checkbox" /> Default</label><br/>
+
+      <div style="text-align:center;"><input type="button" value="Add" class="button_ok" style="margin-right:15px;" /> <input type="button" value="Cancel" class="button_cancel" /></div>
+    </div>
+  </div>
+
+  <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90%;box-sizing:border-box;display:flex;flex-direction:column;">
+    <h3 class="edit_page_title">Edit Page</h3>
+    <div align="left" style="padding-top:15px;display:flex;flex-direction:column;flex-grow:1;">
+      <textarea class="page_content default_focus" style="width:100%;box-sizing:border-box;flex-grow:1;"></textarea>
+
+      <div style="text-align:center;"><input type="button" value="Save" class="button_ok" style="margin-right:15px;margin-top:18px;" /> <input type="button" value="Cancel" class="button_cancel" style="margin-top:18px;" /></div>
+    </div>
+  </div>
+
+  <div class="<%=model.class%>_PageProprties xdialogbox xpromptbox" style="min-width:470px;">
+    <h3>Page Properties</h3>
+    <div align="left" style="padding-top:15px;">
+
+      <div style="display: inline-block; width: 100px;margin-bottom:10px;">Page Title:</div>
+      <input class="page_title default_focus" style="width:350px;" type="text" maxlength="1024" /><br/>
+
+      <div style="display: inline-block; width: 100px;margin-bottom:10px;">Template:</div>
+      <select class="page_template_id dropdown"></select><br/>
+
+      <div style="display: inline-block; width: 100px; margin-bottom:10px;">Page URL:</div>
+      <input class="page_path" style="width:270px;" type="text" maxlength="2048" /><br/>
+
+      <div style="text-align:center;"><input type="button" value="Save" class="button_ok" style="margin-right:15px;" /> <input type="button" value="Cancel" class="button_cancel" /></div>
+    </div>
+  </div>
+
+  <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90%;box-sizing:border-box;display:flex;flex-direction:column;">
+    <h3 class="edit_page_title">Edit Page</h3>
+    <div align="left" style="padding-top:15px;display:flex;flex-direction:column;flex-grow:1;">
+      <textarea class="page_content default_focus" style="width:100%;box-sizing:border-box;flex-grow:1;"></textarea>
+
+      <div style="text-align:center;"><input type="button" value="Save" class="button_ok" style="margin-right:15px;margin-top:18px;" /> <input type="button" value="Cancel" class="button_cancel" style="margin-top:18px;" /></div>
+    </div>
+  </div>
+</div>

@@ -145,12 +145,14 @@
       { 
         "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
         "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Site Menu'))"},
-        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"}
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"},
+        "menu_orig_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"}
       },
       { 
         "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
         "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Footer Menu'))"},
-        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"}
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"},
+        "menu_orig_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"}
       }
     ]
   },
@@ -221,6 +223,7 @@
     "unique": [
       ["branch_id","media_key"]
     ],
+    "data_keys": ["branch_id","media_key"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_media_action)='DELETE' and null(inserted(media_orig_id)),'media_orig_id is required for DELETE action');",
@@ -261,6 +264,7 @@
     "unique": [
       ["branch_id","redirect_key"]
     ],
+    "data_keys": ["branch_id","redirect_key"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_redirect_action)='DELETE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for DELETE action');",
@@ -276,6 +280,55 @@
           "set(branch_redirect_muser,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(branch_redirect.branch_redirect_action='DELETE',redirect_id,null);"
         ]
+      }
+    ]
+  },
+
+  "branch_sitemap": {
+    "type": "table",
+    "caption": ["Branch Sitemap", "Branch Sitemaps"],
+    "columns": [
+      { "name": "branch_sitemap_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "sitemap_key", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "sitemap_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "branch_sitemap_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "sitemap_orig_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "sitemap_merge_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "branch_sitemap_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      
+      { "name": "branch_sitemap_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_sitemap_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_sitemap_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_sitemap_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","sitemap_key"]
+    ],
+    "data_keys": ["branch_id","sitemap_key"],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_sitemap_action)='DELETE' and null(inserted(sitemap_orig_id)),'sitemap_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_sitemap_action)='UPDATE' and null(inserted(sitemap_id)),'sitemap_id is required for UPDATE action');",
+          "errorif(inserted(branch_sitemap_action)='UPDATE' and null(inserted(sitemap_orig_id)),'sitemap_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_sitemap_action)='ADD' and null(inserted(sitemap_id)),'sitemap_id is required for ADD action');",
+          "errorif(inserted(branch_sitemap_action)='ADD' and not(null(inserted(sitemap_orig_id))),'sitemap_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_sitemap_merge_action) is not null or inserted(sitemap_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_sitemap_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_sitemap_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_sitemap.branch_sitemap_action='DELETE',sitemap_id,null);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { 
+        "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
+        "sitemap_key": {"sql":"(select top1(sitemap_key from {schema}.sitemap where sitemap_name='Primary Sitemap'))"},
+        "sitemap_id": {"sql":"(select top1(sitemap_id from {schema}.sitemap where sitemap_name='Primary Sitemap'))"},
+        "sitemap_orig_id": {"sql":"(select top1(sitemap_id from {schema}.sitemap where sitemap_name='Primary Sitemap'))"}
       }
     ]
   },
@@ -401,7 +454,7 @@
       {"on": ["update"], "exec": [
           "errorif((inserted(new_branch_id) is not null) and (not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id))),'User does not have access to branch')",
           "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
-          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id) where inserted(new_branch_id) is not null"
+          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id)"
         ]
       },
       {"on": ["insert"], "exec": [
@@ -418,17 +471,19 @@
           "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', $ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
           //Set user's current branch to cloned branch
           "update {schema}.sys_user_branch set branch_id = last_insert_identity() where sys_user_id = jsharmony.my_sys_user_id()",
-          //Add all menu / pages / media / redirect from other branch
+          //Add all menu / pages / media / redirect / sitemap from other branch
           //*Copy New Branch Changes*
           "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, branch_menu_action, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, branch_menu_action, menu_orig_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
           "insert into {schema}.branch_page(branch_id, page_key, page_id, branch_page_action, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, branch_page_action, page_orig_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
           "insert into {schema}.branch_media(branch_id, media_key, media_id, branch_media_action, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, branch_media_action, media_orig_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
           "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, branch_redirect_action, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, branch_redirect_action, redirect_orig_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
+          "insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, branch_sitemap_action, sitemap_orig_id) select {schema}.my_current_branch_id(), sitemap_key, sitemap_id, branch_sitemap_action, sitemap_orig_id from {schema}.branch_sitemap where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
           //*Reset New Branch Changes*
           "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and menu_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
           "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and page_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
           "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, media_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and media_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
-          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and redirect_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'"
+          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and redirect_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
+          "insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, sitemap_orig_id) select {schema}.my_current_branch_id(), sitemap_key, sitemap_id, sitemap_id from {schema}.branch_sitemap where branch_id=inserted(branch_parent_id) and sitemap_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'"
         ]
       }
     ]

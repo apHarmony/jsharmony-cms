@@ -48,6 +48,7 @@ function jsHarmonyCMS(name, options){
 
   _this.PageTemplates = {};
   _this.MenuTemplates = {};
+  _this.Components = {};
   _this.defaultPageTemplate = undefined;
   _this.defaultMenuTemplate = undefined;
   _this.Layouts = {};
@@ -82,6 +83,7 @@ jsHarmonyCMS.prototype.Init = function(cb){
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'page'));
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'media'));
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'menu'));
+  HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'sitemap'));
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'publish_log'));
 
   if(!_.isEmpty(_this.Config.media_thumbnails)){
@@ -157,6 +159,11 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
           prependPropFile(tmpl.content, 'body', tmplbasepath + '.ejs');
           _this.MenuTemplates[tmplname] = tmpl;
         }
+        else if(templateType=='component'){
+          if(!tmpl.content) tmpl.content = '';
+          prependPropFile(tmpl, 'content', tmplbasepath + '.ejs');
+          _this.Components[tmplname] = tmpl;
+        }
       }
     }
   }
@@ -165,6 +172,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   for (var i = 0; i < modeldirs.length; i++ ) {
     LoadTemplatesFolder('page', path.normalize(modeldirs[i].path + '../views/templates/page/'));
     LoadTemplatesFolder('menu', path.normalize(modeldirs[i].path + '../views/templates/menu/'));
+    LoadTemplatesFolder('component', path.normalize(modeldirs[i].path + '../views/templates/component/'));
   }
   _this.PageTemplates['<Raw Text>'] = {
     title: '<Raw Text>',
@@ -268,10 +276,12 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     private_apps: [
       {
         '/_funcs/page/:page_key': _this.funcs.page,
+        '/_funcs/components/:branch_id': _this.funcs.components,
         '/_funcs/media/:media_key/:thumbnail': _this.funcs.media,
         '/_funcs/media/:media_key/': _this.funcs.media,
         '/_funcs/media/': _this.funcs.media,
         '/_funcs/menu/:menu_key/': _this.funcs.menu,
+        '/_funcs/sitemap/:sitemap_key/': _this.funcs.sitemap,
         '/_funcs/deploy': _this.funcs.deploy_req,
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/diff': _this.funcs.diff,

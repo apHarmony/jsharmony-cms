@@ -17,14 +17,14 @@ jsh.App[modelid] = new (function(){
     }
 
     $(window).bind('resize', _this.onresize);
-    jsh.on('jsh_message', function(event, data){ _this.onMessage(data); });
+    jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
     _this.refreshLayout();
   }
 
-  this.onMessage = function(data){
+  this.onmessage = function(data){
     data = (data || '').toString();
-    if(data.indexOf('jsharmony-cms:refresh:')==0){
-      var refresh_folder = data.substr(22);
+    if(data.indexOf('jsharmony-cms:refresh_page_folder:')==0){
+      var refresh_folder = data.substr(34);
       if(_this.state.page_folder == refresh_folder){
         jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
       }
@@ -36,7 +36,6 @@ jsh.App[modelid] = new (function(){
   }
 
   this.onload = function(){
-    //jsh.XModels[XBase["C_ECALL"][0]].bindings.FCERT_ID = function () { return xmodel.controller.form.Data.FCERT_ID; };
     _this.refreshLayout();
     _this.state.page_folder = xmodel.get('page_folder');
   }
@@ -45,7 +44,7 @@ jsh.App[modelid] = new (function(){
 
   this.onloadstate = function(xmodel, state){
     _this.state = _.extend({}, _this.state_default, _this.state, state);
-    this.setFolderBeforeLoad(state.page_folder);
+    if(_this.state.page_folder !== null) this.setFolderBeforeLoad(_this.state.page_folder);
   }
 
   this.setFolderBeforeLoad = function(page_folder){
@@ -73,6 +72,10 @@ jsh.App[modelid] = new (function(){
     _this.state.page_folder = newval;
     jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
     XPage.AddHistory(undefined, undefined, historyParams);
+  }
+
+  this.previewPage = function(page_file){
+    jsh.App[xmodel.namespace+'Page_Tree_Listing'].previewFile(page_file);
   }
 
   this.addFolder = function(parent_page_folder){
@@ -113,25 +116,35 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.moveFolder = function(page_folder){
-    //Get new folder name
-    //Update all paths to new paths
-    var retry = function(){ _this.moveFolder(page_folder); };
-    XExt.Prompt('Please enter a new path', page_folder, function (rslt) {
-      if(rslt === null) return;
-      rslt = rslt.trim();
-      if(rslt == page_folder) return;
-      if(!rslt) return XExt.Alert('Please enter a folder path', retry);
-      if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
-      if(rslt.indexOf('//') >=0 ) return XExt.Alert('Invalid path', retry);
-      if(rslt.indexOf('/./') >=0 ) return XExt.Alert('Invalid path', retry);
-      if(rslt.indexOf('/../') >=0 ) return XExt.Alert('Invalid path', retry);
-      if(rslt[rslt.length-1] != '/') rslt += '/';
-      XForm.Post(xmodel.namespace+'Page_Tree_Folder_Move',{},{ old_page_folder:page_folder, new_page_folder: rslt }, function(){
-        _this.setFolderBeforeLoad(rslt);
-        jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
-      });
-    });
+  this.moveFolder = function(old_page_folder, new_page_folder){
+    new_page_folder = new_page_folder||'';
+
+    XExt.execif(!new_page_folder,
+      function(f){
+        //Get new folder name
+        //Update all paths to new paths
+        var retry = function(){ _this.moveFolder(old_page_folder); };
+        XExt.Prompt('Please enter a new path', old_page_folder, function (rslt) {
+          if(rslt === null) return;
+          rslt = rslt.trim();
+          if(rslt == old_page_folder) return;
+          if(!rslt) return XExt.Alert('Please enter a folder path', retry);
+          if(rslt[0] != '/') return XExt.Alert('Path must start with "/"', retry);
+          if(rslt.indexOf('//') >=0 ) return XExt.Alert('Invalid path', retry);
+          if(rslt.indexOf('/./') >=0 ) return XExt.Alert('Invalid path', retry);
+          if(rslt.indexOf('/../') >=0 ) return XExt.Alert('Invalid path', retry);
+          if(rslt[rslt.length-1] != '/') rslt += '/';
+          new_page_folder = rslt;
+          f();
+        });
+      },
+      function(){
+        XForm.Post(xmodel.namespace+'Page_Tree_Folder_Move',{},{ old_page_folder: old_page_folder, new_page_folder: new_page_folder }, function(){
+          _this.setFolderBeforeLoad(new_page_folder);
+          jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
+        });
+      }
+    );
   }
 
   this.deleteFolder = function(page_folder){
@@ -150,6 +163,35 @@ jsh.App[modelid] = new (function(){
   this.getDefaultPage = function(){
     if(xmodel.controller.form.LOVs.default_page && xmodel.controller.form.LOVs.default_page[0]) return xmodel.controller.form.LOVs.default_page[0].param_cur_val;
     return '';
+  }
+
+  this.page_folder_onmove = function(dragval, dropval, anchor, e) {
+    if(!XExt.hasAction(xmodel.actions,'U')) return;
+    if(!dragval || !dropval) return;
+    dragval = dragval.toString();
+    dropval = dropval.toString();
+
+    if(dragval=='/') return XExt.Alert('Cannot move root folder');
+
+    if(dragval.indexOf('page_key:')==0){
+      //Moving file
+      var page_key = parseInt(dragval.substr(9));
+      var listingmodel = jsh.XModels[xmodel.namespace+'Page_Tree_Listing'];
+      var page = jsh.App[listingmodel.id].getPage(page_key);
+      var new_page_path = dropval + page.page_filename;
+      jsh.App[listingmodel.id].moveFile(page_key, new_page_path);
+    }
+    else {
+      //Moving folder
+      var old_page_folder = dragval;
+      var old_page_folder_name = XExt.basename(old_page_folder);
+      if(!old_page_folder_name) return;
+      var new_page_folder = dropval + old_page_folder_name + '/';
+  
+      XExt.Confirm('Move "'+old_page_folder+'" to "'+ new_page_folder + '"?', function(){
+        _this.moveFolder(old_page_folder, new_page_folder);
+      });
+    }
   }
 
 })();

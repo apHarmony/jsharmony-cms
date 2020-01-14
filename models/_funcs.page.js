@@ -32,7 +32,7 @@ module.exports = exports = function(module, funcs){
     return path.join(path.join(module.jsh.Config.datadir,'page'),page_file_id.toString()+'.json');
   }
 
-  exports.getClientPage = function(page, cb){
+  exports.getClientPage = function(page, sitemaps, cb){
     var appsrv = this;
 
     var page_file_id = page.page_file_id;
@@ -84,53 +84,296 @@ module.exports = exports = function(module, funcs){
       
       return cb(null,{
         page: client_page,
-        template: client_template
+        template: client_template,
+        sitemap: funcs.getPageSitemapInfo(sitemaps, page.page_key)
       });
     });
+  }
+
+  exports.getPageSitemapInfo = function(sitemaps, page_key){
+    if(!sitemaps || !sitemaps.PRIMARY || !page_key) return {};
+    var sitemap = sitemaps.PRIMARY;
+    var sitemap_items = sitemap.sitemap_items || [];
+    page_key = page_key.toString();
+
+    function parseSitemapBool(val){
+      if(typeof val == 'undefined') return false;
+      if(val === '1') return true;
+      if(val === true) return true;
+      return false;
+    }
+
+    var sitemap_items_by_id = {};
+    for(var i=0;i<sitemap_items.length;i++){
+      var sitemap_item = sitemap_items[i];
+      sitemap_item.sitemap_item_id = (sitemap_item.sitemap_item_id||'').toString();
+      sitemap_item.sitemap_item_link_dest = (sitemap_item.sitemap_item_link_dest||'').toString();
+      sitemap_item.sitemap_item_parent_id = (sitemap_item.sitemap_item_parent_id||'').toString();
+      sitemap_items_by_id[sitemap_item.sitemap_item_id.toString()] = sitemap_item;
+      sitemap_item.sitemap_item_exclude_from_breadcrumbs = parseSitemapBool(sitemap_item.sitemap_item_exclude_from_breadcrumbs);
+      sitemap_item.sitemap_item_exclude_from_parent_menu = parseSitemapBool(sitemap_item.sitemap_item_exclude_from_parent_menu);
+      sitemap_item.sitemap_item_hide_menu_parents = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_parents);
+      sitemap_item.sitemap_item_hide_menu_siblings = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_siblings);
+      sitemap_item.sitemap_item_hide_menu_children = parseSitemapBool(sitemap_item.sitemap_item_hide_menu_children);
+    }
+
+    function getParents(sitemap_item){
+      var rslt = [];
+      var curParent = sitemap_items_by_id[sitemap_item.sitemap_item_parent_id];
+      while(curParent){
+        curParent.sitemap_item_siblings = [];
+        rslt.unshift(curParent);
+        curParent = sitemap_items_by_id[curParent.sitemap_item_parent_id];
+      }
+      return rslt;
+    }
+
+    //Get sitemap item
+    var item = null;
+    var matching_items = [];
+    for(var i=0;i<sitemap_items.length;i++){
+      var sitemap_item = sitemap_items[i];
+      if((sitemap_item.sitemap_item_link_type=='PAGE') && (sitemap_item.sitemap_item_link_dest==page_key)){ matching_items.push(sitemap_item); }
+    }
+    if(matching_items.length == 1) item = matching_items[0];
+    else if(matching_items.length > 1){
+      var matching_items_hierarchy = [];
+      for(var i=0;i<matching_items.length;i++){
+        var sitemap_item_parents = getParents(matching_items[i]);
+        var sitemap_item_hierarchy = [matching_items[i].sitemap_item_id];
+        _.each(sitemap_item_parents, function(parent){ sitemap_item_hierarchy.push(parent.sitemap_item_id); });
+        matching_items_hierarchy.push(sitemap_item_hierarchy);
+      }
+      while(
+          (matching_items.length > 1) &&
+          (matching_items[1].sitemap_item_parent_id && _.includes(matching_items_hierarchy[0], matching_items[1].sitemap_item_parent_id))
+        ){ matching_items.shift(); matching_items_hierarchy.shift(); }
+      item = matching_items[0];
+    }
+
+    var parents = null;
+    var children = null;
+    if(item){
+      item.sitemap_item_siblings = [];
+      //Get parents
+      parents = getParents(item);
+
+      children = [];
+      for(var i=0;i<sitemap_items.length;i++){
+        var sitemap_item = sitemap_items[i];
+
+        //Get children
+        if(sitemap_item.sitemap_item_parent_id==item.sitemap_item_id){ children.push(sitemap_item); }
+
+        function parseSibling(sitemap_item){
+          sitemap_item = _.clone(sitemap_item);
+          delete sitemap_item.sitemap_item_siblings;
+          return sitemap_item;
+        }
+
+        //Get siblings
+        if(!sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_parent_id==item.sitemap_item_parent_id)){ item.sitemap_item_siblings.push(parseSibling(sitemap_item)); }
+        for(var j=0;j<parents.length;j++){
+          if(!sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_parent_id==parents[j].sitemap_item_parent_id)){ parents[j].sitemap_item_siblings.push(parseSibling(sitemap_item)); }
+        }
+      }
+
+      if(item.sitemap_item_hide_menu_children) children = [];
+      if(item.sitemap_item_hide_menu_siblings || !item.sitemap_item_siblings.length) item.sitemap_item_siblings = [parseSibling(item)];
+      for(var i=0;i<parents.length;i++){
+        var parent = parents[i];
+        if(parent.sitemap_item_hide_menu_siblings || !parent.sitemap_item_siblings.length) parent.sitemap_item_siblings = [parseSibling(parent)];
+      }
+      if(item.sitemap_item_hide_menu_parents) parents = [];
+      for(var i=parents.length-1;i>=0;i--){
+        var parent = parents[i];
+        if(parent.sitemap_item_hide_menu_parents){
+          parents.splice(0, i);
+          break;
+        }
+      }
+
+    }
+
+    var rslt = {
+      item: item,
+      parents: parents,
+      children: children
+    };
+    return rslt;
   }
 
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
       getMediaURL: function(media_key){ return ''; },
       getPageURL: function(page_key){ return ''; },
-      removeClass: false
-    }, options);
-    var $ = cheerio.load(content, { xmlMode: true });
+      removeClass: false,
+      HTMLParser: false,
+    }, options);    
 
-    function parseURLs(jobj,prop){
-      if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
-      if(jobj.hasClass('cms-no-replace-url')) return;
-      var url = jobj.attr(prop);
-      if(!url) return;
+    function replaceURL(url){
+      if(!url) return url;
+      if(!url) return url;
       var urlparts = urlparser.parse(url, true);
-      if(!urlparts.path) return;
+      if(!urlparts.path) return url;
       var patharr = (urlparts.path||'').split('/');
 
       if((urlparts.path.indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
         var media_key = patharr[3];
         if(parseInt(media_key).toString()==media_key){
           var media_url = options.getMediaURL(media_key);
-          jobj.attr(prop, media_url);
+          return media_url;
         }
       }
       if((urlparts.path.indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
         var page_key = patharr[3];
         if(parseInt(page_key).toString()==page_key){
           var page_url = options.getPageURL(page_key);
-          jobj.attr(prop, page_url);
+          return page_url;
         }
       }
+      
+      return url;
     }
 
-    $('a').each(function(obj_i,obj){
-      parseURLs($(obj),'href');
-    });
-    $('img').each(function(obj_i,obj){
-      parseURLs($(obj),'src');
-    });
-    //Prevent auto-closing HTML elements
-    $('div,iframe,span,script').filter(function(idx,elem){ return !elem.children.length; }).text('');
-    return $.html();
+    function parseURLs(jobj,prop){
+      if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
+      if(jobj.hasClass('cms-no-replace-url')) return;
+      var url = jobj.attr(prop);
+      var newURL = replaceURL(url);
+      if(newURL && (newURL!=url)) jobj.attr(prop, newURL);
+    }
+
+    if(options.HTMLParser){
+      var $ = cheerio.load(content, { xmlMode: true });
+      $('a').each(function(obj_i,obj){
+        parseURLs($(obj),'href');
+      });
+      $('img').each(function(obj_i,obj){
+        parseURLs($(obj),'src');
+      });
+      //Prevent auto-closing HTML elements
+      $('div,iframe,span,script').filter(function(idx,elem){ return !elem.children.length; }).text('');
+
+      content = $.html();
+    }
+
+    var rtag = '#@JSHCMS';
+    var rtagidx = content.indexOf(rtag);
+    while(rtagidx >= 0){
+      var startofstr = rtagidx;
+      var endofstr = rtagidx;
+      var urlchar = /[a-zA-Z0-9\/_#\-:=?@%&]/;
+      do{ if(!urlchar.test(content[startofstr])) break; } while(--startofstr >= 0);
+      do{ if(!urlchar.test(content[endofstr])) break; } while(++endofstr < content.length);
+      startofstr++;
+      endofstr--;
+      var url = content.substr(startofstr, endofstr - startofstr + 1);
+      var newURL = replaceURL(url);
+      if(true || newURL && (newURL!=url)){
+        content = content.substr(0, startofstr) + newURL + content.substr(endofstr + 1);
+        rtagidx = endofstr;
+      }
+      rtagidx = content.indexOf(rtag, rtagidx + 1);
+    }
+
+    return content;
+  }
+
+  exports.components = function(req, res, next){
+    var verb = req.method.toLowerCase();
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var XValidate = jsh.XValidate;
+    var cms = jsh.Modules['jsHarmonyCMS'];
+
+    if(!req.params || !req.params.branch_id) return next();
+    var branch_id = req.params.branch_id;
+
+    var referer = req.get('Referer');
+    if(referer){
+      var urlparts = urlparser.parse(referer, true);
+      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+      res.setHeader('Access-Control-Allow-Origin', remote_domain);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+      res.setHeader('Access-Control-Allow-Credentials', true);
+    }
+
+    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    //Get page
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { 'branch_id': branch_id };
+    var validate = new XValidate();
+    var verrors = {};
+    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+    var deployment_target_params = '';
+
+    if (verb == 'get'){
+
+      var components = JSON.parse(JSON.stringify(module.Components));
+
+      async.waterfall([
+
+        //Check if branch exists
+        function(cb){
+          var sql = "select branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this branch'); }
+            return cb();
+          });
+        },
+
+        //Get deployment_target_params for branch
+        function(cb){
+          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) deployment_target_params = rslt[0];
+            return cb();
+          });
+        },
+
+        //Generate components
+        function(cb){
+          var publish_params = {
+            timestamp: (Date.now()).toString()
+          };
+          try{
+            if(deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment_target_params));
+          }
+          catch(ex){
+            return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
+          }
+          publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
+    
+          //Resolve Remote Templates
+          _.each(components, function(component){
+            if(component.remote_template && component.remote_template.publish){
+              for(var key in publish_params){
+                component.remote_template.publish = Helper.ReplaceAll(component.remote_template.publish, '%%%' + key + '%%%', publish_params[key]);
+              }
+            }
+          });
+
+          return cb();
+        },
+      ], function(err){
+        if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+
+        res.end(JSON.stringify({ 
+          '_success': 1,
+          'components': components
+        }));
+      });
+    }
+    else return next();
   }
   
   exports.page = function (req, res, next) {
@@ -178,7 +421,10 @@ module.exports = exports = function(module, funcs){
       validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
       sql += ' from '+(module.schema?module.schema+'.':'')+'page where page_key=@page_key and page_id=@page_id';
     }
-    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+    else{
+      sql += ',(select '+(module.schema?module.schema+'.':'')+'my_current_branch_id()) branch_id';
+      sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+    }
 
     var page_role = '';
     if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
@@ -204,17 +450,27 @@ module.exports = exports = function(module, funcs){
 
       var baseurl = req.baseurl;
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+
+      if(!Q.page_id){
+        if(Q.branch_id){
+          if(Q.branch_id.toString()!=(page.branch_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The branch has changed.'); }
+        }
+        if(Q.page_template_id){
+          if(Q.page_template_id.toString()!=(page.page_template_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The template has changed.'); }
+        }
+      }
       
       if (verb == 'get'){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|page_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var authors = null;
         var clientPage = null;
         var media_file_ids = {};
+        var sitemaps = {};
 
         async.waterfall([
 
@@ -247,23 +503,52 @@ module.exports = exports = function(module, funcs){
             });
           },
 
+          //Get sitemaps
+          function(cb){
+            appsrv.ExecRecordset(req._DBContext, "select sitemap_key, sitemap_file_id, sitemap_type from "+(module.schema?module.schema+'.':'')+"v_my_sitemap where (sitemap_file_id is not null)", [], {}, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+              _.each(rslt[0], function(sitemap){
+                sitemaps[sitemap.sitemap_type] = sitemap;
+              });
+              async.eachOfSeries(sitemaps, function(sitemap, sitemap_type, sitemap_cb){
+                funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+                  if(err) return sitemap_cb(err);
+                  if(!sitemap_content) return sitemap_cb(null);
+                  sitemap.sitemap_items = sitemap_content.sitemap_items;
+                  return sitemap_cb();
+                });
+              }, cb);
+            });
+          },
+
           //Get page
           function(cb){
-            funcs.getClientPage(page, function(err, _clientPage){
+
+            function replaceURLs(content, options){
+              var rslt = funcs.replaceBranchURLs(content, _.extend(options, {
+                getMediaURL: function(media_key){
+                  return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
+                },
+                getPageURL: function(page_key){
+                  return baseurl+'_funcs/page/'+page_key+'/#@JSHCMS';
+                }
+              }));
+              return rslt;
+            }
+
+            funcs.getClientPage(page, sitemaps, function(err, _clientPage){
               if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
               clientPage = _clientPage;
               if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
-              if(clientPage.page.content && !clientPage.template.raw){
-                for(var key in clientPage.page.content){
-                  clientPage.page.content[key] = funcs.replaceBranchURLs(clientPage.page.content[key], {
-                    getMediaURL: function(media_key){
-                      return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key];
-                    },
-                    getPageURL: function(page_key){
-                      return baseurl+'_funcs/page/'+page_key+'/';
-                    }
-                  });
-                }
+              if(!clientPage.template.raw){
+                if(clientPage.page.content) for(var key in clientPage.page.content){ clientPage.page.content[key] = replaceURLs(clientPage.page.content[key]); }
+                _.each(['css','header','footer'], function(key){
+                  if(clientPage.page[key]) clientPage.page[key] = replaceURLs(clientPage.page[key], { HTMLParser: false });
+                });
+              }
+              else if(clientPage.template.raw) {
+                if(clientPage.page.content && clientPage.page.content.body) clientPage.page.content.body = replaceURLs(clientPage.page.content.body);
               }
               return cb();
             });
@@ -275,6 +560,7 @@ module.exports = exports = function(module, funcs){
             '_success': 1,
             'page': clientPage.page,
             'template': clientPage.template,
+            'sitemap': clientPage.sitemap,
             'authors': authors,
             'role': page_role,
             'views': {
@@ -305,7 +591,7 @@ module.exports = exports = function(module, funcs){
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //XValidate
         var client_page = P;

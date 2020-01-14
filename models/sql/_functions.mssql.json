@@ -17,6 +17,12 @@
       "$ifnull((select case branch_access when 'RW' then 1 else 0 end is_editable from {schema}.v_my_branch_access where branch_id={schema}.my_current_branch_id()),0)"
     ]
   },
+  "{schema}.my_current_branch_is_versioned":{
+    "params": [],
+    "sql": [
+      "$ifnull((select case branch_type when 'USER' then 1 else 0 end is_versioned from {schema}.v_my_branch_access where branch_id={schema}.my_current_branch_id()),0)"
+    ]
+  },
   "{schema}.my_current_branch_is_merging":{
     "params": [],
     "sql": [
@@ -39,6 +45,12 @@
     "params": ["media_desc", "media_path", "media_tags", "media_type", "media_ext", "media_size", "media_width", "media_height"],
     "sql": [
       "insert into {schema}.v_my_media(media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height) values(%%%media_desc%%%, %%%media_path%%%, %%%media_tags%%%, %%%media_type%%%, %%%media_ext%%%, %%%media_size%%%, %%%media_width%%%, %%%media_height%%%);"
+    ]
+  },
+  "{schema}.duplicate_page":{
+    "params": ["page_key", "page_path", "page_title"],
+    "sql": [
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select %%%page_path%%%, page_file_id, %%%page_title%%%, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=%%%page_key%%%;"
     ]
   },
   "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc;"

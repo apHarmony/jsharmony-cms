@@ -1,0 +1,74 @@
+{
+  "Sitemap_Tree_Info": {
+    "layout":"form",
+    "table":"",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "unbound":true,
+    "title":"Edit Sitemap Item",
+    "caption":["Sitemap Item","Sitemap Items"],
+    "hide_system_buttons" : ["print","export","help","delete"], 
+    "buttons":[
+      { "link":"js:jsh.App[xmodel.parent].deleteSitemapItem(xmodel.get('sitemap_item_id'));","icon":"delete","text":"Delete","actions":"D" }
+    ],
+    "css": [
+      ".<%=model.class%>_divider { font-weight:bold;margin-top:24px;margin-bottom:8px;font-size:14px; }",
+      ".<%=model.class%>_page_options a { display:block; padding-bottom:5px; color:#000; position:relative; padding-left:34px; }",
+      ".<%=model.class%>_page_options a img { height:14px; position:absolute; left:10px; top:2px; }",
+      ".<%=model.class%>_page_info { padding-bottom:3px; padding-left:10px; }",
+      ".<%=model.class%>_page_info.last { padding-bottom:6px; }",
+      ".<%=model.class%>_page_info label { font-weight:bold; width:70px; display:inline-block; }",
+      ".<%=model.class%>_page_info img { height:12px; position:relative; top:1px; }",
+    ],
+    "oninit": "_this.oninit();",
+    "onload": "_this.onload();",
+    "fields":[
+      {"name":"sitemap_item_id","control":"hidden","key":true},
+      {"name":"sitemap_item_parent_id","control":"hidden"},
+      {"name":"sitemap_item_path","control":"hidden"},
+      {"name":"sitemap_item_text","control":"textbox_M","controlstyle":"width:300px;","caption":"Link Text","validate":["Required"],"nl":true,"onchange":"_this.sitemap_item_text_onchange(obj,newval);", "captionstyle":"width:68px;"},
+      {"name":"sitemap_item_link_type","control":"dropdown","caption":"Link Type","lov":{ "blank": "(No Link)", "values": { "JS": "JavaScript", "MEDIA": "Media", "PAGE": "Page", "URL": "URL" } }, "onchange":"_this.sitemap_item_link_type_onchange(obj, newval, undoChange);","nl":true},
+      {"name":"sitemap_item_link_target","control":"dropdown","caption":"Target","lov":{ "blank": "Same Window", "values": { "NEWWIN": "New Window" } }},
+
+      {"name":"sitemap_item_link_dest","control":"textbox_L","caption":"Destination","controlstyle":"width:300px;","nl":true,
+        "validate":[{"function":"js:if((_obj.sitemap_item_link_type=='URL') && !_obj.sitemap_item_link_dest) return 'URL is required'; if((_obj.sitemap_item_link_type=='JS') && !_obj.sitemap_item_link_dest) return 'JS is required';"}]},
+
+      {"name":"sitemap_item_link_page","control":"textbox_M","caption":"Page","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
+        "validate":[{"function":"js:if((_obj.sitemap_item_link_type=='PAGE') && !_obj.sitemap_item_link_dest) return 'Page is required';"}]},
+      {"name":"sitemap_item_link_page_browse","control":"button","value":"Browse","onclick":"js:_this.browsePage();","actions":"IU"},
+
+      {"name":"sitemap_item_link_media","control":"textbox_M","caption":"Media","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
+        "validate":[{"function":"js:if((_obj.sitemap_item_link_type=='MEDIA') && !_obj.sitemap_item_link_dest) return 'Media is required';"}]},
+      {"name":"sitemap_item_link_media_browse","control":"button","value":"Browse","onclick":"js:_this.browseMedia();","actions":"IU"},
+
+      {"control":"html","value":"<div class='<%=model.class%>_page_options'>"},
+      {"control":"html","value":"<div class='<%=model.class%>_divider'>:: Page</div>"},
+      {"control":"html","value":"<div class='<%=model.class%>_page_info'><label>Page Title:</label><span class='page_title'></span></div>"},
+      {"control":"html","value":"<div class='<%=model.class%>_page_info last'><label>Template:</label><span class='page_template'></span></div>"},
+      {"control":"html","value":"<a href='#' class='page_edit_content'><img src='/images/icon_edit.png' style='margin-left:1px;' />Edit Page Content</a>"},
+      {"control":"html","value":"<a href='#' class='page_edit_properties'><img src='/images/icon_list.png' />Page Properties</a>"},
+      {"control":"html","value":"<a href='#' class='page_view_revisions'><img src='/images/icon_refresh.png' style='margin-left:-1px;' />View Revisions</a>"},
+      {"control":"html","value":"<a href='#' class='page_duplicate'><img src='/images/icon_copy.png' style='margin-left:1px;' />Duplicate Page</a>"},
+      {"control":"html","value":"</div>"},
+
+      {"control":"html","value":"<div class='<%=model.class%>_divider'>:: Advanced Options</div>"},
+      {"name":"sitemap_item_type","control":"dropdown","caption":"Render As","default":"TEXT","lov":{ "blank": false, "values": { "TEXT": "Text", "HTML": "HTML" } }, "captionstyle":"width:68px;"},
+      {"name":"sitemap_item_class","control":"textbox_M","caption":"CSS Class","nl":true},
+      {"name":"sitemap_item_style","control":"textbox_L","caption":"CSS Style","controlstyle":"width:300px;","nl":true},
+      {"name":"sitemap_item_tag","control":"textbox_L","caption":"Tag","controlstyle":"width:300px;","nl":true},
+
+      {"name":"sitemap_item_exclude_from_breadcrumbs","control":"checkbox","controlstyle":"margin-left:70px;","caption":"","caption_ext":"Exclude from Breadcrumbs","controlparams":{"value_true":1,"value_false":0},"nl":true},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_exclude_from_breadcrumbs\").click();'>Exclude from Breadcrumbs</label>"},
+      {"name":"sitemap_item_exclude_from_parent_menu","control":"checkbox","controlstyle":"margin-left:70px;","caption":"","caption_ext":"Exclude from Parent / Sibling Menus","controlparams":{"value_true":1,"value_false":0},"nl":true},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_exclude_from_parent_menu\").click();'>Exclude from Parent / Sibling Menus</label>"},
+      {"name":"sitemap_item_hide_menu_parents","control":"checkbox","controlstyle":"margin-left:70px;","caption":"","caption_ext":"Menu: Hide Parents","controlparams":{"value_true":1,"value_false":0},"nl":true},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_hide_menu_parents\").click();'>Menu: Hide Parents</label>"},
+      {"name":"sitemap_item_hide_menu_siblings","control":"checkbox","controlstyle":"margin-left:70px;","caption":"","caption_ext":"Menu: Hide Siblings","controlparams":{"value_true":1,"value_false":0},"nl":true},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_hide_menu_siblings\").click();'>Menu: Hide Siblings</label>"},
+      {"name":"sitemap_item_hide_menu_children","control":"checkbox","controlstyle":"margin-left:70px;","caption":"","caption_ext":"Menu: Hide Children","controlparams":{"value_true":1,"value_false":0},"nl":true},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_hide_menu_children\").click();'>Menu: Hide Children</label>"},
+
+      {"control":"hidden", "name":"page_template_id", "lov":{ "values": "#CMS_PAGE_TEMPLATES" } }
+	  ]
+  }
+}

@@ -27,7 +27,7 @@ jsh.App[modelid] = new (function(){
   this.orig_current_menu_item = null;
 
   this.oninit = function(){
-    //jsh.System.RequireBranch(xmodel);
+    jsh.System.RequireBranch(xmodel);
     this.menu_key = jsh._GET.menu_key;
     if(jsh._GET.menu_id) this.menu_id = jsh._GET.menu_id;
     $(window).bind('resize', _this.onresize);
@@ -86,15 +86,15 @@ jsh.App[modelid] = new (function(){
 
     _this.menu_items.splice(dragitemidx, 1);
     var dropitemidx = _.indexOf(_this.menu_items, dropitem);
-    if(anchor == 'full'){
+    if(anchor[1] == 'full'){
       dragitem.menu_item_parent_id = dropitem.menu_item_id;
       _this.menu_items.splice(dropitemidx + 1, 0, dragitem);
     }
-    else if(anchor == 'top'){
+    else if(anchor[1] == 'top'){
       dragitem.menu_item_parent_id = dropitem.menu_item_parent_id;
       _this.menu_items.splice(dropitemidx, 0, dragitem);
     }
-    else if(anchor == 'bottom'){
+    else if(anchor[1] == 'bottom'){
       dragitem.menu_item_parent_id = dropitem.menu_item_parent_id;
       _this.menu_items.splice(dropitemidx + 1, 0, dragitem);
     }
@@ -297,7 +297,15 @@ jsh.App[modelid] = new (function(){
       'menu_item_style',
       'menu_item_tag'
     ], function(key){
-      if((xmodelInfo.get(key)||'') != (_this.orig_current_menu_item[key]||'')){
+      var oldval = _this.orig_current_menu_item[key];
+      if(XExt.isNullUndefined(oldval)) oldval = '';
+      oldval = oldval.toString();
+
+      var newval = xmodelInfo.get(key);
+      if(XExt.isNullUndefined(newval)) newval = '';
+      newval = newval.toString();
+
+      if(oldval != newval){
         _this.has_changes = true;
       }
     });

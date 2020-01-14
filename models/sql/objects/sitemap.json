@@ -1,0 +1,125 @@
+{
+  "code_sitemap_type": {
+    "type": "code",
+    "code_type": "app",
+    "caption": "Sitemap Type",
+    "init_data": [
+      { "code_val": "PRIMARY", "code_txt": "Primary Sitemap", "code_seq": 1 }
+    ]
+  },
+
+  "sitemap": {
+    "type": "table",
+    "caption": ["Sitemap","Sitemaps"],
+    "columns": [
+      { "name": "sitemap_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "sitemap_key", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "sitemap_file_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "sitemap_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "sitemap_type", "type": "varchar", "length": 32, "foreignkey": { "code_sitemap_type": "code_val" } },
+      { "name": "sitemap_notes", "type": "varchar", "length": -1 },
+
+      { "name": "sitemap_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
+      { "name": "sitemap_lang", "type": "varchar", "length": 32, "foreignkey": { "code_lang": "code_val" } },
+      
+      { "name": "sitemap_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "sitemap_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "sitemap_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "sitemap_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          "setif(null(sitemap.sitemap_key),sitemap_key,sitemap.sitemap_id);",
+          "setif(null(sitemap.sitemap_file_id),sitemap_file_id,sitemap.sitemap_id);"
+        ]
+      },
+      { "on": ["validate_update"], "exec": [
+          "errorif(update(sitemap_key) and (deleted(sitemap_key) is not null),'Cannot update sitemap_key');",
+          "errorif(update(sitemap_file_id) and (deleted(sitemap_file_id) is not null),'Cannot update sitemap_file_id');",
+          "errorif(update(sitemap_name) and (deleted(sitemap_name) is not null),'Cannot update sitemap_name');",
+          "errorif(update(sitemap_type) and (deleted(sitemap_type) is not null),'Cannot update sitemap_type');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(sitemap_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(sitemap_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { "sitemap_name": "Primary Sitemap", "sitemap_type": "PRIMARY", "_FILES": { "sitemap_sample.json": "sitemap/{{sitemap_id}}.json" } }
+    ]
+  },
+
+  "v_my_sitemap": {
+    "type": "view",
+    "caption": ["Sitemap", "Sitemaps"],
+    "tables": {
+      "sitemap": {
+        "columns": [
+          "sitemap_id",
+          "sitemap_key",
+          "sitemap_file_id",
+          "sitemap_name",
+          "sitemap_type",
+    
+          "sitemap_review_sts",
+          "sitemap_lang",
+          
+          "sitemap_etstmp",
+          "sitemap_euser",
+          "sitemap_mtstmp",
+          "sitemap_muser"
+        ]
+      },
+      "branch_sitemap": {
+        "join_type": "inner",
+        "join_columns": {
+          "branch_sitemap.sitemap_id": "sitemap.sitemap_id",
+          "branch_sitemap.branch_id": "{schema}.my_current_branch_id()"
+        }
+      }
+    },
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_name=inserted(sitemap_name)),'Sitemap name already exists');",
+            "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_type=inserted(sitemap_type)),'Sitemap already exists for this sitemap_type');",
+            "with_insert_identity(sitemap, sitemap_id, ",
+            "  insert into sitemap(sitemap_name, sitemap_type, sitemap_review_sts, sitemap_lang) values(inserted(sitemap_name), inserted(sitemap_type), inserted(sitemap_review_sts), inserted(sitemap_lang)),",
+            "  return_insert_key(sitemap, sitemap_key, (sitemap_key=%%%INSERT_ID%%%));",
+            "  insert into branch_sitemap(branch_id, sitemap_key, sitemap_id, branch_sitemap_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
+            "  update branch_sitemap set sitemap_orig_id=sitemap_id,branch_sitemap_action=NULL where branch_id={schema}.my_current_branch_id() and sitemap_key = %%%INSERT_ID%%% and {schema}.my_current_branch_is_versioned()=0;",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_name=inserted(sitemap_name) and sitemap_key<>deleted(sitemap_key)),'Sitemap name already exists');",
+            "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_type=inserted(sitemap_type) and sitemap_key<>deleted(sitemap_key)),'Sitemap already exists for this sitemap_type');",
+            "with_insert_identity(sitemap, sitemap_id, ",
+            "  insert into sitemap(sitemap_key, sitemap_file_id, sitemap_name, sitemap_type, sitemap_review_sts, sitemap_lang) values(deleted(sitemap_key), (case when inserted(sitemap_file_id) is null then null else deleted(sitemap_file_id) end), inserted(sitemap_name), inserted(sitemap_type), inserted(sitemap_review_sts), inserted(sitemap_lang)),",
+            "  update branch_sitemap set sitemap_id=%%%INSERT_ID%%%,branch_sitemap_action=(case branch_sitemap_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and sitemap_key = deleted(sitemap_key);",
+            "  update branch_sitemap set sitemap_orig_id=sitemap_id,branch_sitemap_action=NULL where branch_id={schema}.my_current_branch_id() and sitemap_key = deleted(sitemap_key) and {schema}.my_current_branch_is_versioned()=0;",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+          "update branch_sitemap set sitemap_id=null,branch_sitemap_action='DELETE' where branch_id={schema}.my_current_branch_id() and sitemap_key = deleted(sitemap_key) and ((branch_sitemap_action is null) or (branch_sitemap_action in ('UPDATE','DELETE')))",
+          "delete from branch_sitemap where branch_id={schema}.my_current_branch_id() and sitemap_key = deleted(sitemap_key) and (branch_sitemap_action='ADD' or {schema}.my_current_branch_is_versioned()=0)",
+          "increment_changes()"
+        ]
+      }
+    ]
+  }
+}

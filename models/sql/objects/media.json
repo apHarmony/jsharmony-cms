@@ -134,6 +134,7 @@
             "  insert into media(media_file_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values(inserted(media_file_id), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
             "  return_insert_key(media, media_key, (media_key=%%%INSERT_ID%%%));",
             "  insert into branch_media(branch_id, media_key, media_id, branch_media_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
+            "  update branch_media set media_orig_id=media_id,branch_media_action=NULL where branch_id={schema}.my_current_branch_id() and media_key = %%%INSERT_ID%%% and {schema}.my_current_branch_is_versioned()=0;",
             "  increment_changes()",
             ")"
           ]
@@ -148,6 +149,7 @@
             "with_insert_identity(media, media_id, ",
             "  insert into media(media_key, media_file_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values(deleted(media_key), (case when inserted(media_file_id) is null then null else deleted(media_file_id) end), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
             "  update branch_media set media_id=%%%INSERT_ID%%%,branch_media_action=(case branch_media_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key);",
+            "  update branch_media set media_orig_id=media_id,branch_media_action=NULL where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  increment_changes()",
             ")"
           ]
@@ -157,7 +159,7 @@
           "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
           "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
           "update branch_media set media_id=null,branch_media_action='DELETE' where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and ((branch_media_action is null) or (branch_media_action in ('UPDATE','DELETE')))",
-          "delete from branch_media where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and branch_media_action='ADD'",
+          "delete from branch_media where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and (branch_media_action='ADD' or {schema}.my_current_branch_is_versioned()=0)",
           "increment_changes()"
         ]
       }
