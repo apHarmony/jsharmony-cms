@@ -5,6 +5,7 @@ jsh.App[modelid] = new (function(){
   this.branch_media = [];
   this.branch_redirects = [];
   this.branch_menus = [];
+  this.branch_sitemaps = [];
   this.deployment_target_params = {};
   this.conflicts = 0;
   this.resolved = 0;
@@ -20,18 +21,26 @@ jsh.App[modelid] = new (function(){
     XForm.Get(emodelid, { src_branch_id: xmodel.get('branch_merge_id'), dst_branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.deployment_target_params = rslt.deployment_target_params;
+
         _this.branch_pages = rslt.branch_pages;
         _this.conflicts = _this.conflicts + rslt.branch_pages.length;
         _this.unresolved = _this.unresolved + rslt.branch_pages.filter(function(bp) {return bp.page_merge_id == null && bp.branch_page_merge_action == null;}).length;
+
         _this.branch_media = rslt.branch_media;
         _this.conflicts = _this.conflicts + rslt.branch_media.length;
         _this.unresolved = _this.unresolved + rslt.branch_media.filter(function(bm) {return bm.media_merge_id == null && bm.branch_media_merge_action == null;}).length;
+
         _this.branch_redirects = rslt.branch_redirects;
         _this.conflicts = _this.conflicts + rslt.branch_redirects.length;
         _this.unresolved = _this.unresolved + rslt.branch_redirects.filter(function(br) {return br.redirect_merge_id == null && br.branch_redirect_merge_action == null;}).length;
+
         _this.branch_menus = rslt.branch_menus;
         _this.conflicts = _this.conflicts + rslt.branch_menus.length;
         _this.unresolved = _this.unresolved + rslt.branch_menus.filter(function(bm) {return bm.menu_merge_id == null && bm.branch_menu_merge_action == null;}).length;
+
+        _this.branch_sitemaps = rslt.branch_sitemaps;
+        _this.conflicts = _this.conflicts + rslt.branch_sitemaps.length;
+        _this.unresolved = _this.unresolved + rslt.branch_sitemaps.filter(function(bs) { return bs.sitemap_merge_id == null && bs.branch_sitemap_merge_action == null;}).length;
 
         _this.resolved = _this.conflicts - _this.unresolved;
 
@@ -92,6 +101,15 @@ jsh.App[modelid] = new (function(){
       collect(branch_redirect, 'dst_orig_redirect');
       collect(branch_redirect, 'merge_redirect');
     });
+    _.each(_this.branch_sitemaps, function(branch_sitemap){
+      branch_sitemap.src_branch_sitemap_action = (branch_sitemap.src_branch_sitemap_action||'').toString().toUpperCase();
+      branch_sitemap.dst_branch_sitemap_action = (branch_sitemap.dst_branch_sitemap_action||'').toString().toUpperCase();
+      collect(branch_sitemap, 'src_sitemap');
+      collect(branch_sitemap, 'dst_sitemap');
+      collect(branch_sitemap, 'src_orig_sitemap');
+      collect(branch_sitemap, 'dst_orig_sitemap');
+      collect(branch_sitemap, 'merge_sitemap');
+    });
   }
 
   this.render = function(){
@@ -116,6 +134,10 @@ jsh.App[modelid] = new (function(){
       'template_title': 'Template',
       'menu_path': 'Menu File Path',
       'menu_items': 'Menu Items'
+    }
+    mapping.sitemap = {
+      'sitemap_name': 'Sitemap Name',
+      'sitemap_items': 'Sitemap Items'
     }
     var map = function(key, dict){
       if(mapping[dict] && (key in mapping[dict])) return mapping[dict][key];
@@ -165,6 +187,10 @@ jsh.App[modelid] = new (function(){
     jdiff.find('.button_pick_menu').on('click', function(e){ _this.pickMenu(this); e.preventDefault(); });
     jdiff.find('.button_unresolve_menu').on('click', function(e){ _this.pickMenu(this); e.preventDefault(); });
 
+    jdiff.find('.preview_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    jdiff.find('.button_pick_sitemap').on('click', function(e){ _this.pickSitemap(this); e.preventDefault(); });
+    jdiff.find('.button_unresolve_sitemap').on('click', function(e){ _this.pickSitemap(this); e.preventDefault(); });
+
     jdiff.find('.button_pick_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
     jdiff.find('.button_unresolve_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
 
@@ -179,10 +205,8 @@ jsh.App[modelid] = new (function(){
     var page_id = jobj.data('page_id');
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
-    var page_template = jsh.globalparams.PageTemplates[page_template_id];
-    if(!page_template) return XExt.Alert('Template is not defined');
 
-    jsh.System.OpenPageEditor(page_key, page_filename, page_template, { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
   }
 
   this.previewMedia = function(obj){
@@ -200,6 +224,13 @@ jsh.App[modelid] = new (function(){
     var menu_key = jobj.data('menu_key');
     var menu_id = jobj.data('menu_id');
     XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id })
+  }
+
+  this.previewSitemap = function(obj){
+    var jobj = $(obj);
+    var sitemap_key = jobj.data('sitemap_key');
+    var sitemap_id = jobj.data('sitemap_id');
+    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id })
   }
 
   this.pickPage = function(obj){
@@ -266,6 +297,23 @@ jsh.App[modelid] = new (function(){
     };
 
     XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Redirect', query, params, function(rslt){
+      window.location.reload();
+    });
+  }
+
+  this.pickSitemap = function(obj){
+    var jobj = $(obj);
+
+    var query = {
+      branch_id: xmodel.get('branch_id'),
+      sitemap_key: jobj.data('sitemap_key'),
+    };
+    var params = {
+      sitemap_merge_id: jobj.data('sitemap_id'),
+      branch_sitemap_merge_action: jobj.data('branch_sitemap_action'),
+    };
+
+    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Sitemap', query, params, function(rslt){
       window.location.reload();
     });
   }

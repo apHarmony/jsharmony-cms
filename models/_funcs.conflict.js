@@ -62,10 +62,12 @@ module.exports = exports = function(module, funcs){
       var branch_media = [];
       var branch_redirects = [];
       var branch_menus = [];
+      var branch_sitemaps = [];
       var deployment_target_params = '';
       var pages = {};
       var media = {};
       var menus = {};
+      var sitemaps = {};
       var page_keys = {};
       var media_keys = {};
 
@@ -341,6 +343,88 @@ module.exports = exports = function(module, funcs){
           return cb();
         },
 
+        //Get all branch_sitemap
+        function(cb){
+          var sql = "select src_branch_sitemap.sitemap_key,\
+              src_branch_sitemap.branch_sitemap_action as src_branch_sitemap_action, src_branch_sitemap.sitemap_id as src_sitemap_id, src_branch_sitemap.sitemap_orig_id as src_sitemap_orig_id, \
+              dst_branch_sitemap.branch_sitemap_action as dst_branch_sitemap_action, dst_branch_sitemap.sitemap_id as dst_sitemap_id, dst_branch_sitemap.sitemap_orig_id as dst_sitemap_orig_id, \
+              dst_branch_sitemap.sitemap_merge_id, dst_branch_sitemap.sitemap_merge_id merge_sitemap_id, dst_branch_sitemap.branch_sitemap_merge_action, \
+              src_orig_sitemap.sitemap_name src_orig_sitemap_name, src_orig_sitemap.sitemap_type src_orig_sitemap_type, src_orig_sitemap.sitemap_file_id src_orig_sitemap_file_id,\
+              dst_orig_sitemap.sitemap_name dst_orig_sitemap_name, dst_orig_sitemap.sitemap_type dst_orig_sitemap_type, dst_orig_sitemap.sitemap_file_id dst_orig_sitemap_file_id,\
+              src_sitemap.sitemap_name src_sitemap_name, src_sitemap.sitemap_type src_sitemap_type, src_sitemap.sitemap_file_id src_sitemap_file_id,\
+              dst_sitemap.sitemap_name dst_sitemap_name, dst_sitemap.sitemap_type dst_sitemap_type, dst_sitemap.sitemap_file_id dst_sitemap_file_id,\
+              merge_sitemap.sitemap_name merge_sitemap_name, merge_sitemap.sitemap_type merge_sitemap_type, merge_sitemap.sitemap_file_id merge_sitemap_file_id\
+            from "+(module.schema?module.schema+'.':'')+"branch_sitemap src_branch_sitemap \
+              inner join "+(module.schema?module.schema+'.':'')+"branch_sitemap dst_branch_sitemap on dst_branch_sitemap.sitemap_key=src_branch_sitemap.sitemap_key and dst_branch_sitemap.branch_id=@dst_branch_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"sitemap src_orig_sitemap on src_orig_sitemap.sitemap_id=src_branch_sitemap.sitemap_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"sitemap dst_orig_sitemap on dst_orig_sitemap.sitemap_id=dst_branch_sitemap.sitemap_orig_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"sitemap src_sitemap on src_sitemap.sitemap_id=src_branch_sitemap.sitemap_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"sitemap dst_sitemap on dst_sitemap.sitemap_id=dst_branch_sitemap.sitemap_id \
+              left outer join "+(module.schema?module.schema+'.':'')+"sitemap merge_sitemap on merge_sitemap.sitemap_id=dst_branch_sitemap.sitemap_merge_id \
+            where src_branch_sitemap.branch_id=@src_branch_id\
+              and ((src_branch_sitemap.branch_sitemap_action is not null and src_branch_sitemap.sitemap_orig_id<>dst_branch_sitemap.sitemap_id)\
+               or  (dst_branch_sitemap.branch_sitemap_action is not null and dst_branch_sitemap.sitemap_orig_id<>src_branch_sitemap.sitemap_id))";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) branch_sitemaps = rslt[0];
+            return cb();
+          });
+        },
+
+        //Get all sitemaps
+        function(cb){
+          var sql = "select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
+            from "+(module.schema?module.schema+'.':'')+"sitemap sitemap \
+            where\
+                  sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@src_branch_id and branch_sitemap_action is not null) or \
+                  sitemap.sitemap_id in (select sitemap_orig_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@src_branch_id and branch_sitemap_action = 'UPDATE') or\
+                  sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap src_branch_sitemap where src_branch_sitemap.branch_id=@src_branch_id and src_branch_sitemap.sitemap_key in (select sitemap_key from "+(module.schema?module.schema+'.':'')+"branch_sitemap dst_branch_sitemap where dst_branch_sitemap.branch_id=@dst_branch_id and branch_sitemap_action is not null)) or \
+                  sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@dst_branch_id and branch_sitemap_action is not null) or \
+                  sitemap.sitemap_id in (select sitemap_orig_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@dst_branch_id and branch_sitemap_action = 'UPDATE') or\
+                  sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap dst_branch_sitemap where dst_branch_sitemap.branch_id=@dst_branch_id and dst_branch_sitemap.sitemap_key in (select sitemap_key from "+(module.schema?module.schema+'.':'')+"branch_sitemap src_branch_sitemap where src_branch_sitemap.branch_id=@src_branch_id and branch_sitemap_action is not null))";
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]){
+              _.each(rslt[0], function(sitemap){
+                sitemaps[sitemap.sitemap_id] = sitemap;
+              });
+            }
+            return cb();
+          });
+        },
+
+        //Get sitemap file content
+        function(cb){
+          async.eachOfSeries(sitemaps, function(sitemap, sitemap_id, sitemap_cb){
+            funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+              if(err) return sitemap_cb(err);
+              if(!sitemap_content) return sitemap_cb(null);
+              sitemap.sitemap_items_text = funcs.prettySitemap(sitemap_content.sitemap_items, page_keys, media_keys);
+              return sitemap_cb();
+            });
+          }, cb);
+        },
+
+        //Perform sitemap diff
+        function(cb){
+          _.each(branch_sitemaps, function(branch_sitemap){
+            if(branch_sitemap.src_branch_sitemap_action && branch_sitemap.src_branch_sitemap_action.toUpperCase()=='UPDATE'
+            && branch_sitemap.dst_branch_sitemap_action && branch_sitemap.dst_branch_sitemap_action.toUpperCase()=='UPDATE'){
+              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_sitemap_orig_id], sitemaps[branch_sitemap.src_sitemap_id]);
+              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_sitemap_orig_id], sitemaps[branch_sitemap.dst_sitemap_id]);
+            }
+            else if(branch_sitemap.src_branch_sitemap_action && branch_sitemap.src_branch_sitemap_action.toUpperCase()=='UPDATE'){
+              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_sitemap_orig_id], sitemaps[branch_sitemap.src_sitemap_id]);
+              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_sitemap_orig_id], sitemaps[branch_sitemap.dst_sitemap_id]);
+            }
+            else if(branch_sitemap.dst_branch_sitemap_action && branch_sitemap.dst_branch_sitemap_action.toUpperCase()=='UPDATE'){
+              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_sitemap_orig_id], sitemaps[branch_sitemap.src_sitemap_id]);
+              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_sitemap_orig_id], sitemaps[branch_sitemap.dst_sitemap_id]);
+            }
+          });
+          return cb();
+        },
+
       ], function(err){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
@@ -349,7 +433,8 @@ module.exports = exports = function(module, funcs){
           branch_pages: branch_pages,
           branch_redirects: branch_redirects,
           branch_media: branch_media,
-          branch_menus: branch_menus
+          branch_menus: branch_menus,
+          branch_sitemaps: branch_sitemaps
         }));
       });
       return;

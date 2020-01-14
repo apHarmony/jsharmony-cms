@@ -6,26 +6,26 @@
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Page_Diff_Header">
   <# if(branch_page_action=='ADD'){ #>
     <i class="material-icons branch_action_icon add">add_circle</i>
-    ADDED PAGE &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
+    ADDED PAGE: &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
   <# } #>
   <# if(branch_page_action=='DELETE'){ #>
     <i class="material-icons branch_action_icon delete">remove_circle</i>
-    DELETED PAGE <#-XExt.escapeHTML(old_page.path)#>
+    DELETED PAGE: <#-XExt.escapeHTML(old_page.path)#>
     <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=old_page.template_id#>" data-page_filename="<#=old_page.filename#>" data-page_id="<#=old_page.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_page_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
-    UPDATED PAGE <#-XExt.escapeHTML(old_page.path)#>
+    UPDATED PAGE: <#-XExt.escapeHTML(old_page.path)#>
     <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=old_page.template_id#>" data-page_filename="<#=old_page.filename#>" data-page_id="<#=old_page.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_page_action==null || branch_page_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
-    NO CHANGE <#-XExt.escapeHTML(new_page.path)#>
+    NO CHANGE: <#-XExt.escapeHTML(new_page.path)#>
   <# } #>
   <br/>
   <# if((branch_page_action=='UPDATE') && (new_page.path!=old_page.path)){ #>
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
-    RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
+    RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
   <# } #>
   <# if(new_page.id!=null){ #>
     <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" /><#= title #></a>
@@ -66,27 +66,27 @@
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Media_Diff_Header">
   <# if(branch_media_action=='ADD'){ #>
     <i class="material-icons branch_action_icon add">add_circle</i>
-    ADDED MEDIA &nbsp;&nbsp;<#-XExt.escapeHTML(new_media.path)#>
+    ADDED MEDIA: &nbsp;&nbsp;<#-XExt.escapeHTML(new_media.path)#>
   <# } #>
   <# if(branch_media_action=='DELETE'){ #>
     <i class="material-icons branch_action_icon delete">remove_circle</i>
-    DELETED MEDIA <#-XExt.escapeHTML(old_media.path)#>
+    DELETED MEDIA: <#-XExt.escapeHTML(old_media.path)#>
     <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.media_orig_id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_media_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
-    UPDATED MEDIA <#-XExt.escapeHTML(old_media.path)#>
+    UPDATED MEDIA: <#-XExt.escapeHTML(old_media.path)#>
     <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.media_orig_id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_media_action==null || branch_media_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
-    NO CHANGE <#-XExt.escapeHTML(new_media.path)#>
+    NO CHANGE: <#-XExt.escapeHTML(new_media.path)#>
   <# } #>
   <br/>
   <# if((branch_media_action=='UPDATE') && (new_media.path!=old_media.path)){ #>
     <br/>
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
-    RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(new_media.path)#>
+    RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_media.path)#>
   <# } #>
   <# if(new_media.id!=null){ #>
     <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>"><img src="/images/icon_browse.png" /><#=title#></a>
@@ -124,27 +124,27 @@
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Menu_Diff_Header">
   <# if(branch_menu_action=='ADD'){ #>
     <i class="material-icons branch_action_icon add">add_circle</i>
-    ADDED MENU &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
+    ADDED MENU: &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
   <# } #>
   <# if(branch_menu_action=='DELETE'){ #>
     <i class="material-icons branch_action_icon delete">remove_circle</i>
-    DELETED MENU <#-XExt.escapeHTML(old_menu.tag)#>
+    DELETED MENU: <#-XExt.escapeHTML(old_menu.tag)#>
     <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=old_menu.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_menu_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
-    UPDATED MENU <#-XExt.escapeHTML(old_menu.tag)#>
+    UPDATED MENU: <#-XExt.escapeHTML(old_menu.tag)#>
     <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=old_menu.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_menu_action==null || branch_menu_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
-    NO CHANGE <#-XExt.escapeHTML(new_menu.tag)#>
+    NO CHANGE: <#-XExt.escapeHTML(new_menu.tag)#>
   <# } #>
   <br/>
   <# if((branch_menu_action=='UPDATE') && (new_menu.tag!=old_menu.tag)){ #>
     <br/>
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
-    RENAMED TO &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
+    RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
   <# } #>
   <# if(new_menu.id!=null){ #>
     <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
@@ -176,19 +176,19 @@
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Redirect_Diff_Header">
   <# if(branch_redirect_action=='ADD'){ #>
     <i class="material-icons branch_action_icon add">add_circle</i>
-    ADDED REDIRECT &nbsp;&nbsp;<#-XExt.escapeHTML(new_redirect.url)#>
+    ADDED REDIRECT: &nbsp;&nbsp;<#-XExt.escapeHTML(new_redirect.url)#>
   <# } #>
   <# if(branch_redirect_action=='DELETE'){ #>
     <i class="material-icons branch_action_icon delete">remove_circle</i>
-    DELETED REDIRECT <#-XExt.escapeHTML(old_redirect.url)#>
+    DELETED REDIRECT: <#-XExt.escapeHTML(old_redirect.url)#>
   <# } #>
   <# if(branch_redirect_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
-    UPDATED REDIRECT <#-XExt.escapeHTML(old_redirect.url)#>
+    UPDATED REDIRECT: <#-XExt.escapeHTML(old_redirect.url)#>
   <# } #>
   <# if(branch_redirect_action==null || branch_redirect_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
-    NO CHANGE <#-XExt.escapeHTML(new_redirect.url)#>
+    NO CHANGE: <#-XExt.escapeHTML(new_redirect.url)#>
   <# } #>
   <br/>
   <# if(branch_redirect_action=='UPDATE'){ #>
@@ -215,6 +215,58 @@
   </div>
 </script>
 
+<script type="text/x-jsharmony-template" class="<%=model.class%>_Sitemap_Diff_Header">
+  <# if(branch_sitemap_action=='ADD'){ #>
+    <i class="material-icons branch_action_icon add">add_circle</i>
+    ADDED SITEMAP: &nbsp;&nbsp;<#-XExt.escapeHTML(new_sitemap.type)#>
+  <# } #>
+  <# if(branch_sitemap_action=='DELETE'){ #>
+    <i class="material-icons branch_action_icon delete">remove_circle</i>
+    DELETED SITEMAP: <#-XExt.escapeHTML(old_sitemap.type)#>
+    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=old_sitemap.key#>" data-sitemap_id="<#=old_sitemap.id#>"><img src="/images/icon_browse.png" />Prev</a>
+  <# } #>
+  <# if(branch_sitemap_action=='UPDATE'){ #>
+    <i class="material-icons branch_action_icon update">create</i>
+    UPDATED SITEMAP: <#-XExt.escapeHTML(old_sitemap.type)#>
+    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=old_sitemap.key#>" data-sitemap_id="<#=old_sitemap.id#>"><img src="/images/icon_browse.png" />Prev</a>
+  <# } #>
+  <# if(branch_sitemap_action==null || branch_sitemap_action==''){ #>
+    <i class="material-icons branch_action_icon cancel">cancel</i>
+    NO CHANGE: <#-XExt.escapeHTML(new_sitemap.type)#>
+  <# } #>
+  <br/>
+  <# if((branch_sitemap_action=='UPDATE') && (new_sitemap.type!=old_sitemap.type)){ #>
+    <br/>
+    <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
+    RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_sitemap.type)#>
+  <# } #>
+  <# if(new_sitemap.id!=null){ #>
+    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=new_sitemap.key#>" data-sitemap_id="<#=new_sitemap.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
+  <# } #>
+</script>
+
+<script type="text/x-jsharmony-template" class="<%=model.class%>_Sitemap_Diff_Comparison">
+  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header">
+    <#- include('Sitemap_Diff_Header', {
+      branch_sitemap_action: branch_sitemap_action,
+      sitemap_key: sitemap_key,
+      title: title,
+      new_sitemap: new_sitemap,
+      old_sitemap: old_sitemap}) #>
+    <input type="button" value="Pick" class="button_pick_sitemap" data-sitemap_key="<#=sitemap_key#>" data-sitemap_id="<#=new_sitemap.id#>" data-branch_sitemap_action="<#=branch_sitemap_action#>" />
+  </h4>
+
+  <# _.each(_.pick(diff,['sitemap_name']), function(val, key){ #>
+    <div class="<%=model.class%>_diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
+  <# }); #>
+
+  <# _.each(_.pick(diff,['sitemap_items']), function(val, key){ if(val){ #>
+    <div class="<%=model.class%>_diff_head">Content - <#=map(key,'sitemap')#></div>
+    <div class="<%=model.class%>_diff"><#-val#></div>
+  <# } }); #>
+</script>
+
 <script type="text/x-jsharmony-template" class="<%=model.class%>_Changes_Listing">
   <h3>Branch Changes (<#= branch_diff.resolved #>/<#= branch_diff.conflicts #> conflicts resolved)</h3>
   <div class="clear"></div>
@@ -222,7 +274,7 @@
   <!-- ---------- -->
   <!-- NO CHANGES -->
   <!-- ---------- -->
-  <# if(!branch_diff.branch_pages.length && !branch_diff.branch_media.length && !branch_diff.branch_menus.length && !branch_diff.branch_redirects.length){ #>
+  <# if(!branch_diff.branch_pages.length && !branch_diff.branch_media.length && !branch_diff.branch_menus.length && !branch_diff.branch_redirects.length && !branch_diff.branch_sitemaps.length){ #>
     <hr/>
     <h4 class="branch_diff_item_header">
       No conflicts detected
@@ -394,6 +446,51 @@
             title: 'Destination',
             new_redirect: branch_redirect.dst_redirect,
             old_redirect: branch_redirect.dst_orig_redirect}) #>
+        </div>
+      </div>
+    <# } #>
+
+  <# }); #>
+
+
+  <!-- -------- -->
+  <!-- SITEMAPS -->
+  <!-- -------- -->
+  <# _.each(branch_diff.branch_sitemaps, function(branch_sitemap){ #>
+    <hr/>
+
+    <# if(branch_sitemap.branch_sitemap_merge_action!=null || branch_sitemap.sitemap_merge_id!=null){ #>
+      <h4 class="branch_diff_item_header">
+        <#- include('Sitemap_Diff_Header', {
+          branch_sitemap_action: branch_sitemap.branch_sitemap_merge_action,
+          sitemap_key: branch_sitemap.sitemap_key,
+          title: 'View',
+          new_sitemap: branch_sitemap.merge_sitemap,
+          old_sitemap: branch_sitemap.dst_sitemap}) #>
+        <input type="button" value="Unresolve" class="button_unresolve_sitemap" data-sitemap_key="<#=branch_sitemap.sitemap_key#>"  data-sitemap_id="<#=null#>" data-branch_sitemap_action="<#=null#>" />
+      </h4>
+    <# } else { #>
+      <div class="branch_diff_comparison">
+        <div class="branch_diff_comparison_src">
+          <#- include('Sitemap_Diff_Comparison', {
+            branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
+            sitemap_key: branch_sitemap.sitemap_key,
+            title: 'Source',
+            diff: branch_sitemap.src_diff,
+            map: map,
+            new_sitemap: branch_sitemap.src_sitemap,
+            old_sitemap: branch_sitemap.src_orig_sitemap}) #>
+        </div>
+
+        <div class="branch_diff_comparison_dst">
+          <#- include('Sitemap_Diff_Comparison', {
+            branch_sitemap_action: branch_sitemap.dst_branch_sitemap_action,
+            sitemap_key: branch_sitemap.sitemap_key,
+            title: 'Destination',
+            diff: branch_sitemap.dst_diff,
+            map: map,
+            new_sitemap: branch_sitemap.dst_sitemap,
+            old_sitemap: branch_sitemap.dst_orig_sitemap}) #>
         </div>
       </div>
     <# } #>

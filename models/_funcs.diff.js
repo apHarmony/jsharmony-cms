@@ -340,15 +340,7 @@ module.exports = exports = function(module, funcs){
         function(cb){
           _.each(branch_sitemaps, function(branch_sitemap){
             if(branch_sitemap.branch_sitemap_action.toUpperCase()=='UPDATE'){
-              var old_sitemap = sitemaps[branch_sitemap.sitemap_orig_id];
-              var new_sitemap = sitemaps[branch_sitemap.sitemap_id];
-              
-              branch_sitemap.diff = {};
-              var sitemap_items_diff = funcs.diffHTML(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
-              if(sitemap_items_diff) branch_sitemap.diff.sitemap_items = sitemap_items_diff;
-              _.each(['sitemap_name','sitemap_type'], function(key){
-                if(old_sitemap[key] != new_sitemap[key]) branch_sitemap.diff[key] = new_sitemap[key];
-              });
+              branch_sitemap.diff = funcs.sitemapDiff(sitemaps[branch_sitemap.sitemap_orig_id], sitemaps[branch_sitemap.sitemap_id]);
             }
           });
           return cb();
@@ -409,6 +401,16 @@ module.exports = exports = function(module, funcs){
     if(menu_items_diff) diff.menu_items = menu_items_diff;
     _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
       if(old_menu[key] != new_menu[key]) diff[key] = new_menu[key];
+    });
+    return diff;
+  }
+
+  exports.sitemapDiff = function(old_sitemap, new_sitemap){
+    var diff = {};
+    var sitemap_items_diff = funcs.diffHTML(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
+    if(sitemap_items_diff) diff.sitemap_items = sitemap_items_diff;
+    _.each(['sitemap_name','sitemap_type'], function(key){
+      if(old_sitemap[key] != new_sitemap[key]) diff[key] = new_sitemap[key];
     });
     return diff;
   }

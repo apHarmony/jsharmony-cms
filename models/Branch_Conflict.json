@@ -65,6 +65,21 @@
       {"name":"branch_menu_merge_action","caption":"Picked Action"}
     ]
   },
+  "Branch_Conflict_Resolve_Sitemap": {
+    "layout":"form",
+    "table":"{schema}.branch_sitemap",
+    "onecolumn":true,
+    "roles": {"PUBLISHER": "BU","AUTHOR": "BU", "VIEWER": "B"},
+    "actions":"BU",
+    "caption":["Branch","Branches"],
+    "title":"",
+    "fields": [
+      {"name":"branch_id","control":"hidden","key":true},
+      {"name":"sitemap_key","control":"hidden","key":true},
+      {"name":"sitemap_merge_id","caption":"Picked Sitemap ID"},
+      {"name":"branch_sitemap_merge_action","caption":"Picked Action"}
+    ]
+  },
   "Branch_Conflict_Resolve_Redirect": {
     "layout":"form",
     "table":"{schema}.branch_redirect",

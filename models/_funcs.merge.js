@@ -77,6 +77,7 @@ module.exports = exports = function(module, funcs){
     'page',
     'media',
     'redirect',
+    'sitemap',
   ];
 
   var expand = function(sqls) {
