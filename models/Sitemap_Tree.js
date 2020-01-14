@@ -36,10 +36,13 @@ jsh.App[modelid] = new (function(){
   this.orig_current_sitemap_item = null;
 
   this.oninit = function(){
-    jsh.System.RequireBranch(xmodel);
+    if(jsh._GET.sitemap_id) {
+      this.sitemap_id = jsh._GET.sitemap_id;
+    } else {
+      jsh.System.RequireBranch(xmodel);
+    }
     jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
     this.sitemap_key = jsh._GET.sitemap_key;
-    if(jsh._GET.sitemap_id) this.sitemap_id = jsh._GET.sitemap_id;
     $(window).bind('resize', _this.onresize);
     _this.refreshLayout();
     xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); }

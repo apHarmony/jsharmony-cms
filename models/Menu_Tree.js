@@ -27,9 +27,12 @@ jsh.App[modelid] = new (function(){
   this.orig_current_menu_item = null;
 
   this.oninit = function(){
-    jsh.System.RequireBranch(xmodel);
+    if(jsh._GET.menu_id) {
+      this.menu_id = jsh._GET.menu_id;
+    } else {
+      jsh.System.RequireBranch(xmodel);
+    }
     this.menu_key = jsh._GET.menu_key;
-    if(jsh._GET.menu_id) this.menu_id = jsh._GET.menu_id;
     $(window).bind('resize', _this.onresize);
     _this.refreshLayout();
     xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); }
