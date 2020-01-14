@@ -87,6 +87,7 @@
           "update branch_page set page_merge_id=null,branch_page_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
           "update branch_media set media_merge_id=null,branch_media_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
           "update branch_menu set menu_merge_id=null,branch_menu_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
+          "update branch_sitemap set sitemap_merge_id=null,branch_sitemap_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
           "update branch_redirect set redirect_merge_id=null,branch_redirect_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
           "setif(inserted(branch_sts)='REVIEW' and inserted(branch_review_sts) is null,branch_review_sts,'PENDING');"
         ]
