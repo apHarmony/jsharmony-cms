@@ -22,6 +22,12 @@
             Make this branch the parent of the target branch, and re-apply any of the target branch's changes. Only the target branch's changes will be merged to production on publish.
           </td>
         </tr>
+        <tr>
+          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="OVERWRITE"> Overwrite</label></td>
+          <td class="plain">
+            Completely overwrite the target branch with this branch, including unchanged files. Any changes in the target branch will be lost, and any changes in this branch will be copied to the target branch.
+          </td>
+        </tr>
       </table>
     
       <div style="text-align:center;"><input type="button" value="Merge" class="button_ok" style="margin-right:15px;" /> <input type="button" value="Cancel" class="button_cancel" /></div>
