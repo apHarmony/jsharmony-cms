@@ -168,7 +168,7 @@ describe('Merges', function() {
         assert.ifError(err);
         assertBranchState(dst_branch_id, [
           {
-            branch_page_action: null,
+            branch_page_action: 'ADD',
             page_title: 'Add',
             page_path: '/test/add/index.html',
           },
@@ -178,7 +178,7 @@ describe('Merges', function() {
             page_path: '/test/untouched/index.html',
           },
           {
-            branch_page_action: null,
+            branch_page_action: 'UPDATE',
             page_title: 'Update After',
             page_path: '/test/update/index.html',
           },

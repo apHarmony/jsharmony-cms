@@ -137,9 +137,20 @@ module.exports = exports = function(module, funcs){
     // in source but marked as delete (no page id)
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and branch_%%%OBJECT%%%_action='DELETE');",
 
-    "update {schema}.branch_%%%OBJECT%%% set %%%OBJECT%%%_id=(select %%%OBJECT%%%_id from (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) tbl where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key) where branch_id=@dst_branch_id and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id);",
+    "update {schema}.branch_%%%OBJECT%%% set\
+      %%%OBJECT%%%_id=(select %%%OBJECT%%%_id\
+        from (select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) \
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key),\
+      %%%OBJECT%%%_orig_id=(select %%%OBJECT%%%_orig_id\
+        from (select %%%OBJECT%%%_orig_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) \
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key),\
+      branch_%%%OBJECT%%%_action=(select branch_%%%OBJECT%%%_action\
+        from (select branch_%%%OBJECT%%%_action,%%%OBJECT%%%_key src_%%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id) \
+        where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key)\
+    where branch_id=@dst_branch_id\
+      and %%%OBJECT%%%_key in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id);",
 
-    "insert into {schema}.branch_%%%OBJECT%%%(branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_id from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and branch_%%%OBJECT%%%_action not in ('DELETE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
+    "insert into {schema}.branch_%%%OBJECT%%%(branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id, branch_%%%OBJECT%%%_action) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id, branch_%%%OBJECT%%%_action from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and branch_%%%OBJECT%%%_action not in ('DELETE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);
 
   var apply_sql = expand([
