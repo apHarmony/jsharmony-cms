@@ -13,7 +13,7 @@
     "oninit": "jsh.System.RequireBranch(xmodel);",
     "fields": [
       {"name":"sitemap_key","caption":"Key","control":"hidden","key":true},
-      {"name":"sitemap_id","caption":"ID","control":"hidden"},
+      {"name":"sitemap_id","caption":"ID","control":"hidden","actions":"B"},
       {"name":"sitemap_name","caption":"Sitemap Name","control":"textbox_M"},
       {"control":"html","caption":"Edit","link":"js:_this.openSitemapEditor(this)","value":"<img src='/images/icon_edit.png' class='xicon' />"},
       {"name":"sitemap_type","caption":"Type","control":"dropdown"},
