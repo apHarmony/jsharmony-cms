@@ -3,7 +3,7 @@
     "layout":"form",
     "table":"{schema}.branch",
     "onecolumn":true,
-    "roles": {"PUBLISHER": "B","AUTHOR": "B", "VIEWER": "B"},
+    "roles": {"PUBLISHER": "B","AUTHOR": "B"},
     "actions":"B",
     "caption":["Branch","Branches"],
     "title":"Branch Conflict",
