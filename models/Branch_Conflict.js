@@ -116,6 +116,7 @@ jsh.App[modelid] = new (function(){
       map,
     }));
 
+    // see also _funcs.merge.js CMS_OBJECTS on the backend
     var objects = [
       'menu',
       'page',

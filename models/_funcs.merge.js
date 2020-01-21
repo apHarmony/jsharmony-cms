@@ -22,7 +22,23 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  
+
+  var MERGE_TYPES = [
+    'apply',
+    'overwrite',
+    'changes',
+    'rebase',
+  ];
+
+  // see also Branch_Conflict.js on the frontend
+  exports.CMS_OBJECTS = [
+    'menu',
+    'page',
+    'media',
+    'redirect',
+    'sitemap',
+  ];
+ 
   exports.req_merge = function (req, res, next) {
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
@@ -43,7 +59,7 @@ module.exports = exports = function(module, funcs){
       var merge_type = P.merge_type;
 
       // error codes: jsharmony errors document
-      if (merge_types.indexOf(merge_type) == -1) { Helper.GenError(req, res, -4, 'Merge Type Not Supported'); return; }
+      if (MERGE_TYPES.indexOf(merge_type) == -1) { Helper.GenError(req, res, -4, 'Merge Type Not Supported'); return; }
 
       //Check if Asset is defined
       var sql_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
@@ -70,18 +86,10 @@ module.exports = exports = function(module, funcs){
     }
   }
 
-  var objects = [
-    'menu',
-    'page',
-    'media',
-    'redirect',
-    'sitemap',
-  ];
-
   var expand = function(sqls) {
     return sqls.flatMap(function(line) {
       if(line.match('%%%OBJECT%%%')) {
-        return objects.map(function(object) {
+        return exports.CMS_OBJECTS.map(function(object) {
           return Helper.ReplaceAll(line, '%%%OBJECT%%%', object);
         });
       } else {
@@ -89,13 +97,6 @@ module.exports = exports = function(module, funcs){
       }
     });
   }
-
-  var merge_types = [
-    'apply',
-    'overwrite',
-    'changes',
-    'rebase',
-  ];
 
   var copy_src_edit_to_dst_merge =
     // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
