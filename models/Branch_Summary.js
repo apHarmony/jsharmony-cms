@@ -30,4 +30,43 @@ jsh.App[modelid] = new (function(){
     });
   }
 
+  this.mergeFromBranch = function(xmodel){
+    var xform = xmodel.controller.form;
+    var sel = '.'+xmodel.class+'_Merge';
+
+    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
+      var jprompt = jsh.$root('.xdialogblock ' + sel);
+
+      jsh.$root('.xdialogblock ' + sel + ' .src_branch_desc').html(xform.Data.src_branch_desc);
+      jsh.$root('.xdialogblock ' + sel + ' .dst_branch_desc').html(xform.Data.dst_branch_desc);
+    }, function (success) { //onAccept
+      var jprompt = jsh.$root('.xdialogblock ' + sel);
+
+      var mergeType = 'changes';
+      var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
+      if(checked_option.length) mergeType = checked_option.val().toLowerCase();
+
+      var params = {
+        src_branch_id: xmodel.get('branch_id'),
+        dst_branch_id: xmodel.get('dst_branch_id'),
+      };
+
+      if (mergeType == 'overwrite') {
+        // no conflicts possible
+        XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
+          success();
+          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+        });
+      } else {
+        XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
+          success();
+          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
+            '?action=update'+
+            '&branch_id='+xmodel.get('dst_branch_id')+
+            '&merge_type='+mergeType
+          );
+        });
+      }
+    });
+  }
 })();

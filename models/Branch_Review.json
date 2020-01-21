@@ -8,8 +8,8 @@
     "caption":["Branch","Branches"],
     "title":"Branch Review",
     "buttons":[
-      { "link":"js:jsh.System.BeginApproveBranch(xmodel);","icon":"ok","text":"Approve" },
-      { "link":"js:jsh.System.RejectBranch(xmodel);","icon":"delete","text":"Reject" },
+      { "link":"js:_this.approveBranch(xmodel);","icon":"ok","text":"Approve" },
+      { "link":"js:_this.rejectBranch(xmodel);","icon":"delete","text":"Reject" },
       { "link":"update:Branch_Summary&branch_id","icon":"browse","text":"Branch Summary" }
     ],
     "sqlwhere":"branch_sts='REVIEW' and branch_review_sts='PENDING'",
