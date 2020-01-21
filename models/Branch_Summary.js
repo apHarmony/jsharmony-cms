@@ -55,7 +55,7 @@ jsh.App[modelid] = new (function(){
         // no conflicts possible
         XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
           success();
-          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Listing_Redirect');
         });
       } else {
         XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){

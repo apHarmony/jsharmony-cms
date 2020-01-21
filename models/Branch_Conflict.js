@@ -198,7 +198,7 @@ jsh.App[modelid] = new (function(){
     var mergeType = xmodel.get('merge_type');
 
     XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
-      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
     });
   }
 
@@ -208,7 +208,7 @@ jsh.App[modelid] = new (function(){
     };
 
     XForm.Post(xmodel.module_namespace+'Branch_Conflict_Abort', {}, params, function(rslt){
-      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
     });
   }
 })();
