@@ -27,20 +27,20 @@ module.exports = exports = function(module, funcs){
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
 
-    var Q = req.query;
-    var P = {};
-    if (req.body && ('data' in req.body)){
-      try{ P = JSON.parse(req.body.data); }
-      catch(ex){ Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-    }
+    var B = req.body;
+    var P = req.params;
     var appsrv = this;
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
 
     if (verb == 'post') {
-      var src_branch_id = req.body.src_branch_id;
-      var dst_branch_id = req.body.dst_branch_id;
-      var merge_type = req.params.merge_type;
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, ['&merge_type'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('B', B, ['&dst_branch_id','&src_branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      var src_branch_id = B.src_branch_id;
+      var dst_branch_id = B.dst_branch_id;
+      var merge_type = P.merge_type;
 
       // error codes: jsharmony errors document
       if (merge_types.indexOf(merge_type) == -1) { Helper.GenError(req, res, -4, 'Merge Type Not Supported'); return; }
@@ -51,7 +51,6 @@ module.exports = exports = function(module, funcs){
       var verrors = {};
       validate.AddValidator('_obj.src_branch_id', 'Source Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
       validate.AddValidator('_obj.dst_branch_id', 'Destination Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      // look at ParamCheck
 
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
@@ -321,19 +320,16 @@ module.exports = exports = function(module, funcs){
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
 
-    var Q = req.query;
-    var P = {};
-    if (req.body && ('data' in req.body)){
-      try{ P = JSON.parse(req.body.data); }
-      catch(ex){ Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-    }
+    var B = req.body;
     var appsrv = this;
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
 
     if (verb == 'post') {
-      var src_branch_id = req.body.src_branch_id;
-      var dst_branch_id = req.body.dst_branch_id;
+      if (!appsrv.ParamCheck('B', B, ['&dst_branch_id','&src_branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      var src_branch_id = B.src_branch_id;
+      var dst_branch_id = B.dst_branch_id;
 
       //Check if Asset is defined
       var sql_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
@@ -341,7 +337,6 @@ module.exports = exports = function(module, funcs){
       var verrors = {};
       validate.AddValidator('_obj.src_branch_id', 'Source Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
       validate.AddValidator('_obj.dst_branch_id', 'Destination Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      // look at ParamCheck
 
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }

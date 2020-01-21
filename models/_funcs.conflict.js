@@ -51,11 +51,8 @@ module.exports = exports = function(module, funcs){
     if (!req.body) req.body = {};
     
     var Q = req.query;
-    var P = {};
-    if (req.body && ('data' in req.body)){
-      try{ P = JSON.parse(req.body.data); }
-      catch(ex){ Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-    }
+    var P = req.body;
+
     var appsrv = this;
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
@@ -66,6 +63,10 @@ module.exports = exports = function(module, funcs){
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     if (verb == 'get') {
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, ['&dst_branch_id','&src_branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
       var dst_branch_id = req.query.dst_branch_id;
       var src_branch_id = req.query.src_branch_id;
 
