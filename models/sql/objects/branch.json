@@ -455,7 +455,7 @@
       {"on": ["update"], "exec": [
           "errorif((inserted(new_branch_id) is not null) and (not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id))),'User does not have access to branch')",
           "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
-          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id)"
+          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id) where sys_user_id = jsharmony.my_sys_user_id()"
         ]
       },
       {"on": ["insert"], "exec": [

@@ -84,7 +84,8 @@
           "sys_user_site.sys_user_id": "jsharmony.my_sys_user_id()"
         }
       }
-    }
+    },
+    "dependencies": ["{schema}.v_my_deployment_target"]
   },
 
   "v_my_site": {
