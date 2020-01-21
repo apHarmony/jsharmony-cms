@@ -71,9 +71,9 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      exports.check_merge_permissions(req._DBContext, sql_params, function(accessErr) {
+      funcs.merge_check_permissions(req._DBContext, sql_params, function(accessErr) {
         if (accessErr != null) { appsrv.AppDBError(req, res, accessErr); return; }
-        exports[merge_type](req._DBContext, sql_params, function(err) {
+        exports['merge_'+merge_type](req._DBContext, sql_params, function(err) {
           if (err != null) { appsrv.AppDBError(req, res, err); return; }
           res.end(JSON.stringify({
             '_success': 1,
@@ -98,7 +98,7 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  var copy_src_edit_to_dst_merge =
+  var merge_sql_copy_src_edit_to_dst_merge =
     // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
     "update {schema}.branch_%%%OBJECT%%%\
     set\
@@ -130,7 +130,7 @@ module.exports = exports = function(module, funcs){
             and (branch_%%%OBJECT%%%_action is not null)\
         );";
 
-  var overwrite_sql = expand([
+  var merge_sql_overwrite = expand([
     // not in source branch
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id);",
 
@@ -153,8 +153,8 @@ module.exports = exports = function(module, funcs){
     "insert into {schema}.branch_%%%OBJECT%%%(branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id, branch_%%%OBJECT%%%_action) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id, branch_%%%OBJECT%%%_action from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and branch_%%%OBJECT%%%_action not in ('DELETE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);
 
-  var apply_sql = expand([
-    copy_src_edit_to_dst_merge,
+  var merge_sql_apply = expand([
+    merge_sql_copy_src_edit_to_dst_merge,
 
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='DELETE';",
 
@@ -163,8 +163,8 @@ module.exports = exports = function(module, funcs){
     "insert into {schema}.branch_%%%OBJECT%%%(branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_id from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action='UPDATE') and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);
 
-  var changes_sql = expand([
-    copy_src_edit_to_dst_merge,
+  var merge_sql_changes = expand([
+    merge_sql_copy_src_edit_to_dst_merge,
 
     // ADD on UPDATE/DELETE: UPDATE with dst orig
     "update {schema}.branch_%%%OBJECT%%% set\
@@ -230,7 +230,7 @@ module.exports = exports = function(module, funcs){
          where branch_id=@dst_branch_id);",
   ]);
 
-  var rebase_sql = expand([
+  var merge_sql_rebase = expand([
     // edit branch is the one being changed, so just copy merge conflict over to edit columns and continue as normal
     "update {schema}.branch_%%%OBJECT%%%\
     set\
@@ -259,7 +259,7 @@ module.exports = exports = function(module, funcs){
     "insert into {schema}.branch_%%%OBJECT%%% (branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_id from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);
 
-  var archive_sql = expand([
+  var merge_sql_archive = expand([
     "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='DELETE' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
     "update {schema}.branch_%%%OBJECT%%% set branch_%%%OBJECT%%%_action=null,%%%OBJECT%%%_orig_id=%%%OBJECT%%%_id where branch_id=@dst_branch_id and (branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE') and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
 
@@ -274,7 +274,7 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
 
     var sql = sql.join('\n');
-    sql = sql + archive_sql.join('\n');
+    sql = sql + merge_sql_archive.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecCommand(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
@@ -282,34 +282,34 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.apply = function (context, sql_params, callback) {
-    merge(apply_sql, context, sql_params, callback);
+  exports.merge_apply = function (context, sql_params, callback) {
+    merge(merge_sql_apply, context, sql_params, callback);
   }
 
-  exports.overwrite = function (context, sql_params, callback) {
-    merge(overwrite_sql, context, sql_params, callback);
+  exports.merge_overwrite = function (context, sql_params, callback) {
+    merge(merge_sql_overwrite, context, sql_params, callback);
   }
 
-  exports.changes = function (context, sql_params, callback) {
-    merge(changes_sql, context, sql_params, callback);
+  exports.merge_changes = function (context, sql_params, callback) {
+    merge(merge_sql_changes, context, sql_params, callback);
   }
 
-  exports.rebase = function (context, sql_params, callback) {
-    merge(rebase_sql, context, sql_params, callback);
+  exports.merge_rebase = function (context, sql_params, callback) {
+    merge(merge_sql_rebase, context, sql_params, callback);
   }
 
-  var clone_sql = [
+  var merge_sql_clone = [
     "insert into {schema}.v_my_current_branch(branch_parent_id, branch_type, branch_name, new_branch_changes) values(@branch_parent_id, 'USER', @branch_name, @new_branch_changes);",
     "select new_branch_id from {schema}.v_my_current_branch;"
   ];
 
-  exports.clone = function(context, sql_params, callback) {
+  exports.merge_clone = function(context, sql_params, callback) {
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
     var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256), dbtypes.VarChar(8)];
 
-    var sql = clone_sql.join('\n');
+    var sql = merge_sql_clone.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
@@ -342,9 +342,9 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      exports.check_merge_permissions(req._DBContext, sql_params, function(accessErr) {
+      funcs.merge_check_permissions(req._DBContext, sql_params, function(accessErr) {
         if (accessErr != null) { appsrv.AppDBError(req, res, accessErr); return; }
-        exports.begin_merge(req._DBContext, sql_params, function(err) {
+        funcs.merge_begin_merge(req._DBContext, sql_params, function(err) {
           if (err != null) { appsrv.AppDBError(req, res, err); return; }
           res.end(JSON.stringify({
             '_success': 1,
@@ -357,18 +357,18 @@ module.exports = exports = function(module, funcs){
     }
   }
 
-  var begin_merge_sql = [
+  var merge_sql_begin_merge = [
     "update {schema}.branch set branch_merge_id=@src_branch_id where branch_id=@dst_branch_id and branch_merge_id is null and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'));",
     "select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id",
   ];
 
-  exports.begin_merge = function(context, sql_params, callback) {
+  exports.merge_begin_merge = function(context, sql_params, callback) {
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
 
-    var sql = begin_merge_sql.join('\n');
+    var sql = merge_sql_begin_merge.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
@@ -377,7 +377,7 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.check_merge_permissions = function(context, sql_params, callback) {
+  exports.merge_check_permissions = function(context, sql_params, callback) {
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;

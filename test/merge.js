@@ -41,19 +41,19 @@ describe('Merges', function() {
     results = {}
     async.waterfall([
       function(cb){
-        jsh.Modules.jsHarmonyCMS.funcs.clone('S1', {branch_parent_id: testBaseBranchId, branch_name: 'Test: '+name+' master', new_branch_changes: 'RESET'}, function(err, id, stats) {
+        jsh.Modules.jsHarmonyCMS.funcs.merge_clone('S1', {branch_parent_id: testBaseBranchId, branch_name: 'Test: '+name+' master', new_branch_changes: 'RESET'}, function(err, id, stats) {
           results.master_branch_id = id;
           cb();
         });
       },
       function(cb){
-        jsh.Modules.jsHarmonyCMS.funcs.clone('S1', {branch_parent_id: testEditBranchId, branch_name: 'Test: '+name+' edit', new_branch_changes: 'COPY'}, function(err, id, stats) {
+        jsh.Modules.jsHarmonyCMS.funcs.merge_clone('S1', {branch_parent_id: testEditBranchId, branch_name: 'Test: '+name+' edit', new_branch_changes: 'COPY'}, function(err, id, stats) {
           results.edit_branch_id = id;
           cb();
         });
       },
       function(cb){
-        jsh.Modules.jsHarmonyCMS.funcs.begin_merge('S1', {dst_branch_id: results.master_branch_id, src_branch_id: results.edit_branch_id}, function(err, id, stats) {
+        jsh.Modules.jsHarmonyCMS.funcs.merge_begin_merge('S1', {dst_branch_id: results.master_branch_id, src_branch_id: results.edit_branch_id}, function(err, id, stats) {
           cb();
         });
       },
@@ -129,7 +129,7 @@ describe('Merges', function() {
     });
 
     it('apply', function(done) {
-      jsh.Modules.jsHarmonyCMS.funcs.apply('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
+      jsh.Modules.jsHarmonyCMS.funcs.merge_apply('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
         assert.ifError(err);
         assertBranchState(dst_branch_id, [
           {
@@ -164,7 +164,7 @@ describe('Merges', function() {
     });
 
     it('overwrite', function(done) {
-      jsh.Modules.jsHarmonyCMS.funcs.overwrite('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
+      jsh.Modules.jsHarmonyCMS.funcs.merge_overwrite('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
         assert.ifError(err);
         assertBranchState(dst_branch_id, [
           {
@@ -199,7 +199,7 @@ describe('Merges', function() {
     });
 
     it('changes', function(done) {
-      jsh.Modules.jsHarmonyCMS.funcs.changes('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
+      jsh.Modules.jsHarmonyCMS.funcs.merge_changes('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
         assert.ifError(err);
         assertBranchState(dst_branch_id, [
           {
@@ -239,7 +239,7 @@ describe('Merges', function() {
     });
 
     it('rebase', function(done) {
-      jsh.Modules.jsHarmonyCMS.funcs.rebase('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
+      jsh.Modules.jsHarmonyCMS.funcs.merge_rebase('S1', {dst_branch_id: dst_branch_id, src_branch_id: src_branch_id}, function(err) {
         assert.ifError(err);
         assertBranchState(dst_branch_id, [
           {

@@ -96,7 +96,7 @@ module.exports = exports = function(module, funcs){
       async.waterfall([
 
         function(cb){
-          funcs.check_merge_permissions(req._DBContext, sql_params, cb);
+          funcs.merge_check_permissions(req._DBContext, sql_params, cb);
         },
 
         //Get deployment target params
