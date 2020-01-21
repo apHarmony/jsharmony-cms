@@ -44,71 +44,12 @@ jsh.App[modelid] = new (function(){
 
         _this.resolved = _this.conflicts - _this.unresolved;
 
-        _this.processData();
         _this.render();
         if (onComplete) onComplete();
       }
       else XExt.Alert('Error while loading data');
     }, function (err) {
       //Optionally, handle errors
-    });
-  }
-
-  function collect(obj, sub) {
-    var prefix = sub + '_'
-    obj[sub] = {};
-    _.forOwn(obj, function(value, key) {
-      if (_.startsWith(key, prefix)) {
-        obj[sub][key.replace(prefix, '')] = value;
-      }
-    });
-  }
-
-  this.processData = function(){
-    _.each(_this.branch_pages, function(branch_page){
-      branch_page.src_branch_page_action = (branch_page.src_branch_page_action||'').toString().toUpperCase();
-      branch_page.dst_branch_page_action = (branch_page.dst_branch_page_action||'').toString().toUpperCase();
-      collect(branch_page, 'src_page');
-      collect(branch_page, 'dst_page');
-      collect(branch_page, 'src_orig_page');
-      collect(branch_page, 'dst_orig_page');
-      collect(branch_page, 'merge_page');
-    });
-    _.each(_this.branch_media, function(branch_media){
-      branch_media.src_branch_media_action = (branch_media.src_branch_media_action||'').toString().toUpperCase();
-      branch_media.dst_branch_media_action = (branch_media.dst_branch_media_action||'').toString().toUpperCase();
-      collect(branch_media, 'src_media');
-      collect(branch_media, 'dst_media');
-      collect(branch_media, 'src_orig_media');
-      collect(branch_media, 'dst_orig_media');
-      collect(branch_media, 'merge_media');
-    });
-    _.each(_this.branch_menus, function(branch_menu){
-      branch_menu.src_branch_menu_action = (branch_menu.src_branch_menu_action||'').toString().toUpperCase();
-      branch_menu.dst_branch_menu_action = (branch_menu.dst_branch_menu_action||'').toString().toUpperCase();
-      collect(branch_menu, 'src_menu');
-      collect(branch_menu, 'dst_menu');
-      collect(branch_menu, 'src_orig_menu');
-      collect(branch_menu, 'dst_orig_menu');
-      collect(branch_menu, 'merge_menu');
-    });
-    _.each(_this.branch_redirects, function(branch_redirect){
-      branch_redirect.src_branch_redirect_action = (branch_redirect.src_branch_redirect_action||'').toString().toUpperCase();
-      branch_redirect.dst_branch_redirect_action = (branch_redirect.dst_branch_redirect_action||'').toString().toUpperCase();
-      collect(branch_redirect, 'src_redirect');
-      collect(branch_redirect, 'dst_redirect');
-      collect(branch_redirect, 'src_orig_redirect');
-      collect(branch_redirect, 'dst_orig_redirect');
-      collect(branch_redirect, 'merge_redirect');
-    });
-    _.each(_this.branch_sitemaps, function(branch_sitemap){
-      branch_sitemap.src_branch_sitemap_action = (branch_sitemap.src_branch_sitemap_action||'').toString().toUpperCase();
-      branch_sitemap.dst_branch_sitemap_action = (branch_sitemap.dst_branch_sitemap_action||'').toString().toUpperCase();
-      collect(branch_sitemap, 'src_sitemap');
-      collect(branch_sitemap, 'dst_sitemap');
-      collect(branch_sitemap, 'src_orig_sitemap');
-      collect(branch_sitemap, 'dst_orig_sitemap');
-      collect(branch_sitemap, 'merge_sitemap');
     });
   }
 

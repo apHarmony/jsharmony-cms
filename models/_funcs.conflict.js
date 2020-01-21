@@ -23,6 +23,28 @@ var prettyhtml = require('js-beautify').html;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+
+  function propertyPrefixToSubObject(obj, sub) {
+    var prefix = sub + '_'
+    obj[sub] = {};
+    _.forOwn(obj, function(value, key) {
+      if (_.startsWith(key, prefix)) {
+        obj[sub][key.replace(prefix, '')] = value;
+      }
+    });
+  }
+
+  function formatBranchObject(collection, objectType) {
+    _.each(collection, function(branch_object){
+      branch_object['src_branch_'+objectType+'_action'] = (branch_object['src_branch_'+objectType+'_action']||'').toString().toUpperCase();
+      branch_object['dst_branch_'+objectType+'_action'] = (branch_object['dst_branch_'+objectType+'_action']||'').toString().toUpperCase();
+      propertyPrefixToSubObject(branch_object, 'src_'+objectType);
+      propertyPrefixToSubObject(branch_object, 'dst_'+objectType);
+      propertyPrefixToSubObject(branch_object, 'src_orig_'+objectType);
+      propertyPrefixToSubObject(branch_object, 'dst_orig_'+objectType);
+      propertyPrefixToSubObject(branch_object, 'merge_'+objectType);
+    });
+  }
   
   exports.conflict = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -111,6 +133,7 @@ module.exports = exports = function(module, funcs){
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_media = rslt[0];
+            formatBranchObject(branch_media, 'media');
             return cb();
           });
         },
@@ -170,6 +193,7 @@ module.exports = exports = function(module, funcs){
        appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_redirects = rslt[0];
+            formatBranchObject(branch_redirects, 'redirect');
             return cb();
           });
         },
@@ -199,6 +223,7 @@ module.exports = exports = function(module, funcs){
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_pages = rslt[0];
+            formatBranchObject(branch_pages, 'page');
             return cb();
           });
         },
@@ -329,6 +354,7 @@ module.exports = exports = function(module, funcs){
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_menus = rslt[0];
+            formatBranchObject(branch_menus, 'menu');
             return cb();
           });
         },
@@ -412,6 +438,7 @@ module.exports = exports = function(module, funcs){
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_sitemaps = rslt[0];
+            formatBranchObject(branch_sitemaps, 'sitemap');
             return cb();
           });
         },
