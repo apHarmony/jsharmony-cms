@@ -74,7 +74,7 @@ jsh.App[modelid] = new (function(){
       return key;
     }
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_Changes_Listing').html();
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_Changes_Listing').html();
     jdiff.html(XExt.renderClientEJS(tmpl, {
       _: _,
       jsh: jsh,

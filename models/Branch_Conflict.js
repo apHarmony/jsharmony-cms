@@ -85,7 +85,7 @@ jsh.App[modelid] = new (function(){
       return key;
     }
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_Changes_Listing').html();
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_Changes_Listing').html();
     var templates = {};
 
     var ejsenv = {
@@ -101,7 +101,7 @@ jsh.App[modelid] = new (function(){
     function include(path, data) {
       var t = templates[path];
       if (!t) {
-        t = templates[path] = jsh.$root('.'+xmodel.class+'_'+path).html();
+        t = templates[path] = jsh.$root('.'+xmodel.class+'_template_'+path).html();
       }
       if (t) {
         return render(t, data);
