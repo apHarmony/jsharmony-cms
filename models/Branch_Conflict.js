@@ -116,24 +116,22 @@ jsh.App[modelid] = new (function(){
       map,
     }));
 
-    jdiff.find('.preview_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-    jdiff.find('.button_pick_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
-    jdiff.find('.button_unresolve_page').on('click', function(e){ _this.pickPage(this); e.preventDefault(); });
+    var objects = [
+      'menu',
+      'page',
+      'media',
+      'redirect',
+      'sitemap',
+    ];
 
-    jdiff.find('.preview_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-    jdiff.find('.button_pick_media').on('click', function(e){ _this.pickMedia(this); e.preventDefault(); });
-    jdiff.find('.button_unresolve_media').on('click', function(e){ _this.pickMedia(this); e.preventDefault(); });
-
-    jdiff.find('.preview_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-    jdiff.find('.button_pick_menu').on('click', function(e){ _this.pickMenu(this); e.preventDefault(); });
-    jdiff.find('.button_unresolve_menu').on('click', function(e){ _this.pickMenu(this); e.preventDefault(); });
-
-    jdiff.find('.preview_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
-    jdiff.find('.button_pick_sitemap').on('click', function(e){ _this.pickSitemap(this); e.preventDefault(); });
-    jdiff.find('.button_unresolve_sitemap').on('click', function(e){ _this.pickSitemap(this); e.preventDefault(); });
-
-    jdiff.find('.button_pick_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
-    jdiff.find('.button_unresolve_redirect').on('click', function(e){ _this.pickRedirect(this); e.preventDefault(); });
+    objects.forEach(function(objectType) {
+      var ObjectType = objectType.charAt(0).toUpperCase() + objectType.substring(1);
+      if (_this['preview'+ObjectType]) {
+        jdiff.find('.preview_'+objectType).on('click', function(e){ _this['preview'+ObjecType](this); e.preventDefault(); });
+      }
+      jdiff.find('.button_resolve_'+objectType).on('click', function(e){ _this.resolveConflict(this, ObjectType); e.preventDefault(); });
+      jdiff.find('.button_unresolve_'+objectType).on('click', function(e){ _this.resolveConflict(this, ObjectType); e.preventDefault(); });
+    });
 
     jdiff.find('.button_execute_merge').on('click', function(e){ _this.executeMerge(this); e.preventDefault(); });
   }
@@ -174,87 +172,17 @@ jsh.App[modelid] = new (function(){
     XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id })
   }
 
-  this.pickPage = function(obj){
+  this.resolveConflict = function(obj, objectType){
     var jobj = $(obj);
 
-    var query = {
-      branch_id: xmodel.get('branch_id'),
-      page_key: jobj.data('page_key'),
-    };
     var params = {
-      page_merge_id: jobj.data('page_id'),
-      branch_page_merge_action: jobj.data('branch_page_action'),
-    };
-
-    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Page', query, params, function(rslt){
-      window.location.reload();
-    });
-  }
-
-  this.pickMedia = function(obj){
-    var jobj = $(obj);
-
-    var query = {
       branch_id: xmodel.get('branch_id'),
-      media_key: jobj.data('media_key'),
-    };
-    var params = {
-      media_merge_id: jobj.data('media_id'),
-      branch_media_merge_action: jobj.data('branch_media_action'),
+      key: jobj.data('key'),
+      merge_id: jobj.data('id'),
+      branch_merge_action: jobj.data('branch_action'),
     };
 
-    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Media', query, params, function(rslt){
-      window.location.reload();
-    });
-  }
-
-  this.pickMenu = function(obj){
-    var jobj = $(obj);
-
-    var query = {
-      branch_id: xmodel.get('branch_id'),
-      menu_key: jobj.data('menu_key'),
-    };
-    var params = {
-      menu_merge_id: jobj.data('menu_id'),
-      branch_menu_merge_action: jobj.data('branch_menu_action'),
-    };
-
-    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Menu', query, params, function(rslt){
-      window.location.reload();
-    });
-  }
-
-  this.pickRedirect = function(obj){
-    var jobj = $(obj);
-
-    var query = {
-      branch_id: xmodel.get('branch_id'),
-      redirect_key: jobj.data('redirect_key'),
-    };
-    var params = {
-      redirect_merge_id: jobj.data('redirect_id'),
-      branch_redirect_merge_action: jobj.data('branch_redirect_action'),
-    };
-
-    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Redirect', query, params, function(rslt){
-      window.location.reload();
-    });
-  }
-
-  this.pickSitemap = function(obj){
-    var jobj = $(obj);
-
-    var query = {
-      branch_id: xmodel.get('branch_id'),
-      sitemap_key: jobj.data('sitemap_key'),
-    };
-    var params = {
-      sitemap_merge_id: jobj.data('sitemap_id'),
-      branch_sitemap_merge_action: jobj.data('branch_sitemap_action'),
-    };
-
-    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_Sitemap', query, params, function(rslt){
+    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_'+objectType, {}, params, function(rslt){
       window.location.reload();
     });
   }

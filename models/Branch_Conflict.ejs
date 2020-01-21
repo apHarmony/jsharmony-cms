@@ -41,7 +41,7 @@
       title: title,
       new_page: new_page,
       old_page: old_page}) #>
-    <input type="button" value="Pick" class="button_pick_page" data-page_key="<#=page_key#>" data-page_id="<#=new_page.id#>" data-branch_page_action="<#=branch_page_action#>" />
+    <input type="button" value="Pick" class="button_resolve_page" data-key="<#=page_key#>" data-id="<#=new_page.id#>" data-branch_action="<#=branch_page_action#>" />
   </h4>
 
   <# _.each(_.pick(diff,['page_title','template_title']), function(val, key){ #>
@@ -102,7 +102,7 @@
       title: title,
       new_media: new_media,
       old_media: old_media}) #>
-    <input type="button" value="Pick" class="button_pick_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-branch_media_action="<#=branch_media_action#>" />
+    <input type="button" value="Pick" class="button_resolve_media" data-key="<#=media_key#>" data-id="<#=new_media.id#>" data-branch_action="<#=branch_media_action#>" />
   </h4>
 
   <div>
@@ -160,7 +160,7 @@
       title: title,
       new_menu: new_menu,
       old_menu: old_menu}) #>
-    <input type="button" value="Pick" class="button_pick_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>" data-branch_menu_action="<#=branch_menu_action#>" />
+    <input type="button" value="Pick" class="button_resolve_menu" data-key="<#=menu_key#>" data-id="<#=new_menu.id#>" data-branch_action="<#=branch_menu_action#>" />
   </h4>
 
   <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
@@ -205,7 +205,7 @@
       redirect_key: redirect_key,
       new_redirect: new_redirect,
       old_redirect: old_redirect}) #>
-    <input type="button" value="Pick" class="button_pick_redirect" data-redirect_key="<#=redirect_key#>" data-redirect_id="<#=new_redirect.id#>" data-branch_redirect_action="<#=branch_redirect_action#>" />
+    <input type="button" value="Pick" class="button_resolve_redirect" data-key="<#=redirect_key#>" data-id="<#=new_redirect.id#>" data-branch_action="<#=branch_redirect_action#>" />
   </h4>
 
   <div class="diff_item">
@@ -254,7 +254,7 @@
       title: title,
       new_sitemap: new_sitemap,
       old_sitemap: old_sitemap}) #>
-    <input type="button" value="Pick" class="button_pick_sitemap" data-sitemap_key="<#=sitemap_key#>" data-sitemap_id="<#=new_sitemap.id#>" data-branch_sitemap_action="<#=branch_sitemap_action#>" />
+    <input type="button" value="Pick" class="button_resolve_sitemap" data-key="<#=sitemap_key#>" data-id="<#=new_sitemap.id#>" data-branch_action="<#=branch_sitemap_action#>" />
   </h4>
 
   <# _.each(_.pick(diff,['sitemap_name']), function(val, key){ #>
@@ -296,7 +296,7 @@
           title: 'View',
           new_page: branch_page.merge_page,
           old_page: branch_page.dst_page}) #>
-        <input type="button" value="Unresolve" class="button_unresolve_page" data-page_key="<#=branch_page.page_key#>"  data-page_id="<#=null#>" data-branch_page_action="<#=null#>" />
+        <input type="button" value="Unresolve" class="button_unresolve_page" data-key="<#=branch_page.page_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
       </h4>
     <# } else { #>
       <div class="branch_diff_comparison">
@@ -341,7 +341,7 @@
           title: 'View',
           new_media: branch_media.merge_media,
           old_media: branch_media.dst_media}) #>
-        <input type="button" value="Unresolve" class="button_unresolve_media" data-media_key="<#=branch_media.media_key#>"  data-media_id="<#=null#>" data-branch_media_action="<#=null#>" />
+        <input type="button" value="Unresolve" class="button_unresolve_media" data-key="<#=branch_media.media_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
       </h4>
     <# } else { #>
       <div class="branch_diff_comparison">
@@ -382,7 +382,7 @@
           title: 'View',
           new_menu: branch_menu.merge_menu,
           old_menu: branch_menu.dst_menu}) #>
-        <input type="button" value="Unresolve" class="button_unresolve_menu" data-menu_key="<#=branch_menu.menu_key#>"  data-menu_id="<#=null#>" data-branch_menu_action="<#=null#>" />
+        <input type="button" value="Unresolve" class="button_unresolve_menu" data-key="<#=branch_menu.menu_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
       </h4>
     <# } else { #>
       <div class="branch_diff_comparison">
@@ -426,7 +426,7 @@
           redirect_key: branch_redirect.redirect_key,
           new_redirect: branch_redirect.merge_redirect,
           old_redirect: branch_redirect.dst_redirect}) #>
-        <input type="button" value="Unresolve" class="button_unresolve_redirect" data-redirect_key="<#=branch_redirect.redirect_key#>"  data-redirect_id="<#=null#>" data-branch_redirect_action="<#=null#>" />
+        <input type="button" value="Unresolve" class="button_unresolve_redirect" data-key="<#=branch_redirect.redirect_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
       </h4>
     <# } else { #>
       <div class="branch_diff_comparison">
@@ -467,7 +467,7 @@
           title: 'View',
           new_sitemap: branch_sitemap.merge_sitemap,
           old_sitemap: branch_sitemap.dst_sitemap}) #>
-        <input type="button" value="Unresolve" class="button_unresolve_sitemap" data-sitemap_key="<#=branch_sitemap.sitemap_key#>"  data-sitemap_id="<#=null#>" data-branch_sitemap_action="<#=null#>" />
+        <input type="button" value="Unresolve" class="button_unresolve_sitemap" data-key="<#=branch_sitemap.sitemap_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
       </h4>
     <# } else { #>
       <div class="branch_diff_comparison">

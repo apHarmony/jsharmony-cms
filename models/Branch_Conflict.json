@@ -21,83 +21,68 @@
     ]
   },
   "Branch_Conflict_Resolve_Page": {
-    "layout":"form",
-    "table":"{schema}.branch_page",
-    "onecolumn":true,
-    "roles": {"PUBLISHER": "BU","AUTHOR": "BU"},
-    "actions":"BU",
-    "caption":["Branch","Branches"],
+    "layout":"exec",
+    "roles": {"PUBLISHER": "U","AUTHOR": "U"},
+    "actions":"U",
     "title":"",
-    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
+    "sqlexec":"update {schema}.branch_page set page_merge_id=@merge_id, branch_page_merge_action=@branch_merge_action where branch_id=@branch_id and page_key=@key and ('RW' = (select branch_access from {schema}.v_my_branch_access access where access.branch_id=@branch_id));",
     "fields": [
-      {"name":"branch_id","control":"hidden","key":true},
-      {"name":"page_key","control":"hidden","key":true},
-      {"name":"page_merge_id","caption":"Picked Page ID"},
-      {"name":"branch_page_merge_action","caption":"Picked Action"}
+      {"name":"branch_id", "actions":"U", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"key", "actions":"U", "type":"bigint", "caption":"Key", "validate": ["Required"]},
+      {"name":"merge_id", "actions":"U", "type":"bigint", "caption":"Merge ID"},
+      {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
   "Branch_Conflict_Resolve_Media": {
-    "layout":"form",
-    "table":"{schema}.branch_media",
-    "onecolumn":true,
-    "roles": {"PUBLISHER": "BU","AUTHOR": "BU"},
-    "actions":"BU",
-    "caption":["Branch","Branches"],
+    "layout":"exec",
+    "roles": {"PUBLISHER": "U","AUTHOR": "U"},
+    "actions":"U",
     "title":"",
-    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
+    "sqlexec":"update {schema}.branch_media set media_merge_id=@merge_id, branch_media_merge_action=@branch_merge_action where branch_id=@branch_id and media_key=@key and ('RW' = (select branch_access from {schema}.v_my_branch_access access where access.branch_id=@branch_id));",
     "fields": [
-      {"name":"branch_id","control":"hidden","key":true},
-      {"name":"media_key","control":"hidden","key":true},
-      {"name":"media_merge_id","caption":"Picked Media ID"},
-      {"name":"branch_media_merge_action","caption":"Picked Action"}
+      {"name":"branch_id", "actions":"U", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"key", "actions":"U", "type":"bigint", "caption":"Key", "validate": ["Required"]},
+      {"name":"merge_id", "actions":"U", "type":"bigint", "caption":"Merge ID"},
+      {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
   "Branch_Conflict_Resolve_Menu": {
-    "layout":"form",
-    "table":"{schema}.branch_menu",
-    "onecolumn":true,
-    "roles": {"PUBLISHER": "BU","AUTHOR": "BU"},
-    "actions":"BU",
-    "caption":["Branch","Branches"],
+    "layout":"exec",
+    "roles": {"PUBLISHER": "U","AUTHOR": "U"},
+    "actions":"U",
     "title":"",
-    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
+    "sqlexec":"update {schema}.branch_menu set menu_merge_id=@merge_id, branch_menu_merge_action=@branch_merge_action where branch_id=@branch_id and menu_key=@key and ('RW' = (select branch_access from {schema}.v_my_branch_access access where access.branch_id=@branch_id));",
     "fields": [
-      {"name":"branch_id","control":"hidden","key":true},
-      {"name":"menu_key","control":"hidden","key":true},
-      {"name":"menu_merge_id","caption":"Picked Menu ID"},
-      {"name":"branch_menu_merge_action","caption":"Picked Action"}
+      {"name":"branch_id", "actions":"U", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"key", "actions":"U", "type":"bigint", "caption":"Key", "validate": ["Required"]},
+      {"name":"merge_id", "actions":"U", "type":"bigint", "caption":"Merge ID"},
+      {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
   "Branch_Conflict_Resolve_Sitemap": {
-    "layout":"form",
-    "table":"{schema}.branch_sitemap",
-    "onecolumn":true,
-    "roles": {"PUBLISHER": "BU","AUTHOR": "BU"},
-    "actions":"BU",
-    "caption":["Branch","Branches"],
+    "layout":"exec",
+    "roles": {"PUBLISHER": "U","AUTHOR": "U"},
+    "actions":"U",
     "title":"",
-    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
+    "sqlexec":"update {schema}.branch_sitemap set sitemap_merge_id=@merge_id, branch_sitemap_merge_action=@branch_merge_action where branch_id=@branch_id and sitemap_key=@key and ('RW' = (select branch_access from {schema}.v_my_branch_access access where access.branch_id=@branch_id));",
     "fields": [
-      {"name":"branch_id","control":"hidden","key":true},
-      {"name":"sitemap_key","control":"hidden","key":true},
-      {"name":"sitemap_merge_id","caption":"Picked Sitemap ID"},
-      {"name":"branch_sitemap_merge_action","caption":"Picked Action"}
+      {"name":"branch_id", "actions":"U", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"key", "actions":"U", "type":"bigint", "caption":"Key", "validate": ["Required"]},
+      {"name":"Merge_id", "actions":"U", "type":"bigint", "caption":"Merge ID"},
+      {"name":"branch_merge_action", "actions":"U", "type":"varchar"}
     ]
   },
   "Branch_Conflict_Resolve_Redirect": {
-    "layout":"form",
-    "table":"{schema}.branch_redirect",
-    "onecolumn":true,
-    "roles": {"PUBLISHER": "BU","AUTHOR": "BU"},
-    "actions":"BU",
-    "caption":["Branch","Branches"],
+    "layout":"exec",
+    "roles": {"PUBLISHER": "U","AUTHOR": "U"},
+    "actions":"U",
     "title":"",
-    "sqlwhere":"('RW' = (select branch_access from v_my_branch_access access where access.branch_id=@branch_id)",
+    "sqlexec":"update {schema}.branch_redirect set redirect_merge_id=@merge_id, branch_redirect_merge_action=@branch_merge_action where branch_id=@branch_id and redirect_key=@key and ('RW' = (select branch_access from {schema}.v_my_branch_access access where access.branch_id=@branch_id));",
     "fields": [
-      {"name":"branch_id","control":"hidden","key":true},
-      {"name":"redirect_key","control":"hidden","key":true},
-      {"name":"redirect_merge_id","caption":"Picked Redirect ID"},
-      {"name":"branch_redirect_merge_action","caption":"Picked Action"}
+      {"name":"branch_id", "actions":"U", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"key", "actions":"U", "type":"bigint", "caption":"Key", "validate": ["Required"]},
+      {"name":"merge_id", "actions":"U", "type":"bigint", "caption":"Merge ID"},
+      {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
   "Branch_Conflict_Abort": {
