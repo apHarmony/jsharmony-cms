@@ -24,6 +24,47 @@ var prettyhtml = require('js-beautify').html;
 module.exports = exports = function(module, funcs){
   var exports = {};
 
+  function selectConflicts(objectType, detailFields, whereClause) {
+    var details = [
+      ['src_orig_', 'src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id'],
+      ['dst_orig_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id'],
+      ['src_', 'src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id'],
+      ['dst_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_id'],
+      ['merge_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_merge_id'],
+    ];
+    var sqlPrefix = "select src_branch_%%%OBJECT%%%.%%%OBJECT%%%_key,\
+      src_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as src_branch_%%%OBJECT%%%_action, src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id as src_%%%OBJECT%%%_orig_id,\
+      dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as dst_branch_%%%OBJECT%%%_action, dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id as dst_%%%OBJECT%%%_orig_id,\
+      dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_merge_id, dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_merge_action,";
+
+    var sqlDetail = details.flatMap(function(det) {
+      var prefix = det[0];
+      var table = prefix + objectType;
+      return detailFields.map(function(suffix) {
+        var field = objectType + '_' + suffix;
+        return table + '.' + field + ' ' + prefix + field;
+      });
+    }).join(',');
+
+    var schema = module.schema?module.schema+'.':''
+    var sqlFrom =" from "+schema+"branch_%%%OBJECT%%% src_branch_%%%OBJECT%%% \
+      inner join "+schema+"branch_%%%OBJECT%%% dst_branch_%%%OBJECT%%% on dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_key=src_branch_%%%OBJECT%%%.%%%OBJECT%%%_key and dst_branch_%%%OBJECT%%%.branch_id=@dst_branch_id ";
+    var sqlDetailFrom = details.map(function(det) {
+      var prefix = det[0];
+      var id = det[1]
+      var table = prefix + objectType;
+      return 'left outer join ' + schema + objectType + ' ' + table + ' on ' + table + '.' + objectType + '_id=' + id;
+    }).join(' ');
+
+    var sqlWhere = " where src_branch_%%%OBJECT%%%.branch_id=@src_branch_id\
+      and ((src_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action is not null and src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id<>dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)\
+      or  (dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action is not null and dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id<>src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)) ";
+
+    var sql = Helper.ReplaceAll(sqlPrefix + sqlDetail + sqlFrom + sqlDetailFrom + sqlWhere + whereClause, '%%%OBJECT%%%', objectType)
+    return sql;
+  }
+
+
   function propertyPrefixToSubObject(obj, sub) {
     var prefix = sub + '_'
     obj[sub] = {};
@@ -111,26 +152,16 @@ module.exports = exports = function(module, funcs){
 
         //Get all branch_media
         function(cb){
-          var sql = "select src_branch_media.media_key,\
-              src_branch_media.branch_media_action as src_branch_media_action, src_branch_media.media_id as src_media_id, src_branch_media.media_orig_id as src_media_orig_id, src_branch_media.media_orig_id as src_orig_media_id,\
-              dst_branch_media.branch_media_action as dst_branch_media_action, dst_branch_media.media_id as dst_media_id, dst_branch_media.media_orig_id as dst_media_orig_id, dst_branch_media.media_orig_id as dst_orig_media_id,\
-              dst_branch_media.media_merge_id, dst_branch_media.media_merge_id as merge_media_id, dst_branch_media.branch_media_merge_action, \
-              src_orig_media.media_path src_orig_media_path, src_orig_media.media_file_id src_orig_media_file_id, src_orig_media.media_ext src_orig_media_ext, src_orig_media.media_width src_orig_media_width, src_orig_media.media_height src_orig_media_height,\
-              dst_orig_media.media_path dst_orig_media_path, dst_orig_media.media_file_id dst_orig_media_file_id, dst_orig_media.media_ext dst_orig_media_ext, dst_orig_media.media_width dst_orig_media_width, dst_orig_media.media_height dst_orig_media_height,\
-              src_media.media_path src_media_path, src_media.media_file_id src_media_file_id, src_media.media_ext src_media_ext, src_media.media_width src_media_width, src_media.media_height src_media_height,\
-              dst_media.media_path dst_media_path, dst_media.media_file_id dst_media_file_id, dst_media.media_ext dst_media_ext, dst_media.media_width dst_media_width, dst_media.media_height dst_media_height,\
-              merge_media.media_path merge_media_path, merge_media.media_file_id merge_media_file_id, merge_media.media_ext merge_media_ext, merge_media.media_width merge_media_width, merge_media.media_height merge_media_height\
-            from "+(module.schema?module.schema+'.':'')+"branch_media src_branch_media \
-              inner join "+(module.schema?module.schema+'.':'')+"branch_media dst_branch_media on dst_branch_media.media_key=src_branch_media.media_key and dst_branch_media.branch_id=@dst_branch_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"media src_orig_media on src_orig_media.media_id=src_branch_media.media_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"media dst_orig_media on dst_orig_media.media_id=dst_branch_media.media_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"media src_media on src_media.media_id=src_branch_media.media_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"media dst_media on dst_media.media_id=dst_branch_media.media_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"media merge_media on merge_media.media_id=dst_branch_media.media_merge_id \
-            where src_branch_media.branch_id=@src_branch_id\
-              and (src_orig_media.media_is_folder=0 or dst_orig_media.media_is_folder=0 or src_media.media_is_folder=0 or dst_media.media_is_folder=0)\
-              and ((src_branch_media.branch_media_action is not null and src_branch_media.media_orig_id<>dst_branch_media.media_id)\
-               or  (dst_branch_media.branch_media_action is not null and dst_branch_media.media_orig_id<>src_branch_media.media_id))";
+          var detailFields = [
+            'id',
+            'path',
+            'file_id',
+            'ext',
+            'width',
+            'height',
+          ];
+          var whereClause = "and (src_orig_media.media_is_folder=0 or dst_orig_media.media_is_folder=0 or src_media.media_is_folder=0 or dst_media.media_is_folder=0)";
+          var sql = selectConflicts('media', detailFields, whereClause);
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_media = rslt[0];
@@ -172,26 +203,14 @@ module.exports = exports = function(module, funcs){
 
         //Get all branch_redirect
         function(cb){
-          var sql = "select src_branch_redirect.redirect_key,\
-              src_branch_redirect.branch_redirect_action as src_branch_redirect_action, src_branch_redirect.redirect_id as src_redirect_id, src_branch_redirect.redirect_orig_id as src_redirect_orig_id, src_branch_redirect.redirect_orig_id as src_orig_redirect_id, \
-              dst_branch_redirect.branch_redirect_action as dst_branch_redirect_action, dst_branch_redirect.redirect_id as dst_redirect_id, dst_branch_redirect.redirect_orig_id as dst_redirect_orig_id, dst_branch_redirect.redirect_orig_id as dst_orig_redirect_id,\
-              dst_branch_redirect.redirect_merge_id, dst_branch_redirect.redirect_merge_id as merge_redirect_id, dst_branch_redirect.branch_redirect_merge_action, \
-              src_orig_redirect.redirect_url src_orig_redirect_url, src_orig_redirect.redirect_dest src_orig_redirect_dest,\
-              dst_orig_redirect.redirect_url dst_orig_redirect_url, dst_orig_redirect.redirect_dest dst_orig_redirect_dest,\
-              src_redirect.redirect_url src_redirect_url, src_redirect.redirect_dest src_redirect_dest,\
-              dst_redirect.redirect_url dst_redirect_url, dst_redirect.redirect_dest dst_redirect_dest,\
-              merge_redirect.redirect_url merge_redirect_url, merge_redirect.redirect_dest merge_redirect_dest\
-            from "+(module.schema?module.schema+'.':'')+"branch_redirect src_branch_redirect \
-              inner join "+(module.schema?module.schema+'.':'')+"branch_redirect dst_branch_redirect on dst_branch_redirect.redirect_key=src_branch_redirect.redirect_key and dst_branch_redirect.branch_id=@dst_branch_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"redirect src_orig_redirect on src_orig_redirect.redirect_id=src_branch_redirect.redirect_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"redirect dst_orig_redirect on dst_orig_redirect.redirect_id=dst_branch_redirect.redirect_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"redirect src_redirect on src_redirect.redirect_id=src_branch_redirect.redirect_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"redirect dst_redirect on dst_redirect.redirect_id=dst_branch_redirect.redirect_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"redirect merge_redirect on merge_redirect.redirect_id=dst_branch_redirect.redirect_merge_id \
-            where src_branch_redirect.branch_id=@src_branch_id\
-              and ((src_branch_redirect.branch_redirect_action is not null and src_branch_redirect.redirect_orig_id<>dst_branch_redirect.redirect_id)\
-               or  (dst_branch_redirect.branch_redirect_action is not null and dst_branch_redirect.redirect_orig_id<>src_branch_redirect.redirect_id))";
-       appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          var detailFields = [
+            'id',
+            'url',
+            'dest',
+          ];
+          var whereClause = '';
+          sql = selectConflicts('redirect', detailFields, whereClause);
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_redirects = rslt[0];
             formatBranchObject(branch_redirects, 'redirect');
@@ -201,26 +220,16 @@ module.exports = exports = function(module, funcs){
 
         //Get all branch_page
         function(cb){
-          var sql = "select src_branch_page.page_key,\
-              src_branch_page.branch_page_action as src_branch_page_action, src_branch_page.page_id as src_page_id, src_branch_page.page_orig_id as src_page_orig_id, src_branch_page.page_orig_id as src_orig_page_id,\
-              dst_branch_page.branch_page_action as dst_branch_page_action, dst_branch_page.page_id as dst_page_id, dst_branch_page.page_orig_id as dst_page_orig_id, dst_branch_page.page_orig_id as dst_orig_page_id,\
-              dst_branch_page.page_merge_id, dst_branch_page.page_merge_id merge_page_id, dst_branch_page.branch_page_merge_action, \
-              src_orig_page.page_path src_orig_page_path, src_orig_page.page_title src_orig_page_title, src_orig_page.page_file_id src_orig_page_file_id, src_orig_page.page_filename src_orig_page_filename, src_orig_page.page_template_id src_orig_page_template_id,\
-              dst_orig_page.page_path dst_orig_page_path, dst_orig_page.page_title dst_orig_page_title, dst_orig_page.page_file_id dst_orig_page_file_id, dst_orig_page.page_filename dst_orig_page_filename, dst_orig_page.page_template_id dst_orig_page_template_id,\
-              src_page.page_path src_page_path, src_page.page_title src_page_title, src_page.page_file_id src_page_file_id, src_page.page_filename src_page_filename, src_page.page_template_id src_page_template_id,\
-              dst_page.page_path dst_page_path, dst_page.page_title dst_page_title, dst_page.page_file_id dst_page_file_id, dst_page.page_filename dst_page_filename, dst_page.page_template_id dst_page_template_id,\
-              merge_page.page_path merge_page_path, merge_page.page_title merge_page_title, merge_page.page_file_id merge_page_file_id, merge_page.page_filename merge_page_filename, merge_page.page_template_id merge_page_template_id\
-            from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page \
-              inner join "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page on dst_branch_page.page_key=src_branch_page.page_key and dst_branch_page.branch_id=@dst_branch_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"page src_orig_page on src_orig_page.page_id=src_branch_page.page_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"page dst_orig_page on dst_orig_page.page_id=dst_branch_page.page_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"page src_page on src_page.page_id=src_branch_page.page_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"page dst_page on dst_page.page_id=dst_branch_page.page_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"page merge_page on merge_page.page_id=dst_branch_page.page_merge_id \
-            where src_branch_page.branch_id=@src_branch_id\
-              and (src_orig_page.page_is_folder=0 or dst_orig_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)\
-              and ((src_branch_page.branch_page_action is not null and src_branch_page.page_orig_id<>dst_branch_page.page_id)\
-               or  (dst_branch_page.branch_page_action is not null and dst_branch_page.page_orig_id<>src_branch_page.page_id))";
+          var detailFields = [
+            'id',
+            'path',
+            'title',
+            'file_id',
+            'filename',
+            'template_id',
+          ];
+          var whereClause = "and (src_orig_page.page_is_folder=0 or dst_orig_page.page_is_folder=0 or src_page.page_is_folder=0 or dst_page.page_is_folder=0)";
+          var sql = selectConflicts('page', detailFields, whereClause);
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_pages = rslt[0];
@@ -333,25 +342,14 @@ module.exports = exports = function(module, funcs){
 
         //Get all branch_menu
         function(cb){
-          var sql = "select src_branch_menu.menu_key,\
-              src_branch_menu.branch_menu_action as src_branch_menu_action, src_branch_menu.menu_id as src_menu_id, src_branch_menu.menu_orig_id as src_menu_orig_id, src_branch_menu.menu_orig_id as src_orig_menu_id,\
-              dst_branch_menu.branch_menu_action as dst_branch_menu_action, dst_branch_menu.menu_id as dst_menu_id, dst_branch_menu.menu_orig_id as dst_menu_orig_id, dst_branch_menu.menu_orig_id as dst_orig_menu_id,\
-              dst_branch_menu.menu_merge_id, dst_branch_menu.menu_merge_id merge_menu_id, dst_branch_menu.branch_menu_merge_action, \
-              src_orig_menu.menu_name src_orig_menu_name, src_orig_menu.menu_tag src_orig_menu_tag, src_orig_menu.menu_file_id src_orig_menu_file_id,\
-              dst_orig_menu.menu_name dst_orig_menu_name, dst_orig_menu.menu_tag dst_orig_menu_tag, dst_orig_menu.menu_file_id dst_orig_menu_file_id,\
-              src_menu.menu_name src_menu_name, src_menu.menu_tag src_menu_tag, src_menu.menu_file_id src_menu_file_id,\
-              dst_menu.menu_name dst_menu_name, dst_menu.menu_tag dst_menu_tag, dst_menu.menu_file_id dst_menu_file_id,\
-              merge_menu.menu_name merge_menu_name, merge_menu.menu_tag merge_menu_tag, merge_menu.menu_file_id merge_menu_file_id\
-            from "+(module.schema?module.schema+'.':'')+"branch_menu src_branch_menu \
-              inner join "+(module.schema?module.schema+'.':'')+"branch_menu dst_branch_menu on dst_branch_menu.menu_key=src_branch_menu.menu_key and dst_branch_menu.branch_id=@dst_branch_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"menu src_orig_menu on src_orig_menu.menu_id=src_branch_menu.menu_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"menu dst_orig_menu on dst_orig_menu.menu_id=dst_branch_menu.menu_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"menu src_menu on src_menu.menu_id=src_branch_menu.menu_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"menu dst_menu on dst_menu.menu_id=dst_branch_menu.menu_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"menu merge_menu on merge_menu.menu_id=dst_branch_menu.menu_merge_id \
-            where src_branch_menu.branch_id=@src_branch_id\
-              and ((src_branch_menu.branch_menu_action is not null and src_branch_menu.menu_orig_id<>dst_branch_menu.menu_id)\
-               or  (dst_branch_menu.branch_menu_action is not null and dst_branch_menu.menu_orig_id<>src_branch_menu.menu_id))";
+          var detailFields = [
+            'id',
+            'name',
+            'tag',
+            'file_id',
+          ];
+          var whereClause = "";
+          var sql = selectConflicts('menu', detailFields, whereClause);
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_menus = rslt[0];
@@ -417,25 +415,14 @@ module.exports = exports = function(module, funcs){
 
         //Get all branch_sitemap
         function(cb){
-          var sql = "select src_branch_sitemap.sitemap_key,\
-              src_branch_sitemap.branch_sitemap_action as src_branch_sitemap_action, src_branch_sitemap.sitemap_id as src_sitemap_id, src_branch_sitemap.sitemap_orig_id as src_sitemap_orig_id, src_branch_sitemap.sitemap_orig_id as src_orig_sitemap_id,\
-              dst_branch_sitemap.branch_sitemap_action as dst_branch_sitemap_action, dst_branch_sitemap.sitemap_id as dst_sitemap_id, dst_branch_sitemap.sitemap_orig_id as dst_sitemap_orig_id, dst_branch_sitemap.sitemap_orig_id as dst_orig_sitemap_id,\
-              dst_branch_sitemap.sitemap_merge_id, dst_branch_sitemap.sitemap_merge_id merge_sitemap_id, dst_branch_sitemap.branch_sitemap_merge_action, \
-              src_orig_sitemap.sitemap_name src_orig_sitemap_name, src_orig_sitemap.sitemap_type src_orig_sitemap_type, src_orig_sitemap.sitemap_file_id src_orig_sitemap_file_id,\
-              dst_orig_sitemap.sitemap_name dst_orig_sitemap_name, dst_orig_sitemap.sitemap_type dst_orig_sitemap_type, dst_orig_sitemap.sitemap_file_id dst_orig_sitemap_file_id,\
-              src_sitemap.sitemap_name src_sitemap_name, src_sitemap.sitemap_type src_sitemap_type, src_sitemap.sitemap_file_id src_sitemap_file_id,\
-              dst_sitemap.sitemap_name dst_sitemap_name, dst_sitemap.sitemap_type dst_sitemap_type, dst_sitemap.sitemap_file_id dst_sitemap_file_id,\
-              merge_sitemap.sitemap_name merge_sitemap_name, merge_sitemap.sitemap_type merge_sitemap_type, merge_sitemap.sitemap_file_id merge_sitemap_file_id\
-            from "+(module.schema?module.schema+'.':'')+"branch_sitemap src_branch_sitemap \
-              inner join "+(module.schema?module.schema+'.':'')+"branch_sitemap dst_branch_sitemap on dst_branch_sitemap.sitemap_key=src_branch_sitemap.sitemap_key and dst_branch_sitemap.branch_id=@dst_branch_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"sitemap src_orig_sitemap on src_orig_sitemap.sitemap_id=src_branch_sitemap.sitemap_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"sitemap dst_orig_sitemap on dst_orig_sitemap.sitemap_id=dst_branch_sitemap.sitemap_orig_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"sitemap src_sitemap on src_sitemap.sitemap_id=src_branch_sitemap.sitemap_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"sitemap dst_sitemap on dst_sitemap.sitemap_id=dst_branch_sitemap.sitemap_id \
-              left outer join "+(module.schema?module.schema+'.':'')+"sitemap merge_sitemap on merge_sitemap.sitemap_id=dst_branch_sitemap.sitemap_merge_id \
-            where src_branch_sitemap.branch_id=@src_branch_id\
-              and ((src_branch_sitemap.branch_sitemap_action is not null and src_branch_sitemap.sitemap_orig_id<>dst_branch_sitemap.sitemap_id)\
-               or  (dst_branch_sitemap.branch_sitemap_action is not null and dst_branch_sitemap.sitemap_orig_id<>src_branch_sitemap.sitemap_id))";
+          var detailFields = [
+            'id',
+            'name',
+            'type',
+            'file_id',
+          ];
+          var whereClause = "";
+          var sql = selectConflicts('sitemap', detailFields, whereClause);
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) branch_sitemaps = rslt[0];
