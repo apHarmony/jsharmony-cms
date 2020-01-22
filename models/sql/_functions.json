@@ -1,0 +1,37 @@
+{
+  // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
+  "{schema}.merge_copy_src_edit_to_dst_merge":{
+    "params": ["OBJECT", "src_branch_id", "dst_branch_id"],
+    "sql": [
+      "update {schema}.branch_%%%OBJECT%%% ",
+      "set ",
+        "%%%OBJECT%%%_merge_id=",
+          "(select %%%OBJECT%%%_id ",
+            "from ",
+              "(select %%%OBJECT%%%_id,%%%OBJECT%%%_key src_%%%OBJECT%%%_key ",
+                "from {schema}.branch_%%%OBJECT%%% ",
+                "where branch_id=%%%src_branch_id%%% ",
+              ") tbl ",
+            "where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key ",
+          "),",
+        "branch_%%%OBJECT%%%_merge_action=",
+          "(select branch_%%%OBJECT%%%_action ",
+            "from ",
+              "(select branch_%%%OBJECT%%%_action,%%%OBJECT%%%_key src_%%%OBJECT%%%_key ",
+                "from {schema}.branch_%%%OBJECT%%% ",
+                "where branch_id=%%%src_branch_id%%% ",
+              ") tbl ",
+            "where src_%%%OBJECT%%%_key=%%%OBJECT%%%_key ",
+          ") ",
+      "where branch_id=%%%dst_branch_id%%% ",
+        "and %%%OBJECT%%%_merge_id is null ",
+        "and branch_%%%OBJECT%%%_merge_action is null ",
+        "and %%%OBJECT%%%_key in ",
+          "(select %%%OBJECT%%%_key ",
+            "from {schema}.branch_%%%OBJECT%%% ",
+            "where branch_id=%%%src_branch_id%%% ",
+              "and (branch_%%%OBJECT%%%_action is not null)",
+          ");"
+    ]
+  }
+}
