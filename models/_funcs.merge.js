@@ -227,11 +227,9 @@ module.exports = exports = function(module, funcs){
     "insert into {schema}.branch_%%%OBJECT%%% (branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_orig_id) select @dst_branch_id, %%%OBJECT%%%_key, %%%OBJECT%%%_id, %%%OBJECT%%%_id from {schema}.branch_%%%OBJECT%%% where branch_id=@src_branch_id and %%%OBJECT%%%_key not in (select %%%OBJECT%%%_key from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id);",
   ]);
 
-  var merge_sql_archive = expand([
-    "delete from {schema}.branch_%%%OBJECT%%% where branch_id=@dst_branch_id and branch_%%%OBJECT%%%_merge_action='DELETE' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
-    "update {schema}.branch_%%%OBJECT%%% set branch_%%%OBJECT%%%_action=null,%%%OBJECT%%%_orig_id=%%%OBJECT%%%_id where branch_id=@dst_branch_id and (branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE') and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
-
-    "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id and branch_sts='REVIEW' and branch_review_sts='PENDING' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=@dst_branch_id);",
+  var merge_sql_cleanup = expand([
+    "{schema}.merge_clear_edit_on_public(%%%OBJECT%%%, @dst_branch_id);",
+    "{schema}.merge_approve_if_in_review(@dst_branch_id, @src_branch_id);",
     "update {schema}.branch set branch_merge_id=null where branch_id=@dst_branch_id;",
   ]);
 
@@ -242,7 +240,7 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
 
     var sql = sql.join('\n');
-    sql = sql + merge_sql_archive.join('\n');
+    sql = sql + merge_sql_cleanup.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecCommand(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }

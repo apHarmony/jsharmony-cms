@@ -33,5 +33,18 @@
               "and (branch_%%%OBJECT%%%_action is not null)",
           ");"
     ]
+  },
+  "{schema}.merge_clear_edit_on_public":{
+    "params": ["OBJECT", "dst_branch_id"],
+    "sql": [
+      "delete from {schema}.branch_%%%OBJECT%%% where branch_id=%%%dst_branch_id%%% and branch_%%%OBJECT%%%_merge_action='DELETE' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);",
+      "update {schema}.branch_%%%OBJECT%%% set branch_%%%OBJECT%%%_action=null,%%%OBJECT%%%_orig_id=%%%OBJECT%%%_id where branch_id=%%%dst_branch_id%%% and (branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE') and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);"
+    ]
+  },
+  "{schema}.merge_approve_if_in_review":{
+    "params": ["dst_branch_id", "src_branch_id"],
+    "sql": [
+      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=%%%src_branch_id%%% and branch_sts='REVIEW' and branch_review_sts='PENDING' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);",
+    ]
   }
 }
