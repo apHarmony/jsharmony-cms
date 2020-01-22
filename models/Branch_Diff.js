@@ -9,7 +9,7 @@ jsh.App[modelid] = new (function(){
   this.deployment_target_params = {};
 
   this.onload = function(xmodel, callback){
-    var branch_merge_desc = xmodel.controller.form.Data.branch_merge_desc;
+    var branch_merge_desc = xmodel.get('branch_merge_desc');
     if (typeof branch_merge_desc === 'string' && branch_merge_desc != '') {
       // the element is briefly visible, so you see a flash of yellow if style is staticly set
       $('.branch_merge_desc').css('background-color', 'yellow');
