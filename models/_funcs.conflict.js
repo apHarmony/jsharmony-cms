@@ -24,43 +24,50 @@ var prettyhtml = require('js-beautify').html;
 module.exports = exports = function(module, funcs){
   var exports = {};
 
+  var CONFLICT_DETAIL_TABLES = [
+    ['src_orig_', 'src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id'],
+    ['dst_orig_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id'],
+    ['src_', 'src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id'],
+    ['dst_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_id'],
+    ['merge_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_merge_id'],
+  ];
+
+  function selectConflictDetailFields(detailFields) {
+    return CONFLICT_DETAIL_TABLES.flatMap(function(det) {
+      var prefix = det[0];
+      var table = prefix + '%%%OBJECT%%%';
+      return detailFields.map(function(suffix) {
+        var field = '%%%OBJECT%%%_' + suffix;
+        return table + '.' + field + ' ' + prefix + field;
+      });
+    }).join(',');
+  }
+
+  function selectConflictDetailTables() {
+    return CONFLICT_DETAIL_TABLES.map(function(det) {
+      var prefix = det[0];
+      var id = det[1]
+      var table = prefix + '%%%OBJECT%%%';
+      return 'left outer join {schema}.%%%OBJECT%%% ' + table + ' on ' + table + '.%%%OBJECT%%%_id=' + id;
+    }).join(' ');
+  }
+
   function selectConflicts(objectType, detailFields, whereClause) {
-    var details = [
-      ['src_orig_', 'src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id'],
-      ['dst_orig_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id'],
-      ['src_', 'src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id'],
-      ['dst_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_id'],
-      ['merge_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_merge_id'],
-    ];
     var sqlPrefix = "select src_branch_%%%OBJECT%%%.%%%OBJECT%%%_key,\
       src_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as src_branch_%%%OBJECT%%%_action,\
       dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as dst_branch_%%%OBJECT%%%_action,\
       dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_merge_id, dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_merge_action,";
 
-    var sqlDetail = details.flatMap(function(det) {
-      var prefix = det[0];
-      var table = prefix + objectType;
-      return detailFields.map(function(suffix) {
-        var field = objectType + '_' + suffix;
-        return table + '.' + field + ' ' + prefix + field;
-      });
-    }).join(',');
-
-    var schema = module.schema?module.schema+'.':''
-    var sqlFrom =" from "+schema+"branch_%%%OBJECT%%% src_branch_%%%OBJECT%%% \
-      inner join "+schema+"branch_%%%OBJECT%%% dst_branch_%%%OBJECT%%% on dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_key=src_branch_%%%OBJECT%%%.%%%OBJECT%%%_key and dst_branch_%%%OBJECT%%%.branch_id=@dst_branch_id ";
-    var sqlDetailFrom = details.map(function(det) {
-      var prefix = det[0];
-      var id = det[1]
-      var table = prefix + objectType;
-      return 'left outer join ' + schema + objectType + ' ' + table + ' on ' + table + '.' + objectType + '_id=' + id;
-    }).join(' ');
+    var sqlFrom =" from {schema}.branch_%%%OBJECT%%% src_branch_%%%OBJECT%%% \
+      inner join {schema}.branch_%%%OBJECT%%% dst_branch_%%%OBJECT%%% on dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_key=src_branch_%%%OBJECT%%%.%%%OBJECT%%%_key and dst_branch_%%%OBJECT%%%.branch_id=@dst_branch_id ";
 
     var sqlWhere = " where src_branch_%%%OBJECT%%%.branch_id=@src_branch_id\
       and ((src_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action is not null and src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id<>dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)\
       or  (dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action is not null and dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id<>src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)) ";
 
-    var sql = Helper.ReplaceAll(sqlPrefix + sqlDetail + sqlFrom + sqlDetailFrom + sqlWhere + whereClause, '%%%OBJECT%%%', objectType)
+    var sql = sqlPrefix + selectConflictDetailFields(detailFields) + sqlFrom + selectConflictDetailTables() + sqlWhere + whereClause;
+    sql = Helper.ReplaceAll(sql, '%%%OBJECT%%%', objectType);
+    sql = Helper.ReplaceAll(sql, '{schema}.', module.schema?module.schema+'.':'');
     return sql;
   }
 
