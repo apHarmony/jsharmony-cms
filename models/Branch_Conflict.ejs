@@ -71,12 +71,12 @@
   <# if(branch_media_action=='DELETE'){ #>
     <i class="material-icons branch_action_icon delete">remove_circle</i>
     DELETED MEDIA: <#-XExt.escapeHTML(old_media.path)#>
-    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.media_orig_id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>"><img src="/images/icon_browse.png" />Prev</a>
+    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_media_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
     UPDATED MEDIA: <#-XExt.escapeHTML(old_media.path)#>
-    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.media_orig_id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>"><img src="/images/icon_browse.png" />Prev</a>
+    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_media_action==null || branch_media_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>

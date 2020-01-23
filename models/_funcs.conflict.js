@@ -33,8 +33,8 @@ module.exports = exports = function(module, funcs){
       ['merge_', 'dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_merge_id'],
     ];
     var sqlPrefix = "select src_branch_%%%OBJECT%%%.%%%OBJECT%%%_key,\
-      src_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as src_branch_%%%OBJECT%%%_action, src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id as src_%%%OBJECT%%%_orig_id,\
-      dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as dst_branch_%%%OBJECT%%%_action, dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id as dst_%%%OBJECT%%%_orig_id,\
+      src_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as src_branch_%%%OBJECT%%%_action,\
+      dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action as dst_branch_%%%OBJECT%%%_action,\
       dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_merge_id, dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_merge_action,";
 
     var sqlDetail = details.flatMap(function(det) {
@@ -68,10 +68,15 @@ module.exports = exports = function(module, funcs){
   function propertyPrefixToSubObject(obj, sub) {
     var prefix = sub + '_'
     obj[sub] = {};
+    var toDelete = [];
     _.forOwn(obj, function(value, key) {
       if (_.startsWith(key, prefix)) {
         obj[sub][key.replace(prefix, '')] = value;
+        toDelete.push(key);
       }
+    });
+    toDelete.forEach(function(key) {
+      delete obj[key];
     });
   }
 
@@ -325,16 +330,16 @@ module.exports = exports = function(module, funcs){
           _.each(branch_pages, function(branch_page){
             if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'
             && branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.src_diff = funcs.pageDiff(updated_pages[branch_page.src_page_orig_id], updated_pages[branch_page.src_page_id]);
-              branch_page.dst_diff = funcs.pageDiff(updated_pages[branch_page.dst_page_orig_id], updated_pages[branch_page.dst_page_id]);
+              branch_page.src_diff = funcs.pageDiff(updated_pages[branch_page.src_orig_page.id], updated_pages[branch_page.src_page.id]);
+              branch_page.dst_diff = funcs.pageDiff(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.dst_page.id]);
             }
             else if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.src_diff = funcs.pageDiff(updated_pages[branch_page.src_page_orig_id], updated_pages[branch_page.src_page_id]);
-              branch_page.dst_diff = funcs.pageDiff(updated_pages[branch_page.src_page_orig_id], updated_pages[branch_page.dst_page_id]);
+              branch_page.src_diff = funcs.pageDiff(updated_pages[branch_page.src_orig_page.id], updated_pages[branch_page.src_page.id]);
+              branch_page.dst_diff = funcs.pageDiff(updated_pages[branch_page.src_orig_page.id], updated_pages[branch_page.dst_page.id]);
             }
             else if(branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
-              branch_page.src_diff = funcs.pageDiff(updated_pages[branch_page.dst_page_orig_id], updated_pages[branch_page.src_page_id]);
-              branch_page.dst_diff = funcs.pageDiff(updated_pages[branch_page.dst_page_orig_id], updated_pages[branch_page.dst_page_id]);
+              branch_page.src_diff = funcs.pageDiff(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.src_page.id]);
+              branch_page.dst_diff = funcs.pageDiff(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.dst_page.id]);
             }
           });
           return cb();
@@ -398,16 +403,16 @@ module.exports = exports = function(module, funcs){
           _.each(branch_menus, function(branch_menu){
             if(branch_menu.src_branch_menu_action && branch_menu.src_branch_menu_action.toUpperCase()=='UPDATE'
             && branch_menu.dst_branch_menu_action && branch_menu.dst_branch_menu_action.toUpperCase()=='UPDATE'){
-              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_menu_orig_id], menus[branch_menu.src_menu_id]);
-              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_menu_orig_id], menus[branch_menu.dst_menu_id]);
+              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_orig_menu.id], menus[branch_menu.src_menu.id]);
+              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_orig_menu.id], menus[branch_menu.dst_menu.id]);
             }
             else if(branch_menu.src_branch_menu_action && branch_menu.src_branch_menu_action.toUpperCase()=='UPDATE'){
-              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_menu_orig_id], menus[branch_menu.src_menu_id]);
-              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.src_menu_orig_id], menus[branch_menu.dst_menu_id]);
+              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_orig_menu.id], menus[branch_menu.src_menu.id]);
+              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.src_orig_menu.id], menus[branch_menu.dst_menu.id]);
             }
             else if(branch_menu.dst_branch_menu_action && branch_menu.dst_branch_menu_action.toUpperCase()=='UPDATE'){
-              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.dst_menu_orig_id], menus[branch_menu.src_menu_id]);
-              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_menu_orig_id], menus[branch_menu.dst_menu_id]);
+              branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.dst_orig_menu.id], menus[branch_menu.src_menu.id]);
+              branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_orig_menu.id], menus[branch_menu.dst_menu.id]);
             }
           });
           return cb();
@@ -470,16 +475,16 @@ module.exports = exports = function(module, funcs){
           _.each(branch_sitemaps, function(branch_sitemap){
             if(branch_sitemap.src_branch_sitemap_action && branch_sitemap.src_branch_sitemap_action.toUpperCase()=='UPDATE'
             && branch_sitemap.dst_branch_sitemap_action && branch_sitemap.dst_branch_sitemap_action.toUpperCase()=='UPDATE'){
-              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_sitemap_orig_id], sitemaps[branch_sitemap.src_sitemap_id]);
-              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_sitemap_orig_id], sitemaps[branch_sitemap.dst_sitemap_id]);
+              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_orig_sitemap.id], sitemaps[branch_sitemap.src_sitemap.id]);
+              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_orig_sitemap.id], sitemaps[branch_sitemap.dst_sitemap.id]);
             }
             else if(branch_sitemap.src_branch_sitemap_action && branch_sitemap.src_branch_sitemap_action.toUpperCase()=='UPDATE'){
-              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_sitemap_orig_id], sitemaps[branch_sitemap.src_sitemap_id]);
-              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_sitemap_orig_id], sitemaps[branch_sitemap.dst_sitemap_id]);
+              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_orig_sitemap.id], sitemaps[branch_sitemap.src_sitemap.id]);
+              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_orig_sitemap.id], sitemaps[branch_sitemap.dst_sitemap.id]);
             }
             else if(branch_sitemap.dst_branch_sitemap_action && branch_sitemap.dst_branch_sitemap_action.toUpperCase()=='UPDATE'){
-              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_sitemap_orig_id], sitemaps[branch_sitemap.src_sitemap_id]);
-              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_sitemap_orig_id], sitemaps[branch_sitemap.dst_sitemap_id]);
+              branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_orig_sitemap.id], sitemaps[branch_sitemap.src_sitemap.id]);
+              branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_orig_sitemap.id], sitemaps[branch_sitemap.dst_sitemap.id]);
             }
           });
           return cb();
