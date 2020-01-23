@@ -41,13 +41,13 @@ describe('Merges', function() {
     results = {}
     async.waterfall([
       function(cb){
-        jsh.Modules.jsHarmonyCMS.funcs.merge_clone('S1', {branch_parent_id: testBaseBranchId, branch_name: 'Test: '+name+' master', new_branch_changes: 'RESET'}, function(err, id, stats) {
+        jsh.Modules.jsHarmonyCMS.funcs.merge_clone('S1', {branch_parent_id: testBaseBranchId, branch_name: 'Merge Test Data: '+name+' master', new_branch_changes: 'RESET'}, function(err, id, stats) {
           results.master_branch_id = id;
           cb();
         });
       },
       function(cb){
-        jsh.Modules.jsHarmonyCMS.funcs.merge_clone('S1', {branch_parent_id: testEditBranchId, branch_name: 'Test: '+name+' edit', new_branch_changes: 'COPY'}, function(err, id, stats) {
+        jsh.Modules.jsHarmonyCMS.funcs.merge_clone('S1', {branch_parent_id: testEditBranchId, branch_name: 'Merge Test Data: '+name+' edit', new_branch_changes: 'COPY'}, function(err, id, stats) {
           results.edit_branch_id = id;
           cb();
         });
@@ -88,8 +88,8 @@ describe('Merges', function() {
           });
         },
         function(cb){
-          var sql = "select branch_id from cms.branch where branch_name='Test: Base Branch';\
-                     select branch_id from cms.branch where branch_name='Test: Edit Branch';";
+          var sql = "select branch_id from cms.branch where branch_name='Merge Test Data: Base Branch';\
+                     select branch_id from cms.branch where branch_name='Merge Test Data: Edit Branch';";
           db.MultiRecordset('', sql, [], {}, function (err, dbrslt, stats) {
             testBaseBranchId = dbrslt[0][0].branch_id;
             testEditBranchId = dbrslt[1][0].branch_id;
@@ -108,7 +108,7 @@ describe('Merges', function() {
   });
 
   it('database initialized', function(done) {
-    var sql = "select count(*) from cms.branch where branch_name='Test: Base Branch';";
+    var sql = "select count(*) from cms.branch where branch_name='Merge Test Data: Base Branch';";
     db.Scalar('', sql, [], {}, function (err, dbrslt, stats) {
       assert.strictEqual(dbrslt, 1, "test branch should exist");
       assert.notStrictEqual(testBaseBranchId, -1, "base branch id should be captured")
