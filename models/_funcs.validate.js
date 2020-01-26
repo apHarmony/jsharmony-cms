@@ -241,8 +241,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
           from "+(module.schema?module.schema+'.':'')+"menu menu \
-          where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
-                menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
+          where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id)";
         appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
@@ -298,8 +297,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql = "select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
           from "+(module.schema?module.schema+'.':'')+"sitemap sitemap \
-          where sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id and branch_sitemap_action is not null) or \
-                sitemap.sitemap_id in (select sitemap_orig_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id and branch_sitemap_action = 'UPDATE')";
+          where sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id)";
         appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
