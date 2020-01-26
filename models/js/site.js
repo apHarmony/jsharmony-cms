@@ -1,48 +1,27 @@
 (function(jsh){
   var XExt = jsh.XExt;
+  var XForm = jsh.XForm;
   var _ = jsh._;
 
   jsh.System.OpenPageEditor = function(page_key, page_name, page_template_id, options){
     var template = jsh.globalparams.PageTemplates[page_template_id];
     if(!template) return XExt.Alert('Template is not defined');
 
-    options = _.extend({ branch_id: undefined, rawEditorDialog: '', page_id: undefined, deployment_target_params: undefined }, options);
+    options = _.extend({ branch_id: undefined, rawEditorDialog: '', page_id: undefined }, options);
 
     if(template.editor){
-      //Open Editor
-      var url = template.editor;
+      var params = { page_template_id: page_template_id }
+      if(page_key) params.page_key = page_key;
+      if(jsh.bcrumbs && jsh.bcrumbs.branch_id) params.branch_id = jsh.bcrumbs.branch_id;
+      _.each(['branch_id', 'page_id'], function(key){ if(options[key]) params[key] = options[key]; });
 
-      var dtparams = {
-        timestamp: (Date.now()).toString(),
-        branch_id: (options.branch_id||'')
-      };
+      XForm.Get('../_funcs/editor_url', params, {}, function(rslt){
+        if(!rslt || !rslt.editor) return XExt.Alert('Error generating editor URL');
 
-      var dtparamsstr = '';
-      if(options.deployment_target_params) dtparamsstr = options.deployment_target_params;
-      else if(jsh.bcrumbs && jsh.bcrumbs.deployment_target_params) dtparamsstr = jsh.bcrumbs.deployment_target_params;
-      if(dtparamsstr){
-        try{
-          dtparams = _.extend(dtparams, JSON.parse(dtparamsstr));
-        }
-        catch(ex){
-          XExt.Alert('Error reading deployment_target_params.  Please make sure the JSON syntax is correct');
-          return;
-        }
-      }
-
-      if(jsh.bcrumbs && jsh.bcrumbs.branch_id) dtparams.branch_id = jsh.bcrumbs.branch_id;
-
-      dtparams = _.extend(dtparams, {
-        page_template_id: page_template_id,
-        page_key: page_key,
-        page_id: (options.page_id||'')
+        //Open Editor
+        var url = rslt.editor;
+        window.open(url, '_blank', "width=1000,height=800");
       });
-
-      for(var key in dtparams){
-        url = XExt.ReplaceAll(url, '%%%' + key + '%%%', dtparams[key]);
-      }
-
-      window.open(url, '_blank', "width=1000,height=800");
     }
     else {
       //Edit Raw Text

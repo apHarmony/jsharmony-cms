@@ -72,7 +72,11 @@ function jsHarmonyCMSConfig(){
     no_cache_client_js: false  //Do not cache jsharmony-cms.js, always reload from disk
   };
 
-  this.onRender = null; //function(target, content, cb){ return cb(new_content); }  //target = 'editor', 'publish'
+  this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
+  this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing
+  this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, options){ return url; } //return a value (not undefined) to stop processing
+  this.onDeploy_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(); }
+  this.onValidate_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(); }
 }
 
 jsHarmonyCMSConfig.prototype = new jsHarmonyConfig.Base();

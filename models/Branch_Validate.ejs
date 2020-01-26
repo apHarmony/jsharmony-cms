@@ -1,0 +1,106 @@
+<hr/>
+<h3>Branch Errors</h3>
+<div class='clear validate_<%=model.class%>' style='margin-top:10px;margin-bottom:20px;'></div>
+<div class='spacer_<%=model.class%>'></div>
+
+<script type="text/x-jsharmony-template" class="<%=model.class%>_Error_Listing">
+  <div class="clear"></div>
+
+  <!-- ---------- -->
+  <!-- NO CHANGES -->
+  <!-- ---------- -->
+  <# if(!branch_validate.error_count){ #>
+    <hr/>
+    <h4 class="<%=model.class%>_branch_validate_item_header">
+      No errors in this branch
+    </h4>
+  <# } #>
+
+
+  <!-- ----- -->
+  <!-- PAGES -->
+  <!-- ----- -->
+  <# _.each(branch_validate.page_errors, function(page_error){ #>
+    <hr/>
+
+    <h4 class="<%=model.class%>_branch_validate_item_header">
+      <i class="material-icons branch_error_icon error">error</i>
+      PAGE &nbsp;&nbsp;<#-XExt.escapeHTML(page_error.page_path)#>
+      <a href="#" class="preview view_page" data-page_key="<#=page_error.page_key#>" data-page_template_id="<#=page_error.page_template_id#>" data-page_filename="<#=page_error.page_filename#>" data-page_id="<#=page_error.page_id#>"><img src="/images/icon_browse.png" />View</a>
+    </h4>
+
+    <# _.each(page_error.errors, function(errtxt){ #>
+      <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+    <# }); #>
+
+  <# }); #>
+
+
+  <!-- ----- -->
+  <!-- MEDIA -->
+  <!-- ----- -->
+  <# _.each(branch_validate.media_errors, function(media_error){ #>
+    <hr/>
+
+    <h4 class="<%=model.class%>_branch_validate_item_header">
+      <i class="material-icons branch_error_icon error">error</i>
+      MEDIA &nbsp;&nbsp;<#-XExt.escapeHTML(media_error.media_path)#>
+      <a href="#" class="preview view_media" data-media_key="<#=media_error.media_key#>" data-media_id="<#=media_error.media_id#>" data-media_ext="<#=media_error.media_ext#>" data-media_width="<#=media_error.media_width#>" data-media_height="<#=media_error.media_height#>"><img src="/images/icon_browse.png" />View</a>
+    </h4>
+
+    <# _.each(media_error.errors, function(errtxt){ #>
+      <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+    <# }); #>
+
+  <# }); #>
+
+
+  <!-- ----- -->
+  <!-- MENUS -->
+  <!-- ----- -->
+  <# _.each(branch_validate.menu_errors, function(menu_error){ #>
+    <hr/>
+
+    <h4 class="<%=model.class%>_branch_validate_item_header">
+      <i class="material-icons branch_error_icon error">error</i>
+      MENU &nbsp;&nbsp;<#-XExt.escapeHTML(menu_error.menu_tag)#>
+      <a href="#" class="preview view_menu" data-menu_key="<#=menu_error.menu_key#>" data-menu_id="<#=menu_error.menu_id#>"><img src="/images/icon_browse.png" />View</a>
+    </h4>
+
+    <# _.each(menu_error.errors, function(errtxt){ #>
+      <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+    <# }); #>
+
+  <# }); #>
+
+
+  <!-- -------- -->
+  <!-- SITEMAPS -->
+  <!-- -------- -->
+  <# _.each(branch_validate.sitemap_errors, function(sitemap_error){ #>
+    <hr/>
+
+    <h4 class="<%=model.class%>_branch_validate_item_header">
+      <i class="material-icons branch_error_icon error">error</i>
+      SITEMAP &nbsp;&nbsp;<#-XExt.escapeHTML(sitemap_error.sitemap_type)#>
+      <a href="#" class="preview view_sitemap" data-sitemap_key="<#=sitemap_error.sitemap_key#>" data-sitemap_id="<#=sitemap_error.sitemap_id#>"><img src="/images/icon_browse.png" />View</a>
+    </h4>
+
+    <# _.each(sitemap_error.errors, function(errtxt){ #>
+      <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+    <# }); #>
+
+  <# }); #>
+
+  <hr/>
+</script>
+<div style="display:none;">
+  <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90vh;box-sizing:border-box;display:flex;flex-direction:column;">
+    <h3 class="edit_page_title">Edit Page</h3>
+    <div align="left" style="padding-top:15px;display:flex;flex-direction:column;flex-grow:1;">
+      <textarea class="page_content default_focus" style="width:100%;box-sizing:border-box;flex-grow:1;"></textarea>
+
+      <div style="text-align:center;"><input type="button" value="Save" class="button_ok" style="margin-right:15px;margin-top:18px;" /> <input type="button" value="Cancel" class="button_cancel" style="margin-top:18px;" /></div>
+    </div>
+  </div>
+</div>

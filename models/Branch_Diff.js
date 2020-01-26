@@ -6,7 +6,6 @@ jsh.App[modelid] = new (function(){
   this.branch_redirects = [];
   this.branch_menus = [];
   this.branch_sitemaps = [];
-  this.deployment_target_params = {};
 
   this.onload = function(xmodel, callback){
     //Load API Data
@@ -17,7 +16,6 @@ jsh.App[modelid] = new (function(){
     var emodelid = '../_funcs/diff';
     XForm.Get(emodelid, { branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.deployment_target_params = rslt.deployment_target_params;
         _this.branch_pages = rslt.branch_pages;
         _this.branch_media = rslt.branch_media;
         _this.branch_redirects = rslt.branch_redirects;
@@ -106,7 +104,7 @@ jsh.App[modelid] = new (function(){
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id  });
   }
 
   this.previewMedia = function(obj){

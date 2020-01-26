@@ -223,8 +223,10 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.prettyMenu = function(menu_items, page_keys, media_keys){
+  exports.prettyMenu = function(menu_items, page_keys, media_keys, options){
+    var options = _.extend({ text: true }, options);
     var rslt = '[\n';
+    var rsltarr = [];
 
     //Generate indexed list of menu items by ID
     var menu_items_by_id = {};
@@ -281,6 +283,10 @@ module.exports = exports = function(module, funcs){
       if(menu_item.menu_item_tag) print_item.tag = menu_item.menu_item_tag;
       if(menu_item.menu_item_style) print_item.css_style = menu_item.menu_item_style;
       if(menu_item.menu_item_class) print_item.css_class = menu_item.menu_item_class;
+
+      //Add to array
+      rsltarr.push(print_item);
+      
       //Generate text
       rslt += '  { ';
       var first_key = true;
@@ -292,7 +298,9 @@ module.exports = exports = function(module, funcs){
       rslt += ' },\n';
     });
     rslt += ']';
-    return rslt;
+    
+    if(options.text) return rslt;
+    return rsltarr;
   }
 
   return exports;

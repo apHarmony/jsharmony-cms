@@ -205,15 +205,20 @@ module.exports = exports = function(module, funcs){
 
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
-      getMediaURL: function(media_key){ return ''; },
-      getPageURL: function(page_key){ return ''; },
+      getMediaURL: function(media_key, branchData, getLinkContent){ return ''; },
+      getPageURL: function(page_key, branchData, getLinkContent){ return ''; },
+      onError: function(err){ },
       removeClass: false,
       HTMLParser: false,
-    }, options);    
+      branchData: {}
+    }, options);
 
-    function replaceURL(url){
+    function replaceURL(url, getLinkContent){
       if(!url) return url;
-      if(!url) return url;
+      if(module.Config.onReplaceBranchURL){
+        var customURL = module.Config.onReplaceBranchURL(url, options.branchData, getLinkContent, options);
+        if(typeof customURL != 'undefined') return customURL;
+      }
       var urlparts = urlparser.parse(url, true);
       if(!urlparts.path) return url;
       var patharr = (urlparts.path||'').split('/');
@@ -221,14 +226,28 @@ module.exports = exports = function(module, funcs){
       if((urlparts.path.indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
         var media_key = patharr[3];
         if(parseInt(media_key).toString()==media_key){
-          var media_url = options.getMediaURL(media_key);
+          try{
+            var media_url = options.getMediaURL(media_key, options.branchData, getLinkContent);
+          }
+          catch(ex){
+            if(options.onError) options.onError(ex);
+            else throw ex;
+            return '';
+          }
           return media_url;
         }
       }
       if((urlparts.path.indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
         var page_key = patharr[3];
         if(parseInt(page_key).toString()==page_key){
-          var page_url = options.getPageURL(page_key);
+          try{
+            var page_url = options.getPageURL(page_key, options.branchData, getLinkContent);
+          }
+          catch(ex){
+            if(options.onError) options.onError(ex);
+            else throw ex;
+            return '';
+          }
           return page_url;
         }
       }
@@ -240,7 +259,7 @@ module.exports = exports = function(module, funcs){
       if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
       if(jobj.hasClass('cms-no-replace-url')) return;
       var url = jobj.attr(prop);
-      var newURL = replaceURL(url);
+      var newURL = replaceURL(url, function(){ return jobj.html(); });
       if(newURL && (newURL!=url)) jobj.attr(prop, newURL);
     }
 
@@ -269,7 +288,19 @@ module.exports = exports = function(module, funcs){
       startofstr++;
       endofstr--;
       var url = content.substr(startofstr, endofstr - startofstr + 1);
-      var newURL = replaceURL(url);
+      var newURL = replaceURL(url, function(){
+        //Get start of link
+        var startOfLine = startofstr - 1;
+        var startchar = /[\n<]/;
+        do{ if(startchar.test(content[startOfLine])) break; } while((--startOfLine >= 0) && ((startofstr - startOfLine) < 50));
+
+        //Get end of link
+        var endOfLine = endofstr;
+        var endchar = /[\n]/;
+        do{ if(endchar.test(content[endOfLine]) || (content.substr(Math.max(0,endOfLine-2), 3)=='/a>')) break; } while((++endOfLine < content.length) && ((endOfLine - endofstr) < 50));
+
+        return content.substr(startOfLine, endOfLine - startOfLine + 1);
+      });
       if(true || newURL && (newURL!=url)){
         content = content.substr(0, startofstr) + newURL + content.substr(endofstr + 1);
         rtagidx = endofstr;
@@ -658,6 +689,87 @@ module.exports = exports = function(module, funcs){
       }
       else return next();
     });
+  }
+
+  exports.getPageEditorUrl = function(req, res, next){
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+    
+    var Q = req.query;
+    var P = {};
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var XValidate = jsh.XValidate;
+
+    var model = jsh.getModel(req, module.namespace + 'Page_Tree');
+    
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    //Validate parameters
+    if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+    validate = new XValidate();
+    verrors = {};
+    validate.AddValidator('_obj.page_template_id', 'Page Template ID', 'B', [ XValidate._v_Required(), XValidate._v_MaxLength(255) ]);
+    validate.AddValidator('_obj.page_key', 'Page Key', 'B', [ XValidate._v_IsNumeric() ]);
+    validate.AddValidator('_obj.page_id', 'Page ID', 'B', [ XValidate._v_IsNumeric() ]);
+    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [ XValidate._v_IsNumeric() ]);
+    verrors = _.merge(verrors, validate.Validate('B', Q));
+    if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+    //Check to see if page template id exists
+    if(!(Q.page_template_id in module.PageTemplates)) { Helper.GenError(req, res, -1, 'Page Template not found'); return; }
+
+    var page_template = module.PageTemplates[Q.page_template_id];
+    if(!page_template || !page_template.remote_template || !page_template.remote_template.editor) { Helper.GenError(req, res, -9, 'Page Template does not have an editor defined'); return; }
+
+    if (verb == 'get') {
+      var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id="+(module.schema?module.schema+'.':'')+"my_current_branch_id()";
+      appsrv.ExecRow(req._DBContext, sql, [], {}, function (err, rslt) {
+        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+
+        var deployment_target_params = '';
+        if(rslt && rslt[0] && rslt[0].deployment_target_params){
+          deployment_target_params = rslt[0].deployment_target_params;
+        }
+
+        console.log(deployment_target_params);
+
+        var url = page_template.remote_template.editor;
+
+        var dtparams = {
+          timestamp: (Date.now()).toString(),
+          branch_id: (Q.branch_id||'')
+        };
+
+        if(deployment_target_params){
+          try{
+            dtparams = _.extend(dtparams, JSON.parse(deployment_target_params));
+          }
+          catch(ex){
+            Helper.GenError(req, res, -9, 'Error reading deployment_target_params.  Please make sure the JSON syntax is correct');
+            return;
+          }
+        }
+
+        dtparams = _.extend(dtparams, {
+          page_template_id: Q.page_template_id,
+          page_key: (Q.page_key||''),
+          page_id: (Q.page_id||'')
+        });
+
+        for(var key in dtparams){
+          url = Helper.ReplaceAll(url, '%%%' + key + '%%%', dtparams[key]);
+        }
+        
+        res.end(JSON.stringify({ '_success': 1, editor: url }));
+      });
+      return;
+    }
+    return next();
   }
 
   return exports;

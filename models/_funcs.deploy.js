@@ -123,6 +123,46 @@ module.exports = exports = function(module, funcs){
     if(onComplete) onComplete();
   }
 
+  exports.getPageRelativePath = function(page, publish_params){
+    var page_fpath = page.page_path||'';
+    if(!page_fpath) return '';
+    while(page_fpath.substr(0,1)=='/') page_fpath = page_fpath.substr(1);
+
+    var is_folder = (page_fpath[page_fpath.length-1]=='/');
+    if(is_folder) page_fpath += default_page;
+    if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
+    if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
+    if(publish_params) page_fpath = publish_params.page_subfolder + page_fpath;
+    return page_fpath;
+  }
+
+  exports.getMediaRelativePath = function(media, publish_params){
+    var media_fpath = media.media_path||'';
+    if(!media_fpath) return '';
+    while(media_fpath.substr(0,1)=='/') media_fpath = media_fpath.substr(1);
+
+    var is_folder = (media_fpath[media_fpath.length-1]=='/');
+    if(is_folder) throw new Error('Media path:'+media.media_path+' cannot be a folder');
+    if(path.isAbsolute(media_fpath)) throw new Error('Media path:'+media.media_path+' cannot be absolute');
+    if(media_fpath.indexOf('..') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
+    if(media_fpath.indexOf('./') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
+    if(publish_params) media_fpath = publish_params.media_subfolder + media_fpath;
+    return media_fpath;
+  }
+
+  exports.getMenuRelativePath = function(menu, publish_params){
+    var menu_fpath = menu.menu_path||'';
+    if(!menu_fpath) return '';
+    while(menu_fpath.substr(0,1)=='/') menu_fpath = menu_fpath.substr(1);
+
+    var is_folder = (menu_fpath[menu_fpath.length-1]=='/');
+    if(is_folder) throw new Error('Menu path:'+menu.menu_path+' must be a file, not a folder');
+    if(path.isAbsolute(menu_fpath)) throw new Error('Menu path:'+menu.menu_path+' cannot be absolute');
+    if(menu_fpath.indexOf('..') >= 0) throw new Error('Menu path:'+menu.menu_path+' cannot contain directory traversals');
+    if(publish_params) menu_fpath = publish_params.menu_subfolder + menu_fpath;
+    return menu_fpath;
+  }
+
   exports.deploy_exec = function (deployment_id, onComplete) {
     if(!onComplete) onComplete = function(){};
     var jsh = module.jsh;
@@ -189,6 +229,11 @@ module.exports = exports = function(module, funcs){
           var page_redirects = {};
           var sitemaps = {};
 
+          var branchData = {
+            page_keys: page_keys,
+            media_keys: media_keys
+          }
+
           //Shell Commands
           function shellExec(cmd, params, cb, exec_options){
             var rslt = '';
@@ -216,45 +261,6 @@ module.exports = exports = function(module, funcs){
           var deployment_git_revision = (deployment.deployment_git_revision||'');
           function gitExec(git_cmd, params, cb, exec_options){
             return shellExec(path.join(git_path, git_cmd), params, cb, exec_options);
-          }
-
-          function getPageRelativePath(page){
-            var page_fpath = page.page_path||'';
-            if(!page_fpath) return '';
-            while(page_fpath.substr(0,1)=='/') page_fpath = page_fpath.substr(1);
-
-            var is_folder = (page_fpath[page_fpath.length-1]=='/');
-            if(is_folder) page_fpath += default_page;
-            if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
-            if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
-            page_fpath = publish_params.page_subfolder + page_fpath;
-            return page_fpath;
-          }
-
-          function getMediaRelativePath(media){
-            var media_fpath = media.media_path||'';
-            if(!media_fpath) return '';
-            while(media_fpath.substr(0,1)=='/') media_fpath = media_fpath.substr(1);
-
-            var is_folder = (media_fpath[media_fpath.length-1]=='/');
-            if(is_folder) throw new Error('Media path:'+media.media_path+' cannot be a folder');
-            if(path.isAbsolute(media_fpath)) throw new Error('Media path:'+media.media_path+' cannot be absolute');
-            if(media_fpath.indexOf('..') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
-            media_fpath = publish_params.media_subfolder + media_fpath;
-            return media_fpath;
-          }
-
-          function getMenuRelativePath(menu){
-            var menu_fpath = menu.menu_path||'';
-            if(!menu_fpath) return '';
-            while(menu_fpath.substr(0,1)=='/') menu_fpath = menu_fpath.substr(1);
-
-            var is_folder = (menu_fpath[menu_fpath.length-1]=='/');
-            if(is_folder) throw new Error('Menu path:'+menu.menu_path+' must be a file, not a folder');
-            if(path.isAbsolute(menu_fpath)) throw new Error('Menu path:'+menu.menu_path+' cannot be absolute');
-            if(menu_fpath.indexOf('..') >= 0) throw new Error('Menu path:'+menu.menu_path+' cannot contain directory traversals');
-            menu_fpath = publish_params.menu_subfolder + menu_fpath;
-            return menu_fpath;
           }
 
           var farr = [];
@@ -538,7 +544,7 @@ module.exports = exports = function(module, funcs){
                     var page_urlpath = '';
                     var page_cmspath = '';
                     try{
-                      var relativePath = getPageRelativePath(page);
+                      var relativePath = funcs.getPageRelativePath(page, publish_params);
                       if(!relativePath) return cb(new Error('Page has no path: '+page.page_key));
                       page_cmspath = '/' + relativePath;
                       page_urlpath = publish_params.content_url + relativePath;
@@ -582,7 +588,7 @@ module.exports = exports = function(module, funcs){
 
                     var media_urlpath = '';
                     try{
-                      var relativePath = getMediaRelativePath(media);
+                      var relativePath = funcs.getMediaRelativePath(media, publish_params);
                       if(!relativePath) return cb(new Error('Media has no path: '+media.media_key));
                       media_urlpath = publish_params.content_url + relativePath;
                     }
@@ -592,6 +598,12 @@ module.exports = exports = function(module, funcs){
                   });
                   return cb();
                 });
+              },
+
+              //Load Custom Branch Data
+              function (cb){
+                if(!module.Config.onDeploy_LoadData) return cb();
+                return module.Config.onDeploy_LoadData(jsh, branchData, publish_params, cb);
               },
 
               //Get list of all pages
@@ -675,6 +687,7 @@ module.exports = exports = function(module, funcs){
                               if(!(page_key in page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
                               return page_keys[page_key];
                             },
+                            branchData: branchData,
                             removeClass: true
                           });
                         }
@@ -689,7 +702,7 @@ module.exports = exports = function(module, funcs){
                       
                       var page_fpath = '';
                       try{
-                        page_fpath = getPageRelativePath(page);
+                        page_fpath = funcs.getPageRelativePath(page, publish_params);
                       }
                       catch(ex){
                         return cb(ex);
@@ -735,7 +748,7 @@ module.exports = exports = function(module, funcs){
 
                       var media_fpath = '';
                       try{
-                        media_fpath = getMediaRelativePath(media);
+                        media_fpath = funcs.getMediaRelativePath(media, publish_params);
                       }
                       catch(ex){
                         return cb(ex);
@@ -890,7 +903,7 @@ module.exports = exports = function(module, funcs){
 
                           var menu_fpath = '';
                           try{
-                            menu_fpath = getMenuRelativePath(menu);
+                            menu_fpath = funcs.getMenuRelativePath(menu, publish_params);
                           }
                           catch(ex){
                             return cb(ex);

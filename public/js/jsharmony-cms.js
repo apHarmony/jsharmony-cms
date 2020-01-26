@@ -48,7 +48,10 @@ window.jsHarmonyCMS = new (function(){
   this.loadQueue = [];
   this.loadObj = {main:1};
   this.editorDefaultConfig = {};
-  this.onInit = null;
+
+  this.onInit = null;                    //function(jsh)
+  this.onFilePickerCallback = null;      //function(jdata)
+  this.onGetFilePickerParameters = null; //function(filePickerType, url)
 
   this.filePickerCallback = null;
 
@@ -190,19 +193,23 @@ window.jsHarmonyCMS = new (function(){
     }
   }
 
-  this.parseLinkURL = function(url){
+  this.getFilePickerParameters = function(filePickerType, url){
     url = (url||'').toString();
+    if(_this.onGetFilePickerParameters){
+      var qs = _this.onGetFilePickerParameters(filePickerType, url);
+      if(qs) return qs;
+    }
     if(url.indexOf('#@JSHCMS') >= 0){
       var urlparts = document.createElement('a');
       urlparts.href = url;
       var patharr = (urlparts.pathname||'').split('/');
       if(((urlparts.pathname||'').indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
         var media_key = parseInt(patharr[3]);
-        if(media_key.toString()==patharr[3]) return { media_key: media_key };
+        if(media_key.toString()==patharr[3]) return { init_media_key: media_key };
       }
       if(((urlparts.pathname||'').indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
         var page_key = parseInt(patharr[3]);
-        if(page_key.toString()==patharr[3]) return { page_key: page_key };
+        if(page_key.toString()==patharr[3]) return { init_page_key: page_key };
       }
     }
     return {};
@@ -210,17 +217,14 @@ window.jsHarmonyCMS = new (function(){
 
   this.openLinkPicker = function(cb, value, meta){
     _this.filePickerCallback = cb;
-    var qs = { };
-    var linkurl = _this.parseLinkURL(value);
-    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
-    else if(linkurl.page_key) qs.init_page_key = linkurl.page_key;
+    var qs = _this.getFilePickerParameters('link', value);
     XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
 
   this.openMediaPicker = function(cb, value, meta){
     _this.filePickerCallback = cb;
     var qs = { };
-    var linkurl = _this.parseLinkURL(value);
+    var linkurl = _this.getFilePickerParameters('media', value);
     if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
@@ -231,12 +235,11 @@ window.jsHarmonyCMS = new (function(){
       if(!_this.filePickerCallback) return;
       data = data.substr(16);
       var jdata = JSON.parse(data);
-      if(jdata.media_key){
-        var newClass = 'media_key_'+jdata.media_key;
+      if(_this.onFilePickerCallback && (_this.onFilePickerCallback(jdata))){}
+      else if(jdata.media_key){
         _this.filePickerCallback(_this._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS');
       }
       else if(jdata.page_key){
-        var newClass = 'page_key_'+jdata.page_key;
         _this.filePickerCallback(_this._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS');
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));

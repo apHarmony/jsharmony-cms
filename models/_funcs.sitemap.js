@@ -221,8 +221,10 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.prettySitemap = function(sitemap_items, page_keys, media_keys){
+  exports.prettySitemap = function(sitemap_items, page_keys, media_keys, options){
+    var options = _.extend({ text: true }, options);
     var rslt = '[\n';
+    var rsltarr = [];
 
     //Generate indexed list of sitemap items by ID
     var sitemap_items_by_id = {};
@@ -284,6 +286,10 @@ module.exports = exports = function(module, funcs){
       if(sitemap_item.sitemap_item_hide_menu_parents && (sitemap_item.sitemap_item_hide_menu_parents!='0')) print_item.hide_menu_parents = sitemap_item.sitemap_item_hide_menu_parents;
       if(sitemap_item.sitemap_item_hide_menu_siblings && (sitemap_item.sitemap_item_hide_menu_siblings!='0')) print_item.hide_menu_siblings = sitemap_item.sitemap_item_hide_menu_siblings;
       if(sitemap_item.sitemap_item_hide_menu_children && (sitemap_item.sitemap_item_hide_menu_children!='0')) print_item.hide_menu_children = sitemap_item.sitemap_item_hide_menu_children;
+      
+      //Add to array
+      rsltarr.push(print_item);
+      
       //Generate text
       rslt += '  { ';
       var first_key = true;
@@ -295,7 +301,9 @@ module.exports = exports = function(module, funcs){
       rslt += ' },\n';
     });
     rslt += ']';
-    return rslt;
+
+    if(options.text) return rslt;
+    return rsltarr;
   }
 
   return exports;

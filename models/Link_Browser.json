@@ -1,5 +1,5 @@
 {
-  "Link_Browser":{
+  "Link_Browser_Base":{
     "layout": "form", 
     "title": "",
     "unbound":true,
@@ -17,5 +17,8 @@
     ],
     "hide_system_buttons": ["delete","print","help"],
 	  "popup": [1100, 600]
-	}
+  },
+  "Link_Browser":{
+    "inherits": "Link_Browser_Base"
+  }
 }

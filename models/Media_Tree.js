@@ -693,7 +693,7 @@ jsh.App[modelid] = new (function(){
   this.addFile = function(media_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding media');
 
-    //if(typeof page_folder == 'undefined') page_folder = xmodel.get('page_folder');
+    if(typeof media_folder == 'undefined') media_folder = xmodel.get('media_folder');
     var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_AddMedia';
 

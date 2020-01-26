@@ -75,8 +75,8 @@ jsh.App[modelid] = new (function(){
 
     _this.page_info_key = page_key;
     var jpage_options = $('.'+xmodel.class+'_page_options');
-    jtitle = jpage_options.find('.page_title');
-    jtemplate = jpage_options.find('.page_template');
+    var jtitle = jpage_options.find('.page_title');
+    var jtemplate = jpage_options.find('.page_template');
 
     jtitle.html("<img src='/images/loading.gif' />");
     jtemplate.html("<img src='/images/loading.gif' />");

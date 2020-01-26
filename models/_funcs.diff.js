@@ -65,7 +65,6 @@ module.exports = exports = function(module, funcs){
       var branch_redirects = [];
       var branch_menus = [];
       var branch_sitemaps = [];
-      var deployment_target_params = '';
       var updated_pages = {};
       var menus = {};
       var sitemaps = {};
@@ -73,17 +72,7 @@ module.exports = exports = function(module, funcs){
       var media_keys = {};
 
       async.waterfall([
-
-        //Get deployment target params
-        function(cb){
-          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]) deployment_target_params = rslt[0];
-            return cb();
-          });
-        },
-
+        
         //Get all branch_media
         function(cb){
           var sql = "select branch_media.media_key, branch_media.branch_media_action, branch_media.media_id, branch_media.media_orig_id, \
@@ -394,7 +383,6 @@ module.exports = exports = function(module, funcs){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({
           _success: 1,
-          deployment_target_params: deployment_target_params,
           branch_pages: branch_pages,
           branch_redirects: branch_redirects,
           branch_media: branch_media,

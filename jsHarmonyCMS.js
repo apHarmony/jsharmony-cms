@@ -277,6 +277,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
       {
         '/_funcs/page/:page_key': _this.funcs.page,
         '/_funcs/components/:branch_id': _this.funcs.components,
+        '/_funcs/editor_url': _this.funcs.getPageEditorUrl,
         '/_funcs/media/:media_key/:thumbnail': _this.funcs.media,
         '/_funcs/media/:media_key/': _this.funcs.media,
         '/_funcs/media/': _this.funcs.media,
@@ -285,6 +286,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deploy': _this.funcs.deploy_req,
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/diff': _this.funcs.diff,
+        '/_funcs/validate': _this.funcs.validate_req,
       }
     ]
   }

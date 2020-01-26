@@ -1,0 +1,45 @@
+.<%=model.class%>_branch_validate_item_header {
+  font-family:monospace;
+}
+.<%=model.class%>_branch_validate_item_header .branch_error_icon {
+  position: relative;
+  top: 5px;
+  line-height: 16px;
+  margin-right: 3px;
+  font-size: 20px;
+  color:#ff0000;
+}
+.<%=model.class%>_branch_validate_item_header a.preview {
+  font-family:'Roboto', arial, helvetica, sans-serif;
+  font-weight:normal;
+  margin-left:15px;
+}
+.<%=model.class%>_branch_validate_item_header a.preview img {
+  height:16px;
+  position:relative;
+  top:3px;
+  margin-right:7px;
+}
+.spacer_<%=model.class%> {
+  width:800px;
+}
+.validate_<%=model.class%> hr {
+  border-top:1px solid #eee;
+}
+.validate_<%=model.class%> h4 {
+  margin-top:4px;
+  margin-bottom:4px;
+}
+.<%=model.class%>_validate {
+  overflow:auto;
+  position:relative;
+  max-width:90vw;
+  max-height:400px;
+}
+.<%=model.class%>_validate_head {
+  font-weight:bold;
+  font-family:monospace;
+}
+.<%=model.class%>_validate_item {
+  font-family:monospace;
+}
