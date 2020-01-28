@@ -195,7 +195,7 @@ jsh.App[modelid] = new (function(){
       src_branch_id: xmodel.get('branch_merge_id'),
       dst_branch_id: xmodel.get('branch_id')
     };
-    var mergeType = xmodel.get('merge_type');
+    var mergeType = xmodel.get('branch_merge_type').toLowerCase();
 
     XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
       XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');

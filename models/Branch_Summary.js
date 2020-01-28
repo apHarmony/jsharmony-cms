@@ -49,6 +49,7 @@ jsh.App[modelid] = new (function(){
       var params = {
         src_branch_id: xmodel.get('branch_id'),
         dst_branch_id: xmodel.get('dst_branch_id'),
+        merge_type: mergeType,
       };
 
       if (mergeType == 'overwrite') {
@@ -62,8 +63,7 @@ jsh.App[modelid] = new (function(){
           success();
           XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
             '?action=update'+
-            '&branch_id='+xmodel.get('dst_branch_id')+
-            '&merge_type='+mergeType
+            '&branch_id='+xmodel.get('dst_branch_id')
           );
         });
       }

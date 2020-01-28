@@ -14,7 +14,7 @@
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"branch_merge_id","control":"hidden"},
-      {"name":"merge_type","control":"hidden","unbound":true},
+      {"name":"branch_merge_type","control":"hidden"},
       {"name":"src_branch_desc","caption":"Merge From","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc src where src.branch_id = branch_merge_id)"},
       {"name":"dst_branch_desc","caption":"Merge To","control":"label","captionstyle":"font-weight:bold;text-align:right;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc dst where dst.branch_id = @branch_id)"},
       {"name":"branch_type","control":"hidden"}
@@ -90,7 +90,7 @@
     "title": "Abort Merge",
     "actions": "U",
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
-    "sqlexec": "update {schema}.branch set branch_merge_id=null where branch_id=@branch_id and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'))",
+    "sqlexec": "update {schema}.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@branch_id and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'))",
     "fields": [
       {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
     ]

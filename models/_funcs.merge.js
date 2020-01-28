@@ -117,7 +117,7 @@ module.exports = exports = function(module, funcs){
   var merge_sql_cleanup = expand([
     "{schema}.merge_clear_edit_on_public(%%%OBJECT%%%, @dst_branch_id);",
     "{schema}.merge_approve_if_in_review(@dst_branch_id, @src_branch_id);",
-    "update {schema}.branch set branch_merge_id=null where branch_id=@dst_branch_id;",
+    "update {schema}.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@dst_branch_id;",
   ]);
 
   var merge = function(sql, context, sql_params, callback) {
@@ -180,24 +180,27 @@ module.exports = exports = function(module, funcs){
     var XValidate = jsh.XValidate;
 
     if (verb == 'post') {
-      if (!appsrv.ParamCheck('B', B, ['&dst_branch_id','&src_branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('B', B, ['&dst_branch_id','&src_branch_id','&merge_type'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
       var src_branch_id = B.src_branch_id;
       var dst_branch_id = B.dst_branch_id;
+      var merge_type = B.merge_type;
 
       //Check if Asset is defined
-      var sql_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
+      var sql_check_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
+      var sql_begin_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id, 'merge_type': merge_type.toUpperCase() };
       var validate = new XValidate();
       var verrors = {};
       validate.AddValidator('_obj.src_branch_id', 'Source Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
       validate.AddValidator('_obj.dst_branch_id', 'Destination Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.merge_type', 'Merge Type', 'B', [XValidate._v_InArray(MERGE_TYPES.map(function(s) {return s.toUpperCase()})), XValidate._v_Required()]);
 
-      verrors = _.merge(verrors, validate.Validate('B', sql_params));
+      verrors = _.merge(verrors, validate.Validate('B', sql_begin_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      funcs.merge_check_permissions(req._DBContext, sql_params, function(accessErr) {
+      funcs.merge_check_permissions(req._DBContext, sql_check_params, function(accessErr) {
         if (accessErr != null) { appsrv.AppDBError(req, res, accessErr); return; }
-        funcs.merge_begin_merge(req._DBContext, sql_params, function(err) {
+        funcs.merge_begin_merge(req._DBContext, sql_begin_params, function(err) {
           if (err != null) { appsrv.AppDBError(req, res, err); return; }
           res.end(JSON.stringify({
             '_success': 1,
@@ -211,7 +214,7 @@ module.exports = exports = function(module, funcs){
   }
 
   var merge_sql_begin_merge = [
-    "update {schema}.branch set branch_merge_id=@src_branch_id where branch_id=@dst_branch_id and branch_merge_id is null and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'));",
+    "update {schema}.branch set branch_merge_id=@src_branch_id, branch_merge_type=@merge_type where branch_id=@dst_branch_id and branch_merge_id is null and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'));",
     "select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id",
   ];
 
@@ -219,7 +222,7 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
-    var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
+    var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt, dbtypes.VarChar(9)];
 
     var sql = merge_sql_begin_merge.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
