@@ -14,6 +14,9 @@ jsh.App[modelid] = new (function(){
       jsh.$root('.Branch_Summary_buttonMerge').hide();
       jsh.$root('.Branch_Summary_buttonCheckout').hide();
     }
+    if (!xmodel.get('branch_merge_id')) {
+      jsh.$root('.Branch_Summary_buttonConflict').hide();
+    }
   }
 
   this.renameBranch = function(branch_id){
