@@ -213,10 +213,8 @@ module.exports = exports = function(module, funcs){
     }
   }
 
-  var merge_sql_begin_merge = [
-    "update {schema}.branch set branch_merge_id=@src_branch_id, branch_merge_type=@merge_type where branch_id=@dst_branch_id and branch_merge_id is null and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'));",
-    "select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id",
-  ];
+  var merge_sql_begin_merge = "update {schema}.branch set branch_merge_id=@src_branch_id, branch_merge_type=@merge_type where branch_id=@dst_branch_id and branch_merge_id is null and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'));";
+  var merge_sql_check_merge = "select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id;";
 
   exports.merge_begin_merge = function(context, sql_params, callback) {
     var jsh = module.jsh;
@@ -224,12 +222,17 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt, dbtypes.VarChar(9)];
 
-    var sql = merge_sql_begin_merge.join('\n');
+    sql = merge_sql_check_merge;
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
-      if (rslt[0] != sql_params.src_branch_id) { callback(	Helper.NewError('Branch already has an in-progress merge',-9)); return; }
-      callback(null);
+      if (rslt[0]) { callback( Helper.NewError('Branch already has an in-progress merge',-9)); return; }
+      sql = merge_sql_begin_merge;
+      sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
+      appsrv.ExecCommand(context, sql, sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; callback(err); return; }
+        callback(null);
+      });
     });
   }
 

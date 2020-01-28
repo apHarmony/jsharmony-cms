@@ -53,7 +53,7 @@ describe('Merges', function() {
         });
       },
       function(cb){
-        jsh.Modules.jsHarmonyCMS.funcs.merge_begin_merge('S1', {dst_branch_id: results.master_branch_id, src_branch_id: results.edit_branch_id}, function(err, id, stats) {
+        jsh.Modules.jsHarmonyCMS.funcs.merge_begin_merge('S1', {dst_branch_id: results.master_branch_id, src_branch_id: results.edit_branch_id, merge_type: name.toUpperCase()}, function(err, id, stats) {
           cb();
         });
       },
