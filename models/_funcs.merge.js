@@ -87,7 +87,7 @@ module.exports = exports = function(module, funcs){
   }
 
   var expand = function(sqls) {
-    return sqls.flatMap(function(line) {
+    return _.flatMap(sqls, function(line) {
       if(line.match('%%%OBJECT%%%')) {
         return exports.CMS_OBJECTS.map(function(object) {
           return Helper.ReplaceAll(line, '%%%OBJECT%%%', object);

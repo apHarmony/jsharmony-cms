@@ -33,7 +33,7 @@ module.exports = exports = function(module, funcs){
   ];
 
   function selectConflictDetailFields(detailFields) {
-    return CONFLICT_DETAIL_TABLES.flatMap(function(det) {
+    return _.flatMap(CONFLICT_DETAIL_TABLES, function(det) {
       var prefix = det[0];
       var table = prefix + '%%%OBJECT%%%';
       return detailFields.map(function(suffix) {

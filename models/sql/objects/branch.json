@@ -39,6 +39,17 @@
     ]
   },
 
+  "code_branch_merge_type": {
+    "type": "code",
+    "caption": "Branch Merge Type",
+    "init_data": [
+      { "code_val": "APPLY", "code_txt": "Apply", "code_seq": 1 },
+      { "code_val": "OVERWRITE", "code_txt": "Overwrite", "code_seq": 2 },
+      { "code_val": "CHANGES", "code_txt": "Changes", "code_seq": 3 },
+      { "code_val": "REBASE", "code_txt": "Rebase", "code_seq": 4 }
+    ]
+  },
+
   "branch": {
     "type": "table",
     "caption": ["Branch", "Branches"],
@@ -53,6 +64,7 @@
       { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
       { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
       { "name": "branch_merge_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
+      { "name": "branch_merge_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_merge_type": "code_val" } },
 
       { "name": "branch_sts_tstmp", "type": "datetime", "length": 7 },
       { "name": "branch_sts_user", "type": "varchar", "length": 20 },
@@ -70,7 +82,8 @@
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
           "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');",
-          "errorif(inserted(branch_merge_id)=inserted(branch_id),'Branch cannot merge with itself');"
+          "errorif(inserted(branch_merge_id)=inserted(branch_id),'Branch cannot merge with itself');",
+          "errorif((inserted(branch_merge_id) is not null) and (inserted(branch_merge_type) is null),'branch_merge_id requires branch_merge_type');"
         ]
       },
       { "on": ["validate_update"], "exec": [
@@ -89,6 +102,7 @@
           "update branch_menu set menu_merge_id=null,branch_menu_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
           "update branch_sitemap set sitemap_merge_id=null,branch_sitemap_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
           "update branch_redirect set redirect_merge_id=null,branch_redirect_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
+          "setif((inserted(branch_merge_id) is null) and (inserted(branch_merge_type) is not null),branch_merge_type,null);",
           "setif(inserted(branch_sts)='REVIEW' and inserted(branch_review_sts) is null,branch_review_sts,'PENDING');"
         ]
       },
