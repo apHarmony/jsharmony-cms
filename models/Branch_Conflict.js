@@ -44,7 +44,11 @@ jsh.App[modelid] = new (function(){
 
         _this.resolved = _this.conflicts - _this.unresolved;
 
-        _this.render();
+        if (_this.conflicts < 1) {
+          _this.executeMerge();
+        } else {
+          _this.render();
+        }
         if (onComplete) onComplete();
       }
       else XExt.Alert('Error while loading data');
