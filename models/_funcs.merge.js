@@ -116,7 +116,6 @@ module.exports = exports = function(module, funcs){
 
   var merge_sql_cleanup = expand([
     "{schema}.merge_clear_edit_on_public(%%%OBJECT%%%, @dst_branch_id);",
-    "{schema}.merge_approve_if_in_review(@dst_branch_id, @src_branch_id);",
     "update {schema}.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@dst_branch_id;",
   ]);
 

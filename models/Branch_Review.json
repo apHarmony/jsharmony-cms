@@ -19,6 +19,18 @@
         "lov": { "sql": "select branch_id code_val,branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' and site_id=(select site_id from {schema}.branch where branch_id=@branch_id) order by branch_desc", "blank": 1} }
     ]
   },
+  "Branch_Review_Approve": {
+    "layout": "exec",
+    "title": "Approve Branch",
+    "actions": "U",
+    "roles": {"PUBLISHER": "BU"},
+    "sqlexec": [
+      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@branch_id"
+    ],
+    "fields": [
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
+    ]
+  },
   "Branch_Review_Reject": {
     "layout": "exec",
     "title": "Reject Branch",
