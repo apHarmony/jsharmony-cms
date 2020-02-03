@@ -46,6 +46,7 @@
   "Menu_Tree_Browse": {
     "inherits": "Menu_Tree",
     "actions": "B",
+    "breadcrumbs": "__REMOVEPROPERTY__",
     "popup": [1000, 600]
   }
 }

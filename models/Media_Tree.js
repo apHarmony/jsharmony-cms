@@ -291,7 +291,7 @@ jsh.App[modelid] = new (function(){
     });
 
     //Render Files
-    var tmpl = jsh.$root('.'+xmodel.class+'_file_listing_template_'+_this.state.file_view).html();
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_file_listing_'+_this.state.file_view).html();
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
     jcontainer.html(XExt.renderClientEJS(tmpl, { media_files: sorted_media_files, _: _, jsh: jsh }));
     _this.bindEventsListing();
@@ -403,7 +403,7 @@ jsh.App[modelid] = new (function(){
 
   this.renderInfo = function(media_file){
     //Render Files
-    var tmpl = jsh.$root('.'+xmodel.class+'_file_info_template').html();
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_file_info').html();
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_info');
 
     jcontainer.html(XExt.renderClientEJS(tmpl, { media_file: media_file, _: _, jsh: jsh }));

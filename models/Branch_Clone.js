@@ -4,7 +4,7 @@ jsh.App[modelid] = new (function(){
   this.onload = function(){
     var jChangeStatus = jsh.$root('.'+xmodel.class+'_Change_Status');
     if((xmodel.get('source_branch_type')||'').toUpperCase()=='USER'){
-      var tmpl = jsh.$root('.'+xmodel.class+'_Change_Status_template').html();
+      var tmpl = jsh.$root('.'+xmodel.class+'_template_Change_Status').html();
       var jChangeStatus = jsh.$root('.'+xmodel.class+'_Change_Status');
       jChangeStatus.html(XExt.renderClientEJS(tmpl, { _: _, jsh: jsh }));
     }

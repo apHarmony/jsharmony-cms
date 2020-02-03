@@ -18,3 +18,76 @@
 <%-(rootcss)%> body .xtbl tbody tr.active_revision {
   background-color:#c2ffb8;
 }
+
+
+<%-(rootcss)%> .branch_diff_item_header {
+  font-family:monospace;
+}
+<%-(rootcss)%> .branch_diff_item_header .branch_action_icon {
+  position: relative;
+  top: 5px;
+  line-height: 16px;
+  margin-right: 3px;
+  font-size: 20px;
+}
+<%-(rootcss)%> .branch_diff_item_header a.preview {
+  font-family:'Roboto', arial, helvetica, sans-serif;
+  font-weight:normal;
+  margin-left:15px;
+}
+<%-(rootcss)%> .branch_diff_item_header a.preview img {
+  height:16px;
+  position:relative;
+  top:3px;
+  margin-right:7px;
+}
+<%-(rootcss)%> .branch_diff_item_header .branch_action_icon.delete { color:#ff0000; }
+<%-(rootcss)%> .branch_diff_item_header .branch_action_icon.add { color:#00aa00; }
+<%-(rootcss)%> .branch_diff_item_header .branch_action_icon.update { color:#0014ff; }
+<%-(rootcss)%> .branch_diff_item_header .branch_action_icon.rename { color:#0014ff; }
+<%-(rootcss)%> .spacer_diff {
+  width:800px;
+}
+<%-(rootcss)%> .diff_display hr {
+  border-top:1px solid #eee;
+}
+<%-(rootcss)%> .diff_display h4 {
+  margin-top:4px;
+  margin-bottom:4px;
+}
+<%-(rootcss)%> .diff {
+  overflow:auto;
+  position:relative;
+  max-width:90vw;
+  max-height:400px;
+}
+<%-(rootcss)%> .diff_head {
+  font-weight:bold;
+  font-family:monospace;
+}
+<%-(rootcss)%> .diff_item {
+  font-family:monospace;
+}
+<%-(rootcss)%> .diff .d2h-file-diff {
+  overflow-y: visible;
+}
+<%-(rootcss)%> .diff_media_preview {
+  display:inline-block;
+  padding-top:10px;
+  padding-right:10px;
+  font-weight:bold;
+  cursor:pointer;
+  vertical-align:top;
+}
+<%-(rootcss)%> .diff_media_preview img {
+  margin-top:3px;
+}
+<%-(rootcss)%> .branch_diff_comparison {
+  display: relative;
+}
+<%-(rootcss)%> .branch_diff_comparison_src,
+<%-(rootcss)%> .branch_diff_comparison_dst {
+  display: inline-block;
+  width: 49%;
+  vertical-align: top;
+}

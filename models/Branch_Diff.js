@@ -8,6 +8,13 @@ jsh.App[modelid] = new (function(){
   this.branch_sitemaps = [];
 
   this.onload = function(xmodel, callback){
+    var branch_merge_desc = xmodel.get('branch_merge_desc');
+    if (typeof branch_merge_desc === 'string' && branch_merge_desc != '') {
+      // the element is briefly visible, so you see a flash of yellow if style is staticly set
+      $('.branch_merge_desc').css('background-color', 'yellow');
+    } else {
+      jsh.$root('.branch_merge_desc').hide();
+    }
     //Load API Data
     this.loadData();
   }
@@ -41,7 +48,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.render = function(){
-    var jdiff = jsh.$('.diff_'+xmodel.class);
+    var jdiff = jsh.$('.diff_display');
 
     var mapping = {};
     mapping.page_seo = {
@@ -72,7 +79,7 @@ jsh.App[modelid] = new (function(){
       return key;
     }
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_Changes_Listing').html();
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_Changes_Listing').html();
     jdiff.html(XExt.renderClientEJS(tmpl, {
       _: _,
       jsh: jsh,

@@ -287,6 +287,9 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/diff': _this.funcs.diff,
         '/_funcs/validate': _this.funcs.validate_req,
+        '/_funcs/conflict': _this.funcs.conflict,
+        '/_funcs/merge/:merge_type': _this.funcs.req_merge,
+        '/_funcs/begin_merge': _this.funcs.req_begin_merge,
       }
     ]
   }

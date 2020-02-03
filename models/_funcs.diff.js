@@ -150,7 +150,7 @@ module.exports = exports = function(module, funcs){
             select 'NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
               from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
             union all \
-            select 'NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+            select 'PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
               from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
           ";
           appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -218,35 +218,7 @@ module.exports = exports = function(module, funcs){
 
           _.each(branch_pages, function(branch_page){
             if(branch_page.branch_page_action.toUpperCase()=='UPDATE'){
-              var old_page = updated_pages[branch_page.page_orig_id];
-              var new_page = updated_pages[branch_page.page_id];
-              
-              branch_page.diff = {};
-              _.each(['css','header','footer'], function(key){
-                var diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
-                if(diff) branch_page.diff[key] = diff;
-              });
-              var old_content_keys = _.keys(old_page.compiled.content);
-              var new_content_keys = _.keys(new_page.compiled.content);
-              for(var key in old_page.compiled.content){ if(!(key in new_page.compiled.content)) new_page.compiled.content[key] = ''; }
-              for(var key in new_page.compiled.content){ if(!(key in old_page.compiled.content)) old_page.compiled.content[key] = ''; }
-
-              branch_page.diff.content_elements = {};
-              for(var key in old_page.template.content_elements){ branch_page.diff.content_elements[key] = old_page.template.content_elements[key].title; }
-              for(var key in new_page.template.content_elements){ branch_page.diff.content_elements[key] = new_page.template.content_elements[key].title; }
-              
-              branch_page.diff.content = {};
-              for(var key in old_page.compiled.content){
-                var diff = funcs.diffHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
-                branch_page.diff.content[key] = diff;
-              }
-              _.each(['page_title','template_title'], function(key){
-                if(old_page[key] != new_page[key]) branch_page.diff[key] = new_page[key];
-              });
-              branch_page.diff.seo = {};
-              _.each(['title','keywords','metadesc','canonical_url'], function(key){
-                if(old_page.compiled.seo[key] != new_page.compiled.seo[key]) branch_page.diff.seo[key] = new_page.compiled.seo[key];
-              });
+              branch_page.diff = funcs.pageDiff(updated_pages[branch_page.page_orig_id], updated_pages[branch_page.page_id]);
             }
           });
           return cb();
@@ -302,15 +274,7 @@ module.exports = exports = function(module, funcs){
         function(cb){
           _.each(branch_menus, function(branch_menu){
             if(branch_menu.branch_menu_action.toUpperCase()=='UPDATE'){
-              var old_menu = menus[branch_menu.menu_orig_id];
-              var new_menu = menus[branch_menu.menu_id];
-              
-              branch_menu.diff = {};
-              var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
-              if(menu_items_diff) branch_menu.diff.menu_items = menu_items_diff;
-              _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
-                if(old_menu[key] != new_menu[key]) branch_menu.diff[key] = new_menu[key];
-              });
+              branch_menu.diff = funcs.menuDiff(menus[branch_menu.menu_orig_id], menus[branch_menu.menu_id]);
             }
           });
           return cb();
@@ -365,15 +329,7 @@ module.exports = exports = function(module, funcs){
         function(cb){
           _.each(branch_sitemaps, function(branch_sitemap){
             if(branch_sitemap.branch_sitemap_action.toUpperCase()=='UPDATE'){
-              var old_sitemap = sitemaps[branch_sitemap.sitemap_orig_id];
-              var new_sitemap = sitemaps[branch_sitemap.sitemap_id];
-              
-              branch_sitemap.diff = {};
-              var sitemap_items_diff = funcs.diffHTML(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
-              if(sitemap_items_diff) branch_sitemap.diff.sitemap_items = sitemap_items_diff;
-              _.each(['sitemap_name','sitemap_type'], function(key){
-                if(old_sitemap[key] != new_sitemap[key]) branch_sitemap.diff[key] = new_sitemap[key];
-              });
+              branch_sitemap.diff = funcs.sitemapDiff(sitemaps[branch_sitemap.sitemap_orig_id], sitemaps[branch_sitemap.sitemap_id]);
             }
           });
           return cb();
@@ -395,6 +351,56 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
+  }
+
+  exports.pageDiff = function(old_page, new_page){
+    var diff = {};
+    _.each(['css','header','footer'], function(key){
+      var key_diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
+      if(key_diff) diff[key] = key_diff;
+    });
+    var old_content_keys = _.keys(old_page.compiled.content);
+    var new_content_keys = _.keys(new_page.compiled.content);
+    for(var key in old_page.compiled.content){ if(!(key in new_page.compiled.content)) new_page.compiled.content[key] = ''; }
+    for(var key in new_page.compiled.content){ if(!(key in old_page.compiled.content)) old_page.compiled.content[key] = ''; }
+
+    diff.content_elements = {};
+    for(var key in old_page.template.content_elements){ diff.content_elements[key] = old_page.template.content_elements[key].title; }
+    for(var key in new_page.template.content_elements){ diff.content_elements[key] = new_page.template.content_elements[key].title; }
+
+    diff.content = {};
+    for(var key in old_page.compiled.content){
+      var content_diff = funcs.diffHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
+      diff.content[key] = content_diff;
+    }
+    _.each(['page_title','template_title'], function(key){
+      if(old_page[key] != new_page[key]) diff[key] = new_page[key];
+    });
+    diff.seo = {};
+    _.each(['title','keywords','metadesc','canonical_url'], function(key){
+      if(old_page.compiled.seo[key] != new_page.compiled.seo[key]) diff.seo[key] = new_page.compiled.seo[key];
+    });
+    return diff;
+  }
+
+  exports.menuDiff = function(old_menu, new_menu){
+    var diff = {};
+    var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
+    if(menu_items_diff) diff.menu_items = menu_items_diff;
+    _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
+      if(old_menu[key] != new_menu[key]) diff[key] = new_menu[key];
+    });
+    return diff;
+  }
+
+  exports.sitemapDiff = function(old_sitemap, new_sitemap){
+    var diff = {};
+    var sitemap_items_diff = funcs.diffHTML(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
+    if(sitemap_items_diff) diff.sitemap_items = sitemap_items_diff;
+    _.each(['sitemap_name','sitemap_type'], function(key){
+      if(old_sitemap[key] != new_sitemap[key]) diff[key] = new_sitemap[key];
+    });
+    return diff;
   }
 
   exports.diffHTML = function(a, b){

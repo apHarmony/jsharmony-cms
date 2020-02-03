@@ -8,8 +8,8 @@
     "caption":["Branch","Branches"],
     "title":"Branch Review",
     "buttons":[
-      { "link":"js:jsh.System.ApproveBranch(xmodel);","icon":"ok","text":"Approve" },
-      { "link":"js:jsh.System.RejectBranch(xmodel);","icon":"delete","text":"Reject" },
+      { "link":"js:_this.approveBranch(xmodel);","icon":"ok","text":"Approve" },
+      { "link":"js:_this.rejectBranch(xmodel);","icon":"delete","text":"Reject" },
       { "link":"update:Branch_Summary&branch_id","icon":"browse","text":"Branch Summary" }
     ],
     "sqlwhere":"branch_sts='REVIEW' and branch_review_sts='PENDING'",
@@ -19,66 +19,16 @@
         "lov": { "sql": "select branch_id code_val,branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' and site_id=(select site_id from {schema}.branch where branch_id=@branch_id) order by branch_desc", "blank": 1} }
     ]
   },
-  "Branch_Review_Approve_CHANGES": {
+  "Branch_Review_Approve": {
     "layout": "exec",
     "title": "Approve Branch",
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
-      "delete from {schema}.branch_menu where branch_id=@dst_branch_id and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@src_branch_id and branch_menu_action='DELETE');",
-      "delete from {schema}.branch_page where branch_id=@dst_branch_id and page_key in (select page_key from {schema}.branch_page where branch_id=@src_branch_id and branch_page_action='DELETE');",
-      "delete from {schema}.branch_media where branch_id=@dst_branch_id and media_key in (select media_key from {schema}.branch_media where branch_id=@src_branch_id and branch_media_action='DELETE');",
-      "delete from {schema}.branch_redirect where branch_id=@dst_branch_id and redirect_key in (select redirect_key from {schema}.branch_redirect where branch_id=@src_branch_id and branch_redirect_action='DELETE');",
-      "delete from {schema}.branch_sitemap where branch_id=@dst_branch_id and sitemap_key in (select sitemap_key from {schema}.branch_sitemap where branch_id=@src_branch_id and branch_sitemap_action='DELETE');",
-      
-      "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select @dst_branch_id, menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=@src_branch_id and (branch_menu_action='ADD' or branch_menu_action='UPDATE') and menu_key not in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select @dst_branch_id, page_key, page_id, page_id from {schema}.branch_page where branch_id=@src_branch_id and (branch_page_action='ADD' or branch_page_action='UPDATE') and page_key not in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select @dst_branch_id, media_key, media_id, media_id from {schema}.branch_media where branch_id=@src_branch_id and (branch_media_action='ADD' or branch_media_action='UPDATE') and media_key not in (select media_key from {schema}.branch_media where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select @dst_branch_id, redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=@src_branch_id and (branch_redirect_action='ADD' or branch_redirect_action='UPDATE') and redirect_key not in (select redirect_key from {schema}.branch_redirect where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, sitemap_orig_id) select @dst_branch_id, sitemap_key, sitemap_id, sitemap_id from {schema}.branch_sitemap where branch_id=@src_branch_id and (branch_sitemap_action='ADD' or branch_sitemap_action='UPDATE') and sitemap_key not in (select sitemap_key from {schema}.branch_sitemap where branch_id=@dst_branch_id);",
-
-      "update {schema}.branch_menu set menu_id=(select menu_id from (select menu_id,menu_key src_menu_key from {schema}.branch_menu where branch_id=@src_branch_id) tbl where src_menu_key=menu_key) where branch_id=@dst_branch_id and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@src_branch_id and (branch_menu_action='ADD' or branch_menu_action='UPDATE') and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id));",
-      "update {schema}.branch_page set page_id=(select page_id from (select page_id,page_key src_page_key from {schema}.branch_page where branch_id=@src_branch_id) tbl where src_page_key=page_key) where branch_id=@dst_branch_id and page_key in (select page_key from {schema}.branch_page where branch_id=@src_branch_id and (branch_page_action='ADD' or branch_page_action='UPDATE') and page_key in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id));",
-      "update {schema}.branch_media set media_id=(select media_id from (select media_id,media_key src_media_key from {schema}.branch_media where branch_id=@src_branch_id) tbl where src_media_key=media_key) where branch_id=@dst_branch_id and media_key in (select media_key from {schema}.branch_media where branch_id=@src_branch_id and (branch_media_action='ADD' or branch_media_action='UPDATE') and media_key in (select media_key from {schema}.branch_media where branch_id=@dst_branch_id));",
-      "update {schema}.branch_redirect set redirect_id=(select redirect_id from (select redirect_id,redirect_key src_redirect_key from {schema}.branch_redirect where branch_id=@src_branch_id) tbl where src_redirect_key=redirect_key) where branch_id=@dst_branch_id and redirect_key in (select redirect_key from {schema}.branch_redirect where branch_id=@src_branch_id and (branch_redirect_action='ADD' or branch_redirect_action='UPDATE') and redirect_key in (select redirect_key from {schema}.branch_redirect where branch_id=@dst_branch_id));",
-      "update {schema}.branch_sitemap set sitemap_id=(select sitemap_id from (select sitemap_id,sitemap_key src_sitemap_key from {schema}.branch_sitemap where branch_id=@src_branch_id) tbl where src_sitemap_key=sitemap_key) where branch_id=@dst_branch_id and sitemap_key in (select sitemap_key from {schema}.branch_sitemap where branch_id=@src_branch_id and (branch_sitemap_action='ADD' or branch_sitemap_action='UPDATE') and sitemap_key in (select sitemap_key from {schema}.branch_sitemap where branch_id=@dst_branch_id));",
-
-      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id;"
+      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@branch_id"
     ],
     "fields": [
-      {"name":"src_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Source Branch ID", "validate": ["Required"]},
-      {"name":"dst_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Destination Branch ID", "validate": ["Required"]}
-    ]
-  },
-  "Branch_Review_Approve_OVERWRITE": {
-    "layout": "exec",
-    "title": "Approve Branch",
-    "actions": "U",
-    "roles": {"PUBLISHER": "BU"},
-    "sqlexec": [
-      "delete from {schema}.branch_menu where branch_id=@dst_branch_id and menu_key not in (select menu_key from {schema}.branch_menu where branch_id=@src_branch_id);",
-      "delete from {schema}.branch_page where branch_id=@dst_branch_id and page_key not in (select page_key from {schema}.branch_page where branch_id=@src_branch_id);",
-      "delete from {schema}.branch_media where branch_id=@dst_branch_id and media_key not in (select media_key from {schema}.branch_media where branch_id=@src_branch_id);",
-      "delete from {schema}.branch_redirect where branch_id=@dst_branch_id and redirect_key not in (select redirect_key from {schema}.branch_redirect where branch_id=@src_branch_id);",
-      "delete from {schema}.branch_sitemap where branch_id=@dst_branch_id and sitemap_key not in (select sitemap_key from {schema}.branch_sitemap where branch_id=@src_branch_id);",
-
-      "update {schema}.branch_menu set menu_id=(select menu_id from (select menu_id,menu_key src_menu_key from {schema}.branch_menu where branch_id=@src_branch_id) tbl where src_menu_key=menu_key) where branch_id=@dst_branch_id and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@src_branch_id and menu_key in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id));",
-      "update {schema}.branch_page set page_id=(select page_id from (select page_id,page_key src_page_key from {schema}.branch_page where branch_id=@src_branch_id) tbl where src_page_key=page_key) where branch_id=@dst_branch_id and page_key in (select page_key from {schema}.branch_page where branch_id=@src_branch_id and page_key in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id));",
-      "update {schema}.branch_media set media_id=(select media_id from (select media_id,media_key src_media_key from {schema}.branch_media where branch_id=@src_branch_id) tbl where src_media_key=media_key) where branch_id=@dst_branch_id and media_key in (select media_key from {schema}.branch_media where branch_id=@src_branch_id  and media_key in (select media_key from {schema}.branch_media where branch_id=@dst_branch_id));",
-      "update {schema}.branch_redirect set redirect_id=(select redirect_id from (select redirect_id,redirect_key src_redirect_key from {schema}.branch_redirect where branch_id=@src_branch_id) tbl where src_redirect_key=redirect_key) where branch_id=@dst_branch_id and redirect_key in (select redirect_key from {schema}.branch_redirect where branch_id=@src_branch_id  and redirect_key in (select redirect_key from {schema}.branch_redirect where branch_id=@dst_branch_id));",
-      "update {schema}.branch_sitemap set sitemap_id=(select sitemap_id from (select sitemap_id,sitemap_key src_sitemap_key from {schema}.branch_sitemap where branch_id=@src_branch_id) tbl where src_sitemap_key=sitemap_key) where branch_id=@dst_branch_id and sitemap_key in (select sitemap_key from {schema}.branch_sitemap where branch_id=@src_branch_id and sitemap_key in (select sitemap_key from {schema}.branch_sitemap where branch_id=@dst_branch_id));",
-
-      "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select @dst_branch_id, menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=@src_branch_id and menu_key not in (select menu_key from {schema}.branch_menu where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select @dst_branch_id, page_key, page_id, page_id from {schema}.branch_page where branch_id=@src_branch_id and page_key not in (select page_key from {schema}.branch_page where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select @dst_branch_id, media_key, media_id, media_id from {schema}.branch_media where branch_id=@src_branch_id and media_key not in (select media_key from {schema}.branch_media where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select @dst_branch_id, redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=@src_branch_id and redirect_key not in (select redirect_key from {schema}.branch_redirect where branch_id=@dst_branch_id);",
-      "insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, sitemap_orig_id) select @dst_branch_id, sitemap_key, sitemap_id, sitemap_id from {schema}.branch_sitemap where branch_id=@src_branch_id and sitemap_key not in (select sitemap_key from {schema}.branch_sitemap where branch_id=@dst_branch_id);",
-
-      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@src_branch_id;"
-    ],
-    "fields": [
-      {"name":"src_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Source Branch ID"},
-      {"name":"dst_branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Destination Branch ID"}
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
     ]
   },
   "Branch_Review_Reject": {

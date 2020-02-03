@@ -11,15 +11,21 @@
       <h4>Merge Type:</h4>
       <table border="0">
         <tr>
-          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="CHANGES" checked="checked" class="default_focus"> Branch Changes</label></td>
+          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="changes" checked="checked" class="default_focus"> Branch Changes</label></td>
           <td class="plain">
             Add this branch's changes to the target branch's changes. Changes from both branches will be merged to production to publish.
           </td>
         </tr>
         <tr>
-          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="REBASE"> Rebase</label></td>
+          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="rebase"> Rebase</label></td>
           <td class="plain">
             Make this branch the parent of the target branch, and re-apply any of the target branch's changes. Only the target branch's changes will be merged to production on publish.
+          </td>
+        </tr>
+        <tr>
+          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="overwrite"> Overwrite</label></td>
+          <td class="plain">
+            Completely overwrite the target branch with this branch, including unchanged files. Any changes in the target branch will be lost, and any changes in this branch will be copied to the target branch.
           </td>
         </tr>
       </table>

@@ -56,6 +56,7 @@
   "Sitemap_Tree_Browse": {
     "inherits": "Sitemap_Tree",
     "actions": "B",
+    "breadcrumbs": "__REMOVEPROPERTY__",
     "popup": [1000, 600]
   },
   "Sitemap_Tree_Page_Duplicate": {
