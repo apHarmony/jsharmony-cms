@@ -20,6 +20,10 @@ jsh.App[modelid] = new (function(){
     var emodelid = '../_funcs/conflict';
     XForm.Get(emodelid, { src_branch_id: xmodel.get('branch_merge_id'), dst_branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
+        _this.conflicts = 0;
+        _this.resolved = 0;
+        _this.unresolved = 0;
+
         _this.deployment_target_params = rslt.deployment_target_params;
 
         _this.branch_pages = rslt.branch_pages;
@@ -188,7 +192,7 @@ jsh.App[modelid] = new (function(){
     };
 
     XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_'+objectType, {}, params, function(rslt){
-      window.location.reload();
+      _this.loadData();
     });
   }
 
