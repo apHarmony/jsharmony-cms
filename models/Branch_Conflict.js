@@ -132,7 +132,7 @@ jsh.App[modelid] = new (function(){
     objects.forEach(function(objectType) {
       var ObjectType = objectType.charAt(0).toUpperCase() + objectType.substring(1);
       if (_this['preview'+ObjectType]) {
-        jdiff.find('.preview_'+objectType).on('click', function(e){ _this['preview'+ObjecType](this); e.preventDefault(); });
+        jdiff.find('.preview_'+objectType).on('click', function(e){ _this['preview'+ObjectType](this); e.preventDefault(); });
       }
       jdiff.find('.button_resolve_'+objectType).on('click', function(e){ _this.resolveConflict(this, ObjectType); e.preventDefault(); });
       jdiff.find('.button_unresolve_'+objectType).on('click', function(e){ _this.resolveConflict(this, ObjectType); e.preventDefault(); });
