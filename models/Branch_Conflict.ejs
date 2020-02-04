@@ -21,7 +21,7 @@
     <i class="material-icons branch_action_icon cancel">cancel</i>
     NO CHANGE: <#-XExt.escapeHTML(new_page.path)#>
   <# } #>
-  <br/>
+  <# if(!oneline) { #><br/><# } #>
   <# if((branch_page_action=='UPDATE') && (new_page.path!=old_page.path)){ #>
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
@@ -37,6 +37,7 @@
     <#- include('Page_Diff_Header', {
       branch_page_action: branch_page_action,
       page_key: page_key,
+      oneline: false,
       title: title,
       new_page: new_page,
       old_page: old_page}) #>
@@ -80,7 +81,7 @@
     <i class="material-icons branch_action_icon cancel">cancel</i>
     NO CHANGE: <#-XExt.escapeHTML(new_media.path)#>
   <# } #>
-  <br/>
+  <# if(!oneline) { #><br/><# } #>
   <# if((branch_media_action=='UPDATE') && (new_media.path!=old_media.path)){ #>
     <br/>
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
@@ -97,6 +98,7 @@
     <#- include('Media_Diff_Header', {
       branch_media_action: branch_media_action,
       media_key: media_key,
+      oneline: false,
       title: title,
       new_media: new_media,
       old_media: old_media}) #>
@@ -130,7 +132,7 @@
     <i class="material-icons branch_action_icon cancel">cancel</i>
     NO CHANGE: <#-XExt.escapeHTML(new_menu.tag)#>
   <# } #>
-  <br/>
+  <# if(!oneline) { #><br/><# } #>
   <# if((branch_menu_action=='UPDATE') && (new_menu.tag!=old_menu.tag)){ #>
     <br/>
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
@@ -147,6 +149,7 @@
     <#- include('Menu_Diff_Header', {
       branch_menu_action: branch_menu_action,
       menu_key: menu_key,
+      oneline: false,
       title: title,
       new_menu: new_menu,
       old_menu: old_menu}) #>
@@ -180,7 +183,7 @@
     <i class="material-icons branch_action_icon cancel">cancel</i>
     NO CHANGE: <#-XExt.escapeHTML(new_redirect.url)#>
   <# } #>
-  <br/>
+  <# if(!oneline) { #><br/><# } #>
   <# if(branch_redirect_action=='UPDATE'){ #>
     <# if(new_redirect.url!=old_redirect.url){ #>New URL: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<#-XExt.escapeHTML(new_redirect.url)#><# } #>
     <# if(new_redirect.dest!=old_redirect.dest){ #><br/>New Destination: <#-XExt.escapeHTML(new_redirect.dest)#><# } #>
@@ -193,6 +196,7 @@
     <#- include('Redirect_Diff_Header', {
       branch_redirect_action: branch_redirect_action,
       redirect_key: redirect_key,
+      oneline: false,
       new_redirect: new_redirect,
       old_redirect: old_redirect}) #>
     <input type="button" value="Pick" class="button_resolve_redirect" data-key="<#=redirect_key#>" data-id="<#=new_redirect.id#>" data-branch_action="<#=branch_redirect_action#>" />
@@ -223,7 +227,7 @@
     <i class="material-icons branch_action_icon cancel">cancel</i>
     NO CHANGE: <#-XExt.escapeHTML(new_sitemap.type)#>
   <# } #>
-  <br/>
+  <# if(!oneline) { #><br/><# } #>
   <# if((branch_sitemap_action=='UPDATE') && (new_sitemap.type!=old_sitemap.type)){ #>
     <br/>
     <i class="material-icons branch_action_icon rename">subdirectory_arrow_right</i>
@@ -240,6 +244,7 @@
     <#- include('Sitemap_Diff_Header', {
       branch_sitemap_action: branch_sitemap_action,
       sitemap_key: sitemap_key,
+      oneline: false,
       title: title,
       new_sitemap: new_sitemap,
       old_sitemap: old_sitemap}) #>
@@ -282,6 +287,7 @@
         <#- include('Page_Diff_Header', {
           branch_page_action: branch_page.branch_page_merge_action,
           page_key: branch_page.page_key,
+          oneline: true,
           title: 'View',
           new_page: branch_page.merge_page,
           old_page: branch_page.dst_page}) #>
@@ -327,6 +333,7 @@
         <#- include('Media_Diff_Header', {
           branch_media_action: branch_media.branch_media_merge_action,
           media_key: branch_media.media_key,
+          oneline: true,
           title: 'View',
           new_media: branch_media.merge_media,
           old_media: branch_media.dst_media}) #>
@@ -368,6 +375,7 @@
         <#- include('Menu_Diff_Header', {
           branch_menu_action: branch_menu.branch_menu_merge_action,
           menu_key: branch_menu.menu_key,
+          oneline: true,
           title: 'View',
           new_menu: branch_menu.merge_menu,
           old_menu: branch_menu.dst_menu}) #>
@@ -413,6 +421,7 @@
         <#- include('Redirect_Diff_Header', {
           branch_redirect_action: branch_redirect.branch_redirect_merge_action,
           redirect_key: branch_redirect.redirect_key,
+          oneline: true,
           new_redirect: branch_redirect.merge_redirect,
           old_redirect: branch_redirect.dst_redirect}) #>
         <input type="button" value="Unresolve" class="button_unresolve_redirect" data-key="<#=branch_redirect.redirect_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
@@ -453,6 +462,7 @@
         <#- include('Sitemap_Diff_Header', {
           branch_sitemap_action: branch_sitemap.branch_sitemap_merge_action,
           sitemap_key: branch_sitemap.sitemap_key,
+          oneline: true,
           title: 'View',
           new_sitemap: branch_sitemap.merge_sitemap,
           old_sitemap: branch_sitemap.dst_sitemap}) #>
