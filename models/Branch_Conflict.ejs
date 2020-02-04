@@ -16,7 +16,6 @@
   <# if(branch_page_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
     UPDATED PAGE: <#-XExt.escapeHTML(old_page.path)#>
-    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=old_page.template_id#>" data-page_filename="<#=old_page.filename#>" data-page_id="<#=old_page.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_page_action==null || branch_page_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
@@ -76,7 +75,6 @@
   <# if(branch_media_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
     UPDATED MEDIA: <#-XExt.escapeHTML(old_media.path)#>
-    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_media_action==null || branch_media_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
@@ -106,12 +104,6 @@
   </h4>
 
   <div>
-    <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (old_media.ext||'').toLowerCase())){ #>
-      <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=old_media.id#>" data-media_ext="<#=old_media.ext#>" data-media_width="<#=old_media.width#>" data-media_height="<#=old_media.height#>">
-        Prev:<br/>
-        <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=old_media.id#>" />
-      </div>
-    <# } #>
     <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
       <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
         <#=title#>:<br/>
@@ -133,8 +125,6 @@
   <# } #>
   <# if(branch_menu_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
-    UPDATED MENU: <#-XExt.escapeHTML(old_menu.tag)#>
-    <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=old_menu.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_menu_action==null || branch_menu_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
@@ -228,7 +218,6 @@
   <# if(branch_sitemap_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
     UPDATED SITEMAP: <#-XExt.escapeHTML(old_sitemap.type)#>
-    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=old_sitemap.key#>" data-sitemap_id="<#=old_sitemap.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_sitemap_action==null || branch_sitemap_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
