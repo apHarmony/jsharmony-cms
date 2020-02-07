@@ -146,8 +146,15 @@ module.exports = exports = function(module, funcs){
         appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
+            var media_paths = {};
             _.each(rslt[0], function(media){
               media_keys[media.media_key] = media;
+
+              //Find duplicate media_path
+              var media_path_upper = (media.media_path||'').trim().toUpperCase();
+              if(!media_path_upper) logMediaError(media, 'Media ID '+media.media_id+' missing media_path');
+              else if(media_path_upper in media_paths) logMediaError(media, 'Duplicate media_path: '+media.media_path);
+              else media_paths[media_path_upper] = media;
             });
           }
           return cb();
@@ -163,8 +170,15 @@ module.exports = exports = function(module, funcs){
         appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
+            var page_paths = {};
             _.each(rslt[0], function(page){
               page_keys[page.page_key] = page;
+
+              //Find duplicate page_path
+              var page_path_upper = (page.page_path||'').trim().toUpperCase();
+              if(!page_path_upper) logPageError(page, 'Page ID '+page.page_id+' missing page_path');
+              else if(page_path_upper in page_paths) logPageError(page, 'Duplicate page_path: '+page.page_path);
+              else page_paths[page_path_upper] = page;
             });
           }
           return cb();
@@ -245,8 +259,15 @@ module.exports = exports = function(module, funcs){
         appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
+            var menu_tags = {};
             _.each(rslt[0], function(menu){
               menus[menu.menu_id] = menu;
+
+              //Find duplicate menu_tag
+              var menu_tag_upper = (menu.menu_tag||'').trim().toUpperCase();
+              if(!menu_tag_upper) logMenuError(menu, 'Menu ID '+menu.menu_id+' missing menu_tag');
+              else if(menu_tag_upper in menu_tags) logMenuError(menu, 'Duplicate menu_tag: '+menu.menu_tag);
+              else menu_tags[menu_tag_upper] = menu;
             });
           }
           return cb();
@@ -301,8 +322,15 @@ module.exports = exports = function(module, funcs){
         appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
+            var sitemap_types = {};
             _.each(rslt[0], function(sitemap){
               sitemaps[sitemap.sitemap_id] = sitemap;
+
+              //Find duplicate sitemap_type
+              var sitemap_type_upper = (sitemap.sitemap_type||'').trim().toUpperCase();
+              if(!sitemap_type_upper) logSitemapError(sitemap, 'Sitemap ID '+sitemap.sitemap_id+' missing sitemap_type');
+              else if(sitemap_type_upper in sitemap_types) logSitemapError(sitemap, 'Duplicate sitemap_type: '+sitemap.sitemap_type);
+              else sitemap_types[sitemap_type_upper] = sitemap;
             });
           }
           return cb();

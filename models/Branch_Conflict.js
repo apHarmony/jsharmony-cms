@@ -62,7 +62,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.render = function(){
-    var jdiff = jsh.$('.diff_display');
+    var jdiff = jsh.$('.conflict_display');
 
     var mapping = {};
     mapping.page_seo = {
