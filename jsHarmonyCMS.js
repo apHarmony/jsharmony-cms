@@ -96,7 +96,7 @@ jsHarmonyCMS.prototype.Init = function(cb){
       return cb();
     });
   });
-  
+
   return cb();
 }
 
@@ -258,6 +258,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   };
 
   return {
+    cookie_samesite: 'none',
     globalparams: {
       'PageTemplates': {},
       'MenuTemplates': {}
