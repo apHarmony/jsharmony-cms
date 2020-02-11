@@ -736,8 +736,6 @@ module.exports = exports = function(module, funcs){
           deployment_target_params = rslt[0].deployment_target_params;
         }
 
-        console.log(deployment_target_params);
-
         var url = page_template.remote_template.editor;
 
         var dtparams = {

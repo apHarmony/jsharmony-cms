@@ -1,7 +1,7 @@
 {
   "macros": {
     "CMS_BRANCH_BREADCRUMBS": {
-      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><a href='<%=jsh._BASEURL%><%=xmodel.namespace%>Branch_Summary?action=update&branch_id=<#=bcrumbs.branch_id#>'><#=bcrumbs.branch_desc||'\u00A0'#></a></div>",
+      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><a href='<%=jsh._BASEURL%>{namespace}Branch_Summary?action=update&branch_id=<#=bcrumbs.branch_id#>'><#=bcrumbs.branch_desc||'\u00A0'#></a></div>",
       "sql": "select branch_id, branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"
     }
   }
