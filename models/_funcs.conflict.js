@@ -62,8 +62,9 @@ module.exports = exports = function(module, funcs){
       inner join {schema}.branch_%%%OBJECT%%% dst_branch_%%%OBJECT%%% on dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_key=src_branch_%%%OBJECT%%%.%%%OBJECT%%%_key and dst_branch_%%%OBJECT%%%.branch_id=@dst_branch_id ";
 
     var sqlWhere = " where src_branch_%%%OBJECT%%%.branch_id=@src_branch_id\
+      and (dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_id<>src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)\
       and ((src_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action is not null and src_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id<>dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)\
-      or  (dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action is not null and dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id<>src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)) ";
+       or  (dst_branch_%%%OBJECT%%%.branch_%%%OBJECT%%%_action is not null and dst_branch_%%%OBJECT%%%.%%%OBJECT%%%_orig_id<>src_branch_%%%OBJECT%%%.%%%OBJECT%%%_id)) ";
 
     var sql = sqlPrefix + selectConflictDetailFields(detailFields) + sqlFrom + selectConflictDetailTables() + sqlWhere + whereClause;
     sql = Helper.ReplaceAll(sql, '%%%OBJECT%%%', objectType);
