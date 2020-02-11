@@ -82,12 +82,34 @@
 <%-(rootcss)%> .diff_media_preview img {
   margin-top:3px;
 }
-<%-(rootcss)%> .branch_diff_comparison {
-  display: relative;
+
+<%-(rootcss)%> .conflict_display hr {
+  border-top:1px solid #eee;
+  margin:0;
 }
+<%-(rootcss)%> .conflict_display h4 {
+  margin-top:4px;
+  margin-bottom:4px;
+}
+<%-(rootcss)%> .conflict_display .button {
+  margin-left:10px;
+  padding-left:6px;
+  padding-right:6px;
+}
+<%-(rootcss)%> .branch_diff_comparison .diff {
+  max-width:100%;
+}
+<%-(rootcss)%> .branch_diff_comparison > table {
+  width:100%;
+}
+<%-(rootcss)%> .branch_diff_comparison_src { padding-right:8px; border-right:1px solid #eee; }
+<%-(rootcss)%> .branch_diff_comparison_dst { padding-left:8px; border-left:1px solid #eee; }
 <%-(rootcss)%> .branch_diff_comparison_src,
 <%-(rootcss)%> .branch_diff_comparison_dst {
-  display: inline-block;
-  width: 49%;
+  max-width: 48vw;
+  width:50%;
+  box-sizing:border-box;
   vertical-align: top;
+  padding-top:5px;
+  padding-bottom:7px;
 }
