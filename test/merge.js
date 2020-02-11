@@ -173,6 +173,11 @@ describe('Merges', function() {
             page_path: '/test/add/index.html',
           },
           {
+            branch_page_action: 'DELETE',
+            page_title: 'Delete',
+            page_path: '/test/delete/index.html',
+          },
+          {
             branch_page_action: null,
             page_title: 'Untouched',
             page_path: '/test/untouched/index.html',
