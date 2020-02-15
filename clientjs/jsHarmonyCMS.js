@@ -39,7 +39,6 @@ var jsHarmonyCMS = function(){
   };
 
 
-  //Load jsHarmony
   this.jsh = undefined;
   this._baseurl = '<%-Helper.escapeJS(baseurl)%>';
   this._cookie_suffix = '<%-Helper.escapeJS(cookie_suffix)%>';
@@ -67,6 +66,7 @@ var jsHarmonyCMS = function(){
 
   this.init = function(){
     loader.StartLoading();
+    //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
       jsh = _this.jsh = window.jshInstance = new jsHarmony({
