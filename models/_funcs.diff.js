@@ -354,6 +354,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.pageDiff = function(old_page, new_page){
+    if(!old_page || !new_page) return null;
     var diff = {};
     _.each(['css','header','footer'], function(key){
       var key_diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
