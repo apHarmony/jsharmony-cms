@@ -271,7 +271,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
           _this.jsh.getSystemCSS(function(systemCSS){
             HelperFS.outputContent(req, res, ejs.render(systemCSS, { req: req, rootcss: req.jshsite.rootcss, _: _ }),'text/css');
           });
-        }
+        },
+        '/js/jsharmony-cms.js': function (req, res) { return Helper.Redirect302(res, '/js/jsHarmonyCMS.js'); },
       }
     ],
     private_apps: [

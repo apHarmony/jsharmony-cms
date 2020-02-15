@@ -8,7 +8,7 @@
     "title":"Branch Review",
     "menu":"jsHarmonyCMS/Branch_Review_Listing",
     "noresultsmessage":"No branches waiting for review.",
-    "sqlwhere":"branch_sts='REVIEW' and branch_review_sts='PENDING'",
+    "sqlwhere":"branch_sts='REVIEW'",
     "tablestyle":"min-width:400px;",
     "fields": [
       {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site where {schema}.site.site_id={schema}.branch.site_id)"},

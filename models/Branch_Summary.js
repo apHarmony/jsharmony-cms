@@ -49,19 +49,24 @@ jsh.App[modelid] = new (function(){
       var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
       if(checked_option.length) mergeType = checked_option.val().toLowerCase();
 
-      var params = {
-        src_branch_id: xmodel.get('branch_id'),
-        dst_branch_id: xmodel.get('dst_branch_id'),
-        merge_type: mergeType,
-      };
+
 
       if (mergeType == 'overwrite') {
         // no conflicts possible
+        var params = {
+          src_branch_id: xmodel.get('branch_id'),
+          dst_branch_id: xmodel.get('dst_branch_id'),
+        };
         XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
           success();
           XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Listing_Redirect');
         });
       } else {
+        var params = {
+          src_branch_id: xmodel.get('branch_id'),
+          dst_branch_id: xmodel.get('dst_branch_id'),
+          merge_type: mergeType,
+        };
         XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
           success();
           XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+

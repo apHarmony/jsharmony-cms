@@ -37,8 +37,8 @@
   "{schema}.merge_clear_edit_on_public":{
     "params": ["OBJECT", "dst_branch_id"],
     "sql": [
-      "delete from {schema}.branch_%%%OBJECT%%% where branch_id=%%%dst_branch_id%%% and branch_%%%OBJECT%%%_merge_action='DELETE' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);",
-      "update {schema}.branch_%%%OBJECT%%% set branch_%%%OBJECT%%%_action=null,%%%OBJECT%%%_orig_id=%%%OBJECT%%%_id where branch_id=%%%dst_branch_id%%% and (branch_%%%OBJECT%%%_merge_action='ADD' or branch_%%%OBJECT%%%_merge_action='UPDATE') and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);"
+      "delete from {schema}.branch_%%%OBJECT%%% where branch_id=%%%dst_branch_id%%% and branch_%%%OBJECT%%%_action='DELETE' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);",
+      "update {schema}.branch_%%%OBJECT%%% set branch_%%%OBJECT%%%_action=null,%%%OBJECT%%%_orig_id=%%%OBJECT%%%_id where branch_id=%%%dst_branch_id%%% and (branch_%%%OBJECT%%%_action='ADD' or branch_%%%OBJECT%%%_action='UPDATE') and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);"
     ]
   },
   "{schema}.merge_overwrite":{

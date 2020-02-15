@@ -7,6 +7,7 @@
     "caption":["Site","Sites"],
     "menu":"jsHarmonyCMS/Site_Listing",
     "buttons":[{ "link":"insert:Site","icon":"add","text":"Add Site" }],
+    "oncommit": "XPage.Reload({ browserRefresh:true });",
     "fields": [
       {"name":"site_id","caption":"Site ID","control":"hidden","key":true,"actions":"B"},
       {"name":"site_name","caption":"Site Name","actions":"B","control":"label"},
