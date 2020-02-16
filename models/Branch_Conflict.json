@@ -68,7 +68,7 @@
     "fields": [
       {"name":"branch_id", "actions":"U", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
       {"name":"key", "actions":"U", "type":"bigint", "caption":"Key", "validate": ["Required"]},
-      {"name":"Merge_id", "actions":"U", "type":"bigint", "caption":"Merge ID"},
+      {"name":"merge_id", "actions":"U", "type":"bigint", "caption":"Merge ID"},
       {"name":"branch_merge_action", "actions":"U", "type":"varchar"}
     ]
   },

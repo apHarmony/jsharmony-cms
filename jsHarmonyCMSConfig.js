@@ -69,7 +69,7 @@ function jsHarmonyCMSConfig(){
   this.deploymentJobDelay = (1000 * 60 * 60);
 
   this.debug_params = {
-    no_cache_client_js: false  //Do not cache jsharmony-cms.js, always reload from disk
+    no_cache_client_js: false  //Do not cache jsHarmonyCMS.js, always reload from disk
   };
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'

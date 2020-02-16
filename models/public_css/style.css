@@ -93,8 +93,13 @@
 }
 <%-(rootcss)%> .conflict_display .button {
   margin-left:10px;
-  padding-left:6px;
-  padding-right:6px;
+  padding: 2px 10px;
+  background:linear-gradient(180deg, rgba(255,224,95,1) 0%, rgba(235,202,92,1) 100%);
+  border:1px solid #b58c00;
+}
+<%-(rootcss)%> .conflict_display .button:hover {
+  background:linear-gradient(180deg, rgba(255,205,0,1) 0%, rgba(237,183,0,1) 100%);
+  border:1px solid #836600;
 }
 <%-(rootcss)%> .branch_diff_comparison .diff {
   max-width:100%;
