@@ -92,6 +92,7 @@
             "  return_insert_key(redirect, redirect_key, (redirect_key=%%%INSERT_ID%%%));",
             "  insert into branch_redirect(branch_id, redirect_key, redirect_id, branch_redirect_action) values ({schema}.my_current_branch_id(), %%%INSERT_ID%%%, %%%INSERT_ID%%%, 'ADD');",
             "  update branch_redirect set redirect_orig_id=redirect_id,branch_redirect_action=NULL where branch_id={schema}.my_current_branch_id() and redirect_key = %%%INSERT_ID%%% and {schema}.my_current_branch_is_versioned()=0;",
+            "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
             "  increment_changes()",
             ")"
           ]
@@ -105,6 +106,7 @@
             "  insert into redirect(redirect_key, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(deleted(redirect_key), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
             "  update branch_redirect set redirect_id=%%%INSERT_ID%%%,branch_redirect_action=(case branch_redirect_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key);",
             "  update branch_redirect set redirect_orig_id=redirect_id,branch_redirect_action=NULL where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and {schema}.my_current_branch_is_versioned()=0;",
+            "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
             "  increment_changes()",
             ")"
           ]
@@ -115,6 +117,7 @@
           "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
           "update branch_redirect set redirect_id=null,branch_redirect_action='DELETE' where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and ((branch_redirect_action is null) or (branch_redirect_action in ('UPDATE','DELETE')))",
           "delete from branch_redirect where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and (branch_redirect_action='ADD' or {schema}.my_current_branch_is_versioned()=0)",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
           "increment_changes()"
         ]
       }

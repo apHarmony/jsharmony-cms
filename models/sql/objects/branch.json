@@ -73,7 +73,9 @@
       { "name": "branch_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "branch_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
       { "name": "branch_mtstmp", "type": "datetime", "length": 7 },
-      { "name": "branch_muser", "type": "varchar", "length": 20 }
+      { "name": "branch_muser", "type": "varchar", "length": 20 },
+      { "name": "branch_data_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_data_muser", "type": "varchar", "length": 20 },
     ],
     "unique": [
       ["branch_name","branch_user_id","site_id"]
@@ -152,9 +154,14 @@
       { "on": ["update", "insert"], "exec": [
           "set(branch_menu_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_menu_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_menu.branch_menu_action='DELETE',menu_id,null);"
+          "setif(branch_menu.branch_menu_action='DELETE',menu_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
         ]
-      }
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
     ],
     "sample_data": [
       { 
@@ -211,9 +218,14 @@
       { "on": ["update", "insert"], "exec": [
           "set(branch_page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_page_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_page.branch_page_action='DELETE',page_id,null);"
+          "setif(branch_page.branch_page_action='DELETE',page_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
         ]
-      }
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
     ]
   },
 
@@ -252,9 +264,14 @@
       { "on": ["update", "insert"], "exec": [
           "set(branch_media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_media_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_media.branch_media_action='DELETE',media_id,null);"
+          "setif(branch_media.branch_media_action='DELETE',media_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
         ]
-      }
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
     ]
   },
 
@@ -293,9 +310,14 @@
       { "on": ["update", "insert"], "exec": [
           "set(branch_redirect_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_redirect_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_redirect.branch_redirect_action='DELETE',redirect_id,null);"
+          "setif(branch_redirect.branch_redirect_action='DELETE',redirect_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
         ]
-      }
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
     ]
   },
 
@@ -334,9 +356,14 @@
       { "on": ["update", "insert"], "exec": [
           "set(branch_sitemap_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(branch_sitemap_muser,%%%%%%jsh.map.current_user%%%%%%);",
-          "setif(branch_sitemap.branch_sitemap_action='DELETE',sitemap_id,null);"
+          "setif(branch_sitemap.branch_sitemap_action='DELETE',sitemap_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
         ]
-      }
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
     ],
     "sample_data": [
       { 
@@ -389,6 +416,8 @@
           "branch_sts",
           "branch_mtstmp",
           "branch_muser",
+          "branch_data_mtstmp",
+          "branch_data_muser",
           { "name":"branch_is_checked_out", "type": "int", "sqlselect": "(case branch_id when {schema}.my_current_branch_id() then 1 else 0 end)" },
           { "name":"branch_access", "type": "varchar", "length": "10", "sqlselect": "case when branch_type='DEPLOYMENT' then 'R' when {schema}.my_user_is_publisher() = 1 then 'RW' else decode(branch_type, 'PUBLIC', 'R', 'USER', decode(branch_sts,'ACTIVE','RW','R')) end" }
         ]
@@ -422,6 +451,8 @@
           "branch_sts",
           "branch_mtstmp",
           "branch_muser",
+          "branch_data_mtstmp",
+          "branch_data_muser",
           "branch_access",
           "branch_is_checked_out",
           { "name":"branch_desc", "type": "varchar", "length": -1, "sqlselect": "concat(site_name,'/',(case branch_type when 'DEPLOYMENT' then 'deployment' when 'PUBLIC' then 'public' else (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=branch_user_id) end),'/',branch_name,(case branch_access when 'R' then ' (Read-only)' else '' end))" }

@@ -37,7 +37,7 @@
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
-      "update {schema}.branch set branch_sts='ACTIVE',branch_review_sts='REJECTED' where branch_id=@branch_id"
+      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='REJECTED' where branch_id=@branch_id"
     ],
     "fields": [
       {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}

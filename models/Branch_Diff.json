@@ -13,7 +13,7 @@
       {"name":"branch_desc","caption":"Branch","control":"label","captionstyle":"font-weight:bold;text-align:right;"},
       {"name":"branch_user_id_fmt","caption":"Author","control":"label","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))"},
       {"name":"branch_sts","caption":"Status","control":"label"},
-      {"name":"branch_mtstmp","caption":"Last Modified","control":"label","format":["date","MM/DD/YYYY h:mm a"]},
+      {"name":"branch_data_mtstmp","caption":"Last Modified","control":"label","format":["date","MM/DD/YYYY h:mm a"]},
       {"name":"branch_merge_desc","caption":"Merge In Progress","control":"label","captionstyle":"font-weight:bold;text-align:right;","block":true,"blockclass":"branch_merge_desc","sqlselect":"(select branch_desc from {schema}.branch merge_branch inner join {schema}.v_my_branch_desc merge_branch_desc on (merge_branch.branch_id=v_my_branch_desc.branch_id and merge_branch.branch_merge_id=merge_branch_desc.branch_id))"},
       {"name":"branch_type","control":"hidden"}
     ]
