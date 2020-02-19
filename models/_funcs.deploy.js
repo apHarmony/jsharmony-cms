@@ -353,9 +353,9 @@ module.exports = exports = function(module, funcs){
               //Deploy to target
               function (cb) {
                 var deploy_path = (deployment.deployment_target_publish_path||'').toString();
-                if(!deploy_path) return cb(new Error('Invalid Deployment Target Path'));
 
-                if(deploy_path.indexOf('file://')==0){
+                if(!deploy_path){ return cb(); }
+                else if(deploy_path.indexOf('file://')==0){
                   //File Deployment
                   return funcs.deploy_fs(deployment, publish_path, deploy_path.substr(7), site_files, cb);
                 }
