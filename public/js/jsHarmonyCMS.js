@@ -242,8 +242,13 @@ exports = module.exports = function(jsh, cms){
   var _ = jsh._;
   var XExt = jsh.XExt;
   
+  this.isEditing = false;
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.defaultConfig = {};
+
+  this.onBeginEdit = null; //function(editor){};
+  this.onEndEdit = null; //function(editor){};
+
 
   this.editorConfig = {
     base: null,
@@ -314,11 +319,15 @@ exports = module.exports = function(jsh, cms){
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
           editor.on('focus', function(){
+            _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
             $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
+            if(_this.onBeginEdit) _this.onBeginEdit(editor);
           });
           editor.on('blur', function(){
+            _this.isEditing = false;
             $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:0 },300);
+            if(_this.onEndEdit) _this.onEndEdit(editor);
           });
         }
       });
@@ -344,6 +353,14 @@ exports = module.exports = function(jsh, cms){
     var config = _.extend({ selector: '#' + elem_id }, _this.editorConfig[config_id], options);
     if(cb) config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, cb);
     window.tinymce.init(config);
+  }
+
+  this.detach = function(id){
+    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(editor){
+      if(_this.isEditing == id) editor.fire('blur');
+      editor.destroy();
+    }
   }
 
   this.setContent = function(id, val){
@@ -447,6 +464,11 @@ exports = module.exports = function(cms){
     this.isLoading = false;
     if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut();
     else document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+  }
+
+  this.ClearLoading = function(){
+    this.loadQueue = [];
+    this.StopLoading();
   }
 }
 },{}],6:[function(require,module,exports){
@@ -570,7 +592,7 @@ exports = module.exports = function(){
     }
   }
 
-  this.refreshParent = function(page_folder){
+  this.refreshParentPageTree = function(page_folder){
     if(window.opener){
       window.opener.postMessage('jsharmony-cms:refresh_page_folder:'+page_folder, '*');
       if(_this.page_key) window.opener.postMessage('jsharmony-cms:refresh_page_key:'+_this.page_key, '*');
@@ -704,6 +726,7 @@ var jsHarmonyCMS = function(){
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,
+        urlrouting: false,
         onInit: function(){
           jshInit = true;
         }
@@ -716,18 +739,19 @@ var jsHarmonyCMS = function(){
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = new jsHarmonyCMSEditor(jsh, _this);
 
+      if(_this.onInit) _this.onInit(jsh);
+
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
   
       _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
-
-      if(_this.onInit) _this.onInit(jsh);
   
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
         function(cb){ util.loadScript(_this._baseurl+'js/site.js', function(){ cb(); }); },
+        function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){ cb(); }); },
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
       ], function(err){

@@ -26,8 +26,13 @@ exports = module.exports = function(jsh, cms){
   var _ = jsh._;
   var XExt = jsh.XExt;
   
+  this.isEditing = false;
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.defaultConfig = {};
+
+  this.onBeginEdit = null; //function(editor){};
+  this.onEndEdit = null; //function(editor){};
+
 
   this.editorConfig = {
     base: null,
@@ -98,11 +103,15 @@ exports = module.exports = function(jsh, cms){
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
           editor.on('focus', function(){
+            _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
             $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
+            if(_this.onBeginEdit) _this.onBeginEdit(editor);
           });
           editor.on('blur', function(){
+            _this.isEditing = false;
             $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:0 },300);
+            if(_this.onEndEdit) _this.onEndEdit(editor);
           });
         }
       });
@@ -128,6 +137,14 @@ exports = module.exports = function(jsh, cms){
     var config = _.extend({ selector: '#' + elem_id }, _this.editorConfig[config_id], options);
     if(cb) config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, cb);
     window.tinymce.init(config);
+  }
+
+  this.detach = function(id){
+    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(editor){
+      if(_this.isEditing == id) editor.fire('blur');
+      editor.destroy();
+    }
   }
 
   this.setContent = function(id, val){
