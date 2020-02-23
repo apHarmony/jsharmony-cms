@@ -154,6 +154,7 @@ exports = module.exports = function(jsh, cms){
     }
     else {
       var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+      if(!editor) throw new Error('Editor not found: '+id);
       if(!_this.isInitialized) editor.undoManager.clear();
       editor.setContent(val);
       if(!_this.isInitialized) editor.undoManager.add();
@@ -161,7 +162,9 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.getContent = function(id){
-    return window.tinymce.get('jsharmony_cms_content_'+id).getContent();
+    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(!editor) throw new Error('Editor not found: '+id);
+    return editor.getContent();
   }
 
 }

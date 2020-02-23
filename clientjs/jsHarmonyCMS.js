@@ -105,7 +105,10 @@ var jsHarmonyCMS = function(){
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
         function(cb){ util.loadScript(_this._baseurl+'js/site.js', function(){ cb(); }); },
-        function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){ cb(); }); },
+        function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){
+          jsh.Config.debug_params.monitor_globals = false;
+          cb();
+        }); },
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
       ], function(err){
@@ -114,7 +117,7 @@ var jsHarmonyCMS = function(){
     });
     util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
-    util.loadScript('http://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
+    util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
       WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } }); 
     });
     window.addEventListener('message', this.onmessage);
