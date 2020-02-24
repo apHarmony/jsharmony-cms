@@ -305,7 +305,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           if(timeLeft > 0) window.setTimeout(function(){ cms.loader.StopLoading(); }, timeLeft);
           else cms.loader.StopLoading();
         });
-        cms.util.refreshParent(rslt.page_folder);
+        cms.util.refreshParentPageTree(rslt.page_folder);
       }
       else{
         cms.loader.StopLoading();

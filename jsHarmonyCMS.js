@@ -53,6 +53,7 @@ function jsHarmonyCMS(name, options){
   _this.defaultMenuTemplate = undefined;
   _this.Layouts = {};
   _this.Elements = {};
+  _this.BranchItems = this.getDefaultBranchItems();
   _this.funcs = new funcs(_this);
   _this.transform = new jsHarmonyCMSTransform(_this);
 }
@@ -70,6 +71,9 @@ jsHarmonyCMS.prototype.Application = function(){
     _this.LoadTemplates();
     _this.LoadClientJS();
     return cb();
+  });
+  jsh.Config.onDBDriverLoaded.push(function(cb){
+    _this.initBranchItems(cb);
   });
   return jsh;
 }
@@ -218,6 +222,46 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   }
   this.jsh.Sites['main'].globalparams.MenuTemplates = frontend_MenuTemplates;
   this.jsh.Sites['main'].globalparams.defaultMenuTemplate = _this.defaultMenuTemplate;
+}
+
+jsHarmonyCMS.prototype.initBranchItems = function(cb){
+  var _this = this;
+  var sql_branch_items = [];
+  for(var key in _this.BranchItems){
+    var branchItem = _this.BranchItems[key];
+    sql_branch_items.push({
+      item: branchItem.name,
+      tbl_branch_item: branchItem.tbl_branch_item,
+    });
+  }
+  _this.jsh.DB['default'].SQLExt.Funcs[_this.schema+'.branch_items'] = JSON.stringify(sql_branch_items);
+  return cb();
+}
+
+jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
+  var _this = this;
+  return {
+    'page': {
+      name: 'page',
+      tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_page',
+    },
+    'media': {
+      name: 'media',
+      tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_media',
+    },
+    'menu': {
+      name: 'menu',
+      tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_menu',
+    },
+    'redirect': {
+      name: 'redirect',
+      tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_redirect',
+    },
+    'sitemap': {
+      name: 'sitemap',
+      tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_sitemap',
+    },
+  };
 }
 
 jsHarmonyCMS.prototype.getFactoryConfig = function(){

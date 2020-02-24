@@ -81,4 +81,9 @@ exports = module.exports = function(cms){
     if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut();
     else document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
   }
+
+  this.ClearLoading = function(){
+    this.loadQueue = [];
+    this.StopLoading();
+  }
 }

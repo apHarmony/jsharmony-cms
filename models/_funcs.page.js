@@ -42,7 +42,9 @@ module.exports = exports = function(module, funcs){
 
     //Load Page Content from disk
     module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
-      var page_file_content = '';
+      if(err) return cb(err);
+      
+      var page_file_content = {};
       try{
         page_file_content = JSON.parse(JSON.stringify(template.default_content||'')) || {};
       }

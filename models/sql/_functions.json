@@ -1,4 +1,5 @@
 {
+  "{schema}.branch_items":{ "object": [ ] },
   // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
   "{schema}.merge_copy_src_edit_to_dst_merge":{
     "params": ["OBJECT", "src_branch_id", "dst_branch_id"],

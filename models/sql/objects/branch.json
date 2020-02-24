@@ -99,11 +99,7 @@
           "setif(update(branch_sts),branch_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
           "setif(update(branch_review_sts),branch_review_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "setif(update(branch_review_sts),branch_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
-          "update branch_page set page_merge_id=null,branch_page_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
-          "update branch_media set media_merge_id=null,branch_media_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
-          "update branch_menu set menu_merge_id=null,branch_menu_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
-          "update branch_sitemap set sitemap_merge_id=null,branch_sitemap_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
-          "update branch_redirect set redirect_merge_id=null,branch_redirect_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id));",
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"update {tbl_branch_item} set {item}_merge_id=null,branch_{item}_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id))\")",
           "setif((inserted(branch_merge_id) is null) and (inserted(branch_merge_type) is not null),branch_merge_type,null);",
           "setif(inserted(branch_sts)='REVIEW' and inserted(branch_review_sts) is null,branch_review_sts,'PENDING');"
         ]
@@ -519,17 +515,9 @@
           "update {schema}.sys_user_branch set branch_id = last_insert_identity() where sys_user_id = jsharmony.my_sys_user_id()",
           //Add all menu / pages / media / redirect / sitemap from other branch
           //*Copy New Branch Changes*
-          "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, branch_menu_action, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, branch_menu_action, menu_orig_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
-          "insert into {schema}.branch_page(branch_id, page_key, page_id, branch_page_action, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, branch_page_action, page_orig_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
-          "insert into {schema}.branch_media(branch_id, media_key, media_id, branch_media_action, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, branch_media_action, media_orig_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
-          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, branch_redirect_action, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, branch_redirect_action, redirect_orig_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
-          "insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, branch_sitemap_action, sitemap_orig_id) select {schema}.my_current_branch_id(), sitemap_key, sitemap_id, branch_sitemap_action, sitemap_orig_id from {schema}.branch_sitemap where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'",
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, branch_{item}_action, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, branch_{item}_action, {item}_orig_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'\")",
           //*Reset New Branch Changes*
-          "insert into {schema}.branch_menu(branch_id, menu_key, menu_id, menu_orig_id) select {schema}.my_current_branch_id(), menu_key, menu_id, menu_id from {schema}.branch_menu where branch_id=inserted(branch_parent_id) and menu_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
-          "insert into {schema}.branch_page(branch_id, page_key, page_id, page_orig_id) select {schema}.my_current_branch_id(), page_key, page_id, page_id from {schema}.branch_page where branch_id=inserted(branch_parent_id) and page_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
-          "insert into {schema}.branch_media(branch_id, media_key, media_id, media_orig_id) select {schema}.my_current_branch_id(), media_key, media_id, media_id from {schema}.branch_media where branch_id=inserted(branch_parent_id) and media_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
-          "insert into {schema}.branch_redirect(branch_id, redirect_key, redirect_id, redirect_orig_id) select {schema}.my_current_branch_id(), redirect_key, redirect_id, redirect_id from {schema}.branch_redirect where branch_id=inserted(branch_parent_id) and redirect_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'",
-          "insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, sitemap_orig_id) select {schema}.my_current_branch_id(), sitemap_key, sitemap_id, sitemap_id from {schema}.branch_sitemap where branch_id=inserted(branch_parent_id) and sitemap_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'"
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and {item}_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'\")"
         ]
       }
     ]

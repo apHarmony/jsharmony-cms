@@ -80,6 +80,7 @@ var jsHarmonyCMS = function(){
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,
+        urlrouting: false,
         onInit: function(){
           jshInit = true;
         }
@@ -92,18 +93,22 @@ var jsHarmonyCMS = function(){
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = new jsHarmonyCMSEditor(jsh, _this);
 
+      if(_this.onInit) _this.onInit(jsh);
+
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
   
       _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
-
-      if(_this.onInit) _this.onInit(jsh);
   
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
         function(cb){ util.loadScript(_this._baseurl+'js/site.js', function(){ cb(); }); },
+        function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){
+          jsh.Config.debug_params.monitor_globals = false;
+          cb();
+        }); },
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
       ], function(err){
@@ -112,7 +117,7 @@ var jsHarmonyCMS = function(){
     });
     util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
-    util.loadScript('http://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
+    util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
       WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } }); 
     });
     window.addEventListener('message', this.onmessage);

@@ -37,7 +37,7 @@ exports = module.exports = function(){
     }
   }
 
-  this.refreshParent = function(page_folder){
+  this.refreshParentPageTree = function(page_folder){
     if(window.opener){
       window.opener.postMessage('jsharmony-cms:refresh_page_folder:'+page_folder, '*');
       if(_this.page_key) window.opener.postMessage('jsharmony-cms:refresh_page_key:'+_this.page_key, '*');

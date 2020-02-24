@@ -81,6 +81,97 @@ exports = module.exports = function(jsh, cms){
       jobj.html(component_content);
     });
   }
+
+  this.loadTestForm = function(callback){
+    var CUST_FORM_CONTAINER = '.test_cust_form_container';
+
+    if(jsh.XModels['Customer']) return callback();
+
+    $('body').append("<div style='display:none;'>\
+        <div class='test_cust_form_container xdialogbox' style='width:400px;'></div>\
+      </div>");
+    //Define the form in-memory
+    jsh.XPage.LoadVirtualModel($(CUST_FORM_CONTAINER)[0], {
+      "id": "Customer",
+      "layout": "form",
+      "buttons": [{"link": "js:_this.showTestMessage()", "icon": "ok", "actions":"BIU", "text":"Test Message"}],
+      "ejs": "<div class='test_sample_ejs'>Sample EJS for Test model</div>",
+      "css": ".test_sample_ejs { background-color:#f0f0f0; border:1px solid #bbb; padding:4px 20px; margin-top:10px; }",
+      "js": function(){ //This function is virtual and cannot reference any variables outside its scope
+        var _this = this;
+        //var modelid = [current model id];
+        //var xmodel = [current model];
+
+        _this.oninit = function(xmodel){
+          //Custom oninit function
+        }
+
+        _this.onload = function(xmodel){
+          //Custom onload function
+        }
+
+        _this.showTestMessage = function(){
+          XExt.Alert('Test Message');
+        }
+      },
+      "oninit":"_this.oninit(xmodel);",
+      "onload":"_this.onload(xmodel);",
+      "fields": [
+        {"name": "cust_id", "caption":"Customer ID", "type": "int", "actions":"B",
+         "control":"textbox", "controlstyle":"width:80px;", "validate": ["IsNumeric","Required"] },
+         
+        {"name": "cust_name", "caption":"Name", "type": "varchar", "length": 256, "actions":"B",
+         "control":"textbox", "controlstyle":"width:260px;", "validate": ["MaxLength:256","Required"] },
+         
+        {"name": "cust_sts", "caption":"Status", "type": "varchar", "length":32,
+         "control":"dropdown", "validate": ["Required"] },
+
+        {"control":"html","value":"<b>Sample HTML:</b> Content"},
+
+        {"name":"save_button","control":"button","value":"Save"},
+        {"name":"cancel_button","control":"button","value":"Cancel","nl":false},
+      ]
+    }, function(custmodel){
+      if(callback) callback();
+    });
+  }
+
+  this.showTestForm = function(){
+    var CUST_FORM_CONTAINER = '.test_cust_form_container';
+
+    var cust_data = {
+      cust_id:   1,
+      cust_name: 'Test Customer',
+      cust_sts:  'ACTIVE',
+    };
+
+    _this.loadTestForm(function(){
+      //Model loaded
+      //Render data
+      jsh.XModels['Customer'].controller.setLOV('cust_sts', [
+        {code_val: '',       code_txt:'Please select...'},
+        {code_val: 'ACTIVE', code_txt:'Active'},
+        {code_val: 'CLOSED', code_txt:'Closed'},
+      ]);
+      jsh.XModels['Customer'].controller.Render(cust_data);
+      //Open dialog
+      XExt.CustomPrompt(CUST_FORM_CONTAINER, $(CUST_FORM_CONTAINER), function(acceptFunc, cancelFunc){ //onInit
+        //Enable the form (so that navigation events trigger check for updates)
+        jsh.XModels['Customer'].controller.form.Prop.Enabled = true;
+        //Attach save / cancel events to dialog events
+        jsh.$root('.save_button.xelemCustomer').off('click').on('click', acceptFunc);
+        jsh.$root('.cancel_button.xelemCustomer').off('click').on('click', cancelFunc);
+      }, function(success){ //onAccept
+        //Commit customer data to API
+        if(!jsh.XModels['Customer'].controller.Commit(cust_data, 'U')) return;
+        XExt.Alert('Saving...'+JSON.stringify(cust_data), success);
+      }, undefined, function(){ //onClosed
+        //Disable the form (so that navigation events do not trigger check for updates)
+        jsh.XModels['Customer'].controller.form.Prop.Enabled = false;
+      }, { reuse: true });
+    });
+  }
+
 }
 },{}],2:[function(require,module,exports){
 /*
@@ -242,8 +333,13 @@ exports = module.exports = function(jsh, cms){
   var _ = jsh._;
   var XExt = jsh.XExt;
   
+  this.isEditing = false;
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.defaultConfig = {};
+
+  this.onBeginEdit = null; //function(editor){};
+  this.onEndEdit = null; //function(editor){};
+
 
   this.editorConfig = {
     base: null,
@@ -314,11 +410,15 @@ exports = module.exports = function(jsh, cms){
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
           editor.on('focus', function(){
+            _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
             $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
+            if(_this.onBeginEdit) _this.onBeginEdit(editor);
           });
           editor.on('blur', function(){
+            _this.isEditing = false;
             $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:0 },300);
+            if(_this.onEndEdit) _this.onEndEdit(editor);
           });
         }
       });
@@ -346,6 +446,14 @@ exports = module.exports = function(jsh, cms){
     window.tinymce.init(config);
   }
 
+  this.detach = function(id){
+    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(editor){
+      if(_this.isEditing == id) editor.fire('blur');
+      editor.destroy();
+    }
+  }
+
   this.setContent = function(id, val){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
@@ -353,6 +461,7 @@ exports = module.exports = function(jsh, cms){
     }
     else {
       var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+      if(!editor) throw new Error('Editor not found: '+id);
       if(!_this.isInitialized) editor.undoManager.clear();
       editor.setContent(val);
       if(!_this.isInitialized) editor.undoManager.add();
@@ -360,7 +469,9 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.getContent = function(id){
-    return window.tinymce.get('jsharmony_cms_content_'+id).getContent();
+    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(!editor) throw new Error('Editor not found: '+id);
+    return editor.getContent();
   }
 
 }
@@ -447,6 +558,11 @@ exports = module.exports = function(cms){
     this.isLoading = false;
     if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut();
     else document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+  }
+
+  this.ClearLoading = function(){
+    this.loadQueue = [];
+    this.StopLoading();
   }
 }
 },{}],6:[function(require,module,exports){
@@ -570,7 +686,7 @@ exports = module.exports = function(){
     }
   }
 
-  this.refreshParent = function(page_folder){
+  this.refreshParentPageTree = function(page_folder){
     if(window.opener){
       window.opener.postMessage('jsharmony-cms:refresh_page_folder:'+page_folder, '*');
       if(_this.page_key) window.opener.postMessage('jsharmony-cms:refresh_page_key:'+_this.page_key, '*');
@@ -704,6 +820,7 @@ var jsHarmonyCMS = function(){
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,
+        urlrouting: false,
         onInit: function(){
           jshInit = true;
         }
@@ -716,18 +833,22 @@ var jsHarmonyCMS = function(){
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = new jsHarmonyCMSEditor(jsh, _this);
 
+      if(_this.onInit) _this.onInit(jsh);
+
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
   
       _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
-
-      if(_this.onInit) _this.onInit(jsh);
   
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
         function(cb){ util.loadScript(_this._baseurl+'js/site.js', function(){ cb(); }); },
+        function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){
+          jsh.Config.debug_params.monitor_globals = false;
+          cb();
+        }); },
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
       ], function(err){
@@ -736,7 +857,7 @@ var jsHarmonyCMS = function(){
     });
     util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
-    util.loadScript('http://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
+    util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
       WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } }); 
     });
     window.addEventListener('message', this.onmessage);
