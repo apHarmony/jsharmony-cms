@@ -488,6 +488,21 @@ describe('Merges - Matrix', function() {
     });
   }
 
+  function clearTestData(cb){
+    /* Clear previous branchs */
+    var sql = "\
+    delete from cms.branch_page where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.page where page_path like 'Merge Test Data:%';\
+    delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch where branch_name like 'Merge Test Data:%';"
+    db.Command('S1', sql, [], {}, function(err, dbrslt, stats) {
+      assert.ifError(err);
+      cb();
+    });
+  }
+
   before(function(done) {
     this.timeout(0);
 
@@ -503,15 +518,10 @@ describe('Merges - Matrix', function() {
         dbconfig.password = dbconfig.admin_password;
       }
       async.waterfall([
+        clearTestData,
         function(cb){
-          /* Clear previous branchs */
-          var sql = "\
-          delete from cms.branch_page where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.page where page_path like 'Merge Test Data:%';\
-          delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.branch where branch_name like 'Merge Test Data:%';"
+          // create test site
+          var sql = "insert into cms.site(site_name) select 'Merge Test Data' where ('Merge Test Data' not in (select site_name from cms.site));";
           db.Command('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             cb();
@@ -519,7 +529,7 @@ describe('Merges - Matrix', function() {
         },
         function(cb){
           // create destiniation branch
-          var sql = "insert into cms.v_my_current_branch(branch_parent_id, branch_type, branch_name) values(2, 'USER', 'Merge Test Data: Destination Branch');\
+          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
           select branch_id from v_my_current_branch;"
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
@@ -529,7 +539,7 @@ describe('Merges - Matrix', function() {
         },
         function(cb){
           // create source branch
-          var sql = "insert into cms.v_my_current_branch(branch_parent_id, branch_type, branch_name) values(2, 'USER', 'Merge Test Data: Source Branch');\
+          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Source Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
           select branch_id from v_my_current_branch;"
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
@@ -584,8 +594,12 @@ describe('Merges - Matrix', function() {
     });
   });
 
-  after(function() {
-    db.Close();
+  after(function(done) {
+    clearTestData(function(err){
+      if(err) console.log(err);
+      db.Close();
+      done();
+    });
   });
 
   Object.keys(operations).forEach(function(operation){

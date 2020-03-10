@@ -74,6 +74,20 @@ describe('Merges', function() {
     });
   }
 
+  function clearTestData(cb){
+    /* Clear previous branchs */
+    var sql = "\
+    delete from cms.branch_page where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.page where page_path like 'Merge Test Data:%';\
+    delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch where branch_name like 'Merge Test Data:%';"
+    db.Command('S1', sql, [], {}, function(err, dbrslt, stats) {
+      assert.ifError(err);
+      cb();
+    });
+  }
 
   before(function(done) {
     this.timeout(0);
@@ -91,7 +105,7 @@ describe('Merges', function() {
       }
 
       async.waterfall([
-        function(cb){ setTimeout(cb, 3000); },
+        clearTestData,
         function(cb){
           console.log('Initializing test data');
           db.RunScripts(jsh, ['jsHarmonyCMS','test_data','merge'], { dbconfig: dbconfig, context: 'S1' }, function(err, rslt){
@@ -115,8 +129,12 @@ describe('Merges', function() {
     });
   });
 
-  after(function() {
-    db.Close();
+  after(function(done) {
+    clearTestData(function(err){
+      if(err) console.log(err);
+      db.Close();
+      done();
+    });
   });
 
   it('database initialized', function(done) {
