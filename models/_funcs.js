@@ -28,7 +28,7 @@ function ModuleFunctions(module){
   _.extend(this, require('./_funcs.deploy.js')(module, this));
   _.extend(this, require('./_funcs.diff.js')(module, this));
   _.extend(this, require('./_funcs.validate.js')(module, this));
-  _.extend(this, require('./_funcs.conflict.js')(module, this));
+  _.extend(this, require('./_funcs.conflicts.js')(module, this));
   _.extend(this, require('./_funcs.merge.js')(module, this));
 }
 

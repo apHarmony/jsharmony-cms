@@ -29,15 +29,6 @@ module.exports = exports = function(module, funcs){
     'changes',
     'rebase',
   ];
-
-  // see also Branch_Conflict.js on the frontend
-  exports.CMS_OBJECTS = [
-    'menu',
-    'page',
-    'media',
-    'redirect',
-    'sitemap',
-  ];
  
   exports.req_merge = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -87,35 +78,29 @@ module.exports = exports = function(module, funcs){
   }
 
   var expand = function(sqls) {
-    return _.flatMap(sqls, function(line) {
-      if(line.match('%%%OBJECT%%%')) {
-        return exports.CMS_OBJECTS.map(function(object) {
-          return Helper.ReplaceAll(line, '%%%OBJECT%%%', object);
-        });
-      } else {
-        return line;
-      }
-    });
+    var cms = module;
+
+    return sqls;
   }
 
   var merge_sql_overwrite = expand([
-    "{schema}.merge_overwrite(%%%OBJECT%%%, @src_branch_id, @dst_branch_id);",
+    "{schema}.merge_overwrite(@src_branch_id, @dst_branch_id);",
   ]);
 
   var merge_sql_apply = expand([
-    "{schema}.merge_apply(%%%OBJECT%%%, @src_branch_id, @dst_branch_id);",
+    "{schema}.merge_apply(@src_branch_id, @dst_branch_id);",
   ]);
 
   var merge_sql_changes = expand([
-    "{schema}.merge_changes(%%%OBJECT%%%, @src_branch_id, @dst_branch_id);",
+    "{schema}.merge_changes(@src_branch_id, @dst_branch_id);",
   ]);
 
   var merge_sql_rebase = expand([
-    "{schema}.merge_rebase(%%%OBJECT%%%, @src_branch_id, @dst_branch_id);",
+    "{schema}.merge_rebase(@src_branch_id, @dst_branch_id);",
   ]);
 
   var merge_sql_cleanup = expand([
-    "{schema}.merge_clear_edit_on_public(%%%OBJECT%%%, @dst_branch_id);",
+    "{schema}.merge_clear_edit_on_public(@dst_branch_id);",
     "update {schema}.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@dst_branch_id;",
   ]);
 

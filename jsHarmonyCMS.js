@@ -244,24 +244,88 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
     'page': {
       name: 'page',
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_page',
+      tbl_item: (_this.schema?_this.schema+'.':'')+'page',
+      diff: {
+        columns: ['page_path','page_title','page_file_id','page_filename','page_template_id'],
+        sqlwhere: "(old_page.page_is_folder=0 or new_page.page_is_folder=0)",
+        onBeforeDiff: function(branch_data, callback){ return _this.funcs.diff_getPages(branch_data, callback); },
+        onDiff: function(branch_items, branch_data, callback){ return _this.funcs.diff_page(branch_items, branch_data, callback); },
+      },
+      conflicts: {
+        columns: ['page_path','page_title','page_file_id','page_filename','page_template_id'],
+        sqlwhere: "(src_orig_{item}.{item}_is_folder=0 or dst_orig_{item}.{item}_is_folder=0 or src_{item}.{item}_is_folder=0 or dst_{item}.{item}_is_folder=0)",
+        onBeforeConflicts: function(branch_data, callback){ return _this.funcs.conflicts_getPages(branch_data, callback); },
+        onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_page(branch_items, branch_data, callback); },
+      },
     },
     'media': {
       name: 'media',
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_media',
+      tbl_item: (_this.schema?_this.schema+'.':'')+'media',
+      diff: {
+        columns: ['media_path','media_file_id','media_ext','media_width','media_height'],
+        sqlwhere: "(old_{item}.{item}_is_folder=0 or new_{item}.{item}_is_folder=0)",
+        onBeforeDiff: function(branch_data, callback){ return _this.funcs.diff_getMedia(branch_data, callback); },
+      },
+      conflicts: {
+        columns: ['media_path','media_file_id','media_ext','media_width','media_height'],
+        sqlwhere: "(src_orig_{item}.{item}_is_folder=0 or dst_orig_{item}.{item}_is_folder=0 or src_{item}.{item}_is_folder=0 or dst_{item}.{item}_is_folder=0)",
+        onBeforeConflicts: function(branch_data, callback){ return _this.funcs.conflicts_getMedia(branch_data, callback); },
+      },
     },
     'menu': {
       name: 'menu',
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_menu',
+      tbl_item: (_this.schema?_this.schema+'.':'')+'menu',
+      diff: {
+        columns: ['menu_name','menu_tag','menu_file_id'],
+        onDiff: function(branch_items, branch_data, callback){ return _this.funcs.diff_menu(branch_items, branch_data, callback); },
+      },
+      conflicts: {
+        columns: ['menu_name','menu_tag','menu_file_id'],
+        onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_menu(branch_items, branch_data, callback); },
+      },
     },
     'redirect': {
       name: 'redirect',
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_redirect',
+      tbl_item: (_this.schema?_this.schema+'.':'')+'redirect',
+      diff: {
+        columns: ['redirect_url','redirect_dest']
+      },
+      conflicts: {
+        columns: ['redirect_url','redirect_dest']
+      },
     },
     'sitemap': {
       name: 'sitemap',
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_sitemap',
+      tbl_item: (_this.schema?_this.schema+'.':'')+'sitemap',
+      diff: {
+        columns: ['sitemap_name','sitemap_type','sitemap_file_id'],
+        onDiff: function(branch_items, branch_data, callback){ return _this.funcs.diff_sitemap(branch_items, branch_data, callback); },
+      },
+      conflicts: {
+        columns: ['sitemap_name','sitemap_type','sitemap_file_id'],
+        onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_sitemap(branch_items, branch_data, callback); },
+      },
     },
   };
+}
+
+jsHarmonyCMS.prototype.applyBranchItemSQL = function(item_type, sql){
+  var _this = this;
+  if(!(item_type in _this.BranchItems)) throw new Error('Branch item_type not defined: ' + item_type);
+  var branchItem = _this.BranchItems[item_type];
+  var keys = {
+    item: branchItem.name,
+    tbl_branch_item: branchItem.tbl_branch_item,
+    tbl_item: branchItem.tbl_item,
+  };
+  for(var key in keys){
+    sql = Helper.ReplaceAll(sql, '{' + key + '}', keys[key]);
+  }
+  return sql;
 }
 
 jsHarmonyCMS.prototype.getFactoryConfig = function(){
@@ -333,7 +397,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/diff': _this.funcs.diff,
         '/_funcs/validate': _this.funcs.validate_req,
-        '/_funcs/conflict': _this.funcs.req_conflict,
+        '/_funcs/conflicts': _this.funcs.req_conflicts,
         '/_funcs/merge/:merge_type': _this.funcs.req_merge,
         '/_funcs/begin_merge': _this.funcs.req_begin_merge,
       }

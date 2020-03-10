@@ -32,7 +32,18 @@ describe('Merges', function() {
     //"select branch_page_action from cms.branch_page where branch_id="+branch_id+" and branch_page_action='DELETE';";
     db.Recordset('', sql, [], {}, function (err, dbrslt, stats) {
       assert.ifError(err);
-      assert.deepStrictEqual(dbrslt, state);
+      try{
+        assert.deepStrictEqual(dbrslt, state);
+      }
+      catch(ex){
+        console.log('Found');
+        console.log('-----');
+        console.log(JSON.stringify(dbrslt,null,4));
+        console.log('Expected');
+        console.log('--------');
+        console.log(JSON.stringify(state,null,4));
+        throw(ex);
+      }
       done(); 
     });
   }
@@ -82,6 +93,7 @@ describe('Merges', function() {
       async.waterfall([
         function(cb){ setTimeout(cb, 3000); },
         function(cb){
+          console.log('Initializing test data');
           db.RunScripts(jsh, ['jsHarmonyCMS','test_data','merge'], { dbconfig: dbconfig, context: 'S1' }, function(err, rslt){
             if(err){ console.log('Error initializing database'); console.log(err); return; }
             return cb();

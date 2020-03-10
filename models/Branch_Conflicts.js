@@ -1,15 +1,12 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.branch_pages = [];
-  this.branch_media = [];
-  this.branch_redirects = [];
-  this.branch_menus = [];
-  this.branch_sitemaps = [];
+  this.branch_conflicts = {};
+
   this.deployment_target_params = {};
-  this.conflicts = 0;
-  this.resolved = 0;
-  this.unresolved = 0;
+  this.numConflicts = 0;
+  this.numResolved = 0;
+  this.numUnresolved = 0;
 
   this.onload = function(xmodel, callback){
     //Load API Data
@@ -17,38 +14,23 @@ jsh.App[modelid] = new (function(){
   }
 
   this.loadData = function(onComplete){
-    var emodelid = '../_funcs/conflict';
+    var emodelid = '../_funcs/conflicts';
     XForm.Get(emodelid, { src_branch_id: xmodel.get('branch_merge_id'), dst_branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.conflicts = 0;
-        _this.resolved = 0;
-        _this.unresolved = 0;
+        _this.numConflicts = 0;
+        _this.numResolved = 0;
+        _this.numUnresolved = 0;
 
         _this.deployment_target_params = rslt.deployment_target_params;
+        _this.branch_conflicts = rslt.branch_conflicts;
 
-        _this.branch_pages = rslt.branch_pages;
-        _this.conflicts = _this.conflicts + rslt.branch_pages.length;
-        _this.unresolved = _this.unresolved + rslt.branch_pages.filter(function(bp) {return bp.page_merge_id == null && bp.branch_page_merge_action == null;}).length;
+        _.each(_this.branch_conflicts, function(branch_items, item_type){
+          _this.numConflicts += branch_items.length;
+          _this.numUnresolved = _this.numUnresolved + branch_items.filter(function(branch_item) {return branch_item[item_type + '_merge_id'] == null && branch_item[item_type + '_merge_action'] == null;}).length;
+        });
+        _this.numResolved = _this.numConflicts - _this.numUnresolved;
 
-        _this.branch_media = rslt.branch_media;
-        _this.conflicts = _this.conflicts + rslt.branch_media.length;
-        _this.unresolved = _this.unresolved + rslt.branch_media.filter(function(bm) {return bm.media_merge_id == null && bm.branch_media_merge_action == null;}).length;
-
-        _this.branch_redirects = rslt.branch_redirects;
-        _this.conflicts = _this.conflicts + rslt.branch_redirects.length;
-        _this.unresolved = _this.unresolved + rslt.branch_redirects.filter(function(br) {return br.redirect_merge_id == null && br.branch_redirect_merge_action == null;}).length;
-
-        _this.branch_menus = rslt.branch_menus;
-        _this.conflicts = _this.conflicts + rslt.branch_menus.length;
-        _this.unresolved = _this.unresolved + rslt.branch_menus.filter(function(bm) {return bm.menu_merge_id == null && bm.branch_menu_merge_action == null;}).length;
-
-        _this.branch_sitemaps = rslt.branch_sitemaps;
-        _this.conflicts = _this.conflicts + rslt.branch_sitemaps.length;
-        _this.unresolved = _this.unresolved + rslt.branch_sitemaps.filter(function(bs) { return bs.sitemap_merge_id == null && bs.branch_sitemap_merge_action == null;}).length;
-
-        _this.resolved = _this.conflicts - _this.unresolved;
-
-        if (_this.conflicts < 1) {
+        if (_this.numConflicts <= 0) {
           _this.executeMerge();
         } else {
           _this.render();
@@ -93,7 +75,7 @@ jsh.App[modelid] = new (function(){
       return key;
     }
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_Changes_Listing').html();
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_diff_listing').html();
     var templates = {};
 
     var ejsenv = {
@@ -119,7 +101,7 @@ jsh.App[modelid] = new (function(){
     }
 
     jdiff.html(render(tmpl, {
-      branch_diff: this,
+      branch_conflicts: _this.branch_conflicts,
       branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
       map,
     }));
@@ -191,7 +173,7 @@ jsh.App[modelid] = new (function(){
       branch_merge_action: jobj.data('branch_action'),
     };
 
-    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Resolve_'+objectType, {}, params, function(rslt){
+    XForm.Post(xmodel.module_namespace+'Branch_Conflicts_Resolve_'+objectType, {}, params, function(rslt){
       _this.loadData();
     });
   }
@@ -215,7 +197,7 @@ jsh.App[modelid] = new (function(){
       branch_id: xmodel.get('branch_id'),
     };
 
-    XForm.Post(xmodel.module_namespace+'Branch_Conflict_Abort', {}, params, function(rslt){
+    XForm.Post(xmodel.module_namespace+'Branch_Conflicts_Abort', {}, params, function(rslt){
       XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
     });
   }

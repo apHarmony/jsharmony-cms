@@ -1,15 +1,15 @@
 {
-  "Branch_Conflict": {
+  "Branch_Conflicts": {
     "layout":"form",
     "table":"{schema}.branch",
     "onecolumn":true,
     "roles": {"PUBLISHER": "B","AUTHOR": "B"},
     "actions":"B",
     "caption":["Branch","Branches"],
-    "title":"Branch Conflict",
+    "title":"Branch Conflicts",
     "onload":"_this.onload(xmodel, callback);",
     "buttons":[
-      { "link":"js:_this.abortMerge(this)","icon":"delete","text":"Abort","class":"Branch_Conflict_buttonAbort", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
+      { "link":"js:_this.abortMerge(this)","icon":"delete","text":"Abort","class":"Branch_Conflicts_buttonAbort", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
     ],
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
@@ -20,7 +20,7 @@
       {"name":"branch_type","control":"hidden"}
     ]
   },
-  "Branch_Conflict_Resolve_Page": {
+  "Branch_Conflicts_Resolve_Page": {
     "layout":"exec",
     "roles": {"PUBLISHER": "U","AUTHOR": "U"},
     "actions":"U",
@@ -33,7 +33,7 @@
       {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
-  "Branch_Conflict_Resolve_Media": {
+  "Branch_Conflicts_Resolve_Media": {
     "layout":"exec",
     "roles": {"PUBLISHER": "U","AUTHOR": "U"},
     "actions":"U",
@@ -46,7 +46,7 @@
       {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
-  "Branch_Conflict_Resolve_Menu": {
+  "Branch_Conflicts_Resolve_Menu": {
     "layout":"exec",
     "roles": {"PUBLISHER": "U","AUTHOR": "U"},
     "actions":"U",
@@ -59,7 +59,7 @@
       {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
-  "Branch_Conflict_Resolve_Sitemap": {
+  "Branch_Conflicts_Resolve_Sitemap": {
     "layout":"exec",
     "roles": {"PUBLISHER": "U","AUTHOR": "U"},
     "actions":"U",
@@ -72,7 +72,7 @@
       {"name":"branch_merge_action", "actions":"U", "type":"varchar"}
     ]
   },
-  "Branch_Conflict_Resolve_Redirect": {
+  "Branch_Conflicts_Resolve_Redirect": {
     "layout":"exec",
     "roles": {"PUBLISHER": "U","AUTHOR": "U"},
     "actions":"U",
@@ -85,7 +85,7 @@
       {"name":"branch_merge_action", "actions":"U", "type":"varchar", "caption":"Action"}
     ]
   },
-  "Branch_Conflict_Abort": {
+  "Branch_Conflicts_Abort": {
     "layout": "exec",
     "title": "Abort Merge",
     "actions": "U",

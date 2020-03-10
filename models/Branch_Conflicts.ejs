@@ -261,14 +261,14 @@
   <# } }); #>
 </script>
 
-<script type="text/x-jsharmony-template" class="<%=model.class%>_template_Changes_Listing">
-  <h3>Branch Changes (<#= branch_diff.resolved #>/<#= branch_diff.conflicts #> conflicts resolved)</h3>
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_listing">
+  <h3>Branch Changes (<#= branch_conflicts.numResolved #>/<#= branch_conflicts.numConflicts #> conflicts resolved)</h3>
   <div class="clear"></div>
 
   <!-- ---------- -->
   <!-- NO CHANGES -->
   <!-- ---------- -->
-  <# if(!branch_diff.branch_pages.length && !branch_diff.branch_media.length && !branch_diff.branch_menus.length && !branch_diff.branch_redirects.length && !branch_diff.branch_sitemaps.length){ #>
+  <# if(_.isEmpty(branch_conflicts)){ #>
     <hr/>
     <h4 class="branch_diff_item_header">
       No conflicts detected
@@ -279,7 +279,7 @@
   <!-- ----- -->
   <!-- PAGES -->
   <!-- ----- -->
-  <# _.each(branch_diff.branch_pages, function(branch_page){ #>
+  <# _.each(branch_conflicts.page, function(branch_page){ #>
     <hr/>
 
     <# if(branch_page.branch_page_merge_action!=null || branch_page.page_merge_id!=null){ #>
@@ -330,7 +330,7 @@
   <!-- ----- -->
   <!-- MEDIA -->
   <!-- ----- -->
-  <# _.each(branch_diff.branch_media, function(branch_media){ #>
+  <# _.each(branch_conflicts.media, function(branch_media){ #>
     <hr/>
 
     <# if(branch_media.branch_media_merge_action!=null || branch_media.media_merge_id!=null){ #>
@@ -377,7 +377,7 @@
   <!-- ----- -->
   <!-- MENUS -->
   <!-- ----- -->
-  <# _.each(branch_diff.branch_menus, function(branch_menu){ #>
+  <# _.each(branch_conflicts.menu, function(branch_menu){ #>
     <hr/>
 
     <# if(branch_menu.branch_menu_merge_action!=null || branch_menu.menu_merge_id!=null){ #>
@@ -428,7 +428,7 @@
   <!-- --------- -->
   <!-- REDIRECTS -->
   <!-- --------- -->
-  <# _.each(branch_diff.branch_redirects, function(branch_redirect){ #>
+  <# _.each(branch_conflicts.redirect, function(branch_redirect){ #>
     <hr/>
 
     <# if(branch_redirect.branch_redirect_merge_action!=null || branch_redirect.redirect_merge_id!=null){ #>
@@ -472,7 +472,7 @@
   <!-- -------- -->
   <!-- SITEMAPS -->
   <!-- -------- -->
-  <# _.each(branch_diff.branch_sitemaps, function(branch_sitemap){ #>
+  <# _.each(branch_conflicts.sitemap, function(branch_sitemap){ #>
     <hr/>
 
     <# if(branch_sitemap.branch_sitemap_merge_action!=null || branch_sitemap.sitemap_merge_id!=null){ #>
@@ -521,8 +521,8 @@
 
   <hr/>
 
-  <# if (branch_diff.unresolved > 0) { #>
-    <h3>Unresolved Conflicts: <#= branch_diff.unresolved #></h3>
+  <# if (branch_conflicts.numUnresolved > 0) { #>
+    <h3>Unresolved Conflicts: <#= branch_conflicts.numUnresolved #></h3>
   <# } else { #>
     <h3>All Conflicts Resolved <input type="button" value="Continue and Complete Merge" class="button button_execute_merge" /></h3>
   <# } #>

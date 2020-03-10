@@ -6,6 +6,9 @@ var jsHarmonyCMS = require('../jsHarmonyCMS.js');
 var DB = require('jsharmony-db');
 var async = require('async');
 var _ = require('lodash');
+var path = require('path');
+var fs = require('fs');
+
 
 // -------------------- merge result assertions -----------------
 // D - values from destination
@@ -374,6 +377,9 @@ manualConflicts = [
   // <= two pages: see matrix
 ];
 
+var cmsPath = '';
+var dataPath = '';
+
 describe('Merges - Matrix', function() {
   var jsh = new jsHarmonyCMS.Application();
   jsh.Config.appbasepath = process.cwd();
@@ -381,6 +387,8 @@ describe('Merges - Matrix', function() {
   jsh.Config.interactive = true;
   jsh.Config.onConfigLoaded.push(function(cb){
     jsh.Config.system_settings.automatic_schema = false;
+    cmsPath = jsh.Config.modules['jsHarmonyCMS'].moduledir;
+    dataPath = jsh.Config.datadir;
     return cb();
   });
 
@@ -464,7 +472,18 @@ describe('Merges - Matrix', function() {
       // providing a message to deepStrictEqual doesn't print the diff.
       console.log(label, 'results');
       assert.ifError(err);
-      assert.deepStrictEqual(dbrslt, state);
+      try{
+        assert.deepStrictEqual(dbrslt, state);
+      }
+      catch(ex){
+        console.log('Found');
+        console.log('-----');
+        console.log(JSON.stringify(dbrslt,null,4));
+        console.log('Expected');
+        console.log('--------');
+        console.log(JSON.stringify(state,null,4));
+        throw(ex);
+      }
       done(err); 
     });
   }
@@ -526,7 +545,10 @@ describe('Merges - Matrix', function() {
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testPageKey = dbrslt;
-            cb();
+            fs.copyFile(
+              path.join(cmsPath, 'models/sql/objects/data_files/page_sample.json'),
+              path.join(dataPath, 'page/'+dbrslt+'.json'),
+              cb);
           });
         },
         function(cb){
@@ -547,7 +569,12 @@ describe('Merges - Matrix', function() {
             testDstOrigPageId = testPages[3];
             testPageIdA = testPages[0];
             testPageIdB = testPages[1];
-            cb();
+            async.eachSeries(testPages, function(page_key, file_cb){
+              fs.copyFile(
+                path.join(cmsPath, 'models/sql/objects/data_files/page_sample.json'),
+                path.join(dataPath, 'page/'+page_key+'.json'),
+                file_cb);
+            }, cb);
           });
         },
       ], function(err){
@@ -601,9 +628,10 @@ describe('Merges - Matrix', function() {
       setupBranchPage(testDstBranchId, testPageKey, dstPage),
       function(cb) {
         console.log('conflicts for ', label);
-        jsh.Modules.jsHarmonyCMS.funcs.conflict('S1', {dst_branch_id: testDstBranchId, src_branch_id: testSrcBranchId}, function(err, results) {
+        jsh.Modules.jsHarmonyCMS.funcs.conflicts('S1', testSrcBranchId, testDstBranchId, function(err, results) {
           if(err) return cb(err);
-          assert.strictEqual(results.branch_pages.length > 0 ? CONFLICT : nc, status);
+          assert(!_.isEmpty(results.branch_conflicts));
+          assert.strictEqual(results.branch_conflicts.page.length > 0 ? CONFLICT : nc, status);
           cb();
         });
       },
