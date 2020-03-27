@@ -307,6 +307,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
       'PageTemplates': {},
       'MenuTemplates': {}
     },
+    title: 'Content Management System',
     public_apps: [
       { '*':  express.static(path.join(_this.basepath, 'public')) },
       { 
