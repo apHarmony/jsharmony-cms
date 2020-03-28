@@ -32,68 +32,28 @@ exports = module.exports = function(jsh, cms){
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.components = rslt.components;
-
-        function loadRemoteTemplate(templateUrl, complete_cb) {
-          $.ajax({
-            type: 'GET',
-            cache: false,
-            url: templateUrl,
-            xhrFields: { withCredentials: true },
-            success: function(data){
-              return complete_cb(undefined, data);
-            },
-            error: function(xhr, status, err){
-              return complete_cb(err, undefined);
-            }
-          });
-        }
-
-        function appendRemoteTemplate(currentTemplate, remoteTemplate) {
-          // Join the templates.
-          // If current is not empty and remote is empty, only use current.
-          // If current is empty and remote is not empty, only use remote.
-          // If neither is empty, append remote to current.
-          // If both are empty, use empty template string.
-          var output = [currentTemplate, remoteTemplate]
-            .filter(function(template) { return (template || '').length > 0 })
-            .join('\n');
-          return  output.length > 0 ? output : '*** COMPONENT NOT FOUND ***';
-        }
-
-        var asyncLoadFunctions = [];
-
-        Object.keys(_this.components).forEach(function(key) {
-          var component = _this.components[key];
-          if (!component.remote_template) return;
-          component.templates = component.templates || {};
-          component.templates.publish = component.templates.publish || '';
-          component.templates.editor = component.templates.editor || '';
-
-          if (component.remote_template.publish) {
-            asyncLoadFunctions.push(function(complete_cb) {
-              loadRemoteTemplate(component.remote_template.publish, function(error, data) {
-                component.templates.publish = appendRemoteTemplate(component.templates.publish, data);
-                complete_cb();
-              });
+        async.eachOf(_this.components, function(component, component_id, component_cb){
+          if(component.remote_template && component.remote_template.publish){
+            var loadObj = {};
+            cms.loader.StartLoading(loadObj);
+            $.ajax({
+              type: 'GET',
+              cache: false,
+              url: component.remote_template.publish,
+              xhrFields: { withCredentials: true },
+              success: function(data){
+                cms.loader.StopLoading(loadObj);
+                component.content = data;
+                return component_cb();
+              },
+              error: function(xhr, status, err){
+                cms.loader.StopLoading(loadObj);
+                component.content = '*** COMPONENT NOT FOUND ***';
+                return component_cb();
+              }
             });
           }
-          if (component.remote_template.editor) {
-            asyncLoadFunctions.push(function(complete_cb) {
-              loadRemoteTemplate(component.remote_template.editor, function(error, data) {
-                component.templates.editor = appendRemoteTemplate(component.templates.editor, data);
-                complete_cb();
-              });
-            });
-          }
-        });
-
-        async.eachOf(asyncLoadFunctions, function(loadFn, index, component_cb){
-          var loadObj = {};
-          cms.loader.StartLoading(loadObj);
-          loadFn(function() {
-            cms.loader.StopLoading(loadObj);
-            component_cb();
-          });
+          else return component_cb();
         }, function(err){
           _this.isInitialized = true;
         });
@@ -115,10 +75,7 @@ exports = module.exports = function(jsh, cms){
       if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
       else if(!(component_id in _this.components)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
       else{
-        var component = _this.components[component_id];
-        var templates = component != undefined ? component.templates : undefined
-        var publishTemplate = (templates || {}).publish;
-        component_content = ejs.render(publishTemplate || '', cms.controller.getComponentRenderParameters(component_id));
+        component_content = ejs.render(_this.components[component_id].content || '', cms.controller.getComponentRenderParameters(component_id));
       }
       jobj.html(component_content);
     });
@@ -161,10 +118,10 @@ exports = module.exports = function(jsh, cms){
       "fields": [
         {"name": "cust_id", "caption":"Customer ID", "type": "int", "actions":"B",
          "control":"textbox", "controlstyle":"width:80px;", "validate": ["IsNumeric","Required"] },
-
+         
         {"name": "cust_name", "caption":"Name", "type": "varchar", "length": 256, "actions":"B",
          "control":"textbox", "controlstyle":"width:260px;", "validate": ["MaxLength:256","Required"] },
-
+         
         {"name": "cust_sts", "caption":"Status", "type": "varchar", "length":32,
          "control":"dropdown", "validate": ["Required"] },
 
