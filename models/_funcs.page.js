@@ -384,7 +384,7 @@ module.exports = exports = function(module, funcs){
           catch(ex){
             return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
-          publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
+          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
     
           //Resolve Remote Templates
           _.each(components, function(component){
@@ -559,7 +559,7 @@ module.exports = exports = function(module, funcs){
           function(cb){
 
             function replaceURLs(content, options){
-              var rslt = funcs.replaceBranchURLs(content, _.extend(options, {
+              var rslt = funcs.replaceBranchURLs(content, _.extend({}, options, {
                 getMediaURL: function(media_key){
                   return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
                 },

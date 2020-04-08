@@ -21,7 +21,7 @@ if(routetype == 'd'){
         jsh.Log.error('Publish Target has invalid deployment_target_params: '+deployment_target_params);
         return;
       }
-      deployment_target_params = _.extend(cms.Config.deployment_target_params, deployment_target_params);
+      deployment_target_params = _.extend({}, cms.Config.deployment_target_params, deployment_target_params);
       if(deployment_target_params.page_subfolder){
         root_txt += '/' + deployment_target_params.page_subfolder;
         if(root_txt[root_txt.length-1] == '/') root_txt = root_txt.substr(0, root_txt.length - 1);

@@ -218,7 +218,7 @@ module.exports = exports = function(module, funcs){
           catch(ex){
             return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
-          publish_params = _.extend(cms.Config.deployment_target_params, publish_params);
+          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
           deployment.publish_params = publish_params;
 
           var page_template_html = {};
