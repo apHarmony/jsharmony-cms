@@ -19,7 +19,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
 var async = require('async');
-var prettyhtml = require('js-beautify').html;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -151,7 +150,7 @@ module.exports = exports = function(module, funcs){
                 sep: '\n'
               };
               for(var key in page.compiled.content){
-                page.compiled.content[key] = prettyhtml(page.compiled.content[key], pretty_params);
+                page.compiled.content[key] = funcs.prettyhtml(page.compiled.content[key], pretty_params);
               }
             }
             page.template_title = clientPage.template.title;
@@ -162,7 +161,6 @@ module.exports = exports = function(module, funcs){
 
       //Perform page diff
       function(cb){
-
         _.each(branch_pages, function(branch_page){
           if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'
           && branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
@@ -176,6 +174,59 @@ module.exports = exports = function(module, funcs){
           else if(branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
             branch_page.src_diff = funcs.diff_pageContent(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.src_page.id]);
             branch_page.dst_diff = funcs.diff_pageContent(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.dst_page.id]);
+          }
+        });
+        return cb();
+      },
+    ], callback);
+  }
+
+  exports.conflicts_media = function(branch_media, branch_data, callback){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var media = {};
+
+    async.waterfall([
+      //Get all media
+      function(cb){
+        var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
+        var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
+        var sql = "select media_id,media_key,media_file_id,media_desc,media_tags,media_type,media_path \
+          from "+(module.schema?module.schema+'.':'')+"media media \
+          where\
+                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id and branch_media_action is not null) or \
+                media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id and branch_media_action = 'UPDATE') or\
+                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media src_branch_media where src_branch_media.branch_id=@src_branch_id and src_branch_media.media_key in (select media_key from "+(module.schema?module.schema+'.':'')+"branch_media dst_branch_media where dst_branch_media.branch_id=@dst_branch_id and branch_media_action is not null)) or \
+                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id and branch_media_action is not null) or \
+                media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id and branch_media_action = 'UPDATE') or\
+                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media dst_branch_media where dst_branch_media.branch_id=@dst_branch_id and dst_branch_media.media_key in (select media_key from "+(module.schema?module.schema+'.':'')+"branch_media src_branch_media where src_branch_media.branch_id=@src_branch_id and branch_media_action is not null))";
+        appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql;return cb(err); }
+          if(rslt && rslt[0]){
+            _.each(rslt[0], function(media_item){
+              media[media_item.media_id] = media_item;
+            });
+          }
+          return cb();
+        });
+      },
+
+      //Perform media diff
+      function(cb){
+        _.each(branch_media, function(branch_media_item){
+          if(branch_media_item.src_branch_media_action && branch_media_item.src_branch_media_action.toUpperCase()=='UPDATE'
+          && branch_media_item.dst_branch_media_action && branch_media_item.dst_branch_media_action.toUpperCase()=='UPDATE'){
+            branch_media_item.src_diff = funcs.mediaDiff(media[branch_media_item.src_orig_media.id], media[branch_media_item.src_media.id]);
+            branch_media_item.dst_diff = funcs.mediaDiff(media[branch_media_item.dst_orig_media.id], media[branch_media_item.dst_media.id]);
+          }
+          else if(branch_media_item.src_branch_media_action && branch_media_item.src_branch_media_action.toUpperCase()=='UPDATE'){
+            branch_media_item.src_diff = funcs.mediaDiff(media[branch_media_item.src_orig_media.id], media[branch_media_item.src_media.id]);
+            branch_media_item.dst_diff = funcs.mediaDiff(media[branch_media_item.src_orig_media.id], media[branch_media_item.dst_media.id]);
+          }
+          else if(branch_media_item.dst_branch_media_action && branch_media_item.dst_branch_media_action.toUpperCase()=='UPDATE'){
+            branch_media_item.src_diff = funcs.mediaDiff(media[branch_media_item.dst_orig_media.id], media[branch_media_item.src_media.id]);
+            branch_media_item.dst_diff = funcs.mediaDiff(media[branch_media_item.dst_orig_media.id], media[branch_media_item.dst_media.id]);
           }
         });
         return cb();
@@ -375,10 +426,10 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     var branch_conflicts = {};
-    var deployment_target_params = '';
     var branch_data = {
       src_branch_id: src_branch_id,
       dst_branch_id: dst_branch_id,
+      deployment_target_params: undefined,
       _DBContext: context
     };
 
@@ -396,7 +447,12 @@ module.exports = exports = function(module, funcs){
         var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@dst_branch_id";
         appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
-          if(rslt && rslt[0]) deployment_target_params = rslt[0];
+          if(rslt && rslt[0]){
+            try{
+              branch_data.deployment_target_params = JSON.parse(rslt[0]);
+            }
+            catch(ex){}
+          }
           return cb();
         });
       },
@@ -459,7 +515,7 @@ module.exports = exports = function(module, funcs){
     ], function(err){
       callback(err, {
         _success: 1,
-        deployment_target_params: deployment_target_params,
+        deployment_target_params: branch_data.deployment_target_params,
         branch_conflicts: branch_conflicts,
       });
     });
@@ -490,7 +546,7 @@ module.exports = exports = function(module, funcs){
       var dst_branch_id = req.query.dst_branch_id;
       var src_branch_id = req.query.src_branch_id;
 
-      //Check if Asset is defined
+      //Check if item is defined
       var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
       var sql_params = { dst_branch_id: dst_branch_id, src_branch_id: src_branch_id };
       var validate = new XValidate();
@@ -505,6 +561,61 @@ module.exports = exports = function(module, funcs){
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify(result));
+      });
+    }
+    else {
+      return next();
+    }
+  }
+
+  exports.req_conflicts_resolve = function (req, res, next) {
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+    
+    var Q = req.query;
+    var P = req.body;
+
+    var appsrv = this;
+    var cms = module;
+    var jsh = module.jsh;
+    var XValidate = jsh.XValidate;
+    var dbtypes = appsrv.DB.types;
+
+    var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
+    
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    if (verb == 'post') {
+      //Validate parameters
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('P', P, ['&branch_item_type','&branch_id','&key','&merge_id','&branch_merge_action'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      var branch_item_type = req.body.branch_item_type;
+      var branch_id = req.body.branch_id;
+      var key = req.body.key;
+      var merge_id = req.body.merge_id;
+      var branch_merge_action = req.body.branch_merge_action;
+
+      if(!(branch_item_type in cms.BranchItems)) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      //Check if item is defined
+      var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt, dbtypes.BigInt, dbtypes.VarChar(32)];
+      var sql_params = { branch_id: branch_id, key: key, merge_id: merge_id, branch_merge_action: branch_merge_action };
+      var validate = new XValidate();
+      var verrors = {};
+      validate.AddValidator('_obj.branch_id', 'Branch ID', 'U', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.key', 'Item Key', 'U', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.merge_id', 'Merge ID', 'U', [XValidate._v_IsNumeric()]);
+      validate.AddValidator('_obj.branch_merge_action', 'Action', 'U', [XValidate._v_MaxLength(32)]);
+ 
+      verrors = _.merge(verrors, validate.Validate('U', sql_params));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+      var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
+      appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
+        if(err) return Helper.GenError(req, res, -99999, err.toString());
+        res.end(JSON.stringify({ '_success': 1 }));
       });
     }
     else {

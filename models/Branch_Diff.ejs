@@ -59,7 +59,7 @@
     <# } #>
   </h4>
 
-  <# _.each(_.pick(branch_page.diff,['page_title','template_title']), function(val, key){ #>
+  <# _.each(_.pick(branch_page.diff,['page_title','template_title','page_tags']), function(val, key){ #>
     <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
   <# }); #>
 
@@ -67,7 +67,7 @@
     <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
   <# }); #>
 
-  <# _.each(_.omit(branch_page.diff,['seo','content','content_elements','page_title','template_title']), function(val, key){ #>
+  <# _.each(_.omit(branch_page.diff,['seo','content','content_elements','page_title','template_title','page_tags']), function(val, key){ #>
     <div class="diff_head"><#=map(key,'page')#></div>
     <div class="diff"><#-val#></div>
   <# }); #>
@@ -108,20 +108,26 @@
     <# } #>
   </h4>
 
-  <div>
-    <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (branch_media.old_media_ext||'').toLowerCase())){ #>
-      <div class="diff_media_preview previous_media" data-media_key="<#=branch_media.media_key#>" data-media_id="<#=branch_media.media_orig_id#>" data-media_ext="<#=branch_media.old_media_ext#>" data-media_width="<#=branch_media.old_media_width#>" data-media_height="<#=branch_media.old_media_height#>">
-        Prev:<br/>
-        <img src="<%=jsh._BASEURL%>_funcs/media/<#=branch_media.media_key#>/file_preview?media_id=<#=branch_media.media_orig_id#>" />
-      </div>
-    <# } #>
-    <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (branch_media.new_media_ext||'').toLowerCase())){ #>
-      <div class="diff_media_preview new_media"  data-media_key="<#=branch_media.media_key#>" data-media_id="<#=branch_media.media_id#>" data-media_ext="<#=branch_media.new_media_ext#>" data-media_width="<#=branch_media.new_media_width#>" data-media_height="<#=branch_media.new_media_height#>">
-        New:<br/>
-        <img src="<%=jsh._BASEURL%>_funcs/media/<#=branch_media.media_key#>/file_preview?media_id=<#=branch_media.media_id#>" />
-      </div>
-    <# } #>
-  </div>
+  <# _.each(_.pick(branch_media.diff,['media_desc','media_tags','media_type']), function(val, key){ #>
+    <div class="diff_item"><b>New <#=map(key,'media')#></b>: <#=val#></div>
+  <# }); #>
+
+  <# if(branch_media.old_media_file_id != branch_media.new_media_file_id){ #>
+    <div>
+      <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (branch_media.old_media_ext||'').toLowerCase())){ #>
+        <div class="diff_media_preview previous_media" data-media_key="<#=branch_media.media_key#>" data-media_id="<#=branch_media.media_orig_id#>" data-media_ext="<#=branch_media.old_media_ext#>" data-media_width="<#=branch_media.old_media_width#>" data-media_height="<#=branch_media.old_media_height#>">
+          Prev:<br/>
+          <img src="<%=jsh._BASEURL%>_funcs/media/<#=branch_media.media_key#>/file_preview?media_id=<#=branch_media.media_orig_id#>" />
+        </div>
+      <# } #>
+      <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (branch_media.new_media_ext||'').toLowerCase())){ #>
+        <div class="diff_media_preview new_media"  data-media_key="<#=branch_media.media_key#>" data-media_id="<#=branch_media.media_id#>" data-media_ext="<#=branch_media.new_media_ext#>" data-media_width="<#=branch_media.new_media_width#>" data-media_height="<#=branch_media.new_media_height#>">
+          New:<br/>
+          <img src="<%=jsh._BASEURL%>_funcs/media/<#=branch_media.media_key#>/file_preview?media_id=<#=branch_media.media_id#>" />
+        </div>
+      <# } #>
+    </div>
+  <# } #>
 </script>
 
 

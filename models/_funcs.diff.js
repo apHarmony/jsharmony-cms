@@ -21,7 +21,6 @@ var _ = require('lodash');
 var async = require('async');
 var DiffMatchPatch = require('diff-match-patch');
 var diff2html = require("diff2html").Diff2Html;
-var prettyhtml = require('js-beautify').html;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -51,7 +50,7 @@ module.exports = exports = function(module, funcs){
     if (verb == 'get') {
       var branch_id = req.query.branch_id;
       
-      //Check if Asset is defined
+      //Check if item is defined
       var sql_ptypes = [dbtypes.BigInt];
       var sql_params = { 'branch_id': branch_id };
       var validate = new XValidate();
@@ -64,10 +63,26 @@ module.exports = exports = function(module, funcs){
       var branch_data = {
         _DBContext: req._DBContext,
         branch_id: branch_id,
+        deployment_target_params: undefined,
       };
       var branch_diff = {};
 
       async.waterfall([
+
+        //Get deployment_target_params for branch
+        function(cb){
+          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return cb(err); }
+            if(rslt && rslt[0]){
+              try{
+                branch_data.deployment_target_params = JSON.parse(rslt[0]);
+              }
+              catch(ex){}
+            }
+            return cb();
+          });
+        },
 
         //Run onBeforeDiff functions
         function(cb){
@@ -224,7 +239,7 @@ module.exports = exports = function(module, funcs){
                 sep: '\n'
               };
               for(var key in page.compiled.content){
-                page.compiled.content[key] = prettyhtml(page.compiled.content[key], pretty_params);
+                page.compiled.content[key] = funcs.prettyhtml(page.compiled.content[key], pretty_params);
               }
             }
             page.template_title = clientPage.template.title;
@@ -238,6 +253,44 @@ module.exports = exports = function(module, funcs){
         _.each(branch_pages, function(branch_page){
           if(branch_page.branch_page_action.toUpperCase()=='UPDATE'){
             branch_page.diff = funcs.diff_pageContent(updated_pages[branch_page.page_orig_id], updated_pages[branch_page.page_id]);
+          }
+        });
+        return cb();
+      },
+    ], callback);
+  }
+
+  exports.diff_media = function(branch_media, branch_data, callback){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var media = {};
+
+    async.waterfall([
+      //Get all media
+      function(cb){
+        var sql_ptypes = [dbtypes.BigInt];
+        var sql_params = { 'branch_id': branch_data.branch_id };
+        var sql = "select media_id,media_key,media_file_id,media_desc,media_tags,media_type,media_path \
+          from "+(module.schema?module.schema+'.':'')+"media media \
+          where media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action is not null) or \
+                media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE')";
+        appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          if (err) return callback(err);
+          if(rslt && rslt[0]){
+            _.each(rslt[0], function(media_item){
+              media[media_item.media_id] = media_item;
+            });
+          }
+          return cb();
+        });
+      },
+
+      //Perform media diff
+      function(cb){
+        _.each(branch_media, function(branch_media_item){
+          if(branch_media_item.branch_media_action.toUpperCase()=='UPDATE'){
+            branch_media_item.diff = funcs.mediaDiff(media[branch_media_item.media_orig_id], media[branch_media_item.media_id]);
           }
         });
         return cb();
@@ -367,12 +420,20 @@ module.exports = exports = function(module, funcs){
       var content_diff = funcs.diffHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
       diff.content[key] = content_diff;
     }
-    _.each(['page_title','template_title'], function(key){
+    _.each(['page_title','template_title','page_tags'], function(key){
       if(old_page[key] != new_page[key]) diff[key] = new_page[key];
     });
     diff.seo = {};
     _.each(['title','keywords','metadesc','canonical_url'], function(key){
       if(old_page.compiled.seo[key] != new_page.compiled.seo[key]) diff.seo[key] = new_page.compiled.seo[key];
+    });
+    return diff;
+  }
+
+  exports.mediaDiff = function(old_media, new_media){
+    var diff = {};
+    _.each(['media_desc','media_tags','media_type'], function(key){
+      if(old_media[key] != new_media[key]) diff[key] = new_media[key];
     });
     return diff;
   }

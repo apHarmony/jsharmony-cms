@@ -52,7 +52,7 @@ module.exports = exports = function(module, funcs){
       // error codes: jsharmony errors document
       if (MERGE_TYPES.indexOf(merge_type) == -1) { Helper.GenError(req, res, -4, 'Merge Type Not Supported'); return; }
 
-      //Check if Asset is defined
+      //Check if item is defined
       var sql_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
       var validate = new XValidate();
       var verrors = {};
@@ -170,7 +170,7 @@ module.exports = exports = function(module, funcs){
       var dst_branch_id = B.dst_branch_id;
       var merge_type = B.merge_type;
 
-      //Check if Asset is defined
+      //Check if item is defined
       var sql_check_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
       var sql_begin_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id, 'merge_type': merge_type.toUpperCase() };
       var validate = new XValidate();

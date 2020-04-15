@@ -3,6 +3,83 @@
 <div class='clear conflict_display' style='margin-top:10px;margin-bottom:20px;'></div>
 <div class='spacer_diff'></div>
 
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_listing">
+  <h3>Branch Changes (<#=numResolved #>/<#=numConflicts #> conflicts resolved)</h3>
+  <div class="clear"></div>
+
+  <!-- ---------- -->
+  <!-- NO CHANGES -->
+  <!-- ---------- -->
+  <# if(_.isEmpty(branch_conflicts)){ #>
+    <hr/>
+    <h4 class="branch_diff_item_header">
+      No conflicts detected
+    </h4>
+  <# } #>
+
+  <# _.each(branch_conflicts, function(branch_items, branch_item_type){ #>
+    <# _.each(branch_items, function(branch_item){ #>
+      <hr/>
+      <#-renderItemConflicts(branch_item_type, branch_item)#>
+    <# }); #>
+  <# }); #>
+
+  <hr/>
+
+  <# if (numUnresolved > 0) { #>
+    <h3>Unresolved Conflicts: <#=numUnresolved #></h3>
+  <# } else { #>
+    <h3>All Conflicts Resolved <input type="button" value="Continue and Complete Merge" class="button button_execute_merge" /></h3>
+  <# } #>
+</script>
+
+<!-- ----- -->
+<!-- PAGES -->
+<!-- ----- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_page">
+  <# if(branch_page.branch_page_merge_action!=null || branch_page.page_merge_id!=null){ #>
+    <h4 class="branch_diff_item_header">
+      <#-renderTemplate('Page_Diff_Header', {
+        branch_page_action: branch_page.branch_page_merge_action,
+        page_key: branch_page.page_key,
+        oneline: true,
+        title: 'View'
+          + (branch_page.page_merge_id==((branch_page.src_page||{}).id)?' (Source Branch File Selected)':'')
+          + (branch_page.page_merge_id==((branch_page.dst_page||{}).id)?' (Destination Branch File Selected)':''),
+        new_page: branch_page.merge_page,
+        old_page: branch_page.dst_page}) #>
+      <input type="button" value="Undo Resolve" class="button button_unresolve_page" data-key="<#=branch_page.page_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
+    </h4>
+  <# } else { #>
+    <div class="branch_diff_comparison">
+      <table cellspacing=0 cellpadding=0 border=0>
+        <tr>
+          <td class="branch_diff_comparison_src">
+            <#-renderTemplate('Page_Diff_Comparison', {
+              branch_page_action: branch_page.src_branch_page_action,
+              page_key: branch_page.page_key,
+              title: 'Source',
+              diff: branch_page.src_diff,
+              map: map,
+              new_page: branch_page.src_page,
+              old_page: branch_page.src_orig_page}) #>
+          </td>
+          <td class="branch_diff_comparison_dst">
+              <#-renderTemplate('Page_Diff_Comparison', {
+                branch_page_action: branch_page.dst_branch_page_action,
+                page_key: branch_page.page_key,
+                title: 'Destination',
+                diff: branch_page.dst_diff,
+                map: map,
+                new_page: branch_page.dst_page,
+                old_page: branch_page.dst_orig_page}) #>
+          </td>
+        </tr>
+      </table>
+    </div>
+  <# } #>
+</script>
+
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Page_Diff_Header">
   <# if(branch_page_action=='ADD'){ #>
     <i class="material-icons branch_action_icon add">add_circle</i>
@@ -27,14 +104,14 @@
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
   <# } #>
   <# if(new_page.id!=null){ #>
-    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" /><#= title #></a>
+    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
   <# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Page_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
   <h4 class="branch_diff_item_header">
-    <#- include('Page_Diff_Header', {
+    <#-renderTemplate('Page_Diff_Header', {
       branch_page_action: branch_page_action,
       page_key: page_key,
       oneline: false,
@@ -44,7 +121,7 @@
     <input type="button" value="Pick" class="button button_resolve_page" data-key="<#=page_key#>" data-id="<#=new_page.id#>" data-branch_action="<#=branch_page_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['page_title','template_title']), function(val, key){ #>
+  <# _.each(_.pick(diff,['page_title','template_title','page_tags']), function(val, key){ #>
     <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
   <# }); #>
 
@@ -52,7 +129,7 @@
     <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
   <# }); #>
 
-  <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title']), function(val, key){ #>
+  <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title','page_tags']), function(val, key){ #>
     <div class="diff_head"><#=map(key,'page')#></div>
     <div class="diff"><#-val#></div>
   <# }); #>
@@ -61,6 +138,51 @@
     <div class="diff_head">Content - <#=diff.content_elements[key]#></div>
     <div class="diff"><#-val#></div>
   <# } }); #>
+</script>
+
+<!-- ----- -->
+<!-- MEDIA -->
+<!-- ----- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_media">
+<# if(branch_media.branch_media_merge_action!=null || branch_media.media_merge_id!=null){ #>
+  <h4 class="branch_diff_item_header">
+    <#-renderTemplate('Media_Diff_Header', {
+      branch_media_action: branch_media.branch_media_merge_action,
+      media_key: branch_media.media_key,
+      oneline: true,
+      title: 'View'
+        + (branch_media.media_merge_id==((branch_media.src_media||{}).id)?' (Source Branch File Selected)':'')
+        + (branch_media.media_merge_id==((branch_media.dst_media||{}).id)?' (Destination Branch File Selected)':''),
+      new_media: branch_media.merge_media,
+      old_media: branch_media.dst_media}) #>
+    <input type="button" value="Undo Resolve" class="button button_unresolve_media" data-key="<#=branch_media.media_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
+  </h4>
+<# } else { #>
+  <div class="branch_diff_comparison">
+    <table cellspacing=0 cellpadding=0 border=0>
+      <tr>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Media_Diff_Comparison', {
+            branch_media_action: branch_media.src_branch_media_action,
+            media_key: branch_media.media_key,
+            title: 'Source',
+            diff: branch_media.src_diff,
+            new_media: branch_media.src_media,
+            old_media: branch_media.src_orig_media}) #>
+        </td>
+        <td class="branch_diff_comparison_dst">
+          <#-renderTemplate('Media_Diff_Comparison', {
+            branch_media_action: branch_media.dst_branch_media_action,
+            media_key: branch_media.media_key,
+            title: 'Destination',
+            diff: branch_media.dst_diff,
+            new_media: branch_media.dst_media,
+            old_media: branch_media.dst_orig_media}) #>
+        </td>
+      </tr>
+    </table>
+  </div>
+<# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Media_Diff_Header">
@@ -93,9 +215,9 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Media_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
   <h4 class="branch_diff_item_header">
-    <#- include('Media_Diff_Header', {
+    <#-renderTemplate('Media_Diff_Header', {
       branch_media_action: branch_media_action,
       media_key: media_key,
       oneline: false,
@@ -105,6 +227,10 @@
     <input type="button" value="Pick" class="button button_resolve_media" data-key="<#=media_key#>" data-id="<#=new_media.id#>" data-branch_action="<#=branch_media_action#>" />
   </h4>
 
+  <# _.each(_.pick(diff,['media_desc','media_tags','media_type']), function(val, key){ #>
+    <div class="diff_item"><b>New <#=map(key,'media')#></b>: <#=val#></div>
+  <# }); #>
+
   <div>
     <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
       <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
@@ -113,6 +239,53 @@
       </div>
     <# } #>
   </div>
+</script>
+
+<!-- ----- -->
+<!-- MENUS -->
+<!-- ----- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_media">
+<# if(branch_menu.branch_menu_merge_action!=null || branch_menu.menu_merge_id!=null){ #>
+  <h4 class="branch_diff_item_header">
+    <#-renderTemplate('Menu_Diff_Header', {
+      branch_menu_action: branch_menu.branch_menu_merge_action,
+      menu_key: branch_menu.menu_key,
+      oneline: true,
+      title: 'View'
+        + (branch_menu.menu_merge_id==((branch_menu.src_menu||{}).id)?' (Source Branch File Selected)':'')
+        + (branch_menu.menu_merge_id==((branch_menu.dst_menu||{}).id)?' (Destination Branch File Selected)':''),
+      new_menu: branch_menu.merge_menu,
+      old_menu: branch_menu.dst_menu}) #>
+    <input type="button" value="Undo Resolve" class="button button_unresolve_menu" data-key="<#=branch_menu.menu_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
+  </h4>
+<# } else { #>
+  <div class="branch_diff_comparison">
+    <table cellspacing=0 cellpadding=0 border=0>
+      <tr>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Menu_Diff_Comparison', {
+            branch_menu_action: branch_menu.src_branch_menu_action,
+            menu_key: branch_menu.menu_key,
+            title: 'Source',
+            diff: branch_menu.src_diff,
+            map: map,
+            new_menu: branch_menu.src_menu,
+            old_menu: branch_menu.src_orig_menu}) #>
+        </td>
+        <td class="branch_diff_comparison_dst">
+          <#-renderTemplate('Menu_Diff_Comparison', {
+            branch_menu_action: branch_menu.dst_branch_menu_action,
+            menu_key: branch_menu.menu_key,
+            title: 'Destination',
+            diff: branch_menu.dst_diff,
+            map: map,
+            new_menu: branch_menu.dst_menu,
+            old_menu: branch_menu.dst_orig_menu}) #>
+        </td>
+      </tr>
+    </table>
+  </div>
+<# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Menu_Diff_Header">
@@ -144,9 +317,9 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Menu_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
   <h4 class="branch_diff_item_header">
-    <#- include('Menu_Diff_Header', {
+    <#-renderTemplate('Menu_Diff_Header', {
       branch_menu_action: branch_menu_action,
       menu_key: menu_key,
       oneline: false,
@@ -164,6 +337,47 @@
     <div class="diff_head">Content - <#=map(key,'menu')#></div>
     <div class="diff"><#-val#></div>
   <# } }); #>
+</script>
+
+
+<!-- --------- -->
+<!-- REDIRECTS -->
+<!-- --------- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_media">
+<# if(branch_redirect.branch_redirect_merge_action!=null || branch_redirect.redirect_merge_id!=null){ #>
+  <h4 class="branch_diff_item_header">
+    <#-renderTemplate('Redirect_Diff_Header', {
+      branch_redirect_action: branch_redirect.branch_redirect_merge_action,
+      redirect_key: branch_redirect.redirect_key,
+      oneline: true,
+      new_redirect: branch_redirect.merge_redirect,
+      old_redirect: branch_redirect.dst_redirect}) #>
+    <input type="button" value="Undo Resolve" class="button button_unresolve_redirect" data-key="<#=branch_redirect.redirect_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
+  </h4>
+<# } else { #>
+  <div class="branch_diff_comparison">
+    <table cellspacing=0 cellpadding=0 border=0>
+      <tr>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Redirect_Diff_Comparison', {
+            branch_redirect_action: branch_redirect.src_branch_redirect_action,
+            redirect_key: branch_redirect.redirect_key,
+            title: 'Source',
+            new_redirect: branch_redirect.src_redirect,
+            old_redirect: branch_redirect.src_orig_redirect}) #>
+        </td>
+        <td class="branch_diff_comparison_dst">
+          <#-renderTemplate('Redirect_Diff_Comparison', {
+            branch_redirect_action: branch_redirect.dst_branch_redirect_action,
+            redirect_key: branch_redirect.redirect_key,
+            title: 'Destination',
+            new_redirect: branch_redirect.dst_redirect,
+            old_redirect: branch_redirect.dst_orig_redirect}) #>
+        </td>
+      </tr>
+    </table>
+  </div>
+<# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Redirect_Diff_Header">
@@ -191,9 +405,9 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Redirect_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
   <h4 class="branch_diff_item_header">
-    <#- include('Redirect_Diff_Header', {
+    <#-renderTemplate('Redirect_Diff_Header', {
       branch_redirect_action: branch_redirect_action,
       redirect_key: redirect_key,
       oneline: false,
@@ -207,6 +421,53 @@
     <br/>
     Destination: <#-XExt.escapeHTML(new_redirect.dest)#>
   </div>
+</script>
+
+<!-- -------- -->
+<!-- SITEMAPS -->
+<!-- -------- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_sitemap">
+<# if(branch_sitemap.branch_sitemap_merge_action!=null || branch_sitemap.sitemap_merge_id!=null){ #>
+  <h4 class="branch_diff_item_header">
+    <#-renderTemplate('Sitemap_Diff_Header', {
+      branch_sitemap_action: branch_sitemap.branch_sitemap_merge_action,
+      sitemap_key: branch_sitemap.sitemap_key,
+      oneline: true,
+      title: 'View'
+        + (branch_sitemap.sitemap_merge_id==((branch_sitemap.src_sitemap||{}).id)?' (Source Branch File Selected)':'')
+        + (branch_sitemap.sitemap_merge_id==((branch_sitemap.dst_sitemap||{}).id)?' (Destination Branch File Selected)':''),
+      new_sitemap: branch_sitemap.merge_sitemap,
+      old_sitemap: branch_sitemap.dst_sitemap}) #>
+    <input type="button" value="Undo Resolve" class="button button_unresolve_sitemap" data-key="<#=branch_sitemap.sitemap_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
+  </h4>
+<# } else { #>
+  <div class="branch_diff_comparison">
+    <table cellspacing=0 cellpadding=0 border=0>
+      <tr>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Sitemap_Diff_Comparison', {
+            branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
+            sitemap_key: branch_sitemap.sitemap_key,
+            title: 'Source',
+            diff: branch_sitemap.src_diff,
+            map: map,
+            new_sitemap: branch_sitemap.src_sitemap,
+            old_sitemap: branch_sitemap.src_orig_sitemap}) #>
+        </td>
+        <td class="branch_diff_comparison_dst">
+          <#-renderTemplate('Sitemap_Diff_Comparison', {
+            branch_sitemap_action: branch_sitemap.dst_branch_sitemap_action,
+            sitemap_key: branch_sitemap.sitemap_key,
+            title: 'Destination',
+            diff: branch_sitemap.dst_diff,
+            map: map,
+            new_sitemap: branch_sitemap.dst_sitemap,
+            old_sitemap: branch_sitemap.dst_orig_sitemap}) #>
+        </td>
+      </tr>
+    </table>
+  </div>
+<# } #>
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Sitemap_Diff_Header">
@@ -239,9 +500,9 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Sitemap_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#= title #> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
   <h4 class="branch_diff_item_header">
-    <#- include('Sitemap_Diff_Header', {
+    <#-renderTemplate('Sitemap_Diff_Header', {
       branch_sitemap_action: branch_sitemap_action,
       sitemap_key: sitemap_key,
       oneline: false,
@@ -261,272 +522,7 @@
   <# } }); #>
 </script>
 
-<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_listing">
-  <h3>Branch Changes (<#= branch_conflicts.numResolved #>/<#= branch_conflicts.numConflicts #> conflicts resolved)</h3>
-  <div class="clear"></div>
 
-  <!-- ---------- -->
-  <!-- NO CHANGES -->
-  <!-- ---------- -->
-  <# if(_.isEmpty(branch_conflicts)){ #>
-    <hr/>
-    <h4 class="branch_diff_item_header">
-      No conflicts detected
-    </h4>
-  <# } #>
-
-
-  <!-- ----- -->
-  <!-- PAGES -->
-  <!-- ----- -->
-  <# _.each(branch_conflicts.page, function(branch_page){ #>
-    <hr/>
-
-    <# if(branch_page.branch_page_merge_action!=null || branch_page.page_merge_id!=null){ #>
-      <h4 class="branch_diff_item_header">
-        <#- include('Page_Diff_Header', {
-          branch_page_action: branch_page.branch_page_merge_action,
-          page_key: branch_page.page_key,
-          oneline: true,
-          title: 'View'
-            + (branch_page.page_merge_id==((branch_page.src_page||{}).id)?' (Source Branch File Selected)':'')
-            + (branch_page.page_merge_id==((branch_page.dst_page||{}).id)?' (Destination Branch File Selected)':''),
-          new_page: branch_page.merge_page,
-          old_page: branch_page.dst_page}) #>
-        <input type="button" value="Undo Resolve" class="button button_unresolve_page" data-key="<#=branch_page.page_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
-      </h4>
-    <# } else { #>
-      <div class="branch_diff_comparison">
-        <table cellspacing=0 cellpadding=0 border=0>
-          <tr>
-            <td class="branch_diff_comparison_src">
-              <#- include('Page_Diff_Comparison', {
-                branch_page_action: branch_page.src_branch_page_action,
-                page_key: branch_page.page_key,
-                title: 'Source',
-                diff: branch_page.src_diff,
-                map: map,
-                new_page: branch_page.src_page,
-                old_page: branch_page.src_orig_page}) #>
-            </td>
-            <td class="branch_diff_comparison_dst">
-                <#- include('Page_Diff_Comparison', {
-                  branch_page_action: branch_page.dst_branch_page_action,
-                  page_key: branch_page.page_key,
-                  title: 'Destination',
-                  diff: branch_page.dst_diff,
-                  map: map,
-                  new_page: branch_page.dst_page,
-                  old_page: branch_page.dst_orig_page}) #>
-            </td>
-          </tr>
-        </table>
-      </div>
-    <# } #>
-
-  <# }); #>
-
-
-  <!-- ----- -->
-  <!-- MEDIA -->
-  <!-- ----- -->
-  <# _.each(branch_conflicts.media, function(branch_media){ #>
-    <hr/>
-
-    <# if(branch_media.branch_media_merge_action!=null || branch_media.media_merge_id!=null){ #>
-      <h4 class="branch_diff_item_header">
-        <#- include('Media_Diff_Header', {
-          branch_media_action: branch_media.branch_media_merge_action,
-          media_key: branch_media.media_key,
-          oneline: true,
-          title: 'View'
-            + (branch_media.media_merge_id==((branch_media.src_media||{}).id)?' (Source Branch File Selected)':'')
-            + (branch_media.media_merge_id==((branch_media.dst_media||{}).id)?' (Destination Branch File Selected)':''),
-          new_media: branch_media.merge_media,
-          old_media: branch_media.dst_media}) #>
-        <input type="button" value="Undo Resolve" class="button button_unresolve_media" data-key="<#=branch_media.media_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
-      </h4>
-    <# } else { #>
-      <div class="branch_diff_comparison">
-        <table cellspacing=0 cellpadding=0 border=0>
-          <tr>
-            <td class="branch_diff_comparison_src">
-              <#- include('Media_Diff_Comparison', {
-                branch_media_action: branch_media.src_branch_media_action,
-                media_key: branch_media.media_key,
-                title: 'Source',
-                new_media: branch_media.src_media,
-                old_media: branch_media.src_orig_media}) #>
-            </td>
-            <td class="branch_diff_comparison_dst">
-              <#- include('Media_Diff_Comparison', {
-                branch_media_action: branch_media.dst_branch_media_action,
-                media_key: branch_media.media_key,
-                title: 'Destination',
-                new_media: branch_media.dst_media,
-                old_media: branch_media.dst_orig_media}) #>
-            </td>
-          </tr>
-        </table>
-      </div>
-    <# } #>
-
-  <# }); #>
-
-
-  <!-- ----- -->
-  <!-- MENUS -->
-  <!-- ----- -->
-  <# _.each(branch_conflicts.menu, function(branch_menu){ #>
-    <hr/>
-
-    <# if(branch_menu.branch_menu_merge_action!=null || branch_menu.menu_merge_id!=null){ #>
-      <h4 class="branch_diff_item_header">
-        <#- include('Menu_Diff_Header', {
-          branch_menu_action: branch_menu.branch_menu_merge_action,
-          menu_key: branch_menu.menu_key,
-          oneline: true,
-          title: 'View'
-            + (branch_menu.menu_merge_id==((branch_menu.src_menu||{}).id)?' (Source Branch File Selected)':'')
-            + (branch_menu.menu_merge_id==((branch_menu.dst_menu||{}).id)?' (Destination Branch File Selected)':''),
-          new_menu: branch_menu.merge_menu,
-          old_menu: branch_menu.dst_menu}) #>
-        <input type="button" value="Undo Resolve" class="button button_unresolve_menu" data-key="<#=branch_menu.menu_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
-      </h4>
-    <# } else { #>
-      <div class="branch_diff_comparison">
-        <table cellspacing=0 cellpadding=0 border=0>
-          <tr>
-            <td class="branch_diff_comparison_src">
-              <#- include('Menu_Diff_Comparison', {
-                branch_menu_action: branch_menu.src_branch_menu_action,
-                menu_key: branch_menu.menu_key,
-                title: 'Source',
-                diff: branch_menu.src_diff,
-                map: map,
-                new_menu: branch_menu.src_menu,
-                old_menu: branch_menu.src_orig_menu}) #>
-            </td>
-            <td class="branch_diff_comparison_dst">
-              <#- include('Menu_Diff_Comparison', {
-                branch_menu_action: branch_menu.dst_branch_menu_action,
-                menu_key: branch_menu.menu_key,
-                title: 'Destination',
-                diff: branch_menu.dst_diff,
-                map: map,
-                new_menu: branch_menu.dst_menu,
-                old_menu: branch_menu.dst_orig_menu}) #>
-            </td>
-          </tr>
-        </table>
-      </div>
-    <# } #>
-
-  <# }); #>
-
-
-  <!-- --------- -->
-  <!-- REDIRECTS -->
-  <!-- --------- -->
-  <# _.each(branch_conflicts.redirect, function(branch_redirect){ #>
-    <hr/>
-
-    <# if(branch_redirect.branch_redirect_merge_action!=null || branch_redirect.redirect_merge_id!=null){ #>
-      <h4 class="branch_diff_item_header">
-        <#- include('Redirect_Diff_Header', {
-          branch_redirect_action: branch_redirect.branch_redirect_merge_action,
-          redirect_key: branch_redirect.redirect_key,
-          oneline: true,
-          new_redirect: branch_redirect.merge_redirect,
-          old_redirect: branch_redirect.dst_redirect}) #>
-        <input type="button" value="Undo Resolve" class="button button_unresolve_redirect" data-key="<#=branch_redirect.redirect_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
-      </h4>
-    <# } else { #>
-      <div class="branch_diff_comparison">
-        <table cellspacing=0 cellpadding=0 border=0>
-          <tr>
-            <td class="branch_diff_comparison_src">
-              <#- include('Redirect_Diff_Comparison', {
-                branch_redirect_action: branch_redirect.src_branch_redirect_action,
-                redirect_key: branch_redirect.redirect_key,
-                title: 'Source',
-                new_redirect: branch_redirect.src_redirect,
-                old_redirect: branch_redirect.src_orig_redirect}) #>
-            </td>
-            <td class="branch_diff_comparison_dst">
-              <#- include('Redirect_Diff_Comparison', {
-                branch_redirect_action: branch_redirect.dst_branch_redirect_action,
-                redirect_key: branch_redirect.redirect_key,
-                title: 'Destination',
-                new_redirect: branch_redirect.dst_redirect,
-                old_redirect: branch_redirect.dst_orig_redirect}) #>
-            </td>
-          </tr>
-        </table>
-      </div>
-    <# } #>
-
-  <# }); #>
-
-
-  <!-- -------- -->
-  <!-- SITEMAPS -->
-  <!-- -------- -->
-  <# _.each(branch_conflicts.sitemap, function(branch_sitemap){ #>
-    <hr/>
-
-    <# if(branch_sitemap.branch_sitemap_merge_action!=null || branch_sitemap.sitemap_merge_id!=null){ #>
-      <h4 class="branch_diff_item_header">
-        <#- include('Sitemap_Diff_Header', {
-          branch_sitemap_action: branch_sitemap.branch_sitemap_merge_action,
-          sitemap_key: branch_sitemap.sitemap_key,
-          oneline: true,
-          title: 'View'
-            + (branch_sitemap.sitemap_merge_id==((branch_sitemap.src_sitemap||{}).id)?' (Source Branch File Selected)':'')
-            + (branch_sitemap.sitemap_merge_id==((branch_sitemap.dst_sitemap||{}).id)?' (Destination Branch File Selected)':''),
-          new_sitemap: branch_sitemap.merge_sitemap,
-          old_sitemap: branch_sitemap.dst_sitemap}) #>
-        <input type="button" value="Undo Resolve" class="button button_unresolve_sitemap" data-key="<#=branch_sitemap.sitemap_key#>"  data-id="<#=null#>" data-branch_action="<#=null#>" />
-      </h4>
-    <# } else { #>
-      <div class="branch_diff_comparison">
-        <table cellspacing=0 cellpadding=0 border=0>
-          <tr>
-            <td class="branch_diff_comparison_src">
-              <#- include('Sitemap_Diff_Comparison', {
-                branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
-                sitemap_key: branch_sitemap.sitemap_key,
-                title: 'Source',
-                diff: branch_sitemap.src_diff,
-                map: map,
-                new_sitemap: branch_sitemap.src_sitemap,
-                old_sitemap: branch_sitemap.src_orig_sitemap}) #>
-            </td>
-            <td class="branch_diff_comparison_dst">
-              <#- include('Sitemap_Diff_Comparison', {
-                branch_sitemap_action: branch_sitemap.dst_branch_sitemap_action,
-                sitemap_key: branch_sitemap.sitemap_key,
-                title: 'Destination',
-                diff: branch_sitemap.dst_diff,
-                map: map,
-                new_sitemap: branch_sitemap.dst_sitemap,
-                old_sitemap: branch_sitemap.dst_orig_sitemap}) #>
-            </td>
-          </tr>
-        </table>
-      </div>
-    <# } #>
-
-  <# }); #>
-
-  <hr/>
-
-  <# if (branch_conflicts.numUnresolved > 0) { #>
-    <h3>Unresolved Conflicts: <#= branch_conflicts.numUnresolved #></h3>
-  <# } else { #>
-    <h3>All Conflicts Resolved <input type="button" value="Continue and Complete Merge" class="button button_execute_merge" /></h3>
-  <# } #>
-</script>
 <div style="display:none;">
   <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90vh;box-sizing:border-box;display:flex;flex-direction:column;">
     <h3 class="edit_page_title">Edit Page</h3>

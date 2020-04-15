@@ -1,12 +1,28 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
+  this.field_mapping = {};
+
   this.branch_conflicts = {};
 
   this.deployment_target_params = {};
   this.numConflicts = 0;
   this.numResolved = 0;
   this.numUnresolved = 0;
+
+  this.onRenderedConflicts = [
+    function(jdiff){
+      jdiff.find('.preview_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+      jdiff.find('.preview_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+      jdiff.find('.preview_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+      jdiff.find('.preview_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+
+      _.each(_this.branch_conflicts, function(branch_items, item_type){
+        jdiff.find('.button_resolve_'+item_type).on('click', function(e){ _this.resolveConflict(this, item_type); e.preventDefault(); });
+        jdiff.find('.button_unresolve_'+item_type).on('click', function(e){ _this.resolveConflict(this, item_type); e.preventDefault(); });
+      });
+    }
+  ];
 
   this.onload = function(xmodel, callback){
     //Load API Data
@@ -17,18 +33,11 @@ jsh.App[modelid] = new (function(){
     var emodelid = '../_funcs/conflicts';
     XForm.Get(emodelid, { src_branch_id: xmodel.get('branch_merge_id'), dst_branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.numConflicts = 0;
-        _this.numResolved = 0;
-        _this.numUnresolved = 0;
 
         _this.deployment_target_params = rslt.deployment_target_params;
         _this.branch_conflicts = rslt.branch_conflicts;
-
-        _.each(_this.branch_conflicts, function(branch_items, item_type){
-          _this.numConflicts += branch_items.length;
-          _this.numUnresolved = _this.numUnresolved + branch_items.filter(function(branch_item) {return branch_item[item_type + '_merge_id'] == null && branch_item[item_type + '_merge_action'] == null;}).length;
-        });
-        _this.numResolved = _this.numConflicts - _this.numUnresolved;
+        _this.processData();
+        
 
         if (_this.numConflicts <= 0) {
           _this.executeMerge();
@@ -43,86 +52,68 @@ jsh.App[modelid] = new (function(){
     });
   }
 
+  this.processData = function(){
+    _this.numConflicts = 0;
+    _this.numResolved = 0;
+    _this.numUnresolved = 0;
+
+    for(var item_type in _this.branch_conflicts){
+      var branch_items = _this.branch_conflicts[item_type];
+      _.each(branch_items, function(item){
+        item['branch_'+item_type+'_action'] = (item['branch_'+item_type+'_action']||'').toString().toUpperCase();
+      });
+      _this.numConflicts += branch_items.length;
+      _this.numUnresolved = _this.numUnresolved + branch_items.filter(function(branch_item) {return branch_item[item_type + '_merge_id'] == null && branch_item[item_type + '_merge_action'] == null;}).length;
+    }
+
+    _this.numResolved = _this.numConflicts - _this.numUnresolved;
+  }
+
   this.render = function(){
     var jdiff = jsh.$('.conflict_display');
 
-    var mapping = {};
-    mapping.page_seo = {
-      'title' : 'Title',
-      'keywords': 'Keywords',
-      'metadesc': 'Meta Description',
-      'canonical_url': 'Canonical URL'
-    };
-    mapping.page = {
-      'css': 'CSS',
-      'header': 'Header Code',
-      'footer': 'Footer Code',
-      'page_title': 'Page Title',
-      'template_title': 'Template'
-    }
-    mapping.menu = {
-      'menu_name': 'Menu Name',
-      'template_title': 'Template',
-      'menu_path': 'Menu File Path',
-      'menu_items': 'Menu Items'
-    }
-    mapping.sitemap = {
-      'sitemap_name': 'Sitemap Name',
-      'sitemap_items': 'Sitemap Items'
-    }
     var map = function(key, dict){
-      if(mapping[dict] && (key in mapping[dict])) return mapping[dict][key];
+      if(_this.field_mapping[dict] && (key in _this.field_mapping[dict])) return _this.field_mapping[dict][key];
       return key;
     }
 
     var tmpl = jsh.$root('.'+xmodel.class+'_template_diff_listing').html();
     var templates = {};
-
-    var ejsenv = {
+    var item_tmpl = {};
+    for(var item_type in _this.branch_conflicts){
+      item_tmpl[item_type] = jsh.$root('.'+xmodel.class+'_template_diff_' + item_type).html();
+    }
+    var renderParams = {
       _: _,
       jsh: jsh,
+      branch_conflicts: _this.branch_conflicts,
+      branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
+      numConflicts: _this.numConflicts,
+      numResolved: _this.numResolved,
+      numUnresolved: _this.numUnresolved,
       XExt: XExt,
+      map: map,
     };
-
-    function render(t, data) {
-      return jsh.ejs.compile(t, {client: true, delimiter: '#'})(_.assign(data, ejsenv), null, include);
+    renderParams.renderItemConflicts = function(item_type, branch_item){
+      var item_params = { branch_item: branch_item };
+      item_params['branch_' + item_type] = branch_item;
+      return XExt.renderClientEJS(item_tmpl[item_type], _.extend(item_params, renderParams));
     }
-
-    function include(path, data) {
+    renderParams.renderTemplate = function(path, data){
       var t = templates[path];
       if (!t) {
         t = templates[path] = jsh.$root('.'+xmodel.class+'_template_'+path).html();
       }
       if (t) {
-        return render(t, data);
+        return XExt.renderClientEJS(t, _.extend(data, renderParams));
       } else {
         throw "Template '"+path+"' not found";
       }
-    }
+    };
 
-    jdiff.html(render(tmpl, {
-      branch_conflicts: _this.branch_conflicts,
-      branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
-      map,
-    }));
+    jdiff.html(XExt.renderClientEJS(tmpl, renderParams));
 
-    // see also _funcs.merge.js CMS_OBJECTS on the backend
-    var objects = [
-      'menu',
-      'page',
-      'media',
-      'redirect',
-      'sitemap',
-    ];
-
-    objects.forEach(function(objectType) {
-      var ObjectType = objectType.charAt(0).toUpperCase() + objectType.substring(1);
-      if (_this['preview'+ObjectType]) {
-        jdiff.find('.preview_'+objectType).on('click', function(e){ _this['preview'+ObjectType](this); e.preventDefault(); });
-      }
-      jdiff.find('.button_resolve_'+objectType).on('click', function(e){ _this.resolveConflict(this, ObjectType); e.preventDefault(); });
-      jdiff.find('.button_unresolve_'+objectType).on('click', function(e){ _this.resolveConflict(this, ObjectType); e.preventDefault(); });
-    });
+    XExt.trigger(_this.onRenderedConflicts, jdiff);
 
     jdiff.find('.button_execute_merge').on('click', function(e){ _this.executeMerge(this); e.preventDefault(); });
   }
@@ -163,17 +154,18 @@ jsh.App[modelid] = new (function(){
     XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id })
   }
 
-  this.resolveConflict = function(obj, objectType){
+  this.resolveConflict = function(obj, item_type){
     var jobj = $(obj);
 
     var params = {
+      branch_item_type: item_type,
       branch_id: xmodel.get('branch_id'),
       key: jobj.data('key'),
       merge_id: jobj.data('id'),
       branch_merge_action: jobj.data('branch_action'),
     };
 
-    XForm.Post(xmodel.module_namespace+'Branch_Conflicts_Resolve_'+objectType, {}, params, function(rslt){
+    XForm.Post('/_funcs/conflicts/resolve', {}, params, function(rslt){
       _this.loadData();
     });
   }

@@ -1,7 +1,26 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
+  this.field_mapping = {};
+
   this.branch_diff = {};
+
+  //Event handler
+  this.onRenderedDiff = [
+    function(jdiff){
+      jdiff.find('.new_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+      jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+
+      jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+      jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+
+      jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+      jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+
+      jdiff.find('.new_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+      jdiff.find('.previous_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    }
+  ];
 
   this.onload = function(xmodel, callback){
     var branch_merge_desc = xmodel.get('branch_merge_desc');
@@ -42,32 +61,8 @@ jsh.App[modelid] = new (function(){
   this.render = function(){
     var jdiff = jsh.$('.diff_display');
 
-    var mapping = {};
-    mapping.page_seo = {
-      'title' : 'Title',
-      'keywords': 'Keywords',
-      'metadesc': 'Meta Description',
-      'canonical_url': 'Canonical URL'
-    };
-    mapping.page = {
-      'css': 'CSS',
-      'header': 'Header Code',
-      'footer': 'Footer Code',
-      'page_title': 'Page Title',
-      'template_title': 'Template'
-    }
-    mapping.menu = {
-      'menu_name': 'Menu Name',
-      'template_title': 'Template',
-      'menu_path': 'Menu File Path',
-      'menu_items': 'Menu Items'
-    }
-    mapping.sitemap = {
-      'sitemap_name': 'Sitemap Name',
-      'sitemap_items': 'Sitemap Items'
-    }
     var map = function(key, dict){
-      if(mapping[dict] && (key in mapping[dict])) return mapping[dict][key];
+      if(_this.field_mapping[dict] && (key in _this.field_mapping[dict])) return _this.field_mapping[dict][key];
       return key;
     }
 
@@ -92,17 +87,7 @@ jsh.App[modelid] = new (function(){
 
     jdiff.html(XExt.renderClientEJS(tmpl, renderParams));
 
-    jdiff.find('.new_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-    jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-
-    jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-    jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-
-    jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-    jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-
-    jdiff.find('.new_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
-    jdiff.find('.previous_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    XExt.trigger(_this.onRenderedDiff, jdiff);
   }
 
   this.previewPage = function(obj){
