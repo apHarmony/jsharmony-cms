@@ -244,7 +244,7 @@
 <!-- ----- -->
 <!-- MENUS -->
 <!-- ----- -->
-<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_media">
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_menu">
 <# if(branch_menu.branch_menu_merge_action!=null || branch_menu.menu_merge_id!=null){ #>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Menu_Diff_Header', {
@@ -300,6 +300,7 @@
   <# } #>
   <# if(branch_menu_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
+    UPDATED MENU: <#-XExt.escapeHTML(old_menu.tag)#>
   <# } #>
   <# if(branch_menu_action==null || branch_menu_action==''){ #>
     <i class="material-icons branch_action_icon cancel">cancel</i>
@@ -343,7 +344,7 @@
 <!-- --------- -->
 <!-- REDIRECTS -->
 <!-- --------- -->
-<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_media">
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_redirect">
 <# if(branch_redirect.branch_redirect_merge_action!=null || branch_redirect.redirect_merge_id!=null){ #>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Redirect_Diff_Header', {
