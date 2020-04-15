@@ -319,7 +319,7 @@ var nc = 'no conflict';
 var CONFLICT = 'CONFLICT';
 
 // Two things are slightly unusual because this only uses two values to control combinatorical explosion. (sort of three when null)
-// updateAA/BB wouldn't actually exist
+// updateAA/BB are atypical, but can exist under special circumstances; e.g. merging changes into branch that already has those changes.
 // updateAB vs updateBA is surprising. I don't see how this would actually occur in editing, unless there were some sort of "revert" and that got merged with the original edit.
 // similarly deleteA vs addA. though the sequence add, then delete may occur normally.
 var conflicts = [
@@ -376,6 +376,15 @@ manualConflicts = [
 
   // <= two pages: see matrix
 ];
+
+/*
+Update A-B on no-change C will happen given any two concurrent edits.
+So, lead Developer David recently got a departure notice from Developer Danny, and makes a branch to add a job description to the careers page.
+Meanwhile, HR Henry makes a branch to update all the job descriptions with new work-from-home policies.
+David merges the change, taking the careers page from 1->2. After merge to master and clearing orig, all we see is 2.
+Henry submits his changes, with update 1->3. During the conflict check, we see 1->3 : 2.  No matching ids.
+If there is no conflict notice, the job posting gets lost.
+*/
 
 var cmsPath = '';
 var dataPath = '';
