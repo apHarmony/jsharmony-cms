@@ -54,16 +54,6 @@
     <div class="branch_diff_comparison">
       <table cellspacing=0 cellpadding=0 border=0>
         <tr>
-          <td class="branch_diff_comparison_src">
-            <#-renderTemplate('Page_Diff_Comparison', {
-              branch_page_action: branch_page.src_branch_page_action,
-              page_key: branch_page.page_key,
-              title: 'Source',
-              diff: branch_page.src_diff,
-              map: map,
-              new_page: branch_page.src_page,
-              old_page: branch_page.src_orig_page}) #>
-          </td>
           <td class="branch_diff_comparison_dst">
               <#-renderTemplate('Page_Diff_Comparison', {
                 branch_page_action: branch_page.dst_branch_page_action,
@@ -73,6 +63,16 @@
                 map: map,
                 new_page: branch_page.dst_page,
                 old_page: branch_page.dst_orig_page}) #>
+          </td>
+          <td class="branch_diff_comparison_src">
+            <#-renderTemplate('Page_Diff_Comparison', {
+              branch_page_action: branch_page.src_branch_page_action,
+              page_key: branch_page.page_key,
+              title: 'Source',
+              diff: branch_page.src_diff,
+              map: map,
+              new_page: branch_page.src_page,
+              old_page: branch_page.src_orig_page}) #>
           </td>
         </tr>
       </table>
@@ -161,15 +161,6 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Media_Diff_Comparison', {
-            branch_media_action: branch_media.src_branch_media_action,
-            media_key: branch_media.media_key,
-            title: 'Source',
-            diff: branch_media.src_diff,
-            new_media: branch_media.src_media,
-            old_media: branch_media.src_orig_media}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Media_Diff_Comparison', {
             branch_media_action: branch_media.dst_branch_media_action,
@@ -178,6 +169,15 @@
             diff: branch_media.dst_diff,
             new_media: branch_media.dst_media,
             old_media: branch_media.dst_orig_media}) #>
+        </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Media_Diff_Comparison', {
+            branch_media_action: branch_media.src_branch_media_action,
+            media_key: branch_media.media_key,
+            title: 'Source',
+            diff: branch_media.src_diff,
+            new_media: branch_media.src_media,
+            old_media: branch_media.src_orig_media}) #>
         </td>
       </tr>
     </table>
@@ -262,16 +262,6 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Menu_Diff_Comparison', {
-            branch_menu_action: branch_menu.src_branch_menu_action,
-            menu_key: branch_menu.menu_key,
-            title: 'Source',
-            diff: branch_menu.src_diff,
-            map: map,
-            new_menu: branch_menu.src_menu,
-            old_menu: branch_menu.src_orig_menu}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Menu_Diff_Comparison', {
             branch_menu_action: branch_menu.dst_branch_menu_action,
@@ -283,7 +273,17 @@
             old_menu: branch_menu.dst_orig_menu}) #>
         </td>
       </tr>
-    </table>
+      <td class="branch_diff_comparison_src">
+        <#-renderTemplate('Menu_Diff_Comparison', {
+          branch_menu_action: branch_menu.src_branch_menu_action,
+          menu_key: branch_menu.menu_key,
+          title: 'Source',
+          diff: branch_menu.src_diff,
+          map: map,
+          new_menu: branch_menu.src_menu,
+          old_menu: branch_menu.src_orig_menu}) #>
+      </td>
+  </table>
   </div>
 <# } #>
 </script>
@@ -359,14 +359,6 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Redirect_Diff_Comparison', {
-            branch_redirect_action: branch_redirect.src_branch_redirect_action,
-            redirect_key: branch_redirect.redirect_key,
-            title: 'Source',
-            new_redirect: branch_redirect.src_redirect,
-            old_redirect: branch_redirect.src_orig_redirect}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Redirect_Diff_Comparison', {
             branch_redirect_action: branch_redirect.dst_branch_redirect_action,
@@ -374,6 +366,14 @@
             title: 'Destination',
             new_redirect: branch_redirect.dst_redirect,
             old_redirect: branch_redirect.dst_orig_redirect}) #>
+        </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Redirect_Diff_Comparison', {
+            branch_redirect_action: branch_redirect.src_branch_redirect_action,
+            redirect_key: branch_redirect.redirect_key,
+            title: 'Source',
+            new_redirect: branch_redirect.src_redirect,
+            old_redirect: branch_redirect.src_orig_redirect}) #>
         </td>
       </tr>
     </table>
@@ -445,16 +445,6 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Sitemap_Diff_Comparison', {
-            branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
-            sitemap_key: branch_sitemap.sitemap_key,
-            title: 'Source',
-            diff: branch_sitemap.src_diff,
-            map: map,
-            new_sitemap: branch_sitemap.src_sitemap,
-            old_sitemap: branch_sitemap.src_orig_sitemap}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Sitemap_Diff_Comparison', {
             branch_sitemap_action: branch_sitemap.dst_branch_sitemap_action,
@@ -464,6 +454,16 @@
             map: map,
             new_sitemap: branch_sitemap.dst_sitemap,
             old_sitemap: branch_sitemap.dst_orig_sitemap}) #>
+        </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Sitemap_Diff_Comparison', {
+            branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
+            sitemap_key: branch_sitemap.sitemap_key,
+            title: 'Source',
+            diff: branch_sitemap.src_diff,
+            map: map,
+            new_sitemap: branch_sitemap.src_sitemap,
+            old_sitemap: branch_sitemap.src_orig_sitemap}) #>
         </td>
       </tr>
     </table>
