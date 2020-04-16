@@ -3,6 +3,8 @@ jsh.App[modelid] = new (function(){
 
   this.field_mapping = {};
 
+  this.src_branch_desc = 'Source';
+  this.dst_branch_desc = 'Destination';
   this.branch_conflicts = {};
 
   this.deployment_target_params = {};
@@ -34,6 +36,8 @@ jsh.App[modelid] = new (function(){
     XForm.Get(emodelid, { src_branch_id: xmodel.get('branch_merge_id'), dst_branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
 
+        _this.src_branch_desc = rslt.src_branch_desc;
+        _this.dst_branch_desc = rslt.dst_branch_desc;
         _this.deployment_target_params = rslt.deployment_target_params;
         _this.branch_conflicts = rslt.branch_conflicts;
         _this.processData();
@@ -86,6 +90,8 @@ jsh.App[modelid] = new (function(){
     var renderParams = {
       _: _,
       jsh: jsh,
+      src_branch_desc: _this.src_branch_desc,
+      dst_branch_desc: _this.dst_branch_desc,
       branch_conflicts: _this.branch_conflicts,
       branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
       numConflicts: _this.numConflicts,

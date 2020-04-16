@@ -55,20 +55,22 @@
       <table cellspacing=0 cellpadding=0 border=0>
         <tr>
           <td class="branch_diff_comparison_dst">
-              <#-renderTemplate('Page_Diff_Comparison', {
-                branch_page_action: branch_page.dst_branch_page_action,
-                page_key: branch_page.page_key,
-                title: 'Destination',
-                diff: branch_page.dst_diff,
-                map: map,
-                new_page: branch_page.dst_page,
-                old_page: branch_page.dst_orig_page}) #>
+            <#-renderTemplate('Page_Diff_Comparison', {
+              branch_page_action: branch_page.dst_branch_page_action,
+              page_key: branch_page.page_key,
+              title: 'Destination',
+              desc: dst_branch_desc,
+              diff: branch_page.dst_diff,
+              map: map,
+              new_page: branch_page.dst_page,
+              old_page: branch_page.dst_orig_page}) #>
           </td>
           <td class="branch_diff_comparison_src">
             <#-renderTemplate('Page_Diff_Comparison', {
               branch_page_action: branch_page.src_branch_page_action,
               page_key: branch_page.page_key,
               title: 'Source',
+              desc: src_branch_desc,
               diff: branch_page.src_diff,
               map: map,
               new_page: branch_page.src_page,
@@ -109,7 +111,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Page_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Page_Diff_Header', {
       branch_page_action: branch_page_action,
@@ -166,6 +168,7 @@
             branch_media_action: branch_media.dst_branch_media_action,
             media_key: branch_media.media_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             diff: branch_media.dst_diff,
             new_media: branch_media.dst_media,
             old_media: branch_media.dst_orig_media}) #>
@@ -175,6 +178,7 @@
             branch_media_action: branch_media.src_branch_media_action,
             media_key: branch_media.media_key,
             title: 'Source',
+            desc: src_branch_desc,
             diff: branch_media.src_diff,
             new_media: branch_media.src_media,
             old_media: branch_media.src_orig_media}) #>
@@ -215,7 +219,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Media_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Media_Diff_Header', {
       branch_media_action: branch_media_action,
@@ -234,7 +238,7 @@
   <div>
     <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
       <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
-        <#=title#>:<br/>
+        <#=title#> <#=desc#>:<br/>
         <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=new_media.id#>" />
       </div>
     <# } #>
@@ -267,22 +271,24 @@
             branch_menu_action: branch_menu.dst_branch_menu_action,
             menu_key: branch_menu.menu_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             diff: branch_menu.dst_diff,
             map: map,
             new_menu: branch_menu.dst_menu,
             old_menu: branch_menu.dst_orig_menu}) #>
         </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Menu_Diff_Comparison', {
+            branch_menu_action: branch_menu.src_branch_menu_action,
+            menu_key: branch_menu.menu_key,
+            title: 'Source',
+            desc: src_branch_desc,
+            diff: branch_menu.src_diff,
+            map: map,
+            new_menu: branch_menu.src_menu,
+            old_menu: branch_menu.src_orig_menu}) #>
+        </td>
       </tr>
-      <td class="branch_diff_comparison_src">
-        <#-renderTemplate('Menu_Diff_Comparison', {
-          branch_menu_action: branch_menu.src_branch_menu_action,
-          menu_key: branch_menu.menu_key,
-          title: 'Source',
-          diff: branch_menu.src_diff,
-          map: map,
-          new_menu: branch_menu.src_menu,
-          old_menu: branch_menu.src_orig_menu}) #>
-      </td>
   </table>
   </div>
 <# } #>
@@ -318,7 +324,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Menu_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Menu_Diff_Header', {
       branch_menu_action: branch_menu_action,
@@ -364,6 +370,7 @@
             branch_redirect_action: branch_redirect.dst_branch_redirect_action,
             redirect_key: branch_redirect.redirect_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             new_redirect: branch_redirect.dst_redirect,
             old_redirect: branch_redirect.dst_orig_redirect}) #>
         </td>
@@ -372,6 +379,7 @@
             branch_redirect_action: branch_redirect.src_branch_redirect_action,
             redirect_key: branch_redirect.redirect_key,
             title: 'Source',
+            desc: src_branch_desc,
             new_redirect: branch_redirect.src_redirect,
             old_redirect: branch_redirect.src_orig_redirect}) #>
         </td>
@@ -406,7 +414,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Redirect_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Redirect_Diff_Header', {
       branch_redirect_action: branch_redirect_action,
@@ -450,6 +458,7 @@
             branch_sitemap_action: branch_sitemap.dst_branch_sitemap_action,
             sitemap_key: branch_sitemap.sitemap_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             diff: branch_sitemap.dst_diff,
             map: map,
             new_sitemap: branch_sitemap.dst_sitemap,
@@ -460,6 +469,7 @@
             branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
             sitemap_key: branch_sitemap.sitemap_key,
             title: 'Source',
+            desc: src_branch_desc,
             diff: branch_sitemap.src_diff,
             map: map,
             new_sitemap: branch_sitemap.src_sitemap,
@@ -501,7 +511,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Sitemap_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Sitemap_Diff_Header', {
       branch_sitemap_action: branch_sitemap_action,

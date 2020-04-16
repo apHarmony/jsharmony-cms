@@ -426,6 +426,8 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     var branch_conflicts = {};
+    var src_branch_desc = 'Source';
+    var dst_branch_desc = 'Destination';
     var branch_data = {
       src_branch_id: src_branch_id,
       dst_branch_id: dst_branch_id,
@@ -452,6 +454,21 @@ module.exports = exports = function(module, funcs){
               branch_data.deployment_target_params = JSON.parse(rslt[0]);
             }
             catch(ex){}
+          }
+          return cb();
+        });
+      },
+
+      //Get branch names
+      function(cb){
+        var sql = "select branch_id, branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@dst_branch_id or branch_id=@src_branch_id";
+        appsrv.ExecRecordset(context, sql, sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql;return cb(err); }
+          if(rslt && rslt[0]){
+            _.forEach(rslt[0], function(branch) {
+              if(branch.branch_id == src_branch_id) src_branch_desc = branch.branch_desc;
+              if(branch.branch_id == dst_branch_id) dst_branch_desc = branch.branch_desc;
+            });
           }
           return cb();
         });
@@ -515,6 +532,8 @@ module.exports = exports = function(module, funcs){
     ], function(err){
       callback(err, {
         _success: 1,
+        src_branch_desc: src_branch_desc,
+        dst_branch_desc: dst_branch_desc,
         deployment_target_params: branch_data.deployment_target_params,
         branch_conflicts: branch_conflicts,
       });
