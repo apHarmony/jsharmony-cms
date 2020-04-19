@@ -80,7 +80,7 @@ jsHarmonyCMS.prototype.Application = function(){
 
 jsHarmonyCMS.Application = function(){ return (new jsHarmonyCMS()).Application(); }
 
-jsHarmonyCMS.prototype.Init = function(cb){ 
+jsHarmonyCMS.prototype.Init = function(cb){
   var _this = this;
   var jsh = _this.jsh;
 
@@ -164,8 +164,19 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
           _this.MenuTemplates[tmplname] = tmpl;
         }
         else if(templateType=='component'){
-          if(!tmpl.content) tmpl.content = '';
-          prependPropFile(tmpl, 'content', tmplbasepath + '.ejs');
+          prependPropFile(tmpl, 'css', tmplbasepath + '.css');
+          prependPropFile(tmpl, 'js', tmplbasepath + '.js');
+          tmpl.templates = tmpl.templates || {};
+          prependPropFile(tmpl.templates, 'editor', tmplbasepath + '.templates.editor.ejs');
+          prependPropFile(tmpl.templates, 'publish', tmplbasepath + '.templates.publish.ejs');
+          tmpl.properties = tmpl.properties || {};
+          prependPropFile(tmpl.properties, 'ejs', tmplbasepath + '.properties.ejs');
+          prependPropFile(tmpl.properties, 'css', tmplbasepath + '.properties.css');
+          prependPropFile(tmpl.properties, 'js', tmplbasepath + '.properties.js');
+          tmpl.data = tmpl.data || {};
+          prependPropFile(tmpl.data, 'ejs', tmplbasepath + '.data.ejs');
+          prependPropFile(tmpl.data, 'css', tmplbasepath + '.data.css');
+          prependPropFile(tmpl.data, 'js', tmplbasepath + '.data.js');
           _this.Components[tmplname] = tmpl;
         }
       }
@@ -310,7 +321,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     title: 'Content Management System',
     public_apps: [
       { '*':  express.static(path.join(_this.basepath, 'public')) },
-      { 
+      {
         '/jsharmony.css': function (req, res) {
           //Concatenate jsh css with system css
           _this.jsh.getSystemCSS(function(systemCSS){

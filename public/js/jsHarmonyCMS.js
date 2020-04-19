@@ -33,29 +33,14 @@ exports = module.exports = function(jsh, cms){
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.components = rslt.components;
-        async.eachOf(_this.components, function(component, component_id, component_cb){
-          if(component.remote_template && component.remote_template.publish){
-            var loadObj = {};
-            cms.loader.StartLoading(loadObj);
-            $.ajax({
-              type: 'GET',
-              cache: false,
-              url: component.remote_template.publish,
-              xhrFields: { withCredentials: true },
-              success: function(data){
-                cms.loader.StopLoading(loadObj);
-                component.content = data;
-                return component_cb();
-              },
-              error: function(xhr, status, err){
-                cms.loader.StopLoading(loadObj);
-                component.content = '*** COMPONENT NOT FOUND ***';
-                return component_cb();
-              }
-            });
-          }
-          else return component_cb();
-        }, function(err){
+        async.eachOf(_this.components, function(component, key, cb) {
+          var loadObj = {};
+          cms.loader.StartLoading(loadObj);
+          _this.loadComponent(component, function(err){
+            cms.loader.StopLoading(loadObj);
+            cb(err)
+          });
+        }, function(error){
           _this.isInitialized = true;
         });
       }
@@ -76,9 +61,48 @@ exports = module.exports = function(jsh, cms){
       if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
       else if(!(component_id in _this.components)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
       else{
-        component_content = ejs.render(_this.components[component_id].content || '', cms.controller.getComponentRenderParameters(component_id));
+        var component = _this.components[component_id];
+        var templates = component != undefined ? component.templates : undefined
+        var editorTemplate = (templates || {}).editor;
+        component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component_id));
       }
       jobj.html(component_content);
+    });
+
+    $('[data-component]').each(function(i, element) {
+      _this.renderComponent(element);
+    });
+  }
+
+  this.loadComponent = function(component, complete_cb) {
+    var url = (component.remote_template || {}).editor;
+    if (!url) return complete_cb();
+
+    _this.loadRemoteTemplate(url, function(error, data){
+      if (error) {
+        complete_cb(error);
+      } else {
+        component.templates = component.templates || {};
+        var template = (component.templates.editor || '');
+        data = data && template ? '\n' + data : data || '';
+        component.templates.editor = (template + data) || '*** COMPONENT NOT FOUND ***';
+        complete_cb();
+      }
+    });
+  }
+
+  this.loadRemoteTemplate = function(templateUrl, complete_cb) {
+    $.ajax({
+      type: 'GET',
+      cache: false,
+      url: templateUrl,
+      xhrFields: { withCredentials: true },
+      success: function(data){
+        return complete_cb(undefined, data);
+      },
+      error: function(xhr, status, err){
+        return complete_cb(err, undefined);
+      }
     });
   }
 
@@ -119,10 +143,10 @@ exports = module.exports = function(jsh, cms){
       "fields": [
         {"name": "cust_id", "caption":"Customer ID", "type": "int", "actions":"B",
          "control":"textbox", "controlstyle":"width:80px;", "validate": ["IsNumeric","Required"] },
-         
+
         {"name": "cust_name", "caption":"Name", "type": "varchar", "length": 256, "actions":"B",
          "control":"textbox", "controlstyle":"width:260px;", "validate": ["MaxLength:256","Required"] },
-         
+
         {"name": "cust_sts", "caption":"Status", "type": "varchar", "length":32,
          "control":"dropdown", "validate": ["Required"] },
 
@@ -172,6 +196,36 @@ exports = module.exports = function(jsh, cms){
     });
   }
 
+  this.renderComponent = function(element) {
+
+    var componentType = $(element).attr('data-component');
+    var componentModel = componentType ? _this.components[componentType] : undefined;
+    if (!componentModel) {
+      return;
+    }
+    componentModel.id = componentModel.id || componentType;
+    _this.addComponentStylesToPage(componentType, componentModel);
+    var modelInstance = {};
+    XExt.JSEval(componentModel.js, modelInstance, { _this: modelInstance, cms: cms });
+    if (typeof modelInstance.render !== 'function') return;
+    modelInstance.render(componentModel, element);
+  }
+
+  this.addComponentStylesToPage = function(componentType, componentModel) {
+    var cssParts = [];
+    if (componentModel.css) {
+      cssParts.push(componentModel.css);
+    }
+    if (componentModel.properties && componentModel.properties.css) {
+      cssParts.push(componentModel.properties.css);
+    }
+    if (componentModel.data && componentModel.data.css) {
+      cssParts.push(componentModel.data.css);
+    }
+    var id = 'component-' + componentType;
+    cms.util.removeStyle(id);
+    cms.util.addStyle(id, cssParts.join('\n'));
+  }
 }
 },{}],2:[function(require,module,exports){
 /*
@@ -326,16 +380,18 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 
-exports = module.exports = function(jsh, cms){
+exports = module.exports = function(jsh, cms, toolbarElement){
   var _this = this;
 
   var $ = jsh.$;
   var _ = jsh._;
   var XExt = jsh.XExt;
-  
+
   this.isEditing = false;
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.defaultConfig = {};
+  this.toolbarElement = null;
+  this.toolbarElementId = null;
 
   this.onBeginEdit = null; //function(editor){};
   this.onEndEdit = null; //function(editor){};
@@ -351,7 +407,7 @@ exports = module.exports = function(jsh, cms){
     if(!cb) cb = function(){};
 
     //Initialize Editor
-    $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
+    _this.initializeToolbarElement(toolbarElement);
     XExt.TinyMCE('', undefined, function(){
 
       //Change text labels
@@ -372,9 +428,9 @@ exports = module.exports = function(jsh, cms){
         plugins: [
           'advlist autolink autoresize lists link image charmap anchor',
           'searchreplace visualblocks code fullscreen wordcount template',
-          'insertdatetime media table paste code noneditable'
+          'insertdatetime media table paste code noneditable jsharmony'
         ],
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen',
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen | jsHarmonyComponents',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
@@ -404,21 +460,25 @@ exports = module.exports = function(jsh, cms){
           url = url;
           return url;
         },
-        fixed_toolbar_container: '#jsharmony_cms_content_editor_toolbar',
+        fixed_toolbar_container: '#' + _this.toolbarElementId,
       }, _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
           editor.on('focus', function(){
             _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
-            $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:1 },300);
+            _this.toolbarElement.stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
             if(_this.onBeginEdit) _this.onBeginEdit(editor);
           });
           editor.on('blur', function(){
             _this.isEditing = false;
-            $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:0 },300);
+            _this.toolbarElement.stop(true).animate({ opacity:0 },300);
             if(_this.onEndEdit) _this.onEndEdit(editor);
+          });
+          editor.on('jsHarmonyRenderComponent', function(e) {
+            var el = $(editor.targetElm).find('[data-component="' + e.componentType + '"][data-component-id="' + e.componentId + '"]')[0];
+            if (el) cms.componentController.renderComponent(el);
           });
         }
       });
@@ -474,6 +534,14 @@ exports = module.exports = function(jsh, cms){
     return editor.getContent();
   }
 
+  this.initializeToolbarElement = function(element) {
+    this.toolbarElement = $(element);
+    this.toolbarElementId = this.toolbarElement.attr('id');
+    if (!this.toolbarElementId) {
+      this.toolbarElementId = '_' + Math.random().toString().replace('.', '');
+      this.toolbarElement.attr('id', this.toolbarElementId);
+    }
+  }
 }
 },{"./jsHarmonyCMS.Editor.Picker.js":3}],5:[function(require,module,exports){
 /*
@@ -762,6 +830,7 @@ var jsHarmonyCMSLoader = require('./jsHarmonyCMS.Loader.js');
 var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
+var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSComponentController = require('./jsHarmonyCMS.ComponentController.js');
 
 var jsHarmonyCMS = function(){
@@ -831,16 +900,16 @@ var jsHarmonyCMS = function(){
 
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
-      _this.editor = new jsHarmonyCMSEditor(jsh, _this);
+      _this.editor = _this.createEditor()
+      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
 
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
-  
-      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
-  
+
+
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
@@ -858,11 +927,11 @@ var jsHarmonyCMS = function(){
     util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
-      WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } }); 
+      WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
     });
     window.addEventListener('message', this.onmessage);
   }
-  
+
   this.load = function(){
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
@@ -875,7 +944,7 @@ var jsHarmonyCMS = function(){
     }
     _this.controller.init();
   }
-  
+
   this.refreshLayout = function(){
     var ww = $(window).width();
     var wh = $(window).height();
@@ -887,14 +956,27 @@ var jsHarmonyCMS = function(){
     var ph = ((doch > wh) ? doch : wh);
     var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
     $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
-  
+
     var toolbarTop = 37;
     $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
   }
-  
+
   this.onmessage = function(event){
     var data = (event.data || '').toString();
     if(_this.editor && _this.editor.picker && _this.editor.picker.onmessage(event, data)) return;
+  }
+
+  this.createEditor = function() {
+    var el = $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
+    return new jsHarmonyCMSEditor(jsh, _this, el[0]);
+  }
+
+  this.jsHarmonyCMSEditorFactory = function(toolbarElement) {
+    return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
+  }
+
+  this.jsHarmonyCMSEditorPickerFactory = function(editor) {
+    return new jsHarmonyCMSEditorPicker(jsh, _this, editor);
   }
 
   //Run Init
@@ -904,4 +986,4 @@ var jsHarmonyCMS = function(){
 global.jsHarmonyCMS = jsHarmonyCMS;
 global.jsHarmonyCMSInstance = new jsHarmonyCMS();
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jsHarmonyCMS.ComponentController.js":1,"./jsHarmonyCMS.Controller.js":2,"./jsHarmonyCMS.Editor.js":4,"./jsHarmonyCMS.Loader.js":5,"./jsHarmonyCMS.Toolbar.js":6,"./jsHarmonyCMS.Util.js":7}]},{},[8]);
+},{"./jsHarmonyCMS.ComponentController.js":1,"./jsHarmonyCMS.Controller.js":2,"./jsHarmonyCMS.Editor.Picker.js":3,"./jsHarmonyCMS.Editor.js":4,"./jsHarmonyCMS.Loader.js":5,"./jsHarmonyCMS.Toolbar.js":6,"./jsHarmonyCMS.Util.js":7}]},{},[8]);
