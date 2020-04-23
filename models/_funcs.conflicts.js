@@ -170,12 +170,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'){
             branch_page.src_diff = funcs.diff_pageContent(updated_pages[branch_page.src_orig_page.id], updated_pages[branch_page.src_page.id]);
             branch_page.dst_diff = funcs.diff_pageContent(updated_pages[branch_page.src_orig_page.id], updated_pages[branch_page.dst_page.id]);
-            branch_page.dst_diff.diff_with_other = true;
+            if (branch_page.dst_diff) branch_page.dst_diff.diff_with_other = true;
           }
           else if(branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
             branch_page.src_diff = funcs.diff_pageContent(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.src_page.id]);
             branch_page.dst_diff = funcs.diff_pageContent(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.dst_page.id]);
-            branch_page.src_diff.diff_with_other = true;
+            if (branch_page.src_diff) branch_page.src_diff.diff_with_other = true;
           }
         });
         return cb();
@@ -225,12 +225,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_media_item.src_branch_media_action && branch_media_item.src_branch_media_action.toUpperCase()=='UPDATE'){
             branch_media_item.src_diff = funcs.mediaDiff(media[branch_media_item.src_orig_media.id], media[branch_media_item.src_media.id]);
             branch_media_item.dst_diff = funcs.mediaDiff(media[branch_media_item.src_orig_media.id], media[branch_media_item.dst_media.id]);
-            branch_media_item.dst_diff.diff_with_other = true;
+            if (branch_media_item.dst_diff) branch_media_item.dst_diff.diff_with_other = true;
           }
           else if(branch_media_item.dst_branch_media_action && branch_media_item.dst_branch_media_action.toUpperCase()=='UPDATE'){
             branch_media_item.src_diff = funcs.mediaDiff(media[branch_media_item.dst_orig_media.id], media[branch_media_item.src_media.id]);
             branch_media_item.dst_diff = funcs.mediaDiff(media[branch_media_item.dst_orig_media.id], media[branch_media_item.dst_media.id]);
-            branch_media_item.src_diff.diff_with_other = true;
+            if (branch_media_item.src_diff) branch_media_item.src_diff.diff_with_other = true;
           }
         });
         return cb();
@@ -293,12 +293,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_menu.src_branch_menu_action && branch_menu.src_branch_menu_action.toUpperCase()=='UPDATE'){
             branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_orig_menu.id], menus[branch_menu.src_menu.id]);
             branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.src_orig_menu.id], menus[branch_menu.dst_menu.id]);
-            branch_menu.dst_diff.diff_with_other = true;
+            if (branch_menu.dst_diff) branch_menu.dst_diff.diff_with_other = true;
           }
           else if(branch_menu.dst_branch_menu_action && branch_menu.dst_branch_menu_action.toUpperCase()=='UPDATE'){
             branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.dst_orig_menu.id], menus[branch_menu.src_menu.id]);
             branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_orig_menu.id], menus[branch_menu.dst_menu.id]);
-            branch_menu.src_diff.diff_with_other = true;
+            if (branch_menu.src_diff) branch_menu.src_diff.diff_with_other = true;
           }
         });
         return cb();
@@ -360,12 +360,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_sitemap.src_branch_sitemap_action && branch_sitemap.src_branch_sitemap_action.toUpperCase()=='UPDATE'){
             branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_orig_sitemap.id], sitemaps[branch_sitemap.src_sitemap.id]);
             branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_orig_sitemap.id], sitemaps[branch_sitemap.dst_sitemap.id]);
-            branch_sitemap.dst_diff.diff_with_other = true;
+            if (branch_sitemap.dst_diff) branch_sitemap.dst_diff.diff_with_other = true;
           }
           else if(branch_sitemap.dst_branch_sitemap_action && branch_sitemap.dst_branch_sitemap_action.toUpperCase()=='UPDATE'){
             branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_orig_sitemap.id], sitemaps[branch_sitemap.src_sitemap.id]);
             branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_orig_sitemap.id], sitemaps[branch_sitemap.dst_sitemap.id]);
-            branch_sitemap.src_diff.diff_with_other = true;
+            if (branch_sitemap.src_diff) branch_sitemap.src_diff.diff_with_other = true;
           }
         });
         return cb();
