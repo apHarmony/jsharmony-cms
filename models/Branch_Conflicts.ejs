@@ -123,23 +123,42 @@
     <input type="button" value="Pick" class="button button_resolve_page" data-key="<#=page_key#>" data-id="<#=new_page.id#>" data-branch_action="<#=branch_page_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['page_title','template_title','page_tags']), function(val, key){ #>
-    <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <# _.each(diff && diff.seo, function(val, key){ #>
-    <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
-  <# }); #>
+      <div class="branch_diff_item_details">
+        <# _.each(_.pick(diff,['page_title','template_title','page_tags']), function(val, key){ #>
+          <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
+        <# }); #>
 
-  <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title','page_tags']), function(val, key){ #>
-    <div class="diff_head"><#=map(key,'page')#></div>
-    <div class="diff"><#-val#></div>
-  <# }); #>
+        <# _.each(diff && diff.seo, function(val, key){ #>
+          <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
+        <# }); #>
 
-  <# _.each(diff && diff.content, function(val, key){ if(val){ #>
-    <div class="diff_head">Content - <#=diff.content_elements[key]#></div>
-    <div class="diff"><#-val#></div>
-  <# } }); #>
+        <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title','page_tags', 'diff_with_other']), function(val, key){ #>
+          <div class="diff_head"><#=map(key,'page')#></div>
+          <div class="diff"><#-val#></div>
+        <# }); #>
+
+        <# _.each(diff && diff.content, function(val, key){ if(val){ #>
+          <div class="diff_head">Content - <#=diff.content_elements[key]#></div>
+          <div class="diff"><#-val#></div>
+        <# } }); #>
+      </div>
+    </div>
+  <# } #>
 </script>
 
 <!-- ----- -->
@@ -231,18 +250,38 @@
     <input type="button" value="Pick" class="button button_resolve_media" data-key="<#=media_key#>" data-id="<#=new_media.id#>" data-branch_action="<#=branch_media_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['media_desc','media_tags','media_type']), function(val, key){ #>
-    <div class="diff_item"><b>New <#=map(key,'media')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <div>
-    <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
-      <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
-        <#=title#> <#=desc#>:<br/>
-        <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=new_media.id#>" />
+      <div class="branch_diff_item_details">
+
+        <# _.each(_.pick(diff,['media_desc','media_tags','media_type']), function(val, key){ #>
+          <div class="diff_item"><b>New <#=map(key,'media')#></b>: <#=val#></div>
+        <# }); #>
+
+        <div>
+          <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
+            <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
+              <#=title#> <#=desc#>:<br/>
+              <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=new_media.id#>" />
+            </div>
+          <# } #>
+        </div>
       </div>
-    <# } #>
-  </div>
+    </div>
+  <# } #>
 </script>
 
 <!-- ----- -->
@@ -336,14 +375,33 @@
     <input type="button" value="Pick" class="button button_resolve_menu" data-key="<#=menu_key#>" data-id="<#=new_menu.id#>" data-branch_action="<#=branch_menu_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
-    <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <# _.each(_.pick(diff,['menu_items']), function(val, key){ if(val){ #>
-    <div class="diff_head">Content - <#=map(key,'menu')#></div>
-    <div class="diff"><#-val#></div>
-  <# } }); #>
+      <div class="branch_diff_item_details">
+        <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
+          <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
+        <# }); #>
+
+        <# _.each(_.pick(diff,['menu_items']), function(val, key){ if(val){ #>
+          <div class="diff_head">Content - <#=map(key,'menu')#></div>
+          <div class="diff"><#-val#></div>
+        <# } }); #>
+      </div>
+    </div>
+  <# } #>
 </script>
 
 
@@ -523,14 +581,33 @@
     <input type="button" value="Pick" class="button button_resolve_sitemap" data-key="<#=sitemap_key#>" data-id="<#=new_sitemap.id#>" data-branch_action="<#=branch_sitemap_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['sitemap_name']), function(val, key){ #>
-    <div class="<%=model.class%>_diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <# _.each(_.pick(diff,['sitemap_items']), function(val, key){ if(val){ #>
-    <div class="<%=model.class%>_diff_head">Content - <#=map(key,'sitemap')#></div>
-    <div class="<%=model.class%>_diff"><#-val#></div>
-  <# } }); #>
+      <div class="branch_diff_item_details">
+        <# _.each(_.pick(diff,['sitemap_name']), function(val, key){ #>
+          <div class="<%=model.class%>_diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
+        <# }); #>
+
+        <# _.each(_.pick(diff,['sitemap_items']), function(val, key){ if(val){ #>
+          <div class="<%=model.class%>_diff_head">Content - <#=map(key,'sitemap')#></div>
+          <div class="<%=model.class%>_diff"><#-val#></div>
+        <# } }); #>
+      </div>
+    </div>
+  <# } #>
 </script>
 
 
