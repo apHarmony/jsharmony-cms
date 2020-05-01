@@ -444,12 +444,13 @@ module.exports = exports = function(module, funcs){
 
       //Get deployment target params
       function(cb){
-        var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@dst_branch_id";
-        appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
+        var sql = "select site_editor deployment_target_id,deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@dst_branch_id";
+        appsrv.ExecRow(context, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
             try{
-              branch_data.deployment_target_params = JSON.parse(rslt[0]);
+              branch_data.deployment_target_id = rslt[0].deployment_target_id;
+              branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
             }
             catch(ex){}
           }

@@ -50,7 +50,7 @@
   "{schema}.duplicate_page":{
     "params": ["page_key", "page_path", "page_title"],
     "sql": [
-      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select %%%page_path%%%, page_file_id, %%%page_title%%%, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=%%%page_key%%%;select last_insert_rowid_override page_key from jsharmony_meta;"
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select %%%page_path%%%, page_file_id, %%%page_title%%%, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=%%%page_key%%%;select last_insert_rowid_override page_key from jsharmony_meta;"
     ]
   },
   "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and strftime('%Y-%m-%dT%H:%M:%f',deployment_date) <= strftime('%Y-%m-%dT%H:%M:%f',%%%%%%jsh.map.timestamp%%%%%%) order by deployment_date asc;"

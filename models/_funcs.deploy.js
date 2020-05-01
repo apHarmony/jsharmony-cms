@@ -196,6 +196,7 @@ module.exports = exports = function(module, funcs){
     //Update deployment to running status
     var sql = "select \
         deployment_id, site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_sts, deployment_git_revision, \
+        d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') default_page \
         from "+(module.schema?module.schema+'.':'')+"deployment d \
@@ -244,6 +245,7 @@ module.exports = exports = function(module, funcs){
           publish_params.default_page = default_page;
           publish_params.publish_path = publish_path;
           publish_params.deployment_id = deployment_id;
+          publish_params.deployment_target_id = deployment.deployment_target_id;
           deployment.publish_params = publish_params;
           
           var branchData = {

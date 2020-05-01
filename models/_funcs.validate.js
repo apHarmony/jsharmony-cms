@@ -103,12 +103,13 @@ module.exports = exports = function(module, funcs){
 
       //Get deployment_target_params for branch
       function(cb){
-        var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
-        appsrv.ExecScalar(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
+        var sql = "select site_editor deployment_target_id,deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+        appsrv.ExecRow(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
             try{
-              branchData.deployment_target_params = JSON.parse(rslt[0]);
+              branchData.deployment_target_id = rslt[0].deployment_target_id;
+              branchData.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
             }
             catch(ex){}
           }

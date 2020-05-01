@@ -37,7 +37,7 @@ module.exports = exports = function(module, funcs){
 
     //Load Sitemap Content from disk
     module.jsh.ParseJSON(funcs.getSitemapFile(sitemap_file_id), module.name, 'Sitemap File ID#'+sitemap_file_id, function(err, sitemap_content){
-      if(err) return cb(err);
+      //If an error occurs loading the file, ignore it and load the default template instead
       
       sitemap_content = sitemap_content || { sitemap_items: [] };
       return cb(null,sitemap_content);
