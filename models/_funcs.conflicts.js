@@ -489,9 +489,9 @@ module.exports = exports = function(module, funcs){
           sql += selectConflictDetailTables();
 
           sql += " where src_branch_{item}.branch_id=@src_branch_id\
-            and nequal(dst_branch_{item}.{item}_id,src_branch_{item}.{item}_id)\
-            and ((src_branch_{item}.branch_{item}_action is not null and nequal(src_branch_{item}.{item}_orig_id,dst_branch_{item}.{item}_id))\
-            or  (dst_branch_{item}.branch_{item}_action is not null and nequal(dst_branch_{item}.{item}_orig_id,src_branch_{item}.{item}_id))) ";
+            and jsharmony.nequal(dst_branch_{item}.{item}_id,src_branch_{item}.{item}_id)\
+            and ((src_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(src_branch_{item}.{item}_orig_id,dst_branch_{item}.{item}_id))\
+            or  (dst_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(dst_branch_{item}.{item}_orig_id,src_branch_{item}.{item}_id))) ";
 
           if(branch_item.conflicts.sqlwhere) sql += ' and (' + branch_item.conflicts.sqlwhere + ')';
 
