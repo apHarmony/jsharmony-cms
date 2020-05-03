@@ -97,7 +97,7 @@
     "actions": "U",
     "roles": {"AUTHOR": "U","PUBLISHER": "U"},
     "sqlexec": [
-      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select @page_path, page_file_id, page_title, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=@page_key;"
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select @page_path, page_file_id, page_title, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=@page_key;"
     ],
     "fields": [
       {"name":"page_key", "actions":"U", "type":"bigint", "caption":"Page Key", "validate": ["Required"]},

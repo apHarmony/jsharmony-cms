@@ -6,6 +6,9 @@ var jsHarmonyCMS = require('../jsHarmonyCMS.js');
 var DB = require('jsharmony-db');
 var async = require('async');
 var _ = require('lodash');
+var path = require('path');
+var fs = require('fs');
+
 
 // -------------------- merge result assertions -----------------
 // D - values from destination
@@ -316,7 +319,7 @@ var nc = 'no conflict';
 var CONFLICT = 'CONFLICT';
 
 // Two things are slightly unusual because this only uses two values to control combinatorical explosion. (sort of three when null)
-// updateAA/BB wouldn't actually exist
+// updateAA/BB are atypical, but can exist under special circumstances; e.g. merging changes into branch that already has those changes.
 // updateAB vs updateBA is surprising. I don't see how this would actually occur in editing, unless there were some sort of "revert" and that got merged with the original edit.
 // similarly deleteA vs addA. though the sequence add, then delete may occur normally.
 var conflicts = [
@@ -374,6 +377,18 @@ manualConflicts = [
   // <= two pages: see matrix
 ];
 
+/*
+Update A-B on no-change C will happen given any two concurrent edits.
+So, lead Developer David recently got a departure notice from Developer Danny, and makes a branch to add a job description to the careers page.
+Meanwhile, HR Henry makes a branch to update all the job descriptions with new work-from-home policies.
+David merges the change, taking the careers page from 1->2. After merge to master and clearing orig, all we see is 2.
+Henry submits his changes, with update 1->3. During the conflict check, we see 1->3 : 2.  No matching ids.
+If there is no conflict notice, the job posting gets lost.
+*/
+
+var cmsPath = '';
+var dataPath = '';
+
 describe('Merges - Matrix', function() {
   var jsh = new jsHarmonyCMS.Application();
   jsh.Config.appbasepath = process.cwd();
@@ -381,6 +396,8 @@ describe('Merges - Matrix', function() {
   jsh.Config.interactive = true;
   jsh.Config.onConfigLoaded.push(function(cb){
     jsh.Config.system_settings.automatic_schema = false;
+    cmsPath = jsh.Config.modules['jsHarmonyCMS'].moduledir;
+    dataPath = jsh.Config.datadir;
     return cb();
   });
 
@@ -396,6 +413,9 @@ describe('Merges - Matrix', function() {
   var testDstOrigPageId = -1;
   var testPageIdA = -1;
   var testPateIdB = -1;
+  var testPageIdGrandparent = -1;
+  var testPageIdParent = -1;
+  var testPageIdChild = -1;
   var testPageKey = -1;
 
   var setupBranchPage = function(branchId, key, page){
@@ -464,8 +484,34 @@ describe('Merges - Matrix', function() {
       // providing a message to deepStrictEqual doesn't print the diff.
       console.log(label, 'results');
       assert.ifError(err);
-      assert.deepStrictEqual(dbrslt, state);
+      try{
+        assert.deepStrictEqual(dbrslt, state);
+      }
+      catch(ex){
+        console.log('Found');
+        console.log('-----');
+        console.log(JSON.stringify(dbrslt,null,4));
+        console.log('Expected');
+        console.log('--------');
+        console.log(JSON.stringify(state,null,4));
+        throw(ex);
+      }
       done(err); 
+    });
+  }
+
+  function clearTestData(cb){
+    /* Clear previous branchs */
+    var sql = "\
+    delete from cms.branch_page where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.page where page_path like 'Merge Test Data:%';\
+    delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
+    delete from cms.branch where branch_name like 'Merge Test Data:%';"
+    db.Command('S1', sql, [], {}, function(err, dbrslt, stats) {
+      assert.ifError(err);
+      cb();
     });
   }
 
@@ -484,15 +530,10 @@ describe('Merges - Matrix', function() {
         dbconfig.password = dbconfig.admin_password;
       }
       async.waterfall([
+        clearTestData,
         function(cb){
-          /* Clear previous branchs */
-          var sql = "\
-          delete from cms.branch_page where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.page where page_path like 'Merge Test Data:%';\
-          delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-          delete from cms.branch where branch_name like 'Merge Test Data:%';"
+          // create test site
+          var sql = "insert into cms.site(site_name) select 'Merge Test Data' where ('Merge Test Data' not in (select site_name from cms.site));";
           db.Command('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             cb();
@@ -500,7 +541,7 @@ describe('Merges - Matrix', function() {
         },
         function(cb){
           // create destiniation branch
-          var sql = "insert into cms.v_my_current_branch(branch_parent_id, branch_type, branch_name) values(2, 'USER', 'Merge Test Data: Destination Branch');\
+          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
           select branch_id from v_my_current_branch;"
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
@@ -510,7 +551,7 @@ describe('Merges - Matrix', function() {
         },
         function(cb){
           // create source branch
-          var sql = "insert into cms.v_my_current_branch(branch_parent_id, branch_type, branch_name) values(2, 'USER', 'Merge Test Data: Source Branch');\
+          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Source Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
           select branch_id from v_my_current_branch;"
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
@@ -518,36 +559,34 @@ describe('Merges - Matrix', function() {
             cb();
           });
         },
-        function(cb){
-          // create the first page
+      function(cb){
+          // create test pages
           var sql = 
-          "insert into cms.page(page_path) values('Merge Test Data: src current');\
-          select page_key from cms.page where page_path like 'Merge Test Data:%'"
-          db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
+          "insert into cms.page(page_path) values('Merge Test Data: src orig');\
+          insert into cms.page(page_key, page_path) select page_key, 'Merge Test Data: dst orig' from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
+          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
+          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%'"
+          db.Recordset('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
-            testPageKey = dbrslt;
-            cb();
-          });
-        },
-        function(cb){
-          // create three more pages
-          var sql = 
-          "insert into cms.page(page_key, page_path) values(@page_key, 'Merge Test Data: src orig');\
-          insert into cms.page(page_key, page_path) values(@page_key, 'Merge Test Data: dst current');\
-          insert into cms.page(page_key, page_path) values(@page_key, 'Merge Test Data: dst orig');\
-          select page_id from cms.page where page_path like 'Merge Test Data:%'"
-          var sql_params = {'page_key': testPageKey };
-          var sql_ptypes = [dbtypes.BigInt];
-          db.Recordset('S1', sql, sql_ptypes, sql_params, function(err, dbrslt, stats) {
-            assert.ifError(err);
+            testPageKey = dbrslt[0].page_key;
             testPages = dbrslt.map(function(rec) {return rec.page_id});
-            testSrcPageId = testPages[0];
-            testSrcOrigPageId = testPages[1];
-            testDstPageId = testPages[2];
-            testDstOrigPageId = testPages[3];
+            testSrcOrigPageId = testPages[0];
+            testDstOrigPageId = testPages[1];
+            testSrcPageId = testPages[2];
+            testDstPageId = testPages[3];
             testPageIdA = testPages[0];
             testPageIdB = testPages[1];
-            cb();
+            testPageIdGrandparent = testPages[0];
+            testPageIdParent = testPages[2];
+            testPageIdChild = testPages[4];
+            async.eachSeries(testPages, function(page_id, file_cb){
+              fs.copyFile(
+                path.join(cmsPath, 'models/sql/objects/data_files/page_sample.json'),
+                path.join(dataPath, 'page/'+page_id+'.json'),
+                file_cb);
+            }, cb);
           });
         },
       ], function(err){
@@ -557,8 +596,12 @@ describe('Merges - Matrix', function() {
     });
   });
 
-  after(function() {
-    db.Close();
+  after(function(done) {
+    clearTestData(function(err){
+      if(err) console.log(err);
+      db.Close();
+      done();
+    });
   });
 
   Object.keys(operations).forEach(function(operation){
@@ -601,9 +644,10 @@ describe('Merges - Matrix', function() {
       setupBranchPage(testDstBranchId, testPageKey, dstPage),
       function(cb) {
         console.log('conflicts for ', label);
-        jsh.Modules.jsHarmonyCMS.funcs.conflict('S1', {dst_branch_id: testDstBranchId, src_branch_id: testSrcBranchId}, function(err, results) {
+        jsh.Modules.jsHarmonyCMS.funcs.conflicts('S1', testSrcBranchId, testDstBranchId, function(err, results) {
           if(err) return cb(err);
-          assert.strictEqual(results.branch_pages.length > 0 ? CONFLICT : nc, status);
+          assert(!_.isEmpty(results.branch_conflicts));
+          assert.strictEqual(results.branch_conflicts.page.length > 0 ? CONFLICT : nc, status);
           cb();
         });
       },
@@ -646,5 +690,20 @@ describe('Merges - Matrix', function() {
         });
       });
     });
+
+    describe("Direct Descedant", function() {
+      it("Unrelated pages", function(done) {
+        var srcPage = setupUpdate(testSrcPageId, testSrcOrigPageId);
+        var dstPage = setupUnchanged(testDstPageId, testDstPageId);
+        conflictTest("Unrelated pages", srcPage, dstPage, CONFLICT, done);
+      });
+
+      it("Related pages", function(done) {
+        var srcPage = setupUpdate(testPageIdChild, testPageIdParent);
+        var dstPage = setupUnchanged(testPageIdGrandparent, testPageIdGrandparent);
+        conflictTest("Related pages", srcPage, dstPage, nc, done);
+      });
+    });
+
   });
 });

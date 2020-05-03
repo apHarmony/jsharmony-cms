@@ -15,7 +15,7 @@ jsh.App[modelid] = new (function(){
       jsh.$root('.Branch_Summary_buttonCheckout').hide();
     }
     if (!xmodel.get('branch_merge_id')) {
-      jsh.$root('.Branch_Summary_buttonConflict').hide();
+      jsh.$root('.Branch_Summary_buttonConflicts').hide();
     }
   }
 
@@ -69,7 +69,7 @@ jsh.App[modelid] = new (function(){
         };
         XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
           success();
-          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
+          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflicts'+
             '?action=update'+
             '&branch_id='+xmodel.get('dst_branch_id')
           );

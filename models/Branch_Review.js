@@ -49,7 +49,7 @@ jsh.App[modelid] = new (function(){
         XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
           XForm.Post(xmodel.module_namespace+'Branch_Review_Approve', { }, { branch_id: xmodel.get('branch_id') }, function(rslt){
             success();
-            XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflict'+
+            XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflicts'+
               '?action=update'+
               '&branch_id='+jprompt.find('.dst_branch_id').val()
             );

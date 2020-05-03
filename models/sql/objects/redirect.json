@@ -4,8 +4,11 @@
     "caption": "Redirect URL Type",
     "init_data": [
       { "code_val": "BEGINS", "code_txt": "Begins With", "code_seq": 1 },
-      { "code_val": "EXACT", "code_txt": "Exact Match", "code_seq": 2 },
-      { "code_val": "REGEX", "code_txt": "Regular Expression", "code_seq": 3 }
+      { "code_val": "BEGINSICASE", "code_txt": "Begins With (Case Insensitive)", "code_seq": 2 },
+      { "code_val": "EXACT", "code_txt": "Exact Match", "code_seq": 3 },
+      { "code_val": "EXACTICASE", "code_txt": "Exact Match (Case Insensitive)", "code_seq": 4 },
+      { "code_val": "REGEX", "code_txt": "Regular Expression", "code_seq": 5 },
+      { "code_val": "REGEXICASE", "code_txt": "Regular Expression (Case Insensitive)", "code_seq": 6 },
     ]
   },
 
@@ -25,6 +28,7 @@
     "columns": [
       { "name": "redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "redirect_orig_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
       { "name": "redirect_url", "type": "varchar", "length": 1024, "null": false },
       { "name": "redirect_url_type", "type": "varchar", "length": 32, "foreignkey": { "code_redirect_url_type": "code_val" }, "null": false, "default": "EXACT" },
       { "name": "redirect_seq", "type": "int" },
@@ -62,6 +66,7 @@
         "columns": [
           "redirect_id",
           "redirect_key",
+          "redirect_orig_id",
           "redirect_url",
           "redirect_url_type",
           "redirect_seq",
@@ -103,7 +108,7 @@
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
             "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "with_insert_identity(redirect, redirect_id, ",
-            "  insert into redirect(redirect_key, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(deleted(redirect_key), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
+            "  insert into redirect(redirect_key, redirect_orig_id, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(deleted(redirect_key), deleted(redirect_id), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
             "  update branch_redirect set redirect_id=@@INSERT_ID,branch_redirect_action=(case branch_redirect_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key);",
             "  update branch_redirect set redirect_orig_id=redirect_id,branch_redirect_action=NULL where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",

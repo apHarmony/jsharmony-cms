@@ -3,7 +3,7 @@
     "layout":"grid",
     "table":"{schema}.v_my_redirect",
     "actions":"BIUD",
-    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
     "caption":["Redirect","Redirects"],
     "reselectafteredit": "row",
     "sort":["^redirect_seq","^redirect_url"],
