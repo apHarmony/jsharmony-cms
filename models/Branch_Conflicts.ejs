@@ -106,7 +106,7 @@
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
   <# } #>
   <# if(new_page.id!=null){ #>
-    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
+    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" />Preview</a>
   <# } #>
 </script>
 
@@ -233,7 +233,7 @@
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_media.path)#>
   <# } #>
   <# if(new_media.id!=null){ #>
-    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>"><img src="/images/icon_browse.png" /><#=title#></a>
+    <a href="#" class="preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>"><img src="/images/icon_browse.png" />Preview</a>
   <# } #>
 </script>
 
@@ -274,7 +274,7 @@
         <div>
           <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
             <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
-              <#=title#> <#=desc#>:<br/>
+              <#=desc#>:<br/>
               <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=new_media.id#>" />
             </div>
           <# } #>
@@ -358,7 +358,7 @@
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_menu.tag)#>
   <# } #>
   <# if(new_menu.id!=null){ #>
-    <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
+    <a href="#" class="preview preview_menu" data-menu_key="<#=menu_key#>" data-menu_id="<#=new_menu.id#>"><img src="/images/icon_browse.png" />Preview</a>
   <# } #>
 </script>
 
@@ -564,7 +564,7 @@
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_sitemap.type)#>
   <# } #>
   <# if(new_sitemap.id!=null){ #>
-    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=new_sitemap.key#>" data-sitemap_id="<#=new_sitemap.id#>"><img src="/images/icon_browse.png" /><#=title#></a>
+    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=new_sitemap.key#>" data-sitemap_id="<#=new_sitemap.id#>"><img src="/images/icon_browse.png" />Preview</a>
   <# } #>
 </script>
 

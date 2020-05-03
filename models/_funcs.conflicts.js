@@ -556,7 +556,7 @@ module.exports = exports = function(module, funcs){
         async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
           if(!branch_item.conflicts) return branch_item_cb();
 
-          var sql = "select {item}_key key, {item}_id id, {item}_orig_id orig_id\
+          var sql = "select {item}_key [key], {item}_id id, {item}_orig_id orig_id\
             from {tbl_item}\
             where {item}.{item}_key in \
                 (select {item}_key \
@@ -566,12 +566,12 @@ module.exports = exports = function(module, funcs){
               and {item}_id between \
                   (select min({item}_id) \
                     from {tbl_branch_item} \
-                    where {item}_key = {tbl_item}.{item}_key and (branch_id = @src_branch_id or branch_id = @dst_branch_id) \
+                    where {item}_id is not null and {item}_key = {tbl_item}.{item}_key and (branch_id = @src_branch_id or branch_id = @dst_branch_id) \
                   ) \
                 and \
                   (select max({item}_id) \
                     from {tbl_branch_item} \
-                    where {item}_key = {tbl_item}.{item}_key and (branch_id = @src_branch_id or branch_id = @dst_branch_id) \
+                    where {item}_id is not null and {item}_key = {tbl_item}.{item}_key and (branch_id = @src_branch_id or branch_id = @dst_branch_id) \
                   ) \
             ;"
 

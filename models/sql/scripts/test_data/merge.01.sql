@@ -17,7 +17,7 @@ insert into cms.v_my_media(media_path, media_ext, media_size, media_desc, media_
 /* Edit Branch */
 /* --------------*/
 /* Create branch */
-insert into cms.v_my_current_branch(branch_parent_id, branch_type, branch_name) values((select branch_id from cms.branch where branch_name="Merge Test Data: Base Branch"), 'USER', 'Merge Test Data: Edit Branch');
+insert into cms.v_my_current_branch(branch_parent_id, branch_type, branch_name) values((select branch_id from cms.branch where branch_name='Merge Test Data: Base Branch'), 'USER', 'Merge Test Data: Edit Branch');
 /* Update pages */
 insert into cms.v_my_page(page_title, page_path) values('Add','/test/add/index.html');
 update cms.v_my_page set page_title='Update After' where page_path='/test/update/index.html';

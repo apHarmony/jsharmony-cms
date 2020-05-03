@@ -390,6 +390,7 @@ var cmsPath = '';
 var dataPath = '';
 
 describe('Merges - Matrix', function() {
+  this.timeout(10000);
   var jsh = new jsHarmonyCMS.Application();
   jsh.Config.appbasepath = process.cwd();
   jsh.Config.silentStart = true;
@@ -542,7 +543,7 @@ describe('Merges - Matrix', function() {
         function(cb){
           // create destiniation branch
           var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
-          select branch_id from v_my_current_branch;"
+          select branch_id from cms.v_my_current_branch;"
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testDstBranchId = dbrslt;
@@ -552,7 +553,7 @@ describe('Merges - Matrix', function() {
         function(cb){
           // create source branch
           var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Source Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
-          select branch_id from v_my_current_branch;"
+          select branch_id from cms.v_my_current_branch;"
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testSrcBranchId = dbrslt;
