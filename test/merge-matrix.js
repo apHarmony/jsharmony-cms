@@ -319,7 +319,7 @@ var nc = 'no conflict';
 var CONFLICT = 'CONFLICT';
 
 // Two things are slightly unusual because this only uses two values to control combinatorical explosion. (sort of three when null)
-// updateAA/BB wouldn't actually exist
+// updateAA/BB are atypical, but can exist under special circumstances; e.g. merging changes into branch that already has those changes.
 // updateAB vs updateBA is surprising. I don't see how this would actually occur in editing, unless there were some sort of "revert" and that got merged with the original edit.
 // similarly deleteA vs addA. though the sequence add, then delete may occur normally.
 var conflicts = [
@@ -377,6 +377,15 @@ manualConflicts = [
   // <= two pages: see matrix
 ];
 
+/*
+Update A-B on no-change C will happen given any two concurrent edits.
+So, lead Developer David recently got a departure notice from Developer Danny, and makes a branch to add a job description to the careers page.
+Meanwhile, HR Henry makes a branch to update all the job descriptions with new work-from-home policies.
+David merges the change, taking the careers page from 1->2. After merge to master and clearing orig, all we see is 2.
+Henry submits his changes, with update 1->3. During the conflict check, we see 1->3 : 2.  No matching ids.
+If there is no conflict notice, the job posting gets lost.
+*/
+
 var cmsPath = '';
 var dataPath = '';
 
@@ -404,6 +413,9 @@ describe('Merges - Matrix', function() {
   var testDstOrigPageId = -1;
   var testPageIdA = -1;
   var testPateIdB = -1;
+  var testPageIdGrandparent = -1;
+  var testPageIdParent = -1;
+  var testPageIdChild = -1;
   var testPageKey = -1;
 
   var setupBranchPage = function(branchId, key, page){
@@ -547,42 +559,32 @@ describe('Merges - Matrix', function() {
             cb();
           });
         },
-        function(cb){
-          // create the first page
+      function(cb){
+          // create test pages
           var sql = 
-          "insert into cms.page(page_path) values('Merge Test Data: src current');\
-          select page_key from cms.page where page_path like 'Merge Test Data:%'"
-          db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
+          "insert into cms.page(page_path) values('Merge Test Data: src orig');\
+          insert into cms.page(page_key, page_path) select page_key, 'Merge Test Data: dst orig' from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
+          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
+          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%'"
+          db.Recordset('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
-            testPageKey = dbrslt;
-            fs.copyFile(
-              path.join(cmsPath, 'models/sql/objects/data_files/page_sample.json'),
-              path.join(dataPath, 'page/'+dbrslt+'.json'),
-              cb);
-          });
-        },
-        function(cb){
-          // create three more pages
-          var sql = 
-          "insert into cms.page(page_key, page_path) values(@page_key, 'Merge Test Data: src orig');\
-          insert into cms.page(page_key, page_path) values(@page_key, 'Merge Test Data: dst current');\
-          insert into cms.page(page_key, page_path) values(@page_key, 'Merge Test Data: dst orig');\
-          select page_id from cms.page where page_path like 'Merge Test Data:%'"
-          var sql_params = {'page_key': testPageKey };
-          var sql_ptypes = [dbtypes.BigInt];
-          db.Recordset('S1', sql, sql_ptypes, sql_params, function(err, dbrslt, stats) {
-            assert.ifError(err);
+            testPageKey = dbrslt[0].page_key;
             testPages = dbrslt.map(function(rec) {return rec.page_id});
-            testSrcPageId = testPages[0];
-            testSrcOrigPageId = testPages[1];
-            testDstPageId = testPages[2];
-            testDstOrigPageId = testPages[3];
+            testSrcOrigPageId = testPages[0];
+            testDstOrigPageId = testPages[1];
+            testSrcPageId = testPages[2];
+            testDstPageId = testPages[3];
             testPageIdA = testPages[0];
             testPageIdB = testPages[1];
-            async.eachSeries(testPages, function(page_key, file_cb){
+            testPageIdGrandparent = testPages[0];
+            testPageIdParent = testPages[2];
+            testPageIdChild = testPages[4];
+            async.eachSeries(testPages, function(page_id, file_cb){
               fs.copyFile(
                 path.join(cmsPath, 'models/sql/objects/data_files/page_sample.json'),
-                path.join(dataPath, 'page/'+page_key+'.json'),
+                path.join(dataPath, 'page/'+page_id+'.json'),
                 file_cb);
             }, cb);
           });
@@ -688,5 +690,20 @@ describe('Merges - Matrix', function() {
         });
       });
     });
+
+    describe("Direct Descedant", function() {
+      it("Unrelated pages", function(done) {
+        var srcPage = setupUpdate(testSrcPageId, testSrcOrigPageId);
+        var dstPage = setupUnchanged(testDstPageId, testDstPageId);
+        conflictTest("Unrelated pages", srcPage, dstPage, CONFLICT, done);
+      });
+
+      it("Related pages", function(done) {
+        var srcPage = setupUpdate(testPageIdChild, testPageIdParent);
+        var dstPage = setupUnchanged(testPageIdGrandparent, testPageIdGrandparent);
+        conflictTest("Related pages", srcPage, dstPage, nc, done);
+      });
+    });
+
   });
 });

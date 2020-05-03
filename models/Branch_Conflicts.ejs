@@ -54,25 +54,27 @@
     <div class="branch_diff_comparison">
       <table cellspacing=0 cellpadding=0 border=0>
         <tr>
+          <td class="branch_diff_comparison_dst">
+            <#-renderTemplate('Page_Diff_Comparison', {
+              branch_page_action: branch_page.dst_branch_page_action,
+              page_key: branch_page.page_key,
+              title: 'Destination',
+              desc: dst_branch_desc,
+              diff: branch_page.dst_diff,
+              map: map,
+              new_page: branch_page.dst_page,
+              old_page: branch_page.dst_orig_page}) #>
+          </td>
           <td class="branch_diff_comparison_src">
             <#-renderTemplate('Page_Diff_Comparison', {
               branch_page_action: branch_page.src_branch_page_action,
               page_key: branch_page.page_key,
               title: 'Source',
+              desc: src_branch_desc,
               diff: branch_page.src_diff,
               map: map,
               new_page: branch_page.src_page,
               old_page: branch_page.src_orig_page}) #>
-          </td>
-          <td class="branch_diff_comparison_dst">
-              <#-renderTemplate('Page_Diff_Comparison', {
-                branch_page_action: branch_page.dst_branch_page_action,
-                page_key: branch_page.page_key,
-                title: 'Destination',
-                diff: branch_page.dst_diff,
-                map: map,
-                new_page: branch_page.dst_page,
-                old_page: branch_page.dst_orig_page}) #>
           </td>
         </tr>
       </table>
@@ -109,7 +111,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Page_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Page_Diff_Header', {
       branch_page_action: branch_page_action,
@@ -121,23 +123,42 @@
     <input type="button" value="Pick" class="button button_resolve_page" data-key="<#=page_key#>" data-id="<#=new_page.id#>" data-branch_action="<#=branch_page_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['page_title','template_title','page_tags']), function(val, key){ #>
-    <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <# _.each(diff && diff.seo, function(val, key){ #>
-    <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
-  <# }); #>
+      <div class="branch_diff_item_details">
+        <# _.each(_.pick(diff,['page_title','template_title','page_tags']), function(val, key){ #>
+          <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
+        <# }); #>
 
-  <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title','page_tags']), function(val, key){ #>
-    <div class="diff_head"><#=map(key,'page')#></div>
-    <div class="diff"><#-val#></div>
-  <# }); #>
+        <# _.each(diff && diff.seo, function(val, key){ #>
+          <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
+        <# }); #>
 
-  <# _.each(diff && diff.content, function(val, key){ if(val){ #>
-    <div class="diff_head">Content - <#=diff.content_elements[key]#></div>
-    <div class="diff"><#-val#></div>
-  <# } }); #>
+        <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title','page_tags', 'diff_with_other']), function(val, key){ #>
+          <div class="diff_head"><#=map(key,'page')#></div>
+          <div class="diff"><#-val#></div>
+        <# }); #>
+
+        <# _.each(diff && diff.content, function(val, key){ if(val){ #>
+          <div class="diff_head">Content - <#=diff.content_elements[key]#></div>
+          <div class="diff"><#-val#></div>
+        <# } }); #>
+      </div>
+    </div>
+  <# } #>
 </script>
 
 <!-- ----- -->
@@ -161,23 +182,25 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Media_Diff_Comparison', {
-            branch_media_action: branch_media.src_branch_media_action,
-            media_key: branch_media.media_key,
-            title: 'Source',
-            diff: branch_media.src_diff,
-            new_media: branch_media.src_media,
-            old_media: branch_media.src_orig_media}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Media_Diff_Comparison', {
             branch_media_action: branch_media.dst_branch_media_action,
             media_key: branch_media.media_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             diff: branch_media.dst_diff,
             new_media: branch_media.dst_media,
             old_media: branch_media.dst_orig_media}) #>
+        </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Media_Diff_Comparison', {
+            branch_media_action: branch_media.src_branch_media_action,
+            media_key: branch_media.media_key,
+            title: 'Source',
+            desc: src_branch_desc,
+            diff: branch_media.src_diff,
+            new_media: branch_media.src_media,
+            old_media: branch_media.src_orig_media}) #>
         </td>
       </tr>
     </table>
@@ -215,7 +238,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Media_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Media_Diff_Header', {
       branch_media_action: branch_media_action,
@@ -227,18 +250,38 @@
     <input type="button" value="Pick" class="button button_resolve_media" data-key="<#=media_key#>" data-id="<#=new_media.id#>" data-branch_action="<#=branch_media_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['media_desc','media_tags','media_type']), function(val, key){ #>
-    <div class="diff_item"><b>New <#=map(key,'media')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <div>
-    <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
-      <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
-        <#=title#>:<br/>
-        <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=new_media.id#>" />
+      <div class="branch_diff_item_details">
+
+        <# _.each(_.pick(diff,['media_desc','media_tags','media_type']), function(val, key){ #>
+          <div class="diff_item"><b>New <#=map(key,'media')#></b>: <#=val#></div>
+        <# }); #>
+
+        <div>
+          <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
+            <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
+              <#=title#> <#=desc#>:<br/>
+              <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=new_media.id#>" />
+            </div>
+          <# } #>
+        </div>
       </div>
-    <# } #>
-  </div>
+    </div>
+  <# } #>
 </script>
 
 <!-- ----- -->
@@ -262,28 +305,30 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Menu_Diff_Comparison', {
-            branch_menu_action: branch_menu.src_branch_menu_action,
-            menu_key: branch_menu.menu_key,
-            title: 'Source',
-            diff: branch_menu.src_diff,
-            map: map,
-            new_menu: branch_menu.src_menu,
-            old_menu: branch_menu.src_orig_menu}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Menu_Diff_Comparison', {
             branch_menu_action: branch_menu.dst_branch_menu_action,
             menu_key: branch_menu.menu_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             diff: branch_menu.dst_diff,
             map: map,
             new_menu: branch_menu.dst_menu,
             old_menu: branch_menu.dst_orig_menu}) #>
         </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Menu_Diff_Comparison', {
+            branch_menu_action: branch_menu.src_branch_menu_action,
+            menu_key: branch_menu.menu_key,
+            title: 'Source',
+            desc: src_branch_desc,
+            diff: branch_menu.src_diff,
+            map: map,
+            new_menu: branch_menu.src_menu,
+            old_menu: branch_menu.src_orig_menu}) #>
+        </td>
       </tr>
-    </table>
+  </table>
   </div>
 <# } #>
 </script>
@@ -318,7 +363,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Menu_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Menu_Diff_Header', {
       branch_menu_action: branch_menu_action,
@@ -330,14 +375,33 @@
     <input type="button" value="Pick" class="button button_resolve_menu" data-key="<#=menu_key#>" data-id="<#=new_menu.id#>" data-branch_action="<#=branch_menu_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
-    <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <# _.each(_.pick(diff,['menu_items']), function(val, key){ if(val){ #>
-    <div class="diff_head">Content - <#=map(key,'menu')#></div>
-    <div class="diff"><#-val#></div>
-  <# } }); #>
+      <div class="branch_diff_item_details">
+        <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
+          <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
+        <# }); #>
+
+        <# _.each(_.pick(diff,['menu_items']), function(val, key){ if(val){ #>
+          <div class="diff_head">Content - <#=map(key,'menu')#></div>
+          <div class="diff"><#-val#></div>
+        <# } }); #>
+      </div>
+    </div>
+  <# } #>
 </script>
 
 
@@ -359,21 +423,23 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Redirect_Diff_Comparison', {
-            branch_redirect_action: branch_redirect.src_branch_redirect_action,
-            redirect_key: branch_redirect.redirect_key,
-            title: 'Source',
-            new_redirect: branch_redirect.src_redirect,
-            old_redirect: branch_redirect.src_orig_redirect}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Redirect_Diff_Comparison', {
             branch_redirect_action: branch_redirect.dst_branch_redirect_action,
             redirect_key: branch_redirect.redirect_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             new_redirect: branch_redirect.dst_redirect,
             old_redirect: branch_redirect.dst_orig_redirect}) #>
+        </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Redirect_Diff_Comparison', {
+            branch_redirect_action: branch_redirect.src_branch_redirect_action,
+            redirect_key: branch_redirect.redirect_key,
+            title: 'Source',
+            desc: src_branch_desc,
+            new_redirect: branch_redirect.src_redirect,
+            old_redirect: branch_redirect.src_orig_redirect}) #>
         </td>
       </tr>
     </table>
@@ -406,7 +472,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Redirect_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Redirect_Diff_Header', {
       branch_redirect_action: branch_redirect_action,
@@ -445,25 +511,27 @@
   <div class="branch_diff_comparison">
     <table cellspacing=0 cellpadding=0 border=0>
       <tr>
-        <td class="branch_diff_comparison_src">
-          <#-renderTemplate('Sitemap_Diff_Comparison', {
-            branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
-            sitemap_key: branch_sitemap.sitemap_key,
-            title: 'Source',
-            diff: branch_sitemap.src_diff,
-            map: map,
-            new_sitemap: branch_sitemap.src_sitemap,
-            old_sitemap: branch_sitemap.src_orig_sitemap}) #>
-        </td>
         <td class="branch_diff_comparison_dst">
           <#-renderTemplate('Sitemap_Diff_Comparison', {
             branch_sitemap_action: branch_sitemap.dst_branch_sitemap_action,
             sitemap_key: branch_sitemap.sitemap_key,
             title: 'Destination',
+            desc: dst_branch_desc,
             diff: branch_sitemap.dst_diff,
             map: map,
             new_sitemap: branch_sitemap.dst_sitemap,
             old_sitemap: branch_sitemap.dst_orig_sitemap}) #>
+        </td>
+        <td class="branch_diff_comparison_src">
+          <#-renderTemplate('Sitemap_Diff_Comparison', {
+            branch_sitemap_action: branch_sitemap.src_branch_sitemap_action,
+            sitemap_key: branch_sitemap.sitemap_key,
+            title: 'Source',
+            desc: src_branch_desc,
+            diff: branch_sitemap.src_diff,
+            map: map,
+            new_sitemap: branch_sitemap.src_sitemap,
+            old_sitemap: branch_sitemap.src_orig_sitemap}) #>
         </td>
       </tr>
     </table>
@@ -501,7 +569,7 @@
 </script>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_Sitemap_Diff_Comparison">
-  <h4 class="branch_diff_item_header"><#=title#> Branch</h4>
+  <h4 class="branch_diff_item_header"><#=title#> Branch: <#=desc#></h4>
   <h4 class="branch_diff_item_header">
     <#-renderTemplate('Sitemap_Diff_Header', {
       branch_sitemap_action: branch_sitemap_action,
@@ -513,14 +581,33 @@
     <input type="button" value="Pick" class="button button_resolve_sitemap" data-key="<#=sitemap_key#>" data-id="<#=new_sitemap.id#>" data-branch_action="<#=branch_sitemap_action#>" />
   </h4>
 
-  <# _.each(_.pick(diff,['sitemap_name']), function(val, key){ #>
-    <div class="<%=model.class%>_diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
-  <# }); #>
+  <# if (diff) { #>
+    <div class="branch_diff_item <# if (diff.diff_with_other) { #>branch_diff_item_collapsed<# } #>">
+      <# if (diff.diff_with_other) { #>
+        <a href="#" class="branch_diff_item_toggle">
+          <span class="branch_diff_item_expand">
+            <img src="/images/icon_zoom_in.png" />
+            Show differences with other's prior state
+          </span>
+          <span class="branch_diff_item_collapse">
+            <img src="/images/icon_zoom_out.png" />
+            Hide differences with other's prior state
+          </span>
+        </a>
+      <# } #>
 
-  <# _.each(_.pick(diff,['sitemap_items']), function(val, key){ if(val){ #>
-    <div class="<%=model.class%>_diff_head">Content - <#=map(key,'sitemap')#></div>
-    <div class="<%=model.class%>_diff"><#-val#></div>
-  <# } }); #>
+      <div class="branch_diff_item_details">
+        <# _.each(_.pick(diff,['sitemap_name']), function(val, key){ #>
+          <div class="<%=model.class%>_diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
+        <# }); #>
+
+        <# _.each(_.pick(diff,['sitemap_items']), function(val, key){ if(val){ #>
+          <div class="<%=model.class%>_diff_head">Content - <#=map(key,'sitemap')#></div>
+          <div class="<%=model.class%>_diff"><#-val#></div>
+        <# } }); #>
+      </div>
+    </div>
+  <# } #>
 </script>
 
 

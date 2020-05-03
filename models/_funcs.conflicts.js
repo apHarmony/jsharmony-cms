@@ -170,10 +170,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_page.src_branch_page_action && branch_page.src_branch_page_action.toUpperCase()=='UPDATE'){
             branch_page.src_diff = funcs.diff_pageContent(updated_pages[branch_page.src_orig_page.id], updated_pages[branch_page.src_page.id]);
             branch_page.dst_diff = funcs.diff_pageContent(updated_pages[branch_page.src_orig_page.id], updated_pages[branch_page.dst_page.id]);
+            if (branch_page.dst_diff) branch_page.dst_diff.diff_with_other = true;
           }
           else if(branch_page.dst_branch_page_action && branch_page.dst_branch_page_action.toUpperCase()=='UPDATE'){
             branch_page.src_diff = funcs.diff_pageContent(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.src_page.id]);
             branch_page.dst_diff = funcs.diff_pageContent(updated_pages[branch_page.dst_orig_page.id], updated_pages[branch_page.dst_page.id]);
+            if (branch_page.src_diff) branch_page.src_diff.diff_with_other = true;
           }
         });
         return cb();
@@ -223,10 +225,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_media_item.src_branch_media_action && branch_media_item.src_branch_media_action.toUpperCase()=='UPDATE'){
             branch_media_item.src_diff = funcs.mediaDiff(media[branch_media_item.src_orig_media.id], media[branch_media_item.src_media.id]);
             branch_media_item.dst_diff = funcs.mediaDiff(media[branch_media_item.src_orig_media.id], media[branch_media_item.dst_media.id]);
+            if (branch_media_item.dst_diff) branch_media_item.dst_diff.diff_with_other = true;
           }
           else if(branch_media_item.dst_branch_media_action && branch_media_item.dst_branch_media_action.toUpperCase()=='UPDATE'){
             branch_media_item.src_diff = funcs.mediaDiff(media[branch_media_item.dst_orig_media.id], media[branch_media_item.src_media.id]);
             branch_media_item.dst_diff = funcs.mediaDiff(media[branch_media_item.dst_orig_media.id], media[branch_media_item.dst_media.id]);
+            if (branch_media_item.src_diff) branch_media_item.src_diff.diff_with_other = true;
           }
         });
         return cb();
@@ -289,10 +293,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_menu.src_branch_menu_action && branch_menu.src_branch_menu_action.toUpperCase()=='UPDATE'){
             branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.src_orig_menu.id], menus[branch_menu.src_menu.id]);
             branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.src_orig_menu.id], menus[branch_menu.dst_menu.id]);
+            if (branch_menu.dst_diff) branch_menu.dst_diff.diff_with_other = true;
           }
           else if(branch_menu.dst_branch_menu_action && branch_menu.dst_branch_menu_action.toUpperCase()=='UPDATE'){
             branch_menu.src_diff = funcs.menuDiff(menus[branch_menu.dst_orig_menu.id], menus[branch_menu.src_menu.id]);
             branch_menu.dst_diff = funcs.menuDiff(menus[branch_menu.dst_orig_menu.id], menus[branch_menu.dst_menu.id]);
+            if (branch_menu.src_diff) branch_menu.src_diff.diff_with_other = true;
           }
         });
         return cb();
@@ -354,10 +360,12 @@ module.exports = exports = function(module, funcs){
           else if(branch_sitemap.src_branch_sitemap_action && branch_sitemap.src_branch_sitemap_action.toUpperCase()=='UPDATE'){
             branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_orig_sitemap.id], sitemaps[branch_sitemap.src_sitemap.id]);
             branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.src_orig_sitemap.id], sitemaps[branch_sitemap.dst_sitemap.id]);
+            if (branch_sitemap.dst_diff) branch_sitemap.dst_diff.diff_with_other = true;
           }
           else if(branch_sitemap.dst_branch_sitemap_action && branch_sitemap.dst_branch_sitemap_action.toUpperCase()=='UPDATE'){
             branch_sitemap.src_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_orig_sitemap.id], sitemaps[branch_sitemap.src_sitemap.id]);
             branch_sitemap.dst_diff = funcs.sitemapDiff(sitemaps[branch_sitemap.dst_orig_sitemap.id], sitemaps[branch_sitemap.dst_sitemap.id]);
+            if (branch_sitemap.src_diff) branch_sitemap.src_diff.diff_with_other = true;
           }
         });
         return cb();
@@ -419,6 +427,25 @@ module.exports = exports = function(module, funcs){
     });
   }
 
+  function rejectDirectAncestorConflicts(collection, objectType, lineage) {
+    var parent = {};
+    _.each(lineage, function(link) {
+      parent[link.id] = link.orig_id;
+    });
+    return _.filter(collection, function(branch_object){
+      var src = branch_object['src_'+objectType];
+      var dst = branch_object['dst_'+objectType];
+      if (!src || !dst) return true;
+      var newer = Math.max(src.id, dst.id);
+      var older = Math.min(src.id, dst.id);
+      var crazy = 0;
+      while (newer && newer > older && crazy++ < 200) {
+        newer = parent[newer];
+      }
+      return newer != older;
+    });
+  }
+
   exports.conflicts = function(context, src_branch_id, dst_branch_id, callback) {
     var cms = module;
     var jsh = module.jsh;
@@ -426,6 +453,8 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     var branch_conflicts = {};
+    var src_branch_desc = 'Source';
+    var dst_branch_desc = 'Destination';
     var branch_data = {
       src_branch_id: src_branch_id,
       dst_branch_id: dst_branch_id,
@@ -453,6 +482,21 @@ module.exports = exports = function(module, funcs){
               branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
             }
             catch(ex){}
+          }
+          return cb();
+        });
+      },
+
+      //Get branch names
+      function(cb){
+        var sql = "select branch_id, branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@dst_branch_id or branch_id=@src_branch_id";
+        appsrv.ExecRecordset(context, sql, sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql;return cb(err); }
+          if(rslt && rslt[0]){
+            _.forEach(rslt[0], function(branch) {
+              if(branch.branch_id == src_branch_id) src_branch_desc = branch.branch_desc;
+              if(branch.branch_id == dst_branch_id) dst_branch_desc = branch.branch_desc;
+            });
           }
           return cb();
         });
@@ -502,20 +546,64 @@ module.exports = exports = function(module, funcs){
               formatBranchObject(branch_conflicts[branch_item_type], branch_item_type);
             }
 
-            //Run onConflicts function
-            Helper.execif(branch_item.conflicts.onConflicts,
-              function(f){
-                branch_item.conflicts.onConflicts(branch_conflicts[branch_item_type], branch_data, f);
-              },
-              branch_item_cb
-            );
+            branch_item_cb();
           });
+        }, cb);
+      },
+
+      //Reject conflicts where one item is a direct decendant of the other
+      function(cb){
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          if(!branch_item.conflicts) return branch_item_cb();
+
+          var sql = "select {item}_key key, {item}_id id, {item}_orig_id orig_id\
+            from {tbl_item}\
+            where {item}.{item}_key in \
+                (select {item}_key \
+                  from {tbl_branch_item} \
+                  where (branch_id = @src_branch_id and branch_{item}_action is not null) or (branch_id = @dst_branch_id and branch_{item}_action is not null) \
+                ) \
+              and {item}_id between \
+                  (select min({item}_id) \
+                    from {tbl_branch_item} \
+                    where {item}_key = {tbl_item}.{item}_key and (branch_id = @src_branch_id or branch_id = @dst_branch_id) \
+                  ) \
+                and \
+                  (select max({item}_id) \
+                    from {tbl_branch_item} \
+                    where {item}_key = {tbl_item}.{item}_key and (branch_id = @src_branch_id or branch_id = @dst_branch_id) \
+                  ) \
+            ;"
+
+          appsrv.ExecRecordset(context, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return cb(err); }
+            if(rslt && rslt[0]){
+              branch_conflicts[branch_item_type] = rejectDirectAncestorConflicts(branch_conflicts[branch_item_type], branch_item_type, rslt[0]);
+            }
+
+            branch_item_cb();
+          });
+        }, cb);
+      },
+
+      //Run onConflicts functions
+      function(cb){
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          if(!branch_item.conflicts) return branch_item_cb();
+          Helper.execif(branch_item.conflicts.onConflicts,
+            function(f){
+              branch_item.conflicts.onConflicts(branch_conflicts[branch_item_type], branch_data, f);
+            },
+            branch_item_cb
+          );
         }, cb);
       },
 
     ], function(err){
       callback(err, {
         _success: 1,
+        src_branch_desc: src_branch_desc,
+        dst_branch_desc: dst_branch_desc,
         deployment_target_params: branch_data.deployment_target_params,
         branch_conflicts: branch_conflicts,
       });
