@@ -699,16 +699,16 @@ describe('Merges - Matrix', function() {
         conflictTest("Unrelated pages", srcPage, dstPage, CONFLICT, done);
       });
 
-      it("Source Decendant of Destination", function(done) {
+      it("Source Descendant of Destination", function(done) {
         var srcPage = setupUpdate(testPageIdChild, testPageIdParent);
         var dstPage = setupUnchanged(testPageIdGrandparent, testPageIdGrandparent);
-        conflictTest("Source Decendant of Destination", srcPage, dstPage, nc, done);
+        conflictTest("Source Descendant of Destination", srcPage, dstPage, nc, done);
       });
 
-      it("Destination Decendant of Source", function(done) {
+      it("Destination Descendant of Source", function(done) {
         var srcPage = setupUpdate(testPageIdParent, testPageIdGrandparent);
         var dstPage = setupUpdate(testPageIdChild, testPageIdParent);
-        conflictTest("Destination Decendant of Source", srcPage, dstPage, CONFLICT, done);
+        conflictTest("Destination Descendant of Source", srcPage, dstPage, CONFLICT, done);
       });
     });
 
