@@ -140,10 +140,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     else {
       cms.editor.init(function(){
         async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
-          cms.editor.attach('full', elem.id, {}, editor_cb);
-        }, function(){
+          cms.editor.attach('full', elem.id, {}, function(){ return editor_cb(); });
+        }, function(err){
           //Initialize the title editor
-          cms.editor.attach('text', 'jsharmony_cms_title', {}, cb);
+          cms.editor.attach('text', 'jsharmony_cms_title', {}, function(){ return cb(); });
         });
       });
 
@@ -305,7 +305,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           if(timeLeft > 0) window.setTimeout(function(){ cms.loader.StopLoading(); }, timeLeft);
           else cms.loader.StopLoading();
         });
-        cms.util.refreshParentPageTree(rslt.page_folder);
+        cms.util.refreshParentPageTree(rslt.page_folder, _this.page_key);
       }
       else{
         cms.loader.StopLoading();
