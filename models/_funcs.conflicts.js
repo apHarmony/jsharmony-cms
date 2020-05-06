@@ -435,9 +435,9 @@ module.exports = exports = function(module, funcs){
     return _.filter(collection, function(branch_object){
       var src = branch_object['src_'+objectType];
       var dst = branch_object['dst_'+objectType];
-      if (!src || !dst) return true;
-      var newer = Math.max(src.id, dst.id);
-      var older = Math.min(src.id, dst.id);
+      if (!src || !dst || !src.id || !dst.id) return true;
+      var newer = src.id;
+      var older = dst.id;
       var cur_depth = 0;
       while (newer && newer > older && cur_depth++ < 200) {
         newer = parent[newer];
