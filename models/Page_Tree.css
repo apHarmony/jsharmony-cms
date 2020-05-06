@@ -43,6 +43,7 @@
   width:100%;
   box-sizing:border-box;
   border-collapse:separate;
+  border-bottom:1px solid #ddd;
 }
 .xsubform.Page_Tree_Listing .xtbl thead th {
   border-left: 0px;
