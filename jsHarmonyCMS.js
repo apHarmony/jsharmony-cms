@@ -438,6 +438,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   **********************/
   configFactory.scheduled_tasks['deploy'] = {
     action: configFactory.Helper.JobProc.ExecuteSQL("jsHarmonyCMS_GetNextDeployment", function(rslt){
+      if(_this.funcs.deploymentQueue.length()) return;
       if(rslt && rslt.length && rslt[0] && rslt[0].length){
         var deployment = rslt[0][0];
         _this.funcs.deploy.call(_this.jsh.AppSrv, deployment.deployment_id);
