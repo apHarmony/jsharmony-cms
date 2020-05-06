@@ -551,7 +551,7 @@ module.exports = exports = function(module, funcs){
         }, cb);
       },
 
-      //Reject conflicts where one item is a direct decendant of the other
+      //Reject conflicts where one item is a direct descendant of the other
       function(cb){
         async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
           if(!branch_item.conflicts) return branch_item_cb();
