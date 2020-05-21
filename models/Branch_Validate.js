@@ -1,11 +1,22 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.page_errors = [];
-  this.media_errors = [];
-  this.menu_errors = [];
-  this.sitemap_errors = [];
+  this.branch_validate = {};
   this.error_count = 0;
+
+  //Event handler
+  this.onRenderedValidate = [
+    function(jvalidate){
+      jvalidate.find('.view_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+
+      jvalidate.find('.view_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+
+      jvalidate.find('.view_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+
+      jvalidate.find('.view_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    }
+  ];
+  
 
   this.onload = function(xmodel, callback){
     //Load API Data
@@ -16,10 +27,7 @@ jsh.App[modelid] = new (function(){
     var emodelid = '../_funcs/validate';
     XForm.Get(emodelid, { branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.page_errors = rslt.page_errors;
-        _this.media_errors = rslt.media_errors;
-        _this.menu_errors = rslt.menu_errors;
-        _this.sitemap_errors = rslt.sitemap_errors;
+        _this.branch_validate = rslt.branch_validate;
         _this.error_count = rslt.error_count;
 
         _this.render();
@@ -34,24 +42,27 @@ jsh.App[modelid] = new (function(){
   this.render = function(){
     var jvalidate = jsh.$('.validate_'+xmodel.class);
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_Error_Listing').html();
-    jvalidate.html(XExt.renderClientEJS(tmpl, {
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_validate_listing').html();
+    var item_tmpl = {};
+    for(var item_type in _this.branch_validate){
+      item_tmpl[item_type] = jsh.$root('.'+xmodel.class+'_template_validate_' + item_type).html();
+    }
+    var renderParams = {
       _: _,
       jsh: jsh,
-      branch_validate: this,
+      branch_validate: _this.branch_validate,
       branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
-      XExt: XExt
-    }));
+      XExt: XExt,
+    };
+    renderParams.renderItemValidate = function(item_type, branch_item){
+      var item_params = { branch_item: branch_item };
+      item_params['branch_' + item_type] = branch_item;
+      return XExt.renderClientEJS(item_tmpl[item_type], _.extend(item_params, renderParams));
+    }
 
-    jvalidate.find('.view_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    jvalidate.html(XExt.renderClientEJS(tmpl, renderParams));
 
-    jvalidate.find('.view_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-    jvalidate.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-
-    jvalidate.find('.view_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-    jvalidate.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-
-    jvalidate.find('.view_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    XExt.trigger(_this.onRenderedValidate, jvalidate);
   }
 
   this.previewPage = function(obj){

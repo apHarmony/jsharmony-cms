@@ -17,10 +17,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 var _ = require('lodash');
+var prettyhtml = require('js-beautify').html;
 
 function ModuleFunctions(module){
   this.deploymentQueue = undefined;
   
+  this.prettyhtml = prettyhtml;
   _.extend(this, require('./_funcs.page.js')(module, this));
   _.extend(this, require('./_funcs.media.js')(module, this));
   _.extend(this, require('./_funcs.menu.js')(module, this));
@@ -28,7 +30,7 @@ function ModuleFunctions(module){
   _.extend(this, require('./_funcs.deploy.js')(module, this));
   _.extend(this, require('./_funcs.diff.js')(module, this));
   _.extend(this, require('./_funcs.validate.js')(module, this));
-  _.extend(this, require('./_funcs.conflict.js')(module, this));
+  _.extend(this, require('./_funcs.conflicts.js')(module, this));
   _.extend(this, require('./_funcs.merge.js')(module, this));
 }
 

@@ -40,7 +40,7 @@ module.exports = exports = function(module, funcs){
 
     //Load Menu Content from disk
     module.jsh.ParseJSON(funcs.getMenuFile(menu_file_id), module.name, 'Menu File ID#'+menu_file_id, function(err, menu_content){
-      if(err) return cb(err);
+      //If an error occurs loading the file, ignore it and load the default template instead
       
       menu_content = menu_content || { menu_items: [] };
       menu_content.template = {

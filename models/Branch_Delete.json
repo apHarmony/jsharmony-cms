@@ -10,7 +10,10 @@
       "(select branch_desc from {schema}.v_my_branch_desc where branch_id=@branch_id and branch_access='RW') branch_name"
     ],
     "sqlupdate":[
-      "delete from {schema}.branch where branch_id = (select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access='RW');"
+      "begin transaction;",
+      "update {schema}.branch set branch_parent_id = null where branch_parent_id = @branch_id;",
+      "delete from {schema}.branch where branch_id = (select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access='RW');",
+      "commit transaction;",
     ],
     "hide_system_buttons":["print"],
     "fields": [

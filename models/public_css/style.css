@@ -48,6 +48,24 @@
 <%-(rootcss)%> .spacer_diff {
   width:800px;
 }
+<%-(rootcss)%> .branch_diff_item_collapsed .branch_diff_item_details {
+  display: none;
+}
+<%-(rootcss)%> .branch_diff_item_expand {
+  display: none;
+}
+<%-(rootcss)%> .branch_diff_item_collapsed .branch_diff_item_expand {
+  display: inline-block;
+}
+<%-(rootcss)%> .branch_diff_item_collapsed .branch_diff_item_collapse {
+  display: none;
+}
+<%-(rootcss)%> a.branch_diff_item_toggle img {
+  height:16px;
+  position:relative;
+  top:3px;
+  margin-right:7px;
+}
 <%-(rootcss)%> .diff_display hr {
   border-top:1px solid #eee;
 }
@@ -107,8 +125,8 @@
 <%-(rootcss)%> .branch_diff_comparison > table {
   width:100%;
 }
-<%-(rootcss)%> .branch_diff_comparison_src { padding-right:8px; border-right:1px solid #eee; }
-<%-(rootcss)%> .branch_diff_comparison_dst { padding-left:8px; border-left:1px solid #eee; }
+<%-(rootcss)%> .branch_diff_comparison_src { padding-left:8px; border-left:1px solid #eee; }
+<%-(rootcss)%> .branch_diff_comparison_dst { padding-right:8px; border-right:1px solid #eee; }
 <%-(rootcss)%> .branch_diff_comparison_src,
 <%-(rootcss)%> .branch_diff_comparison_dst {
   max-width: 48vw;

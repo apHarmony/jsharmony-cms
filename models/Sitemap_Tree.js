@@ -46,6 +46,9 @@ jsh.App[modelid] = new (function(){
     $(window).bind('resize', _this.onresize);
     _this.refreshLayout();
     xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); }
+
+    var jtree = jsh.$root('.xelem'+xmodel.class+'.sitemap_item_id');
+    jtree.data('ondoubleclick', jsh._instance+'.App['+JSON.stringify(xmodel.id)+'].sitemap_item_id_ondoubleclick(n);');
   }
 
   this.ondestroy = function(xmodel){
@@ -178,6 +181,17 @@ jsh.App[modelid] = new (function(){
         if(page_key) return true;
       }
       return false;
+    }
+  }
+
+  this.sitemap_item_id_ondoubleclick = function(sitemap_item_id){
+    sitemap_item_id = parseInt(sitemap_item_id);
+    var sitemap_item = _this.getSitemapItem(sitemap_item_id);
+    if(!sitemap_item) return false;
+
+    if(sitemap_item.sitemap_item_link_type=='PAGE'){
+      var page_key = sitemap_item.sitemap_item_link_dest;
+      if(page_key) _this.editPageContent(page_key);
     }
   }
 

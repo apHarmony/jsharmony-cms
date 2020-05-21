@@ -1,11 +1,26 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.branch_pages = [];
-  this.branch_media = [];
-  this.branch_redirects = [];
-  this.branch_menus = [];
-  this.branch_sitemaps = [];
+  this.field_mapping = {};
+
+  this.branch_diff = {};
+
+  //Event handler
+  this.onRenderedDiff = [
+    function(jdiff){
+      jdiff.find('.new_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+      jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+
+      jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+      jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+
+      jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+      jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+
+      jdiff.find('.new_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+      jdiff.find('.previous_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    }
+  ];
 
   this.onload = function(xmodel, callback){
     var branch_merge_desc = xmodel.get('branch_merge_desc');
@@ -23,11 +38,7 @@ jsh.App[modelid] = new (function(){
     var emodelid = '../_funcs/diff';
     XForm.Get(emodelid, { branch_id: xmodel.get('branch_id') }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.branch_pages = rslt.branch_pages;
-        _this.branch_media = rslt.branch_media;
-        _this.branch_redirects = rslt.branch_redirects;
-        _this.branch_menus = rslt.branch_menus;
-        _this.branch_sitemaps = rslt.branch_sitemaps;
+        _this.branch_diff = rslt.branch_diff || {};
 
         _this.processData();
         _this.render();
@@ -40,66 +51,43 @@ jsh.App[modelid] = new (function(){
   }
 
   this.processData = function(){
-    _.each(_this.branch_pages, function(branch_page){ branch_page.branch_page_action = (branch_page.branch_page_action||'').toString().toUpperCase(); });
-    _.each(_this.branch_media, function(branch_media){ branch_media.branch_media_action = (branch_media.branch_media_action||'').toString().toUpperCase(); });
-    _.each(_this.branch_menus, function(branch_menu){ branch_menu.branch_menu_action = (branch_menu.branch_menu_action||'').toString().toUpperCase(); });
-    _.each(_this.branch_redirects, function(branch_redirect){ branch_redirect.branch_redirect_action = (branch_redirect.branch_redirect_action||'').toString().toUpperCase(); });
-    _.each(_this.branch_sitemaps, function(branch_sitemap){ branch_sitemap.branch_sitemap_action = (branch_sitemap.branch_sitemap_action||'').toString().toUpperCase(); });
+    for(var item_type in _this.branch_diff){
+      _.each(_this.branch_diff[item_type], function(item){
+        item['branch_'+item_type+'_action'] = (item['branch_'+item_type+'_action']||'').toString().toUpperCase();
+      });
+    }
   }
 
   this.render = function(){
     var jdiff = jsh.$('.diff_display');
 
-    var mapping = {};
-    mapping.page_seo = {
-      'title' : 'Title',
-      'keywords': 'Keywords',
-      'metadesc': 'Meta Description',
-      'canonical_url': 'Canonical URL'
-    };
-    mapping.page = {
-      'css': 'CSS',
-      'header': 'Header Code',
-      'footer': 'Footer Code',
-      'page_title': 'Page Title',
-      'template_title': 'Template'
-    }
-    mapping.menu = {
-      'menu_name': 'Menu Name',
-      'template_title': 'Template',
-      'menu_path': 'Menu File Path',
-      'menu_items': 'Menu Items'
-    }
-    mapping.sitemap = {
-      'sitemap_name': 'Sitemap Name',
-      'sitemap_items': 'Sitemap Items'
-    }
     var map = function(key, dict){
-      if(mapping[dict] && (key in mapping[dict])) return mapping[dict][key];
+      if(_this.field_mapping[dict] && (key in _this.field_mapping[dict])) return _this.field_mapping[dict][key];
       return key;
     }
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_Changes_Listing').html();
-    jdiff.html(XExt.renderClientEJS(tmpl, {
+    var tmpl = jsh.$root('.'+xmodel.class+'_template_diff_listing').html();
+    var item_tmpl = {};
+    for(var item_type in _this.branch_diff){
+      item_tmpl[item_type] = jsh.$root('.'+xmodel.class+'_template_diff_' + item_type).html();
+    }
+    var renderParams = {
       _: _,
       jsh: jsh,
-      branch_diff: this,
+      branch_diff: _this.branch_diff,
       branch_type: (xmodel.get('branch_type')||'').toString().toUpperCase(),
       XExt: XExt,
-      map: map
-    }));
+      map: map,
+    };
+    renderParams.renderItemDiff = function(item_type, branch_item){
+      var item_params = { branch_item: branch_item };
+      item_params['branch_' + item_type] = branch_item;
+      return XExt.renderClientEJS(item_tmpl[item_type], _.extend(item_params, renderParams));
+    }
 
-    jdiff.find('.new_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-    jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    jdiff.html(XExt.renderClientEJS(tmpl, renderParams));
 
-    jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-    jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-
-    jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-    jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-
-    jdiff.find('.new_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
-    jdiff.find('.previous_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+    XExt.trigger(_this.onRenderedDiff, jdiff);
   }
 
   this.previewPage = function(obj){

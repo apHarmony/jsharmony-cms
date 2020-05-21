@@ -26,6 +26,7 @@ var fs = require('fs');
 var async = require('async');
 var crypto = require('crypto');
 var wclib = require('jsharmony/WebConnect');
+var wc = new wclib.WebConnect();
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -129,7 +130,7 @@ module.exports = exports = function(module, funcs){
     while(page_fpath.substr(0,1)=='/') page_fpath = page_fpath.substr(1);
 
     var is_folder = (page_fpath[page_fpath.length-1]=='/');
-    if(is_folder) page_fpath += default_page;
+    if(is_folder) page_fpath += publish_params.default_page;
     if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
     if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
     if(publish_params) page_fpath = publish_params.page_subfolder + page_fpath;
@@ -163,6 +164,28 @@ module.exports = exports = function(module, funcs){
     return menu_fpath;
   }
 
+  exports.downloadTemplate = function(branchData, templates, template_html, download_cb){
+    async.eachOf(templates, function(template, template_name, template_cb){
+      if(!template.remote_template || !template.remote_template.publish){
+        if(template.content && ('body' in template.content)){
+          template_html[template_name] = template.body;
+        }
+        else if(_.isString(template.content)) template_html[template_name] = template.content;
+        return template_cb();
+      }
+      var publish_template_url = template.remote_template.publish;
+      for(var key in branchData.publish_params){
+        publish_template_url = Helper.ReplaceAll(publish_template_url, '%%%' + key + '%%%', branchData.publish_params[key]);
+      }
+      funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+publish_template_url);
+      wc.req(publish_template_url, 'GET', {}, {}, undefined, function(err, res, rslt){
+        if(err) return template_cb(err);
+        template_html[template_name] = rslt;
+        return template_cb();
+      });
+    }, download_cb);
+  }
+
   exports.deploy_exec = function (deployment_id, onComplete) {
     if(!onComplete) onComplete = function(){};
     var jsh = module.jsh;
@@ -173,6 +196,7 @@ module.exports = exports = function(module, funcs){
     //Update deployment to running status
     var sql = "select \
         deployment_id, site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_sts, deployment_git_revision, \
+        d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') default_page \
         from "+(module.schema?module.schema+'.':'')+"deployment d \
@@ -207,7 +231,6 @@ module.exports = exports = function(module, funcs){
           var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
           publish_path = path.normalize(publish_path);
           var default_page = deployment.default_page;
-          var site_files = {};
 
           var publish_params = {
             timestamp: (Date.now()).toString()
@@ -219,19 +242,27 @@ module.exports = exports = function(module, funcs){
             return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
           publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
+          publish_params.default_page = default_page;
+          publish_params.publish_path = publish_path;
+          publish_params.deployment_id = deployment_id;
+          publish_params.deployment_target_id = deployment.deployment_target_id;
           deployment.publish_params = publish_params;
-
-          var page_template_html = {};
-          var menu_template_html = {};
-          var component_html = {};
-          var page_keys = {};
-          var media_keys = {};
-          var page_redirects = {};
-          var sitemaps = {};
-
+          
           var branchData = {
-            page_keys: page_keys,
-            media_keys: media_keys
+            publish_params: publish_params,
+            deployment: deployment,
+            component_html: {},
+            site_files: {},
+
+            page_keys: {},
+            page_template_html: {},
+            page_redirects: {},
+
+            media_keys: {},
+
+            menu_template_html: {},
+
+            sitemaps: {},
           }
 
           //Shell Commands
@@ -328,7 +359,7 @@ module.exports = exports = function(module, funcs){
                   else webpath = folders[parentpath] + '/' + path.basename(relativepath);
                   fs.readFile(filepath, null, function(err, filecontent){
                     if(err) return cb(err);
-                    site_files[webpath] = {
+                    branchData.site_files[webpath] = {
                       md5: crypto.createHash('md5').update(filecontent).digest("hex")
                     };
                     return file_cb();
@@ -357,11 +388,11 @@ module.exports = exports = function(module, funcs){
                 if(!deploy_path){ return cb(); }
                 else if(deploy_path.indexOf('file://')==0){
                   //File Deployment
-                  return funcs.deploy_fs(deployment, publish_path, deploy_path.substr(7), site_files, cb);
+                  return funcs.deploy_fs(deployment, publish_path, deploy_path.substr(7), branchData.site_files, cb);
                 }
                 else if(deploy_path.indexOf('s3://')==0){
                   //Amazon S3 Deployment
-                  return funcs.deploy_s3(deployment, publish_path, deploy_path, site_files, cb);
+                  return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
                 else return cb(new Error('Deployment Target path not supported'));
               },
@@ -467,137 +498,17 @@ module.exports = exports = function(module, funcs){
                 }, cb);
               },
 
-              //Load remote templates
-              function (cb){
-                var wc = new wclib.WebConnect();
-                var downloadTemplate = function(templates, template_html, download_cb){
-                  async.eachOf(templates, function(template, template_name, template_cb){
-                    if(!template.remote_template || !template.remote_template.publish){
-                      if(template.content && ('body' in template.content)){
-                        template_html[template_name] = template.body;
-                      }
-                      else if(_.isString(template.content)) template_html[template_name] = template.content;
-                      return template_cb();
-                    }
-                    var publish_template_url = template.remote_template.publish;
-                    for(var key in publish_params){
-                      publish_template_url = Helper.ReplaceAll(publish_template_url, '%%%' + key + '%%%', publish_params[key]);
-                    }
-                    wc.req(publish_template_url, 'GET', {}, {}, undefined, function(err, res, rslt){
-                      if(err) return template_cb(err);
-                      template_html[template_name] = rslt;
-                      return template_cb();
-                    });
-                  }, download_cb);
-                }
-                async.waterfall([
-                  function(download_cb){ downloadTemplate(module.PageTemplates, page_template_html, download_cb); },
-                  function(download_cb){ downloadTemplate(module.MenuTemplates, menu_template_html, download_cb); },
-                  function(download_cb){ downloadTemplate(module.Components, component_html, download_cb); },
-                ], cb);
-              },
-
-              //Get all sitemaps
-              function (cb){
-                var sql = 'select \
-                  s.sitemap_key,s.sitemap_file_id, s.sitemap_type \
-                  from '+(module.schema?module.schema+'.':'')+'sitemap s \
-                  inner join '+(module.schema?module.schema+'.':'')+'branch_sitemap bs on bs.sitemap_id = s.sitemap_id\
-                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bs.branch_id and d.deployment_id=@deployment_id\
-                  where s.sitemap_file_id is not null'
-                  ;
-                var sql_ptypes = [dbtypes.BigInt];
-                var sql_params = { deployment_id: deployment_id };
-                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                  if (err != null) { err.sql = sql; return cb(err); }
-                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment sitemaps')); }
-                  _.each(rslt[0], function(sitemap){
-                    sitemaps[sitemap.sitemap_type] = sitemap;
-                  });
-                  async.eachOfSeries(sitemaps, function(sitemap, sitemap_type, sitemap_cb){
-                    funcs.getClientSitemap(sitemap, function(err, sitemap_content){
-                      if(err) return sitemap_cb(err);
-                      if(!sitemap_content) return sitemap_cb(null);
-                      sitemap.sitemap_items = sitemap_content.sitemap_items;
-                      return sitemap_cb();
-                    });
-                  }, cb);
-                });
-              },
-
-              //Get list of all page_keys
-              function (cb){
-                var sql = 'select \
-                  p.page_key,page_path \
-                  from '+(module.schema?module.schema+'.':'')+'page p \
-                  inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
-                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id\
-                  where p.page_file_id is not null'
-                  ;
-                var sql_ptypes = [dbtypes.BigInt];
-                var sql_params = { deployment_id: deployment_id };
-                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                  if (err != null) { err.sql = sql; return cb(err); }
-                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
-                  _.each(rslt[0], function(page){
-
-                    var page_urlpath = '';
-                    var page_cmspath = '';
-                    try{
-                      var relativePath = funcs.getPageRelativePath(page, publish_params);
-                      if(!relativePath) return cb(new Error('Page has no path: '+page.page_key));
-                      page_cmspath = '/' + relativePath;
-                      page_urlpath = publish_params.content_url + relativePath;
-                    }
-                    catch(ex){ }
-
-                    if(page_urlpath){
-                      page_keys[page.page_key] = page_cmspath;
-                      page_redirects[page_cmspath] = page_urlpath;
-                      if(path.basename(page_cmspath)==default_page){
-                        var page_dir = ((page_cmspath=='/'+default_page) ? '/' : path.dirname(page_cmspath)+'/');
-                        page_redirects[page_dir] = page_urlpath;
-                        page_keys[page.page_key] = page_dir;
-                      }
-                      else if(path.basename(page_cmspath).indexOf('.')<0){
-                        if(page_cmspath[page_cmspath.length-1] != '/'){
-                          page_redirects[page_cmspath+'/'] = page_urlpath;
-                        }
-                      }
-                    }
-                  });
-                  return cb();
-                });
-              },
-
-              //Get list of all media_keys
-              function (cb){
-                var sql = 'select \
-                  m.media_key,media_file_id,media_path \
-                  from '+(module.schema?module.schema+'.':'')+'media m \
-                  inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
-                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
-                  where m.media_file_id is not null'
-                  ;
-                var sql_ptypes = [dbtypes.BigInt];
-                var sql_params = { deployment_id: deployment_id };
-                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                  if (err != null) { err.sql = sql; return cb(err); }
-                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
-                  _.each(rslt[0], function(media){
-
-                    var media_urlpath = '';
-                    try{
-                      var relativePath = funcs.getMediaRelativePath(media, publish_params);
-                      if(!relativePath) return cb(new Error('Media has no path: '+media.media_key));
-                      media_urlpath = publish_params.content_url + relativePath;
-                    }
-                    catch(ex){ }
-
-                    if(media_urlpath) media_keys[media.media_key] = media_urlpath;
-                  });
-                  return cb();
-                });
+              //Run onBeforeDeploy functions
+              function(cb){
+                async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+                  if(!branch_item.deploy) return branch_item_cb();
+                  Helper.execif(branch_item.deploy.onBeforeDeploy,
+                    function(f){
+                      branch_item.deploy.onBeforeDeploy(jsh, branchData, publish_params, f);
+                    },
+                    branch_item_cb
+                  );
+                }, cb);
               },
 
               //Load Custom Branch Data
@@ -606,330 +517,17 @@ module.exports = exports = function(module, funcs){
                 return module.Config.onDeploy_LoadData(jsh, branchData, publish_params, cb);
               },
 
-              //Get list of all pages
-              //For each page
-              //  Merge content with template
-              //  Save template to file
-              function (cb){
-                var sql = 'select \
-                  p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id, \
-                  page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
-                  from '+(module.schema?module.schema+'.':'')+'page p \
-                  inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
-                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id\
-                  where p.page_file_id is not null'
-                  ;
-                var sql_ptypes = [dbtypes.BigInt];
-                var sql_params = { deployment_id: deployment_id };
-                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                  if (err != null) { err.sql = sql; return cb(err); }
-                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
-                  async.eachSeries(rslt[0], function(page, cb){
-                    funcs.getClientPage(page, sitemaps, function(err, clientPage){
-                      if(err) return cb(err);
-
-                      //Merge content with template
-                      var ejsparams = {
-                        page: {
-                          seo: {
-                            title: clientPage.page.seo.title||clientPage.page.title||'',
-                            keywords: clientPage.page.seo.keywords||'',
-                            metadesc: clientPage.page.seo.metadesc||'',
-                            canonical_url: clientPage.page.seo.canonical_url||'',
-                          },
-                          css: (clientPage.template.css||'')+' '+(clientPage.page.css||''),
-                          js: (clientPage.template.js||'')+' '+(clientPage.page.js||''),
-                          header: (clientPage.template.header||'')+' '+(clientPage.page.header||''),
-                          content: clientPage.page.content||{},
-                          footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
-                          title: clientPage.page.title
-                        },
-                        _: _,
-                        Helper: Helper,
-                        renderComponent: function(id){
-                          if(!id) return '';
-                          if(!(id in component_html)) return '<!-- Component '+Helper.escapeHTML(id)+' not found -->';
-                          var rslt = ejs.render(component_html[id] || '', {
-                            _: _,
-                            escapeHTML: Helper.escapeHTML,
-                            page: clientPage.page,
-                            template: clientPage.template,
-                            sitemap: clientPage.sitemap,
-                            getSitemapURL: function(sitemap_item){
-                              if((sitemap_item.sitemap_item_link_type||'').toString()=='PAGE'){
-                                var page_key = parseInt(sitemap_item.sitemap_item_link_dest);
-                                if(!(page_key in page_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item  '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Page ID # '+page_key.toString()); return '#'; }
-                                return page_keys[page_key];
-                              }
-                              else if((sitemap_item.sitemap_item_link_type||'').toString()=='MEDIA'){
-                                var media_key = parseInt(sitemap_item.sitemap_item_link_dest);
-                                if(!(media_key in media_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Media ID # '+media_key.toString()); return '#'; }
-                                return media_keys[media_key];
-                              }
-                              return sitemap_item.sitemap_item_link_dest;
-                            },
-                            isInEditor: false
-                          });
-                          return rslt;
-                        }
-                      };
-                      var page_content = '';
-                      if(page.page_template_id in page_template_html){
-                        page_content = page_template_html[page.page_template_id]||'';
-                        page_content = ejs.render(page_content, ejsparams);
-                        try{
-                          page_content = funcs.replaceBranchURLs(page_content, {
-                            getMediaURL: function(media_key){
-                              if(!(media_key in media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
-                              return media_keys[media_key];
-                            },
-                            getPageURL: function(page_key){
-                              if(!(page_key in page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
-                              return page_keys[page_key];
-                            },
-                            branchData: branchData,
-                            removeClass: true
-                          });
-                        }
-                        catch(ex){
-                          return cb(ex);
-                        }  
-                      }
-                      else {
-                        //Raw Content
-                        page_content = ejsparams.page.content.body||'';
-                      }
-                      
-                      var page_fpath = '';
-                      try{
-                        page_fpath = funcs.getPageRelativePath(page, publish_params);
-                      }
-                      catch(ex){
-                        return cb(ex);
-                      }
-                      if(!page_fpath) return cb(new Error('Page has no path: '+page.page_key));
-
-                      site_files[page_fpath] = {
-                        md5: crypto.createHash('md5').update(page_content).digest("hex")
-                      };
-                      page_fpath = path.join(publish_path, page_fpath);
-
-                      //Create folders for path
-                      HelperFS.createFolderRecursive(path.dirname(page_fpath), function(err){
-                        if(err) return cb(err);
-                        //Save page to publish folder
-                        fs.writeFile(page_fpath, page_content, 'utf8', cb);
-                      });
-                    });
-                  }, cb);
-                });
-              },
-
-              //Get list of all media
-              //For each media
-              //  Save media to file
-              function (cb){
-                var sql = 'select \
-                  m.media_key,media_file_id,media_path,media_ext \
-                  from '+(module.schema?module.schema+'.':'')+'media m \
-                  inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
-                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
-                  where m.media_file_id is not null'
-                  ;
-                var sql_ptypes = [dbtypes.BigInt];
-                var sql_params = { deployment_id: deployment_id };
-                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                  if (err != null) { err.sql = sql; return cb(err); }
-                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
-                  async.eachSeries(rslt[0], function(media, cb){
-                    var srcpath = funcs.getMediaFile(media.media_file_id, media.media_ext);
-                    fs.readFile(srcpath, null, function(err, media_content){
-                      if(err) return cb(err);
-
-                      var media_fpath = '';
-                      try{
-                        media_fpath = funcs.getMediaRelativePath(media, publish_params);
-                      }
-                      catch(ex){
-                        return cb(ex);
-                      }
-                      if(!media_fpath) return cb(new Error('Media has no path: '+media.media_key));
-
-                      site_files[media_fpath] = {
-                        md5: crypto.createHash('md5').update(media_content).digest("hex")
-                      };
-                      media_fpath = path.join(publish_path, media_fpath);
-
-                      //Create folders for path
-                      HelperFS.createFolderRecursive(path.dirname(media_fpath), function(err){
-                        if(err) return cb(err);
-                        //Save media to publish folder
-                        HelperFS.copyFile(srcpath, media_fpath, cb);
-                      });
-                    });
-                  }, cb);
-                });
-              },
-
-              //Get list of all redirects
-              //Generate redirect file and save to disk
-              function (cb){
-                var sql = 'select \
-                  r.redirect_key, r.redirect_url, r.redirect_url_type, r.redirect_dest, r.redirect_http_code \
-                  from '+(module.schema?module.schema+'.':'')+'redirect r \
-                  inner join '+(module.schema?module.schema+'.':'')+'branch_redirect br on br.redirect_id = r.redirect_id \
-                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = br.branch_id and d.deployment_id=@deployment_id \
-                  order by r.redirect_seq'
-                  ;
-                var sql_ptypes = [dbtypes.BigInt];
-                var sql_params = { deployment_id: deployment_id };
-                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                  if (err != null) { err.sql = sql; return cb(err); }
-                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment redirects')); }
-                  
-                  var redirect_files = {};
-                  async.waterfall([
-                    function(redirect_cb){
-                      if(_.isFunction(publish_params.generate_redirect_files)){
-                        publish_params.generate_redirect_files(jsh, deployment, rslt[0], page_redirects, function(err, generated_redirect_files){
-                          if(err) return redirect_cb(err);
-                          redirect_files = generated_redirect_files||{};
-                          return redirect_cb();
-                        });
-                      }
-                      else return redirect_cb();
-                    }
-                  ], function(err){
-                    if(err) return cb(err);
-                    async.eachOfSeries(redirect_files, function(fcontent, fpath, redirect_cb){
-                      site_files[fpath] = {
-                        md5: crypto.createHash('md5').update(fcontent).digest("hex")
-                      };
-                      fpath = path.join(publish_path, fpath);
-        
-                      HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
-                        if(err) return redirect_cb(err);
-                        //Save redirect to publish folder
-                        fs.writeFile(fpath, fcontent, 'utf8', redirect_cb);
-                      });
-                    }, cb);
-                  });
-                });
-              },
-
-              //Get all menus
-              //Generate menu files and save to disk
-              function (cb){
-                var sql = 'select \
-                  m.menu_key, m.menu_file_id, m.menu_name, m.menu_tag, m.menu_template_id, m.menu_path \
-                  from '+(module.schema?module.schema+'.':'')+'menu m \
-                  inner join '+(module.schema?module.schema+'.':'')+'branch_menu bm on bm.menu_id = m.menu_id \
-                  inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id'
-                  ;
-                var sql_ptypes = [dbtypes.BigInt];
-                var sql_params = { deployment_id: deployment_id };
-                appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                  if (err != null) { err.sql = sql; return cb(err); }
-                  if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment menus')); }
-
-                  var menus = rslt[0];
-                  
-                  var menu_output_files = {};
-                  async.waterfall([
-                    //Get menus from disk and replace URLs
-                    function(menu_cb){
-                      async.eachSeries(menus, function(menu, menu_file_cb){
-                        funcs.getClientMenu(menu, function(err, menu_content){
-                          if(err) return menu_file_cb(err);
-          
-                          //Replace URLs
-                          menu.menu_items = menu_content.menu_items||[];
-                          for(var i=0;i<menu.menu_items.length;i++){
-                            var menu_item = menu.menu_items[i];
-                            if((menu_item.menu_item_link_type||'').toString()=='PAGE'){
-                              var page_key = parseInt(menu_item.menu_item_link_dest);
-                              if(!(page_key in page_keys)) return menu_file_cb(new Error('Menu  '+menu.menu_tag+' links to missing Page ID # '+page_key.toString()));
-                              menu_item.menu_item_link_dest = page_keys[page_key];
-                            }
-                            else if((menu_item.menu_item_link_type||'').toString()=='MEDIA'){
-                              var media_key = parseInt(menu_item.menu_item_link_dest);
-                              if(!(media_key in media_keys)) return menu_file_cb(new Error('Menu '+menu.menu_tag+' links to missing Media ID # '+media_key.toString()));
-                              menu_item.menu_item_link_dest = media_keys[media_key];
-                            }
-                          }
-
-                          //Generate menu item tree
-                          var menu_item_ids = {};
-                          _.each(menu.menu_items, function(menu_item){
-                            menu_item.menu_item_children = [];
-                            menu_item_ids[menu_item.menu_item_id] = menu_item;
-                          });
-                          menu.menu_item_tree = [];
-                          _.each(menu.menu_items, function(menu_item){
-                            if(!menu_item.menu_item_parent_id) menu.menu_item_tree.push(menu_item);
-                            else menu_item_ids[menu_item.menu_item_parent_id].menu_item_children.push(menu_item);
-                          });
-
-                          return menu_file_cb();
-                        });
-                      }, menu_cb);
+              //Run onDeploy functions
+              function(cb){
+                async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+                  if(!branch_item.deploy) return branch_item_cb();
+                  Helper.execif(branch_item.deploy.onDeploy,
+                    function(f){
+                      branch_item.deploy.onDeploy(jsh, branchData, publish_params, f);
                     },
-
-                    //Generate menus
-                    function(menu_cb){
-                      if(_.isFunction(publish_params.generate_menu_files)){
-                        publish_params.generate_menu_files(jsh, deployment, menus, function(err, generated_menu_files){
-                          if(err) return menu_cb(err);
-                          menu_output_files = generated_menu_files||{};
-                          return menu_cb();
-                        });
-                      }
-                      else{
-                        async.eachSeries(menus, function(menu, menu_file_cb){
-                          //Merge content with template
-                          var ejsparams = {
-                            menu: menu,
-                            _: _,
-                            Helper: Helper
-                          };
-                          var menu_content = '';
-                          if(menu.menu_template_id in menu_template_html){
-                            menu_content = menu_template_html[menu.menu_template_id]||'';
-                            menu_content = ejs.render(menu_content, ejsparams);
-                          }
-                          else {
-                            menu_content = 'Error: Menu template not found';
-                          }
-
-                          var menu_fpath = '';
-                          try{
-                            menu_fpath = funcs.getMenuRelativePath(menu, publish_params);
-                          }
-                          catch(ex){
-                            return cb(ex);
-                          }
-                          if(!menu_fpath) return cb(new Error('Menu has no path: '+menu.menu_key));
-                          menu_output_files[menu_fpath] = menu_content;
-                          return menu_file_cb();
-                        }, menu_cb);
-                      }
-                    }
-                  ], function(err){
-                    if(err) return cb(err);
-                    async.eachOfSeries(menu_output_files, function(fcontent, fpath, menu_cb){
-                      site_files[fpath] = {
-                        md5: crypto.createHash('md5').update(fcontent).digest("hex")
-                      };
-                      fpath = path.join(publish_path, fpath);
-        
-                      HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
-                        if(err) return menu_cb(err);
-                        //Save menu to publish folder
-                        fs.writeFile(fpath, fcontent, 'utf8', menu_cb);
-                      });
-                    }, cb);
-                  });
-                });
+                    branch_item_cb
+                  );
+                }, cb);
               },
 
               //Exec Pre-Deployment Shell Command
@@ -986,11 +584,11 @@ module.exports = exports = function(module, funcs){
                 if(!deploy_path){ return cb(); }
                 else if(deploy_path.indexOf('file://')==0){
                   //File Deployment
-                  return funcs.deploy_fs(deployment, publish_path, deploy_path.substr(7), site_files, cb);
+                  return funcs.deploy_fs(deployment, publish_path, deploy_path.substr(7), branchData.site_files, cb);
                 }
                 else if(deploy_path.indexOf('s3://')==0){
                   //Amazon S3 Deployment
-                  return funcs.deploy_s3(deployment, publish_path, deploy_path, site_files, cb);
+                  return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
                 else return cb(new Error('Deployment Target path not supported'));
               },
@@ -1037,6 +635,456 @@ module.exports = exports = function(module, funcs){
             return onComplete();
           });
         });
+      });
+    });
+  }
+
+  exports.deploy_getSitemaps = function(jsh, branchData, publish_params, cb){
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    //Get all sitemaps
+    var sql = 'select \
+      s.sitemap_key,s.sitemap_file_id, s.sitemap_type \
+      from '+(module.schema?module.schema+'.':'')+'sitemap s \
+      inner join '+(module.schema?module.schema+'.':'')+'branch_sitemap bs on bs.sitemap_id = s.sitemap_id\
+      inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bs.branch_id and d.deployment_id=@deployment_id\
+      where s.sitemap_file_id is not null'
+      ;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: publish_params.deployment_id };
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; return cb(err); }
+      if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment sitemaps')); }
+      _.each(rslt[0], function(sitemap){
+        branchData.sitemaps[sitemap.sitemap_type] = sitemap;
+      });
+      async.eachOfSeries(branchData.sitemaps, function(sitemap, sitemap_type, sitemap_cb){
+        funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+          if(err) return sitemap_cb(err);
+          if(!sitemap_content) return sitemap_cb(null);
+          sitemap.sitemap_items = sitemap_content.sitemap_items;
+          return sitemap_cb();
+        });
+      }, cb);
+    });
+  }
+
+  exports.deploy_getPages = function(jsh, branchData, publish_params, cb){
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    
+    //Get list of all page_keys
+    var sql = 'select \
+      p.page_key,page_path \
+      from '+(module.schema?module.schema+'.':'')+'page p \
+      inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
+      inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id\
+      where p.page_file_id is not null'
+      ;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: publish_params.deployment_id };
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; return cb(err); }
+      if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
+      _.each(rslt[0], function(page){
+
+        var page_urlpath = '';
+        var page_cmspath = '';
+        try{
+          var relativePath = funcs.getPageRelativePath(page, publish_params);
+          if(!relativePath) return cb(new Error('Page has no path: '+page.page_key));
+          page_cmspath = '/' + relativePath;
+          page_urlpath = publish_params.content_url + relativePath;
+        }
+        catch(ex){ }
+
+        if(page_urlpath){
+          branchData.page_keys[page.page_key] = page_cmspath;
+          branchData.page_redirects[page_cmspath] = page_urlpath;
+          if(path.basename(page_cmspath)==publish_params.default_page){
+            var page_dir = ((page_cmspath=='/'+publish_params.default_page) ? '/' : path.dirname(page_cmspath)+'/');
+            branchData.page_redirects[page_dir] = page_urlpath;
+            branchData.page_keys[page.page_key] = page_dir;
+          }
+          else if(path.basename(page_cmspath).indexOf('.')<0){
+            if(page_cmspath[page_cmspath.length-1] != '/'){
+              branchData.page_redirects[page_cmspath+'/'] = page_urlpath;
+            }
+          }
+        }
+      });
+      return cb();
+    });
+  }
+
+  exports.deploy_getMedia = function(jsh, branchData, publish_params, cb){
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    
+    //Get list of all media_keys
+    var sql = 'select \
+      m.media_key,media_file_id,media_path \
+      from '+(module.schema?module.schema+'.':'')+'media m \
+      inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
+      inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
+      where m.media_file_id is not null'
+      ;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: publish_params.deployment_id };
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; return cb(err); }
+      if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
+      _.each(rslt[0], function(media){
+
+        var media_urlpath = '';
+        try{
+          var relativePath = funcs.getMediaRelativePath(media, publish_params);
+          if(!relativePath) return cb(new Error('Media has no path: '+media.media_key));
+          media_urlpath = publish_params.content_url + relativePath;
+        }
+        catch(ex){ }
+
+        if(media_urlpath) branchData.media_keys[media.media_key] = media_urlpath;
+      });
+      return cb();
+    });
+  }
+    
+  exports.deploy_page = function(jsh, branchData, publish_params, cb){
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    
+    //Get list of all pages
+    //For each page
+    //  Merge content with template
+    //  Save template to file
+    var sql = 'select \
+      p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id, \
+      page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      from '+(module.schema?module.schema+'.':'')+'page p \
+      inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
+      inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id\
+      where p.page_file_id is not null'
+      ;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: publish_params.deployment_id };
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; return cb(err); }
+      if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
+      async.eachSeries(rslt[0], function(page, cb){
+        funcs.getClientPage(page, branchData.sitemaps, function(err, clientPage){
+          if(err) return cb(err);
+
+          //Merge content with template
+          var ejsparams = {
+            page: {
+              seo: {
+                title: clientPage.page.seo.title||clientPage.page.title||'',
+                keywords: clientPage.page.seo.keywords||'',
+                metadesc: clientPage.page.seo.metadesc||'',
+                canonical_url: clientPage.page.seo.canonical_url||'',
+              },
+              css: (clientPage.template.css||'')+' '+(clientPage.page.css||''),
+              js: (clientPage.template.js||'')+' '+(clientPage.page.js||''),
+              header: (clientPage.template.header||'')+' '+(clientPage.page.header||''),
+              content: clientPage.page.content||{},
+              footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
+              title: clientPage.page.title
+            },
+            _: _,
+            Helper: Helper,
+            renderComponent: function(id){
+              if(!id) return '';
+              if(!(id in branchData.component_html)) return '<!-- Component '+Helper.escapeHTML(id)+' not found -->';
+              var rslt = ejs.render(branchData.component_html[id] || '', {
+                _: _,
+                escapeHTML: Helper.escapeHTML,
+                page: clientPage.page,
+                template: clientPage.template,
+                sitemap: clientPage.sitemap,
+                getSitemapURL: function(sitemap_item){
+                  if((sitemap_item.sitemap_item_link_type||'').toString()=='PAGE'){
+                    var page_key = parseInt(sitemap_item.sitemap_item_link_dest);
+                    if(!(page_key in branchData.page_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item  '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Page ID # '+page_key.toString()); return '#'; }
+                    return branchData.page_keys[page_key];
+                  }
+                  else if((sitemap_item.sitemap_item_link_type||'').toString()=='MEDIA'){
+                    var media_key = parseInt(sitemap_item.sitemap_item_link_dest);
+                    if(!(media_key in branchData.media_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Media ID # '+media_key.toString()); return '#'; }
+                    return branchData.media_keys[media_key];
+                  }
+                  return sitemap_item.sitemap_item_link_dest;
+                },
+                isInEditor: false
+              });
+              return rslt;
+            }
+          };
+          var page_content = '';
+          if(page.page_template_id in branchData.page_template_html){
+            page_content = branchData.page_template_html[page.page_template_id]||'';
+            page_content = ejs.render(page_content, ejsparams);
+            try{
+              page_content = funcs.replaceBranchURLs(page_content, {
+                getMediaURL: function(media_key){
+                  if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
+                  return branchData.media_keys[media_key];
+                },
+                getPageURL: function(page_key){
+                  if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
+                  return branchData.page_keys[page_key];
+                },
+                branchData: branchData,
+                removeClass: true
+              });
+            }
+            catch(ex){
+              return cb(ex);
+            }  
+          }
+          else {
+            //Raw Content
+            page_content = ejsparams.page.content.body||'';
+          }
+          
+          var page_fpath = '';
+          try{
+            page_fpath = funcs.getPageRelativePath(page, publish_params);
+          }
+          catch(ex){
+            return cb(ex);
+          }
+          if(!page_fpath) return cb(new Error('Page has no path: '+page.page_key));
+
+          branchData.site_files[page_fpath] = {
+            md5: crypto.createHash('md5').update(page_content).digest("hex")
+          };
+          page_fpath = path.join(publish_params.publish_path, page_fpath);
+
+          //Create folders for path
+          HelperFS.createFolderRecursive(path.dirname(page_fpath), function(err){
+            if(err) return cb(err);
+            //Save page to publish folder
+            fs.writeFile(page_fpath, page_content, 'utf8', cb);
+          });
+        });
+      }, cb);
+    });
+  }
+
+  exports.deploy_media = function(jsh, branchData, publish_params, cb){
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    //Get list of all media
+    //For each media
+    //  Save media to file
+    var sql = 'select \
+      m.media_key,media_file_id,media_path,media_ext \
+      from '+(module.schema?module.schema+'.':'')+'media m \
+      inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
+      inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
+      where m.media_file_id is not null'
+      ;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: publish_params.deployment_id };
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; return cb(err); }
+      if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
+      async.eachSeries(rslt[0], function(media, cb){
+        var srcpath = funcs.getMediaFile(media.media_file_id, media.media_ext);
+        fs.readFile(srcpath, null, function(err, media_content){
+          if(err) return cb(err);
+
+          var media_fpath = '';
+          try{
+            media_fpath = funcs.getMediaRelativePath(media, publish_params);
+          }
+          catch(ex){
+            return cb(ex);
+          }
+          if(!media_fpath) return cb(new Error('Media has no path: '+media.media_key));
+
+          branchData.site_files[media_fpath] = {
+            md5: crypto.createHash('md5').update(media_content).digest("hex")
+          };
+          media_fpath = path.join(publish_params.publish_path, media_fpath);
+
+          //Create folders for path
+          HelperFS.createFolderRecursive(path.dirname(media_fpath), function(err){
+            if(err) return cb(err);
+            //Save media to publish folder
+            HelperFS.copyFile(srcpath, media_fpath, cb);
+          });
+        });
+      }, cb);
+    });
+  }
+
+  exports.deploy_redirect = function(jsh, branchData, publish_params, cb){
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    
+    //Get list of all redirects
+    //Generate redirect file and save to disk
+    var sql = 'select \
+      r.redirect_key, r.redirect_url, r.redirect_url_type, r.redirect_dest, r.redirect_http_code \
+      from '+(module.schema?module.schema+'.':'')+'redirect r \
+      inner join '+(module.schema?module.schema+'.':'')+'branch_redirect br on br.redirect_id = r.redirect_id \
+      inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = br.branch_id and d.deployment_id=@deployment_id \
+      order by r.redirect_seq'
+      ;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: publish_params.deployment_id };
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; return cb(err); }
+      if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment redirects')); }
+      
+      var redirect_files = {};
+      async.waterfall([
+        function(redirect_cb){
+          if(_.isFunction(publish_params.generate_redirect_files)){
+            publish_params.generate_redirect_files(jsh, branchData.deployment, rslt[0], branchData.page_redirects, function(err, generated_redirect_files){
+              if(err) return redirect_cb(err);
+              redirect_files = generated_redirect_files||{};
+              return redirect_cb();
+            });
+          }
+          else return redirect_cb();
+        }
+      ], function(err){
+        if(err) return cb(err);
+        async.eachOfSeries(redirect_files, function(fcontent, fpath, redirect_cb){
+          branchData.site_files[fpath] = {
+            md5: crypto.createHash('md5').update(fcontent).digest("hex")
+          };
+          fpath = path.join(publish_params.publish_path, fpath);
+
+          HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
+            if(err) return redirect_cb(err);
+            //Save redirect to publish folder
+            fs.writeFile(fpath, fcontent, 'utf8', redirect_cb);
+          });
+        }, cb);
+      });
+    });
+  }
+
+  exports.deploy_menu = function(jsh, branchData, publish_params, cb){
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    //Get all menus
+    //Generate menu files and save to disk
+    var sql = 'select \
+      m.menu_key, m.menu_file_id, m.menu_name, m.menu_tag, m.menu_template_id, m.menu_path \
+      from '+(module.schema?module.schema+'.':'')+'menu m \
+      inner join '+(module.schema?module.schema+'.':'')+'branch_menu bm on bm.menu_id = m.menu_id \
+      inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id'
+      ;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: publish_params.deployment_id };
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; return cb(err); }
+      if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment menus')); }
+
+      var menus = rslt[0];
+      
+      var menu_output_files = {};
+      async.waterfall([
+        //Get menus from disk and replace URLs
+        function(menu_cb){
+          async.eachSeries(menus, function(menu, menu_file_cb){
+            funcs.getClientMenu(menu, function(err, menu_content){
+              if(err) return menu_file_cb(err);
+
+              //Replace URLs
+              menu.menu_items = menu_content.menu_items||[];
+              for(var i=0;i<menu.menu_items.length;i++){
+                var menu_item = menu.menu_items[i];
+                if((menu_item.menu_item_link_type||'').toString()=='PAGE'){
+                  var page_key = parseInt(menu_item.menu_item_link_dest);
+                  if(!(page_key in branchData.page_keys)) return menu_file_cb(new Error('Menu  '+menu.menu_tag+' links to missing Page ID # '+page_key.toString()));
+                  menu_item.menu_item_link_dest = branchData.page_keys[page_key];
+                }
+                else if((menu_item.menu_item_link_type||'').toString()=='MEDIA'){
+                  var media_key = parseInt(menu_item.menu_item_link_dest);
+                  if(!(media_key in branchData.media_keys)) return menu_file_cb(new Error('Menu '+menu.menu_tag+' links to missing Media ID # '+media_key.toString()));
+                  menu_item.menu_item_link_dest = branchData.media_keys[media_key];
+                }
+              }
+
+              //Generate menu item tree
+              var menu_item_ids = {};
+              _.each(menu.menu_items, function(menu_item){
+                menu_item.menu_item_children = [];
+                menu_item_ids[menu_item.menu_item_id] = menu_item;
+              });
+              menu.menu_item_tree = [];
+              _.each(menu.menu_items, function(menu_item){
+                if(!menu_item.menu_item_parent_id) menu.menu_item_tree.push(menu_item);
+                else menu_item_ids[menu_item.menu_item_parent_id].menu_item_children.push(menu_item);
+              });
+
+              return menu_file_cb();
+            });
+          }, menu_cb);
+        },
+
+        //Generate menus
+        function(menu_cb){
+          if(_.isFunction(publish_params.generate_menu_files)){
+            publish_params.generate_menu_files(jsh, branchData.deployment, menus, function(err, generated_menu_files){
+              if(err) return menu_cb(err);
+              menu_output_files = generated_menu_files||{};
+              return menu_cb();
+            });
+          }
+          else{
+            async.eachSeries(menus, function(menu, menu_file_cb){
+              //Merge content with template
+              var ejsparams = {
+                menu: menu,
+                _: _,
+                Helper: Helper
+              };
+              var menu_content = '';
+              if(menu.menu_template_id in branchData.menu_template_html){
+                menu_content = branchData.menu_template_html[menu.menu_template_id]||'';
+                menu_content = ejs.render(menu_content, ejsparams);
+              }
+              else {
+                menu_content = 'Error: Menu template not found';
+              }
+
+              var menu_fpath = '';
+              try{
+                menu_fpath = funcs.getMenuRelativePath(menu, publish_params);
+              }
+              catch(ex){
+                return cb(ex);
+              }
+              if(!menu_fpath) return cb(new Error('Menu has no path: '+menu.menu_key));
+              menu_output_files[menu_fpath] = menu_content;
+              return menu_file_cb();
+            }, menu_cb);
+          }
+        }
+      ], function(err){
+        if(err) return cb(err);
+        async.eachOfSeries(menu_output_files, function(fcontent, fpath, menu_cb){
+          branchData.site_files[fpath] = {
+            md5: crypto.createHash('md5').update(fcontent).digest("hex")
+          };
+          fpath = path.join(publish_params.publish_path, fpath);
+
+          HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
+            if(err) return menu_cb(err);
+            //Save menu to publish folder
+            fs.writeFile(fpath, fcontent, 'utf8', menu_cb);
+          });
+        }, cb);
       });
     });
   }
