@@ -52,6 +52,21 @@ module.exports = exports = function(module, funcs){
       return cb(null,menu_content);
     });
   }
+
+  exports.createMenuTree = function(menu_items){
+    //Generate menu item tree
+    var menu_item_ids = {};
+    _.each(menu_items, function(menu_item){
+      menu_item.menu_item_children = [];
+      menu_item_ids[menu_item.menu_item_id] = menu_item;
+    });
+    var menu_item_tree = [];
+    _.each(menu_items, function(menu_item){
+      if(!menu_item.menu_item_parent_id) menu_item_tree.push(menu_item);
+      else menu_item_ids[menu_item.menu_item_parent_id].menu_item_children.push(menu_item);
+    });
+    return menu_item_tree;
+  }
   
   exports.menu = function (req, res, next) {
     var verb = req.method.toLowerCase();

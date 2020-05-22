@@ -24,43 +24,43 @@ exports = module.exports = function(jsh, cms){
   var async = jsh.async;
   var ejs = jsh.ejs;
 
-  this.components = null;
+  this.menus = null;
   this.isInitialized = false;
 
   this.load = function(onComplete){
-    var url = '../_funcs/page/components/'+cms.branch_id;
+    var url = '../_funcs/page/menus/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.components = rslt.components;
-        async.eachOf(_this.components, function(component, component_id, component_cb){
-          if(component.remote_template && component.remote_template.publish){
+        _this.menus = rslt.menus;
+        async.eachOf(_this.menus, function(menu, menu_tag, menu_cb){
+          if(menu.remote_template && menu.remote_template.publish){
             var loadObj = {};
             cms.loader.StartLoading(loadObj);
             $.ajax({
               type: 'GET',
               cache: false,
-              url: component.remote_template.publish,
+              url: menu.remote_template.publish,
               xhrFields: { withCredentials: true },
               success: function(data){
                 cms.loader.StopLoading(loadObj);
-                component.content = data;
-                return component_cb();
+                menu.content = data;
+                return menu_cb();
               },
               error: function(xhr, status, err){
                 cms.loader.StopLoading(loadObj);
-                component.content = '*** COMPONENT NOT FOUND ***';
-                return component_cb();
+                menu.content = '*** MENU NOT FOUND ***';
+                return menu_cb();
               }
             });
           }
-          else return component_cb();
+          else return menu_cb();
         }, function(err){
           _this.isInitialized = true;
         });
       }
       else{
-        if(onComplete) onComplete(new Error('Error Loading Components'));
-        XExt.Alert('Error loading components');
+        if(onComplete) onComplete(new Error('Error Loading Menus'));
+        XExt.Alert('Error loading menus');
       }
     }, function (err) {
       if(onComplete) onComplete(err);
@@ -68,16 +68,16 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.render = function(){
-    $('.jsharmony_cms_component').addClass('mceNonEditable').each(function(){
+    $('.jsharmony_cms_menu').addClass('mceNonEditable').each(function(){
       var jobj = $(this);
-      var component_id = jobj.data('id');
-      var component_content = '';
-      if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
-      else if(!(component_id in _this.components)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
+      var menu_tag = jobj.data('menu_tag');
+      var menu_content = '';
+      if(!menu_tag) menu_content = '*** MENU MISSING data-id ATTRIBUTE ***';
+      else if(!(menu_tag in _this.menus)) menu_content = '*** MISSING CONTENT FOR MENU TAG ' + menu_tag+' ***';
       else{
-        component_content = ejs.render(_this.components[component_id].content || '', cms.controller.getComponentRenderParameters(component_id));
+        menu_content = ejs.render(_this.menus[menu_tag].content || '', cms.controller.getMenuRenderParameters(menu_tag));
       }
-      jobj.html(component_content);
+      jobj.html(menu_content);
     });
   }
 }

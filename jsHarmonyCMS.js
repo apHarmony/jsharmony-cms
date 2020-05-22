@@ -474,7 +474,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     private_apps: [
       {
         '/_funcs/page/:page_key': _this.funcs.page,
-        '/_funcs/components/:branch_id': _this.funcs.components,
+        '/_funcs/page/components/:branch_id': _this.funcs.page_components,
+        '/_funcs/page/menus/:branch_id': _this.funcs.page_menus,
         '/_funcs/editor_url': _this.funcs.getPageEditorUrl,
         '/_funcs/media/:media_key/:thumbnail': _this.funcs.media,
         '/_funcs/media/:media_key/': _this.funcs.media,

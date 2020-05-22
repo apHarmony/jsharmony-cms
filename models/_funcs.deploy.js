@@ -1015,17 +1015,8 @@ module.exports = exports = function(module, funcs){
                 }
               }
 
-              //Generate menu item tree
-              var menu_item_ids = {};
-              _.each(menu.menu_items, function(menu_item){
-                menu_item.menu_item_children = [];
-                menu_item_ids[menu_item.menu_item_id] = menu_item;
-              });
-              menu.menu_item_tree = [];
-              _.each(menu.menu_items, function(menu_item){
-                if(!menu_item.menu_item_parent_id) menu.menu_item_tree.push(menu_item);
-                else menu_item_ids[menu_item.menu_item_parent_id].menu_item_children.push(menu_item);
-              });
+              //Generate tree
+              menu.menu_item_tree = funcs.createMenuTree(menu.menu_items);
 
               return menu_file_cb();
             });
@@ -1047,7 +1038,7 @@ module.exports = exports = function(module, funcs){
               var ejsparams = {
                 menu: menu,
                 _: _,
-                Helper: Helper
+                escapeHTML: Helper.escapeHTML,
               };
               var menu_content = '';
               if(menu.menu_template_id in branchData.menu_template_html){
