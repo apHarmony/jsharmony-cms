@@ -22,7 +22,7 @@ exports = module.exports = function(jsh, cms){
 
   this.hasChanges = false;
 
-  this.init = function(){
+  this.init = function(cb){
   }
 
   this.load = function(cb){

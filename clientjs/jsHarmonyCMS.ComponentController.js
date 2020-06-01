@@ -17,6 +17,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+var pluginComponentController = require('./component/componentController');
+
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var $ = jsh.$;
@@ -108,30 +110,45 @@ exports = module.exports = function(jsh, cms){
   this.renderComponent = function(element) {
 
     var componentType = $(element).attr('data-component');
-    var componentModel = componentType ? _this.components[componentType] : undefined;
-    if (!componentModel) {
+    var componentConfig = componentType ? _this.components[componentType] : undefined;
+    if (!componentConfig) {
       return;
     }
-    componentModel.id = componentModel.id || componentType;
-    _this.addComponentStylesToPage(componentType, componentModel);
-    var modelInstance = {};
-    XExt.JSEval(componentModel.js, modelInstance, { _this: modelInstance, cms: cms });
-    if (typeof modelInstance.render !== 'function') return;
-    modelInstance.render(componentModel, element);
+    componentConfig.id = componentConfig.id || componentType;
+    _this.renderComponentStyles(componentType, componentConfig);
+    var componentInstance = {};
+    XExt.JSEval('\r\n' + (componentConfig.js || '') + '\r\n', componentInstance, {
+      _this: componentInstance,
+      cms: cms,
+      jsh: jsh,
+      component: componentInstance
+    });
+    if (!_.isFunction(componentInstance.create))  {
+      componentInstance.create = function(componentConfig, element) {
+        var controller = new pluginComponentController(element, cms, jsh, componentConfig.id);
+        controller.onBeforeRender = componentInstance.onBeforeRender
+        controller.onRender = componentInstance.onRender;
+        controller.render();
+      }
+    }
+    componentInstance.create(componentConfig, element);
   }
 
-  this.addComponentStylesToPage = function(componentType, componentModel) {
+  this.renderComponentStyles = function(componentType, componentConfig) {
+    this.renderedComponentTypeStyles = this.renderedComponentTypeStyles || {};
+    if (this.renderedComponentTypeStyles[componentType]) return;
+    this.renderedComponentTypeStyles[componentType] = true;
     var cssParts = [];
-    if (componentModel.css) {
-      cssParts.push(componentModel.css);
+    if (componentConfig.css) {
+      cssParts.push(componentConfig.css);
     }
-    if (componentModel.properties && componentModel.properties.css) {
-      cssParts.push(componentModel.properties.css);
+    if (componentConfig.properties && componentConfig.properties.css) {
+      cssParts.push(componentConfig.properties.css);
     }
-    if (componentModel.data && componentModel.data.css) {
-      cssParts.push(componentModel.data.css);
+    if (componentConfig.data && componentConfig.data.css) {
+      cssParts.push(componentConfig.data.css);
     }
-    var id = 'component-' + componentType;
+    var id = 'jsharmony_cms_component_' + componentType;
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
   }
