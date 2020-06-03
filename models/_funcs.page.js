@@ -313,7 +313,7 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
-  exports.page_components = function(req, res, next){
+  exports.templates_component = function(req, res, next){
     var verb = req.method.toLowerCase();
 
     var jsh = module.jsh;
@@ -409,7 +409,7 @@ module.exports = exports = function(module, funcs){
     else return next();
   }
 
-  exports.page_menus = function(req, res, next){
+  exports.templates_menu = function(req, res, next){
     var verb = req.method.toLowerCase();
 
     var jsh = module.jsh;
@@ -445,7 +445,7 @@ module.exports = exports = function(module, funcs){
 
     if (verb == 'get'){
 
-      var menus = JSON.parse(JSON.stringify(module.MenuTemplates));
+      var menuTemplates = {};
 
       async.waterfall([
 
@@ -469,7 +469,7 @@ module.exports = exports = function(module, funcs){
           });
         },
 
-        //Generate menus
+        //Generate menu templates
         function(cb){
           var publish_params = {
             timestamp: (Date.now()).toString()
@@ -482,14 +482,30 @@ module.exports = exports = function(module, funcs){
           }
           publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
     
-          //Resolve Remote Templates
-          _.each(menus, function(menu){
-            if(menu.remote_template && menu.remote_template.publish){
-              for(var key in publish_params){
-                menu.remote_template.publish = Helper.ReplaceAll(menu.remote_template.publish, '%%%' + key + '%%%', publish_params[key]);
+          //Parse menu templates
+          for(var tmplname in module.MenuTemplates){
+            var tmpl = module.MenuTemplates[tmplname];
+            var front_tmpl = {
+              title: tmpl.title,
+              content_elements: {},
+            };
+
+            for(var key in tmpl.content_elements){
+              var content_element = tmpl.content_elements[key];
+              front_tmpl.content_elements[key] = {};
+              var rslt_content_element = front_tmpl.content_elements[key];
+              if('template' in content_element) rslt_content_element.template = content_element.template['editor'] || '';
+              if('remote_template' in content_element) rslt_content_element.remote_template = content_element.remote_template['editor'] || '';
+              
+              //Resolve Remote Templates
+              if(rslt_content_element.remote_template){
+                for(var key in publish_params){
+                  rslt_content_element.remote_template = Helper.ReplaceAll(rslt_content_element.remote_template, '%%%' + key + '%%%', publish_params[key]);
+                }
               }
             }
-          });
+            menuTemplates[tmplname] = front_tmpl;
+          }
 
           return cb();
         },
@@ -498,7 +514,7 @@ module.exports = exports = function(module, funcs){
 
         res.end(JSON.stringify({ 
           '_success': 1,
-          'menus': menus
+          'menuTemplates': menuTemplates
         }));
       });
     }
@@ -661,7 +677,7 @@ module.exports = exports = function(module, funcs){
                 menus[menu.menu_tag] = menu;
               });
               async.eachOfSeries(menus, function(menu, menu_tag, menu_cb){
-                funcs.getClientMenu(menu, function(err, menu_content){
+                funcs.getClientMenu(menu, { }, function(err, menu_content){
                   if(err) return menu_cb(err);
                   if(!menu_content) return menu_cb(null);
                   menu.menu_items = menu_content.menu_items;

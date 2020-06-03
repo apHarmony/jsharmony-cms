@@ -29,7 +29,7 @@ exports = module.exports = function(jsh, cms){
   this.isInitialized = false;
 
   this.load = function(onComplete){
-    var url = '../_funcs/page/components/'+cms.branch_id;
+    var url = '../_funcs/templates/component/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.components = rslt.components;
@@ -507,36 +507,38 @@ exports = module.exports = function(jsh, cms){
   var async = jsh.async;
   var ejs = jsh.ejs;
 
-  this.menus = null;
+  this.menuTemplates = {};
   this.isInitialized = false;
 
   this.load = function(onComplete){
-    var url = '../_funcs/page/menus/'+cms.branch_id;
+    var url = '../_funcs/templates/menu/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.menus = rslt.menus;
-        async.eachOf(_this.menus, function(menu, menu_tag, menu_cb){
-          if(menu.remote_template && menu.remote_template.publish){
+        _this.menuTemplates = rslt.menuTemplates;
+        async.eachOf(_this.menuTemplates, function(menu, menu_template_id, menu_cb){
+          async.eachOf(menu.content_elements, function(content_element, content_element_name, content_element_cb){
+            if(!content_element.remote_template) return content_element_cb();
+
+            //Load remote menu templates
             var loadObj = {};
             cms.loader.StartLoading(loadObj);
             $.ajax({
               type: 'GET',
               cache: false,
-              url: menu.remote_template.publish,
+              url: content_element.remote_template,
               xhrFields: { withCredentials: true },
               success: function(data){
                 cms.loader.StopLoading(loadObj);
-                menu.content = data;
-                return menu_cb();
+                content_element.template = (content_element.template||'')+data;
+                return content_element_cb();
               },
               error: function(xhr, status, err){
                 cms.loader.StopLoading(loadObj);
-                menu.content = '*** MENU NOT FOUND ***';
-                return menu_cb();
+                content_element.template = '*** ERROR DOWNLOADING REMOTE MENU ***';
+                return content_element_cb();
               }
             });
-          }
-          else return menu_cb();
+          }, menu_cb);
         }, function(err){
           _this.isInitialized = true;
         });
@@ -554,11 +556,20 @@ exports = module.exports = function(jsh, cms){
     $('.jsharmony_cms_menu').addClass('mceNonEditable').each(function(){
       var jobj = $(this);
       var menu_tag = jobj.data('menu_tag');
+      var content_element_name = jobj.data('menu_content_element');
       var menu_content = '';
-      if(!menu_tag) menu_content = '*** MENU MISSING data-id ATTRIBUTE ***';
-      else if(!(menu_tag in _this.menus)) menu_content = '*** MISSING CONTENT FOR MENU TAG ' + menu_tag+' ***';
-      else{
-        menu_content = ejs.render(_this.menus[menu_tag].content || '', cms.controller.getMenuRenderParameters(menu_tag));
+      if(!menu_tag) menu_content = '*** MENU MISSING data-menu_tag ATTRIBUTE ***';
+      else if(!content_element_name) menu_content = '*** MENU MISSING data-menu_content_element ATTRIBUTE ***';
+      else if(!(menu_tag in cms.controller.menus)) menu_content = '*** MISSING MENU DATA FOR MENU TAG ' + menu_tag+' ***';
+      else {
+        var menu = cms.controller.menus[menu_tag];
+        var menuTemplate = _this.menuTemplates[menu.menu_template_id];
+        if(!menuTemplate) menu_content = '*** MENU TEMPLATE NOT FOUND: ' + menu.menu_template_id+' ***';
+        else if(!(content_element_name in menuTemplate.content_elements)) menu_content = '*** MENU ' + menu.menu_template_id + ' CONTENT ELEMENT NOT DEFINED: ' + content_element_name+' ***';
+        else{
+          var content_element = menuTemplate.content_elements[content_element_name];
+          menu_content = ejs.render(content_element.template || '', cms.controller.getMenuRenderParameters(menu_tag));
+        }
       }
       jobj.html(menu_content);
     });

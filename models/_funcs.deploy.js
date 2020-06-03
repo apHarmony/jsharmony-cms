@@ -151,13 +151,30 @@ module.exports = exports = function(module, funcs){
     return media_fpath;
   }
 
-  exports.getMenuRelativePath = function(menu, publish_params){
+  exports.getMenuRelativePath = function(menu, content_element_name, publish_params){
+    var cms = module;
     var menu_fpath = menu.menu_path||'';
     if(!menu_fpath) return '';
     while(menu_fpath.substr(0,1)=='/') menu_fpath = menu_fpath.substr(1);
 
+    var menuTemplate = cms.MenuTemplates[menu.menu_template_id];
+    if(!menuTemplate) throw new Error('Menu template '+menu.menu_template_id+' not defined');
+    if(!menuTemplate.content_elements[content_element_name]) throw new Error('Menu content element '+content_element_name+' not defined for menu ' + menu.menu_template_id);
+    var content_element_filename = menuTemplate.content_elements[content_element_name].filename || '';
+
+    var num_content_elements = 0;
+    for(var key in menuTemplate.content_elements){
+      if(menuTemplate.content_elements[key].filename) num_content_elements++;
+    }
+
+    var multiple_content_elements = (num_content_elements > 1);
     var is_folder = (menu_fpath[menu_fpath.length-1]=='/');
-    if(is_folder) throw new Error('Menu path:'+menu.menu_path+' must be a file, not a folder');
+
+    if(multiple_content_elements && !is_folder) throw new Error('Menu '+menu.menu_tag+' contains multiple content elements and requires menu_path to be a folder (ending in "/")');
+
+    if(is_folder) menu_fpath += content_element_filename;
+    if(menu_fpath[menu_fpath.length-1]=='/') throw new Error('Final menu path:'+menu.menu_path+' must be a file, not a folder');
+
     if(path.isAbsolute(menu_fpath)) throw new Error('Menu path:'+menu.menu_path+' cannot be absolute');
     if(menu_fpath.indexOf('..') >= 0) throw new Error('Menu path:'+menu.menu_path+' cannot contain directory traversals');
     if(publish_params) menu_fpath = publish_params.menu_subfolder + menu_fpath;
@@ -166,23 +183,53 @@ module.exports = exports = function(module, funcs){
 
   exports.downloadTemplate = function(branchData, templates, template_html, download_cb){
     async.eachOf(templates, function(template, template_name, template_cb){
-      if(!template.remote_template || !template.remote_template.publish){
-        if(template.content && ('body' in template.content)){
-          template_html[template_name] = template.body;
-        }
-        else if(_.isString(template.content)) template_html[template_name] = template.content;
-        return template_cb();
+      if(template.content && ('body' in template.content)){
+        template_html[template_name] = template.body;
       }
-      var publish_template_url = template.remote_template.publish;
-      for(var key in branchData.publish_params){
-        publish_template_url = Helper.ReplaceAll(publish_template_url, '%%%' + key + '%%%', branchData.publish_params[key]);
-      }
-      funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+publish_template_url);
-      wc.req(publish_template_url, 'GET', {}, {}, undefined, function(err, res, rslt){
-        if(err) return template_cb(err);
-        template_html[template_name] = rslt;
-        return template_cb();
-      });
+      else if(_.isString(template.content)) template_html[template_name] = template.content;
+
+      async.waterfall([
+
+        //Download template.remote_template.publish
+        function(template_action_cb){
+          if(!template.remote_template || !template.remote_template.publish) return template_action_cb();
+
+          var url = template.remote_template.publish;
+          for(var key in branchData.publish_params){
+            url = Helper.ReplaceAll(url, '%%%' + key + '%%%', branchData.publish_params[key]);
+          }
+          funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
+          wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
+            if(err) return template_action_cb(err);
+            template_html[template_name] = rslt;
+            return template_action_cb();
+          });
+        },
+
+        //Download template.content_elements[].remote_template.publish
+        function(template_action_cb){
+          if(!(template_html[template_name])) template_html[template_name] = {};
+
+          async.eachOfSeries(template.content_elements, function(content_element, content_element_name, content_element_cb){
+            template_html[template_name][content_element_name] = '';
+            if('template' in content_element) template_html[template_name][content_element_name] += content_element.template['publish'] || '';
+
+            if(!content_element || !content_element.remote_template || !content_element.remote_template.publish) return content_element_cb();
+
+            var url = content_element.remote_template.publish;
+            for(var key in branchData.publish_params){
+              url = Helper.ReplaceAll(url, '%%%' + key + '%%%', branchData.publish_params[key]);
+            }
+            funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
+            wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
+              if(err) return content_element_cb(err);
+              template_html[template_name][content_element_name] += rslt;
+              return content_element_cb();
+            });
+          }, template_action_cb);
+        },
+      ], template_cb);
+
     }, download_cb);
   }
 
@@ -216,7 +263,7 @@ module.exports = exports = function(module, funcs){
           var sql = "update "+(module.schema?module.schema+'.':'')+"deployment set deployment_sts='RUNNING' where deployment_id=@deployment_id;";
           var sql_ptypes = [dbtypes.BigInt];
           var sql_params = { deployment_id: deployment_id };
-          appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+          appsrv.ExecCommand('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err) return deploy_cb(err);
             return deploy_cb();
           });
@@ -260,6 +307,7 @@ module.exports = exports = function(module, funcs){
 
             media_keys: {},
 
+            menus: {},
             menu_template_html: {},
 
             sitemaps: {},
@@ -498,6 +546,27 @@ module.exports = exports = function(module, funcs){
                 }, cb);
               },
 
+              //Copy static files to publish folder
+              function (cb){
+                if(!publish_params.copy_folders) return cb();
+                async.eachSeries(publish_params.copy_folders, function(fpath, file_cb){
+                  if(!path.isAbsolute(fpath)) fpath = path.join(jsh.Config.datadir, fpath);
+                  fs.lstat(fpath, function(err, stats){
+                    if(err) return file_cb(err);
+                    if(!stats.isDirectory()) return file_cb(new Error('"copy_folder" parameter is not a folder: ' + fpath));
+                    HelperFS.copyRecursive(fpath, publish_path,
+                      {
+                        forEachDir: function(dirpath, targetpath, relativepath, cb){
+                          if(relativepath=='.git') return cb(false);
+                          return cb(true);
+                        }
+                      },
+                      file_cb
+                    );
+                  });
+                }, cb);
+              },
+
               //Run onBeforeDeploy functions
               function(cb){
                 async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
@@ -519,7 +588,16 @@ module.exports = exports = function(module, funcs){
 
               //Run onDeploy functions
               function(cb){
-                async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+                var branchItemTypes = _.keys(cms.BranchItems);
+                branchItemTypes.sort(function(a,b){
+                  var aseq = (cms.BranchItems[a] && cms.BranchItems[a].deploy && cms.BranchItems[a].deploy.onDeploy_seq) || 0;
+                  var bseq = (cms.BranchItems[b] && cms.BranchItems[b].deploy && cms.BranchItems[b].deploy.onDeploy_seq) || 0;
+                  if(aseq > bseq) return 1;
+                  if(bseq > aseq) return -1;
+                  return 0;
+                });
+                async.eachSeries(branchItemTypes, function(branch_item_type, branch_item_cb){
+                  var branch_item = cms.BranchItems[branch_item_type];
                   if(!branch_item.deploy) return branch_item_cb();
                   Helper.execif(branch_item.deploy.onDeploy,
                     function(f){
@@ -621,6 +699,11 @@ module.exports = exports = function(module, funcs){
           }
         }
       ], function(err){
+        //In no_publish_complete debug mode, do not set finish the deployment
+        if(module.Config.debug_params.no_publish_complete){
+          if(err) console.log(err);
+          return;
+        }
         var deployment_sts = 'COMPLETE';
         if(err){
           funcs.deploy_log_error(deployment_id, err);
@@ -794,6 +877,16 @@ module.exports = exports = function(module, funcs){
             },
             _: _,
             Helper: Helper,
+            renderMenu: function(menu_tag, content_element_name){
+              if(!menu_tag) return '';
+              if(!branchData.menus[menu_tag]) return '<!-- Menu '+Helper.escapeHTML(menu_tag)+' not found -->';
+              var menu = branchData.menus[menu_tag];
+              if(!content_element_name){
+                for(var key in menu){ content_element_name = key; break; }
+              }
+              if(!(content_element_name in menu)) return '<!-- Menu Content Element '+Helper.escapeHTML(content_element_name)+' not found -->';
+              return menu[content_element_name]||'';
+            },
             renderComponent: function(id){
               if(!id) return '';
               if(!(id in branchData.component_html)) return '<!-- Component '+Helper.escapeHTML(id)+' not found -->';
@@ -996,7 +1089,7 @@ module.exports = exports = function(module, funcs){
         //Get menus from disk and replace URLs
         function(menu_cb){
           async.eachSeries(menus, function(menu, menu_file_cb){
-            funcs.getClientMenu(menu, function(err, menu_content){
+            funcs.getClientMenu(menu, { target: 'publish' }, function(err, menu_content){
               if(err) return menu_file_cb(err);
 
               //Replace URLs
@@ -1017,6 +1110,7 @@ module.exports = exports = function(module, funcs){
 
               //Generate tree
               menu.menu_item_tree = funcs.createMenuTree(menu.menu_items);
+              menu.template = menu_content.template;
 
               return menu_file_cb();
             });
@@ -1034,31 +1128,41 @@ module.exports = exports = function(module, funcs){
           }
           else{
             async.eachSeries(menus, function(menu, menu_file_cb){
-              //Merge content with template
-              var ejsparams = {
-                menu: menu,
-                _: _,
-                escapeHTML: Helper.escapeHTML,
-              };
-              var menu_content = '';
-              if(menu.menu_template_id in branchData.menu_template_html){
-                menu_content = branchData.menu_template_html[menu.menu_template_id]||'';
-                menu_content = ejs.render(menu_content, ejsparams);
-              }
-              else {
-                menu_content = 'Error: Menu template not found';
-              }
+              branchData.menus[menu.menu_tag] = {};
+              async.eachOfSeries(menu.template.content_elements, function(content_element, content_element_name, content_element_cb){
+                //Merge content with template
+                var ejsparams = {
+                  menu: menu,
+                  _: _,
+                  escapeHTML: Helper.escapeHTML,
+                  isInEditor: false,
+                };
+                var menu_content = '';
+                if(menu.menu_template_id in branchData.menu_template_html){
+                  if(content_element_name in branchData.menu_template_html[menu.menu_template_id]){
+                    menu_content = branchData.menu_template_html[menu.menu_template_id][content_element_name]||'';
+                    menu_content = ejs.render(menu_content, ejsparams);
+                  }
+                  else {
+                    menu_content = 'Error: Menu content element '+content_element_name+' not found';
+                  }
+                }
+                else {
+                  menu_content = 'Error: Menu template '+menu.menu_template_id+' not found';
+                }
 
-              var menu_fpath = '';
-              try{
-                menu_fpath = funcs.getMenuRelativePath(menu, publish_params);
-              }
-              catch(ex){
-                return cb(ex);
-              }
-              if(!menu_fpath) return cb(new Error('Menu has no path: '+menu.menu_key));
-              menu_output_files[menu_fpath] = menu_content;
-              return menu_file_cb();
+                var menu_fpath = '';
+                try{
+                  menu_fpath = funcs.getMenuRelativePath(menu, content_element_name, publish_params);
+                }
+                catch(ex){
+                  return cb(ex);
+                }
+                if(!menu_fpath) return cb(new Error('Menu has no path: '+menu.menu_key));
+                menu_output_files[menu_fpath] = menu_content;
+                branchData.menus[menu.menu_tag][content_element_name] = menu_content;
+                return content_element_cb();
+              }, menu_file_cb);
             }, menu_cb);
           }
         }

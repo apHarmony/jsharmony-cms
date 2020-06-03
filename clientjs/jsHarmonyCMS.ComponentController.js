@@ -28,7 +28,7 @@ exports = module.exports = function(jsh, cms){
   this.isInitialized = false;
 
   this.load = function(onComplete){
-    var url = '../_funcs/page/components/'+cms.branch_id;
+    var url = '../_funcs/templates/component/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.components = rslt.components;
