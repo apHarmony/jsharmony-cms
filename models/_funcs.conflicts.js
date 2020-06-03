@@ -272,7 +272,7 @@ module.exports = exports = function(module, funcs){
       //Get menu file content
       function(cb){
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, function(err, menu_content){
+          funcs.getClientMenu(menu, {}, function(err, menu_content){
             if(err) return menu_cb(err);
             if(!menu_content) return menu_cb(null);
             menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, branch_data.page_keys, branch_data.media_keys);

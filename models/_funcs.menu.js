@@ -30,8 +30,9 @@ module.exports = exports = function(module, funcs){
     return path.join(path.join(module.jsh.Config.datadir,'menu'),menu_file_id.toString()+'.json');
   }
 
-  exports.getClientMenu = function(menu, cb){
+  exports.getClientMenu = function(menu, options, cb){
     var appsrv = this;
+    options = _.extend({ target: '' }, options);
 
     var menu_file_id = menu.menu_file_id;
     var menu_template_id = menu.menu_template_id;
@@ -45,12 +46,35 @@ module.exports = exports = function(module, funcs){
       menu_content = menu_content || { menu_items: [] };
       menu_content.template = {
         title: template.title||'',
-        content: {
-          body: template.content.body||'',
-        }
+        content_elements: {},
       }; 
+      for(var key in template.content_elements){
+        var content_element = template.content_elements[key];
+        menu_content.template.content_elements[key] = {
+          filename: content_element.filename
+        };
+        if(options.target){
+          if('template' in content_element) menu_content.template.content_elements[key].template = content_element.template[options.target] || '';
+          if('remote_template' in content_element) menu_content.template.content_elements[key].remote_template = content_element.remote_template[options.target] || '';
+        }
+      }
       return cb(null,menu_content);
     });
+  }
+
+  exports.createMenuTree = function(menu_items){
+    //Generate menu item tree
+    var menu_item_ids = {};
+    _.each(menu_items, function(menu_item){
+      menu_item.menu_item_children = [];
+      menu_item_ids[menu_item.menu_item_id] = menu_item;
+    });
+    var menu_item_tree = [];
+    _.each(menu_items, function(menu_item){
+      if(!menu_item.menu_item_parent_id) menu_item_tree.push(menu_item);
+      else menu_item_ids[menu_item.menu_item_parent_id].menu_item_children.push(menu_item);
+    });
+    return menu_item_tree;
   }
   
   exports.menu = function (req, res, next) {
@@ -107,7 +131,7 @@ module.exports = exports = function(module, funcs){
         if (!appsrv.ParamCheck('Q', Q, ['|menu_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //Return menu
-        funcs.getClientMenu(menu, function(err, clientMenu){
+        funcs.getClientMenu(menu, { }, function(err, clientMenu){
           if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
 
           var page_keys = {};
