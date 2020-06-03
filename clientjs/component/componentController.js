@@ -199,6 +199,12 @@ BasicComponentController.prototype.render = function() {
   });
 
   if (_.isFunction(this.onRender)) this.onRender(this._$element[0], data, props);
+
+  setTimeout(function() {
+    _.forEach(self._$element.find('[data-component]'), function(el) {
+      self.cms.componentController.renderComponent(el);
+    });
+  });
 }
 
 /**

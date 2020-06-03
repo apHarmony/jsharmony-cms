@@ -477,6 +477,12 @@ DataGridPreviewEditorController.prototype.renderRow = function(data) {
   });
 
   if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderOptions.data, renderOptions.properties);
+
+  setTimeout(function() {
+    _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
+      self.cms.componentController.renderComponent(el);
+    });
+  }, 100);
 }
 
 /**

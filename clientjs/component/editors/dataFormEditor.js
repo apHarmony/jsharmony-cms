@@ -291,6 +291,8 @@ DataFormEditor.prototype.openMediaBrowser = function(cb) {
  */
 DataFormEditor.prototype.renderPreview = function($wrapper, template, data, properties) {
 
+  var self = this;
+
   /** @type {RenderConfig} */
   var renderOptions = {
     template: template,
@@ -311,6 +313,12 @@ DataFormEditor.prototype.renderPreview = function($wrapper, template, data, prop
   $wrapper.empty().append(rendered);
 
   if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderOptions.data, renderOptions.properties);
+
+  setTimeout(function() {
+    _.forEach($($wrapper.children()[0]).find('[data-component]'), function(el) {
+      self._cms.componentController.renderComponent(el);
+    });
+  }, 50);
 }
 
 exports = module.exports = DataFormEditor;
