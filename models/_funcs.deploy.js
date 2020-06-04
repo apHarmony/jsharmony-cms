@@ -209,6 +209,7 @@ module.exports = exports = function(module, funcs){
 
         //Download template.content_elements[].remote_template.publish
         function(template_action_cb){
+          if(!options.content_element_templates) return template_action_cb();
           if(!(template_html[template_name])) template_html[template_name] = {};
 
           async.eachOfSeries(template.content_elements, function(content_element, content_element_name, content_element_cb){
