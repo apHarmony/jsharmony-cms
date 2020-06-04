@@ -40,6 +40,8 @@ module.exports = exports = function(module, funcs){
     if(!page_template_id) page_template_id = module.defaultPageTemplate;
     var template = module.PageTemplates[page_template_id];
 
+    if(!template) return cb(new Error('Invalid page template: '+page_template_id));
+
     //Load Page Content from disk
     module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
       //If an error occurs loading the file, ignore it and load the default template instead
