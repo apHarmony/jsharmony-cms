@@ -34,6 +34,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.page = null;
   this.template = null;
   this.sitemap = {};
+  this.menus = {};
   this.authors = [];
   this.role = '';
 
@@ -63,7 +64,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       XExt.waitUntil(
-        function(){ return (cms.componentController.isInitialized); },
+        function(){ return (cms.componentController.isInitialized && cms.menuController.isInitialized); },
         function(){
           if ('_success' in rslt) {
             //Populate arrays + create editor
@@ -72,6 +73,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             _this.page = rslt.page;
             _this.template = rslt.template;
             _this.sitemap = rslt.sitemap;
+            _this.menus = rslt.menus||{};
             _this.authors = rslt.authors;
             _this.role = rslt.role;
             cms.views = _.extend(cms.views, rslt.views);
@@ -171,6 +173,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     }
 
     cms.componentController.render();
+    cms.menuController.render();
 
     //CSS
     cms.util.removeStyle('jsharmony_cms_template_style');
@@ -325,6 +328,20 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       template: _this.template,
       sitemap: _this.sitemap,
       getSitemapURL: function(sitemap_item){ return '#'; },
+      isInEditor: true,
+    }
+  }
+
+  this.getMenuRenderParameters = function(menu_tag){
+    return {
+      _: _,
+      escapeHTML: XExt.xejs.escapeHTML,
+      page: _this.page,
+      template: _this.template,
+      sitemap: _this.sitemap,
+      getSitemapURL: function(sitemap_item){ return '#'; },
+      menu: _this.menus[menu_tag],
+      getMenuURL: function(menu_item){ return '#'; },
       isInEditor: true,
     }
   }

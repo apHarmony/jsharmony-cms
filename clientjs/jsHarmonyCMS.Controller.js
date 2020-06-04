@@ -48,4 +48,10 @@ exports = module.exports = function(jsh, cms){
   this.getComponentRenderParameters = function(component_id){
     return {};
   }
+
+  this.getMenuRenderParameters = function(menu_tag){
+    return {
+      menu: { menu_item_tree: [] }
+    };
+  }
 }

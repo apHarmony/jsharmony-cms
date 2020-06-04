@@ -23,6 +23,7 @@ var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
 var jsHarmonyCMSComponentController = require('./jsHarmonyCMS.ComponentController.js');
+var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
 
 var jsHarmonyCMS = function(){
   var _this = this;
@@ -33,6 +34,7 @@ var jsHarmonyCMS = function(){
   this.controller = undefined; //Loaded after init
   this.editor = undefined; //Loaded after init
   this.componentController = undefined; //Loaded after init
+  this.menuController = undefined; //Loaded after init
   this.views = {
     'jsh_cms_editor.css': '',
     'jsh_cms_editor': '',
@@ -100,6 +102,7 @@ var jsHarmonyCMS = function(){
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
   
       _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
+      _this.menuController = new jsHarmonyCMSMenuController(jsh, _this);
   
       jsh.xLoader = loader;
       async.parallel([
@@ -128,6 +131,7 @@ var jsHarmonyCMS = function(){
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
       this.componentController.load();
+      this.menuController.load();
     }
     else{
       loader.StopLoading();

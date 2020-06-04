@@ -1,0 +1,15 @@
+{
+  "title": "Template Name",
+  "default_content": {
+    "body": "Default Page Content",
+    "footer": "Default Footer Content"
+  },
+  "remote_template": {
+    "editor": "%%%editor_base_url%%%/templates/page/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
+    "publish": "%%%publish_template_base_url%%%/templates/page/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
+  },
+  "content_elements": {
+    "body": { "type": "htmleditor", "title": "Body" },
+    "footer": { "type": "htmleditor", "title": "Footer" }
+  }
+}

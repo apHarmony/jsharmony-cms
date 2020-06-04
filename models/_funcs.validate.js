@@ -326,20 +326,30 @@ module.exports = exports = function(module, funcs){
 
       //Get menu file content
       function(cb){
+        var menu_paths = {};
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, function(err, menu_content){
+          funcs.getClientMenu(menu, { }, function(err, menu_content){
             if(err){ funcs.validate_logError(item_errors, 'menu', menu, err.toString()); return menu_cb(); }
-
-            var menu_path = null;
-            try{
-              menu_path = funcs.getMenuRelativePath(menu);
+            if(!menu_content || !menu_content.template){
+              funcs.validate_logError(item_errors, 'menu', menu, 'Menu template not found');
+              return menu_cb(null);
             }
-            catch(ex){
-              if(ex) funcs.validate_logError(item_errors, 'menu', menu, ex.toString());
-            }
-            if(!menu_path) funcs.validate_logError(item_errors, 'menu', menu, 'Menu does not have a valid path');
 
-            if(!menu_content) return menu_cb(null);
+            for(var content_element_name in menu_content.template.content_elements){
+              var menu_path = null;
+              try{
+                menu_path = funcs.getMenuRelativePath(menu, content_element_name);
+              }
+              catch(ex){
+                if(ex) funcs.validate_logError(item_errors, 'menu', menu, ex.toString());
+              }
+              if(!menu_path) funcs.validate_logError(item_errors, 'menu', menu, 'Menu does not have a valid path for content element '+content_element_name);
+              else{
+                menu_path_ucase = menu_path.trim().toUpperCase();
+                if(menu_paths[menu_path_ucase]) funcs.validate_logError(item_errors, 'menu', menu, 'Duplicate menu path: '+menu_path);
+                menu_paths[menu_path_ucase] = menu_path_ucase;
+              }
+            }
 
             //Validate URLs
             menu.menu_items = menu_content.menu_items||[];
