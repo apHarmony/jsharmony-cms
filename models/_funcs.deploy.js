@@ -181,7 +181,8 @@ module.exports = exports = function(module, funcs){
     return menu_fpath;
   }
 
-  exports.downloadTemplate = function(branchData, templates, template_html, download_cb){
+  exports.downloadTemplate = function(branchData, templates, template_html, options, download_cb){
+    options = _.extend({ content_element_templates: false }, options);
     async.eachOf(templates, function(template, template_name, template_cb){
       if(template.content && ('body' in template.content)){
         template_html[template_name] = template.body;

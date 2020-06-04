@@ -322,8 +322,8 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       deploy: {
         onBeforeDeploy: function(jsh, branchData, publish_params, callback){
           async.waterfall([
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.PageTemplates, branchData.page_template_html, cb); },
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.Components, branchData.component_html, cb); },
+            function(cb){ _this.funcs.downloadTemplate(branchData, _this.PageTemplates, branchData.page_template_html, {}, cb); },
+            function(cb){ _this.funcs.downloadTemplate(branchData, _this.Components, branchData.component_html, {}, cb); },
             function(cb){ _this.funcs.deploy_getPages(jsh, branchData, publish_params, cb); },
           ], callback);
         },
@@ -361,7 +361,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       deploy: {
         onBeforeDeploy: function(jsh, branchData, publish_params, callback){
           async.waterfall([
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.MenuTemplates, branchData.menu_template_html, cb); },
+            function(cb){ _this.funcs.downloadTemplate(branchData, _this.MenuTemplates, branchData.menu_template_html, { content_element_templates: true }, cb); },
             function(cb){ _this.funcs.deploy_getMedia(jsh, branchData, publish_params, callback); },
           ], callback);
         },
