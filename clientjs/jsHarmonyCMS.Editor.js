@@ -60,7 +60,7 @@ exports = module.exports = function(jsh, cms){
         inline: true,
         branding: false,
         browser_spellcheck: true,
-        valid_elements: '+*[*]',
+        valid_elements: '+*[*],#p',
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmap anchor',
