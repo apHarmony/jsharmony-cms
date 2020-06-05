@@ -167,6 +167,7 @@
 body .tox-tinymce-inline {
   z-index: 9999;
 }
+
 body .tox-tinymce-aux {
   z-index: 10003;
 }
@@ -183,4 +184,36 @@ body .tox-tinymce-aux {
   content: "";
   display: table;
   clear: both;
+}
+
+.mce-content-body:focus {
+  outline: 2px solid #b4d7ff;
+}
+
+.jsharmony_cms_content.mce-content-body [contentEditable=false][data-mce-selected] {
+  cursor: pointer;
+  outline: 1px dashed #b4d7ff;
+}
+
+.cms_component .empty {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #e2e2e2;
+  border: 1px solid #999;
+}
+
+.cms_component .empty h3 {
+  margin: 5px;
+  font-weight: normal;
+  color: #555;
+}
+
+.cms_component .empty .material-icons {
+  font-size: 48px;
+  color: #555;
 }
