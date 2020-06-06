@@ -55,6 +55,8 @@ function jsHarmonyCMS(name, options){
   _this.Layouts = {};
   _this.Elements = {};
   _this.BranchItems = this.getDefaultBranchItems();
+  _this.DeploymentJobReady = false;
+
   _this.funcs = new funcs(_this);
   _this.transform = new jsHarmonyCMSTransform(_this);
 }
@@ -96,8 +98,13 @@ jsHarmonyCMS.prototype.Init = function(cb){
   }
 
   jsh.Config.onServerReady.push(function (cb, servers){
-    jsh.AppSrv.ExecCommand('system', "update "+(_this.schema?_this.schema+'.':'')+"deployment set deployment_sts='FAILED' where deployment_sts='RUNNING'", [], { }, function (err, rslt) {
+    var sql = "update "+(_this.schema?_this.schema+'.':'')+"deployment set deployment_sts='FAILED' where deployment_sts='RUNNING';";
+    if(_this.Config.debug_params.auto_restart_failed_publish){
+      sql = "insert into "+(_this.schema?_this.schema+'.':'')+"deployment(deployment_tag, branch_id, deployment_date, deployment_target_id) select concat(deployment_tag,'#'), branch_id, deployment_date, deployment_target_id from "+(_this.schema?_this.schema+'.':'')+"deployment where deployment_sts='RUNNING';" + sql;
+    }
+    jsh.AppSrv.ExecCommand('system', sql, [], { }, function (err, rslt) {
       if (err) { jsh.Log.error(err); }
+      _this.DeploymentJobReady = true;
       return cb();
     });
   });
@@ -121,11 +128,20 @@ jsHarmonyCMS.prototype.LoadClientJS = function(){
 jsHarmonyCMS.prototype.LoadTemplates = function(){
   var _this = this;
 
+  //Prepend file content to property.  Add property if it does not exist and content exists
   function prependPropFile(obj, prop, path){
     if (fs.existsSync(path)) {
       var fcontent = fs.readFileSync(path, 'utf8');
-      if (prop in obj) fcontent += '\r\n' + obj[prop];
-      obj[prop] = fcontent;
+      if(_.isString(prop)){
+        if (prop in obj) fcontent += '\r\n' + obj[prop];
+        obj[prop] = fcontent;
+      }
+      else if(_.isArray(prop)){
+        _.each(prop, function(key){
+          if (key in obj) fcontent += '\r\n' + obj[key];
+          obj[key] = fcontent;
+        });
+      }
     }
   }
 
@@ -144,6 +160,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
         var tmpl = _this.jsh.ParseJSON(fpath, _this.name, templateType + ' template ' + tmplname);
         if(!tmpl.title) tmpl.title = tmplname;
         if(templateType=='page'){
+          //Load page template files
           prependPropFile(tmpl, 'header', tmplbasepath + '.header.ejs');
           prependPropFile(tmpl, 'footer', tmplbasepath + '.footer.ejs');
           prependPropFile(tmpl, 'css', tmplbasepath + '.css');
@@ -160,8 +177,39 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
           _this.PageTemplates[tmplname] = tmpl;
         }
         else if(templateType=='menu'){
-          if(!tmpl.content) tmpl.content = {};
-          prependPropFile(tmpl.content, 'body', tmplbasepath + '.ejs');
+          //Load menu template files
+          if(!tmpl.content_elements) tmpl.content_elements = {};
+          //Normalize content_elements
+          for(var key in tmpl.content_elements){
+            if(_.isString(tmpl.content_elements[key])){
+              tmpl.content_elements[key] = { template: tmpl.content_elements[key] };
+            }
+            var content_element = tmpl.content_elements[key];
+            if(_.isString(content_element.template)){
+              content_element.template = {
+                editor: content_element.template,
+                publish: content_element.template,
+              }
+            }
+            if(_.isString(content_element.remote_template)){
+              content_element.remote_template = {
+                editor: content_element.remote_template,
+                publish: content_element.remote_template,
+              }
+            }
+            if(!content_element.filename) content_element.filename = key + '.html';
+          }
+          if(fs.existsSync(tmplbasepath + '.ejs')){
+            if(!tmpl.content_elements[tmplname]){
+              tmpl.content_elements[tmplname] = {
+                template: {
+                  editor: '',
+                  publish: '',
+                }
+              };
+            }
+            prependPropFile(tmpl.content_elements[tmplname].template, ['editor','publish'], tmplbasepath + '.ejs')
+          }
           _this.MenuTemplates[tmplname] = tmpl;
         }
         else if(templateType=='component'){
@@ -178,6 +226,9 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
           prependPropFile(tmpl.data, 'ejs', tmplbasepath + '.data.ejs');
           prependPropFile(tmpl.data, 'css', tmplbasepath + '.data.css');
           prependPropFile(tmpl.data, 'js', tmplbasepath + '.data.js');
+          //Load component template files
+          if(!tmpl.content) tmpl.content = '';
+          prependPropFile(tmpl, 'content', tmplbasepath + '.ejs');
           _this.Components[tmplname] = tmpl;
         }
       }
@@ -197,6 +248,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     content: {}
   };
 
+  //Load Page Templates
   this.jsh.Config.macros.CMS_PAGE_TEMPLATES = [];
   var frontend_PageTemplates = {};
   for(var tmplname in this.PageTemplates){
@@ -217,23 +269,13 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   this.jsh.Sites['main'].globalparams.PageTemplates = frontend_PageTemplates;
   this.jsh.Sites['main'].globalparams.defaultPageTemplate = _this.defaultPageTemplate;
 
+  //Load Menu Templates
   this.jsh.Config.macros.CMS_MENU_TEMPLATES = [];
-  var frontend_MenuTemplates = {};
   for(var tmplname in this.MenuTemplates){
     var tmpl = this.MenuTemplates[tmplname];
     if(typeof _this.defaultMenuTemplate == 'undefined') _this.defaultMenuTemplate = tmplname;
     this.jsh.Config.macros.CMS_MENU_TEMPLATES.push({ "code_val": tmplname, "code_txt": tmpl.title });
-
-    var frontend_template = {
-      publish: undefined
-    };
-    if(tmpl.remote_template){
-      if('publish' in tmpl.remote_template) frontend_template.publish = tmpl.remote_template.publish;
-    }
-    frontend_MenuTemplates[tmplname] = frontend_template;
   }
-  this.jsh.Sites['main'].globalparams.MenuTemplates = frontend_MenuTemplates;
-  this.jsh.Sites['main'].globalparams.defaultMenuTemplate = _this.defaultMenuTemplate;
 }
 
 jsHarmonyCMS.prototype.initBranchItems = function(cb){
@@ -293,8 +335,8 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       deploy: {
         onBeforeDeploy: function(jsh, branchData, publish_params, callback){
           async.waterfall([
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.PageTemplates, branchData.page_template_html, cb); },
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.Components, branchData.component_html, cb); },
+            function(cb){ _this.funcs.downloadTemplate(branchData, _this.PageTemplates, branchData.page_template_html, {}, cb); },
+            function(cb){ _this.funcs.downloadTemplate(branchData, _this.Components, branchData.component_html, {}, cb); },
             function(cb){ _this.funcs.deploy_getPages(jsh, branchData, publish_params, cb); },
           ], callback);
         },
@@ -332,7 +374,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       deploy: {
         onBeforeDeploy: function(jsh, branchData, publish_params, callback){
           async.waterfall([
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.MenuTemplates, branchData.menu_template_html, cb); },
+            function(cb){ _this.funcs.downloadTemplate(branchData, _this.MenuTemplates, branchData.menu_template_html, { content_element_templates: true }, cb); },
             function(cb){ _this.funcs.deploy_getMedia(jsh, branchData, publish_params, callback); },
           ], callback);
         },
@@ -365,6 +407,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       },
       deploy: {
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_menu(jsh, branchData, publish_params, callback); },
+        onDeploy_seq: -100,
       },
     },
     'redirect': {
@@ -459,6 +502,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
       quiet: true
     },
     when: function (curdt, lastdt) {  //return true if the job should run
+      if(!_this.DeploymentJobReady) return false;
       return (curdt.getTime() - lastdt.getTime() > _this.Config.deploymentJobDelay);
     }
   };
@@ -485,7 +529,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     private_apps: [
       {
         '/_funcs/page/:page_key': _this.funcs.page,
-        '/_funcs/components/:branch_id': _this.funcs.components,
+        '/_funcs/templates/component/:branch_id': _this.funcs.templates_component,
+        '/_funcs/templates/menu/:branch_id': _this.funcs.templates_menu,
         '/_funcs/editor_url': _this.funcs.getPageEditorUrl,
         '/_funcs/media/:media_key/:thumbnail': _this.funcs.media,
         '/_funcs/media/:media_key/': _this.funcs.media,

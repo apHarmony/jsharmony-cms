@@ -1,0 +1,22 @@
+{
+  "title": "Component Name",
+  "content_elements": {
+    "content_element_name": {
+      "template": "...Content...", //Also populated from <content_name>.<content_element_name>.ejs -> Prepends to both "editor" and "publish" templates
+      "template": {
+        "editor": "...Content...",
+        "publish": "...Content...",
+      },
+
+      "remote_template": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%", //Appends to both "editor" and "publish" templates
+      "remote_template": {
+        "editor": "%%%editor_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%",
+        "publish": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%"
+      }
+    },
+
+    //If a "component_name.ejs" file exists:
+    //  1. content_elements.<content_name>.template will be auto-created if it does not exist
+    //  2. Content of the ejs file will be appended to content_elements.<content_name>.template
+  }
+}

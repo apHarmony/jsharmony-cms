@@ -40,6 +40,8 @@ module.exports = exports = function(module, funcs){
     if(!page_template_id) page_template_id = module.defaultPageTemplate;
     var template = module.PageTemplates[page_template_id];
 
+    if(!template) return cb(new Error('Invalid page template: '+page_template_id));
+
     //Load Page Content from disk
     module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
       //If an error occurs loading the file, ignore it and load the default template instead
@@ -313,7 +315,7 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
-  exports.components = function(req, res, next){
+  exports.templates_component = function(req, res, next){
     var verb = req.method.toLowerCase();
 
     var jsh = module.jsh;
@@ -403,6 +405,118 @@ module.exports = exports = function(module, funcs){
         res.end(JSON.stringify({ 
           '_success': 1,
           'components': components
+        }));
+      });
+    }
+    else return next();
+  }
+
+  exports.templates_menu = function(req, res, next){
+    var verb = req.method.toLowerCase();
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var XValidate = jsh.XValidate;
+    var cms = jsh.Modules['jsHarmonyCMS'];
+
+    if(!req.params || !req.params.branch_id) return next();
+    var branch_id = req.params.branch_id;
+
+    var referer = req.get('Referer');
+    if(referer){
+      var urlparts = urlparser.parse(referer, true);
+      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+      res.setHeader('Access-Control-Allow-Origin', remote_domain);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+      res.setHeader('Access-Control-Allow-Credentials', true);
+    }
+
+    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    //Get page
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { 'branch_id': branch_id };
+    var validate = new XValidate();
+    var verrors = {};
+    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+    var deployment_target_params = '';
+
+    if (verb == 'get'){
+
+      var menuTemplates = {};
+
+      async.waterfall([
+
+        //Check if branch exists
+        function(cb){
+          var sql = "select branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this branch'); }
+            return cb();
+          });
+        },
+
+        //Get deployment_target_params for branch
+        function(cb){
+          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(rslt && rslt[0]) deployment_target_params = rslt[0];
+            return cb();
+          });
+        },
+
+        //Generate menu templates
+        function(cb){
+          var publish_params = {
+            timestamp: (Date.now()).toString()
+          };
+          try{
+            if(deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment_target_params));
+          }
+          catch(ex){
+            return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
+          }
+          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
+    
+          //Parse menu templates
+          for(var tmplname in module.MenuTemplates){
+            var tmpl = module.MenuTemplates[tmplname];
+            var front_tmpl = {
+              title: tmpl.title,
+              content_elements: {},
+            };
+
+            for(var key in tmpl.content_elements){
+              var content_element = tmpl.content_elements[key];
+              front_tmpl.content_elements[key] = {};
+              var rslt_content_element = front_tmpl.content_elements[key];
+              if('template' in content_element) rslt_content_element.template = content_element.template['editor'] || '';
+              if('remote_template' in content_element) rslt_content_element.remote_template = content_element.remote_template['editor'] || '';
+              
+              //Resolve Remote Templates
+              if(rslt_content_element.remote_template){
+                for(var key in publish_params){
+                  rslt_content_element.remote_template = Helper.ReplaceAll(rslt_content_element.remote_template, '%%%' + key + '%%%', publish_params[key]);
+                }
+              }
+            }
+            menuTemplates[tmplname] = front_tmpl;
+          }
+
+          return cb();
+        },
+      ], function(err){
+        if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+
+        res.end(JSON.stringify({ 
+          '_success': 1,
+          'menuTemplates': menuTemplates
         }));
       });
     }
@@ -504,6 +618,7 @@ module.exports = exports = function(module, funcs){
         var clientPage = null;
         var media_file_ids = {};
         var sitemaps = {};
+        var menus = {};
 
         async.waterfall([
 
@@ -555,6 +670,29 @@ module.exports = exports = function(module, funcs){
             });
           },
 
+          //Get menus
+          function(cb){
+            appsrv.ExecRecordset(req._DBContext, "select menu_key, menu_file_id, menu_name, menu_tag, menu_template_id, menu_path from "+(module.schema?module.schema+'.':'')+"v_my_menu where (menu_file_id is not null)", [], {}, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+              _.each(rslt[0], function(menu){
+                menus[menu.menu_tag] = menu;
+              });
+              async.eachOfSeries(menus, function(menu, menu_tag, menu_cb){
+                funcs.getClientMenu(menu, { }, function(err, menu_content){
+                  if(err) return menu_cb(err);
+                  if(!menu_content) return menu_cb(null);
+                  menu.menu_items = menu_content.menu_items;
+
+                  //Generate tree
+                  menu.menu_item_tree = funcs.createMenuTree(menu.menu_items);
+                  
+                  return menu_cb();
+                });
+              }, cb);
+            });
+          },
+
           //Get page
           function(cb){
 
@@ -594,6 +732,7 @@ module.exports = exports = function(module, funcs){
             'page': clientPage.page,
             'template': clientPage.template,
             'sitemap': clientPage.sitemap,
+            'menus': menus,
             'authors': authors,
             'role': page_role,
             'views': {

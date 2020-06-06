@@ -29,7 +29,7 @@ exports = module.exports = function(jsh, cms){
   this.isInitialized = false;
 
   this.load = function(onComplete){
-    var url = '../_funcs/components/'+cms.branch_id;
+    var url = '../_funcs/templates/component/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.components = rslt.components;
@@ -105,6 +105,7 @@ exports = module.exports = function(jsh, cms){
       }
     });
   }
+<<<<<<< HEAD
 
   this.loadTestForm = function(callback){
     var CUST_FORM_CONTAINER = '.test_cust_form_container';
@@ -226,6 +227,8 @@ exports = module.exports = function(jsh, cms){
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
   }
+=======
+>>>>>>> origin/CMS
 }
 },{}],2:[function(require,module,exports){
 /*
@@ -277,6 +280,12 @@ exports = module.exports = function(jsh, cms){
 
   this.getComponentRenderParameters = function(component_id){
     return {};
+  }
+
+  this.getMenuRenderParameters = function(menu_tag){
+    return {
+      menu: { menu_item_tree: [] }
+    };
   }
 }
 },{}],3:[function(require,module,exports){
@@ -423,7 +432,7 @@ exports = module.exports = function(jsh, cms, toolbarElement){
         inline: true,
         branding: false,
         browser_spellcheck: true,
-        valid_elements: '+*[*]',
+        valid_elements: '+*[*],#p',
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmap anchor',
@@ -656,6 +665,101 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var $ = jsh.$;
+  var XExt = jsh.XExt;
+  var async = jsh.async;
+  var ejs = jsh.ejs;
+
+  this.menuTemplates = {};
+  this.isInitialized = false;
+
+  this.load = function(onComplete){
+    var url = '../_funcs/templates/menu/'+cms.branch_id;
+    XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+      if ('_success' in rslt) {
+        _this.menuTemplates = rslt.menuTemplates;
+        async.eachOf(_this.menuTemplates, function(menu, menu_template_id, menu_cb){
+          async.eachOf(menu.content_elements, function(content_element, content_element_name, content_element_cb){
+            if(!content_element.remote_template) return content_element_cb();
+
+            //Load remote menu templates
+            var loadObj = {};
+            cms.loader.StartLoading(loadObj);
+            $.ajax({
+              type: 'GET',
+              cache: false,
+              url: content_element.remote_template,
+              xhrFields: { withCredentials: true },
+              success: function(data){
+                cms.loader.StopLoading(loadObj);
+                content_element.template = (content_element.template||'')+data;
+                return content_element_cb();
+              },
+              error: function(xhr, status, err){
+                cms.loader.StopLoading(loadObj);
+                content_element.template = '*** ERROR DOWNLOADING REMOTE MENU ***';
+                return content_element_cb();
+              }
+            });
+          }, menu_cb);
+        }, function(err){
+          _this.isInitialized = true;
+        });
+      }
+      else{
+        if(onComplete) onComplete(new Error('Error Loading Menus'));
+        XExt.Alert('Error loading menus');
+      }
+    }, function (err) {
+      if(onComplete) onComplete(err);
+    });
+  };
+
+  this.render = function(){
+    $('.jsharmony_cms_menu').addClass('mceNonEditable').each(function(){
+      var jobj = $(this);
+      var menu_tag = jobj.data('menu_tag');
+      var content_element_name = jobj.data('menu_content_element');
+      var menu_content = '';
+      if(!menu_tag) menu_content = '*** MENU MISSING data-menu_tag ATTRIBUTE ***';
+      else if(!content_element_name) menu_content = '*** MENU MISSING data-menu_content_element ATTRIBUTE ***';
+      else if(!(menu_tag in cms.controller.menus)) menu_content = '*** MISSING MENU DATA FOR MENU TAG ' + menu_tag+' ***';
+      else {
+        var menu = cms.controller.menus[menu_tag];
+        var menuTemplate = _this.menuTemplates[menu.menu_template_id];
+        if(!menuTemplate) menu_content = '*** MENU TEMPLATE NOT FOUND: ' + menu.menu_template_id+' ***';
+        else if(!(content_element_name in menuTemplate.content_elements)) menu_content = '*** MENU ' + menu.menu_template_id + ' CONTENT ELEMENT NOT DEFINED: ' + content_element_name+' ***';
+        else{
+          var content_element = menuTemplate.content_elements[content_element_name];
+          menu_content = ejs.render(content_element.template || '', cms.controller.getMenuRenderParameters(menu_tag));
+        }
+      }
+      jobj.html(menu_content);
+    });
+  }
+}
+},{}],7:[function(require,module,exports){
+/*
+Copyright 2019 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+exports = module.exports = function(jsh, cms){
+  var _this = this;
+  var $ = jsh.$;
 
   this.editorBarDocked = false;
   this.origMarginTop = undefined;
@@ -714,7 +818,7 @@ exports = module.exports = function(jsh, cms){
 
 
 }
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -804,7 +908,7 @@ exports = module.exports = function(){
     if(elem) elem.parentNode.removeChild(elem);
   }
 }
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global){
 /*
 Copyright 2019 apHarmony
@@ -832,6 +936,7 @@ var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSComponentController = require('./jsHarmonyCMS.ComponentController.js');
+var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
 
 var jsHarmonyCMS = function(){
   var _this = this;
@@ -842,6 +947,7 @@ var jsHarmonyCMS = function(){
   this.controller = undefined; //Loaded after init
   this.editor = undefined; //Loaded after init
   this.componentController = undefined; //Loaded after init
+  this.menuController = undefined; //Loaded after init
   this.views = {
     'jsh_cms_editor.css': '',
     'jsh_cms_editor': '',
@@ -908,8 +1014,15 @@ var jsHarmonyCMS = function(){
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
+<<<<<<< HEAD
 
 
+=======
+  
+      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
+      _this.menuController = new jsHarmonyCMSMenuController(jsh, _this);
+  
+>>>>>>> origin/CMS
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
@@ -937,6 +1050,7 @@ var jsHarmonyCMS = function(){
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
       this.componentController.load();
+      this.menuController.load();
     }
     else{
       loader.StopLoading();
@@ -986,4 +1100,8 @@ var jsHarmonyCMS = function(){
 global.jsHarmonyCMS = jsHarmonyCMS;
 global.jsHarmonyCMSInstance = new jsHarmonyCMS();
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+<<<<<<< HEAD
 },{"./jsHarmonyCMS.ComponentController.js":1,"./jsHarmonyCMS.Controller.js":2,"./jsHarmonyCMS.Editor.Picker.js":3,"./jsHarmonyCMS.Editor.js":4,"./jsHarmonyCMS.Loader.js":5,"./jsHarmonyCMS.Toolbar.js":6,"./jsHarmonyCMS.Util.js":7}]},{},[8]);
+=======
+},{"./jsHarmonyCMS.ComponentController.js":1,"./jsHarmonyCMS.Controller.js":2,"./jsHarmonyCMS.Editor.js":4,"./jsHarmonyCMS.Loader.js":5,"./jsHarmonyCMS.MenuController.js":6,"./jsHarmonyCMS.Toolbar.js":7,"./jsHarmonyCMS.Util.js":8}]},{},[9]);
+>>>>>>> origin/CMS

@@ -63,13 +63,16 @@ function jsHarmonyCMSConfig(){
                                     //  var menu_files = { file_path1: file_contents1, file_path2: file_contents2 };
                                     //  return menus_cb(err, menu_files);
                                     //}
-    git_branch: 'site_%%%SITE_ID%%%', //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
+    git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
+    copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
   };
 
-  this.deploymentJobDelay = (1000 * 60 * 60);
+  this.deploymentJobDelay = (1000 * 15);
 
   this.debug_params = {
-    no_cache_client_js: false  //Do not cache jsHarmonyCMS.js, always reload from disk
+    no_cache_client_js: false,          //Do not cache jsHarmonyCMS.js, always reload from disk
+    auto_restart_failed_publish: false, //Do not cancel failed publish - instead auto-restart
+    no_publish_complete: false,         //Leave publish in 'RUNNING' (for debugging, so that it will auto-restart with auto_restart_failed_publish flag)
   };
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
