@@ -18,8 +18,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
+var registerPlugin = require('./component/tinyMceComponentPlugin');
 
-exports = module.exports = function(jsh, cms, toolbarElement){
+exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
 
   var $ = jsh.$;
@@ -29,8 +30,7 @@ exports = module.exports = function(jsh, cms, toolbarElement){
   this.isEditing = false;
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.defaultConfig = {};
-  this.toolbarElement = null;
-  this.toolbarElementId = null;
+  this.toolbarContainer = null;
 
   this.onBeginEdit = null; //function(editor){};
   this.onEndEdit = null; //function(editor){};
@@ -46,8 +46,10 @@ exports = module.exports = function(jsh, cms, toolbarElement){
     if(!cb) cb = function(){};
 
     //Initialize Editor
-    _this.initializeToolbarElement(toolbarElement);
+    _this.initToolbarContainer(toolbarContainer);
     XExt.TinyMCE('', undefined, function(){
+
+      registerPlugin(cms.componentController.components);
 
       //Change text labels
       window.tinymce.addI18n('en', {
@@ -99,20 +101,22 @@ exports = module.exports = function(jsh, cms, toolbarElement){
           url = url;
           return url;
         },
-        fixed_toolbar_container: '#' + _this.toolbarElementId,
+        fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
       }, _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
           editor.on('focus', function(){
+            $('[data-component="header"]').css('pointer-events', 'none');
             _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
-            _this.toolbarElement.stop(true).animate({ opacity:1 },300);
+            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
             if(_this.onBeginEdit) _this.onBeginEdit(editor);
           });
           editor.on('blur', function(){
+            $('[data-component="header"]').css('pointer-events', 'auto');
             _this.isEditing = false;
-            _this.toolbarElement.stop(true).animate({ opacity:0 },300);
+            _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
             if(_this.onEndEdit) _this.onEndEdit(editor);
           });
           editor.on('jsHarmonyRenderComponent', function(e) {
@@ -131,7 +135,12 @@ exports = module.exports = function(jsh, cms, toolbarElement){
           '*': ''
         },
         menubar: false,
-        browser_spellcheck: true
+        browser_spellcheck: true,
+        init_instance_callback: function(editor){
+          editor.on('blur', function(){
+            if(_this.onEndEdit) _this.onEndEdit(editor);
+          });
+        }
       });
 
       return cb();
@@ -173,12 +182,14 @@ exports = module.exports = function(jsh, cms, toolbarElement){
     return editor.getContent();
   }
 
-  this.initializeToolbarElement = function(element) {
-    this.toolbarElement = $(element);
-    this.toolbarElementId = this.toolbarElement.attr('id');
-    if (!this.toolbarElementId) {
-      this.toolbarElementId = '_' + Math.random().toString().replace('.', '');
-      this.toolbarElement.attr('id', this.toolbarElementId);
+  this.initToolbarContainer = function(element) {
+    this.toolbarContainer = $(element);
+    var id = this.toolbarContainer.attr('id');
+    if (!id) {
+      do {
+        id = 'jsharmony_cms_editor_toolbar_' + Math.random().toString().replace('.', '');
+      } while($('#' + id).length > 0)
+      this.toolbarContainer.attr('id', id);
     }
   }
 }

@@ -53,6 +53,7 @@ var jsHarmonyCMS = function(){
   this.filePickerCallback = null;        //function(url)
 
   this.onInit = null;                    //function(jsh)
+  this.onLoaded = null;                  //function(jsh)
   this.onGetControllerUrl = null;        //function() => url
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
@@ -94,7 +95,7 @@ var jsHarmonyCMS = function(){
 
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
-      _this.editor = _this.createEditor()
+      _this.editor = _this.createCoreEditor()
       _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
 
       if(_this.onInit) _this.onInit(jsh);
@@ -139,7 +140,11 @@ var jsHarmonyCMS = function(){
       loader.StopLoading();
       XExt.Alert('Site ID not defined in querystring');
     }
-    _this.controller.init();
+    _this.controller.init(function(err){
+      if(!err){
+        if(_this.onLoaded) _this.onLoaded(jsh);
+      }
+    });
   }
 
   this.refreshLayout = function(){
@@ -163,16 +168,16 @@ var jsHarmonyCMS = function(){
     if(_this.editor && _this.editor.picker && _this.editor.picker.onmessage(event, data)) return;
   }
 
-  this.createEditor = function() {
+  this.createCoreEditor = function() {
     var el = $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
     return new jsHarmonyCMSEditor(jsh, _this, el[0]);
   }
 
-  this.jsHarmonyCMSEditorFactory = function(toolbarElement) {
+  this.createJsHarmonyCMSEditor = function(toolbarElement) {
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
   }
 
-  this.jsHarmonyCMSEditorPickerFactory = function(editor) {
+  this.createJsHarmonyCMSEditorPicker = function(editor) {
     return new jsHarmonyCMSEditorPicker(jsh, _this, editor);
   }
 
