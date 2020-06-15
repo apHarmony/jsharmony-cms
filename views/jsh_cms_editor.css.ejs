@@ -195,7 +195,8 @@ body .tox-tinymce-aux {
   outline: 1px dashed #b4d7ff;
 }
 
-.cms_component .empty {
+.cms_component.empty,
+.cms_component_preview.empty {
   display: flex;
   flex-flow: column nowrap;
   justify-content: center;
@@ -207,13 +208,50 @@ body .tox-tinymce-aux {
   border: 1px solid #999;
 }
 
-.cms_component .empty h3 {
+.cms_component.empty h3,
+.cms_component_preview.empty h3 {
   margin: 5px;
   font-weight: normal;
   color: #555;
 }
 
-.cms_component .empty .material-icons {
+.cms_component.empty .material-icons,
+.cms_component_preview.empty .material-icons {
   font-size: 48px;
   color: #555;
+}
+jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] {
+  position: relative;
+  margin-bottom: 10px;
+  border: 1px solid;
+}
+
+.jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] .material-icons {
+  font-family: 'Material Icons' !important;
+}
+
+.jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar {
+  position: relative;
+  border: 0 solid;
+  border-bottom-width: 1px;
+  margin-top: 15px;
+  background-color: #fcfcfc;
+}
+
+.jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar button {
+  outline: none;
+  border: 0;
+  background: inherit;
+  cursor: pointer;
+}
+
+.jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar button[disabled] {
+  opacity: 0.3;
+}
+.jsHarmony_cms_component_dataGridEditor .xtbl_noresults .xgrid_norecords {
+  display: none;
+}
+
+.material-icons {
+  font-family: 'Material Icons' !important;
 }

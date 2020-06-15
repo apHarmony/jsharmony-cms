@@ -23,7 +23,7 @@ var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
-var jsHarmonyCMSComponentController = require('./jsHarmonyCMS.ComponentController.js');
+var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
 
 var jsHarmonyCMS = function(){
@@ -34,7 +34,7 @@ var jsHarmonyCMS = function(){
   this.toolbar = undefined; //Loaded after init
   this.controller = undefined; //Loaded after init
   this.editor = undefined; //Loaded after init
-  this.componentController = undefined; //Loaded after init
+  this.componentManager = undefined; // Loaded after init
   this.menuController = undefined; //Loaded after init
   this.views = {
     'jsh_cms_editor.css': '',
@@ -96,17 +96,16 @@ var jsHarmonyCMS = function(){
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = _this.createCoreEditor()
-      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
+      _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
 
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
-  
-      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
+
       _this.menuController = new jsHarmonyCMSMenuController(jsh, _this);
-  
+
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
@@ -133,7 +132,7 @@ var jsHarmonyCMS = function(){
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
-      this.componentController.load();
+      this.componentManager.load();
       this.menuController.load();
     }
     else{

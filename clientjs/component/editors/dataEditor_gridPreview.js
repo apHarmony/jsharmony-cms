@@ -1,19 +1,19 @@
-var ComponentConfig = require('../componentModel/componentConfig');
+var ComponentTemplate = require('../componentModel/componentTemplate');
 var GridDialog = require('../dialogs/gridDialog');
-var DataGridPreviewEditorController = require('./dataGridPreviewEditorController');
+var DataEditor_GridPreviewController = require('./dataEditor_ gridPreviewController');
 
 
 
 /**
  * @class
- * @param {ComponentConfig} componentConfig
+ * @param {ComponentTemplate} componentTemplate
  * @param {Object} cms
  * @param {Object} jsh
  */
-function DataGridPreviewEditor(componentConfig, cms, jsh) {
+function DataEditor_GridPreview(componentTemplate, cms, jsh) {
 
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
 
   /** @private @type {Object} */
   this._cms = cms;
@@ -29,35 +29,36 @@ function DataGridPreviewEditor(componentConfig, cms, jsh) {
  * @param {Object} properties - the component's configured properties (used to render the component)
  * @param {Function} dataUpdatedCb - Called when data is updated. Arg0 is updated data.
  */
-DataGridPreviewEditor.prototype.open = function(data, properties, dataUpdatedCb) {
+DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb) {
 
   var self = this;
-  var gridPreviewDataModel = this._componentConfig.getGridPreviewDataModelInstance();
-  var modelConfig = gridPreviewDataModel.getModelConfig();
+  var modelTemplate = this._componentTemplate.getDataModelTemplate_GridPreview();
+  var modelConfig = modelTemplate.getModelInstance();
 
 
-  var componentInstanceId = modelConfig.id + '_componentInstance';
-  this._jsh.XExt.JSEval(gridPreviewDataModel.getModelJs() || '', {}, {
+  var componentInstanceId = modelConfig.id;
+  this._jsh.XExt.JSEval(modelTemplate.getModelJs() || '', {}, {
     modelid: componentInstanceId
   });
   var componentInstance = this._jsh.App[componentInstanceId] || {};
 
-  // Allow title to be overridden
-  modelConfig.title = modelConfig.title ? modelConfig.title : 'Edit';
 
   var dialog = new GridDialog(this._jsh, modelConfig, {
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentConfig.getComponentConfigId(),
+    cssClass: 'l-content jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     maxHeight: 800,
-    maxWidth: 1400
+    minHeight: modelConfig.popup[1],
+    minWidth: modelConfig.popup[0]
   });
 
   var dataController;
 
   dialog.onBeforeOpen = function(xModel, dialogSelector) {
 
-    dataController = new DataGridPreviewEditorController(xModel, (data || {}).items, properties, $(dialogSelector),
-      self._cms, self._jsh, gridPreviewDataModel, self._componentConfig);
+    self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
+
+    dataController = new DataEditor_GridPreviewController(xModel, (data || {}).items, properties, $(dialogSelector),
+      self._cms, self._jsh, modelTemplate, self._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
       if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
@@ -101,4 +102,14 @@ DataGridPreviewEditor.prototype.open = function(data, properties, dataUpdatedCb)
 
 }
 
-exports = module.exports = DataGridPreviewEditor;
+DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captions) {
+
+  var text = captions[1] != undefined ? 'Add ' + captions[1] : 'Add';
+
+  var $el = $(selector);
+  var $img = $el.find('img');
+  $el.empty().append($img).append(text);
+}
+
+
+exports = module.exports = DataEditor_GridPreview;

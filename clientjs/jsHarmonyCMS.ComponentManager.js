@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var pluginComponentController = require('./component/componentController');
+var JsHarmonyCMSComponent = require('./jsHarmonyCMS.Component');
 
 exports = module.exports = function(jsh, cms){
   var _this = this;
@@ -26,18 +26,20 @@ exports = module.exports = function(jsh, cms){
   var async = jsh.async;
   var ejs = jsh.ejs;
 
-  this.components = null;
+  this.componentTemplates = null;
+  this.components = {};
   this.isInitialized = false;
+  this.lastComponentId = 0;
 
   this.load = function(onComplete){
     var url = '../_funcs/templates/component/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.components = rslt.components;
-        async.eachOf(_this.components, function(component, key, cb) {
+        _this.componentTemplates = rslt.components;
+        async.eachOf(_this.componentTemplates, function(component, key, cb) {
           var loadObj = {};
           cms.loader.StartLoading(loadObj);
-          _this.loadComponent(component, function(err){
+          _this.loadTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             cb(err)
           });
@@ -60,22 +62,18 @@ exports = module.exports = function(jsh, cms){
       var component_id = jobj.data('id');
       var component_content = '';
       if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
-      else if(!(component_id in _this.components)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
+      else if(!(component_id in _this.componentTemplates)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
       else{
-        var component = _this.components[component_id];
+        var component = _this.componentTemplates[component_id];
         var templates = component != undefined ? component.templates : undefined
         var editorTemplate = (templates || {}).editor;
         component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component_id));
       }
       jobj.html(component_content);
     });
-
-    $('[data-component]').each(function(i, element) {
-      _this.renderComponent(element);
-    });
   }
 
-  this.loadComponent = function(component, complete_cb) {
+  this.loadTemplate = function(component, complete_cb) {
     var url = (component.remote_template || {}).editor;
     if (!url) return complete_cb();
 
@@ -87,6 +85,7 @@ exports = module.exports = function(jsh, cms){
         var template = (component.templates.editor || '');
         data = data && template ? '\n' + data : data || '';
         component.templates.editor = (template + data) || '*** COMPONENT NOT FOUND ***';
+        _this.renderTemplateStyles(component.id, component);
         complete_cb();
       }
     });
@@ -107,17 +106,25 @@ exports = module.exports = function(jsh, cms){
     });
   }
 
+  this.getNextComponentId = function() {
+    return 'jsharmony_cms_component_' + this.lastComponentId++;
+  }
+
   this.renderComponent = function(element) {
 
     var componentType = $(element).attr('data-component');
-    var componentConfig = componentType ? _this.components[componentType] : undefined;
-    if (!componentConfig) {
+    var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
+    if (!componentTemplate) {
       return;
     }
-    componentConfig.id = componentConfig.id || componentType;
-    _this.renderComponentStyles(componentType, componentConfig);
+    componentTemplate.id = componentTemplate.id || componentType;
+    var componentId = $(element).attr('data-component-id') || '';
+    if (componentId.length < 1) {
+      console.error(new Error('Component is missing [data-component-id] attribute.'));
+      return;
+    }
     var componentInstance = {};
-    XExt.JSEval('\r\n' + (componentConfig.js || '') + '\r\n', componentInstance, {
+    XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', componentInstance, {
       _this: componentInstance,
       cms: cms,
       jsh: jsh,
@@ -125,16 +132,22 @@ exports = module.exports = function(jsh, cms){
     });
     if (!_.isFunction(componentInstance.create))  {
       componentInstance.create = function(componentConfig, element) {
-        var controller = new pluginComponentController(element, cms, jsh, componentConfig.id);
-        controller.onBeforeRender = componentInstance.onBeforeRender
-        controller.onRender = componentInstance.onRender;
-        controller.render();
+        var component = new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id);
+        component.onBeforeRender = componentInstance.onBeforeRender
+        component.onRender = componentInstance.onRender;
+        component.render();
+        _this.components[componentId] = component;
       }
     }
-    componentInstance.create(componentConfig, element);
+    componentInstance.create(componentTemplate, element);
+    if ($(element).attr('data-is-insert')) {
+      $(element).attr('data-is-insert', null);
+      element.scrollIntoView(false);
+      _this.components[componentId].openDataEditor();
+    }
   }
 
-  this.renderComponentStyles = function(componentType, componentConfig) {
+  this.renderTemplateStyles = function(componentType, componentConfig) {
     this.renderedComponentTypeStyles = this.renderedComponentTypeStyles || {};
     if (this.renderedComponentTypeStyles[componentType]) return;
     this.renderedComponentTypeStyles[componentType] = true;

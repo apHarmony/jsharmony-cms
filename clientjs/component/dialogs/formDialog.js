@@ -116,7 +116,7 @@ FormDialog.prototype.augmentModel = function(model, config) {
       control: 'button',
       value: config.cancelButtonLabel,
       controlclass: 'secondary',
-      controlstyle: 'margin-right: 10px'
+      controlstyle: 'margin-right:10px; margin-top:10px;'
     });
   }
   if (config.acceptButtonLabel) {

@@ -6,6 +6,8 @@ var Dialog = require('./dialog');
  * when the background is clicked
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
+ * @property {(number | undefined)} minWidth - set min the width (pixels) of the form if defined
+ * @property {(number | undefined)} minHeight - set min the height (pixels) of the form if defined
  * @property {(number | undefined)} width - set the width (pixels) of the form if defined
  * @property {(number | undefined)} height - set the height (pixels) of the form if defined
  * @property {(string | undefined)} cssClass - space delimited list of classes to add to the dialog element
@@ -78,6 +80,8 @@ GridDialog.prototype.open = function() {
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,
+    minHeight: config.minHeight,
+    minWidth: config.minWidth,
     width: config.width
   });
 

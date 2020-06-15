@@ -61,10 +61,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(cms.branch_id) qs.branch_id = cms.branch_id;
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
-    
+
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       XExt.waitUntil(
-        function(){ return (cms.componentController.isInitialized && cms.menuController.isInitialized); },
+        function(){ return (cms.componentManager.isInitialized && cms.menuController.isInitialized); },
         function(){
           if ('_success' in rslt) {
             //Populate arrays + create editor
@@ -172,7 +172,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       if(!cms.readonly) _this.page.content[key] = cms.editor.getContent(key);
     }
 
-    cms.componentController.render();
+    cms.componentManager.render();
     cms.menuController.render();
 
     //CSS
@@ -180,11 +180,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     cms.util.removeStyle('jsharmony_cms_page_style');
     cms.util.addStyle('jsharmony_cms_template_style',_this.template.css);
     cms.util.addStyle('jsharmony_cms_page_style',_this.page.css);
-    
+
     //Header
     var header = (_this.template.header||'')+(_this.page.header||'');
     if(header) cms.util.appendHTML($('head'), header);
-    
+
     //Footer
     cms.util.setHTML($('#jsharmony_cms_footer'), (_this.template.footer||'')+(_this.page.footer||''));
 
@@ -196,7 +196,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     _.each(['title','keywords','metadesc','canonical_url'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
     XExt.TagBox_Refresh(jeditorbar.find('.page_settings_tags_editor'), jeditorbar.find('.page_settings_tags'));
 
-    
+
     if(cms.readonly){
       jeditorbar.find('.save').hide();
       jeditorbar.find('.readonly').show();
