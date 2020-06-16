@@ -263,6 +263,9 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     if(typeof _this.defaultMenuTemplate == 'undefined') _this.defaultMenuTemplate = tmplname;
     this.jsh.Config.macros.CMS_MENU_TEMPLATES.push({ "code_val": tmplname, "code_txt": tmpl.title });
   }
+
+  //Add defaultEditorConfig to client-side variables
+  this.jsh.Sites['main'].globalparams.defaultEditorConfig = _this.Config.defaultEditorConfig;
 }
 
 jsHarmonyCMS.prototype.initBranchItems = function(cb){
