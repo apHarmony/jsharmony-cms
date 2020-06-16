@@ -38,7 +38,7 @@ module.exports = exports = function(module, funcs){
   exports.deploy_req = function (req, res, next) {
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
-    
+
     var Q = req.query;
     var P = {};
     if (req.body && ('data' in req.body)){
@@ -50,7 +50,7 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     var model = jsh.getModel(req, module.namespace + 'Publish_Add');
-    
+
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     var sql = "select \
@@ -296,7 +296,7 @@ module.exports = exports = function(module, funcs){
           publish_params.deployment_id = deployment_id;
           publish_params.deployment_target_id = deployment.deployment_target_id;
           deployment.publish_params = publish_params;
-          
+
           var branchData = {
             publish_params: publish_params,
             deployment: deployment,
@@ -395,7 +395,7 @@ module.exports = exports = function(module, funcs){
                     });
                   }
 
-                ], cb);          
+                ], cb);
               },
 
               //Get list of all site files
@@ -497,7 +497,7 @@ module.exports = exports = function(module, funcs){
                       funcs.deploy_log_info(deployment_id, 'Initializing git in publish path: '+publish_path);
                       gitExec('git', ['init','-q'], function(err, rslt){
                         if(err) return git_cb(err);
-                        return git_cb(); 
+                        return git_cb();
                       });
                     });
                   },
@@ -527,7 +527,7 @@ module.exports = exports = function(module, funcs){
                     });
                   }
 
-                ], cb);          
+                ], cb);
               },
 
               //Clear output folder
@@ -539,7 +539,7 @@ module.exports = exports = function(module, funcs){
                 }, function (dirpath, relativepath, dir_cb) { //dirfunc
                   if(relativepath) HelperFS.rmdirRecursive(dirpath, dir_cb);
                   else return dir_cb();
-                }, { 
+                }, {
                   file_before_dir: true,
                   preview_dir: function(dirpath, relativepath, dir_cb){
                     if(relativepath=='.git') return dir_cb(false);
@@ -758,7 +758,7 @@ module.exports = exports = function(module, funcs){
   exports.deploy_getPages = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
-    
+
     //Get list of all page_keys
     var sql = 'select \
       p.page_key,page_path \
@@ -806,7 +806,7 @@ module.exports = exports = function(module, funcs){
   exports.deploy_getMedia = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
-    
+
     //Get list of all media_keys
     var sql = 'select \
       m.media_key,media_file_id,media_path \
@@ -835,11 +835,11 @@ module.exports = exports = function(module, funcs){
       return cb();
     });
   }
-    
+
   exports.deploy_page = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
-    
+
     //Get list of all pages
     //For each page
     //  Merge content with template
@@ -921,6 +921,7 @@ module.exports = exports = function(module, funcs){
             page_content = branchData.page_template_html[page.page_template_id]||'';
             page_content = ejs.render(page_content, ejsparams);
             try{
+              page_content = funcs.replaceComponents(page_content, { components: branchData.component_html });
               page_content = funcs.replaceBranchURLs(page_content, {
                 getMediaURL: function(media_key){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
@@ -936,13 +937,13 @@ module.exports = exports = function(module, funcs){
             }
             catch(ex){
               return cb(ex);
-            }  
+            }
           }
           else {
             //Raw Content
             page_content = ejsparams.page.content.body||'';
           }
-          
+
           var page_fpath = '';
           try{
             page_fpath = funcs.getPageRelativePath(page, publish_params);
@@ -1020,7 +1021,7 @@ module.exports = exports = function(module, funcs){
   exports.deploy_redirect = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
-    
+
     //Get list of all redirects
     //Generate redirect file and save to disk
     var sql = 'select \
@@ -1035,7 +1036,7 @@ module.exports = exports = function(module, funcs){
     appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; return cb(err); }
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment redirects')); }
-      
+
       var redirect_files = {};
       async.waterfall([
         function(redirect_cb){
@@ -1085,7 +1086,7 @@ module.exports = exports = function(module, funcs){
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment menus')); }
 
       var menus = rslt[0];
-      
+
       var menu_output_files = {};
       async.waterfall([
         //Get menus from disk and replace URLs
@@ -1205,7 +1206,7 @@ module.exports = exports = function(module, funcs){
         if((foldername=='.')||(foldername=='..')) break;
       }
     }
-    
+
     var found_files = {};
     var found_folders = {};
 
@@ -1238,7 +1239,7 @@ module.exports = exports = function(module, funcs){
           }
           funcs.deploy_log_info(deployment_id, 'Deleting '+dirpath);
           HelperFS.rmdirRecursive(dirpath, dir_cb);
-        }, { 
+        }, {
           file_before_dir: true,
         }, fs_cb);
       },
@@ -1356,7 +1357,7 @@ module.exports = exports = function(module, funcs){
   exports.deployment_log = function (req, res, next) {
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
-    
+
     var Q = req.query;
     var P = {};
     if (req.body && ('data' in req.body)){
@@ -1372,7 +1373,7 @@ module.exports = exports = function(module, funcs){
     var deployment_id = req.params.deployment_id;
     if(!deployment_id) return next();
     if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
-    
+
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     var sql = "select deployment_id, deployment_sts, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";

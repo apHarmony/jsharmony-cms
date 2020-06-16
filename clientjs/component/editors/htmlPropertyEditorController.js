@@ -87,7 +87,6 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
   this._editor = this._cms.createJsHarmonyCMSEditor(this._$toolbarElement[0]);
   this._editor.onEndEdit = function() {
     var content = self.processText(self._editor.getContent(self._uid));
-    console.log(content);
     self.getDataElement().attr('value', content);
   }
   this._editor.init(function() {
@@ -97,13 +96,17 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     var editorType = (self._editorType || '').toLowerCase();
     if (editorType === 'full') {
       configType = 'full';
+      config = {
+        valid_elements : '+*[*],#p[*]',
+      };
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'forecolor backcolor | bold italic underline',
-        valid_elements : 'a,strong/b,p,br,span[style]',
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify',
+        valid_elements : 'a,strong/b,p,span[style],p[*],h1[*],h2[*],h3[*],h4[*]',
         plugins: [],
-        menubar: false
+        menubar: false,
+        block_formats: "Heading 1=h1;Heading 2=h2;Heading 3=h3;Heading 4=h4"
       };
     } else {
       throw new Error('Unknown editor type "' + self._editorType + '"');

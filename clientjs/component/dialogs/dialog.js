@@ -6,6 +6,8 @@ var DialogResizer = require('./dialogResizer');
  * when the background is clicked
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
+ * @property {(number | undefined)} minHeight - set the min height (pixels) of the form if defined
+ * @property {(number | undefined)} minWidth - set the min width (pixels) of the form if defined
  * @property {(number | undefined)} width - set the width (pixels) of the form if defined
  * @property {(number | undefined)} height - set the height (pixels) of the form if defined
  * @property {(string | undefined)} cssClass - space delimited list of classes to add to the dialog element
@@ -141,6 +143,16 @@ Dialog.prototype.getNextId = function() {
 }
 
 /**
+ * Get the scroll top position for the page.
+ * @private
+ * @param {JQuery} $wrapper
+ * @returns {number}
+ */
+Dialog.prototype.getScrollTop = function($wrapper) {
+  return $wrapper.scrollParent().scrollTop();
+}
+
+/**
  * @private
  */
 Dialog.prototype.load = function(callback) {
@@ -163,6 +175,8 @@ Dialog.prototype.makeDialog = function(id, config) {
     .attr('id', this._id)
     .css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null)
     .css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null)
+    .css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null)
+    .css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null)
     .css('height',  _.isNumber(config.height) ? config.height + 'px' : null)
     .css('width',  _.isNumber(config.width) ? config.width + 'px' : null)
     .addClass(config.cssClass || '');
@@ -188,7 +202,8 @@ Dialog.prototype.open = function() {
   this.load(function(xModel) {
 
     self.registerLovs(xModel);
-
+    var $wrapper = $(formSelector);
+    var lastScrollTop = 0
 
     if (_.isFunction(self.onBeforeOpen)) self.onBeforeOpen(xModel);
 
@@ -197,18 +212,22 @@ Dialog.prototype.open = function() {
 
     self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
       function(acceptFunc, cancelFunc) {
-        var $wrapper = $(formSelector);
+        lastScrollTop = self.getScrollTop($wrapper);
         dialogResizer = new DialogResizer($wrapper[0], self._jsh);
         if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
       },
       function(success) {
+        lastScrollTop = self.getScrollTop($wrapper);
+
         if (_.isFunction(self.onAccept)) self.onAccept(success);
       },
       function(options) {
+        lastScrollTop = self.getScrollTop($wrapper);
         if (_.isFunction(self.onCancel)) return self.onCancel(options);
         return false;
       },
       function() {
+        self.setScrollTop(lastScrollTop, $wrapper);
         dialogResizer.closeDialog();
         if(_.isFunction(self.onClose)) self.onClose();
         self.destroy();
@@ -240,6 +259,16 @@ Dialog.prototype.registerLovs = function(xModel) {
       xModel.controller.setLOV(field.name, lovs);
     }
   });
+}
+
+/**
+ * Set the scroll top position for the page.
+ * @private
+ * @param {JQuery} $wrapper
+ * @returns {number} position
+ */
+Dialog.prototype.setScrollTop = function(position, $wrapper) {
+  $wrapper.scrollParent().scrollTop(position);
 }
 
 exports = module.exports = Dialog;

@@ -30,6 +30,8 @@ var ICONS = {
   }
 };
 
+
+
 /**
  * This defines commands that can be used for the plugin.
  * @type {Object.<string, string>}
@@ -51,25 +53,30 @@ var EVENT_NAMES = {
 /**
  * Register the JSH CMS Component plugin.
  * @public
- * @param {Object[]} components - the component configurations
+ * @param {Object} jsHarmonyCmsComponentManager
  */
-function registerPlugin(components) {
+function registerPlugin(jsHarmonyCmsComponentManager) {
   if (tinymce.PluginManager.get('jsharmony') != undefined) {
     return;
   }
 
+  var components = jsHarmonyCmsComponentManager.componentTemplates;
   tinymce.PluginManager.add('jsharmony', function(editor, url) {
-    new JsHarmonyComponentPlugin(editor, components);
+    new JsHarmonyComponentPlugin(editor, components, jsHarmonyCmsComponentManager);
   });
 }
 
 /**
  * @class
  * @private
+ * @param {Object} editor - the TinyMce editor instance
+ * @param {Object[]} components - the component configurations
+ * @param {Object} jsHarmonyCmsComponentManager
  */
-function JsHarmonyComponentPlugin(editor, components) {
+function JsHarmonyComponentPlugin(editor, components, jsHarmonyCmsComponentManager) {
 
   this._editor = editor;
+  this._jsHarmonyCmsComponentManager = jsHarmonyCmsComponentManager;
   this.initialize(components);
 }
 
@@ -137,6 +144,24 @@ JsHarmonyComponentPlugin.prototype.createContextToolbar = function() {
 }
 
 /**
+ * Find the component instance if it exits
+ * @private
+ * @param {(string | HTMLElement)} element - if type is string then find the component by the string ID,
+ * if type is an HTMLElement then find element and get ID from the ID attribute.
+ * @returns {(Object | undefined)}
+ */
+JsHarmonyComponentPlugin.prototype.getComponentInstance = function(element) {
+
+  if (!element) return;
+  var id = element;
+  if (!_.isString(element)) {
+    id = $(element).attr('data-component-id') || '';
+  }
+
+  return this._jsHarmonyCmsComponentManager.components[id];
+}
+
+/**
  * When an undo or redo event occurs in the editor
  * the component needs to be re-rendered.
  * @private
@@ -196,8 +221,8 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
       self._editor.ui.registry.addIcon(iconRegistryName, icon);
 
-      var text = _.isArray(component.caption) ? component.caption[0] : component.caption;
-      componentInfo.push({ componentType: component.id, icon: iconRegistryName, text: text || component.id });
+      var text =  component.title || component.id;
+      componentInfo.push({ componentType: component.id, icon: iconRegistryName, text: text });
     }
   });
 
@@ -219,9 +244,7 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
   this._editor.addCommand(COMMAND_NAMES.editComponentProperties, function() {
     var el = self._editor.selection.getStart();
-    if (el && el._componentInterface && el._componentInterface.openPropertiesEditor) {
-      el._componentInterface.openPropertiesEditor();
-    }
+    self.openPropertiesEditor(el);
   });
 
   this._editor.on('init', function() {
@@ -236,21 +259,12 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
  * @param {string} componentType - the type of the component to insert.
  */
 JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentType) {
-  var self = this;
-  var id = this.makeComponentId(componentType)
-  this._editor.insertContent(this.makeComponentContainer(componentType, id));
+
+  this._editor.insertContent(this.makeComponentContainer(componentType));
+
   // Don't need to fire the insert event here.
   // We have a parser filter that will detect the insert and
   // fire the event.
-
-  // But we do need to open the data dialog.
-  // The next loop will cause the editor to parse the data
-  // Then the loop after that the content will be in the DOM
-  // (at least based on empirical tests).
-  // So 1ms will be way more than enough time to wait.
-  setTimeout(function() {
-    self.openDataEditor(id);
-  }, 1);
 }
 
 /**
@@ -258,12 +272,10 @@ JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentTy
  * inserting into the editor.
  * @private
  * @param {string} componentType - the type of component to create
- * @param {string} id - the ID to uniquely identify the component.
  * @returns {string} - HTML string
  */
-JsHarmonyComponentPlugin.prototype.makeComponentContainer = function(componentType, id) {
-  return '<div class="mceNonEditable" data-component="' + componentType +'" data-component-id="' +
-    id + '" data-component-properties="" data-component-content=""></div>';
+JsHarmonyComponentPlugin.prototype.makeComponentContainer = function(componentType) {
+  return '<div class="mceNonEditable" data-component="' + componentType + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
 }
 
 /**
@@ -281,35 +293,28 @@ JsHarmonyComponentPlugin.prototype.makeComponentEvent = function(componentId, co
 }
 
 /**
- * Create a random ID for uniquely identifying
- * each component add via the editor.
+ * Open the data editor for the component.
  * @private
- * @returns {string}
+ * @param {(string | Element)} element - if type is string then find the component by the string ID,
+ * if type is an HTMLElement then find component from the ID attribute.
  */
-JsHarmonyComponentPlugin.prototype.makeComponentId = function(componentType) {
-  var id;
-  do {
-    id = 'jsharmony_cms_component_' + Math.random().toString().replace('.', '');
-    var idExists = tinymce.dom.DomQuery.find('#' + id).length > 0;
-    id = idExists ? undefined : id;
-  } while(!id)
-  return id;
+JsHarmonyComponentPlugin.prototype.openDataEditor = function(element) {
+  var component = this.getComponentInstance(element);
+  if (component && _.isFunction(component.openDataEditor)) {
+    component.openDataEditor();
+  }
 }
 
 /**
- * Open the data editor for the component.
+ * Open the property editor for the component.
  * @private
- * @param {(string | Element)} componentIdOrElement - if type is string then find the component in the dom,
- * or else use the component element passed in
+ * @param {(string | Element)} element - if type is string then find the component by the string ID,
+ * if type is an HTMLElement then find component from the ID attribute.
  */
-JsHarmonyComponentPlugin.prototype.openDataEditor = function(componentIdOrElement) {
-  if (!componentIdOrElement) return;
-  if (_.isString(componentIdOrElement)) {
-    var componentIdOrElement = tinymce.dom.DomQuery.find('[data-component-id="' + componentIdOrElement + '"]')[0];
-  }
-  if (!componentIdOrElement) return;
-  if (componentIdOrElement && componentIdOrElement._componentInterface && componentIdOrElement._componentInterface.openDataEditor) {
-    componentIdOrElement._componentInterface.openDataEditor();
+JsHarmonyComponentPlugin.prototype.openPropertiesEditor = function(element) {
+  var component = this.getComponentInstance(element);
+  if (component && _.isFunction(component.openPropertiesEditor)) {
+    component.openPropertiesEditor();
   }
 }
 
@@ -321,7 +326,9 @@ JsHarmonyComponentPlugin.prototype.openDataEditor = function(componentIdOrElemen
 JsHarmonyComponentPlugin.prototype.parseFilter = function(nodes) {
   var self = this;
   _.each(nodes, function(node) {
-    var id = node.attributes.map['data-component-id'];
+    var id = self._jsHarmonyCmsComponentManager.getNextComponentId();
+    // var id = node.attributes.map['data-component-id'];
+    node.attr('data-component-id', id);
     var type = node.attributes.map['data-component'];
     // Content is not actually in the DOM yet.
     // Wait for next loop

@@ -1,21 +1,19 @@
 var FormDialog = require('../dialogs/formDialog');
-var ComponentConfig = require('../componentModel/componentConfig');
+var ComponentTemplate = require('../componentModel/componentTemplate');
 var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
+var TemplateRenderer = require('../templateRenderer');
+
+/** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
+
+/** @typedef {import('../componentModel/componentTemplate').MediaBrowserControlInfo} MediaBrowserControlInfo */
 
 /**
- * @typedef {Object} RenderConfig
- * @property {Object} data - the component data
- * @property {Object} properties - the component properties
- * @property {string} template - the template being rendered
- */
-
-/**
- * @callback DataFormEditor~beforeRenderDataItemPreview
+ * @callback DataEditor_Form~beforeRenderDataItemPreview
  * @param {RenderConfig} renderConfig
  */
 
 /**
- * @callback DataGridItemEditor~renderDataItemPreview
+ * @callback DataEditor_Form~renderDataItemPreview
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
@@ -25,14 +23,15 @@ var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
 
 /**
  * @class
- * @param {ComponentConfig} componentConfig
+ * @param {ComponentTemplate} componentTemplate
+ * @param {(import('../templateRenderer').GridPreviewRenderContext | undefined)} gridContext
  * @param {Object} cms
  * @param {Object} jsh
  */
-function DataFormEditor(componentConfig, isReadOnly, cms, jsh) {
+function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh) {
 
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
 
   /** @private @type {boolean} */
   this._isReadOnly = isReadOnly;
@@ -40,16 +39,19 @@ function DataFormEditor(componentConfig, isReadOnly, cms, jsh) {
   /** @private @type {Object} */
   this._cms = cms;
 
+  /** @private */
+  this._gridContext = gridContext;
+
   /** @private @type {Object} */
   this._jsh = jsh;
 
   /** @private @type {HTMLPropertyEditorController[]} */
   this._htmlEditors = [];
 
-  /** @private @type {DataFormEditor~beforeRenderDataItemPreview} */
+  /** @private @type {DataEditor_Form~beforeRenderDataItemPreview} */
   this._onBeforeRenderDataItemPreview = undefined;
 
-  /** @private @type {DataGridItemEditor~renderDataItemPreview} */
+  /** @private @type {DataEditor_Form~renderDataItemPreview} */
   this._onRenderDataItemPreview = undefined;
 }
 
@@ -58,7 +60,7 @@ function DataFormEditor(componentConfig, isReadOnly, cms, jsh) {
  * @param {JQuery} $dialog - the dialog element.
  * @param {JQuery} $wrapper - the preview wrapper element.
  */
-DataFormEditor.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
+DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
 
   var self = this;
 
@@ -86,17 +88,17 @@ DataFormEditor.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
  * @private
  * @returns {object}
  */
-DataFormEditor.prototype.createPicker = function() {
+DataEditor_Form.prototype.createPicker = function() {
   return this._cms.createJsHarmonyCMSEditorPicker(undefined);
 }
 
 /**
  * @private
  * @param {JQuery} $dialog
- * @param {import('../componentModel/formDataModel').mediaBrowserControlInfo} info
- * @param {boolean}
+ * @param {MediaBrowserControlInfo} info
+ * @param {boolean} enable
  */
-DataFormEditor.prototype.enableBrowserControl = function($dialog, info, enable) {
+DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable) {
   $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
 }
 
@@ -106,32 +108,28 @@ DataFormEditor.prototype.enableBrowserControl = function($dialog, info, enable) 
  * @param {Object} itemData - the data used to render the component.
  * @param {Object} properties - the component's configured properties (used to render the component)
  * @param {Function} onAcceptCb - Called if the data is updated. Arg0 is updated data.
+ * @param {Function} onCloseCb - Called anytime the dialog is closed.
  */
-DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
+DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCloseCb) {
 
   var self = this;
-  var formModel = this._componentConfig.getFormDataModelInstance();
-  var modelConfig = formModel.getModelConfig();
-  var template = formModel.getItemTemplate();
-
-  // Allow title to be overridden
-  modelConfig.title = modelConfig.title ? modelConfig.title : 'Edit';
+  var modelTemplate = this._componentTemplate.getDataModelTemplate_FormPreview();
+  var modelConfig = modelTemplate.getModelInstance();
+  var template = modelTemplate.getItemTemplate();
 
   if (this._isReadOnly) {
     modelConfig.actions = 'B';
   }
 
-  var itemData = formModel.getItemFields().populateDataInstance(itemData || {});
-
+  var itemData = modelTemplate.populateDataInstance(itemData || {});
 
   var dialog = new FormDialog(this._jsh, modelConfig, {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentConfig.getComponentConfigId(),
+    cssClass: 'l-content jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     maxHeight: 800
   });
-
 
   var $toolbar;
 
@@ -139,6 +137,7 @@ DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
 
     var editor = self._jsh.App[xModel.id];
     var $dialog = $(dialogSelector);
+    $dialog.css('opacity', '0');
     self._formSelector = dialogSelector; // remove this
 
     // Note that the toolbar HAS to be in the popup DOM hierarchy for focus/blur
@@ -151,16 +150,16 @@ DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
       .css('z-index', '999999');
     $(dialogSelector).append($toolbar);
 
-    _.forEach(formModel.getBrowserFieldInfos(), function(info) {
-      self.enableBrowserControl($dialog, info, (itemData[info.titleFieldName] || '') === (itemData[info.dataFieldName] || ''));
+    _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {
+      var title = itemData[info.titleFieldName] || '';
+      var data = itemData[info.dataFieldName] || '';
+      var fieldsMatch = title === data;
+      var isDataEmpty = title.length < 1 && data.length < 1;
+      var fieldIsEditable = fieldsMatch || isDataEmpty;
+      self.enableBrowserControl($dialog, info, fieldIsEditable);
     });
 
-    // This function NEEDS to be debounced.
-    // It SHOULD be anyway so it doesn't re-render the preview on every
-    // keystroke, but it HAS to be just in case two fields change
-    // at the same time (in which case the first change causes a re-render
-    // and the second change breaks things since parts of the re-render are async)
-    editor.onChangeData = _.debounce(function() {
+    editor.onChangeData_noDebounce = function() {
       var updatedData = {};
       _.forEach(modelConfig.fields, function(field) {
         if (field.type != undefined) {
@@ -173,11 +172,18 @@ DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
       // Don't attach any events until after the onRenderGridItemPreview hook is called.
       // Otherwise, the events might be attached to elements that get replaced or removed.
       self.attachEditors($dialog, $wrapper, $toolbar);
-    }, 300);
+    }
+
+    // This function NEEDS to be debounced.
+    // It SHOULD be anyway so it doesn't re-render the preview on every
+    // keystroke, but it HAS to be just in case two fields change
+    // at the same time (in which case the first change causes a re-render
+    // and the second change breaks things since parts of the re-render are async)
+    editor.onChangeData = _.debounce(editor.onChangeData_noDebounce, 300);
 
     editor.openEditorBrowser = function(browserControlName) {
 
-      var info = formModel.getBrowserFieldInfo(browserControlName);
+      var info = modelTemplate.getBrowserFieldInfo(browserControlName);
       if (info == undefined) return;
 
       var update = function(url, title) {
@@ -211,14 +217,14 @@ DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
     editor.onChangeBrowserTitleControl = function(browserControlName) {
       // When the user manually changes the link title,
       // the link value must be set to the title value.
-      var info = formModel.getBrowserFieldInfo(browserControlName);
+      var info = modelTemplate.getBrowserFieldInfo(browserControlName);
       if (info == undefined) return;
       xModel.set(browserControlName, xModel.get(info.titleFieldName));
       editor.onChangeData();
     }
 
     editor.resetEditorBrowser = function(linkControlName) {
-      var info = formModel.getBrowserFieldInfo(linkControlName);
+      var info = modelTemplate.getBrowserFieldInfo(linkControlName);
       if (info == undefined) return;
       self.enableBrowserControl($dialog, info, true);
       xModel.set(linkControlName, '');
@@ -234,13 +240,16 @@ DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
     var editor = self._jsh.App[xModel.id];
     // Manually call change to do initial render
     setTimeout(function() {
-      editor.onChangeData();
+      editor.onChangeData_noDebounce();
+      setTimeout(function() {
+        $dialog.css('opacity', '1');
+      }, 50);
     });
   }
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(itemData, 'U')) return false;
-    itemData = formModel.getItemFields().makePristineModel(itemData);
+    itemData = modelTemplate.getPristineData(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
   }
@@ -259,6 +268,7 @@ DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
     delete self._jsh.XModels[xModel.id];
     delete self._jsh.App[xModel.id];
     _.forEach(self._htmlEditors, function(editor) { editor.destroy(); });
+    if (_.isFunction(onCloseCb)) onCloseCb();
   }
 
   dialog.open(itemData);
@@ -269,7 +279,7 @@ DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
  * @private
  * @param {Function} cb - callback for when link is selected (matches original picker signature)
  */
-DataFormEditor.prototype.openLinkBrowser = function(cb) {
+DataEditor_Form.prototype.openLinkBrowser = function(cb) {
   this.createPicker().openLink(cb, '');
 }
 
@@ -278,7 +288,7 @@ DataFormEditor.prototype.openLinkBrowser = function(cb) {
  * @private
  * @param {Function} cb - callback for when link is selected (matches original picker signature)
  */
-DataFormEditor.prototype.openMediaBrowser = function(cb) {
+DataEditor_Form.prototype.openMediaBrowser = function(cb) {
   this.createPicker().openMedia(cb, '');
 }
 
@@ -289,36 +299,26 @@ DataFormEditor.prototype.openMediaBrowser = function(cb) {
  * @param {Object} data
  * @param {Object} properties
  */
-DataFormEditor.prototype.renderPreview = function($wrapper, template, data, properties) {
+DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties) {
 
   var self = this;
 
-  /** @type {RenderConfig} */
-  var renderOptions = {
-    template: template,
-    data: data,
-    properties: properties
-  };
+  var renderConfig = TemplateRenderer.createRenderConfig(template, data, properties, this._cms);
+  renderConfig.gridContext = this._gridContext;
 
-  if (_.isFunction(this._onBeforeRenderDataItemPreview)) this._onBeforeRenderDataItemPreview(renderOptions);
+  if (_.isFunction(this._onBeforeRenderDataItemPreview)) this._onBeforeRenderDataItemPreview(renderConfig);
 
-  var templateData = { data: renderOptions.data, properties: renderOptions.properties };
-  var rendered = '';
-  try {
-    rendered = this._jsh.ejs.render(renderOptions.template || '', templateData);
-  } catch (error) {
-    console.error(error);
-  }
+  var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh);
 
   $wrapper.empty().append(rendered);
 
-  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderOptions.data, renderOptions.properties);
+  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties);
 
   setTimeout(function() {
     _.forEach($($wrapper.children()[0]).find('[data-component]'), function(el) {
-      self._cms.componentController.renderComponent(el);
+      self._cms.componentManager.renderComponent(el);
     });
   }, 50);
 }
 
-exports = module.exports = DataFormEditor;
+exports = module.exports = DataEditor_Form;

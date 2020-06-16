@@ -1,25 +1,24 @@
 
 var Convert  = require('../utils/convert');
 var GridDataStore = require('./gridDataStore');
-var DataFormEditor = require('./dataFormEditor')
-var ComponentConfig = require('../componentModel/componentConfig');
-var GridPreviewDataModel = require('../componentModel/gridPreviewDataModel');
+var DataEditor_Form = require('./dataEditor_form')
+var ComponentTemplate = require('../componentModel/componentTemplate');
+var TemplateRenderer = require('../templateRenderer');
+
+
+/** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
+/** @typedef {import('../templateRenderer').GridPreviewRenderContext} GridPreviewRenderContext */
+
+/** @typedef {import('../componentModel/dataModelTemplate_gridPreview').DataModelTemplate_GridPreview} DataModelTemplate_GridPreview */
 
 
 /**
- * @typedef {Object} RenderConfig
- * @property {Object} data - the component data
- * @property {Object} properties - the component properties
- * @property {string} template - the template being rendered
- */
-
-/**
- * @callback DataGridPreviewEditorController~beforeRenderGridRow
+ * @callback DataEditor_GridPreviewController~beforeRenderGridRow
  * @param {DataGridItemEditor~RenderConfig} renderConfig
  */
 
 /**
- * @callback DataGridPreviewEditorController~renderGridRow
+ * @callback DataEditor_GridPreviewController~renderGridRow
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
@@ -35,10 +34,10 @@ var GridPreviewDataModel = require('../componentModel/gridPreviewDataModel');
  * @param {(JQuery | HTMLElement)} dialogWrapper
  * @param {Object} cms
  * @param {Object} jsh
- * @param {GridPreviewDataModel} gridPreviewDataModel
- * @param {ComponentConfig} componentConfig
+ * @param {DataModelTemplate_GridPreview} dataModelTemplate_GridPreview
+ * @param {ComponentTemplate} componentTemplate
  */
-function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper, cms, jsh, gridPreviewDataModel, componentConfig) {
+function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, dataModelTemplate_GridPreview, componentTemplate) {
 
   var self = this;
 
@@ -57,22 +56,25 @@ function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper
   /** @private @type {JQuery} */
   this.$dialogWrapper = $(dialogWrapper);
 
-  /** @private @type {import('../componentModel/fieldModel').FieldModel} */
-  this._gridFields = gridPreviewDataModel.getGridFields();
+  /** @private @type {string} */
+  this._idFieldName = dataModelTemplate_GridPreview.getIdFieldName();
 
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
-  this._rowTemplate = gridPreviewDataModel.getRowTemplate();
+  this._rowTemplate = dataModelTemplate_GridPreview.getRowTemplate();
 
-  /** @public @type {DataGridPreviewEditorController~tileUpdateCallback} */
+  /** @private @type {DataModelTemplate_GridPreview} */
+  this._modelTemplate = dataModelTemplate_GridPreview;
+
+  /** @public @type {DataEditor_GridPreviewController~tileUpdateCallback} */
   this.onDataUpdated = undefined;
 
-  /** @public @type {DataGridPreviewEditorController~beforeRenderGridRow} */
+  /** @public @type {DataEditor_GridPreviewController~beforeRenderGridRow} */
   this.onBeforeRenderGridRow = undefined;
 
-  /** @public @type {DataGridPreviewEditorController~renderGridRow} */
+  /** @public @type {DataEditor_GridPreviewController~renderGridRow} */
   this.onRenderGridRow = undefined;
 
 
@@ -87,10 +89,10 @@ function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper
   // changes are propagated to the API data which is
   // attached to the grid.
   /** @type {GridDataStore} */
-  this._dataStore = new GridDataStore(this._gridFields.getIdFieldName());
+  this._dataStore = new GridDataStore(this._idFieldName);
   this._apiData = [];
   _.each(data, function(item, index) {
-    item[self._gridFields.getIdFieldName()] = self.makeItemId();
+    item[self._idFieldName] = self.makeItemId();
     item.sequence = index;
     // Don't expose references in data store.
     // The grid is not allowed to touch them.
@@ -105,20 +107,26 @@ function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper
  * @param {object} $row - the JQuery row element proper
  * @param {Object} rowData - the data for the row (augmented by model)
  */
-DataGridPreviewEditorController.prototype.addRow = function($row, rowData) {
+DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
   var rowId = this.getParentRowId($row);
   var $rowComponent = this.getRowElementFromRowId(rowId);
+  var self = this;
+
   $row.find('td.xgrid_action_cell.delete').remove();
   if (rowData._is_insert) {
     var id = this.makeItemId();
     this._insertId = id;
     rowData._insertId = id;
     $rowComponent.attr('data-item-id', id);
+    setTimeout(function() {
+      self.openItemEditor(id);
+      $rowComponent[0].scrollIntoView();
+    });
+
     this.forceCommit();
   } else {
-    $rowComponent.attr('data-item-id', rowData[this._gridFields.getIdFieldName()]);
-    var self = this;
-    self.renderRow(rowData);
+    $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
+    this.renderRow(rowData);
   }
 }
 
@@ -128,7 +136,7 @@ DataGridPreviewEditorController.prototype.addRow = function($row, rowData) {
  * @param {number} itemId - the item ID of the item being moved
  * @param {boolean} moveDown - set to true to mode the item toward the end of the list.
  */
-DataGridPreviewEditorController.prototype.changeItemSequence = function(itemId, moveDown) {
+DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId, moveDown) {
 
   var item = this._dataStore.getDataItem(itemId);
   if (!item) return;
@@ -176,10 +184,10 @@ DataGridPreviewEditorController.prototype.changeItemSequence = function(itemId, 
   if (doUpdate) {
     var adjData = items[updateIndex]
     adjData.sequence = item.sequence;
-    this.updateModelDataFromDataStore(this.getRowIdFromItemId(adjData[this._gridFields.getIdFieldName()]));
+    this.updateModelDataFromDataStore(this.getRowIdFromItemId(adjData[this._idFieldName]));
 
     item.sequence = newSequence;
-    this.updateModelDataFromDataStore(this.getRowIdFromItemId(item[this._gridFields.getIdFieldName()]));
+    this.updateModelDataFromDataStore(this.getRowIdFromItemId(item[this._idFieldName]));
 
     this._dataStore.sortBySequence();
     this._apiData.splice(0, this._apiData.length);
@@ -199,7 +207,7 @@ DataGridPreviewEditorController.prototype.changeItemSequence = function(itemId, 
  * Call anytime slide data is changed (and valid) in the view.
  * @private
  */
-DataGridPreviewEditorController.prototype.dataUpdated = function() {
+DataEditor_GridPreviewController.prototype.dataUpdated = function() {
   this.updateParentController();
 }
 
@@ -208,7 +216,7 @@ DataGridPreviewEditorController.prototype.dataUpdated = function() {
  * Should only be used for inserts and deletes.
  * @private
  */
-DataGridPreviewEditorController.prototype.forceCommit = function() {
+DataEditor_GridPreviewController.prototype.forceCommit = function() {
   var controller = this.xModel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Commit();
@@ -218,10 +226,24 @@ DataGridPreviewEditorController.prototype.forceCommit = function() {
  * Refresh the grid.
  * @private
  */
-DataGridPreviewEditorController.prototype.forceRefresh = function() {
+DataEditor_GridPreviewController.prototype.forceRefresh = function() {
   var controller = this.xModel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Refresh();
+}
+
+/**
+ * @private
+ * @param {string} itemId
+ * @returns {GridPreviewRenderContext}
+ */
+DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = function(itemId) {
+  var itemIndex = this._dataStore.getItemIndexById(itemId);
+  /** @type {GridPreviewRenderContext} */
+  var retVal = {
+    rowIndex: itemIndex
+  };
+  return retVal;
 }
 
 /**
@@ -230,7 +252,7 @@ DataGridPreviewEditorController.prototype.forceRefresh = function() {
  * @param {number} rowId - the row ID of the data to get.
  * @return {(Oobject | undefined)}
  */
-DataGridPreviewEditorController.prototype.getItemDataFromRowId = function(rowId) {
+DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId) {
   var slideId = $('.xrow.xrow_' + this.xModel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
     .attr('data-item-id');
   return this._dataStore.getDataItem(slideId) || {};
@@ -242,7 +264,7 @@ DataGridPreviewEditorController.prototype.getItemDataFromRowId = function(rowId)
  * @private
  * @returns {number}
  */
-DataGridPreviewEditorController.prototype.getNextSequenceNumber = function() {
+DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
   var maxItem =  _.max(this._dataStore.getDataArray(), function(item) {
     return typeof item.sequence == 'number' ? item.sequence : -1;
   });
@@ -255,7 +277,7 @@ DataGridPreviewEditorController.prototype.getNextSequenceNumber = function() {
  * @param {object} $element - a child JQuery element of the row
  * @return {number}
  */
-DataGridPreviewEditorController.prototype.getParentRowId = function($element) {
+DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
   return this.jsh.XExt.XModel.GetRowID(this.xModel.id, $element);
 }
 
@@ -266,7 +288,7 @@ DataGridPreviewEditorController.prototype.getParentRowId = function($element) {
  * @param {number} rowId
  * @returns {JQuery}
  */
-DataGridPreviewEditorController.prototype.getRowElementFromRowId = function(rowId) {
+DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(rowId) {
   var rowSelector = '.xrow[data-id="' + rowId + '"]';
   return this.$dialogWrapper.find(rowSelector + ' [data-component-template="gridRow"]');
 }
@@ -277,7 +299,7 @@ DataGridPreviewEditorController.prototype.getRowElementFromRowId = function(rowI
  * @param {number} itemId - the item ID to use to find the parent row ID.
  * @return {number}
  */
-DataGridPreviewEditorController.prototype.getRowIdFromItemId = function(itemId) {
+DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId) {
   var $el = $(this.$dialogWrapper).find('[data-component-template="gridRow"][data-item-id="' + itemId + '"]');
   return this.getParentRowId($el);
 }
@@ -287,7 +309,7 @@ DataGridPreviewEditorController.prototype.getRowIdFromItemId = function(itemId) 
  * the form is on screen.
  * @public
  */
-DataGridPreviewEditorController.prototype.initialize = function() {
+DataEditor_GridPreviewController.prototype.initialize = function() {
 
   var self = this;
   var modelInterface = this.jsh.App[this.xModel.id];
@@ -303,20 +325,20 @@ DataGridPreviewEditorController.prototype.initialize = function() {
   formApi.dataset = this._apiData;
 
   formApi.onInsert = function(action, actionResult, newRow) {
-    newRow[self._gridFields.getIdFieldName()] = self._insertId;
+    newRow[self._idFieldName] = self._insertId;
     newRow.sequence = self.getNextSequenceNumber();
     self._insertId = undefined;
     self._dataStore.addNewItem(_.extend({}, newRow));
     self._apiData.push(newRow);
     actionResult[self.xModel.id] = {}
-    actionResult[self.xModel.id][self._gridFields.getIdFieldName()] = newRow[self._gridFields.getIdFieldName()];
+    actionResult[self.xModel.id][self._idFieldName] = newRow[self._idFieldName];
     self.dataUpdated();
-    self.renderRow(self._dataStore.getDataItem(newRow[self._gridFields.getIdFieldName()]));
+    self.renderRow(self._dataStore.getDataItem(newRow[self._idFieldName]));
   }
 
   formApi.onDelete  = function(action, actionResult, keys) {
-    self._dataStore.deleteItem(keys[self._gridFields.getIdFieldName()]);
-    var index = self._apiData.findIndex(function(item) { return item[self._gridFields.getIdFieldName()] === keys[self._gridFields.getIdFieldName()]});
+    self._dataStore.deleteItem(keys[self._idFieldName]);
+    var index = self._apiData.findIndex(function(item) { return item[self._idFieldName] === keys[self._idFieldName]});
     if (index > -1) {
       self._apiData.splice(index, 1);
     }
@@ -332,7 +354,7 @@ DataGridPreviewEditorController.prototype.initialize = function() {
  * @private
  * @returns {boolean} - true if the model is readonly.
  */
-DataGridPreviewEditorController.prototype.isReadOnly = function() {
+DataEditor_GridPreviewController.prototype.isReadOnly = function() {
   return !!this.cms.readonly;
 }
 
@@ -341,7 +363,7 @@ DataGridPreviewEditorController.prototype.isReadOnly = function() {
  * @private
  * @returns {string}
  */
-DataGridPreviewEditorController.prototype.makeItemId = function() {
+DataEditor_GridPreviewController.prototype.makeItemId = function() {
   return '_' + Math.random().toString().replace('.', '');
 }
 
@@ -349,17 +371,20 @@ DataGridPreviewEditorController.prototype.makeItemId = function() {
  * @private
  * @param {string} itemId - the ID of the item to edit
  */
-DataGridPreviewEditorController.prototype.openItemEditor = function(itemId) {
+DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   var self = this;
-  var dataFormEditor =  new DataFormEditor(this._componentConfig, this.isReadOnly(), this.cms, this.jsh)
+  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh)
   var currentData = this._dataStore.getDataItem(itemId);
-  dataFormEditor.open(this._dataStore.getDataItem(itemId), this._properties || {},  function(updatedData) {
+  var rowId = this.getRowIdFromItemId(itemId);
+
+  dateEditor.open(this._dataStore.getDataItem(itemId), this._properties || {},  function(updatedData) {
       _.assign(currentData, updatedData)
-      var rowId = self.getRowIdFromItemId(itemId);
       self.updateModelDataFromDataStore(rowId);
       self.dataUpdated();
       self.renderRow(currentData);
+  }, function() {
+    self.getRowElementFromRowId(rowId)[0].scrollIntoView();
   });
 }
 
@@ -368,7 +393,7 @@ DataGridPreviewEditorController.prototype.openItemEditor = function(itemId) {
  * @private
  * @param {number} rowId - the ID of the row to delete.
  */
-DataGridPreviewEditorController.prototype.promptDelete = function(rowId) {
+DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   this.xModel.controller.DeleteRow(rowId);
   var self = this;
   $('body').one('click', '.xdialogbox.xconfirmbox input[type="button"]', function(e) {
@@ -387,16 +412,14 @@ DataGridPreviewEditorController.prototype.promptDelete = function(rowId) {
  * @private
  * @param {TileData} data
  */
-DataGridPreviewEditorController.prototype.renderRow = function(data) {
-
+DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var self = this;
-  var dataId = data[this._gridFields.getIdFieldName()];
+  var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
   var itemIndex = this._dataStore.getItemIndexById(dataId);
   var isFirst = itemIndex < 1;
   var isLast = itemIndex >= (this._dataStore.count() - 1);
-
   var template =
         '<div tabindex="0" data-component-template="gridRow">' +
           '<div class="toolbar">' +
@@ -426,22 +449,12 @@ DataGridPreviewEditorController.prototype.renderRow = function(data) {
 
   $row.empty().append(template);
 
-  var renderOptions = {
-    template: this._rowTemplate,
-    data: data,
-    properties: this._properties || {}
-  }
+  var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, data, this._properties || {}, this.cms);
+  renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
 
-  if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderOptions);
+  if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderConfig);
 
-  var templateData = { data: renderOptions.data, properties: renderOptions.properties };
-  var rendered = '';
-  try {
-    rendered = this.jsh.ejs.render(renderOptions.template || '', templateData);
-  } catch (error) {
-    console.error(error);
-  }
-
+  var rendered = TemplateRenderer.render(renderConfig, 'gridRowDataPreview', this.jsh);
 
   $row.find('[data-component-part="preview"]').empty().append(rendered);
 
@@ -476,11 +489,19 @@ DataGridPreviewEditorController.prototype.renderRow = function(data) {
     self.openItemEditor(dataId);
   });
 
-  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderOptions.data, renderOptions.properties);
+  $row.off('mousedown.cmsComponent').on('mousedown.cmsComponent', function(event) {
+    // We don't want the user to accidentally select text (which happens often)
+    // when double clicking. This will prevent that.
+    if (event.detail === 2) {
+      event.preventDefault();
+    }
+  });
+
+  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties);
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
-      self.cms.componentController.renderComponent(el);
+      self.cms.componentManager.renderComponent(el);
     });
   }, 100);
 }
@@ -491,9 +512,9 @@ DataGridPreviewEditorController.prototype.renderRow = function(data) {
  * @private
  * @param {number} rowId - the ID of the row for which the corresponding data will be updated (mutated).
  */
-DataGridPreviewEditorController.prototype.updateModelDataFromDataStore = function(rowId) {
+DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = function(rowId) {
 
-  var idField = this._gridFields.getIdFieldName();
+  var idField = this._idFieldName;
   var data = this.getItemDataFromRowId(rowId);
   var item = this.xModel.controller.form.DataSet.find(a => a[idField] === data[idField]);
   if (!item) {
@@ -509,23 +530,16 @@ DataGridPreviewEditorController.prototype.updateModelDataFromDataStore = functio
  * Call anytime item data is changed (and valid).
  * @private
  */
-DataGridPreviewEditorController.prototype.updateParentController = function() {
+DataEditor_GridPreviewController.prototype.updateParentController = function() {
   var self = this;
   this._dataStore.sortBySequence();
-  var data = this._dataStore.getDataArray()  || [];
 
-  // /** @type {Array.<TileData>} */
-  // var tiles = _.map(data, function(item) {
-  //   // return self.cleanAndCopySlideData(item);
-  //   return item;
-  // });
+  var items = this._dataStore.getDataArray()  || [];
+  items = _.map(items, function(item) { return self._modelTemplate.getPristineData(item); });
 
-  /** @type {TilesData} */
-  var data = {
-    items: data
-  };
+  var data = { items: items };
 
   if (_.isFunction(this.onDataUpdated)) this.onDataUpdated(data);
 }
 
-exports = module.exports = DataGridPreviewEditorController;
+exports = module.exports = DataEditor_GridPreviewController;
