@@ -49,7 +49,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     _this.initToolbarContainer(toolbarContainer);
     XExt.TinyMCE('', undefined, function(){
 
-      registerPlugin(cms.componentController.components);
+      registerPlugin(cms.componentManager);
 
       //Change text labels
       window.tinymce.addI18n('en', {
@@ -121,7 +121,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           });
           editor.on('jsHarmonyRenderComponent', function(e) {
             var el = $(editor.targetElm).find('[data-component="' + e.componentType + '"][data-component-id="' + e.componentId + '"]')[0];
-            if (el) cms.componentController.renderComponent(el);
+            if (el) cms.componentManager.renderComponent(el);
           });
         }
       });

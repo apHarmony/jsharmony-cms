@@ -1,16 +1,16 @@
-var ComponentConfig = require('../componentModel/componentConfig');
+var ComponentTemplate = require('../componentModel/componentTemplate');
 var FormDialog = require('../dialogs/formDialog');
 
 /**
  * @class
- * @param {ComponentConfig} componentConfig
+ * @param {ComponentTemplate} componentTemplate
  * @param {Object} cms
  * @param {Object} jsh
  */
-function PropertyFormEditor(componentConfig, cms, jsh) {
+function PropertyEditor_Form(componentTemplate, cms, jsh) {
 
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
 
   /** @private @type {Object} */
   this._cms = cms;
@@ -25,27 +25,24 @@ function PropertyFormEditor(componentConfig, cms, jsh) {
  * @param {Object} properties - the component's configured properties
  * @param {Function} onAcceptCb - Called if the data is updated. Arg0 is updated data.
  */
-PropertyFormEditor.prototype.open = function(properties, onAcceptCb) {
+PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var self = this;
-  var formModel = this._componentConfig.getFormPropertiesModelInstance();
-  var modelConfig = formModel.getModelConfig();
+  var modelTemplate = this._componentTemplate.getPropertiesModelTemplate_Form();
+  var model = modelTemplate.getModelInstance();
 
-  // Allow title to be overridden
-  modelConfig.title = modelConfig.title ? modelConfig.title : 'Configure';
+  var data = modelTemplate.populateDataInstance(properties || {});
 
-  var data = formModel.getItemFields().populateDataInstance(properties || {});
-
-  var dialog = new FormDialog(this._jsh, modelConfig, {
+  var dialog = new FormDialog(this._jsh, model, {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentConfig.getComponentConfigId(),
+    cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
   });
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(data, 'U')) return false;
-    data = formModel.getItemFields().makePristineModel(data);
+    data = modelTemplate.getPristineData(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   }
@@ -68,4 +65,4 @@ PropertyFormEditor.prototype.open = function(properties, onAcceptCb) {
   dialog.open(data);
 }
 
-exports = module.exports = PropertyFormEditor;
+exports = module.exports = PropertyEditor_Form;
