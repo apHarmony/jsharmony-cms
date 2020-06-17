@@ -1,254 +1,114 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-var ComponentConfig = require('./componentModel/componentConfig');
-var DataGridPreviewEditor = require('./editors/dataGridPreviewEditor');
-var PropertyFormEditor = require('./editors/propertyFormEditor');
-var DataFormEditor = require('./editors/dataFormEditor');
-var DomSerializer = require('./utils/domSerializer');
+var DataModelTemplate_GridPreview = require('./dataModelTemplate_gridPreview');
+var DataModelTemplate_FormPreview = require('./dataModelTemplate_formPreview');
+var PropertiesModelTemplate_Form = require('./propertiesModelTemplate_form');
 
 /**
- * @typedef {Object} RenderConfig
- * @property {Object} data - the component data
- * @property {Object} properties - the component properties
- * @property {string} template - the template being rendered
- */
+  * @typedef {Object} MediaBrowserControlInfo
+  * @property {string} dataFieldName
+  * @property {string} titleFieldName
+  * @property {('link' | 'media')} browserType
+  */
 
-/**
- * @callback BasicComponentController~beforeRender
- * @param {RenderConfig} renderConfig
- */
-
- /**
- * @callback BasicComponentController~render
- * @param {HTMLElement} element
- * @param {Object} data - the component data
- * @param {Object} properties - the component properties
- */
-
-/**
- * @class
- * @param {(HTMLElement | JQuert)} element
- * @param {Object} cms
- * @param {Object} jsh
- * @param {string} componentConfigId
- */
-function BasicComponentController (element, cms, jsh, componentConfigId) {
-
-  /** @private @type {JQuery} */
-  this._$element = $(element);
-
-  /** @private @type {Object} */
-  this.cms = cms;
-
-  /** @private @type {Object} */
-  this.jsh = jsh;
-
-  /** @private @type {string} */
-  this._componentConfigId = componentConfigId;
-
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = new ComponentConfig(cms.componentController.components[componentConfigId], jsh);
-
-  /** @private @type {Object} */
-  this._$element[0]._componentInterface = undefined;
-
-  /** @public @type {BasicComponentController~beforeRender} */
-  this.onBeforeRender = undefined;
-
-  /** @public @type {BasicComponentController~render} */
-  this.onRender = undefined;
-
-
-
-  // This interface is used by the TinyMce plugin to handle editor events
-  var self = this;
-  this._$element[0]._componentInterface = {
-    openDataEditor: function() { self.openDataEditor(); },
-    openPropertiesEditor: function() { self.openPropertiesEditor(); }
-  }
-}
-
-/**
- * Get the component configuration
- * @private
- * @returns {(Object | undefined)}
- */
-BasicComponentController.prototype.getComponentConfig = function() {
-  return this.cms.componentController.components[this._componentConfigId];
-}
-
-/**
- * Get the data from the element's serialized data attribute value.
- * @private
- * @return {Object}
- */
-BasicComponentController.prototype.getData = function() {
-  return DomSerializer.getAttr(this._$element, 'data-component-data');
-}
-
-/**
- * Get the properties from the element's serialized property attribute value.
- * @private
- * @return {Object}
- */
-BasicComponentController.prototype.getProperties = function() {
-  return DomSerializer.getAttr(this._$element, 'data-component-properties');
-}
-
-/**
- * Check to see if the component is readonly.
- * @private
- * @returns {boolean} - true if the model is readonly.
- */
-BasicComponentController.prototype.isReadOnly = function() {
-  return !!this.cms.readonly;
-}
-
-/**
- * Open the data editor form.
- * @public
- */
-BasicComponentController.prototype.openDataEditor = function() {
-  var editorType = this._componentConfig.getDataEditorType();
-  if (editorType === 'grid') {
-    throw new Error('Not Implemented');
-  } else if (editorType === 'grid_preview') {
-    this.openDataGridPreviewEditor();
-  } else if (editorType === 'form') {
-    this.openDataFormEditor();
-  } else if (editorType != undefined) {
-    throw new  Error('Unknown editor type "' + editorType  + '"');
-  }
-}
-
-/**
- * @private
- * @param {object} modelInstance - the model instance to render (model will be mutated).
- */
-BasicComponentController.prototype.openDataFormEditor = function() {
-  var self = this;
-  var dataFormEditor = new DataFormEditor(this._componentConfig, this.isReadOnly(), this.cms, this.jsh);
-
-  var data = this.getData() || {};
-  dataFormEditor.open(data.item || {}, this.getProperties() || {}, function(updatedData) {
-    data.item = updatedData;
-    self.saveData(data);
-    self.render();
-  });
-}
-
-/**
- * @private
- */
-BasicComponentController.prototype.openDataGridPreviewEditor = function() {
-  var self = this;
-  var dataGridPreviewEditor = new DataGridPreviewEditor(this._componentConfig, this.cms, this.jsh);
-
-  dataGridPreviewEditor.open(this.getData(), this.getProperties() || {}, function(updatedData) {
-    self.saveData(updatedData);
-    self.render();
-  });
-}
-
-/**
- * Open the property editor form.
- * @public
- */
-BasicComponentController.prototype.openPropertiesEditor = function() {
-
-  var self = this;
-  var propertyFormEditor = new PropertyFormEditor(this._componentConfig, this.cms, this.jsh);
-
-  propertyFormEditor.open(this.getProperties() || {}, function(data) {
-    self.saveProperties(data);
-    self.render();
-  });
-}
-
-/**
- * Render the component
- * @public
- */
-BasicComponentController.prototype.render = function() {
-
-  var self = this;
-  var config = this.getComponentConfig() || {};
-  var template = (config.templates || {}).editor || '';
-
-  var data = this.getData();
-  var props = this.getProperties();
-
-  var renderOptions = {
-    template: template,
-    data: data,
-    properties: props
-  }
-
-  if (_.isFunction(this.onBeforeRender)) this.onBeforeRender(renderOptions);
-
-  var templateData = { data: renderOptions.data, properties: renderOptions.properties };
-  var rendered = '';
-  try {
-    rendered = this.jsh.ejs.render(renderOptions.template || '', templateData);
-  } catch (error) {
-    console.error(error);
-  }
-
-  this._$element.empty().append(rendered);
-
-  this._$element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
-    self.openDataEditor();
-  });
-
-  if (_.isFunction(this.onRender)) this.onRender(this._$element[0], data, props);
-
-  setTimeout(function() {
-    _.forEach(self._$element.find('[data-component]'), function(el) {
-      self.cms.componentController.renderComponent(el);
-    });
-  });
-}
-
-/**
- * Call anytime the data is changed in the view (i.e.,
- * by the user). This will update the component's data
- * on the page.
- * @private
- * @param {(Object | undefined)} data
- */
-BasicComponentController.prototype.saveData = function(data) {
-  DomSerializer.setAttr(this._$element, 'data-component-data', data);
-}
-
-/**
- * Call anytime the properties are changed in the view (i.e.,
- * by the user). This will save the properties for the components
- * @private
- * @param {(Object | undefined)} props
- */
-BasicComponentController.prototype.saveProperties = function(props) {
-  DomSerializer.setAttr(this._$element, 'data-component-properties', props);
-}
-
-exports = module.exports = BasicComponentController;
-
-},{"./componentModel/componentConfig":2,"./editors/dataFormEditor":11,"./editors/dataGridPreviewEditor":12,"./editors/propertyFormEditor":16,"./utils/domSerializer":20}],2:[function(require,module,exports){
-var Cloner = require('../utils/cloner');
-var GridPreviewDataModel = require('./gridPreviewDataModel');
-var FormDataModel = require('./formDataModel');
-var FormPropertiesModel = require('./formPropertiesModel');
+/** @typedef {ComponentTemplate} ComponentTemplate */
 
 /**
  * @class
  * @param {Object} componentConfig - the component configuration as defined by the component JSON.
  * @param {Object} jsh
  */
-function ComponentConfig(componentConfig, jsh) {
+function ComponentTemplate(componentConfig, jsh) {
 
   /** @private @type {Object} */
   this._componentConfig = componentConfig;
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {DataModelTemplate_GridPreview} */
+  this._dataModelTemplate_GridPreview = undefined;
+
+  /** @private @type {DataModelTemplate_FormPreview} */
+  this._dataModelTemplate_FormPreview = undefined;
+
+  /** @private @type {PropertiesModelTemplate_Form} */
+  this._propertiesModelTemplate_Form = undefined;
+
+
+
+  if (this._componentConfig.data) {
+    this._componentConfig.data.fields = this.processBrowserFields(this._componentConfig.data.fields || []);
+    this._dataModelTemplate_GridPreview = new DataModelTemplate_GridPreview(this, this._componentConfig.data);
+    this._dataModelTemplate_FormPreview = new DataModelTemplate_FormPreview(this, this._componentConfig.data);
+  }
+  if (this._componentConfig.properties) {
+    this._componentConfig.data.fields = this.processBrowserFields(this._componentConfig.data.fields || []);
+    this._propertiesModelTemplate_Form = new PropertiesModelTemplate_Form(this, this._componentConfig.properties);
+  }
+}
+
+/**
+ * Get the component captions tuple as defined by the component JSON.
+ * The first element is the title, the second element is the singular caption
+ * (if exists), and the third element is the plural caption (if exists).
+ * @public
+ * @returns {[string, string, string]}
+ */
+ComponentTemplate.prototype.getCaptions = function() {
+  var captions = [this._componentConfig.title];
+  if (_.isArray(this._componentConfig.caption)) {
+    captions.push(this._componentConfig.caption[0]);
+    captions.push(this._componentConfig.caption[1]);
+  } else {
+    captions.push(this._componentConfig.caption);
+    captions.push(this._componentConfig.caption);
+  }
+  return captions
+}
+
+/**
+ * Get the component configuration as defined by the component JSON.
+ * @public
+ * @returns {Object}
+ */
+ComponentTemplate.prototype.getComponentConfig = function() {
+  return this._componentConfig;
+}
+
+/**
+ * Return the editor type
+ * @public
+ * @returns {('grid'| | 'grid_preview' | 'form' | undefined)}
+ */
+ComponentTemplate.prototype.getDataEditorType = function() {
+  if (this._componentConfig.data) {
+    return this._componentConfig.data.layout;
+  }
+  return undefined;
+}
+
+/**
+ * @public
+ * @returns {(DataModelTemplate_FormPreview | undefined)}
+ */
+ComponentTemplate.prototype.getDataModelTemplate_FormPreview = function() {
+  return this._dataModelTemplate_FormPreview;
+}
+
+/**
+ * @public
+ * @returns {(DataModelTemplate_GridPreview | undefined)}
+ */
+ComponentTemplate.prototype.getDataModelTemplate_GridPreview = function() {
+  return this._dataModelTemplate_GridPreview;
+}
+
+/**
+ * @public
+ * @returns {(PropertiesModelTemplate_Form | undefined)}
+ */
+ComponentTemplate.prototype.getPropertiesModelTemplate_Form = function() {
+  return this._propertiesModelTemplate_Form;
 }
 
 /**
@@ -257,250 +117,215 @@ function ComponentConfig(componentConfig, jsh) {
  * @public
  * @returns {(string | undefined)}
  */
-ComponentConfig.prototype.getComponentConfigId = function() {
+ComponentTemplate.prototype.getTemplateId = function() {
   return this._componentConfig.id;
 }
 
 /**
- * Return the editor type
- * @public
- * @returns {('grid'| | 'grid_preview' | 'form' | undefined)}
- */
-ComponentConfig.prototype.getDataEditorType = function() {
-  if (this._componentConfig.data) {
-    return this._componentConfig.data.layout;
-  }
-  return undefined;
-}
-
-/**
- * Get a model instance configured for the grid preview data editor.
- * @public
- * @returns {(GridPreviewDataModel | undefined)}
- */
-ComponentConfig.prototype.getGridPreviewDataModelInstance = function() {
-
-  var model = this.getModelInstance('data');
-  if (model === undefined) return undefined;
-  return new GridPreviewDataModel(model);
-}
-
-/**
- * Get a model instance configured for the form data editor.
- * @public
- * @returns {(FormDataModel | undefined)}
- */
-ComponentConfig.prototype.getFormDataModelInstance = function() {
-
-  var model = this.getModelInstance('data');
-  if (model === undefined) return undefined;
-  return new FormDataModel(model);
-}
-
-/**
- * Get a model instance configured for the form properties editor.
- * @public
- * @returns {(FormPropertiesModel | undefined)}
- */
-ComponentConfig.prototype.getFormPropertiesModelInstance = function() {
-
-  var model = this.getModelInstance('properties');
-  if (model === undefined) return undefined;
-  return new FormPropertiesModel(model);
-}
-
-/**
- * Create a unique model from the component configuration.
  * @private
- * @param {('data' | 'props')} key - the type of model instance to get.
- * @returns {(Object | undefined)} - if model is found, return a unique instance of the model
- * from the component configuration. Model can be mutated without side effects.
+ * @param {object[]} fields
+ * @returns {object[]}
  */
-ComponentConfig.prototype.getModelInstance = function(key) {
+ComponentTemplate.prototype.processBrowserFields = function(fields) {
 
-  var model;
-  if (key === 'data') {
-    model = this._componentConfig.data;
-  } else if (key === 'properties') {
-    model = this._componentConfig.properties;
-  } else {
-    throw new Error('Mode key is not valid: "'+ key +'"');
+  var retVal = [];
+
+  _.forEach(fields, function(field) {
+    retVal.push(field);
+    if (field.control !== 'link_browser' &&  field.control !== 'media_browser') {
+      return;
+    }
+
+    var browserType = { link_browser: 'link',   media_browser: 'media' }[field.control];
+
+    /** @type {MediaBrowserControlInfo} */
+    var info = {
+      dataFieldName: field.name,
+      titleFieldName: field.name + '_jsh_browserDataTitle',
+      browserType: browserType
+    }
+
+    field.mediaBrowserControlInfo = info;
+    field.name = info.titleFieldName;
+    field.control = 'textbox';
+    field.type = 'varchar';
+    field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeBrowserTitleControl) m.onChangeBrowserTitleControl("' + info.dataFieldName + '");  })()';
+
+    retVal.push({
+      name: field.name + '_browserButton',
+      caption: '',
+      control: 'button',
+      value: 'Browse',
+      nl: false,
+      onclick: '(function() { var m = jsh.App[modelid]; if (m && m.openEditorBrowser) m.openEditorBrowser("' + info.dataFieldName + '"); })()'
+    });
+
+    retVal.push({
+      name: field.name + '_resetButton',
+      controlclass: 'secondary',
+      controlstyle: 'margin-left:10px;',
+      caption: '',
+      control: 'button',
+      value: 'Reset',
+      nl: false,
+      onclick: '(function() { var m = jsh.App[modelid]; if (m && m.resetEditorBrowser) m.resetEditorBrowser("' + info.dataFieldName + '"); })()'
+    });
+
+    retVal.push({
+      name: info.dataFieldName,
+      caption: '',
+      control: 'hidden',
+      type: 'varchar'
+    });
+  });
+
+  return retVal;
+}
+
+
+exports = module.exports = ComponentTemplate;
+
+},{"./dataModelTemplate_formPreview":2,"./dataModelTemplate_gridPreview":3,"./propertiesModelTemplate_form":5}],2:[function(require,module,exports){
+var Cloner = require('../utils/cloner');
+var FieldModel = require('./fieldModel');
+
+/** @typedef {DataModelTemplate_FormPreview} DataModelTemplate_FormPreview */
+
+
+/**
+ * @class
+ * @classdesc Normalizes the model for use in the form preview
+ * editor. Creates a model template that can then be used to generate
+ * unique instances of the model for editing.
+ * @param {import('./componentTemplate').ComponentTemplate} componentTemplate
+ * @param {object} dataModel - the raw data model from the component config
+ */
+function DataModelTemplate_FormPreview(componentTemplate, dataModel) {
+
+  /** @private @type {string} */
+  this._componentTemplateId = componentTemplate.getTemplateId();
+
+  /** @private @type {string} */
+  this._itemTemplate = '';
+
+  /** @private @type {object} */
+  this._modelTemplate = {};
+
+  /** @private @type {string} */
+  this._rawOriginalJs = '';
+
+
+  this.buildTemplate(componentTemplate, dataModel);
+}
+
+/**
+ * @private
+ * @param {import('./componentTemplate').ComponentTemplate} componentTemplate
+ * @param {object} dataModel - the raw data model from the component config
+ */
+DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTemplate, dataModel) {
+
+  var modelConfig = Cloner.deepClone(dataModel || {});
+  if (modelConfig.layout !== 'grid_preview' && modelConfig.layout !== 'form') return undefined;
+
+  this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
+
+  var fields = modelConfig.fields || [];
+  _.forEach(fields, function(field) {
+    if (field.type != undefined && field.mediaBrowserControlInfo == undefined) {
+      field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeData) m.onChangeData();  })()';
+    }
+  });
+
+  fields.push({
+    caption: '', control:'html', value:'<div data-id="previewWrapper"></div>', 'block':true
+  });
+
+  var model = _.extend({}, modelConfig);
+  this._modelTemplate = model;
+  model.title = modelConfig.title ? modelConfig.title : 'Edit ' + componentTemplate.getCaptions()[1];
+  model.fields = fields;
+  model.layout = 'form';
+  model.unbound = true;
+  model.onecolumn = true;
+  model.ejs = '';
+  model.js = this._rawOriginalJs;
+
+  var $templates = $('<div>' + modelConfig.ejs + '</div>');
+  var itemTemplateSelector = (modelConfig.templates || {}).itemPreview;
+  var itemTemplateElement = itemTemplateSelector ? $templates.find(itemTemplateSelector) : undefined;
+  if (itemTemplateElement.length !== 1) {
+    throw new Error('Item template must contain a single root element. Found ' + itemTemplateElement.length + ' elements');
   }
+  this._itemTemplate = itemTemplateElement ? itemTemplateElement.html() : undefined;
+}
 
-  // jsHarmony will mutate the model. We have to have a DEEP
-  // clone to keep things isolated (since models need to be reused for nested components).
-  model = Cloner.deepClone(model);
-  model.id = this.createInstanceId();
+/**
+ * Get the link browser field info (if exists) for the link field with
+ * the given field name.
+ * @public
+ * @param {string} fieldName
+ * @returns {(import('./componentTemplate').MediaBrowserControlInfo | undefined)}
+ */
+DataModelTemplate_FormPreview.prototype.getBrowserFieldInfo = function(fieldName) {
+  var field = _.find(this._modelTemplate.fields, function(field) {
+    return field.mediaBrowserControlInfo && field.mediaBrowserControlInfo.dataFieldName === fieldName;
+  });
+  return field ? field.mediaBrowserControlInfo : undefined;
+}
+
+/**
+ * Get the link browser field infos
+ * @public
+ * @returns {import('./componentTemplate').MediaBrowserControlInfo[]]}
+ */
+DataModelTemplate_FormPreview.prototype.getBrowserFieldInfos = function() {
+  var retVal = [];
+  _.forEach(this._modelTemplate.fields, function(field) {
+    if (field.mediaBrowserControlInfo) {
+      retVal.push(field.mediaBrowserControlInfo);
+    }
+  });
+  return retVal;
+}
+
+/**
+ * Get the EJS string used to render the item preview
+ * @public
+ * @returns {string}
+ */
+DataModelTemplate_FormPreview.prototype.getItemTemplate = function() {
+  return this._itemTemplate || '';
+}
+
+/**
+ * @public
+ */
+DataModelTemplate_FormPreview.prototype.getModelInstance = function() {
+  var model = Cloner.deepClone(this._modelTemplate);
+  model.id = DataModelTemplate_FormPreview.getNextInstanceId(this._componentTemplateId);
 
   return model;
 }
 
 /**
- * Create a unique ID to use for model instance
+ * Return the raw model JavaScript.
+ * @public
+ * @returns {Object}
+ */
+DataModelTemplate_FormPreview.prototype.getModelJs = function() {
+  return this._rawOriginalJs;
+}
+
+/**
+ * Get a unique ID for the model instance
+ * @private
  * @returns {string}
  */
-ComponentConfig.prototype.createInstanceId = function() {
-  var id = undefined;
-  do {
-    id = 'jsharmony_cms_component_model_' + Math.random().toString().replace('.', '');
-    id = this._jsh.XModels[id] ? undefined : id;
-  } while (!id);
-  return id;
-}
-
-
-exports = module.exports = ComponentConfig;
-
-},{"../utils/cloner":18,"./formDataModel":4,"./formPropertiesModel":5,"./gridPreviewDataModel":6}],3:[function(require,module,exports){
-var Cloner = require('../utils/cloner');
-var Convert = require('../utils/convert');
-
-/**
- * @typedef {FieldModel} FieldModel
- */
-
-/**
- * @class
- * @classdesc This class adds functionality for working with field models
- * defined in the JSH component JSON.
- * @param {Object[]} fieldModels = the field's as defined by the model's 'field' property
- */
-function FieldModel(fieldModels) {
-
-  // Since we might mutate the fields we need out own
-  // copy to avoid side effects.
-  /** @private @type {Object[]} */
-  this._fieldModels = Cloner.deepClone(fieldModels || []);
-
-  /** @private @type {(string | undefined)} */
-  this._idFieldName = undefined;
-
-  /** @private @type {(string | undefined)} */
-  this._sequenceFieldName = undefined;
-
-  /** @private @type {Objec}*/
-  this._AUTO_FIELD_NAMES = {
-    id: '_jsh_auto_id',
-    sequence: '_jsh_auto_sequence'
-  };
-}
-
-/**
- * Add a new field to the field models list.
- * @public
- * @param {Object} field
- */
-FieldModel.prototype.addField = function(field) {
-  this._fieldModels.push(field);
-}
-
-/**
- * JSH changes the types defined in the model.
- * This will convert the fields in dataInstance to the correct type
- * based on the fieldModel.
- * @public
- * @param {Object} dataInstance - the data to operate on.
- */
-FieldModel.prototype.convertTypes = function(dataInstance) {
-
-  if (dataInstance == undefined) return;
-
-  var numberTypeLut = {
-    bigint: true,
-    int: true,
-    smallint: true,
-    tinyint: true,
-    decimal: true,
-    float: true
-  }
-
-  dataInstance = dataInstance || {};
-  _.forEach(this._fieldModels || [], function(field) {
-    var fieldName = field.name;
-    var fieldType = field.type;
-    if (fieldType == undefined) return;
-    if (!(fieldName in dataInstance)) return;
-
-    if (numberTypeLut[fieldType]) {
-      dataInstance[fieldName] = Convert.toNumber(dataInstance[fieldName]);
-    }
-  });
-}
-
-/**
- * Ensure that an ID field exists.
- * If no ID field exists then one will be added.
- * An error will be thrown if more than one ID field exists.
- * @public
- */
-FieldModel.prototype.ensureIdField = function() {
-  var idFields = _.filter(this._fieldModels, function(field) { return field.key; });
-  if (idFields.length > 1) throw new Error('Expected a single ID field. Found ' + idFields.length);
-  if (idFields.length < 1) {
-    var idField = { name: this._AUTO_FIELD_NAMES.id, type: 'varchar', control: 'hidden', key: true, caption: '' };
-    idFields = [idField];
-    this._fieldModels.push(idField);
-  }
-
-  this._idFieldName = idFields[0].name;
-}
-
-/**
- * Ensure that a sequence field exists.
- * If no sequence field exists then one will be added.
- * @public
- */
-FieldModel.prototype.ensureSequenceField = function() {
-
-  var seqFieldName = this._AUTO_FIELD_NAMES.sequence;
-  var hasSeqField = _.some(this._fieldModels, function(field) { return field.name === seqFieldName; })
-  if (!hasSeqField) {
-    var idField = { name: seqFieldName, type: 'int', control: 'hidden', caption: '' };
-    this._fieldModels.push(idField);
-  }
-
-  this._sequenceFieldName = seqFieldName
-}
-
-/**
- * Get a copy of the field model array.
- * @public
- * @returns {Object[]}
- */
-FieldModel.prototype.getFieldModels = function() {
-  return Cloner.deepClone(this._fieldModels);
-}
-
-/**
- * Get the name of the ID field.
- * Don't call this unless `ensureIdField()` has been called.
- * @public
- * @returns {(string | undefined)}
- */
-FieldModel.prototype.getIdFieldName = function() {
-  return this._idFieldName;
-}
-
-/**
- * Get the name of the sequence field.
- * Don't call this unless `ensureSequenceField()` has been called.
- * @public
- * @returns {(string | undefined)}
- */
-FieldModel.prototype.getSequenceFieldName = function() {
-  return this._sequenceFieldName;
-}
-
-/**
- * Set the field with the given field name to hidden.
- * @public
- * @param {string} fieldName
- */
-FieldModel.prototype.makeFieldHidden = function(fieldName) {
-  var field = _.find(this._fieldModels, function(field) { return field.name === fieldName; });
-  if (field) {
-    field.control = 'hidden';
-  }
+DataModelTemplate_FormPreview.getNextInstanceId = function(componentType ) {
+  if (DataModelTemplate_FormPreview._id == undefined) DataModelTemplate_FormPreview._id = 0;
+  var id = DataModelTemplate_FormPreview._id++;
+  return 'DataModel_FormPreview' + componentType + '_' + id;
 }
 
 /**
@@ -514,29 +339,336 @@ FieldModel.prototype.makeFieldHidden = function(fieldName) {
  *
  * @public
  * @param {Object} dataInstance - the existing field values.
- * @param {boolean} [removeAutoProps] - if true then this will remove any fields added
- * (e.g., sequence and ID fields)
- * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
+  * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-FieldModel.prototype.makePristineModel = function(dataInstance, removeAutoProps) {
+DataModelTemplate_FormPreview.prototype.getPristineData = function(dataInstance) {
+  return FieldModel.getPristineData(dataInstance, this._modelTemplate.fields);
+}
 
-  var autoFieldNameMap = {};
-  if (removeAutoProps) {
-    _.values(this._AUTO_FIELD_NAMES, function(a) { autoFieldNameMap[a] = true; });
+/**
+ * Iterates through the fields
+ * to look for fields with "type" property. If a field has the type property
+ * then the field will be added to the new data instance object. When adding
+ * a field, the value is set as either the value in the current data instance
+ * (if that property key exists) or as the field model default/undefined.
+ *
+ * This will also correctly convert values as needed.
+ *
+ * This mutates the dataInstance.
+ * @public
+ * @param {Object} dataInstance - the data instance. Each property corresponds
+ * to a field in the field array. This object will be mutated.
+ * @returns {Object} the new or mutated data
+ */
+DataModelTemplate_FormPreview.prototype.populateDataInstance = function(dataInstance) {
+  return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
+}
+
+exports = module.exports = DataModelTemplate_FormPreview;
+
+},{"../utils/cloner":18,"./fieldModel":4}],3:[function(require,module,exports){
+var Cloner = require('../utils/cloner');
+var FieldModel = require('./fieldModel');
+
+
+/** @typedef {DataModelTemplate_GridPreview} DataModelTemplate_GridPreview */
+
+/**
+ * @class
+ * @classdesc Normalizes the model for use in the grid preview
+ * editor. Creates a model template that can then be used to generate
+ * unique instances of the model for editing.
+ * @param {import('./componentTemplate').ComponentTemplate} componentTemplate
+ * @param {object} dataModel - the raw data model from the component config
+ */
+function DataModelTemplate_GridPreview(componentTemplate, dataModel) {
+
+  /** @private @type {string} */
+  this._componentTemplateId = componentTemplate.getTemplateId();
+
+  /** @private @type {string} */
+  this._idFieldName = '';
+
+  /** @private @type {object} */
+  this._modelTemplate = {};
+
+  /** @private @type {string} */
+  this._rawOriginalJs = '';
+
+  /** @private @type {string} */
+  this._rowTemplate = '';
+
+  /** @private @type {string} */
+  this._sequenceFieldName = '';
+
+  this.buildTemplate(componentTemplate, dataModel);
+}
+
+/**
+ * @private
+ * @param {import('./componentTemplate').ComponentTemplate} componentTemplate
+ * @param {object} dataModel - the raw data model from the component config
+ */
+DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTemplate, dataModel) {
+
+  var modelConfig = Cloner.deepClone(dataModel || {});
+  if (modelConfig.layout !== 'grid_preview') return undefined;
+
+  this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
+
+  var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
+
+  var fields = modelConfig.fields || [];
+  this._idFieldName = this.ensureIdField(fields);
+  this._sequenceFieldName = this.ensureSequenceField(fields);
+
+  _.forEach(fields, function(field) {
+    field.control = 'hidden';
+  });
+
+  fields.push({
+    name: 'cust_field', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;',
+    value: '<div tabindex="0" data-component-template="gridRow"></div>',
+    ongetvalue: 'return;'
+  });
+
+
+  var model = {};
+  this._modelTemplate = model;
+  model.title = 'Edit ' + componentTemplate.getCaptions()[0];
+  model.popup = [ _.isNumber(popup[0]) ? popup[0] : 400, _.isNumber(popup[1]) ? popup[1] : 200 ];
+  model.fields = fields;
+  model.layout = 'grid';
+  model.unbound = true;
+  model.newrowposition = 'last';
+  model.commitlevel= 'page';
+  model.hide_system_buttons = ['export', 'search', 'save'];
+  model.sort = [];
+  model.buttons = [
+    {link: 'js:_this.close()', icon: 'ok', actions: 'IU', text: 'Done' }
+  ];
+  model.getapi =   'return _this.getDataApi(xmodel, apitype)';
+  model.onrowbind =   '_this.onRowBind(xmodel,jobj,datarow);';
+  model.oncommit =  '_this.onCommit(xmodel, rowid, callback);';
+  model.ejs =  '';
+  model.sort = { [this._sequenceFieldName]: 'asc' };
+
+  //--------------------------------------------------
+  // Get templates
+  //--------------------------------------------------
+  var $templates = $('<div>' + (modelConfig.ejs || '') + '</div>');
+  var rowTemplateSelector = (modelConfig.templates || {}).gridRowPreview;
+  var rowTemplateElement = rowTemplateSelector ? $templates.find(rowTemplateSelector) : undefined;
+  if (rowTemplateElement.length !== 1) {
+    throw new Error('Row template must contain a single root element. Found ' + rowTemplateElement.length + ' elements');
   }
 
-  var pristineCopy = {};
-  _.forEach(this._fieldModels, function(field) {
+  this._rowTemplate = rowTemplateElement ? rowTemplateElement.html() : undefined;
+
+  return  model;
+}
+
+/**
+ * Ensure that an ID field exists.
+ * If no ID field exists then one will be added.
+ * An error will be thrown if more than one ID field exists.
+ * @private
+ * @param {Object[]} fields
+ * @returns {string} the name of the ID field
+ */
+DataModelTemplate_GridPreview.prototype.ensureIdField = function(fields) {
+  var idFields = _.filter(fields, function(field) { return field.key; });
+  if (idFields.length > 1) throw new Error('Expected a single ID field. Found ' + idFields.length);
+  if (idFields.length < 1) {
+    var idField = { name: '_jsh_auto_id', type: 'varchar', control: 'hidden', key: true, caption: '', isAutoAddedField: true };
+    idFields = [idField];
+    fields.push(idField);
+  }
+
+  return idFields[0].name;
+}
+
+/**
+ * Ensure that a sequence field exists.
+ * If no sequence field exists then one will be added.
+ * @private
+ * @param {Object[]} fields
+ * @returns {string} the name of the sequence field
+ */
+DataModelTemplate_GridPreview.prototype.ensureSequenceField = function(fields) {
+
+  var seqFieldName = 'sequence'; //This is by convention!!!
+  var hasSeqField = _.some(fields, function(field) { return field.name === seqFieldName; })
+  if (!hasSeqField) {
+    var idField = { name: seqFieldName, type: 'int', control: 'hidden', caption: '', isAutoAddedField: true };
+    fields.push(idField);
+  }
+
+  return seqFieldName
+}
+
+/**
+ * Get the name of the field used for the data item ID.
+ * @public
+ * @returns {string}
+ */
+DataModelTemplate_GridPreview.prototype.getIdFieldName = function() {
+  return this._idFieldName;
+}
+
+/**
+ * @public
+ */
+DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
+  var model = Cloner.deepClone(this._modelTemplate);
+  model.id = DataModelTemplate_GridPreview.getNextInstanceId(this._componentTemplateId);
+
+  model.js =  function() {
+    var gridApi = new jsh.XAPI.Grid.Static(modelid);
+    var formApi = new jsh.XAPI.Form.Static(modelid);
+    return  {
+      getDataApi: function(xmodel, apiType) {
+        if (apiType === 'grid') return gridApi;
+        else if (apiType === 'form') return formApi;
+      }
+    }
+  }
+
+  return model;
+}
+
+/**
+ * Return the raw model JavaScript.
+ * @public
+ * @returns {Object}
+ */
+DataModelTemplate_GridPreview.prototype.getModelJs = function() {
+  return this._rawOriginalJs;
+}
+
+/**
+ * Get a unique ID for the model instance
+ * @private
+ * @returns {string}
+ */
+DataModelTemplate_GridPreview.getNextInstanceId = function(componentType ) {
+  if (DataModelTemplate_GridPreview._id == undefined) DataModelTemplate_GridPreview._id = 0;
+  var id = DataModelTemplate_GridPreview._id++;
+  return 'DataModel_GridPreview_' + componentType + '_' + id;
+}
+
+/**
+ * Create a pristine copy of the data.
+ * This will remove extraneous properties (that don't exist in the model)
+ * and do data conversions. It will also add missing fields.
+ * The returned value will match the field model exactly.
+ *
+ * NOTE: this does not set default values! If the value is not set in
+ * dataInstance then the property will be set to undefined.
+ *
+ * @public
+ * @param {Object} dataInstance - the existing field values.
+  * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
+ * properties removed.
+ */
+DataModelTemplate_GridPreview.prototype.getPristineData = function(dataInstance) {
+  var fields = _.filter(this._modelTemplate.fields, function(field) { return !field.isAutoAddedField; });
+  return FieldModel.getPristineData(dataInstance, fields);
+}
+
+/**
+ * Get the EJS string used to render the row item preview
+ * @public
+ * @returns {string}
+ */
+DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
+  return this._rowTemplate || '';
+}
+
+
+
+exports = module.exports = DataModelTemplate_GridPreview;
+},{"../utils/cloner":18,"./fieldModel":4}],4:[function(require,module,exports){
+var Cloner = require('../utils/cloner');
+var Convert = require('../utils/convert');
+
+/**
+ * @typedef {FieldModel} FieldModel
+ */
+
+/**
+ * @class
+ * @classdesc This class adds functionality for working with field models
+ * defined in the JSH component JSON.
+ */
+function FieldModel() {
+
+}
+
+/**
+ * JSH changes the types defined in the model.
+ * This will convert the fields in dataInstance to the correct type
+ * based on the fieldModel.
+ * @public
+ * @static
+ * @param {Object} dataInstance - the data to operate on (will be mutated).
+ * @param {Object[]} fields - the fields array from the model
+ */
+FieldModel.convertTypes = function(dataInstance, fields) {
+
+  if (dataInstance == undefined) return;
+
+  var numberTypeLut = {
+    bigint: true,
+    int: true,
+    smallint: true,
+    tinyint: true,
+    decimal: true,
+    float: true
+  }
+
+  dataInstance = dataInstance || {};
+  _.forEach(fields || [], function(field) {
     var fieldName = field.name;
     var fieldType = field.type;
     if (fieldType == undefined) return;
-    if (removeAutoProps && autoFieldNameMap[fieldName]) return;
+    if (!(fieldName in dataInstance)) return;
+
+    if (numberTypeLut[fieldType]) {
+      dataInstance[fieldName] = Convert.toNumber(dataInstance[fieldName]);
+    }
+  });
+}
+
+/**
+ * Create a pristine copy of the data.
+ * This will remove extraneous properties (that don't exist in the model)
+ * and do data conversions. It will also add missing fields.
+ * The returned value will match the field model exactly.
+ *
+ * NOTE: this does not set default values! If the value is not set in
+ * dataInstance then the property will be set to undefined.
+ *
+ * @public
+ * @static
+ * @param {Object} dataInstance - the existing field values.
+ * @param {Object[]} fields - the fields array from the model
+ * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
+ * properties removed.
+ */
+FieldModel.getPristineData = function(dataInstance, fields) {
+
+  var pristineCopy = {};
+  _.forEach(fields, function(field) {
+    var fieldName = field.name;
+    var fieldType = field.type;
+    if (fieldType == undefined) return;
 
     pristineCopy[fieldName] = dataInstance[fieldName];
   });
 
-  this.convertTypes(pristineCopy);
+  FieldModel.convertTypes(pristineCopy);
   return pristineCopy;
 }
 
@@ -551,13 +683,16 @@ FieldModel.prototype.makePristineModel = function(dataInstance, removeAutoProps)
  *
  * This mutates the dataInstance.
  * @public
+ * @static
  * @param {Object} dataInstance - the data instance. Each property corresponds
  * to a field in the fieldModels array. This object will not be mutated.
+ * @param {Object[]} fields - the fields array from the model
+ * @returns {Object} the new or mutated data
  */
-FieldModel.prototype.populateDataInstance = function(dataInstance) {
+FieldModel.populateDataInstance = function(dataInstance, fields) {
 
   dataInstance = dataInstance || {};
-  _.forEach(this._fieldModels || [], function(field) {
+  _.forEach(fields || [], function(field) {
     var fieldName = field.name;
     var fieldType = field.type;
     if (fieldType == undefined) return;
@@ -575,397 +710,117 @@ FieldModel.prototype.populateDataInstance = function(dataInstance) {
       dataInstance[fieldName] = field.default;
     }
   });
-  this.convertTypes(dataInstance);
+  FieldModel.convertTypes(dataInstance);
   // Must return in case original instance was null/undefined
   return dataInstance;
 }
+
 exports = module.exports = FieldModel;
-},{"../utils/cloner":18,"../utils/convert":19}],4:[function(require,module,exports){
+
+},{"../utils/cloner":18,"../utils/convert":19}],5:[function(require,module,exports){
+var Cloner = require('../utils/cloner');
 var FieldModel = require('./fieldModel');
 
-/**
- * @typedef {Object} mediaBrowserControlInfo
- * @property {string} dataFieldName
- * @property {string} titleFieldName
- * @property {('link' | 'media')} browserType
- */
-
+/** @typedef {PropertiesModelTemplate_Form} PropertiesModelTemplate_Form */
 
 /**
  * @class
- * @classdesc Use for working with models for editing component
- * data in a form
- * @param {Object} modelConfig - the base model config as defined
- * in the component config.
+ * @classdesc Normalizes the model for use in the property form
+ * editor. Creates a model template that can then be used to generate
+ * unique instances of the model for editing.
+ * @param {import('./componentTemplate').ComponentTemplate} componentTemplate
+ * @param {object} propertiesModel - the raw properties model from the component config
  */
-function FormDataModel(modelConfig) {
-
-  /** @private @type {FieldModel} */
-  this._itemFields;
+function PropertiesModelTemplate_Form(componentTemplate, propertiesModel) {
 
   /** @private @type {string} */
-  this._itemTemplate = '';
+  this._componentTemplateId = componentTemplate.getTemplateId();
 
-  /** @private @type {mediaBrowserControlInfo[]} */
-  this._browserFields = [];
+  /** @private @type {object} */
+  this._modelTemplate = {};
 
-  /** @private @type {Object} */
-  this._modelConfig = modelConfig;
 
-  // Preserve the JS because we will modify it.
-  /** @private @type {string} */
-  this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
-
-  this.init(modelConfig);
+  this.buildTemplate(componentTemplate, propertiesModel);
 }
 
 /**
- * Get the link browser field info (if exists) for the link field with
- * the given field name.
- * @public
- * @param {string} fieldName
- * @returns {(mediaBrowserControlInfo | undefined)}
+ * @private
+ * @param {import('./componentTemplate').ComponentTemplate} componentTemplate
+ * @param {object} propertiesModel - the raw properties model from the component config
  */
-FormDataModel.prototype.getBrowserFieldInfo = function(fieldName) {
-  return _.find(this._browserFields, function(item) { return item.dataFieldName === fieldName });
+PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplate, propertiesModel) {
+
+  var modelConfig = Cloner.deepClone(propertiesModel || {});
+
+  var model = _.extend({}, modelConfig);
+  this._modelTemplate = model;
+  model.title = modelConfig.title ? modelConfig.title : 'Configure ' + componentTemplate.getCaptions()[0];
+  model.unbound = true;
+  model.layout = 'form';
+  model.onecolumn = true;
 }
 
 /**
- * Get the link browser field infos
  * @public
- * @returns {mediaBrowserControlInfo[]}
  */
-FormDataModel.prototype.getBrowserFieldInfos = function() {
-  return (this._browserFields || []).slice();
+PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
+  var model = Cloner.deepClone(this._modelTemplate);
+  model.id = PropertiesModelTemplate_Form.getNextInstanceId(this._componentTemplateId);
+
+  return model;
 }
 
 /**
- * @public
- * @returns {FieldModel}
- */
-FormDataModel.prototype.getItemFields = function() {
-  return this._itemFields;
-}
-
-/**
- * @public
+ * Get a unique ID for the model instance
+ * @private
  * @returns {string}
  */
-FormDataModel.prototype.getItemTemplate = function() {
-  return this._itemTemplate;
+PropertiesModelTemplate_Form.getNextInstanceId = function(componentType ) {
+  if (PropertiesModelTemplate_Form._id == undefined) PropertiesModelTemplate_Form._id = 0;
+  var id = PropertiesModelTemplate_Form._id++;
+  return 'PropertiesModel_Form' + componentType + '_' + id;
 }
 
 /**
- * Return the raw model configuration.
+ * Create a pristine copy of the data.
+ * This will remove extraneous properties (that don't exist in the model)
+ * and do data conversions. It will also add missing fields.
+ * The returned value will match the field model exactly.
+ *
+ * NOTE: this does not set default values! If the value is not set in
+ * dataInstance then the property will be set to undefined.
+ *
  * @public
- * @returns {Object}
+ * @param {Object} dataInstance - the existing field values.
+  * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
+ * properties removed.
  */
-FormDataModel.prototype.getModelConfig = function() {
-  return this._modelConfig;
+PropertiesModelTemplate_Form.prototype.getPristineData = function(dataInstance) {
+  return FieldModel.getPristineData(dataInstance, this._modelTemplate.fields);
 }
 
 /**
- * Return the raw model JavaScript.
+ * Iterates through the fields
+ * to look for fields with "type" property. If a field has the type property
+ * then the field will be added to the new data instance object. When adding
+ * a field, the value is set as either the value in the current data instance
+ * (if that property key exists) or as the field model default/undefined.
+ *
+ * This will also correctly convert values as needed.
+ *
+ * This mutates the dataInstance.
  * @public
- * @returns {Object}
+ * @param {Object} dataInstance - the data instance. Each property corresponds
+ * to a field in the field array. This object will be mutated.
+ * @returns {Object} the new or mutated data
  */
-FormDataModel.prototype.getModelJs = function() {
-  return this._rawOriginalJs;
+PropertiesModelTemplate_Form.prototype.populateDataInstance = function(dataInstance) {
+  return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
 }
 
-/**
- * Ensure the model is configured according to conventions
- * and setup for standard form operation.
- * @private
- */
-FormDataModel.prototype.init = function(modelConfig) {
-  var self = this;
+exports = module.exports = PropertiesModelTemplate_Form;
 
-  //--------------------------------------------------
-  // Build Link And Image Browsers
-  //--------------------------------------------------
-  var fields = modelConfig.fields || [];
-  modelConfig.fields = [];
-  _.forEach(fields, function(field) {
-
-    if (field.control === 'link_browser' || field.control === 'media_browser') {
-      var browserType = { link_browser: 'link',   media_browser: 'media' }[field.control];
-
-      /** @type {mediaBrowserControlInfo} */
-      var info = {
-        dataFieldName: field.name,
-        titleFieldName: field.name + '_jsh_browserDataTitle',
-        browserType: browserType
-      }
-
-      self._browserFields.push(info);
-
-      field.name = info.titleFieldName;
-      field.control = 'textbox';
-      field.type = 'varchar';
-      field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeBrowserTitleControl) m.onChangeBrowserTitleControl("' + info.dataFieldName + '");  })()';
-      modelConfig.fields.push(field);
-      modelConfig.fields.push({
-        name: field.name + '_browserButton',
-        caption: '',
-        control: 'button',
-        value: 'Browse',
-        nl: false,
-        onclick: '(function() { var m = jsh.App[modelid]; if (m && m.openEditorBrowser) m.openEditorBrowser("' + info.dataFieldName + '"); })()'
-      });
-      modelConfig.fields.push({
-        name: field.name + '_resetButton',
-        controlclass: 'secondary',
-        controlstyle: 'margin-left:10px;',
-        caption: '',
-        control: 'button',
-        value: 'Reset',
-        nl: false,
-        onclick: '(function() { var m = jsh.App[modelid]; if (m && m.resetEditorBrowser) m.resetEditorBrowser("' + info.dataFieldName + '"); })()'
-      });
-      modelConfig.fields.push({
-        name: info.dataFieldName,
-        caption: '',
-        control: 'hidden',
-        type: 'varchar'
-      });
-
-    } else if (field.type != undefined) {
-      field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeData) m.onChangeData();  })()';
-      modelConfig.fields.push(field);
-    }
-  });
-
-
-  this._itemFields = new FieldModel(modelConfig.fields);
-  this._itemFields.addField({
-    caption: '', control:'html', value:'<div data-id="previewWrapper"></div>', 'block':true
-  });
-
-  //--------------------------------------------------
-  // Get templates
-  //--------------------------------------------------
-  var $templates = $('<div>' + modelConfig.ejs + '</div>');
-  var itemTemplateSelector = (modelConfig.templates || {}).itemPreview;
-  var itemTemplateElement = itemTemplateSelector ? $templates.find(itemTemplateSelector) : undefined;
-  if (itemTemplateElement.length !== 1) {
-    throw new Error('Item template must contain a single root element. Found ' + itemTemplateElement.length + ' elements');
-  }
-  this._itemTemplate = itemTemplateElement ? itemTemplateElement.html() : undefined;
-
-  //--------------------------------------------------
-  // Set up the model instance fields
-  //--------------------------------------------------
-  modelConfig.fields = this._itemFields.getFieldModels();
-  modelConfig.layout = 'form';
-  modelConfig.unbound = true;
-  modelConfig.onecolumn = true;
-  modelConfig.ejs = '';
-  modelConfig.js = this._rawOriginalJs;
-
-  this._itemFields = new FieldModel(modelConfig.fields)
-}
-
-exports = module.exports = FormDataModel;
-
-},{"./fieldModel":3}],5:[function(require,module,exports){
-var FieldModel = require('./fieldModel');
-
-/**
- * @class
- * @classdesc Use for working with models for editing component
- * properties in a form
- * @param {Object} modelConfig - the base model config as defined
- * in the component config.
- */
-function FormPropertiesModel(modelConfig) {
-
-  /** @private @type {FieldModel} */
-  this._itemFields;
-
-  /** @private @type {Object} */
-  this._modelConfig = modelConfig;
-
-  this.init(modelConfig);
-}
-
-/**
- * @public
- * @returns {FieldModel}
- */
-FormPropertiesModel.prototype.getItemFields = function() {
-  return this._itemFields;
-}
-
-/**
- * Return the raw model configuration.
- * @public
- * @returns {Object}
- */
-FormPropertiesModel.prototype.getModelConfig = function() {
-  return this._modelConfig;
-}
-
-/**
- * Ensure the model is configured according to conventions
- * and setup for standard form operation.
- * @private
- */
-FormPropertiesModel.prototype.init = function(modelConfig) {
-
-  modelConfig.unbound = true;
-  modelConfig.layout = 'form';
-  modelConfig.onecolumn = true;
-
-
-  this._itemFields = new FieldModel(modelConfig.fields)
-}
-
-
-exports = module.exports = FormPropertiesModel;
-
-},{"./fieldModel":3}],6:[function(require,module,exports){
-var FieldModel = require('./fieldModel');
-
-/**
- * @class
- * @classdesc Use for working with models for editing component
- * data in a grid preview
- * @param {Object} modelConfig - the base model config as defined
- * in the component config.
- */
-function GridPreviewDataModel(modelConfig) {
-
-  /** @private @type {FieldModel} */
-  this._gridFields = undefined;
-
-  /** @private @type {Object} */
-  this._modelConfig = undefined;
-
-  /** @private @type {string} */
-  this._rowTemplate = '';
-
-  /** @private @type {string} */
-  this._rawOriginalJs = '';
-
-  this.init(modelConfig);
-}
-
-/**
- * @public
- * @returns {FieldModel}
- */
-GridPreviewDataModel.prototype.getGridFields = function() {
-  return this._gridFields;
-}
-
-/**
- * Return the raw model configuration.
- * @public
- * @returns {Object}
- */
-GridPreviewDataModel.prototype.getModelConfig = function() {
-  return this._modelConfig;
-}
-
-/**
- * Return the raw model JavaScript.
- * @public
- * @returns {Object}
- */
-GridPreviewDataModel.prototype.getModelJs = function() {
-  return this._rawOriginalJs;
-}
-
-/**
- * @public
- * @returns {string}
- */
-GridPreviewDataModel.prototype.getRowTemplate = function() {
-  return this._rowTemplate;
-}
-
-/**
- * Ensure the model is configured according to conventions
- * and setup for standard grid operation.
- * @private
- */
-GridPreviewDataModel.prototype.init = function(modelConfig) {
-  var self = this;
-
-  //--------------------------------------------------
-  // Set up the model instance
-  //--------------------------------------------------
-  var gridModelConfig = {
-    id: modelConfig.id,
-    title: modelConfig.title,
-    fields: [],
-    layout: 'grid',
-    unbound: true,
-    newrowposition: 'last',
-    commitlevel: 'page',
-    hide_system_buttons: ['export', 'search', 'save'],
-    sort: [],
-    buttons: [
-      {link: 'js:_this.close()', icon: 'ok', actions: 'IU', text: 'Done' }
-    ],
-    getapi:   'return _this.getDataApi(xmodel, apitype)',
-    onrowbind:   '_this.onRowBind(xmodel,jobj,datarow);',
-    oncommit:  '_this.onCommit(xmodel, rowid, callback);',
-    ejs:  '',
-    js:  function() {
-      var gridApi = new jsh.XAPI.Grid.Static(modelid);
-      var formApi = new jsh.XAPI.Form.Static(modelid);
-      return  {
-        getDataApi: function(xmodel, apiType) {
-          if (apiType === 'grid') return gridApi;
-          else if (apiType === 'form') return formApi;
-        }
-      }
-    }
-  }
-  this._modelConfig = gridModelConfig;
-  this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
-
-  //--------------------------------------------------
-  // Set up the grid fields to match component conventions.
-  //--------------------------------------------------
-  this._gridFields = new FieldModel(modelConfig.fields);
-  _.forEach(modelConfig.fields, function(field) {
-    if (field.control === 'link_browser'|| field.control === 'media_browser') {
-      field.type = 'varchar';
-      field.control = 'hidden'
-    }
-
-    if (field.type == undefined)  return;
-    self._gridFields.makeFieldHidden(field.name);
-  });
-
-  this._gridFields.addField({
-    name: 'cust_field', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;',
-    value: '<div tabindex="0" data-component-template="gridRow"></div>',
-    ongetvalue: 'return;'
-  });
-  this._gridFields.ensureIdField();
-  this._gridFields.ensureSequenceField();
-  gridModelConfig.fields = this._gridFields.getFieldModels();
-  gridModelConfig.sort = [this._gridFields.getSequenceFieldName()];
-
-  //--------------------------------------------------
-  // Get templates
-  //--------------------------------------------------
-  var $templates = $('<div>' + modelConfig.ejs + '</div>');
-  var rowTemplateSelector = (modelConfig.templates || {}).gridRowPreview;
-  var rowTemplateElement = rowTemplateSelector ? $templates.find(rowTemplateSelector) : undefined;
-  if (rowTemplateElement.length !== 1) {
-    throw new Error('Row template must contain a single root element. Found ' + rowTemplateElement.length + ' elements');
-  }
-  this._rowTemplate = rowTemplateElement ? rowTemplateElement.html() : undefined;
-}
-
-exports = module.exports = GridPreviewDataModel;
-
-},{"./fieldModel":3}],7:[function(require,module,exports){
+},{"../utils/cloner":18,"./fieldModel":4}],6:[function(require,module,exports){
 var DialogResizer = require('./dialogResizer');
 
 /**
@@ -974,6 +829,8 @@ var DialogResizer = require('./dialogResizer');
  * when the background is clicked
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
+ * @property {(number | undefined)} minHeight - set the min height (pixels) of the form if defined
+ * @property {(number | undefined)} minWidth - set the min width (pixels) of the form if defined
  * @property {(number | undefined)} width - set the width (pixels) of the form if defined
  * @property {(number | undefined)} height - set the height (pixels) of the form if defined
  * @property {(string | undefined)} cssClass - space delimited list of classes to add to the dialog element
@@ -1109,6 +966,16 @@ Dialog.prototype.getNextId = function() {
 }
 
 /**
+ * Get the scroll top position for the page.
+ * @private
+ * @param {JQuery} $wrapper
+ * @returns {number}
+ */
+Dialog.prototype.getScrollTop = function($wrapper) {
+  return $wrapper.scrollParent().scrollTop();
+}
+
+/**
  * @private
  */
 Dialog.prototype.load = function(callback) {
@@ -1131,6 +998,8 @@ Dialog.prototype.makeDialog = function(id, config) {
     .attr('id', this._id)
     .css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null)
     .css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null)
+    .css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null)
+    .css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null)
     .css('height',  _.isNumber(config.height) ? config.height + 'px' : null)
     .css('width',  _.isNumber(config.width) ? config.width + 'px' : null)
     .addClass(config.cssClass || '');
@@ -1156,7 +1025,8 @@ Dialog.prototype.open = function() {
   this.load(function(xModel) {
 
     self.registerLovs(xModel);
-
+    var $wrapper = $(formSelector);
+    var lastScrollTop = 0
 
     if (_.isFunction(self.onBeforeOpen)) self.onBeforeOpen(xModel);
 
@@ -1165,18 +1035,22 @@ Dialog.prototype.open = function() {
 
     self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
       function(acceptFunc, cancelFunc) {
-        var $wrapper = $(formSelector);
+        lastScrollTop = self.getScrollTop($wrapper);
         dialogResizer = new DialogResizer($wrapper[0], self._jsh);
         if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
       },
       function(success) {
+        lastScrollTop = self.getScrollTop($wrapper);
+
         if (_.isFunction(self.onAccept)) self.onAccept(success);
       },
       function(options) {
+        lastScrollTop = self.getScrollTop($wrapper);
         if (_.isFunction(self.onCancel)) return self.onCancel(options);
         return false;
       },
       function() {
+        self.setScrollTop(lastScrollTop, $wrapper);
         dialogResizer.closeDialog();
         if(_.isFunction(self.onClose)) self.onClose();
         self.destroy();
@@ -1210,9 +1084,19 @@ Dialog.prototype.registerLovs = function(xModel) {
   });
 }
 
+/**
+ * Set the scroll top position for the page.
+ * @private
+ * @param {JQuery} $wrapper
+ * @returns {number} position
+ */
+Dialog.prototype.setScrollTop = function(position, $wrapper) {
+  $wrapper.scrollParent().scrollTop(position);
+}
+
 exports = module.exports = Dialog;
 
-},{"./dialogResizer":8}],8:[function(require,module,exports){
+},{"./dialogResizer":7}],7:[function(require,module,exports){
 /**
  * @class
  * @classdesc Use to resize dialogs when content changes. Otherwise
@@ -1350,7 +1234,7 @@ DialogResizer.prototype.startResizeObserver = function(wrapper) {
 }
 
 exports = module.exports = DialogResizer;
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var Dialog = require('./dialog');
 
 /**
@@ -1469,7 +1353,7 @@ FormDialog.prototype.augmentModel = function(model, config) {
       control: 'button',
       value: config.cancelButtonLabel,
       controlclass: 'secondary',
-      controlstyle: 'margin-right: 10px'
+      controlstyle: 'margin-right:10px; margin-top:10px;'
     });
   }
   if (config.acceptButtonLabel) {
@@ -1555,7 +1439,7 @@ FormDialog.prototype.open = function(data) {
 
 
 exports = module.exports = FormDialog;
-},{"./dialog":7}],10:[function(require,module,exports){
+},{"./dialog":6}],9:[function(require,module,exports){
 var Dialog = require('./dialog');
 
 /**
@@ -1564,6 +1448,8 @@ var Dialog = require('./dialog');
  * when the background is clicked
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
+ * @property {(number | undefined)} minWidth - set min the width (pixels) of the form if defined
+ * @property {(number | undefined)} minHeight - set min the height (pixels) of the form if defined
  * @property {(number | undefined)} width - set the width (pixels) of the form if defined
  * @property {(number | undefined)} height - set the height (pixels) of the form if defined
  * @property {(string | undefined)} cssClass - space delimited list of classes to add to the dialog element
@@ -1636,6 +1522,8 @@ GridDialog.prototype.open = function() {
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,
+    minHeight: config.minHeight,
+    minWidth: config.minWidth,
     width: config.width
   });
 
@@ -1677,459 +1565,28 @@ GridDialog.prototype.open = function() {
 
 exports = module.exports = GridDialog;
 
-},{"./dialog":7}],11:[function(require,module,exports){
-var FormDialog = require('../dialogs/formDialog');
-var ComponentConfig = require('../componentModel/componentConfig');
-var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
-
-/**
- * @typedef {Object} RenderConfig
- * @property {Object} data - the component data
- * @property {Object} properties - the component properties
- * @property {string} template - the template being rendered
- */
-
-/**
- * @callback DataFormEditor~beforeRenderDataItemPreview
- * @param {RenderConfig} renderConfig
- */
-
-/**
- * @callback DataGridItemEditor~renderDataItemPreview
- * @param {HTMLElement} element
- * @param {Object} data - the component data
- * @param {Object} properties - the component properties
- */
-
-
-
-/**
- * @class
- * @param {ComponentConfig} componentConfig
- * @param {Object} cms
- * @param {Object} jsh
- */
-function DataFormEditor(componentConfig, isReadOnly, cms, jsh) {
-
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
-
-  /** @private @type {boolean} */
-  this._isReadOnly = isReadOnly;
-
-  /** @private @type {Object} */
-  this._cms = cms;
-
-  /** @private @type {Object} */
-  this._jsh = jsh;
-
-  /** @private @type {HTMLPropertyEditorController[]} */
-  this._htmlEditors = [];
-
-  /** @private @type {DataFormEditor~beforeRenderDataItemPreview} */
-  this._onBeforeRenderDataItemPreview = undefined;
-
-  /** @private @type {DataGridItemEditor~renderDataItemPreview} */
-  this._onRenderDataItemPreview = undefined;
-}
-
-/**
- * @private
- * @param {JQuery} $dialog - the dialog element.
- * @param {JQuery} $wrapper - the preview wrapper element.
- */
-DataFormEditor.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
-
-  var self = this;
-
-  _.forEach(this._htmlEditors, function(editor) { editor.destroy(); });
-
-  _.forEach($wrapper.find('[data-component-full-editor]'), function (editorEl) {
-    var $el = $(editorEl);
-    var propName = $el.attr('data-component-full-editor');
-    var editor = new HTMLPropertyEditorController('full', self._jsh, self._cms, $dialog, propName,  $el, $toolbar);
-    editor.initialize(function() {});
-    self._htmlEditors.push(editor);
-  });
-
-  _.forEach($wrapper.find('[data-component-title-editor]'), function (editorEl) {
-    var $el = $(editorEl);
-    var propName = $el.attr('data-component-title-editor');
-    var editor = new HTMLPropertyEditorController('title', self._jsh, self._cms, $dialog, propName, $el, $toolbar);
-    editor.initialize(function() {});
-    self._htmlEditors.push(editor);
-  });
-}
-
-/**
- * Create a new instance of the jsHarmonyCMSEditorPicker
- * @private
- * @returns {object}
- */
-DataFormEditor.prototype.createPicker = function() {
-  return this._cms.createJsHarmonyCMSEditorPicker(undefined);
-}
-
-/**
- * @private
- * @param {JQuery} $dialog
- * @param {import('../componentModel/formDataModel').mediaBrowserControlInfo} info
- * @param {boolean}
- */
-DataFormEditor.prototype.enableBrowserControl = function($dialog, info, enable) {
-  $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
-}
-
-/**
- * Open the editor
- * @public
- * @param {Object} itemData - the data used to render the component.
- * @param {Object} properties - the component's configured properties (used to render the component)
- * @param {Function} onAcceptCb - Called if the data is updated. Arg0 is updated data.
- */
-DataFormEditor.prototype.open = function(itemData, properties, onAcceptCb) {
-
-  var self = this;
-  var formModel = this._componentConfig.getFormDataModelInstance();
-  var modelConfig = formModel.getModelConfig();
-  var template = formModel.getItemTemplate();
-
-  // Allow title to be overridden
-  modelConfig.title = modelConfig.title ? modelConfig.title : 'Edit';
-
-  if (this._isReadOnly) {
-    modelConfig.actions = 'B';
-  }
-
-  var itemData = formModel.getItemFields().populateDataInstance(itemData || {});
-
-
-  var dialog = new FormDialog(this._jsh, modelConfig, {
-    acceptButtonLabel: 'Save',
-    cancelButtonLabel:  'Cancel',
-    closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentConfig.getComponentConfigId(),
-    maxHeight: 800
-  });
-
-
-  var $toolbar;
-
-  dialog.onBeforeOpen = function(xModel, dialogSelector) {
-
-    var editor = self._jsh.App[xModel.id];
-    var $dialog = $(dialogSelector);
-    self._formSelector = dialogSelector; // remove this
-
-    // Note that the toolbar HAS to be in the popup DOM hierarchy for focus/blur
-    // events to work correctly.
-    $toolbar = $('<div class="jsharmony_cms_content_editor_toolbar"></div>')
-      .css('position', 'fixed')
-      .css('top', '37px')
-      .css('left', '0')
-      .css('width', '100%')
-      .css('z-index', '999999');
-    $(dialogSelector).append($toolbar);
-
-    _.forEach(formModel.getBrowserFieldInfos(), function(info) {
-      self.enableBrowserControl($dialog, info, (itemData[info.titleFieldName] || '') === (itemData[info.dataFieldName] || ''));
-    });
-
-    // This function NEEDS to be debounced.
-    // It SHOULD be anyway so it doesn't re-render the preview on every
-    // keystroke, but it HAS to be just in case two fields change
-    // at the same time (in which case the first change causes a re-render
-    // and the second change breaks things since parts of the re-render are async)
-    editor.onChangeData = _.debounce(function() {
-      var updatedData = {};
-      _.forEach(modelConfig.fields, function(field) {
-        if (field.type != undefined) {
-          updatedData[field.name] = xModel.get(field.name);
-        }
-      });
-
-      var $wrapper =  $dialog.find('[data-id="previewWrapper"]').first();
-      self.renderPreview($wrapper, template, updatedData, properties);
-      // Don't attach any events until after the onRenderGridItemPreview hook is called.
-      // Otherwise, the events might be attached to elements that get replaced or removed.
-      self.attachEditors($dialog, $wrapper, $toolbar);
-    }, 300);
-
-    editor.openEditorBrowser = function(browserControlName) {
-
-      var info = formModel.getBrowserFieldInfo(browserControlName);
-      if (info == undefined) return;
-
-      var update = function(url, title) {
-        // IMPORTANT! Set the title FIRST.
-        // The change handler is attached to the title
-        // so that will run and update the link control,
-        // and then we override the link control.
-        xModel.set(info.titleFieldName, title);
-        xModel.set(browserControlName, url);
-        self.enableBrowserControl($dialog, info, false);
-        editor.onChangeData();
-      };
-
-      if (info.browserType === 'link') {
-
-        if (info == undefined) return;
-        self.openLinkBrowser(function(url, data) {
-          var title = data.page_path || '';
-          update(url, title);
-        });
-      } else if (info.browserType === 'media') {
-          self.openMediaBrowser(function(url, data) {
-            var title = data.media_path;
-            update(url, title);
-          });
-      } else {
-        console.warn(new Error('Unknown browser type ' + info.browserType));
-      }
-    }
-
-    editor.onChangeBrowserTitleControl = function(browserControlName) {
-      // When the user manually changes the link title,
-      // the link value must be set to the title value.
-      var info = formModel.getBrowserFieldInfo(browserControlName);
-      if (info == undefined) return;
-      xModel.set(browserControlName, xModel.get(info.titleFieldName));
-      editor.onChangeData();
-    }
-
-    editor.resetEditorBrowser = function(linkControlName) {
-      var info = formModel.getBrowserFieldInfo(linkControlName);
-      if (info == undefined) return;
-      self.enableBrowserControl($dialog, info, true);
-      xModel.set(linkControlName, '');
-      xModel.set(info.titleFieldName, '');
-      editor.onChangeData();
-    }
-
-    self._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
-    self._onRenderDataItemPreview = editor.onRenderDataItemPreview;
-  }
-
-  dialog.onOpened = function($dialog, xModel) {
-    var editor = self._jsh.App[xModel.id];
-    // Manually call change to do initial render
-    setTimeout(function() {
-      editor.onChangeData();
-    });
-  }
-
-  dialog.onAccept = function($dialog, xModel) {
-    if(!xModel.controller.Commit(itemData, 'U')) return false;
-    itemData = formModel.getItemFields().makePristineModel(itemData);
-    if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
-    return true;
-  }
-
-  dialog.onCancel = function(options, $dialog, xModel) {
-    if (!options.force && xModel.controller.HasUpdates()) {
-      self._jsh.XExt.Confirm('Close without saving changes?', function() {
-        xModel.controller.form.ResetDataset();
-        options.forceCancel();
-      });
-      return false;
-    }
-  }
-
-  dialog.onClose = function($dialog, xModel) {
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
-    _.forEach(self._htmlEditors, function(editor) { editor.destroy(); });
-  }
-
-  dialog.open(itemData);
-}
-
-/**
- * Open a link browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataFormEditor.prototype.openLinkBrowser = function(cb) {
-  this.createPicker().openLink(cb, '');
-}
-
-/**
- * Open a medial browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataFormEditor.prototype.openMediaBrowser = function(cb) {
-  this.createPicker().openMedia(cb, '');
-}
-
-/**
- * @private
- * @param {JQuery} $wrapper
- * @param {string} template
- * @param {Object} data
- * @param {Object} properties
- */
-DataFormEditor.prototype.renderPreview = function($wrapper, template, data, properties) {
-
-  var self = this;
-
-  /** @type {RenderConfig} */
-  var renderOptions = {
-    template: template,
-    data: data,
-    properties: properties
-  };
-
-  if (_.isFunction(this._onBeforeRenderDataItemPreview)) this._onBeforeRenderDataItemPreview(renderOptions);
-
-  var templateData = { data: renderOptions.data, properties: renderOptions.properties };
-  var rendered = '';
-  try {
-    rendered = this._jsh.ejs.render(renderOptions.template || '', templateData);
-  } catch (error) {
-    console.error(error);
-  }
-
-  $wrapper.empty().append(rendered);
-
-  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderOptions.data, renderOptions.properties);
-
-  setTimeout(function() {
-    _.forEach($($wrapper.children()[0]).find('[data-component]'), function(el) {
-      self._cms.componentController.renderComponent(el);
-    });
-  }, 50);
-}
-
-exports = module.exports = DataFormEditor;
-},{"../componentModel/componentConfig":2,"../dialogs/formDialog":9,"./htmlPropertyEditorController":15}],12:[function(require,module,exports){
-var ComponentConfig = require('../componentModel/componentConfig');
-var GridDialog = require('../dialogs/gridDialog');
-var DataGridPreviewEditorController = require('./dataGridPreviewEditorController');
-
-
-
-/**
- * @class
- * @param {ComponentConfig} componentConfig
- * @param {Object} cms
- * @param {Object} jsh
- */
-function DataGridPreviewEditor(componentConfig, cms, jsh) {
-
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
-
-  /** @private @type {Object} */
-  this._cms = cms;
-
-  /** @private @type {Object} */
-  this._jsh = jsh;
-}
-
-/**
- * Open the editor
- * @public
- * @param {Object} data - the data used to render the component.
- * @param {Object} properties - the component's configured properties (used to render the component)
- * @param {Function} dataUpdatedCb - Called when data is updated. Arg0 is updated data.
- */
-DataGridPreviewEditor.prototype.open = function(data, properties, dataUpdatedCb) {
-
-  var self = this;
-  var gridPreviewDataModel = this._componentConfig.getGridPreviewDataModelInstance();
-  var modelConfig = gridPreviewDataModel.getModelConfig();
-
-
-  var componentInstanceId = modelConfig.id + '_componentInstance';
-  this._jsh.XExt.JSEval(gridPreviewDataModel.getModelJs() || '', {}, {
-    modelid: componentInstanceId
-  });
-  var componentInstance = this._jsh.App[componentInstanceId] || {};
-
-  // Allow title to be overridden
-  modelConfig.title = modelConfig.title ? modelConfig.title : 'Edit';
-
-  var dialog = new GridDialog(this._jsh, modelConfig, {
-    closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentConfig.getComponentConfigId(),
-    maxHeight: 800,
-    maxWidth: 1400
-  });
-
-  var dataController;
-
-  dialog.onBeforeOpen = function(xModel, dialogSelector) {
-
-    dataController = new DataGridPreviewEditorController(xModel, (data || {}).items, properties, $(dialogSelector),
-      self._cms, self._jsh, gridPreviewDataModel, self._componentConfig);
-
-    dataController.onDataUpdated = function(updatedData) {
-      if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
-    }
-
-    dataController.onBeforeRenderGridRow = function(renderOptions) {
-      if (_.isFunction(componentInstance.onBeforeRenderGridRow)) componentInstance.onBeforeRenderGridRow(renderOptions);
-    }
-
-    dataController.onRenderGridRow = function(element, data, properties) {
-      if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties);
-    }
-
-    var modelInterface = self._jsh.App[xModel.id];
-
-    modelInterface.onRowBind = function(xModel, jobj, dataRow) {
-      if (!dataController) return;
-      dataController.addRow(jobj, dataRow);
-    }
-
-    modelInterface.onCommit = function(xModel, rowId, callback) {
-      callback();
-    }
-
-    modelInterface.close = function() {
-      self._jsh.XExt.CancelDialog();
-    }
-  }
-
-  dialog.onOpened = function($dialog, xModel) {
-    dataController.initialize();
-  }
-
-  dialog.onClose = function($dialog, xModel) {
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
-    delete self._jsh.App[componentInstanceId];
-  }
-
-  dialog.open();
-
-}
-
-exports = module.exports = DataGridPreviewEditor;
-},{"../componentModel/componentConfig":2,"../dialogs/gridDialog":10,"./dataGridPreviewEditorController":13}],13:[function(require,module,exports){
+},{"./dialog":6}],10:[function(require,module,exports){
 
 var Convert  = require('../utils/convert');
 var GridDataStore = require('./gridDataStore');
-var DataFormEditor = require('./dataFormEditor')
-var ComponentConfig = require('../componentModel/componentConfig');
-var GridPreviewDataModel = require('../componentModel/gridPreviewDataModel');
+var DataEditor_Form = require('./dataEditor_form')
+var ComponentTemplate = require('../componentModel/componentTemplate');
+var TemplateRenderer = require('../templateRenderer');
+
+
+/** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
+/** @typedef {import('../templateRenderer').GridPreviewRenderContext} GridPreviewRenderContext */
+
+/** @typedef {import('../componentModel/dataModelTemplate_gridPreview').DataModelTemplate_GridPreview} DataModelTemplate_GridPreview */
 
 
 /**
- * @typedef {Object} RenderConfig
- * @property {Object} data - the component data
- * @property {Object} properties - the component properties
- * @property {string} template - the template being rendered
- */
-
-/**
- * @callback DataGridPreviewEditorController~beforeRenderGridRow
+ * @callback DataEditor_GridPreviewController~beforeRenderGridRow
  * @param {DataGridItemEditor~RenderConfig} renderConfig
  */
 
 /**
- * @callback DataGridPreviewEditorController~renderGridRow
+ * @callback DataEditor_GridPreviewController~renderGridRow
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
@@ -2145,10 +1602,10 @@ var GridPreviewDataModel = require('../componentModel/gridPreviewDataModel');
  * @param {(JQuery | HTMLElement)} dialogWrapper
  * @param {Object} cms
  * @param {Object} jsh
- * @param {GridPreviewDataModel} gridPreviewDataModel
- * @param {ComponentConfig} componentConfig
+ * @param {DataModelTemplate_GridPreview} dataModelTemplate_GridPreview
+ * @param {ComponentTemplate} componentTemplate
  */
-function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper, cms, jsh, gridPreviewDataModel, componentConfig) {
+function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, dataModelTemplate_GridPreview, componentTemplate) {
 
   var self = this;
 
@@ -2167,22 +1624,25 @@ function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper
   /** @private @type {JQuery} */
   this.$dialogWrapper = $(dialogWrapper);
 
-  /** @private @type {import('../componentModel/fieldModel').FieldModel} */
-  this._gridFields = gridPreviewDataModel.getGridFields();
+  /** @private @type {string} */
+  this._idFieldName = dataModelTemplate_GridPreview.getIdFieldName();
 
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
-  this._rowTemplate = gridPreviewDataModel.getRowTemplate();
+  this._rowTemplate = dataModelTemplate_GridPreview.getRowTemplate();
 
-  /** @public @type {DataGridPreviewEditorController~tileUpdateCallback} */
+  /** @private @type {DataModelTemplate_GridPreview} */
+  this._modelTemplate = dataModelTemplate_GridPreview;
+
+  /** @public @type {DataEditor_GridPreviewController~tileUpdateCallback} */
   this.onDataUpdated = undefined;
 
-  /** @public @type {DataGridPreviewEditorController~beforeRenderGridRow} */
+  /** @public @type {DataEditor_GridPreviewController~beforeRenderGridRow} */
   this.onBeforeRenderGridRow = undefined;
 
-  /** @public @type {DataGridPreviewEditorController~renderGridRow} */
+  /** @public @type {DataEditor_GridPreviewController~renderGridRow} */
   this.onRenderGridRow = undefined;
 
 
@@ -2197,10 +1657,10 @@ function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper
   // changes are propagated to the API data which is
   // attached to the grid.
   /** @type {GridDataStore} */
-  this._dataStore = new GridDataStore(this._gridFields.getIdFieldName());
+  this._dataStore = new GridDataStore(this._idFieldName);
   this._apiData = [];
   _.each(data, function(item, index) {
-    item[self._gridFields.getIdFieldName()] = self.makeItemId();
+    item[self._idFieldName] = self.makeItemId();
     item.sequence = index;
     // Don't expose references in data store.
     // The grid is not allowed to touch them.
@@ -2215,20 +1675,26 @@ function DataGridPreviewEditorController(xModel, data, properties, dialogWrapper
  * @param {object} $row - the JQuery row element proper
  * @param {Object} rowData - the data for the row (augmented by model)
  */
-DataGridPreviewEditorController.prototype.addRow = function($row, rowData) {
+DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
   var rowId = this.getParentRowId($row);
   var $rowComponent = this.getRowElementFromRowId(rowId);
+  var self = this;
+
   $row.find('td.xgrid_action_cell.delete').remove();
   if (rowData._is_insert) {
     var id = this.makeItemId();
     this._insertId = id;
     rowData._insertId = id;
     $rowComponent.attr('data-item-id', id);
+    setTimeout(function() {
+      self.openItemEditor(id);
+      $rowComponent[0].scrollIntoView();
+    });
+
     this.forceCommit();
   } else {
-    $rowComponent.attr('data-item-id', rowData[this._gridFields.getIdFieldName()]);
-    var self = this;
-    self.renderRow(rowData);
+    $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
+    this.renderRow(rowData);
   }
 }
 
@@ -2238,7 +1704,7 @@ DataGridPreviewEditorController.prototype.addRow = function($row, rowData) {
  * @param {number} itemId - the item ID of the item being moved
  * @param {boolean} moveDown - set to true to mode the item toward the end of the list.
  */
-DataGridPreviewEditorController.prototype.changeItemSequence = function(itemId, moveDown) {
+DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId, moveDown) {
 
   var item = this._dataStore.getDataItem(itemId);
   if (!item) return;
@@ -2286,10 +1752,10 @@ DataGridPreviewEditorController.prototype.changeItemSequence = function(itemId, 
   if (doUpdate) {
     var adjData = items[updateIndex]
     adjData.sequence = item.sequence;
-    this.updateModelDataFromDataStore(this.getRowIdFromItemId(adjData[this._gridFields.getIdFieldName()]));
+    this.updateModelDataFromDataStore(this.getRowIdFromItemId(adjData[this._idFieldName]));
 
     item.sequence = newSequence;
-    this.updateModelDataFromDataStore(this.getRowIdFromItemId(item[this._gridFields.getIdFieldName()]));
+    this.updateModelDataFromDataStore(this.getRowIdFromItemId(item[this._idFieldName]));
 
     this._dataStore.sortBySequence();
     this._apiData.splice(0, this._apiData.length);
@@ -2309,7 +1775,7 @@ DataGridPreviewEditorController.prototype.changeItemSequence = function(itemId, 
  * Call anytime slide data is changed (and valid) in the view.
  * @private
  */
-DataGridPreviewEditorController.prototype.dataUpdated = function() {
+DataEditor_GridPreviewController.prototype.dataUpdated = function() {
   this.updateParentController();
 }
 
@@ -2318,7 +1784,7 @@ DataGridPreviewEditorController.prototype.dataUpdated = function() {
  * Should only be used for inserts and deletes.
  * @private
  */
-DataGridPreviewEditorController.prototype.forceCommit = function() {
+DataEditor_GridPreviewController.prototype.forceCommit = function() {
   var controller = this.xModel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Commit();
@@ -2328,10 +1794,24 @@ DataGridPreviewEditorController.prototype.forceCommit = function() {
  * Refresh the grid.
  * @private
  */
-DataGridPreviewEditorController.prototype.forceRefresh = function() {
+DataEditor_GridPreviewController.prototype.forceRefresh = function() {
   var controller = this.xModel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Refresh();
+}
+
+/**
+ * @private
+ * @param {string} itemId
+ * @returns {GridPreviewRenderContext}
+ */
+DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = function(itemId) {
+  var itemIndex = this._dataStore.getItemIndexById(itemId);
+  /** @type {GridPreviewRenderContext} */
+  var retVal = {
+    rowIndex: itemIndex
+  };
+  return retVal;
 }
 
 /**
@@ -2340,7 +1820,7 @@ DataGridPreviewEditorController.prototype.forceRefresh = function() {
  * @param {number} rowId - the row ID of the data to get.
  * @return {(Oobject | undefined)}
  */
-DataGridPreviewEditorController.prototype.getItemDataFromRowId = function(rowId) {
+DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId) {
   var slideId = $('.xrow.xrow_' + this.xModel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
     .attr('data-item-id');
   return this._dataStore.getDataItem(slideId) || {};
@@ -2352,7 +1832,7 @@ DataGridPreviewEditorController.prototype.getItemDataFromRowId = function(rowId)
  * @private
  * @returns {number}
  */
-DataGridPreviewEditorController.prototype.getNextSequenceNumber = function() {
+DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
   var maxItem =  _.max(this._dataStore.getDataArray(), function(item) {
     return typeof item.sequence == 'number' ? item.sequence : -1;
   });
@@ -2365,7 +1845,7 @@ DataGridPreviewEditorController.prototype.getNextSequenceNumber = function() {
  * @param {object} $element - a child JQuery element of the row
  * @return {number}
  */
-DataGridPreviewEditorController.prototype.getParentRowId = function($element) {
+DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
   return this.jsh.XExt.XModel.GetRowID(this.xModel.id, $element);
 }
 
@@ -2376,7 +1856,7 @@ DataGridPreviewEditorController.prototype.getParentRowId = function($element) {
  * @param {number} rowId
  * @returns {JQuery}
  */
-DataGridPreviewEditorController.prototype.getRowElementFromRowId = function(rowId) {
+DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(rowId) {
   var rowSelector = '.xrow[data-id="' + rowId + '"]';
   return this.$dialogWrapper.find(rowSelector + ' [data-component-template="gridRow"]');
 }
@@ -2387,7 +1867,7 @@ DataGridPreviewEditorController.prototype.getRowElementFromRowId = function(rowI
  * @param {number} itemId - the item ID to use to find the parent row ID.
  * @return {number}
  */
-DataGridPreviewEditorController.prototype.getRowIdFromItemId = function(itemId) {
+DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId) {
   var $el = $(this.$dialogWrapper).find('[data-component-template="gridRow"][data-item-id="' + itemId + '"]');
   return this.getParentRowId($el);
 }
@@ -2397,7 +1877,7 @@ DataGridPreviewEditorController.prototype.getRowIdFromItemId = function(itemId) 
  * the form is on screen.
  * @public
  */
-DataGridPreviewEditorController.prototype.initialize = function() {
+DataEditor_GridPreviewController.prototype.initialize = function() {
 
   var self = this;
   var modelInterface = this.jsh.App[this.xModel.id];
@@ -2413,20 +1893,20 @@ DataGridPreviewEditorController.prototype.initialize = function() {
   formApi.dataset = this._apiData;
 
   formApi.onInsert = function(action, actionResult, newRow) {
-    newRow[self._gridFields.getIdFieldName()] = self._insertId;
+    newRow[self._idFieldName] = self._insertId;
     newRow.sequence = self.getNextSequenceNumber();
     self._insertId = undefined;
     self._dataStore.addNewItem(_.extend({}, newRow));
     self._apiData.push(newRow);
     actionResult[self.xModel.id] = {}
-    actionResult[self.xModel.id][self._gridFields.getIdFieldName()] = newRow[self._gridFields.getIdFieldName()];
+    actionResult[self.xModel.id][self._idFieldName] = newRow[self._idFieldName];
     self.dataUpdated();
-    self.renderRow(self._dataStore.getDataItem(newRow[self._gridFields.getIdFieldName()]));
+    self.renderRow(self._dataStore.getDataItem(newRow[self._idFieldName]));
   }
 
   formApi.onDelete  = function(action, actionResult, keys) {
-    self._dataStore.deleteItem(keys[self._gridFields.getIdFieldName()]);
-    var index = self._apiData.findIndex(function(item) { return item[self._gridFields.getIdFieldName()] === keys[self._gridFields.getIdFieldName()]});
+    self._dataStore.deleteItem(keys[self._idFieldName]);
+    var index = self._apiData.findIndex(function(item) { return item[self._idFieldName] === keys[self._idFieldName]});
     if (index > -1) {
       self._apiData.splice(index, 1);
     }
@@ -2442,7 +1922,7 @@ DataGridPreviewEditorController.prototype.initialize = function() {
  * @private
  * @returns {boolean} - true if the model is readonly.
  */
-DataGridPreviewEditorController.prototype.isReadOnly = function() {
+DataEditor_GridPreviewController.prototype.isReadOnly = function() {
   return !!this.cms.readonly;
 }
 
@@ -2451,7 +1931,7 @@ DataGridPreviewEditorController.prototype.isReadOnly = function() {
  * @private
  * @returns {string}
  */
-DataGridPreviewEditorController.prototype.makeItemId = function() {
+DataEditor_GridPreviewController.prototype.makeItemId = function() {
   return '_' + Math.random().toString().replace('.', '');
 }
 
@@ -2459,17 +1939,20 @@ DataGridPreviewEditorController.prototype.makeItemId = function() {
  * @private
  * @param {string} itemId - the ID of the item to edit
  */
-DataGridPreviewEditorController.prototype.openItemEditor = function(itemId) {
+DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   var self = this;
-  var dataFormEditor =  new DataFormEditor(this._componentConfig, this.isReadOnly(), this.cms, this.jsh)
+  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh)
   var currentData = this._dataStore.getDataItem(itemId);
-  dataFormEditor.open(this._dataStore.getDataItem(itemId), this._properties || {},  function(updatedData) {
+  var rowId = this.getRowIdFromItemId(itemId);
+
+  dateEditor.open(this._dataStore.getDataItem(itemId), this._properties || {},  function(updatedData) {
       _.assign(currentData, updatedData)
-      var rowId = self.getRowIdFromItemId(itemId);
       self.updateModelDataFromDataStore(rowId);
       self.dataUpdated();
       self.renderRow(currentData);
+  }, function() {
+    self.getRowElementFromRowId(rowId)[0].scrollIntoView();
   });
 }
 
@@ -2478,7 +1961,7 @@ DataGridPreviewEditorController.prototype.openItemEditor = function(itemId) {
  * @private
  * @param {number} rowId - the ID of the row to delete.
  */
-DataGridPreviewEditorController.prototype.promptDelete = function(rowId) {
+DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   this.xModel.controller.DeleteRow(rowId);
   var self = this;
   $('body').one('click', '.xdialogbox.xconfirmbox input[type="button"]', function(e) {
@@ -2497,16 +1980,14 @@ DataGridPreviewEditorController.prototype.promptDelete = function(rowId) {
  * @private
  * @param {TileData} data
  */
-DataGridPreviewEditorController.prototype.renderRow = function(data) {
-
+DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var self = this;
-  var dataId = data[this._gridFields.getIdFieldName()];
+  var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
   var itemIndex = this._dataStore.getItemIndexById(dataId);
   var isFirst = itemIndex < 1;
   var isLast = itemIndex >= (this._dataStore.count() - 1);
-
   var template =
         '<div tabindex="0" data-component-template="gridRow">' +
           '<div class="toolbar">' +
@@ -2536,22 +2017,12 @@ DataGridPreviewEditorController.prototype.renderRow = function(data) {
 
   $row.empty().append(template);
 
-  var renderOptions = {
-    template: this._rowTemplate,
-    data: data,
-    properties: this._properties || {}
-  }
+  var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, data, this._properties || {}, this.cms);
+  renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
 
-  if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderOptions);
+  if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderConfig);
 
-  var templateData = { data: renderOptions.data, properties: renderOptions.properties };
-  var rendered = '';
-  try {
-    rendered = this.jsh.ejs.render(renderOptions.template || '', templateData);
-  } catch (error) {
-    console.error(error);
-  }
-
+  var rendered = TemplateRenderer.render(renderConfig, 'gridRowDataPreview', this.jsh);
 
   $row.find('[data-component-part="preview"]').empty().append(rendered);
 
@@ -2586,11 +2057,19 @@ DataGridPreviewEditorController.prototype.renderRow = function(data) {
     self.openItemEditor(dataId);
   });
 
-  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderOptions.data, renderOptions.properties);
+  $row.off('mousedown.cmsComponent').on('mousedown.cmsComponent', function(event) {
+    // We don't want the user to accidentally select text (which happens often)
+    // when double clicking. This will prevent that.
+    if (event.detail === 2) {
+      event.preventDefault();
+    }
+  });
+
+  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties);
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
-      self.cms.componentController.renderComponent(el);
+      self.cms.componentManager.renderComponent(el);
     });
   }, 100);
 }
@@ -2601,9 +2080,9 @@ DataGridPreviewEditorController.prototype.renderRow = function(data) {
  * @private
  * @param {number} rowId - the ID of the row for which the corresponding data will be updated (mutated).
  */
-DataGridPreviewEditorController.prototype.updateModelDataFromDataStore = function(rowId) {
+DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = function(rowId) {
 
-  var idField = this._gridFields.getIdFieldName();
+  var idField = this._idFieldName;
   var data = this.getItemDataFromRowId(rowId);
   var item = this.xModel.controller.form.DataSet.find(a => a[idField] === data[idField]);
   if (!item) {
@@ -2619,28 +2098,462 @@ DataGridPreviewEditorController.prototype.updateModelDataFromDataStore = functio
  * Call anytime item data is changed (and valid).
  * @private
  */
-DataGridPreviewEditorController.prototype.updateParentController = function() {
+DataEditor_GridPreviewController.prototype.updateParentController = function() {
   var self = this;
   this._dataStore.sortBySequence();
-  var data = this._dataStore.getDataArray()  || [];
 
-  // /** @type {Array.<TileData>} */
-  // var tiles = _.map(data, function(item) {
-  //   // return self.cleanAndCopySlideData(item);
-  //   return item;
-  // });
+  var items = this._dataStore.getDataArray()  || [];
+  items = _.map(items, function(item) { return self._modelTemplate.getPristineData(item); });
 
-  /** @type {TilesData} */
-  var data = {
-    items: data
-  };
+  var data = { items: items };
 
   if (_.isFunction(this.onDataUpdated)) this.onDataUpdated(data);
 }
 
-exports = module.exports = DataGridPreviewEditorController;
+exports = module.exports = DataEditor_GridPreviewController;
 
-},{"../componentModel/componentConfig":2,"../componentModel/gridPreviewDataModel":6,"../utils/convert":19,"./dataFormEditor":11,"./gridDataStore":14}],14:[function(require,module,exports){
+},{"../componentModel/componentTemplate":1,"../templateRenderer":16,"../utils/convert":19,"./dataEditor_form":11,"./gridDataStore":13}],11:[function(require,module,exports){
+var FormDialog = require('../dialogs/formDialog');
+var ComponentTemplate = require('../componentModel/componentTemplate');
+var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
+var TemplateRenderer = require('../templateRenderer');
+
+/** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
+
+/** @typedef {import('../componentModel/componentTemplate').MediaBrowserControlInfo} MediaBrowserControlInfo */
+
+/**
+ * @callback DataEditor_Form~beforeRenderDataItemPreview
+ * @param {RenderConfig} renderConfig
+ */
+
+/**
+ * @callback DataEditor_Form~renderDataItemPreview
+ * @param {HTMLElement} element
+ * @param {Object} data - the component data
+ * @param {Object} properties - the component properties
+ */
+
+
+
+/**
+ * @class
+ * @param {ComponentTemplate} componentTemplate
+ * @param {(import('../templateRenderer').GridPreviewRenderContext | undefined)} gridContext
+ * @param {Object} cms
+ * @param {Object} jsh
+ */
+function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh) {
+
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
+
+  /** @private @type {boolean} */
+  this._isReadOnly = isReadOnly;
+
+  /** @private @type {Object} */
+  this._cms = cms;
+
+  /** @private */
+  this._gridContext = gridContext;
+
+  /** @private @type {Object} */
+  this._jsh = jsh;
+
+  /** @private @type {HTMLPropertyEditorController[]} */
+  this._htmlEditors = [];
+
+  /** @private @type {DataEditor_Form~beforeRenderDataItemPreview} */
+  this._onBeforeRenderDataItemPreview = undefined;
+
+  /** @private @type {DataEditor_Form~renderDataItemPreview} */
+  this._onRenderDataItemPreview = undefined;
+}
+
+/**
+ * @private
+ * @param {JQuery} $dialog - the dialog element.
+ * @param {JQuery} $wrapper - the preview wrapper element.
+ */
+DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
+
+  var self = this;
+
+  _.forEach(this._htmlEditors, function(editor) { editor.destroy(); });
+
+  _.forEach($wrapper.find('[data-component-full-editor]'), function (editorEl) {
+    var $el = $(editorEl);
+    var propName = $el.attr('data-component-full-editor');
+    var editor = new HTMLPropertyEditorController('full', self._jsh, self._cms, $dialog, propName,  $el, $toolbar);
+    editor.initialize(function() {});
+    self._htmlEditors.push(editor);
+  });
+
+  _.forEach($wrapper.find('[data-component-title-editor]'), function (editorEl) {
+    var $el = $(editorEl);
+    var propName = $el.attr('data-component-title-editor');
+    var editor = new HTMLPropertyEditorController('title', self._jsh, self._cms, $dialog, propName, $el, $toolbar);
+    editor.initialize(function() {});
+    self._htmlEditors.push(editor);
+  });
+}
+
+/**
+ * Create a new instance of the jsHarmonyCMSEditorPicker
+ * @private
+ * @returns {object}
+ */
+DataEditor_Form.prototype.createPicker = function() {
+  return this._cms.createJsHarmonyCMSEditorPicker(undefined);
+}
+
+/**
+ * @private
+ * @param {JQuery} $dialog
+ * @param {MediaBrowserControlInfo} info
+ * @param {boolean} enable
+ */
+DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable) {
+  $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
+}
+
+/**
+ * Open the editor
+ * @public
+ * @param {Object} itemData - the data used to render the component.
+ * @param {Object} properties - the component's configured properties (used to render the component)
+ * @param {Function} onAcceptCb - Called if the data is updated. Arg0 is updated data.
+ * @param {Function} onCloseCb - Called anytime the dialog is closed.
+ */
+DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCloseCb) {
+
+  var self = this;
+  var modelTemplate = this._componentTemplate.getDataModelTemplate_FormPreview();
+  var modelConfig = modelTemplate.getModelInstance();
+  var template = modelTemplate.getItemTemplate();
+
+  if (this._isReadOnly) {
+    modelConfig.actions = 'B';
+  }
+
+  var itemData = modelTemplate.populateDataInstance(itemData || {});
+
+  var dialog = new FormDialog(this._jsh, modelConfig, {
+    acceptButtonLabel: 'Save',
+    cancelButtonLabel:  'Cancel',
+    closeOnBackdropClick: true,
+    cssClass: 'l-content jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    maxHeight: 800
+  });
+
+  var $toolbar;
+
+  dialog.onBeforeOpen = function(xModel, dialogSelector) {
+
+    var editor = self._jsh.App[xModel.id];
+    var $dialog = $(dialogSelector);
+    $dialog.css('opacity', '0');
+    self._formSelector = dialogSelector; // remove this
+
+    // Note that the toolbar HAS to be in the popup DOM hierarchy for focus/blur
+    // events to work correctly.
+    $toolbar = $('<div class="jsharmony_cms_content_editor_toolbar"></div>')
+      .css('position', 'fixed')
+      .css('top', '37px')
+      .css('left', '0')
+      .css('width', '100%')
+      .css('z-index', '999999');
+    $(dialogSelector).append($toolbar);
+
+    _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {
+      var title = itemData[info.titleFieldName] || '';
+      var data = itemData[info.dataFieldName] || '';
+      var fieldsMatch = title === data;
+      var isDataEmpty = title.length < 1 && data.length < 1;
+      var fieldIsEditable = fieldsMatch || isDataEmpty;
+      self.enableBrowserControl($dialog, info, fieldIsEditable);
+    });
+
+    editor.onChangeData_noDebounce = function() {
+      var updatedData = {};
+      _.forEach(modelConfig.fields, function(field) {
+        if (field.type != undefined) {
+          updatedData[field.name] = xModel.get(field.name);
+        }
+      });
+
+      var $wrapper =  $dialog.find('[data-id="previewWrapper"]').first();
+      self.renderPreview($wrapper, template, updatedData, properties);
+      // Don't attach any events until after the onRenderGridItemPreview hook is called.
+      // Otherwise, the events might be attached to elements that get replaced or removed.
+      self.attachEditors($dialog, $wrapper, $toolbar);
+    }
+
+    // This function NEEDS to be debounced.
+    // It SHOULD be anyway so it doesn't re-render the preview on every
+    // keystroke, but it HAS to be just in case two fields change
+    // at the same time (in which case the first change causes a re-render
+    // and the second change breaks things since parts of the re-render are async)
+    editor.onChangeData = _.debounce(editor.onChangeData_noDebounce, 300);
+
+    editor.openEditorBrowser = function(browserControlName) {
+
+      var info = modelTemplate.getBrowserFieldInfo(browserControlName);
+      if (info == undefined) return;
+
+      var update = function(url, title) {
+        // IMPORTANT! Set the title FIRST.
+        // The change handler is attached to the title
+        // so that will run and update the link control,
+        // and then we override the link control.
+        xModel.set(info.titleFieldName, title);
+        xModel.set(browserControlName, url);
+        self.enableBrowserControl($dialog, info, false);
+        editor.onChangeData();
+      };
+
+      if (info.browserType === 'link') {
+
+        if (info == undefined) return;
+        self.openLinkBrowser(function(url, data) {
+          var title = data.page_path || '';
+          update(url, title);
+        });
+      } else if (info.browserType === 'media') {
+          self.openMediaBrowser(function(url, data) {
+            var title = data.media_path;
+            update(url, title);
+          });
+      } else {
+        console.warn(new Error('Unknown browser type ' + info.browserType));
+      }
+    }
+
+    editor.onChangeBrowserTitleControl = function(browserControlName) {
+      // When the user manually changes the link title,
+      // the link value must be set to the title value.
+      var info = modelTemplate.getBrowserFieldInfo(browserControlName);
+      if (info == undefined) return;
+      xModel.set(browserControlName, xModel.get(info.titleFieldName));
+      editor.onChangeData();
+    }
+
+    editor.resetEditorBrowser = function(linkControlName) {
+      var info = modelTemplate.getBrowserFieldInfo(linkControlName);
+      if (info == undefined) return;
+      self.enableBrowserControl($dialog, info, true);
+      xModel.set(linkControlName, '');
+      xModel.set(info.titleFieldName, '');
+      editor.onChangeData();
+    }
+
+    self._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
+    self._onRenderDataItemPreview = editor.onRenderDataItemPreview;
+  }
+
+  dialog.onOpened = function($dialog, xModel) {
+    var editor = self._jsh.App[xModel.id];
+    // Manually call change to do initial render
+    setTimeout(function() {
+      editor.onChangeData_noDebounce();
+      setTimeout(function() {
+        $dialog.css('opacity', '1');
+      }, 50);
+    });
+  }
+
+  dialog.onAccept = function($dialog, xModel) {
+    if(!xModel.controller.Commit(itemData, 'U')) return false;
+    itemData = modelTemplate.getPristineData(itemData);
+    if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
+    return true;
+  }
+
+  dialog.onCancel = function(options, $dialog, xModel) {
+    if (!options.force && xModel.controller.HasUpdates()) {
+      self._jsh.XExt.Confirm('Close without saving changes?', function() {
+        xModel.controller.form.ResetDataset();
+        options.forceCancel();
+      });
+      return false;
+    }
+  }
+
+  dialog.onClose = function($dialog, xModel) {
+    delete self._jsh.XModels[xModel.id];
+    delete self._jsh.App[xModel.id];
+    _.forEach(self._htmlEditors, function(editor) { editor.destroy(); });
+    if (_.isFunction(onCloseCb)) onCloseCb();
+  }
+
+  dialog.open(itemData);
+}
+
+/**
+ * Open a link browser
+ * @private
+ * @param {Function} cb - callback for when link is selected (matches original picker signature)
+ */
+DataEditor_Form.prototype.openLinkBrowser = function(cb) {
+  this.createPicker().openLink(cb, '');
+}
+
+/**
+ * Open a medial browser
+ * @private
+ * @param {Function} cb - callback for when link is selected (matches original picker signature)
+ */
+DataEditor_Form.prototype.openMediaBrowser = function(cb) {
+  this.createPicker().openMedia(cb, '');
+}
+
+/**
+ * @private
+ * @param {JQuery} $wrapper
+ * @param {string} template
+ * @param {Object} data
+ * @param {Object} properties
+ */
+DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties) {
+
+  var self = this;
+
+  var renderConfig = TemplateRenderer.createRenderConfig(template, data, properties, this._cms);
+  renderConfig.gridContext = this._gridContext;
+
+  if (_.isFunction(this._onBeforeRenderDataItemPreview)) this._onBeforeRenderDataItemPreview(renderConfig);
+
+  var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh);
+
+  $wrapper.empty().append(rendered);
+
+  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties);
+
+  setTimeout(function() {
+    _.forEach($($wrapper.children()[0]).find('[data-component]'), function(el) {
+      self._cms.componentManager.renderComponent(el);
+    });
+  }, 50);
+}
+
+exports = module.exports = DataEditor_Form;
+},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8,"../templateRenderer":16,"./htmlPropertyEditorController":14}],12:[function(require,module,exports){
+var ComponentTemplate = require('../componentModel/componentTemplate');
+var GridDialog = require('../dialogs/gridDialog');
+var DataEditor_GridPreviewController = require('./dataEditor_ gridPreviewController');
+
+
+
+/**
+ * @class
+ * @param {ComponentTemplate} componentTemplate
+ * @param {Object} cms
+ * @param {Object} jsh
+ */
+function DataEditor_GridPreview(componentTemplate, cms, jsh) {
+
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
+
+  /** @private @type {Object} */
+  this._cms = cms;
+
+  /** @private @type {Object} */
+  this._jsh = jsh;
+}
+
+/**
+ * Open the editor
+ * @public
+ * @param {Object} data - the data used to render the component.
+ * @param {Object} properties - the component's configured properties (used to render the component)
+ * @param {Function} dataUpdatedCb - Called when data is updated. Arg0 is updated data.
+ */
+DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb) {
+
+  var self = this;
+  var modelTemplate = this._componentTemplate.getDataModelTemplate_GridPreview();
+  var modelConfig = modelTemplate.getModelInstance();
+
+
+  var componentInstanceId = modelConfig.id;
+  this._jsh.XExt.JSEval(modelTemplate.getModelJs() || '', {}, {
+    modelid: componentInstanceId
+  });
+  var componentInstance = this._jsh.App[componentInstanceId] || {};
+
+
+  var dialog = new GridDialog(this._jsh, modelConfig, {
+    closeOnBackdropClick: true,
+    cssClass: 'l-content jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    maxHeight: 800,
+    minHeight: modelConfig.popup[1],
+    minWidth: modelConfig.popup[0]
+  });
+
+  var dataController;
+
+  dialog.onBeforeOpen = function(xModel, dialogSelector) {
+
+    self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
+
+    dataController = new DataEditor_GridPreviewController(xModel, (data || {}).items, properties, $(dialogSelector),
+      self._cms, self._jsh, modelTemplate, self._componentTemplate);
+
+    dataController.onDataUpdated = function(updatedData) {
+      if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
+    }
+
+    dataController.onBeforeRenderGridRow = function(renderOptions) {
+      if (_.isFunction(componentInstance.onBeforeRenderGridRow)) componentInstance.onBeforeRenderGridRow(renderOptions);
+    }
+
+    dataController.onRenderGridRow = function(element, data, properties) {
+      if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties);
+    }
+
+    var modelInterface = self._jsh.App[xModel.id];
+
+    modelInterface.onRowBind = function(xModel, jobj, dataRow) {
+      if (!dataController) return;
+      dataController.addRow(jobj, dataRow);
+    }
+
+    modelInterface.onCommit = function(xModel, rowId, callback) {
+      callback();
+    }
+
+    modelInterface.close = function() {
+      self._jsh.XExt.CancelDialog();
+    }
+  }
+
+  dialog.onOpened = function($dialog, xModel) {
+    dataController.initialize();
+  }
+
+  dialog.onClose = function($dialog, xModel) {
+    delete self._jsh.XModels[xModel.id];
+    delete self._jsh.App[xModel.id];
+    delete self._jsh.App[componentInstanceId];
+  }
+
+  dialog.open();
+
+}
+
+DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captions) {
+
+  var text = captions[1] != undefined ? 'Add ' + captions[1] : 'Add';
+
+  var $el = $(selector);
+  var $img = $el.find('img');
+  $el.empty().append($img).append(text);
+}
+
+
+exports = module.exports = DataEditor_GridPreview;
+},{"../componentModel/componentTemplate":1,"../dialogs/gridDialog":9,"./dataEditor_ gridPreviewController":10}],13:[function(require,module,exports){
 var Convert  = require('../utils/convert');
 
 /**
@@ -2750,7 +2663,7 @@ GridDataStore.prototype.updateItem = function(item) {
 
 exports = module.exports = GridDataStore;
 
-},{"../utils/convert":19}],15:[function(require,module,exports){
+},{"../utils/convert":19}],14:[function(require,module,exports){
 /**
  * @class
  * @classdesc This is a wrapper on the jshCMSEditor to easily attach it
@@ -2840,7 +2753,6 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
   this._editor = this._cms.createJsHarmonyCMSEditor(this._$toolbarElement[0]);
   this._editor.onEndEdit = function() {
     var content = self.processText(self._editor.getContent(self._uid));
-    console.log(content);
     self.getDataElement().attr('value', content);
   }
   this._editor.init(function() {
@@ -2850,13 +2762,17 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     var editorType = (self._editorType || '').toLowerCase();
     if (editorType === 'full') {
       configType = 'full';
+      config = {
+        valid_elements : '+*[*],#p[*]',
+      };
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'forecolor backcolor | bold italic underline',
-        valid_elements : 'a,strong/b,p,br,span[style]',
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify',
+        valid_elements : 'a,strong/b,p,span[style],p[*],h1[*],h2[*],h3[*],h4[*]',
         plugins: [],
-        menubar: false
+        menubar: false,
+        block_formats: "Heading 1=h1;Heading 2=h2;Heading 3=h3;Heading 4=h4"
       };
     } else {
       throw new Error('Unknown editor type "' + self._editorType + '"');
@@ -2892,20 +2808,20 @@ HTMLPropertyEditor.prototype.render = function() {
 
 
 exports = module.exports = HTMLPropertyEditor;
-},{}],16:[function(require,module,exports){
-var ComponentConfig = require('../componentModel/componentConfig');
+},{}],15:[function(require,module,exports){
+var ComponentTemplate = require('../componentModel/componentTemplate');
 var FormDialog = require('../dialogs/formDialog');
 
 /**
  * @class
- * @param {ComponentConfig} componentConfig
+ * @param {ComponentTemplate} componentTemplate
  * @param {Object} cms
  * @param {Object} jsh
  */
-function PropertyFormEditor(componentConfig, cms, jsh) {
+function PropertyEditor_Form(componentTemplate, cms, jsh) {
 
-  /** @private @type {ComponentConfig} */
-  this._componentConfig = componentConfig;
+  /** @private @type {ComponentTemplate} */
+  this._componentTemplate = componentTemplate;
 
   /** @private @type {Object} */
   this._cms = cms;
@@ -2920,27 +2836,24 @@ function PropertyFormEditor(componentConfig, cms, jsh) {
  * @param {Object} properties - the component's configured properties
  * @param {Function} onAcceptCb - Called if the data is updated. Arg0 is updated data.
  */
-PropertyFormEditor.prototype.open = function(properties, onAcceptCb) {
+PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var self = this;
-  var formModel = this._componentConfig.getFormPropertiesModelInstance();
-  var modelConfig = formModel.getModelConfig();
+  var modelTemplate = this._componentTemplate.getPropertiesModelTemplate_Form();
+  var model = modelTemplate.getModelInstance();
 
-  // Allow title to be overridden
-  modelConfig.title = modelConfig.title ? modelConfig.title : 'Configure';
+  var data = modelTemplate.populateDataInstance(properties || {});
 
-  var data = formModel.getItemFields().populateDataInstance(properties || {});
-
-  var dialog = new FormDialog(this._jsh, modelConfig, {
+  var dialog = new FormDialog(this._jsh, model, {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentConfig.getComponentConfigId(),
+    cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
   });
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(data, 'U')) return false;
-    data = formModel.getItemFields().makePristineModel(data);
+    data = modelTemplate.getPristineData(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   }
@@ -2963,9 +2876,94 @@ PropertyFormEditor.prototype.open = function(properties, onAcceptCb) {
   dialog.open(data);
 }
 
-exports = module.exports = PropertyFormEditor;
+exports = module.exports = PropertyEditor_Form;
 
-},{"../componentModel/componentConfig":2,"../dialogs/formDialog":9}],17:[function(require,module,exports){
+},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8}],16:[function(require,module,exports){
+/**
+ * @typedef {Object} RenderConfig
+ * @property {Object} data - the component data
+ * @property {Object} properties - the component properties
+ * @property {string} template - the template being rendered
+ * @property {string} baseUrl
+ * @property {(GridPreviewRenderContext | undefined )} gridContext
+ */
+
+/**
+ * @typedef {Object} RenderContext
+ * @property {Object} data - the component data
+ * @property {Object} properties - the component properties
+ * @property {('component' | 'gridRowDataPreview' | 'gridItemPreview')} type
+ * @property {string} baseUrl
+ * @property {(GridPreviewRenderContext | undefined )} gridContext
+ */
+
+/**
+ * @typedef {Object} GridPreviewRenderContext
+ * @property {number} rowIndex
+ */
+
+
+
+/**
+ * @class
+ * @public
+ * @static
+ */
+function TemplateRenderer() {}
+
+/**
+ * Create a mutable object that can be preprocessed before rendering.
+ * @public
+ * @static
+ * @param {string} template
+ * @param {Object} data - the component data
+ * @param {Object} properties - the component properties
+ * @param {Object} cms
+ * @returns {RenderConfig}
+ */
+TemplateRenderer.createRenderConfig = function(template, data, properties, cms) {
+
+  /** @type {RenderConfig} */
+  var config  = {
+    data: data,
+    properties: properties,
+    template: template,
+    baseUrl: (cms._baseurl || '').replace(/\/+$/, '') + '/'
+  };
+
+  return config;
+}
+
+/**
+ * @public
+ * @static
+ * @param {('component' | 'gridRowDataPreview' | 'gridItemPreview')} type
+ * @param {RenderConfig} config
+ * @param {Object} jsh
+ * @returns {string}
+ */
+TemplateRenderer.render = function(config, type, jsh) {
+
+    /** @type {RenderContext} */
+    var renderContext = {
+      baseUrl: config.baseUrl,
+      data: config.data,
+      properties: config.properties,
+      type: type,
+      gridContext: config.gridContext
+    }
+
+    var rendered = '';
+    try {
+      rendered = jsh.ejs.render(config.template || '', renderContext);
+    } catch (error) {
+      console.error(error);
+    }
+    return rendered
+}
+
+exports = module.exports = TemplateRenderer;
+},{}],17:[function(require,module,exports){
 /**
  * @typedef {Object} IconDefinition
  * @property {string} name - the name the icon is registered as
@@ -2998,6 +2996,8 @@ var ICONS = {
   }
 };
 
+
+
 /**
  * This defines commands that can be used for the plugin.
  * @type {Object.<string, string>}
@@ -3019,25 +3019,30 @@ var EVENT_NAMES = {
 /**
  * Register the JSH CMS Component plugin.
  * @public
- * @param {Object[]} components - the component configurations
+ * @param {Object} jsHarmonyCmsComponentManager
  */
-function registerPlugin(components) {
+function registerPlugin(jsHarmonyCmsComponentManager) {
   if (tinymce.PluginManager.get('jsharmony') != undefined) {
     return;
   }
 
+  var components = jsHarmonyCmsComponentManager.componentTemplates;
   tinymce.PluginManager.add('jsharmony', function(editor, url) {
-    new JsHarmonyComponentPlugin(editor, components);
+    new JsHarmonyComponentPlugin(editor, components, jsHarmonyCmsComponentManager);
   });
 }
 
 /**
  * @class
  * @private
+ * @param {Object} editor - the TinyMce editor instance
+ * @param {Object[]} components - the component configurations
+ * @param {Object} jsHarmonyCmsComponentManager
  */
-function JsHarmonyComponentPlugin(editor, components) {
+function JsHarmonyComponentPlugin(editor, components, jsHarmonyCmsComponentManager) {
 
   this._editor = editor;
+  this._jsHarmonyCmsComponentManager = jsHarmonyCmsComponentManager;
   this.initialize(components);
 }
 
@@ -3105,6 +3110,24 @@ JsHarmonyComponentPlugin.prototype.createContextToolbar = function() {
 }
 
 /**
+ * Find the component instance if it exits
+ * @private
+ * @param {(string | HTMLElement)} element - if type is string then find the component by the string ID,
+ * if type is an HTMLElement then find element and get ID from the ID attribute.
+ * @returns {(Object | undefined)}
+ */
+JsHarmonyComponentPlugin.prototype.getComponentInstance = function(element) {
+
+  if (!element) return;
+  var id = element;
+  if (!_.isString(element)) {
+    id = $(element).attr('data-component-id') || '';
+  }
+
+  return this._jsHarmonyCmsComponentManager.components[id];
+}
+
+/**
  * When an undo or redo event occurs in the editor
  * the component needs to be re-rendered.
  * @private
@@ -3164,8 +3187,8 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
       self._editor.ui.registry.addIcon(iconRegistryName, icon);
 
-      var text = _.isArray(component.caption) ? component.caption[0] : component.caption;
-      componentInfo.push({ componentType: component.id, icon: iconRegistryName, text: text || component.id });
+      var text =  component.title || component.id;
+      componentInfo.push({ componentType: component.id, icon: iconRegistryName, text: text });
     }
   });
 
@@ -3187,9 +3210,7 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
   this._editor.addCommand(COMMAND_NAMES.editComponentProperties, function() {
     var el = self._editor.selection.getStart();
-    if (el && el._componentInterface && el._componentInterface.openPropertiesEditor) {
-      el._componentInterface.openPropertiesEditor();
-    }
+    self.openPropertiesEditor(el);
   });
 
   this._editor.on('init', function() {
@@ -3204,21 +3225,12 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
  * @param {string} componentType - the type of the component to insert.
  */
 JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentType) {
-  var self = this;
-  var id = this.makeComponentId(componentType)
-  this._editor.insertContent(this.makeComponentContainer(componentType, id));
+
+  this._editor.insertContent(this.makeComponentContainer(componentType));
+
   // Don't need to fire the insert event here.
   // We have a parser filter that will detect the insert and
   // fire the event.
-
-  // But we do need to open the data dialog.
-  // The next loop will cause the editor to parse the data
-  // Then the loop after that the content will be in the DOM
-  // (at least based on empirical tests).
-  // So 1ms will be way more than enough time to wait.
-  setTimeout(function() {
-    self.openDataEditor(id);
-  }, 1);
 }
 
 /**
@@ -3226,12 +3238,10 @@ JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentTy
  * inserting into the editor.
  * @private
  * @param {string} componentType - the type of component to create
- * @param {string} id - the ID to uniquely identify the component.
  * @returns {string} - HTML string
  */
-JsHarmonyComponentPlugin.prototype.makeComponentContainer = function(componentType, id) {
-  return '<div class="mceNonEditable" data-component="' + componentType +'" data-component-id="' +
-    id + '" data-component-properties="" data-component-content=""></div>';
+JsHarmonyComponentPlugin.prototype.makeComponentContainer = function(componentType) {
+  return '<div class="mceNonEditable" data-component="' + componentType + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
 }
 
 /**
@@ -3249,35 +3259,28 @@ JsHarmonyComponentPlugin.prototype.makeComponentEvent = function(componentId, co
 }
 
 /**
- * Create a random ID for uniquely identifying
- * each component add via the editor.
+ * Open the data editor for the component.
  * @private
- * @returns {string}
+ * @param {(string | Element)} element - if type is string then find the component by the string ID,
+ * if type is an HTMLElement then find component from the ID attribute.
  */
-JsHarmonyComponentPlugin.prototype.makeComponentId = function(componentType) {
-  var id;
-  do {
-    id = 'jsharmony_cms_component_' + Math.random().toString().replace('.', '');
-    var idExists = tinymce.dom.DomQuery.find('#' + id).length > 0;
-    id = idExists ? undefined : id;
-  } while(!id)
-  return id;
+JsHarmonyComponentPlugin.prototype.openDataEditor = function(element) {
+  var component = this.getComponentInstance(element);
+  if (component && _.isFunction(component.openDataEditor)) {
+    component.openDataEditor();
+  }
 }
 
 /**
- * Open the data editor for the component.
+ * Open the property editor for the component.
  * @private
- * @param {(string | Element)} componentIdOrElement - if type is string then find the component in the dom,
- * or else use the component element passed in
+ * @param {(string | Element)} element - if type is string then find the component by the string ID,
+ * if type is an HTMLElement then find component from the ID attribute.
  */
-JsHarmonyComponentPlugin.prototype.openDataEditor = function(componentIdOrElement) {
-  if (!componentIdOrElement) return;
-  if (_.isString(componentIdOrElement)) {
-    var componentIdOrElement = tinymce.dom.DomQuery.find('[data-component-id="' + componentIdOrElement + '"]')[0];
-  }
-  if (!componentIdOrElement) return;
-  if (componentIdOrElement && componentIdOrElement._componentInterface && componentIdOrElement._componentInterface.openDataEditor) {
-    componentIdOrElement._componentInterface.openDataEditor();
+JsHarmonyComponentPlugin.prototype.openPropertiesEditor = function(element) {
+  var component = this.getComponentInstance(element);
+  if (component && _.isFunction(component.openPropertiesEditor)) {
+    component.openPropertiesEditor();
   }
 }
 
@@ -3289,7 +3292,9 @@ JsHarmonyComponentPlugin.prototype.openDataEditor = function(componentIdOrElemen
 JsHarmonyComponentPlugin.prototype.parseFilter = function(nodes) {
   var self = this;
   _.each(nodes, function(node) {
-    var id = node.attributes.map['data-component-id'];
+    var id = self._jsHarmonyCmsComponentManager.getNextComponentId();
+    // var id = node.attributes.map['data-component-id'];
+    node.attr('data-component-id', id);
     var type = node.attributes.map['data-component'];
     // Content is not actually in the DOM yet.
     // Wait for next loop
@@ -3429,6 +3434,203 @@ DomSerializer.serializeAttrValue = function(data) {
 exports = module.exports = DomSerializer;
 
 },{}],21:[function(require,module,exports){
+var ComponentTemplate = require('./component/componentModel/componentTemplate');
+var DataEditor_GridPreview = require('./component/editors/dataEditor_gridPreview');
+var PropertyEditor_Form = require('./component/editors/propertyEditor_form');
+var DataEditor_Form = require('./component/editors/dataEditor_form');
+var DomSerializer = require('./component/utils/domSerializer');
+var TemplateRenderer = require('./component/templateRenderer');
+
+
+/** @typedef {import('./component/templateRenderer').RenderConfig} RenderConfig */
+
+/**
+ * @callback BasicComponentController~beforeRender
+ * @param {RenderConfig} renderConfig
+ */
+
+/**
+ * @callback BasicComponentController~render
+ * @param {HTMLElement} element
+ * @param {Object} data - the component data
+ * @param {Object} properties - the component properties
+ */
+
+/**
+ * @class
+ * @param {string} componentId - the globally unique component instance ID
+ * @param {(HTMLElement | JQuery)} element
+ * @param {Object} cms
+ * @param {Object} jsh
+ * @param {string} componentConfigId
+ */
+exports = module.exports = function(componentId, element, cms, jsh, componentConfigId) {
+
+  /** @type {JQuery} */
+  var $element = $(element);
+
+  /** @type {ComponentTemplate} */
+  var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh);
+
+  /** @public @type {BasicComponentController~beforeRender} */
+  this.onBeforeRender = undefined;
+
+  /** @public @type {BasicComponentController~render} */
+  this.onRender = undefined;
+
+  /** @public @type {Object} */
+  this.template = undefined;
+  Object.defineProperty(this, 'template', { get: function() { return componentTemplate.getComponentConfig() }});
+
+  /** @public @type {string} */
+  this.id = undefined;
+  Object.defineProperty(this, 'id', { get: function() { return componentId }});
+
+  /**
+   * Get the data from the element's serialized data attribute value.
+   * @private
+   * @return {Object}
+   */
+  this.getData = function() {
+    return DomSerializer.getAttr($element, 'data-component-data');
+  }
+
+  /**
+   * Get the properties from the element's serialized property attribute value.
+   * @private
+   * @return {Object}
+   */
+  this.getProperties = function() {
+    return DomSerializer.getAttr($element, 'data-component-properties');
+  }
+
+  /**
+   * Check to see if the component is readonly.
+   * @private
+   * @returns {boolean} - true if the model is readonly.
+   */
+  this.isReadOnly = function() {
+    return !!cms.readonly;
+  }
+
+  /**
+   * Open the data editor form.
+   * @public
+   */
+  this.openDataEditor = function() {
+    var editorType = componentTemplate.getDataEditorType();
+    if (editorType === 'grid') {
+      throw new Error('Not Implemented');
+    } else if (editorType === 'grid_preview') {
+      this.openDataEditor_GridPreview();
+    } else if (editorType === 'form') {
+      this.openDataEditor_Form();
+    } else if (editorType != undefined) {
+      throw new  Error('Unknown editor type "' + editorType  + '"');
+    }
+  }
+
+  /**
+   * @private
+   * @param {object} modelInstance - the model instance to render (model will be mutated).
+   */
+  this.openDataEditor_Form = function() {
+    var self = this;
+    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh);
+
+    var data = this.getData() || {};
+    dataEditor.open(data.item || {}, this.getProperties() || {}, function(updatedData) {
+      data.item = updatedData;
+      self.saveData(data);
+      self.render();
+    });
+  }
+
+  /**
+   * @private
+   */
+  this.openDataEditor_GridPreview = function() {
+    var self = this;
+    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh);
+
+    dataEditor.open(this.getData(), this.getProperties() || {}, function(updatedData) {
+      self.saveData(updatedData);
+      self.render();
+    });
+  }
+
+  /**
+   * Open the property editor form.
+   * @public
+   */
+  this.openPropertiesEditor = function() {
+
+    var self = this;
+    var propertyEditor = new PropertyEditor_Form(componentTemplate, cms, jsh);
+
+    propertyEditor.open(this.getProperties() || {}, function(data) {
+      self.saveProperties(data);
+      self.render();
+    });
+  }
+
+  /**
+   * Render the component
+   * @public
+   */
+  this.render = function() {
+
+    var self = this;
+    var config = componentTemplate.getComponentConfig()  || {};
+    var template = (config.templates || {}).editor || '';
+
+    var data = this.getData();
+    var props = this.getProperties();
+
+
+    var renderConfig = TemplateRenderer.createRenderConfig(template, data, props, cms);
+
+    if (_.isFunction(this.onBeforeRender)) this.onBeforeRender(renderConfig);
+
+    var rendered = TemplateRenderer.render(renderConfig, 'component', jsh);
+
+    $element.empty().append(rendered);
+
+    $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
+      self.openDataEditor();
+    });
+
+    if (_.isFunction(this.onRender)) this.onRender($element[0], data, props);
+
+    setTimeout(function() {
+      _.forEach($element.find('[data-component]'), function(el) {
+        cms.componentManager.renderComponent(el);
+      });
+    });
+  }
+
+  /**
+   * Call anytime the data is changed in the view (i.e.,
+   * by the user). This will update the component's data
+   * on the page.
+   * @private
+   * @param {(Object | undefined)} data
+   */
+  this.saveData = function(data) {
+    DomSerializer.setAttr($element, 'data-component-data', data);
+  }
+
+  /**
+   * Call anytime the properties are changed in the view (i.e.,
+   * by the user). This will save the properties for the components
+   * @private
+   * @param {(Object | undefined)} props
+   */
+  this.saveProperties = function(props) {
+    DomSerializer.setAttr($element, 'data-component-properties', props);
+  }
+}
+},{"./component/componentModel/componentTemplate":1,"./component/editors/dataEditor_form":11,"./component/editors/dataEditor_gridPreview":12,"./component/editors/propertyEditor_form":15,"./component/templateRenderer":16,"./component/utils/domSerializer":20}],22:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -3448,7 +3650,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var pluginComponentController = require('./component/componentController');
+var JsHarmonyCMSComponent = require('./jsHarmonyCMS.Component');
 
 exports = module.exports = function(jsh, cms){
   var _this = this;
@@ -3457,18 +3659,20 @@ exports = module.exports = function(jsh, cms){
   var async = jsh.async;
   var ejs = jsh.ejs;
 
-  this.components = null;
+  this.componentTemplates = null;
+  this.components = {};
   this.isInitialized = false;
+  this.lastComponentId = 0;
 
   this.load = function(onComplete){
     var url = '../_funcs/templates/component/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.components = rslt.components;
-        async.eachOf(_this.components, function(component, key, cb) {
+        _this.componentTemplates = rslt.components;
+        async.eachOf(_this.componentTemplates, function(component, key, cb) {
           var loadObj = {};
           cms.loader.StartLoading(loadObj);
-          _this.loadComponent(component, function(err){
+          _this.loadTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             cb(err)
           });
@@ -3491,22 +3695,18 @@ exports = module.exports = function(jsh, cms){
       var component_id = jobj.data('id');
       var component_content = '';
       if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
-      else if(!(component_id in _this.components)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
+      else if(!(component_id in _this.componentTemplates)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
       else{
-        var component = _this.components[component_id];
+        var component = _this.componentTemplates[component_id];
         var templates = component != undefined ? component.templates : undefined
         var editorTemplate = (templates || {}).editor;
         component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component_id));
       }
       jobj.html(component_content);
     });
-
-    $('[data-component]').each(function(i, element) {
-      _this.renderComponent(element);
-    });
   }
 
-  this.loadComponent = function(component, complete_cb) {
+  this.loadTemplate = function(component, complete_cb) {
     var url = (component.remote_template || {}).editor;
     if (!url) return complete_cb();
 
@@ -3518,6 +3718,7 @@ exports = module.exports = function(jsh, cms){
         var template = (component.templates.editor || '');
         data = data && template ? '\n' + data : data || '';
         component.templates.editor = (template + data) || '*** COMPONENT NOT FOUND ***';
+        _this.renderTemplateStyles(component.id, component);
         complete_cb();
       }
     });
@@ -3538,17 +3739,25 @@ exports = module.exports = function(jsh, cms){
     });
   }
 
+  this.getNextComponentId = function() {
+    return 'jsharmony_cms_component_' + this.lastComponentId++;
+  }
+
   this.renderComponent = function(element) {
 
     var componentType = $(element).attr('data-component');
-    var componentConfig = componentType ? _this.components[componentType] : undefined;
-    if (!componentConfig) {
+    var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
+    if (!componentTemplate) {
       return;
     }
-    componentConfig.id = componentConfig.id || componentType;
-    _this.renderComponentStyles(componentType, componentConfig);
+    componentTemplate.id = componentTemplate.id || componentType;
+    var componentId = $(element).attr('data-component-id') || '';
+    if (componentId.length < 1) {
+      console.error(new Error('Component is missing [data-component-id] attribute.'));
+      return;
+    }
     var componentInstance = {};
-    XExt.JSEval('\r\n' + (componentConfig.js || '') + '\r\n', componentInstance, {
+    XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', componentInstance, {
       _this: componentInstance,
       cms: cms,
       jsh: jsh,
@@ -3556,16 +3765,22 @@ exports = module.exports = function(jsh, cms){
     });
     if (!_.isFunction(componentInstance.create))  {
       componentInstance.create = function(componentConfig, element) {
-        var controller = new pluginComponentController(element, cms, jsh, componentConfig.id);
-        controller.onBeforeRender = componentInstance.onBeforeRender
-        controller.onRender = componentInstance.onRender;
-        controller.render();
+        var component = new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id);
+        component.onBeforeRender = componentInstance.onBeforeRender
+        component.onRender = componentInstance.onRender;
+        component.render();
+        _this.components[componentId] = component;
       }
     }
-    componentInstance.create(componentConfig, element);
+    componentInstance.create(componentTemplate, element);
+    if ($(element).attr('data-is-insert')) {
+      $(element).attr('data-is-insert', null);
+      element.scrollIntoView(false);
+      _this.components[componentId].openDataEditor();
+    }
   }
 
-  this.renderComponentStyles = function(componentType, componentConfig) {
+  this.renderTemplateStyles = function(componentType, componentConfig) {
     this.renderedComponentTypeStyles = this.renderedComponentTypeStyles || {};
     if (this.renderedComponentTypeStyles[componentType]) return;
     this.renderedComponentTypeStyles[componentType] = true;
@@ -3584,7 +3799,7 @@ exports = module.exports = function(jsh, cms){
     cms.util.addStyle(id, cssParts.join('\n'));
   }
 }
-},{"./component/componentController":1}],22:[function(require,module,exports){
+},{"./jsHarmonyCMS.Component":21}],23:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -3642,7 +3857,7 @@ exports = module.exports = function(jsh, cms){
     };
   }
 }
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -3721,7 +3936,7 @@ exports = module.exports = function(jsh, cms, editor){
     return false;
   }
 }
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -3773,7 +3988,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     _this.initToolbarContainer(toolbarContainer);
     XExt.TinyMCE('', undefined, function(){
 
-      registerPlugin(cms.componentController.components);
+      registerPlugin(cms.componentManager);
 
       //Change text labels
       window.tinymce.addI18n('en', {
@@ -3845,7 +4060,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           });
           editor.on('jsHarmonyRenderComponent', function(e) {
             var el = $(editor.targetElm).find('[data-component="' + e.componentType + '"][data-component-id="' + e.componentId + '"]')[0];
-            if (el) cms.componentController.renderComponent(el);
+            if (el) cms.componentManager.renderComponent(el);
           });
         }
       });
@@ -3917,7 +4132,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 }
-},{"./component/tinyMceComponentPlugin":17,"./jsHarmonyCMS.Editor.Picker.js":23}],25:[function(require,module,exports){
+},{"./component/tinyMceComponentPlugin":17,"./jsHarmonyCMS.Editor.Picker.js":24}],26:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4007,7 +4222,7 @@ exports = module.exports = function(cms){
     this.StopLoading();
   }
 }
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4102,7 +4317,7 @@ exports = module.exports = function(jsh, cms){
     });
   }
 }
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4183,7 +4398,7 @@ exports = module.exports = function(jsh, cms){
 
 
 }
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4273,7 +4488,7 @@ exports = module.exports = function(){
     if(elem) elem.parentNode.removeChild(elem);
   }
 }
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 (function (global){
 /*
 Copyright 2019 apHarmony
@@ -4300,7 +4515,7 @@ var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
-var jsHarmonyCMSComponentController = require('./jsHarmonyCMS.ComponentController.js');
+var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
 
 var jsHarmonyCMS = function(){
@@ -4311,7 +4526,7 @@ var jsHarmonyCMS = function(){
   this.toolbar = undefined; //Loaded after init
   this.controller = undefined; //Loaded after init
   this.editor = undefined; //Loaded after init
-  this.componentController = undefined; //Loaded after init
+  this.componentManager = undefined; // Loaded after init
   this.menuController = undefined; //Loaded after init
   this.views = {
     'jsh_cms_editor.css': '',
@@ -4373,17 +4588,16 @@ var jsHarmonyCMS = function(){
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = _this.createCoreEditor()
-      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
+      _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
 
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
-  
-      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
+
       _this.menuController = new jsHarmonyCMSMenuController(jsh, _this);
-  
+
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
@@ -4410,7 +4624,7 @@ var jsHarmonyCMS = function(){
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
-      this.componentController.load();
+      this.componentManager.load();
       this.menuController.load();
     }
     else{
@@ -4465,4 +4679,4 @@ var jsHarmonyCMS = function(){
 global.jsHarmonyCMS = jsHarmonyCMS;
 global.jsHarmonyCMSInstance = new jsHarmonyCMS();
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jsHarmonyCMS.ComponentController.js":21,"./jsHarmonyCMS.Controller.js":22,"./jsHarmonyCMS.Editor.Picker.js":23,"./jsHarmonyCMS.Editor.js":24,"./jsHarmonyCMS.Loader.js":25,"./jsHarmonyCMS.MenuController.js":26,"./jsHarmonyCMS.Toolbar.js":27,"./jsHarmonyCMS.Util.js":28}]},{},[29]);
+},{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.Editor.Picker.js":24,"./jsHarmonyCMS.Editor.js":25,"./jsHarmonyCMS.Loader.js":26,"./jsHarmonyCMS.MenuController.js":27,"./jsHarmonyCMS.Toolbar.js":28,"./jsHarmonyCMS.Util.js":29}]},{},[30]);
