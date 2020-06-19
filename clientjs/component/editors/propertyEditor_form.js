@@ -42,7 +42,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(data, 'U')) return false;
-    data = modelTemplate.getPristineData(data);
+    data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   }

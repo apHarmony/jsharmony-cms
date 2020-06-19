@@ -60,12 +60,24 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   }
 
   /**
-   * Get the properties from the element's serialized property attribute value.
+   * Get the properties from the element's serialized property attribute value
+   * and update from model definition.
    * @private
    * @return {Object}
    */
   this.getProperties = function() {
-    return DomSerializer.getAttr($element, 'data-component-properties');
+    var model = componentTemplate.getPropertiesModelTemplate_Form();
+    var properties = DomSerializer.getAttr($element, 'data-component-properties');
+    return model.populateDataInstance(properties);
+  }
+
+  /**
+   * Setup the default properties object
+   * and save the object.
+   * @private
+   */
+  this.initProperties = function() {
+    this.saveProperties(this.getProperties());
   }
 
   /**
@@ -193,4 +205,10 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   this.saveProperties = function(props) {
     DomSerializer.setAttr($element, 'data-component-properties', props);
   }
+
+
+
+  this.initProperties();
+
+
 }

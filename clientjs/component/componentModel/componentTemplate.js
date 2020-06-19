@@ -77,7 +77,7 @@ ComponentTemplate.prototype.getComponentConfig = function() {
 /**
  * Return the editor type
  * @public
- * @returns {('grid'| | 'grid_preview' | 'form' | undefined)}
+ * @returns {('grid' | 'grid_preview' | 'form' | undefined)}
  */
 ComponentTemplate.prototype.getDataEditorType = function() {
   if (this._componentConfig.data) {

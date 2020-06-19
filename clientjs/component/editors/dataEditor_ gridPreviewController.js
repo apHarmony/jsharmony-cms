@@ -327,9 +327,13 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
   formApi.onInsert = function(action, actionResult, newRow) {
     newRow[self._idFieldName] = self._insertId;
     newRow.sequence = self.getNextSequenceNumber();
-    self._insertId = undefined;
-    self._dataStore.addNewItem(_.extend({}, newRow));
     self._apiData.push(newRow);
+    self._insertId = undefined;
+
+    var dataStoreItem = self._modelTemplate.makePristineCopy(newRow, false);
+    dataStoreItem = self._modelTemplate.populateDataInstance(dataStoreItem);
+    self._dataStore.addNewItem(dataStoreItem);
+
     actionResult[self.xModel.id] = {}
     actionResult[self.xModel.id][self._idFieldName] = newRow[self._idFieldName];
     self.dataUpdated();
@@ -535,7 +539,7 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
   this._dataStore.sortBySequence();
 
   var items = this._dataStore.getDataArray()  || [];
-  items = _.map(items, function(item) { return self._modelTemplate.getPristineData(item); });
+  items = _.map(items, function(item) { return self._modelTemplate.makePristineCopy(item, true); });
 
   var data = { items: items };
 

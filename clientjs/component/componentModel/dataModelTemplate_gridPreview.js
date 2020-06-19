@@ -189,6 +189,15 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentType ) {
 }
 
 /**
+ * Get the EJS string used to render the row item preview
+ * @public
+ * @returns {string}
+ */
+DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
+  return this._rowTemplate || '';
+}
+
+/**
  * Create a pristine copy of the data.
  * This will remove extraneous properties (that don't exist in the model)
  * and do data conversions. It will also add missing fields.
@@ -199,23 +208,42 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentType ) {
  *
  * @public
  * @param {Object} dataInstance - the existing field values.
+ * @param {Object} isAutoAddedField - if true then the added fields (e.g., ID, sequence) will be removed.
   * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-DataModelTemplate_GridPreview.prototype.getPristineData = function(dataInstance) {
-  var fields = _.filter(this._modelTemplate.fields, function(field) { return !field.isAutoAddedField; });
-  return FieldModel.getPristineData(dataInstance, fields);
+DataModelTemplate_GridPreview.prototype.makePristineCopy = function(dataInstance, removeAutoAddedFields) {
+  var fields = removeAutoAddedFields ?  _.filter(this._modelTemplate.fields, function(field) { return !field.isAutoAddedField; }) : this._modelTemplate.fields;
+  return FieldModel.makePristineCopy(dataInstance, fields);
 }
 
 /**
- * Get the EJS string used to render the row item preview
+ * Iterates through the fieldModels
+ * to look for fields with "type" property. If a field has the type property
+ * then the field will be added to the new data instance object.
+ *
+ * Setting the field follows specific rules
+ * 1. If the data instance does not contain the property key
+ *    then the property is set to either undefined or the default value.
+ * 2. If the data instance contains the property and the property value is
+ *    defined then it is left as-is.
+ * 3. If the data instance contains the property and the property value is
+ *    null/undefined then the property is overridden if there is a default AND
+ *    it is a required field. If it is not required then the value is left as
+ *    null/undefined (which allows the user to clear default values that are
+ *    not required fields).
+ *
+ * This will also correctly convert values as needed.
+ *
+ * This mutates the dataInstance.
  * @public
- * @returns {string}
+ * @param {Object} dataInstance - the data instance. Each property corresponds
+ * to a field in the field array. This object will be mutated.
+ * @returns {Object} the new or mutated data
  */
-DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
-  return this._rowTemplate || '';
+DataModelTemplate_GridPreview.prototype.populateDataInstance = function(dataInstance) {
+  return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
 }
-
 
 
 exports = module.exports = DataModelTemplate_GridPreview;
