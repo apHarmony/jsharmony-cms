@@ -65,7 +65,7 @@ FieldModel.convertTypes = function(dataInstance, fields) {
  * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-FieldModel.getPristineData = function(dataInstance, fields) {
+FieldModel.makePristineCopy = function(dataInstance, fields) {
 
   var pristineCopy = {};
   _.forEach(fields, function(field) {
@@ -83,9 +83,18 @@ FieldModel.getPristineData = function(dataInstance, fields) {
 /**
  * Iterates through the fieldModels
  * to look for fields with "type" property. If a field has the type property
- * then the field will be added to the new data instance object. When adding
- * a field, the value is set as either the value in the current data instance
- * (if that property key exists) or as the field model default/undefined.
+ * then the field will be added to the new data instance object.
+ *
+ * Setting the field follows specific rules
+ * 1. If the data instance does not contain the property key
+ *    then the property is set to either undefined or the default value.
+ * 2. If the data instance contains the property and the property value is
+ *    defined then it is left as-is.
+ * 3. If the data instance contains the property and the property value is
+ *    null/undefined then the property is overridden if there is a default AND
+ *    it is a required field. If it is not required then the value is left as
+ *    null/undefined (which allows the user to clear default values that are
+ *    not required fields).
  *
  * This will also correctly convert values as needed.
  *
@@ -105,17 +114,28 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
     var fieldType = field.type;
     if (fieldType == undefined) return;
 
-    // If the loaded data has the field set
-    // (even if set to null/undefined) then we
-    // need to use that value. Otherwise use the default
-    // or set to undefined. All props must included in the data object (even if null/undefined).
-    const dataHasField = fieldName in dataInstance;
-    if (dataHasField) {
-      dataInstance[fieldName] = dataInstance[fieldName];
-    } else {
-      // It's okay if default is undefined. We just have to ensure that the
-      // field key is set in the data object.
-      dataInstance[fieldName] = field.default;
+    // Must follow the rules to ensure
+    // required fields are set to default values while also
+    // allowing default fields to be cleared by the user if they are
+    // not required fields.
+    if (dataInstance[fieldName] != undefined) {
+      return;
+    }
+    var isRequired = _.some((field.validate || []), function(a) { return a === 'Required'; });
+    var defaultValue= field.default;
+    const propertyKeyExists = fieldName in dataInstance;
+
+    if (propertyKeyExists && isRequired) {
+      // The property has been set by the user
+      // (since the key exists) but it is undefined/null
+      // while being required. This means the undefined value needs
+      // to be overridden with the default.
+      dataInstance[fieldName] = defaultValue;
+    } else if (!propertyKeyExists) {
+      // The property has not been set by the user
+      // (since the key does not exist) so must
+      // default to the default value (even if undefined/null)
+      dataInstance[fieldName] = defaultValue;
     }
   });
   FieldModel.convertTypes(dataInstance);

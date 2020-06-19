@@ -78,7 +78,7 @@ ComponentTemplate.prototype.getComponentConfig = function() {
 /**
  * Return the editor type
  * @public
- * @returns {('grid'| | 'grid_preview' | 'form' | undefined)}
+ * @returns {('grid' | 'grid_preview' | 'form' | undefined)}
  */
 ComponentTemplate.prototype.getDataEditorType = function() {
   if (this._componentConfig.data) {
@@ -342,16 +342,25 @@ DataModelTemplate_FormPreview.getNextInstanceId = function(componentType ) {
   * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-DataModelTemplate_FormPreview.prototype.getPristineData = function(dataInstance) {
-  return FieldModel.getPristineData(dataInstance, this._modelTemplate.fields);
+DataModelTemplate_FormPreview.prototype.makePristineCopy = function(dataInstance) {
+  return FieldModel.makePristineCopy(dataInstance, this._modelTemplate.fields);
 }
 
 /**
- * Iterates through the fields
+ * Iterates through the fieldModels
  * to look for fields with "type" property. If a field has the type property
- * then the field will be added to the new data instance object. When adding
- * a field, the value is set as either the value in the current data instance
- * (if that property key exists) or as the field model default/undefined.
+ * then the field will be added to the new data instance object.
+ *
+ * Setting the field follows specific rules
+ * 1. If the data instance does not contain the property key
+ *    then the property is set to either undefined or the default value.
+ * 2. If the data instance contains the property and the property value is
+ *    defined then it is left as-is.
+ * 3. If the data instance contains the property and the property value is
+ *    null/undefined then the property is overridden if there is a default AND
+ *    it is a required field. If it is not required then the value is left as
+ *    null/undefined (which allows the user to clear default values that are
+ *    not required fields).
  *
  * This will also correctly convert values as needed.
  *
@@ -559,6 +568,15 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentType ) {
 }
 
 /**
+ * Get the EJS string used to render the row item preview
+ * @public
+ * @returns {string}
+ */
+DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
+  return this._rowTemplate || '';
+}
+
+/**
  * Create a pristine copy of the data.
  * This will remove extraneous properties (that don't exist in the model)
  * and do data conversions. It will also add missing fields.
@@ -569,23 +587,42 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentType ) {
  *
  * @public
  * @param {Object} dataInstance - the existing field values.
+ * @param {Object} isAutoAddedField - if true then the added fields (e.g., ID, sequence) will be removed.
   * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-DataModelTemplate_GridPreview.prototype.getPristineData = function(dataInstance) {
-  var fields = _.filter(this._modelTemplate.fields, function(field) { return !field.isAutoAddedField; });
-  return FieldModel.getPristineData(dataInstance, fields);
+DataModelTemplate_GridPreview.prototype.makePristineCopy = function(dataInstance, removeAutoAddedFields) {
+  var fields = removeAutoAddedFields ?  _.filter(this._modelTemplate.fields, function(field) { return !field.isAutoAddedField; }) : this._modelTemplate.fields;
+  return FieldModel.makePristineCopy(dataInstance, fields);
 }
 
 /**
- * Get the EJS string used to render the row item preview
+ * Iterates through the fieldModels
+ * to look for fields with "type" property. If a field has the type property
+ * then the field will be added to the new data instance object.
+ *
+ * Setting the field follows specific rules
+ * 1. If the data instance does not contain the property key
+ *    then the property is set to either undefined or the default value.
+ * 2. If the data instance contains the property and the property value is
+ *    defined then it is left as-is.
+ * 3. If the data instance contains the property and the property value is
+ *    null/undefined then the property is overridden if there is a default AND
+ *    it is a required field. If it is not required then the value is left as
+ *    null/undefined (which allows the user to clear default values that are
+ *    not required fields).
+ *
+ * This will also correctly convert values as needed.
+ *
+ * This mutates the dataInstance.
  * @public
- * @returns {string}
+ * @param {Object} dataInstance - the data instance. Each property corresponds
+ * to a field in the field array. This object will be mutated.
+ * @returns {Object} the new or mutated data
  */
-DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
-  return this._rowTemplate || '';
+DataModelTemplate_GridPreview.prototype.populateDataInstance = function(dataInstance) {
+  return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
 }
-
 
 
 exports = module.exports = DataModelTemplate_GridPreview;
@@ -657,7 +694,7 @@ FieldModel.convertTypes = function(dataInstance, fields) {
  * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-FieldModel.getPristineData = function(dataInstance, fields) {
+FieldModel.makePristineCopy = function(dataInstance, fields) {
 
   var pristineCopy = {};
   _.forEach(fields, function(field) {
@@ -675,9 +712,18 @@ FieldModel.getPristineData = function(dataInstance, fields) {
 /**
  * Iterates through the fieldModels
  * to look for fields with "type" property. If a field has the type property
- * then the field will be added to the new data instance object. When adding
- * a field, the value is set as either the value in the current data instance
- * (if that property key exists) or as the field model default/undefined.
+ * then the field will be added to the new data instance object.
+ *
+ * Setting the field follows specific rules
+ * 1. If the data instance does not contain the property key
+ *    then the property is set to either undefined or the default value.
+ * 2. If the data instance contains the property and the property value is
+ *    defined then it is left as-is.
+ * 3. If the data instance contains the property and the property value is
+ *    null/undefined then the property is overridden if there is a default AND
+ *    it is a required field. If it is not required then the value is left as
+ *    null/undefined (which allows the user to clear default values that are
+ *    not required fields).
  *
  * This will also correctly convert values as needed.
  *
@@ -697,17 +743,28 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
     var fieldType = field.type;
     if (fieldType == undefined) return;
 
-    // If the loaded data has the field set
-    // (even if set to null/undefined) then we
-    // need to use that value. Otherwise use the default
-    // or set to undefined. All props must included in the data object (even if null/undefined).
-    const dataHasField = fieldName in dataInstance;
-    if (dataHasField) {
-      dataInstance[fieldName] = dataInstance[fieldName];
-    } else {
-      // It's okay if default is undefined. We just have to ensure that the
-      // field key is set in the data object.
-      dataInstance[fieldName] = field.default;
+    // Must follow the rules to ensure
+    // required fields are set to default values while also
+    // allowing default fields to be cleared by the user if they are
+    // not required fields.
+    if (dataInstance[fieldName] != undefined) {
+      return;
+    }
+    var isRequired = _.some((field.validate || []), function(a) { return a === 'Required'; });
+    var defaultValue= field.default;
+    const propertyKeyExists = fieldName in dataInstance;
+
+    if (propertyKeyExists && isRequired) {
+      // The property has been set by the user
+      // (since the key exists) but it is undefined/null
+      // while being required. This means the undefined value needs
+      // to be overridden with the default.
+      dataInstance[fieldName] = defaultValue;
+    } else if (!propertyKeyExists) {
+      // The property has not been set by the user
+      // (since the key does not exist) so must
+      // default to the default value (even if undefined/null)
+      dataInstance[fieldName] = defaultValue;
     }
   });
   FieldModel.convertTypes(dataInstance);
@@ -795,16 +852,25 @@ PropertiesModelTemplate_Form.getNextInstanceId = function(componentType ) {
   * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-PropertiesModelTemplate_Form.prototype.getPristineData = function(dataInstance) {
-  return FieldModel.getPristineData(dataInstance, this._modelTemplate.fields);
+PropertiesModelTemplate_Form.prototype.makePristineCopy = function(dataInstance) {
+  return FieldModel.makePristineCopy(dataInstance, this._modelTemplate.fields);
 }
 
 /**
- * Iterates through the fields
+ * Iterates through the fieldModels
  * to look for fields with "type" property. If a field has the type property
- * then the field will be added to the new data instance object. When adding
- * a field, the value is set as either the value in the current data instance
- * (if that property key exists) or as the field model default/undefined.
+ * then the field will be added to the new data instance object.
+ *
+ * Setting the field follows specific rules
+ * 1. If the data instance does not contain the property key
+ *    then the property is set to either undefined or the default value.
+ * 2. If the data instance contains the property and the property value is
+ *    defined then it is left as-is.
+ * 3. If the data instance contains the property and the property value is
+ *    null/undefined then the property is overridden if there is a default AND
+ *    it is a required field. If it is not required then the value is left as
+ *    null/undefined (which allows the user to clear default values that are
+ *    not required fields).
  *
  * This will also correctly convert values as needed.
  *
@@ -1895,9 +1961,13 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
   formApi.onInsert = function(action, actionResult, newRow) {
     newRow[self._idFieldName] = self._insertId;
     newRow.sequence = self.getNextSequenceNumber();
-    self._insertId = undefined;
-    self._dataStore.addNewItem(_.extend({}, newRow));
     self._apiData.push(newRow);
+    self._insertId = undefined;
+
+    var dataStoreItem = self._modelTemplate.makePristineCopy(newRow, false);
+    dataStoreItem = self._modelTemplate.populateDataInstance(dataStoreItem);
+    self._dataStore.addNewItem(dataStoreItem);
+
     actionResult[self.xModel.id] = {}
     actionResult[self.xModel.id][self._idFieldName] = newRow[self._idFieldName];
     self.dataUpdated();
@@ -2103,7 +2173,7 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
   this._dataStore.sortBySequence();
 
   var items = this._dataStore.getDataArray()  || [];
-  items = _.map(items, function(item) { return self._modelTemplate.getPristineData(item); });
+  items = _.map(items, function(item) { return self._modelTemplate.makePristineCopy(item, true); });
 
   var data = { items: items };
 
@@ -2364,7 +2434,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(itemData, 'U')) return false;
-    itemData = modelTemplate.getPristineData(itemData);
+    itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
   }
@@ -2768,9 +2838,9 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify',
-        valid_elements : 'a,strong/b,p,span[style],p[*],h1[*],h2[*],h3[*],h4[*]',
-        plugins: [],
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | image',
+        valid_elements : 'a,strong/b,p,span[style],p[*],h1[*],h2[*],h3[*],h4[*],img[*]',
+        plugins: ['image'],
         menubar: false,
         block_formats: "Heading 1=h1;Heading 2=h2;Heading 3=h3;Heading 4=h4"
       };
@@ -2853,7 +2923,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(data, 'U')) return false;
-    data = modelTemplate.getPristineData(data);
+    data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   }
@@ -3496,12 +3566,24 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   }
 
   /**
-   * Get the properties from the element's serialized property attribute value.
+   * Get the properties from the element's serialized property attribute value
+   * and update from model definition.
    * @private
    * @return {Object}
    */
   this.getProperties = function() {
-    return DomSerializer.getAttr($element, 'data-component-properties');
+    var model = componentTemplate.getPropertiesModelTemplate_Form();
+    var properties = DomSerializer.getAttr($element, 'data-component-properties');
+    return model.populateDataInstance(properties);
+  }
+
+  /**
+   * Setup the default properties object
+   * and save the object.
+   * @private
+   */
+  this.initProperties = function() {
+    this.saveProperties(this.getProperties());
   }
 
   /**
@@ -3629,6 +3711,12 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   this.saveProperties = function(props) {
     DomSerializer.setAttr($element, 'data-component-properties', props);
   }
+
+
+
+  this.initProperties();
+
+
 }
 },{"./component/componentModel/componentTemplate":1,"./component/editors/dataEditor_form":11,"./component/editors/dataEditor_gridPreview":12,"./component/editors/propertyEditor_form":15,"./component/templateRenderer":16,"./component/utils/domSerializer":20}],22:[function(require,module,exports){
 /*

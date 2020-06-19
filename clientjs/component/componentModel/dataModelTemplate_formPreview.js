@@ -154,16 +154,25 @@ DataModelTemplate_FormPreview.getNextInstanceId = function(componentType ) {
   * @returns {Object} a copy of the dataInstance with type conversions done and extraneous
  * properties removed.
  */
-DataModelTemplate_FormPreview.prototype.getPristineData = function(dataInstance) {
-  return FieldModel.getPristineData(dataInstance, this._modelTemplate.fields);
+DataModelTemplate_FormPreview.prototype.makePristineCopy = function(dataInstance) {
+  return FieldModel.makePristineCopy(dataInstance, this._modelTemplate.fields);
 }
 
 /**
- * Iterates through the fields
+ * Iterates through the fieldModels
  * to look for fields with "type" property. If a field has the type property
- * then the field will be added to the new data instance object. When adding
- * a field, the value is set as either the value in the current data instance
- * (if that property key exists) or as the field model default/undefined.
+ * then the field will be added to the new data instance object.
+ *
+ * Setting the field follows specific rules
+ * 1. If the data instance does not contain the property key
+ *    then the property is set to either undefined or the default value.
+ * 2. If the data instance contains the property and the property value is
+ *    defined then it is left as-is.
+ * 3. If the data instance contains the property and the property value is
+ *    null/undefined then the property is overridden if there is a default AND
+ *    it is a required field. If it is not required then the value is left as
+ *    null/undefined (which allows the user to clear default values that are
+ *    not required fields).
  *
  * This will also correctly convert values as needed.
  *

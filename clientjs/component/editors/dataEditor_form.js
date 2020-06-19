@@ -249,7 +249,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(itemData, 'U')) return false;
-    itemData = modelTemplate.getPristineData(itemData);
+    itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
   }
