@@ -154,8 +154,13 @@ class ComponentRenderer {
       type: 'component'
     };
 
-
-    let component = ejs.render(template, context);
+    let component = '';
+    try{
+      component = ejs.render(template, context);
+    }
+    catch(ex){
+      throw new Error('Error rendering '+template+'\r\n'+ex.toString());
+    }
     let nestedComponentLocations = this.findComponents(component).reverse();
     nestedComponentLocations.forEach(location => {
       let nestedComponent = component.slice(location.startIndex, location.endIndex + 1);

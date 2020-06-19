@@ -25,6 +25,7 @@ var DialogResizer = require('./dialogResizer');
  *  Called when the dialog is first opened
  * @callback Dialog~beforeOpenCallback
  * @param {Object} xModel - the JSH model instance
+ * @param {Function} onComplete - Should be called by handler when complete
  */
 
 /**
@@ -205,34 +206,39 @@ Dialog.prototype.open = function() {
     var $wrapper = $(formSelector);
     var lastScrollTop = 0
 
-    if (_.isFunction(self.onBeforeOpen)) self.onBeforeOpen(xModel);
+    self._jsh.XExt.execif(self.onBeforeOpen,
+      function(f){
+        self.onBeforeOpen(xModel, f);
+      },
+      function(){
+        /** @type {DialogResizer} */
+        var dialogResizer = undefined;
 
-    /** @type {DialogResizer} */
-    var dialogResizer = undefined;
+        self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
+          function(acceptFunc, cancelFunc) {
+            lastScrollTop = self.getScrollTop($wrapper);
+            dialogResizer = new DialogResizer($wrapper[0], self._jsh);
+            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
+          },
+          function(success) {
+            lastScrollTop = self.getScrollTop($wrapper);
 
-    self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
-      function(acceptFunc, cancelFunc) {
-        lastScrollTop = self.getScrollTop($wrapper);
-        dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-        if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
-      },
-      function(success) {
-        lastScrollTop = self.getScrollTop($wrapper);
-
-        if (_.isFunction(self.onAccept)) self.onAccept(success);
-      },
-      function(options) {
-        lastScrollTop = self.getScrollTop($wrapper);
-        if (_.isFunction(self.onCancel)) return self.onCancel(options);
-        return false;
-      },
-      function() {
-        self.setScrollTop(lastScrollTop, $wrapper);
-        dialogResizer.closeDialog();
-        if(_.isFunction(self.onClose)) self.onClose();
-        self.destroy();
-      },
-      { reuse: false, backgroundClose: self._config.closeOnBackdropClick }
+            if (_.isFunction(self.onAccept)) self.onAccept(success);
+          },
+          function(options) {
+            lastScrollTop = self.getScrollTop($wrapper);
+            if (_.isFunction(self.onCancel)) return self.onCancel(options);
+            return false;
+          },
+          function() {
+            self.setScrollTop(lastScrollTop, $wrapper);
+            dialogResizer.closeDialog();
+            if(_.isFunction(self.onClose)) self.onClose();
+            self.destroy();
+          },
+          { reuse: false, backgroundClose: self._config.closeOnBackdropClick }
+        );        
+      }
     );
   });
 }

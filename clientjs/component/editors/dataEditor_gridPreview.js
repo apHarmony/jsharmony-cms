@@ -93,6 +93,10 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
   }
 
   dialog.onClose = function($dialog, xModel) {
+    //Destroy model
+    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
+    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+
     delete self._jsh.XModels[xModel.id];
     delete self._jsh.App[xModel.id];
     delete self._jsh.App[componentInstanceId];

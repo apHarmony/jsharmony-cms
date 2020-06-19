@@ -28,6 +28,7 @@ var Dialog = require('./dialog');
  * @callback FormDialogConfig~beforeOpenCallback
  * @param {Object} xModel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
+ * @param {Function} onComplete - Should be called by handler when complete
  */
 
 /**
@@ -150,6 +151,8 @@ FormDialog.prototype.open = function(data) {
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,
+    minHeight: config.minHeight,
+    minWidth: config.minWidth,
     width: config.width
   });
 
@@ -157,11 +160,17 @@ FormDialog.prototype.open = function(data) {
   var xModel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel) {
+  dialog.onBeforeOpen = function(_xModel, onComplete) {
     xModel = _xModel;
     controller = _xModel.controller;
-    if (_.isFunction(self.onBeforeOpen)) self.onBeforeOpen(xModel, dialog.getFormSelector());
-    controller.Render(data);
+    self.jsh.XExt.execif(self.onBeforeOpen,
+      function(f){
+        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+      },
+      function(){
+        controller.Render(data, undefined, onComplete);
+      }
+    );
   }
 
 

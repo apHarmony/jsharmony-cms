@@ -848,6 +848,7 @@ var DialogResizer = require('./dialogResizer');
  *  Called when the dialog is first opened
  * @callback Dialog~beforeOpenCallback
  * @param {Object} xModel - the JSH model instance
+ * @param {Function} onComplete - Should be called by handler when complete
  */
 
 /**
@@ -1028,34 +1029,39 @@ Dialog.prototype.open = function() {
     var $wrapper = $(formSelector);
     var lastScrollTop = 0
 
-    if (_.isFunction(self.onBeforeOpen)) self.onBeforeOpen(xModel);
+    self._jsh.XExt.execif(self.onBeforeOpen,
+      function(f){
+        self.onBeforeOpen(xModel, f);
+      },
+      function(){
+        /** @type {DialogResizer} */
+        var dialogResizer = undefined;
 
-    /** @type {DialogResizer} */
-    var dialogResizer = undefined;
+        self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
+          function(acceptFunc, cancelFunc) {
+            lastScrollTop = self.getScrollTop($wrapper);
+            dialogResizer = new DialogResizer($wrapper[0], self._jsh);
+            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
+          },
+          function(success) {
+            lastScrollTop = self.getScrollTop($wrapper);
 
-    self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
-      function(acceptFunc, cancelFunc) {
-        lastScrollTop = self.getScrollTop($wrapper);
-        dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-        if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
-      },
-      function(success) {
-        lastScrollTop = self.getScrollTop($wrapper);
-
-        if (_.isFunction(self.onAccept)) self.onAccept(success);
-      },
-      function(options) {
-        lastScrollTop = self.getScrollTop($wrapper);
-        if (_.isFunction(self.onCancel)) return self.onCancel(options);
-        return false;
-      },
-      function() {
-        self.setScrollTop(lastScrollTop, $wrapper);
-        dialogResizer.closeDialog();
-        if(_.isFunction(self.onClose)) self.onClose();
-        self.destroy();
-      },
-      { reuse: false, backgroundClose: self._config.closeOnBackdropClick }
+            if (_.isFunction(self.onAccept)) self.onAccept(success);
+          },
+          function(options) {
+            lastScrollTop = self.getScrollTop($wrapper);
+            if (_.isFunction(self.onCancel)) return self.onCancel(options);
+            return false;
+          },
+          function() {
+            self.setScrollTop(lastScrollTop, $wrapper);
+            dialogResizer.closeDialog();
+            if(_.isFunction(self.onClose)) self.onClose();
+            self.destroy();
+          },
+          { reuse: false, backgroundClose: self._config.closeOnBackdropClick }
+        );        
+      }
     );
   });
 }
@@ -1265,6 +1271,7 @@ var Dialog = require('./dialog');
  * @callback FormDialogConfig~beforeOpenCallback
  * @param {Object} xModel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
+ * @param {Function} onComplete - Should be called by handler when complete
  */
 
 /**
@@ -1387,6 +1394,8 @@ FormDialog.prototype.open = function(data) {
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,
+    minHeight: config.minHeight,
+    minWidth: config.minWidth,
     width: config.width
   });
 
@@ -1394,11 +1403,17 @@ FormDialog.prototype.open = function(data) {
   var xModel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel) {
+  dialog.onBeforeOpen = function(_xModel, onComplete) {
     xModel = _xModel;
     controller = _xModel.controller;
-    if (_.isFunction(self.onBeforeOpen)) self.onBeforeOpen(xModel, dialog.getFormSelector());
-    controller.Render(data);
+    self.jsh.XExt.execif(self.onBeforeOpen,
+      function(f){
+        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+      },
+      function(){
+        controller.Render(data, undefined, onComplete);
+      }
+    );
   }
 
 
@@ -1460,6 +1475,7 @@ var Dialog = require('./dialog');
  * @callback GridDialog~beforeOpenCallback
  * @param {Object} xModel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
+ * @param {Function} onComplete - Should be called by handler when complete
  */
 
 /**
@@ -1531,10 +1547,17 @@ GridDialog.prototype.open = function() {
   var xModel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel) {
+  dialog.onBeforeOpen = function(_xModel, onComplete) {
     xModel = _xModel;
     controller = _xModel.controller;
-    if (_.isFunction(self.onBeforeOpen)) self.onBeforeOpen(xModel, dialog.getFormSelector());
+    self.jsh.XExt.execif(self.onBeforeOpen,
+      function(f){
+        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+      },
+      function(){
+        if(onComplete) onComplete();
+      }
+    );
   }
 
   dialog.onOpened = function(_$dialog, _xModel, acceptFunc, cancelFunc) {
@@ -2380,6 +2403,10 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
   }
 
   dialog.onClose = function($dialog, xModel) {
+    //Destroy model
+    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
+    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+
     delete self._jsh.XModels[xModel.id];
     delete self._jsh.App[xModel.id];
     _.forEach(self._htmlEditors, function(editor) { editor.destroy(); });
@@ -2533,6 +2560,10 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
   }
 
   dialog.onClose = function($dialog, xModel) {
+    //Destroy model
+    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
+    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+
     delete self._jsh.XModels[xModel.id];
     delete self._jsh.App[xModel.id];
     delete self._jsh.App[componentInstanceId];
@@ -2844,12 +2875,19 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var data = modelTemplate.populateDataInstance(properties || {});
 
-  var dialog = new FormDialog(this._jsh, model, {
+  var dialogParams = {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
-  });
+  };
+  
+  if(model.popup){
+    dialogParams.minHeight = model.popup[1];
+    dialogParams.minWidth = model.popup[0];
+  }
+
+  var dialog = new FormDialog(this._jsh, model, dialogParams);
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(data, 'U')) return false;
@@ -2869,6 +2907,10 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
   }
 
   dialog.onClose = function($dialog, xModel) {
+    //Destroy model
+    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
+    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+
     delete self._jsh.XModels[xModel.id];
     delete self._jsh.App[xModel.id];
   }

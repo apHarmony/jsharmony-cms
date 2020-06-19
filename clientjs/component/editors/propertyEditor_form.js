@@ -33,12 +33,19 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var data = modelTemplate.populateDataInstance(properties || {});
 
-  var dialog = new FormDialog(this._jsh, model, {
+  var dialogParams = {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
-  });
+  };
+  
+  if(model.popup){
+    dialogParams.minHeight = model.popup[1];
+    dialogParams.minWidth = model.popup[0];
+  }
+
+  var dialog = new FormDialog(this._jsh, model, dialogParams);
 
   dialog.onAccept = function($dialog, xModel) {
     if(!xModel.controller.Commit(data, 'U')) return false;
@@ -58,6 +65,10 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
   }
 
   dialog.onClose = function($dialog, xModel) {
+    //Destroy model
+    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
+    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+
     delete self._jsh.XModels[xModel.id];
     delete self._jsh.App[xModel.id];
   }
