@@ -75,6 +75,9 @@ function jsHarmonyCMSConfig(){
     no_publish_complete: false,         //Leave publish in 'RUNNING' (for debugging, so that it will auto-restart with auto_restart_failed_publish flag)
   };
 
+  this.defaultEditorConfig = {};        //Default GUI editor config
+                                        //Set widgets path: { widgets: '/templates/widget/index.html' }
+
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing
   this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, options){ return url; } //return a value (not undefined) to stop processing
