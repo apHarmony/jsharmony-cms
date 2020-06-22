@@ -45,7 +45,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dialog = new GridDialog(this._jsh, modelConfig, {
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     maxHeight: 800,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -53,7 +53,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dataController;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector) {
+  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
 
     self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
 
@@ -86,6 +86,8 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     modelInterface.close = function() {
       self._jsh.XExt.CancelDialog();
     }
+
+    if(onComplete) onComplete();
   }
 
   dialog.onOpened = function($dialog, xModel) {

@@ -102,11 +102,10 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | image',
-        valid_elements : 'a,strong/b,p,span[style],p[*],h1[*],h2[*],h3[*],h4[*],img[*]',
-        plugins: ['image'],
+        toolbar: 'forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons',
+        valid_elements : 'a,strong/b,p,span[style],p[*],img[*],br[*]',
+        plugins: ['link image charmapmaterialicons'],
         menubar: false,
-        block_formats: "Heading 1=h1;Heading 2=h2;Heading 3=h3;Heading 4=h4"
       };
     } else {
       throw new Error('Unknown editor type "' + self._editorType + '"');

@@ -111,21 +111,21 @@ FormDialog.prototype.augmentModel = function(model, config) {
   var newFields = [];
   // Add cancel button first to maintain consistent
   // styles with TinyMce
+  if (config.acceptButtonLabel) {
+    newFields.push({
+      name: 'save_button',
+      control: 'button',
+      value: config.acceptButtonLabel,
+      controlstyle: 'margin-right:10px; margin-top:15px;',
+    });
+  }
   if (config.cancelButtonLabel) {
     newFields.push({
       name: 'cancel_button',
       control: 'button',
       value: config.cancelButtonLabel,
       controlclass: 'secondary',
-      controlstyle: 'margin-right:10px; margin-top:10px;'
-    });
-  }
-  if (config.acceptButtonLabel) {
-    newFields.push({
-      name: 'save_button',
-      control: 'button',
-      value: config.acceptButtonLabel,
-      nl:false
+      nl:false,
     });
   }
   // Don't mutate the model!

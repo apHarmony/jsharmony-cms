@@ -1,5 +1,7 @@
 var ejs = require('ejs');
 var cheerio = require('cheerio');
+var _ = require('lodash');
+var Helper = require('jsharmony/Helper');
 
 /**
  * @typedef {Object} RenderContext
@@ -151,7 +153,9 @@ class ComponentRenderer {
       baseUrl: '',
       data: data,
       properties: props,
-      type: 'component'
+      type: 'component',
+      _: _,
+      escapeHTML: Helper.escapeHTML,
     };
 
     let component = '';

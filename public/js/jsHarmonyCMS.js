@@ -238,7 +238,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   });
 
   fields.push({
-    caption: '', control:'html', value:'<div data-id="previewWrapper"></div>', 'block':true
+    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor" data-id="previewWrapper"></div>', 'block':true
   });
 
   var model = _.extend({}, modelConfig);
@@ -1420,21 +1420,21 @@ FormDialog.prototype.augmentModel = function(model, config) {
   var newFields = [];
   // Add cancel button first to maintain consistent
   // styles with TinyMce
+  if (config.acceptButtonLabel) {
+    newFields.push({
+      name: 'save_button',
+      control: 'button',
+      value: config.acceptButtonLabel,
+      controlstyle: 'margin-right:10px; margin-top:15px;',
+    });
+  }
   if (config.cancelButtonLabel) {
     newFields.push({
       name: 'cancel_button',
       control: 'button',
       value: config.cancelButtonLabel,
       controlclass: 'secondary',
-      controlstyle: 'margin-right:10px; margin-top:10px;'
-    });
-  }
-  if (config.acceptButtonLabel) {
-    newFields.push({
-      name: 'save_button',
-      control: 'button',
-      value: config.acceptButtonLabel,
-      nl:false
+      nl:false,
     });
   }
   // Don't mutate the model!
@@ -2084,11 +2084,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var template =
         '<div tabindex="0" data-component-template="gridRow">' +
           '<div class="toolbar">' +
-            '<button data-component-part="editButton" data-allowReadOnly>' +
-              '<span class="material-icons">' +
-                'edit' +
-              '</span>' +
-            '</button>' +
             '<button data-component-part="moveItem" data-dir="prev">' +
               '<span class="material-icons" style="transform: rotate(-90deg)">' +
                 'chevron_right' +
@@ -2097,6 +2092,11 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
             '<button data-component-part="moveItem" data-dir="next">' +
               '<span class="material-icons" style="transform: rotate(90deg)">' +
                 'chevron_right' +
+              '</span>' +
+            '</button>' +
+            '<button data-component-part="editButton" data-allowReadOnly>' +
+              '<span class="material-icons">' +
+                'edit' +
               '</span>' +
             '</button>' +
             '<button data-component-part="deleteItem">' +
@@ -2335,13 +2335,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     maxHeight: 800
   });
 
   var $toolbar;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector) {
+  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
 
     var editor = self._jsh.App[xModel.id];
     var $dialog = $(dialogSelector);
@@ -2409,7 +2409,12 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
         if (info == undefined) return;
         self.openLinkBrowser(function(url, data) {
-          var title = data.page_path || '';
+          var title = url||'';
+          if(data){
+            if(data.page_path) title = data.page_path;
+            else if(data.media_path) title = data.media_path;
+            else if(data.item_path) title = data.item_path;
+          }
           update(url, title);
         });
       } else if (info.browserType === 'media') {
@@ -2442,6 +2447,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
     self._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
     self._onRenderDataItemPreview = editor.onRenderDataItemPreview;
+
+    if(onComplete) onComplete();
   }
 
   dialog.onOpened = function($dialog, xModel) {
@@ -2582,7 +2589,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dialog = new GridDialog(this._jsh, modelConfig, {
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     maxHeight: 800,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -2590,7 +2597,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dataController;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector) {
+  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
 
     self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
 
@@ -2623,6 +2630,8 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     modelInterface.close = function() {
       self._jsh.XExt.CancelDialog();
     }
+
+    if(onComplete) onComplete();
   }
 
   dialog.onOpened = function($dialog, xModel) {
@@ -2869,11 +2878,10 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | image',
-        valid_elements : 'a,strong/b,p,span[style],p[*],h1[*],h2[*],h3[*],h4[*],img[*]',
-        plugins: ['image'],
+        toolbar: 'forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons',
+        valid_elements : 'a,strong/b,p,span[style],p[*],img[*],br[*]',
+        plugins: ['link image charmapmaterialicons'],
         menubar: false,
-        block_formats: "Heading 1=h1;Heading 2=h2;Heading 3=h3;Heading 4=h4"
       };
     } else {
       throw new Error('Unknown editor type "' + self._editorType + '"');
@@ -2949,7 +2957,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'jsHarmony_cms_component_dialog jsHarmony_cms_component_propertyFormEditor jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
   };
   
   if(model.popup){
@@ -3040,7 +3048,7 @@ TemplateRenderer.createRenderConfig = function(template, data, properties, cms) 
     data: data,
     properties: properties,
     template: template,
-    baseUrl: (cms._baseurl || '').replace(/\/+$/, '') + '/'
+    baseUrl: (cms._baseurl || '').replace(/\/+$/, '') + '/',
   };
 
   return config;
@@ -3062,7 +3070,9 @@ TemplateRenderer.render = function(config, type, jsh) {
       data: config.data,
       properties: config.properties,
       type: type,
-      gridContext: config.gridContext
+      gridContext: config.gridContext,
+      _: jsh._,
+      escapeHTML: jsh.XExt.escapeHTML,
     }
 
     var rendered = '';
@@ -5612,6 +5622,7 @@ var jsHarmonyCMS = function(){
   this.filePickerCallback = null;        //function(url)
 
   this.onInit = null;                    //function(jsh)
+  this.onLoad = null;                    //function(jsh)
   this.onLoaded = null;                  //function(jsh)
   this.onGetControllerUrl = null;        //function() => url
   this.onFilePickerCallback = null;      //function(jdata)
@@ -5688,6 +5699,7 @@ var jsHarmonyCMS = function(){
   }
 
   this.load = function(){
+    if(_this.onLoad) _this.onLoad(jsh);
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];

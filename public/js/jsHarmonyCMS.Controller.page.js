@@ -38,17 +38,21 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.authors = [];
   this.role = '';
 
-  this.init = function(){
+  this.init = function(onComplete){
     if(jsh._GET['page_key']) _this.page_key = jsh._GET['page_key'];
     if(jsh._GET['page_id']) _this.page_id = jsh._GET['page_id'];
     if(jsh._GET['page_template_id']) _this.page_template_id = jsh._GET['page_template_id'];
 
     if(_this.page_key){
-      this.load(function(err){ cms.loader.StopLoading(); });
+      this.load(function(err){
+        cms.loader.StopLoading();
+        if(onComplete) onComplete(err);
+      });
     }
     else{
       cms.loader.StopLoading();
       XExt.Alert('Page Key not defined in querystring');
+      if(onComplete) onComplete(new Error('Page Key not defined in querystring'));
     }
   }
 

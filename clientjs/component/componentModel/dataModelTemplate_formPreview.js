@@ -50,7 +50,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   });
 
   fields.push({
-    caption: '', control:'html', value:'<div data-id="previewWrapper"></div>', 'block':true
+    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor" data-id="previewWrapper"></div>', 'block':true
   });
 
   var model = _.extend({}, modelConfig);

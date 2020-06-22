@@ -427,11 +427,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var template =
         '<div tabindex="0" data-component-template="gridRow">' +
           '<div class="toolbar">' +
-            '<button data-component-part="editButton" data-allowReadOnly>' +
-              '<span class="material-icons">' +
-                'edit' +
-              '</span>' +
-            '</button>' +
             '<button data-component-part="moveItem" data-dir="prev">' +
               '<span class="material-icons" style="transform: rotate(-90deg)">' +
                 'chevron_right' +
@@ -440,6 +435,11 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
             '<button data-component-part="moveItem" data-dir="next">' +
               '<span class="material-icons" style="transform: rotate(90deg)">' +
                 'chevron_right' +
+              '</span>' +
+            '</button>' +
+            '<button data-component-part="editButton" data-allowReadOnly>' +
+              '<span class="material-icons">' +
+                'edit' +
               '</span>' +
             '</button>' +
             '<button data-component-part="deleteItem">' +

@@ -199,6 +199,10 @@ body .tox-collection__item-icon .material-icons {
   outline: 1px dashed #b4d7ff;
 }
 
+.cms_component_preview {
+  border: 1px solid #eee;
+}
+
 .cms_component.empty,
 .cms_component_preview.empty {
   display: flex;
@@ -246,10 +250,10 @@ jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] {
 
 .jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar {
   position: relative;
-  border: 0 solid;
-  border-bottom-width: 1px;
-  margin-top: 15px;
-  background-color: #fcfcfc;
+  text-align:right;
+  margin-bottom:6px;
+  margin-top:24px;
+  padding-right:1px;
 }
 
 .jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar button {
@@ -268,4 +272,110 @@ jsHarmony_cms_component_dataGridEditor [data-component-template="gridRow"] {
 
 .material-icons {
   font-family: 'Material Icons' !important;
+}
+
+.jsHarmony_cms_component_dialog input.xform_ctrl,
+.jsHarmony_cms_component_dialog select.xform_ctrl {
+  margin-bottom:11px;
+}
+
+.jsharmony_cms_preview_editor {
+  margin-top:5px;
+  margin-bottom:2px;
+  border:1px solid #b4d7ff;
+}
+
+.xdialogblock .xdialogbox.jsHarmony_cms_component_dialog .xbodyhead .xtitle {
+  margin-top:0px;
+}
+
+.xdialogblock .xdialogbox.jsHarmony_cms_component_dialog.jsHarmony_cms_component_dataGridEditor .xbodyhead .xtitle {
+  padding-bottom:0px;
+}
+
+.xdialogbox .xform_caption {
+  font-size: 1.1em;
+}
+
+.xdialogbox .xform_caption.leading {
+  padding-right: 6px;
+}
+
+.xdialogbox input.xform_ctrl,
+.xdialogbox select.xform_ctrl  {
+  box-sizing: border-box;
+  font-size: 1.1em;
+  padding: 2px 5px;
+}
+
+.xdialogbox input[type="button"] {
+  background-color: #207ab7;
+  background-image: none;
+  background-position: none;
+  background-repeat: none;
+  border-color: #207ab7;
+  border-radius: 3px;
+  border-style: solid;
+  border-width: 1px;
+  box-shadow: none;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1;
+  line-height: 24px;
+  margin: 3px 0;
+  outline: 0;
+  padding: 4px 16px;
+  text-align: center;
+  text-decoration: none;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.xdialogbox input.button_ok,
+.xdialogbox input.button_no,
+.xdialogbox input.button_cancel {
+  margin-top:15px;
+}
+
+.xdialogbox input[type="button"]:hover:not(:disabled) {
+  background-color: #1c6ca1;
+  background-image: none;
+  border-color: #1c6ca1;
+  box-shadow: none;
+  color: #fff;
+}
+
+.xdialogbox input[type="button"].secondary {
+  background-color: #f0f0f0;
+  background-image: none;
+  background-position: none;
+  background-repeat: none;
+  border-color: #f0f0f0;
+  border-radius: 3px;
+  border-style: solid;
+  border-width: 1px;
+  box-shadow: none;
+  color: #222f3e;
+}
+
+.xdialogbox input[type="button"].secondary:hover:not(:disabled) {
+  background-color: #e3e3e3;
+  background-image: none;
+  border-color: #e3e3e3;
+  box-shadow: none;
+  color: #222f3e;
+}
+
+.xdialogbox .xbodyhead .xtitle {
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.3;
+  margin-bottom: 0px;
+  margin-top: 10px;
 }

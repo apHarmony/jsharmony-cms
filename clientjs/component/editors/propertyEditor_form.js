@@ -37,7 +37,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'jsHarmony_cms_component_dialog jsHarmony_cms_component_propertyFormEditor jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
   };
   
   if(model.popup){

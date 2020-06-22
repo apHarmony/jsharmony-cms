@@ -53,6 +53,7 @@ var jsHarmonyCMS = function(){
   this.filePickerCallback = null;        //function(url)
 
   this.onInit = null;                    //function(jsh)
+  this.onLoad = null;                    //function(jsh)
   this.onLoaded = null;                  //function(jsh)
   this.onGetControllerUrl = null;        //function() => url
   this.onFilePickerCallback = null;      //function(jdata)
@@ -129,6 +130,7 @@ var jsHarmonyCMS = function(){
   }
 
   this.load = function(){
+    if(_this.onLoad) _this.onLoad(jsh);
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];

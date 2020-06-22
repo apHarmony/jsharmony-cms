@@ -127,13 +127,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     maxHeight: 800
   });
 
   var $toolbar;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector) {
+  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
 
     var editor = self._jsh.App[xModel.id];
     var $dialog = $(dialogSelector);
@@ -201,7 +201,12 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
         if (info == undefined) return;
         self.openLinkBrowser(function(url, data) {
-          var title = data.page_path || '';
+          var title = url||'';
+          if(data){
+            if(data.page_path) title = data.page_path;
+            else if(data.media_path) title = data.media_path;
+            else if(data.item_path) title = data.item_path;
+          }
           update(url, title);
         });
       } else if (info.browserType === 'media') {
@@ -234,6 +239,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
     self._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
     self._onRenderDataItemPreview = editor.onRenderDataItemPreview;
+
+    if(onComplete) onComplete();
   }
 
   dialog.onOpened = function($dialog, xModel) {

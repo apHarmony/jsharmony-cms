@@ -47,7 +47,7 @@ TemplateRenderer.createRenderConfig = function(template, data, properties, cms) 
     data: data,
     properties: properties,
     template: template,
-    baseUrl: (cms._baseurl || '').replace(/\/+$/, '') + '/'
+    baseUrl: (cms._baseurl || '').replace(/\/+$/, '') + '/',
   };
 
   return config;
@@ -69,7 +69,9 @@ TemplateRenderer.render = function(config, type, jsh) {
       data: config.data,
       properties: config.properties,
       type: type,
-      gridContext: config.gridContext
+      gridContext: config.gridContext,
+      _: jsh._,
+      escapeHTML: jsh.XExt.escapeHTML,
     }
 
     var rendered = '';
