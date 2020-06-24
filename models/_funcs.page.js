@@ -23,7 +23,6 @@ var path = require('path');
 var fs = require('fs');
 var urlparser = require('url');
 var cheerio = require('cheerio');
-var ComponentRenderer = require('./Component_Renderer');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -208,10 +207,6 @@ module.exports = exports = function(module, funcs){
     return rslt;
   }
 
-  exports.replaceComponents = function(content, options) {
-    return new ComponentRenderer(options.components).render(content);
-  }
-
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
       getMediaURL: function(media_key, branchData, getLinkContent){ return ''; },
@@ -394,14 +389,9 @@ module.exports = exports = function(module, funcs){
           publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
 
           _.each(components, function(component){
-              if(component.remote_template){
+              if(component.remote_template && component.remote_template.editor){
                 for(var key in publish_params){
-                  if(component.remote_template.publish){
-                    component.remote_template.publish = Helper.ReplaceAll(component.remote_template.publish, '%%%' + key + '%%%', publish_params[key]);
-                  }
-                  if(component.remote_template.editor){
-                    component.remote_template.editor = Helper.ReplaceAll(component.remote_template.editor, '%%%' + key + '%%%', publish_params[key]);
-                  }
+                  component.remote_template.editor = Helper.ReplaceAll(component.remote_template.editor, '%%%' + key + '%%%', publish_params[key]);
                 }
               }
             });

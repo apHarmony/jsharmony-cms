@@ -33,13 +33,15 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var data = modelTemplate.populateDataInstance(properties || {});
 
+  /** @type {import('../dialogs/formDialog').FormDialogConfig} */
   var dialogParams = {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'jsHarmony_cms_component_dialog jsHarmony_cms_component_propertyFormEditor jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
+    dialogId: model.id
   };
-  
+
   if(model.popup){
     dialogParams.minHeight = model.popup[1];
     dialogParams.minWidth = model.popup[0];

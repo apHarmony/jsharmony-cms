@@ -4,6 +4,8 @@ var Dialog = require('./dialog');
  * @typedef {Object} GridDialogConfig
  * @property {(boolean | undefined)} closeOnBackdropClick - Set true to close the dialog
  * when the background is clicked
+ * @property {(string | undefined)} dialogId - set this to override the assigned unique ID for the dialog.
+ * There is no need to set this. If it is set, it must be globally unique among ALL dialogs.
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
  * @property {(number | undefined)} minWidth - set min the width (pixels) of the form if defined
@@ -78,6 +80,7 @@ GridDialog.prototype.open = function() {
   var dialog = new Dialog(this.jsh, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
+    dialogId: config.dialogId,
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,

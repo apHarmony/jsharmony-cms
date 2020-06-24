@@ -4,6 +4,8 @@ var DialogResizer = require('./dialogResizer');
  * @typedef {Object} DialogConfig
  * @property {(boolean | undefined)} closeOnBackdropClick - Set true to close the dialog
  * when the background is clicked
+ * @property {(string | undefined)} dialogId - set this to override the assigned unique ID for the dialog.
+ * There is no need to set this. If it is set, it must be globally unique among ALL dialogs.
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
  * @property {(number | undefined)} minHeight - set the min height (pixels) of the form if defined
@@ -59,9 +61,11 @@ var DialogResizer = require('./dialogResizer');
 function Dialog(jsh, model, config) {
   this._jsh = jsh;
   this._model = model;
-  this._id = this.getNextId();
+  this._id = config.dialogId ? config.dialogId : this.getNextId();
+  /** @type {DialogConfig} */
   this._config = config || {};
   this._$wrapper = this.makeDialog(this._id, this._config);
+  this._$overlay = undefined;
   this._destroyed = false;
 
   $('body').append(this._$wrapper)
@@ -111,6 +115,7 @@ Dialog._idLookup = {};
  */
 Dialog.prototype.destroy = function() {
   this._$wrapper.remove();
+  if (this._$overlay) this._$overlay.remove();
   delete Dialog._idLookup[this._id];
   this._destroyed = true;
 }
@@ -123,6 +128,23 @@ Dialog.prototype.destroy = function() {
  */
 Dialog.prototype.getFormSelector = function() {
   return  '.xdialogbox.' + this._id;
+}
+
+/**
+ * Find the z-index of the child element with the
+ * highest z-index inside of the dialog block
+ * @private
+ * @returns {number}
+ */
+Dialog.prototype.getMaxDialogBlockZIndex = function() {
+  var self = this;
+  var maxZIndex = 0;
+  $('.xdialogblock').children().each(function(i, el) {
+    var zIndex = self.getZIndex(el);
+    maxZIndex = Math.max(maxZIndex, zIndex);
+  });
+
+  return maxZIndex;
 }
 
 /**
@@ -151,6 +173,42 @@ Dialog.prototype.getNextId = function() {
  */
 Dialog.prototype.getScrollTop = function($wrapper) {
   return $wrapper.scrollParent().scrollTop();
+}
+
+/**
+ * Get the z-index for the element.
+ * @private
+ * @param {(HTMLElement | JQuery)} element
+ * @returns {number}
+ */
+Dialog.prototype.getZIndex = function(element) {
+  var zIndex = parseInt( $(element).css('zIndex'));
+  return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
+}
+
+/**
+ * Create and insert the overlay for this dialog.
+ * @private
+ */
+Dialog.prototype.insertOverlay = function() {
+  var $dialogBlock = $('.xdialogblock');
+  var $childOverlay = $('<div class="childDialogOverlay"></div>')
+  $childOverlay
+    .css('background-color', 'rgba(0,0,0,0.1)')
+    .css('position', 'absolute')
+    .css('width', '100%')
+    .css('height', '100%');
+
+  this.setZIndexToNextMax($childOverlay);
+
+  $childOverlay.on('click', function() {
+    $dialogBlock.click();
+  });
+
+
+  $dialogBlock.append($childOverlay);
+
+  this._$overlay = $childOverlay;
 }
 
 /**
@@ -200,12 +258,13 @@ Dialog.prototype.open = function() {
 
   var self = this;
   var formSelector = this.getFormSelector();
+  var oldActive = document.activeElement;
   this.load(function(xModel) {
 
+    self.insertOverlay();
     self.registerLovs(xModel);
     var $wrapper = $(formSelector);
     var lastScrollTop = 0
-
     self._jsh.XExt.execif(self.onBeforeOpen,
       function(f){
         self.onBeforeOpen(xModel, f);
@@ -216,9 +275,10 @@ Dialog.prototype.open = function() {
 
         self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
           function(acceptFunc, cancelFunc) {
+            self.setZIndexToNextMax($wrapper);
             lastScrollTop = self.getScrollTop($wrapper);
             dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
+            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc);
           },
           function(success) {
             lastScrollTop = self.getScrollTop($wrapper);
@@ -231,13 +291,14 @@ Dialog.prototype.open = function() {
             return false;
           },
           function() {
+            if (oldActive) oldActive.focus();
             self.setScrollTop(lastScrollTop, $wrapper);
             dialogResizer.closeDialog();
             if(_.isFunction(self.onClose)) self.onClose();
             self.destroy();
           },
-          { reuse: false, backgroundClose: self._config.closeOnBackdropClick }
-        );        
+          { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
+        );
       }
     );
   });
@@ -275,6 +336,18 @@ Dialog.prototype.registerLovs = function(xModel) {
  */
 Dialog.prototype.setScrollTop = function(position, $wrapper) {
   $wrapper.scrollParent().scrollTop(position);
+}
+
+/**
+ * Find the current maximum z-index for the children
+ * elements of the dialog block and set the given
+ * element's z-index to one greater.
+ * @private
+ * @param {(HTMLElement | JQuery)} element
+ */
+Dialog.prototype.setZIndexToNextMax = function(element) {
+  var maxZIndex = this.getMaxDialogBlockZIndex() + 1;
+  $(element).css('zIndex', maxZIndex);
 }
 
 exports = module.exports = Dialog;

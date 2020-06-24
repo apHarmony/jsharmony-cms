@@ -21,13 +21,14 @@ var prettyhtml = require('js-beautify').html;
 
 function ModuleFunctions(module){
   this.deploymentQueue = undefined;
-  
+
   this.prettyhtml = prettyhtml;
   _.extend(this, require('./_funcs.page.js')(module, this));
   _.extend(this, require('./_funcs.media.js')(module, this));
   _.extend(this, require('./_funcs.menu.js')(module, this));
   _.extend(this, require('./_funcs.sitemap.js')(module, this));
   _.extend(this, require('./_funcs.deploy.js')(module, this));
+  _.extend(this, require('./_funcs.component.js')(module, this));
   _.extend(this, require('./_funcs.diff.js')(module, this));
   _.extend(this, require('./_funcs.validate.js')(module, this));
   _.extend(this, require('./_funcs.conflicts.js')(module, this));
