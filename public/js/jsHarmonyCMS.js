@@ -325,7 +325,7 @@ DataModelTemplate_FormPreview.prototype.getModelJs = function() {
 DataModelTemplate_FormPreview.getNextInstanceId = function(componentType ) {
   if (DataModelTemplate_FormPreview._id == undefined) DataModelTemplate_FormPreview._id = 0;
   var id = DataModelTemplate_FormPreview._id++;
-  return 'DataModel_FormPreview' + componentType + '_' + id;
+  return 'DataModel_FormPreview_' + componentType + '_' + id;
 }
 
 /**
@@ -835,7 +835,7 @@ PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
 PropertiesModelTemplate_Form.getNextInstanceId = function(componentType ) {
   if (PropertiesModelTemplate_Form._id == undefined) PropertiesModelTemplate_Form._id = 0;
   var id = PropertiesModelTemplate_Form._id++;
-  return 'PropertiesModel_Form' + componentType + '_' + id;
+  return 'PropertiesModel_Form_' + componentType + '_' + id;
 }
 
 /**
@@ -893,6 +893,8 @@ var DialogResizer = require('./dialogResizer');
  * @typedef {Object} DialogConfig
  * @property {(boolean | undefined)} closeOnBackdropClick - Set true to close the dialog
  * when the background is clicked
+ * @property {(string | undefined)} dialogId - set this to override the assigned unique ID for the dialog.
+ * There is no need to set this. If it is set, it must be globally unique among ALL dialogs.
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
  * @property {(number | undefined)} minHeight - set the min height (pixels) of the form if defined
@@ -948,9 +950,11 @@ var DialogResizer = require('./dialogResizer');
 function Dialog(jsh, model, config) {
   this._jsh = jsh;
   this._model = model;
-  this._id = this.getNextId();
+  this._id = config.dialogId ? config.dialogId : this.getNextId();
+  /** @type {DialogConfig} */
   this._config = config || {};
   this._$wrapper = this.makeDialog(this._id, this._config);
+  this._$overlay = undefined;
   this._destroyed = false;
 
   $('body').append(this._$wrapper)
@@ -1000,6 +1004,7 @@ Dialog._idLookup = {};
  */
 Dialog.prototype.destroy = function() {
   this._$wrapper.remove();
+  if (this._$overlay) this._$overlay.remove();
   delete Dialog._idLookup[this._id];
   this._destroyed = true;
 }
@@ -1012,6 +1017,23 @@ Dialog.prototype.destroy = function() {
  */
 Dialog.prototype.getFormSelector = function() {
   return  '.xdialogbox.' + this._id;
+}
+
+/**
+ * Find the z-index of the child element with the
+ * highest z-index inside of the dialog block
+ * @private
+ * @returns {number}
+ */
+Dialog.prototype.getMaxDialogBlockZIndex = function() {
+  var self = this;
+  var maxZIndex = 0;
+  $('.xdialogblock').children().each(function(i, el) {
+    var zIndex = self.getZIndex(el);
+    maxZIndex = Math.max(maxZIndex, zIndex);
+  });
+
+  return maxZIndex;
 }
 
 /**
@@ -1040,6 +1062,42 @@ Dialog.prototype.getNextId = function() {
  */
 Dialog.prototype.getScrollTop = function($wrapper) {
   return $wrapper.scrollParent().scrollTop();
+}
+
+/**
+ * Get the z-index for the element.
+ * @private
+ * @param {(HTMLElement | JQuery)} element
+ * @returns {number}
+ */
+Dialog.prototype.getZIndex = function(element) {
+  var zIndex = parseInt( $(element).css('zIndex'));
+  return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
+}
+
+/**
+ * Create and insert the overlay for this dialog.
+ * @private
+ */
+Dialog.prototype.insertOverlay = function() {
+  var $dialogBlock = $('.xdialogblock');
+  var $childOverlay = $('<div class="childDialogOverlay"></div>')
+  $childOverlay
+    .css('background-color', 'rgba(0,0,0,0.1)')
+    .css('position', 'absolute')
+    .css('width', '100%')
+    .css('height', '100%');
+
+  this.setZIndexToNextMax($childOverlay);
+
+  $childOverlay.on('click', function() {
+    $dialogBlock.click();
+  });
+
+
+  $dialogBlock.append($childOverlay);
+
+  this._$overlay = $childOverlay;
 }
 
 /**
@@ -1089,12 +1147,13 @@ Dialog.prototype.open = function() {
 
   var self = this;
   var formSelector = this.getFormSelector();
+  var oldActive = document.activeElement;
   this.load(function(xModel) {
 
+    self.insertOverlay();
     self.registerLovs(xModel);
     var $wrapper = $(formSelector);
     var lastScrollTop = 0
-
     self._jsh.XExt.execif(self.onBeforeOpen,
       function(f){
         self.onBeforeOpen(xModel, f);
@@ -1105,9 +1164,10 @@ Dialog.prototype.open = function() {
 
         self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
           function(acceptFunc, cancelFunc) {
+            self.setZIndexToNextMax($wrapper);
             lastScrollTop = self.getScrollTop($wrapper);
             dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc)
+            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc);
           },
           function(success) {
             lastScrollTop = self.getScrollTop($wrapper);
@@ -1120,13 +1180,14 @@ Dialog.prototype.open = function() {
             return false;
           },
           function() {
+            if (oldActive) oldActive.focus();
             self.setScrollTop(lastScrollTop, $wrapper);
             dialogResizer.closeDialog();
             if(_.isFunction(self.onClose)) self.onClose();
             self.destroy();
           },
-          { reuse: false, backgroundClose: self._config.closeOnBackdropClick }
-        );        
+          { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
+        );
       }
     );
   });
@@ -1164,6 +1225,18 @@ Dialog.prototype.registerLovs = function(xModel) {
  */
 Dialog.prototype.setScrollTop = function(position, $wrapper) {
   $wrapper.scrollParent().scrollTop(position);
+}
+
+/**
+ * Find the current maximum z-index for the children
+ * elements of the dialog block and set the given
+ * element's z-index to one greater.
+ * @private
+ * @param {(HTMLElement | JQuery)} element
+ */
+Dialog.prototype.setZIndexToNextMax = function(element) {
+  var maxZIndex = this.getMaxDialogBlockZIndex() + 1;
+  $(element).css('zIndex', maxZIndex);
 }
 
 exports = module.exports = Dialog;
@@ -1313,6 +1386,8 @@ var Dialog = require('./dialog');
  * @typedef {Object} FormDialogConfig
  * @property {(boolean | undefined)} closeOnBackdropClick - Set true to close the dialog
  * when the background is clicked
+ * @property {(string | undefined)} dialogId - set this to override the assigned unique ID for the dialog.
+ * There is no need to set this. If it is set, it must be globally unique among ALL dialogs.
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
  * @property {(number | undefined)} width - set the width (pixels) of the form if defined
@@ -1457,6 +1532,7 @@ FormDialog.prototype.open = function(data) {
   var dialog = new Dialog(this.jsh, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
+    dialogId: config.dialogId,
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,
@@ -1527,6 +1603,8 @@ var Dialog = require('./dialog');
  * @typedef {Object} GridDialogConfig
  * @property {(boolean | undefined)} closeOnBackdropClick - Set true to close the dialog
  * when the background is clicked
+ * @property {(string | undefined)} dialogId - set this to override the assigned unique ID for the dialog.
+ * There is no need to set this. If it is set, it must be globally unique among ALL dialogs.
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
  * @property {(number | undefined)} minWidth - set min the width (pixels) of the form if defined
@@ -1601,6 +1679,7 @@ GridDialog.prototype.open = function() {
   var dialog = new Dialog(this.jsh, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
+    dialogId: config.dialogId,
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,
@@ -1734,7 +1813,6 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
   /** @public @type {DataEditor_GridPreviewController~renderGridRow} */
   this.onRenderGridRow = undefined;
 
-
   if (!_.isArray(data || [])) {
     throw new Error('Grid data must be an array');
   }
@@ -1777,7 +1855,7 @@ DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
     $rowComponent.attr('data-item-id', id);
     setTimeout(function() {
       self.openItemEditor(id);
-      $rowComponent[0].scrollIntoView();
+      self.scrollToItemRow(id);
     });
 
     this.forceCommit();
@@ -1854,9 +1932,26 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
     // Data was changed in the view
     this.dataUpdated();
 
+    // Need to maintain the scroll position
+    // after the grid re-renders
+    var scrollTop = this.$dialogWrapper.scrollTop();
+
     // A refresh is required by the current grid
     // system to ensure rows are re-drawn in correct order.
     this.forceRefresh();
+
+    // Since we don't really know how long it will take
+    // (or have a way to know when render is complete)
+    // we will just set the scroll every so often
+    // for a short period of time.
+    var self = this;
+    var refreshTime  = 800;
+    var refreshInterval = 50;
+    var remainingIntervals = refreshTime/refreshInterval;
+    var interval = setInterval(function() {
+      if (remainingIntervals-- < 2) clearInterval(interval);
+      self.$dialogWrapper.scrollTop(scrollTop);
+    }, refreshInterval);
   }
 }
 
@@ -2045,7 +2140,7 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
       self.dataUpdated();
       self.renderRow(currentData);
   }, function() {
-    self.getRowElementFromRowId(rowId)[0].scrollIntoView();
+    self.scrollToItemRow(itemId);
   });
 }
 
@@ -2122,12 +2217,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   if (this.isReadOnly()) {
     $row.find('button:not([data-allowReadOnly])').attr('disabled', true);
   } else {
-    // Disable "move up" button if item is first, otherwise enable
-    $row.find('[data-component-part="moveItem"][data-dir="prev"]')
-        .attr('disabled', isFirst)
-    // Disable "move down" button if item is last, otherwise enable
-    $row.find('[data-component-part="moveItem"][data-dir="next"]')
-      .attr('disabled', isLast)
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
         if (self.isReadOnly()) return;
@@ -2158,6 +2247,8 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
     }
   });
 
+  this.updateSequenceButtonViews();
+
   if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties);
 
   setTimeout(function() {
@@ -2165,6 +2256,41 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
       self.cms.componentManager.renderComponent(el);
     });
   }, 100);
+}
+
+/**
+ * Set the modal scroll position to show the row for the
+ * item with the given item ID. If the item is already visible
+ * then do nothing.
+ * @private
+ * @param {string} itemId
+ */
+DataEditor_GridPreviewController.prototype.scrollToItemRow = function(itemId) {
+
+  var $row = this.getRowElementFromRowId(this.getRowIdFromItemId(itemId));
+  if ($row.length < 1 ) return;
+
+  var $scrollParent = $row.scrollParent();
+  var scrollParentY = $scrollParent.offset().top;
+  var rowRelativeStartY = $row.offset().top - scrollParentY;
+  var rowRelativeEndY = rowRelativeStartY + $row.outerHeight();
+  var parentRelativeMaxY = $scrollParent.height();
+
+  var isRowFullyInView = rowRelativeStartY >= 0 && rowRelativeEndY <= parentRelativeMaxY;
+  if (isRowFullyInView) return;
+
+  var rowFitsInView = (rowRelativeEndY - rowRelativeStartY) < parentRelativeMaxY;
+  if (!rowFitsInView) {
+    // If the row doesn't fit then just scroll to the top of the row
+    $row[0].scrollIntoView();
+    return;
+  }
+
+  // Try to minimize the scroll distance
+  var rowTopDistanceFromParentTop = Math.abs(rowRelativeStartY);
+  var rowBottomDistanceFromParentBottom = Math.abs(parentRelativeMaxY - rowRelativeEndY);
+  var alignTop = rowTopDistanceFromParentTop <= rowBottomDistanceFromParentBottom;
+  $row[0].scrollIntoView(alignTop);
 }
 
 /**
@@ -2201,6 +2327,28 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
   var data = { items: items };
 
   if (_.isFunction(this.onDataUpdated)) this.onDataUpdated(data);
+}
+
+/**
+ * Iterate through data and enable/disable sequence buttons as needed.
+ * @private
+ */
+DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function() {
+
+  var self = this;
+  _.forEach(this._dataStore.getDataArray(), function(item, index) {
+    var dataId = item[self._idFieldName];
+    var $row = self.getRowElementFromRowId(self.getRowIdFromItemId(dataId));
+
+    var isFirst = index < 1;
+    var isLast = index >= (self._dataStore.count() - 1);
+
+    $row.find('[data-component-part="moveItem"][data-dir="prev"]')
+        .attr('disabled', isFirst || self.isReadOnly());
+
+    $row.find('[data-component-part="moveItem"][data-dir="next"]')
+      .attr('disabled', isLast || self.isReadOnly());
+  });
 }
 
 exports = module.exports = DataEditor_GridPreviewController;
@@ -2336,13 +2484,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    dialogId: modelConfig.id,
     maxHeight: 800
   });
 
   var $toolbar;
 
   dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
-
     var editor = self._jsh.App[xModel.id];
     var $dialog = $(dialogSelector);
     $dialog.css('opacity', '0');
@@ -2590,6 +2738,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
   var dialog = new GridDialog(this._jsh, modelConfig, {
     closeOnBackdropClick: true,
     cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    dialogId: componentInstanceId,
     maxHeight: 800,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -2953,13 +3102,15 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var data = modelTemplate.populateDataInstance(properties || {});
 
+  /** @type {import('../dialogs/formDialog').FormDialogConfig} */
   var dialogParams = {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'jsHarmony_cms_component_dialog jsHarmony_cms_component_propertyFormEditor jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
+    dialogId: model.id
   };
-  
+
   if(model.popup){
     dialogParams.minHeight = model.popup[1];
     dialogParams.minWidth = model.popup[0];
@@ -3099,6 +3250,16 @@ exports = module.exports = TemplateRenderer;
  */
 
 /**
+ * @typedef {Object} ComponentInfo
+ * @property {string} componentType
+ * @property {bool} hasData
+ * @property {bool} hasProperties
+ * @property {string} iconId
+ * @property {string} menuLabel
+ *
+ */
+
+/**
  * Each icon definition will be registered with the editor
  * and available for use within the editor by name property.
  * @type {Object.<string, IconDefinition>}
@@ -3171,7 +3332,7 @@ function JsHarmonyComponentPlugin(editor, components, jsHarmonyCmsComponentManag
 /**
  * Create the menu button for picking components to insert.
  * @private
- * @param {Object[]} componentInfo
+ * @param {ComponentInfo[]} componentInfo
  */
 JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componentInfo) {
   var self = this;
@@ -3183,8 +3344,8 @@ JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componen
       items = _.map(componentInfo, function(item) {
         return {
           type: 'menuitem',
-          text: item.text,
-          icon: item.icon,
+          text: item.menuLabel,
+          icon: item.iconId,
           onAction: function() { self.insertComponentContent(item.componentType); }
         }
       });
@@ -3197,13 +3358,13 @@ JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componen
  * Create and register the context toolbar for editing
  * the component properties and data.
  * @private
+ * @param {ComponentInfo[]} componentInfos
  */
-JsHarmonyComponentPlugin.prototype.createContextToolbar = function() {
+JsHarmonyComponentPlugin.prototype.createContextToolbar = function(componentInfos) {
 
   var self = this;
   var propButtonId = 'jsharmonyComponentPropEditor';
-  var dataButtonId = 'jsharmonyComponentDataEditor'
-  var contextId = 'jsharmonyComponentContextToolbar';
+  var dataButtonId = 'jsharmonyComponentDataEditor';
 
   self._editor.ui.registry.addButton(dataButtonId, {
     tooltip: 'Edit',
@@ -3219,16 +3380,37 @@ JsHarmonyComponentPlugin.prototype.createContextToolbar = function() {
     onAction: function() { self._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
   });
 
-  var toolbar = dataButtonId + ' ' + propButtonId;
+  var dataAndPropsToolbar = dataButtonId + ' ' + propButtonId;
+  var dataToolBar = dataButtonId;
+  var propsToolBar = propButtonId;
 
-  self._editor.ui.registry.addContextToolbar(contextId, {
-    predicate: function(node) {
-      return self._editor.dom.is(node, '[data-component]');
-    },
-    items: toolbar,
-    scope: 'node',
-    position: 'node'
-  });
+  var toolbarPredicate = function(enableData, enableProps) {
+    return function(node) {
+      var isComponent = self._editor.dom.is(node, '[data-component]');
+      if (!isComponent) {
+        return false;
+      }
+      var componentType = self._editor.dom.getAttrib(node, 'data-component');
+      var componentInfo = _.find(componentInfos, function(info) { return info.componentType === componentType });
+      if (!componentInfo) {
+        return false;
+      };
+      return enableData === componentInfo.hasData && enableProps === componentInfo.hasProperties;
+    }
+  }
+
+  var addToolbar = function(toolBarConfig, predicate) {
+    var contextId = 'jsharmonyComponentContextToolbar_' + toolBarConfig;
+    self._editor.ui.registry.addContextToolbar(contextId, {
+      predicate: predicate,
+      items: toolBarConfig,
+      scope: 'node',
+      position: 'node'
+    });
+  }
+  addToolbar(dataAndPropsToolbar, toolbarPredicate(true, true));
+  addToolbar(dataToolBar, toolbarPredicate(true, false));
+  addToolbar(propsToolBar, toolbarPredicate(false, true));
 }
 
 /**
@@ -3283,6 +3465,7 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
   var self = this;
 
+  /** @type {ComponentInfo[]} */
   var componentInfo = [];
 
   // Register component icons and build
@@ -3309,8 +3492,13 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
       self._editor.ui.registry.addIcon(iconRegistryName, icon);
 
-      var text =  component.title || component.id;
-      componentInfo.push({ componentType: component.id, icon: iconRegistryName, text: text });
+      componentInfo.push({
+        componentType: component.id,
+        hasData: ((component.data || {}).fields || []).length > 0,
+        hasProperties: ((component.properties || {}).fields || []).length > 0,
+        iconId: iconRegistryName,
+        menuLabel: component.title || component.id
+      });
     }
   });
 
@@ -3319,7 +3507,7 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
     self._editor.ui.registry.addIcon(ICONS[key].name, ICONS[key].html);
   }
 
-  this.createContextToolbar();
+  this.createContextToolbar(componentInfo);
   this.createComponentInsertMenu(componentInfo);
 
   this._editor.on('undo', function(info) { self.handleUndoRedo(info); });
@@ -3348,11 +3536,28 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
  */
 JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentType) {
 
-  this._editor.insertContent(this.makeComponentContainer(componentType));
+  var domUtil = this._editor.dom;
+  var selection = this._editor.selection;
+
+  var currentNode = selection.getEnd();
+
+  var placeHolderEl1 = domUtil.create('div', {}, '');
+  var placeHolderEl2 = domUtil.create('div', {}, '');
+
+  domUtil.insertAfter(placeHolderEl1, currentNode);
+  domUtil.insertAfter(placeHolderEl2, currentNode);
+
+  domUtil.replace(currentNode, placeHolderEl1)
+
+  selection.select(placeHolderEl2);
+  selection.collapse(false);
 
   // Don't need to fire the insert event here.
   // We have a parser filter that will detect the insert and
   // fire the event.
+  this._editor.insertContent(this.makeComponentContainer(componentType));
+
+  domUtil.remove(placeHolderEl2);
 }
 
 /**

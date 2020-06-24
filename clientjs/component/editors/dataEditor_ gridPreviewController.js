@@ -77,7 +77,6 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
   /** @public @type {DataEditor_GridPreviewController~renderGridRow} */
   this.onRenderGridRow = undefined;
 
-
   if (!_.isArray(data || [])) {
     throw new Error('Grid data must be an array');
   }
@@ -120,7 +119,7 @@ DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
     $rowComponent.attr('data-item-id', id);
     setTimeout(function() {
       self.openItemEditor(id);
-      $rowComponent[0].scrollIntoView();
+      self.scrollToItemRow(id);
     });
 
     this.forceCommit();
@@ -197,9 +196,26 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
     // Data was changed in the view
     this.dataUpdated();
 
+    // Need to maintain the scroll position
+    // after the grid re-renders
+    var scrollTop = this.$dialogWrapper.scrollTop();
+
     // A refresh is required by the current grid
     // system to ensure rows are re-drawn in correct order.
     this.forceRefresh();
+
+    // Since we don't really know how long it will take
+    // (or have a way to know when render is complete)
+    // we will just set the scroll every so often
+    // for a short period of time.
+    var self = this;
+    var refreshTime  = 800;
+    var refreshInterval = 50;
+    var remainingIntervals = refreshTime/refreshInterval;
+    var interval = setInterval(function() {
+      if (remainingIntervals-- < 2) clearInterval(interval);
+      self.$dialogWrapper.scrollTop(scrollTop);
+    }, refreshInterval);
   }
 }
 
@@ -388,7 +404,7 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
       self.dataUpdated();
       self.renderRow(currentData);
   }, function() {
-    self.getRowElementFromRowId(rowId)[0].scrollIntoView();
+    self.scrollToItemRow(itemId);
   });
 }
 
@@ -465,12 +481,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   if (this.isReadOnly()) {
     $row.find('button:not([data-allowReadOnly])').attr('disabled', true);
   } else {
-    // Disable "move up" button if item is first, otherwise enable
-    $row.find('[data-component-part="moveItem"][data-dir="prev"]')
-        .attr('disabled', isFirst)
-    // Disable "move down" button if item is last, otherwise enable
-    $row.find('[data-component-part="moveItem"][data-dir="next"]')
-      .attr('disabled', isLast)
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
         if (self.isReadOnly()) return;
@@ -501,6 +511,8 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
     }
   });
 
+  this.updateSequenceButtonViews();
+
   if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties);
 
   setTimeout(function() {
@@ -508,6 +520,41 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
       self.cms.componentManager.renderComponent(el);
     });
   }, 100);
+}
+
+/**
+ * Set the modal scroll position to show the row for the
+ * item with the given item ID. If the item is already visible
+ * then do nothing.
+ * @private
+ * @param {string} itemId
+ */
+DataEditor_GridPreviewController.prototype.scrollToItemRow = function(itemId) {
+
+  var $row = this.getRowElementFromRowId(this.getRowIdFromItemId(itemId));
+  if ($row.length < 1 ) return;
+
+  var $scrollParent = $row.scrollParent();
+  var scrollParentY = $scrollParent.offset().top;
+  var rowRelativeStartY = $row.offset().top - scrollParentY;
+  var rowRelativeEndY = rowRelativeStartY + $row.outerHeight();
+  var parentRelativeMaxY = $scrollParent.height();
+
+  var isRowFullyInView = rowRelativeStartY >= 0 && rowRelativeEndY <= parentRelativeMaxY;
+  if (isRowFullyInView) return;
+
+  var rowFitsInView = (rowRelativeEndY - rowRelativeStartY) < parentRelativeMaxY;
+  if (!rowFitsInView) {
+    // If the row doesn't fit then just scroll to the top of the row
+    $row[0].scrollIntoView();
+    return;
+  }
+
+  // Try to minimize the scroll distance
+  var rowTopDistanceFromParentTop = Math.abs(rowRelativeStartY);
+  var rowBottomDistanceFromParentBottom = Math.abs(parentRelativeMaxY - rowRelativeEndY);
+  var alignTop = rowTopDistanceFromParentTop <= rowBottomDistanceFromParentBottom;
+  $row[0].scrollIntoView(alignTop);
 }
 
 /**
@@ -544,6 +591,28 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
   var data = { items: items };
 
   if (_.isFunction(this.onDataUpdated)) this.onDataUpdated(data);
+}
+
+/**
+ * Iterate through data and enable/disable sequence buttons as needed.
+ * @private
+ */
+DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function() {
+
+  var self = this;
+  _.forEach(this._dataStore.getDataArray(), function(item, index) {
+    var dataId = item[self._idFieldName];
+    var $row = self.getRowElementFromRowId(self.getRowIdFromItemId(dataId));
+
+    var isFirst = index < 1;
+    var isLast = index >= (self._dataStore.count() - 1);
+
+    $row.find('[data-component-part="moveItem"][data-dir="prev"]')
+        .attr('disabled', isFirst || self.isReadOnly());
+
+    $row.find('[data-component-part="moveItem"][data-dir="next"]')
+      .attr('disabled', isLast || self.isReadOnly());
+  });
 }
 
 exports = module.exports = DataEditor_GridPreviewController;
