@@ -11,6 +11,16 @@
  */
 
 /**
+ * @typedef {Object} ComponentInfo
+ * @property {string} componentType
+ * @property {bool} hasData
+ * @property {bool} hasProperties
+ * @property {string} iconId
+ * @property {string} menuLabel
+ *
+ */
+
+/**
  * Each icon definition will be registered with the editor
  * and available for use within the editor by name property.
  * @type {Object.<string, IconDefinition>}
@@ -83,7 +93,7 @@ function JsHarmonyComponentPlugin(editor, components, jsHarmonyCmsComponentManag
 /**
  * Create the menu button for picking components to insert.
  * @private
- * @param {Object[]} componentInfo
+ * @param {ComponentInfo[]} componentInfo
  */
 JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componentInfo) {
   var self = this;
@@ -95,8 +105,8 @@ JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componen
       items = _.map(componentInfo, function(item) {
         return {
           type: 'menuitem',
-          text: item.text,
-          icon: item.icon,
+          text: item.menuLabel,
+          icon: item.iconId,
           onAction: function() { self.insertComponentContent(item.componentType); }
         }
       });
@@ -109,13 +119,13 @@ JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componen
  * Create and register the context toolbar for editing
  * the component properties and data.
  * @private
+ * @param {ComponentInfo[]} componentInfos
  */
-JsHarmonyComponentPlugin.prototype.createContextToolbar = function() {
+JsHarmonyComponentPlugin.prototype.createContextToolbar = function(componentInfos) {
 
   var self = this;
   var propButtonId = 'jsharmonyComponentPropEditor';
-  var dataButtonId = 'jsharmonyComponentDataEditor'
-  var contextId = 'jsharmonyComponentContextToolbar';
+  var dataButtonId = 'jsharmonyComponentDataEditor';
 
   self._editor.ui.registry.addButton(dataButtonId, {
     tooltip: 'Edit',
@@ -131,16 +141,37 @@ JsHarmonyComponentPlugin.prototype.createContextToolbar = function() {
     onAction: function() { self._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
   });
 
-  var toolbar = dataButtonId + ' ' + propButtonId;
+  var dataAndPropsToolbar = dataButtonId + ' ' + propButtonId;
+  var dataToolBar = dataButtonId;
+  var propsToolBar = propButtonId;
 
-  self._editor.ui.registry.addContextToolbar(contextId, {
-    predicate: function(node) {
-      return self._editor.dom.is(node, '[data-component]');
-    },
-    items: toolbar,
-    scope: 'node',
-    position: 'node'
-  });
+  var toolbarPredicate = function(enableData, enableProps) {
+    return function(node) {
+      var isComponent = self._editor.dom.is(node, '[data-component]');
+      if (!isComponent) {
+        return false;
+      }
+      var componentType = self._editor.dom.getAttrib(node, 'data-component');
+      var componentInfo = _.find(componentInfos, function(info) { return info.componentType === componentType });
+      if (!componentInfo) {
+        return false;
+      };
+      return enableData === componentInfo.hasData && enableProps === componentInfo.hasProperties;
+    }
+  }
+
+  var addToolbar = function(toolBarConfig, predicate) {
+    var contextId = 'jsharmonyComponentContextToolbar_' + toolBarConfig;
+    self._editor.ui.registry.addContextToolbar(contextId, {
+      predicate: predicate,
+      items: toolBarConfig,
+      scope: 'node',
+      position: 'node'
+    });
+  }
+  addToolbar(dataAndPropsToolbar, toolbarPredicate(true, true));
+  addToolbar(dataToolBar, toolbarPredicate(true, false));
+  addToolbar(propsToolBar, toolbarPredicate(false, true));
 }
 
 /**
@@ -195,6 +226,7 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
   var self = this;
 
+  /** @type {ComponentInfo[]} */
   var componentInfo = [];
 
   // Register component icons and build
@@ -221,8 +253,13 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
       self._editor.ui.registry.addIcon(iconRegistryName, icon);
 
-      var text =  component.title || component.id;
-      componentInfo.push({ componentType: component.id, icon: iconRegistryName, text: text });
+      componentInfo.push({
+        componentType: component.id,
+        hasData: ((component.data || {}).fields || []).length > 0,
+        hasProperties: ((component.properties || {}).fields || []).length > 0,
+        iconId: iconRegistryName,
+        menuLabel: component.title || component.id
+      });
     }
   });
 
@@ -231,7 +268,7 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
     self._editor.ui.registry.addIcon(ICONS[key].name, ICONS[key].html);
   }
 
-  this.createContextToolbar();
+  this.createContextToolbar(componentInfo);
   this.createComponentInsertMenu(componentInfo);
 
   this._editor.on('undo', function(info) { self.handleUndoRedo(info); });
@@ -260,11 +297,28 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
  */
 JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentType) {
 
-  this._editor.insertContent(this.makeComponentContainer(componentType));
+  var domUtil = this._editor.dom;
+  var selection = this._editor.selection;
+
+  var currentNode = selection.getEnd();
+
+  var placeHolderEl1 = domUtil.create('div', {}, '');
+  var placeHolderEl2 = domUtil.create('div', {}, '');
+
+  domUtil.insertAfter(placeHolderEl1, currentNode);
+  domUtil.insertAfter(placeHolderEl2, currentNode);
+
+  domUtil.replace(currentNode, placeHolderEl1)
+
+  selection.select(placeHolderEl2);
+  selection.collapse(false);
 
   // Don't need to fire the insert event here.
   // We have a parser filter that will detect the insert and
   // fire the event.
+  this._editor.insertContent(this.makeComponentContainer(componentType));
+
+  domUtil.remove(placeHolderEl2);
 }
 
 /**

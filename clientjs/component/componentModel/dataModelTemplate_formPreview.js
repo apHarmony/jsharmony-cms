@@ -137,7 +137,7 @@ DataModelTemplate_FormPreview.prototype.getModelJs = function() {
 DataModelTemplate_FormPreview.getNextInstanceId = function(componentType ) {
   if (DataModelTemplate_FormPreview._id == undefined) DataModelTemplate_FormPreview._id = 0;
   var id = DataModelTemplate_FormPreview._id++;
-  return 'DataModel_FormPreview' + componentType + '_' + id;
+  return 'DataModel_FormPreview_' + componentType + '_' + id;
 }
 
 /**

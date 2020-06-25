@@ -128,13 +128,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    dialogId: modelConfig.id,
     maxHeight: 800
   });
 
   var $toolbar;
 
   dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
-
     var editor = self._jsh.App[xModel.id];
     var $dialog = $(dialogSelector);
     $dialog.css('opacity', '0');

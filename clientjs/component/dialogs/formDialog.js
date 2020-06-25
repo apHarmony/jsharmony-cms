@@ -4,6 +4,8 @@ var Dialog = require('./dialog');
  * @typedef {Object} FormDialogConfig
  * @property {(boolean | undefined)} closeOnBackdropClick - Set true to close the dialog
  * when the background is clicked
+ * @property {(string | undefined)} dialogId - set this to override the assigned unique ID for the dialog.
+ * There is no need to set this. If it is set, it must be globally unique among ALL dialogs.
  * @property {(number | undefined)} maxHeight - set the max height (pixels) of the form if defined
  * @property {(number | undefined)} maxWidth - set the max width (pixels) of the form if defined
  * @property {(number | undefined)} width - set the width (pixels) of the form if defined
@@ -148,6 +150,7 @@ FormDialog.prototype.open = function(data) {
   var dialog = new Dialog(this.jsh, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
+    dialogId: config.dialogId,
     height: config.height,
     maxHeight: config.maxHeight,
     maxWidth: config.maxWidth,

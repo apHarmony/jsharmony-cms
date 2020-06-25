@@ -58,7 +58,7 @@ PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
 PropertiesModelTemplate_Form.getNextInstanceId = function(componentType ) {
   if (PropertiesModelTemplate_Form._id == undefined) PropertiesModelTemplate_Form._id = 0;
   var id = PropertiesModelTemplate_Form._id++;
-  return 'PropertiesModel_Form' + componentType + '_' + id;
+  return 'PropertiesModel_Form_' + componentType + '_' + id;
 }
 
 /**
