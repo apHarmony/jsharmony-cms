@@ -328,6 +328,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return {
       _: _,
       escapeHTML: XExt.xejs.escapeHTML,
+      stripTags: XExt.StripTags,
       page: _this.page,
       template: _this.template,
       sitemap: _this.sitemap,
@@ -340,6 +341,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return {
       _: _,
       escapeHTML: XExt.xejs.escapeHTML,
+      stripTags: XExt.StripTags,
       page: _this.page,
       template: _this.template,
       sitemap: _this.sitemap,

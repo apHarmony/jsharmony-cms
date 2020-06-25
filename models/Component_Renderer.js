@@ -156,6 +156,7 @@ class ComponentRenderer {
       type: 'component',
       _: _,
       escapeHTML: Helper.escapeHTML,
+      stripTags: Helper.StripTags,
     };
 
     let component = '';

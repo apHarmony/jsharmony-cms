@@ -3073,6 +3073,7 @@ TemplateRenderer.render = function(config, type, jsh) {
       gridContext: config.gridContext,
       _: jsh._,
       escapeHTML: jsh.XExt.escapeHTML,
+      stripTags: jsh.XExt.StripTags,
     }
 
     var rendered = '';

@@ -75,7 +75,7 @@ module.exports = exports = function(module, funcs){
       }
       else if (verb == 'post') {
         if(rslt && rslt[0] && rslt[0].deployment_id){
-          funcs.deploy(deployment_id, function(){
+          funcs.deploy(rslt[0].deployment_id, function(){
             res.end(JSON.stringify({ '_success': 1, publish_path: publish_path, default_page: default_page }));
           });
         }
@@ -895,18 +895,19 @@ module.exports = exports = function(module, funcs){
               var rslt = ejs.render(branchData.component_html[id] || '', {
                 _: _,
                 escapeHTML: Helper.escapeHTML,
+                stripTags: Helper.StripTags,
                 page: clientPage.page,
                 template: clientPage.template,
                 sitemap: clientPage.sitemap,
                 getSitemapURL: function(sitemap_item){
                   if((sitemap_item.sitemap_item_link_type||'').toString()=='PAGE'){
                     var page_key = parseInt(sitemap_item.sitemap_item_link_dest);
-                    if(!(page_key in branchData.page_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item  '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Page ID # '+page_key.toString()); return '#'; }
+                    if(!(page_key in branchData.page_keys)){ funcs.deploy_log_info(publish_params.deployment_id, 'Sitemap item  '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Page ID # '+page_key.toString()); return '#'; }
                     return branchData.page_keys[page_key];
                   }
                   else if((sitemap_item.sitemap_item_link_type||'').toString()=='MEDIA'){
                     var media_key = parseInt(sitemap_item.sitemap_item_link_dest);
-                    if(!(media_key in branchData.media_keys)){ funcs.deploy_log_info(deployment_id, 'Sitemap item '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Media ID # '+media_key.toString()); return '#'; }
+                    if(!(media_key in branchData.media_keys)){ funcs.deploy_log_info(publish_params.deployment_id, 'Sitemap item '+sitemap_item.sitemap_item_path+' :: '+sitemap_item.sitemap_item_text+' links to missing Media ID # '+media_key.toString()); return '#'; }
                     return branchData.media_keys[media_key];
                   }
                   return sitemap_item.sitemap_item_link_dest;
@@ -1138,6 +1139,7 @@ module.exports = exports = function(module, funcs){
                   menu: menu,
                   _: _,
                   escapeHTML: Helper.escapeHTML,
+                  stripTags: Helper.StripTags,
                   isInEditor: false,
                 };
                 var menu_content = '';
