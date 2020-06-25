@@ -55,7 +55,7 @@
       return editor.getParam('template_replace_values');
     };
     var getTemplates = function (editorSettings) {
-      return editorSettings.widgets;
+      return editorSettings.templates;
     };
     var getCdateFormat = function (editor) {
       return editor.getParam('template_cdate_format', editor.translate('%Y-%m-%d'));
@@ -363,7 +363,7 @@
     var open = function (editor, templateList) {
       var createTemplates = function () {
         if (!templateList || templateList.length === 0) {
-          var message = editor.translate('No widgets defined.');
+          var message = editor.translate('No templates defined.');
           editor.notificationManager.open({
             text: message,
             type: 'info'
@@ -399,7 +399,7 @@
         });
       };
       var loadFailedAlert = function (api) {
-        editor.windowManager.alert('Could not load the specified widget.', function () {
+        editor.windowManager.alert('Could not load the specified template.', function () {
           return api.focus('template');
         });
       };
@@ -455,7 +455,7 @@
         var selectBoxItems = createSelectBoxItems(templates);
         var buildDialogSpec = function (bodyItems, initialData) {
           return {
-            title: 'Insert Widget',
+            title: 'Insert Template',
             size: 'large',
             body: {
               type: 'panel',
@@ -485,7 +485,7 @@
             {
               type: 'selectbox',
               name: 'template',
-              label: 'Widgets',
+              label: 'Templates',
               items: selectBoxItems
             },
             {
@@ -530,20 +530,20 @@
       };
     };
     var register$1 = function (editor) {
-      editor.ui.registry.addButton('jshwidget', {
+      editor.ui.registry.addButton('template', {
         icon: 'template',
-        tooltip: 'Widget',
+        tooltip: 'Insert template',
         onAction: createTemplateList(editor.settings, showDialog(editor))
       });
-      editor.ui.registry.addMenuItem('jshwidget', {
+      editor.ui.registry.addMenuItem('template', {
         icon: 'template',
-        text: 'Widget...',
+        text: 'Insert template...',
         onAction: createTemplateList(editor.settings, showDialog(editor))
       });
     };
 
     function Plugin () {
-      global.add('jshwidget', function (editor) {
+      global.add('template', function (editor) {
         register$1(editor);
         register(editor);
         setup(editor);
