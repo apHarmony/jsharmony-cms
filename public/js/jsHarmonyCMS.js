@@ -3937,7 +3937,10 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     $element.empty().append(rendered);
 
     $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
-      self.openDataEditor();
+      var hasData = ((config.data || {}).fields || []).length > 0;
+      var hasProperties = ((config.properties || {}).fields || []).length > 0;
+      if(hasData) self.openDataEditor();
+      else if(hasProperties) self.openPropertiesEditor();
     });
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props);
