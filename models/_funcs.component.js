@@ -1,8 +1,12 @@
-var ejs = require('ejs');
-var cheerio = require('cheerio');
-var _ = require('lodash');
-var Helper = require('jsharmony/Helper');
+const ejs = require('ejs');
+const cheerio = require('cheerio');
+const _ = require('lodash');
+const Helper = require('jsharmony/Helper');
 
+/** Set the chars used to render new lines for the output **/
+const NEW_LINE_OUTPUT = '\r\n';
+/** Set the chars used for a single indent for the diff output **/
+const INDENT_STRING = '  ';
 
 /**
  * @typedef {Object} ComponentConfig
@@ -91,7 +95,7 @@ module.exports = exports = function(module, funcs){
         attribs: {},
         children: [],
         name: kvp[0],
-        text: kvp[1]
+        text: `${kvp[1]}` // convert to string
       };
       return itemNode;
     });
@@ -195,6 +199,28 @@ module.exports = exports = function(module, funcs){
   }
 
   /**
+   * Get a string for indenting at a desired level
+   * @param {number} level - indent level
+   * @returns {string}
+   */
+  function getIndentString(level) {
+    if (level < 1) return '';
+    return new Array(level).fill(INDENT_STRING).join('');
+  }
+
+  /**
+   * Indent each line of the text block
+   * to the desired level
+   * @param {string} text
+   * @param {number} level - indentation level
+   * @returns {string}
+   */
+  function indentTextBlock(text, level) {
+    const indent = getIndentString(level);
+    return indent + (text || '').replace(/\r?\n/g, `${NEW_LINE_OUTPUT}${indent}`);
+  }
+
+  /**
    * Render the component. Recursively called
    * for all nested components.
    * @param {string} componentHtml
@@ -223,7 +249,7 @@ module.exports = exports = function(module, funcs){
       component = ejs.render(template, context);
     }
     catch(ex){
-      throw new Error('Error rendering '+template+'\r\n'+ex.toString());
+      throw new Error(`Error rendering ${template}\r\n${ex.toString()}`);
     }
     const nestedComponentLocations = findComponents(component).reverse();
     nestedComponentLocations.forEach(location => {
@@ -240,10 +266,9 @@ module.exports = exports = function(module, funcs){
    * for component diffing. Recursively called
    * for all nested components.
    * @param {string} componentHtml
-   * @param {(number | undefined)} [depth]
    * @returns {string}
    */
-  function renderComponentXmlLike(componentHtml, depth = 0) {
+  function renderComponentXmlLike(componentHtml) {
 
     const componentConfig = deserialize(componentHtml);
 
@@ -257,39 +282,41 @@ module.exports = exports = function(module, funcs){
     const dataItems = componentConfig.data.item ? [componentConfig.data.item] : componentConfig.data.items || [];
     dataItems.forEach((item, i) => topNode.children.push(createObjectXmlLikeNode(item, 'data', { item: i + 1 })));
 
-    let rendered =  renderXmlLikeNode(topNode, depth);
-    const nestedComponentLocations = findComponents(rendered).reverse();
-    nestedComponentLocations.forEach(location => {
-      let nestedComponent = rendered.slice(location.startIndex, location.endIndex + 1);
-      nestedComponent = renderComponentXmlLike(nestedComponent, depth + 4);
-      rendered = spliceString(rendered, nestedComponent, location);
-    });
-
+    let rendered =  renderComponentXmlLikeNode(topNode);
     return rendered;
   }
 
   /**
    * @param {XmlLikeNode} node
-   * @param {(number | undefined)} [depth]
    * @returns {string}
    */
-  function renderXmlLikeNode(node, depth = 0) {
-    const indent = new Array(depth * 2).fill(' ').join('');
+  function renderComponentXmlLikeNode(node) {
+
     const attributes = Object.entries(node.attribs).map(kvp => `${kvp[0]}="${kvp[1]}"`);
     const startTag = `<${[node.name, ...attributes].join(' ')}>`;
+    const endTag = `</${node.name}>`;
 
-    if ((node.children || []).length < 1) {
-      return `${indent}${startTag}${node.text ? node.text : ''}</${node.name}>`;
-    } else {
-      const lineBuffer = [];
-      lineBuffer.push(`${indent}${startTag}${node.text ? node.text : ''}`);
-      (node.children || []).forEach(childNode => {
-        const child = renderXmlLikeNode(childNode, depth + 1)
-        lineBuffer.push(child)
-      });
-      lineBuffer.push(`${indent}</${node.name}>`);
-      return lineBuffer.join('\r\n');
+    let text = node.text || '';
+    findComponents(text).reverse().forEach(location => {
+      let nestedComponent = text.slice(location.startIndex, location.endIndex + 1);
+      nestedComponent = renderComponentXmlLike(nestedComponent);
+      text = spliceString(text, nestedComponent, location);
+    });
+
+    const childrenNodeText = (node.children || []).map(child => renderComponentXmlLikeNode(child)).join(NEW_LINE_OUTPUT);
+
+    let innerText = '';
+    if (text.length > 0 && childrenNodeText.length > 0) {
+      innerText = text + NEW_LINE_OUTPUT + childrenNodeText;
+    } else if (text.length > 0) {
+      innerText = text;
+    } else if (childrenNodeText.length > 0) {
+      innerText = childrenNodeText;
     }
+
+    const textIsMultiLine = /\r?\n/.test(innerText);
+    innerText = textIsMultiLine ? NEW_LINE_OUTPUT + indentTextBlock(innerText, 1) + NEW_LINE_OUTPUT : innerText;
+    return startTag + innerText + endTag;
   }
 
   /**
