@@ -302,8 +302,9 @@ JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentTy
 
   var currentNode = selection.getEnd();
 
+  var el2Id = domUtil.uniqueId();
   var placeHolderEl1 = domUtil.create('div', {}, '');
-  var placeHolderEl2 = domUtil.create('div', {}, '');
+  var placeHolderEl2 = domUtil.create('div', { id: el2Id },  'b2');
 
   domUtil.insertAfter(placeHolderEl1, currentNode);
   domUtil.insertAfter(placeHolderEl2, currentNode);
@@ -318,7 +319,7 @@ JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentTy
   // fire the event.
   this._editor.insertContent(this.makeComponentContainer(componentType));
 
-  domUtil.remove(placeHolderEl2);
+  domUtil.remove(el2Id);
 }
 
 /**

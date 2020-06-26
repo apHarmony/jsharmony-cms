@@ -24,13 +24,13 @@ var diff2html = require("diff2html").Diff2Html;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  
+
   var dmp = new DiffMatchPatch();
 
   exports.diff = function (req, res, next) {
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
-    
+
     var Q = req.query;
     var P = {};
     if (req.body && ('data' in req.body)){
@@ -44,19 +44,19 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Diff');
-    
+
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     if (verb == 'get') {
       var branch_id = req.query.branch_id;
-      
+
       //Check if item is defined
       var sql_ptypes = [dbtypes.BigInt];
       var sql_params = { 'branch_id': branch_id };
       var validate = new XValidate();
       var verrors = {};
       validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      
+
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
@@ -229,7 +229,7 @@ module.exports = exports = function(module, funcs){
         async.eachOfSeries(updated_pages, function(page, page_id, page_cb){
           funcs.getClientPage(page, null, function(err, clientPage){
             if(err) return page_cb(err);
-            if(!clientPage) return page_cb(null); 
+            if(!clientPage) return page_cb(null);
             page.compiled = clientPage.page;
             page.template = clientPage.template;
             if(page.compiled.content){
@@ -463,6 +463,9 @@ module.exports = exports = function(module, funcs){
   exports.diffHTML = function(a, b){
     if(a==b) return '';
 
+    a = funcs.prettyComponents(a);
+    b = funcs.prettyComponents(b);
+
     var diff_lines = dmp.diff_linesToChars_(a, b);
     var diff_lineText1 = diff_lines.chars1;
     var diff_lineText2 = diff_lines.chars2;
@@ -485,7 +488,7 @@ module.exports = exports = function(module, funcs){
         }
       }
     }
-    
+
     for(var i=0;i<diff.length;i++){
       var diff_line = diff[i];
       var diff_line_type = diff_line[0];
@@ -549,7 +552,7 @@ module.exports = exports = function(module, funcs){
             cur_patch_batch.dest_start_line--;
             cur_patch_batch.lines.unshift(patch_lines[i-1]);
           }
-          
+
         }
       }
 
@@ -575,7 +578,7 @@ module.exports = exports = function(module, funcs){
       inputFormat: "diff",
       matching: "lines"
     });
-    
+
   }
 
   exports.formatDiff = function(diff){

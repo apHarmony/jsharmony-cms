@@ -5,6 +5,13 @@ var Helper = require('jsharmony/Helper');
 
 
 /**
+ * @typedef {Object} ComponentConfig
+ * @property {Object} data
+ * @property {Object} properties
+ * @property {string} type
+ */
+
+/**
  * @typedef {Object} RenderContext
  * @property {Object} data - the component data
  * @property {Object} properties - the component properties
@@ -25,8 +32,32 @@ var Helper = require('jsharmony/Helper');
  * @property {Object.<string, string>} components
  */
 
+
+/**
+ * @typedef {Object} XmlLikeNode
+ * @property {Object.<string, string>} attribs
+ * @property {string} name
+ * @property {string} text
+ * @property {XmlLikeNode[]} children
+ */
+
+
 module.exports = exports = function(module, funcs){
   const exports = {};
+
+  /**
+   * RMake the components pretty for diffing
+   * @param {string} pageContent - the page HTML containing the components to prettify
+   */
+  exports.prettyComponents = function(pageContent) {
+    const locations = findComponents(pageContent).reverse();
+    locations.forEach(location => {
+      let component = pageContent.slice(location.startIndex, location.endIndex + 1);
+      component = renderComponentXmlLike(component);
+      pageContent = spliceString(pageContent, component, location);
+    });
+    return pageContent;
+  }
 
   /**
    * Render the components on the page
@@ -44,12 +75,44 @@ module.exports = exports = function(module, funcs){
   }
 
   /**
-   * @param {string} input - base64 encoded JSON string
-   * @returns {Object}
+   * Create an XML-like node from an object where
+   * each object property is a child element with
+   * the property value the element text.
+   * @param {object} obj
+   * @param {string} nodeName - the name of the top element
+   * @param {Object.<string, string>} attribs
    */
-  function deserialize(input) {
-    const str = Buffer.from(input || '', 'base64').toString() || '{}';
-    return JSON.parse(str);
+  function createObjectXmlLikeNode(obj, nodeName, attribs) {
+    /** @type {XmlLikeNode} */
+    const dataNode = { children: [], attribs: attribs || {}, name: nodeName, text: '' };
+    dataNode.children = Object.entries(obj).map(kvp => {
+    /** @type {XmlLikeNode} */
+      const itemNode = {
+        attribs: {},
+        children: [],
+        name: kvp[0],
+        text: kvp[1]
+      };
+      return itemNode;
+    });
+    return dataNode;
+  }
+
+  /**
+   * @param {string} componentHtml
+   * @returns {ComponentConfig}
+   */
+  function deserialize(componentHtml) {
+    const $component = cheerio(componentHtml || '');
+
+    /** @type {ComponentConfig} */
+    const config = {
+      data: JSON.parse(Buffer.from($component.attr('data-component-data') || '', 'base64').toString() || '{}'),
+      properties: JSON.parse(Buffer.from($component.attr('data-component-properties') || '', 'base64').toString() || '{}'),
+      type: $component.attr('data-component')
+    };
+
+    return config;
   }
 
   /**
@@ -139,12 +202,10 @@ module.exports = exports = function(module, funcs){
    * @returns {string}
    */
   function renderComponent(componentHtml, componentsTemplates) {
-    const $component = cheerio(componentHtml || '');
-    const type = $component.attr('data-component');
-
-    const template = componentsTemplates[type] || ''; // Should this be an error if template is empty?
-    const data = deserialize($component.attr('data-component-data'));
-    const props = deserialize($component.attr('data-component-properties'));
+    const componentConfig = deserialize(componentHtml);
+    const template = componentsTemplates[componentConfig.type] || ''; // Should this be an error if template is empty?
+    const data = componentConfig.data;
+    const props = componentConfig.properties;
 
     /** @type {RenderContext} */
     const context = {
@@ -164,7 +225,7 @@ module.exports = exports = function(module, funcs){
     catch(ex){
       throw new Error('Error rendering '+template+'\r\n'+ex.toString());
     }
-    let nestedComponentLocations = findComponents(component).reverse();
+    const nestedComponentLocations = findComponents(component).reverse();
     nestedComponentLocations.forEach(location => {
       let nestedComponent = component.slice(location.startIndex, location.endIndex + 1);
       nestedComponent = renderComponent(nestedComponent, componentsTemplates);
@@ -172,6 +233,63 @@ module.exports = exports = function(module, funcs){
     });
 
     return component;
+  }
+
+  /**
+   * Render the component in XML-like  format
+   * for component diffing. Recursively called
+   * for all nested components.
+   * @param {string} componentHtml
+   * @param {(number | undefined)} [depth]
+   * @returns {string}
+   */
+  function renderComponentXmlLike(componentHtml, depth = 0) {
+
+    const componentConfig = deserialize(componentHtml);
+
+    /** @type {XmlLikeNode} */
+    const topNode = { attribs: {}, children: [], name: componentConfig.type, text: '' };
+
+    // Add properties
+    topNode.children.push(createObjectXmlLikeNode(componentConfig.properties, 'properties'));
+
+    // Add data
+    const dataItems = componentConfig.data.item ? [componentConfig.data.item] : componentConfig.data.items || [];
+    dataItems.forEach((item, i) => topNode.children.push(createObjectXmlLikeNode(item, 'data', { item: i + 1 })));
+
+    let rendered =  renderXmlLikeNode(topNode, depth);
+    const nestedComponentLocations = findComponents(rendered).reverse();
+    nestedComponentLocations.forEach(location => {
+      let nestedComponent = rendered.slice(location.startIndex, location.endIndex + 1);
+      nestedComponent = renderComponentXmlLike(nestedComponent, depth + 4);
+      rendered = spliceString(rendered, nestedComponent, location);
+    });
+
+    return rendered;
+  }
+
+  /**
+   * @param {XmlLikeNode} node
+   * @param {(number | undefined)} [depth]
+   * @returns {string}
+   */
+  function renderXmlLikeNode(node, depth = 0) {
+    const indent = new Array(depth * 2).fill(' ').join('');
+    const attributes = Object.entries(node.attribs).map(kvp => `${kvp[0]}="${kvp[1]}"`);
+    const startTag = `<${[node.name, ...attributes].join(' ')}>`;
+
+    if ((node.children || []).length < 1) {
+      return `${indent}${startTag}${node.text ? node.text : ''}</${node.name}>`;
+    } else {
+      const lineBuffer = [];
+      lineBuffer.push(`${indent}${startTag}${node.text ? node.text : ''}`);
+      (node.children || []).forEach(childNode => {
+        const child = renderXmlLikeNode(childNode, depth + 1)
+        lineBuffer.push(child)
+      });
+      lineBuffer.push(`${indent}</${node.name}>`);
+      return lineBuffer.join('\r\n');
+    }
   }
 
   /**
