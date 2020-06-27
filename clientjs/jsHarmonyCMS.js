@@ -26,8 +26,11 @@ var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
 
-var jsHarmonyCMS = function(){
+var jsHarmonyCMS = function(options){
   var _this = this;
+
+  this._instance = '';
+  this.App = {}; //Variable data store for implementations
 
   this.loader = new jsHarmonyCMSLoader(this);
   this.util = new jsHarmonyCMSUtil(this);
@@ -58,7 +61,12 @@ var jsHarmonyCMS = function(){
   this.onGetControllerUrl = null;        //function() => url
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
+  this.onApplyProperties = null;         //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); }
+
+  for(var key in options){
+    if(key in _this) _this[key] = options[key];
+  }
 
 
   var loader = _this.loader;
@@ -187,4 +195,4 @@ var jsHarmonyCMS = function(){
 }
 
 global.jsHarmonyCMS = jsHarmonyCMS;
-global.jsHarmonyCMSInstance = new jsHarmonyCMS();
+global.jsHarmonyCMSInstance = new jsHarmonyCMS({ _instance: 'jsHarmonyCMSInstance' });

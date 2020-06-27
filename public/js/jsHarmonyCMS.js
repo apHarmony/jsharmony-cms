@@ -4172,6 +4172,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
 
+  this.type = ''; //Name of controller, ex. page
   this.hasChanges = false;
 
   this.init = function(cb){
@@ -5472,7 +5473,7 @@ exports = module.exports = function(cms){
       loader_obj.style.left = '0px';
       loader_obj.style.bottom = '0px';
       loader_obj.style.width = '100%';
-      loader_obj.style.zIndex = 2147483641;
+      loader_obj.style.zIndex = 2147483642;
       loader_obj.style.cursor = 'wait';
       document.body.appendChild(loader_obj);
 
@@ -5805,8 +5806,11 @@ var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
 
-var jsHarmonyCMS = function(){
+var jsHarmonyCMS = function(options){
   var _this = this;
+
+  this._instance = '';
+  this.App = {}; //Variable data store for implementations
 
   this.loader = new jsHarmonyCMSLoader(this);
   this.util = new jsHarmonyCMSUtil(this);
@@ -5837,7 +5841,12 @@ var jsHarmonyCMS = function(){
   this.onGetControllerUrl = null;        //function() => url
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
+  this.onApplyProperties = null;         //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); }
+
+  for(var key in options){
+    if(key in _this) _this[key] = options[key];
+  }
 
 
   var loader = _this.loader;
@@ -5966,6 +5975,6 @@ var jsHarmonyCMS = function(){
 }
 
 global.jsHarmonyCMS = jsHarmonyCMS;
-global.jsHarmonyCMSInstance = new jsHarmonyCMS();
+global.jsHarmonyCMSInstance = new jsHarmonyCMS({ _instance: 'jsHarmonyCMSInstance' });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.Editor.Picker.js":24,"./jsHarmonyCMS.Editor.js":25,"./jsHarmonyCMS.Loader.js":26,"./jsHarmonyCMS.MenuController.js":27,"./jsHarmonyCMS.Toolbar.js":28,"./jsHarmonyCMS.Util.js":29}]},{},[30]);

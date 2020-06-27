@@ -20,6 +20,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
 
+  this.type = ''; //Name of controller, ex. page
   this.hasChanges = false;
 
   this.init = function(cb){

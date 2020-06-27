@@ -50,7 +50,7 @@ exports = module.exports = function(cms){
       loader_obj.style.left = '0px';
       loader_obj.style.bottom = '0px';
       loader_obj.style.width = '100%';
-      loader_obj.style.zIndex = 2147483641;
+      loader_obj.style.zIndex = 2147483642;
       loader_obj.style.cursor = 'wait';
       document.body.appendChild(loader_obj);
 

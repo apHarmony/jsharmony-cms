@@ -1,3 +1,9 @@
+/*
+z-index:
+Editor Bar: 2147483640
+Dialog Block: 2147483641 (So that validation errors show up over Editor Bar)
+Loading Animation: 2147483642
+*/
 #jsharmony_cms_editor_bar {
   position:fixed;
   top:0px;
@@ -141,11 +147,26 @@
 #jsharmony_cms_editor_bar .page_settings .page_settings_tags_editor {
   width:100%;
 }
+
 #jsharmony_cms_editor_bar .page_settings .page_settings_tags_editor input {
   font-size:1.1em;
 }
 
+#jsharmony_cms_editor_bar .jsharmony_cms_page_settings_properties .xbodyhead {
+  padding-top: 0px;
+}
 
+#jsharmony_cms_editor_bar .jsharmony_cms_page_settings_properties .xform_caption {
+  font-size:1.1em;
+  padding-right:6px;
+}
+
+#jsharmony_cms_editor_bar .jsharmony_cms_page_settings_properties input {
+  padding: 2px 5px;
+  font-size:1.1em;
+  margin-top:0px;
+  margin-bottom:6px;
+}
 
 #jsharmony_cms_editor_bar .bluebutton {
   display:inline-block;
@@ -290,6 +311,10 @@ body .tox-collection__item-icon .material-icons {
 
 .jsharmony_cms_preview_editor .cms_component_preview {
   border:1px solid #b4d7ff;
+}
+
+.xdialogblock {
+  z-index:2147483641;
 }
 
 .xdialogblock .xdialogbox.jsHarmony_cms_component_dialog .xbodyhead .xtitle {

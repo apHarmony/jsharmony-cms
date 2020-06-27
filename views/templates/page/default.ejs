@@ -15,8 +15,8 @@
 <%-page.head%>
 </head>
 
-<body>
-<h1><%-page.title%></h1>
+<body class="<%=page.properties.bodyClass%>" style="<%=page.properties.bodyStyle%>">
+<% if(page.title && (page.properties.showTitle != 'N')){ %><h1><%-page.title%></h1><% } %>
 <%-page.content.body%>
 <%-page.footer%>
 </body>

@@ -320,6 +320,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
             'footer': 'Footer Code',
             'page_title': 'Page Title',
             'page_tags': 'Page Tags',
+            'properties': 'Page Properties',
             'template_title': 'Template'
           }
         }

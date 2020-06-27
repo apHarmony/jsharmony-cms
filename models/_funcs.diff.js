@@ -408,6 +408,10 @@ module.exports = exports = function(module, funcs){
       var key_diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
       if(key_diff) diff[key] = key_diff;
     });
+    _.each(['properties'], function(key){
+      var key_diff = funcs.diffHTML(JSON.stringify(old_page.compiled[key],null,4), JSON.stringify(new_page.compiled[key], null, 4));
+      if(key_diff) diff[key] = key_diff;
+    });
     var old_content_keys = _.keys(old_page.compiled.content);
     var new_content_keys = _.keys(new_page.compiled.content);
     for(var key in old_page.compiled.content){ if(!(key in new_page.compiled.content)) new_page.compiled.content[key] = ''; }

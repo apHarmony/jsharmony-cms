@@ -875,6 +875,7 @@ module.exports = exports = function(module, funcs){
               header: (clientPage.template.header||'')+' '+(clientPage.page.header||''),
               content: clientPage.page.content||{},
               footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
+              properties: _.extend({}, clientPage.template.default_properties, clientPage.page.properties),
               title: clientPage.page.title
             },
             _: _,

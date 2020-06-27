@@ -46,6 +46,7 @@ module.exports = exports = function(module, funcs){
     module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
       //If an error occurs loading the file, ignore it and load the default template instead
 
+      //Parse content
       var page_file_content = {};
       try{
         page_file_content = JSON.parse(JSON.stringify(template.default_content||'')) || {};
@@ -59,12 +60,33 @@ module.exports = exports = function(module, funcs){
         if(key in page_file.content) page_file_content[key] = page_file.content[key];
       }
       page_file.content = page_file_content;
+
+      //Parse properties
+      var default_properties = {};
+      try{
+        default_properties = _.extend(default_properties, JSON.parse(JSON.stringify(template.default_properties||'')) || {});
+      }
+      catch(ex){
+        module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_properties);
+      }
+      if(template.properties){
+        _.each(template.properties.fields, function(field){
+          if(field && field.name){
+            if(!(field.name in default_properties)){
+              default_properties[field.name] = ('default' in field) ? field.default : '';
+            }
+          }
+        });
+      }
+      
+
       if(!page_file.seo) page_file.seo = {};
       var client_page = {
         title: page.page_title||'',
         css: page_file.css||'',
         header: page_file.header||'',
         footer: page_file.footer||'',
+        properties: _.extend({}, default_properties, page_file.properties||{}),
         content: page_file.content||{},
         seo: {
           title: page_file.seo.title||'',
@@ -81,6 +103,8 @@ module.exports = exports = function(module, funcs){
         css: template.css||'',
         header: template.header||'',
         footer: template.footer||'',
+        properties: template.properties||{},
+        default_properties: default_properties||{},
         js: template.js||'',
         content_elements: template.content_elements||{},
         raw: template.raw||false
@@ -749,6 +773,7 @@ module.exports = exports = function(module, funcs){
             css: page_file.css||'',
             header: page_file.header||'',
             footer: page_file.footer||'',
+            properties: page_file.properties||{},
             content: page_file.content||{},
             seo_title: page_file.seo_title||'',
             seo_keywords: page_file.seo_keywords||'',
@@ -761,7 +786,7 @@ module.exports = exports = function(module, funcs){
         */
 
         //Validate parameters
-        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&properties','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
         if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //XValidate
@@ -772,6 +797,7 @@ module.exports = exports = function(module, funcs){
         validate.AddValidator('_obj.css', 'CSS', 'B', []);
         validate.AddValidator('_obj.header', 'Header', 'B', []);
         validate.AddValidator('_obj.footer', 'Footer', 'B', []);
+        validate.AddValidator('_obj.properties', 'Properties', 'B', []);
         validate.AddValidator('_obj.content', 'Content', 'B', []);
         validate.AddValidator('_obj.seo.title', 'SEO Title', 'B', [XValidate._v_MaxLength(2048)]);
         validate.AddValidator('_obj.seo.keywords', 'SEO Keywords', 'B', []);
