@@ -120,6 +120,17 @@ module.exports = exports = function(module, funcs){
   }
 
   /**
+   * Process the raw component template EJS
+   * to extract the component EJS template.
+   * @param {string} rawTemplateEjs
+   */
+  function extractComponentTemplate(rawTemplateEjs) {
+    rawTemplateEjs = rawTemplateEjs || '';
+    const $wrapper = cheerio(rawTemplateEjs).filter('.componentTemplate');
+    return $wrapper.length < 1 ?  rawTemplateEjs : $wrapper.html();
+  }
+
+  /**
    * Start from an index in the middle of the component
    * and search backwards for the start, and search forwards for the end.
    * @param {number} midIndex - an index that is between the start and end index.
@@ -229,7 +240,7 @@ module.exports = exports = function(module, funcs){
    */
   function renderComponent(componentHtml, componentsTemplates) {
     const componentConfig = deserialize(componentHtml);
-    const template = componentsTemplates[componentConfig.type] || ''; // Should this be an error if template is empty?
+    const template = extractComponentTemplate(componentsTemplates[componentConfig.type] || ''); // Should this be an error if template is empty?
     const data = componentConfig.data;
     const props = componentConfig.properties;
 
