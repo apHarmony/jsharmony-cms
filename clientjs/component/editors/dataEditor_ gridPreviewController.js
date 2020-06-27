@@ -437,9 +437,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
-  var itemIndex = this._dataStore.getItemIndexById(dataId);
-  var isFirst = itemIndex < 1;
-  var isLast = itemIndex >= (this._dataStore.count() - 1);
   var template =
         '<div tabindex="0" data-component-template="gridRow">' +
           '<div class="toolbar">' +
@@ -499,7 +496,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
     self.openItemEditor(dataId);
   });
 
-  $row.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
+  $row.find('[data-component-part="preview"]').off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
     self.openItemEditor(dataId);
   });
 

@@ -376,7 +376,7 @@ DataModelTemplate_FormPreview.prototype.populateDataInstance = function(dataInst
 
 exports = module.exports = DataModelTemplate_FormPreview;
 
-},{"../utils/cloner":18,"./fieldModel":4}],3:[function(require,module,exports){
+},{"../utils/cloner":19,"./fieldModel":4}],3:[function(require,module,exports){
 var Cloner = require('../utils/cloner');
 var FieldModel = require('./fieldModel');
 
@@ -626,7 +626,7 @@ DataModelTemplate_GridPreview.prototype.populateDataInstance = function(dataInst
 
 
 exports = module.exports = DataModelTemplate_GridPreview;
-},{"../utils/cloner":18,"./fieldModel":4}],4:[function(require,module,exports){
+},{"../utils/cloner":19,"./fieldModel":4}],4:[function(require,module,exports){
 var Cloner = require('../utils/cloner');
 var Convert = require('../utils/convert');
 
@@ -774,7 +774,7 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
 
 exports = module.exports = FieldModel;
 
-},{"../utils/cloner":18,"../utils/convert":19}],5:[function(require,module,exports){
+},{"../utils/cloner":19,"../utils/convert":20}],5:[function(require,module,exports){
 var Cloner = require('../utils/cloner');
 var FieldModel = require('./fieldModel');
 
@@ -886,8 +886,9 @@ PropertiesModelTemplate_Form.prototype.populateDataInstance = function(dataInsta
 
 exports = module.exports = PropertiesModelTemplate_Form;
 
-},{"../utils/cloner":18,"./fieldModel":4}],6:[function(require,module,exports){
+},{"../utils/cloner":19,"./fieldModel":4}],6:[function(require,module,exports){
 var DialogResizer = require('./dialogResizer');
+var OverlayService = require('./overlayService');
 
 /**
  * @typedef {Object} DialogConfig
@@ -954,7 +955,6 @@ function Dialog(jsh, model, config) {
   /** @type {DialogConfig} */
   this._config = config || {};
   this._$wrapper = this.makeDialog(this._id, this._config);
-  this._$overlay = undefined;
   this._destroyed = false;
 
   $('body').append(this._$wrapper)
@@ -1020,23 +1020,6 @@ Dialog.prototype.getFormSelector = function() {
 }
 
 /**
- * Find the z-index of the child element with the
- * highest z-index inside of the dialog block
- * @private
- * @returns {number}
- */
-Dialog.prototype.getMaxDialogBlockZIndex = function() {
-  var self = this;
-  var maxZIndex = 0;
-  $('.xdialogblock').children().each(function(i, el) {
-    var zIndex = self.getZIndex(el);
-    maxZIndex = Math.max(maxZIndex, zIndex);
-  });
-
-  return maxZIndex;
-}
-
-/**
  * Get a globally unique (W.R.T this dialog class)
  * ID to be used for the current dialog instance
  * @private
@@ -1062,42 +1045,6 @@ Dialog.prototype.getNextId = function() {
  */
 Dialog.prototype.getScrollTop = function($wrapper) {
   return $wrapper.scrollParent().scrollTop();
-}
-
-/**
- * Get the z-index for the element.
- * @private
- * @param {(HTMLElement | JQuery)} element
- * @returns {number}
- */
-Dialog.prototype.getZIndex = function(element) {
-  var zIndex = parseInt( $(element).css('zIndex'));
-  return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
-}
-
-/**
- * Create and insert the overlay for this dialog.
- * @private
- */
-Dialog.prototype.insertOverlay = function() {
-  var $dialogBlock = $('.xdialogblock');
-  var $childOverlay = $('<div class="childDialogOverlay"></div>')
-  $childOverlay
-    .css('background-color', 'rgba(0,0,0,0.1)')
-    .css('position', 'absolute')
-    .css('width', '100%')
-    .css('height', '100%');
-
-  this.setZIndexToNextMax($childOverlay);
-
-  $childOverlay.on('click', function() {
-    $dialogBlock.click();
-  });
-
-
-  $dialogBlock.append($childOverlay);
-
-  this._$overlay = $childOverlay;
 }
 
 /**
@@ -1150,9 +1097,9 @@ Dialog.prototype.open = function() {
   var oldActive = document.activeElement;
   this.load(function(xModel) {
 
-    self.insertOverlay();
-    self.registerLovs(xModel);
+
     var $wrapper = $(formSelector);
+    self.registerLovs(xModel);
     var lastScrollTop = 0
     self._jsh.XExt.execif(self.onBeforeOpen,
       function(f){
@@ -1164,7 +1111,7 @@ Dialog.prototype.open = function() {
 
         self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
           function(acceptFunc, cancelFunc) {
-            self.setZIndexToNextMax($wrapper);
+            OverlayService.pushDialog($wrapper);
             lastScrollTop = self.getScrollTop($wrapper);
             dialogResizer = new DialogResizer($wrapper[0], self._jsh);
             if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc);
@@ -1185,6 +1132,7 @@ Dialog.prototype.open = function() {
             dialogResizer.closeDialog();
             if(_.isFunction(self.onClose)) self.onClose();
             self.destroy();
+            OverlayService.popDialog();
           },
           { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
         );
@@ -1227,21 +1175,9 @@ Dialog.prototype.setScrollTop = function(position, $wrapper) {
   $wrapper.scrollParent().scrollTop(position);
 }
 
-/**
- * Find the current maximum z-index for the children
- * elements of the dialog block and set the given
- * element's z-index to one greater.
- * @private
- * @param {(HTMLElement | JQuery)} element
- */
-Dialog.prototype.setZIndexToNextMax = function(element) {
-  var maxZIndex = this.getMaxDialogBlockZIndex() + 1;
-  $(element).css('zIndex', maxZIndex);
-}
-
 exports = module.exports = Dialog;
 
-},{"./dialogResizer":7}],7:[function(require,module,exports){
+},{"./dialogResizer":7,"./overlayService":10}],7:[function(require,module,exports){
 /**
  * @class
  * @classdesc Use to resize dialogs when content changes. Otherwise
@@ -1734,6 +1670,99 @@ GridDialog.prototype.open = function() {
 exports = module.exports = GridDialog;
 
 },{"./dialog":6}],10:[function(require,module,exports){
+/**
+ * @classdesc A static service for ensuring the overlay appears
+ * between the last modal in the modal stack and all other modals.
+ * @class
+ * @static
+ */
+function OverlayService() {}
+
+/**
+ * @private
+ * @static
+ * @type {JQuery[]}
+ */
+OverlayService._dialogStack = [];
+
+/**
+ * Remove the last dialog element from the overlay stack.
+ * @public
+ * @static
+*/
+OverlayService.popDialog = function() {
+
+  OverlayService._dialogStack.pop();
+  if (OverlayService._dialogStack.length < 1) {
+    $('.xdialogblock .childDialogOverlay').remove();
+    return;
+  }
+
+  var $overlay = OverlayService.getOverlay();
+  var $dialog = $(OverlayService._dialogStack[OverlayService._dialogStack.length - 1]);
+  var zIndex = OverlayService.getZIndex($dialog);
+  $overlay.css('z-index', zIndex);
+  $dialog.before($overlay);
+}
+
+/**
+ * Add a dialog element to the overlay stack.
+ * @public
+ * @static
+ * @param {(HTMLElement | JQuery)} dialog
+*/
+OverlayService.pushDialog = function(dialog) {
+  var zIndex = OverlayService.getZIndex(dialog);
+  var $overlay = OverlayService.getOverlay();
+  $overlay.css('z-index', zIndex);
+  OverlayService._dialogStack.push($(dialog));
+  $(dialog).before($overlay);
+}
+
+/**
+ * Get the overlay. Creates and adds to DOM if it doesn't already
+ * exist.
+ * @private
+ * @static
+ * @returns {JQuery}
+ */
+OverlayService.getOverlay = function() {
+  var $dialogBlock = $('.xdialogblock');
+  var $childOverlay = $dialogBlock.find('.childDialogOverlay');
+  if ($childOverlay.length > 0) {
+    return $childOverlay;
+  }
+
+  $childOverlay = $('<div class="childDialogOverlay"></div>');
+  $dialogBlock.prepend($childOverlay);
+
+  $childOverlay
+    .css('background-color', 'rgba(0,0,0,0.4)')
+    .css('position', 'absolute')
+    .css('width', '100%')
+    .css('height', '100%');
+
+  $childOverlay.off('click').on('click', function() {
+    $dialogBlock.click();
+  });
+
+  return $childOverlay;
+}
+
+/**
+ * Get the z-index for the element.
+ * @private
+ * @static
+ * @param {(HTMLElement | JQuery)} element
+ * @returns {number}
+ */
+OverlayService.getZIndex = function(element) {
+  var zIndex = parseInt( $(element).css('zIndex'));
+  return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
+}
+
+exports = module.exports = OverlayService;
+},{}],11:[function(require,module,exports){
 
 var Convert  = require('../utils/convert');
 var GridDataStore = require('./gridDataStore');
@@ -2173,9 +2202,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
-  var itemIndex = this._dataStore.getItemIndexById(dataId);
-  var isFirst = itemIndex < 1;
-  var isLast = itemIndex >= (this._dataStore.count() - 1);
   var template =
         '<div tabindex="0" data-component-template="gridRow">' +
           '<div class="toolbar">' +
@@ -2235,7 +2261,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
     self.openItemEditor(dataId);
   });
 
-  $row.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
+  $row.find('[data-component-part="preview"]').off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
     self.openItemEditor(dataId);
   });
 
@@ -2353,7 +2379,7 @@ DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function(
 
 exports = module.exports = DataEditor_GridPreviewController;
 
-},{"../componentModel/componentTemplate":1,"../templateRenderer":16,"../utils/convert":19,"./dataEditor_form":11,"./gridDataStore":13}],11:[function(require,module,exports){
+},{"../componentModel/componentTemplate":1,"../templateRenderer":17,"../utils/convert":20,"./dataEditor_form":12,"./gridDataStore":14}],12:[function(require,module,exports){
 var FormDialog = require('../dialogs/formDialog');
 var ComponentTemplate = require('../componentModel/componentTemplate');
 var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
@@ -2689,7 +2715,7 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 }
 
 exports = module.exports = DataEditor_Form;
-},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8,"../templateRenderer":16,"./htmlPropertyEditorController":14}],12:[function(require,module,exports){
+},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8,"../templateRenderer":17,"./htmlPropertyEditorController":15}],13:[function(require,module,exports){
 var ComponentTemplate = require('../componentModel/componentTemplate');
 var GridDialog = require('../dialogs/gridDialog');
 var DataEditor_GridPreviewController = require('./dataEditor_ gridPreviewController');
@@ -2812,7 +2838,7 @@ DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captio
 
 
 exports = module.exports = DataEditor_GridPreview;
-},{"../componentModel/componentTemplate":1,"../dialogs/gridDialog":9,"./dataEditor_ gridPreviewController":10}],13:[function(require,module,exports){
+},{"../componentModel/componentTemplate":1,"../dialogs/gridDialog":9,"./dataEditor_ gridPreviewController":11}],14:[function(require,module,exports){
 var Convert  = require('../utils/convert');
 
 /**
@@ -2922,7 +2948,7 @@ GridDataStore.prototype.updateItem = function(item) {
 
 exports = module.exports = GridDataStore;
 
-},{"../utils/convert":19}],14:[function(require,module,exports){
+},{"../utils/convert":20}],15:[function(require,module,exports){
 /**
  * @class
  * @classdesc This is a wrapper on the jshCMSEditor to easily attach it
@@ -3066,7 +3092,7 @@ HTMLPropertyEditor.prototype.render = function() {
 
 
 exports = module.exports = HTMLPropertyEditor;
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var ComponentTemplate = require('../componentModel/componentTemplate');
 var FormDialog = require('../dialogs/formDialog');
 
@@ -3149,7 +3175,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
 exports = module.exports = PropertyEditor_Form;
 
-},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8}],16:[function(require,module,exports){
+},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8}],17:[function(require,module,exports){
 /**
  * @typedef {Object} RenderConfig
  * @property {Object} data - the component data
@@ -3237,7 +3263,7 @@ TemplateRenderer.render = function(config, type, jsh) {
 }
 
 exports = module.exports = TemplateRenderer;
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /**
  * @typedef {Object} IconDefinition
  * @property {string} name - the name the icon is registered as
@@ -3651,7 +3677,7 @@ JsHarmonyComponentPlugin.prototype.serializerFilter = function(nodes) {
 }
 
 exports = module.exports = registerPlugin;
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /**
  * @class
  * @classdesc Clone objects
@@ -3672,7 +3698,7 @@ Cloner.deepClone = function(obj) {
 
 exports = module.exports = Cloner;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /**
  * @class
  * @classdesc This contains helper functions to coerce values from one type to another.
@@ -3701,7 +3727,7 @@ Convert.toNumber = function(input, allowNan) {
 
 exports = module.exports = Convert;
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /**
  * @class
  * @classdesc Serialize and deserialize component data and property attributes
@@ -3762,7 +3788,7 @@ DomSerializer.serializeAttrValue = function(data) {
 
 exports = module.exports = DomSerializer;
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 var ComponentTemplate = require('./component/componentModel/componentTemplate');
 var DataEditor_GridPreview = require('./component/editors/dataEditor_gridPreview');
 var PropertyEditor_Form = require('./component/editors/propertyEditor_form');
@@ -3980,7 +4006,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
 
 }
-},{"./component/componentModel/componentTemplate":1,"./component/editors/dataEditor_form":11,"./component/editors/dataEditor_gridPreview":12,"./component/editors/propertyEditor_form":15,"./component/templateRenderer":16,"./component/utils/domSerializer":20}],22:[function(require,module,exports){
+},{"./component/componentModel/componentTemplate":1,"./component/editors/dataEditor_form":12,"./component/editors/dataEditor_gridPreview":13,"./component/editors/propertyEditor_form":16,"./component/templateRenderer":17,"./component/utils/domSerializer":21}],23:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4149,7 +4175,7 @@ exports = module.exports = function(jsh, cms){
     cms.util.addStyle(id, cssParts.join('\n'));
   }
 }
-},{"./jsHarmonyCMS.Component":21}],23:[function(require,module,exports){
+},{"./jsHarmonyCMS.Component":22}],24:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4208,7 +4234,7 @@ exports = module.exports = function(jsh, cms){
     };
   }
 }
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4287,7 +4313,7 @@ exports = module.exports = function(jsh, cms, editor){
     return false;
   }
 }
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -5420,7 +5446,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     ];
   }
 }
-},{"./component/tinyMceComponentPlugin":17,"./jsHarmonyCMS.Editor.Picker.js":24}],26:[function(require,module,exports){
+},{"./component/tinyMceComponentPlugin":18,"./jsHarmonyCMS.Editor.Picker.js":25}],27:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -5510,7 +5536,7 @@ exports = module.exports = function(cms){
     this.StopLoading();
   }
 }
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -5605,7 +5631,7 @@ exports = module.exports = function(jsh, cms){
     });
   }
 }
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -5686,7 +5712,7 @@ exports = module.exports = function(jsh, cms){
 
 
 }
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -5776,7 +5802,7 @@ exports = module.exports = function(){
     if(elem) elem.parentNode.removeChild(elem);
   }
 }
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 (function (global){
 /*
 Copyright 2019 apHarmony
@@ -5977,4 +6003,4 @@ var jsHarmonyCMS = function(options){
 global.jsHarmonyCMS = jsHarmonyCMS;
 global.jsHarmonyCMSInstance = new jsHarmonyCMS({ _instance: 'jsHarmonyCMSInstance' });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.Editor.Picker.js":24,"./jsHarmonyCMS.Editor.js":25,"./jsHarmonyCMS.Loader.js":26,"./jsHarmonyCMS.MenuController.js":27,"./jsHarmonyCMS.Toolbar.js":28,"./jsHarmonyCMS.Util.js":29}]},{},[30]);
+},{"./jsHarmonyCMS.ComponentManager.js":23,"./jsHarmonyCMS.Controller.js":24,"./jsHarmonyCMS.Editor.Picker.js":25,"./jsHarmonyCMS.Editor.js":26,"./jsHarmonyCMS.Loader.js":27,"./jsHarmonyCMS.MenuController.js":28,"./jsHarmonyCMS.Toolbar.js":29,"./jsHarmonyCMS.Util.js":30}]},{},[31]);

@@ -1,4 +1,5 @@
 var DialogResizer = require('./dialogResizer');
+var OverlayService = require('./overlayService');
 
 /**
  * @typedef {Object} DialogConfig
@@ -65,7 +66,6 @@ function Dialog(jsh, model, config) {
   /** @type {DialogConfig} */
   this._config = config || {};
   this._$wrapper = this.makeDialog(this._id, this._config);
-  this._$overlay = undefined;
   this._destroyed = false;
 
   $('body').append(this._$wrapper)
@@ -131,23 +131,6 @@ Dialog.prototype.getFormSelector = function() {
 }
 
 /**
- * Find the z-index of the child element with the
- * highest z-index inside of the dialog block
- * @private
- * @returns {number}
- */
-Dialog.prototype.getMaxDialogBlockZIndex = function() {
-  var self = this;
-  var maxZIndex = 0;
-  $('.xdialogblock').children().each(function(i, el) {
-    var zIndex = self.getZIndex(el);
-    maxZIndex = Math.max(maxZIndex, zIndex);
-  });
-
-  return maxZIndex;
-}
-
-/**
  * Get a globally unique (W.R.T this dialog class)
  * ID to be used for the current dialog instance
  * @private
@@ -173,42 +156,6 @@ Dialog.prototype.getNextId = function() {
  */
 Dialog.prototype.getScrollTop = function($wrapper) {
   return $wrapper.scrollParent().scrollTop();
-}
-
-/**
- * Get the z-index for the element.
- * @private
- * @param {(HTMLElement | JQuery)} element
- * @returns {number}
- */
-Dialog.prototype.getZIndex = function(element) {
-  var zIndex = parseInt( $(element).css('zIndex'));
-  return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
-}
-
-/**
- * Create and insert the overlay for this dialog.
- * @private
- */
-Dialog.prototype.insertOverlay = function() {
-  var $dialogBlock = $('.xdialogblock');
-  var $childOverlay = $('<div class="childDialogOverlay"></div>')
-  $childOverlay
-    .css('background-color', 'rgba(0,0,0,0.1)')
-    .css('position', 'absolute')
-    .css('width', '100%')
-    .css('height', '100%');
-
-  this.setZIndexToNextMax($childOverlay);
-
-  $childOverlay.on('click', function() {
-    $dialogBlock.click();
-  });
-
-
-  $dialogBlock.append($childOverlay);
-
-  this._$overlay = $childOverlay;
 }
 
 /**
@@ -261,9 +208,9 @@ Dialog.prototype.open = function() {
   var oldActive = document.activeElement;
   this.load(function(xModel) {
 
-    self.insertOverlay();
-    self.registerLovs(xModel);
+
     var $wrapper = $(formSelector);
+    self.registerLovs(xModel);
     var lastScrollTop = 0
     self._jsh.XExt.execif(self.onBeforeOpen,
       function(f){
@@ -275,7 +222,7 @@ Dialog.prototype.open = function() {
 
         self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
           function(acceptFunc, cancelFunc) {
-            self.setZIndexToNextMax($wrapper);
+            OverlayService.pushDialog($wrapper);
             lastScrollTop = self.getScrollTop($wrapper);
             dialogResizer = new DialogResizer($wrapper[0], self._jsh);
             if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc);
@@ -296,6 +243,7 @@ Dialog.prototype.open = function() {
             dialogResizer.closeDialog();
             if(_.isFunction(self.onClose)) self.onClose();
             self.destroy();
+            OverlayService.popDialog();
           },
           { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
         );
@@ -336,18 +284,6 @@ Dialog.prototype.registerLovs = function(xModel) {
  */
 Dialog.prototype.setScrollTop = function(position, $wrapper) {
   $wrapper.scrollParent().scrollTop(position);
-}
-
-/**
- * Find the current maximum z-index for the children
- * elements of the dialog block and set the given
- * element's z-index to one greater.
- * @private
- * @param {(HTMLElement | JQuery)} element
- */
-Dialog.prototype.setZIndexToNextMax = function(element) {
-  var maxZIndex = this.getMaxDialogBlockZIndex() + 1;
-  $(element).css('zIndex', maxZIndex);
 }
 
 exports = module.exports = Dialog;
