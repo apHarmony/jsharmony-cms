@@ -2542,6 +2542,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     });
 
     editor.onChangeData_noDebounce = function() {
+      if(!self._jsh.XModels[xModel.id]){ return; }
       var updatedData = {};
       _.forEach(modelConfig.fields, function(field) {
         if (field.type != undefined) {
