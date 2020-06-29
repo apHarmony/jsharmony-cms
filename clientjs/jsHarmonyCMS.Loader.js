@@ -22,6 +22,10 @@ exports = module.exports = function(cms){
   this.loadQueue = [];
   this.isLoading = false;
   this.defaultLoadObj = {main:1};
+
+  this.onSquashedClick = [];
+  this.onMouseDown = [];
+  this.onMouseUp = [];
   
   this.StartLoading = function(obj){
     if(!obj) obj = _this.defaultLoadObj;

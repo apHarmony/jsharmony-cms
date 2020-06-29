@@ -290,7 +290,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val();
       if(val != (_this.page.seo[key]||'')){ _this.page.seo[key] = val; _this.hasChanges = true; }
     });
-    _this.hasChanges = _this.hasChange || !!XPage.GetChanges('jsharmony_cms_page_properties').length;
+    _this.hasChanges = _this.hasChanges || !!XPage.GetChanges('jsharmony_cms_page_properties').length;
     _this.hasPropertiesError = false;
     if(!jsh.XModels['jsharmony_cms_page_properties'].controller.Commit(_this.page.properties, 'U')){
       _this.hasChanges = true;

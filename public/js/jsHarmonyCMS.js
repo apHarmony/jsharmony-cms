@@ -4067,8 +4067,8 @@ exports = module.exports = function(jsh, cms){
     });
   };
 
-  this.render = function(){
-    $('.jsharmony_cms_component').addClass('mceNonEditable').each(function(){
+  this.render = function(container){
+    $('.jsharmony_cms_component').not('.initialized').addClass('initialized mceNonEditable').each(function(){
       var jobj = $(this);
       var component_id = jobj.data('id');
       var component_content = '';
@@ -4082,6 +4082,12 @@ exports = module.exports = function(jsh, cms){
       }
       jobj.html(component_content);
     });
+    if(container){
+      $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function(){
+        $(this).attr('data-component-id', _this.getNextComponentId());
+        _this.renderComponent(this);
+      });
+    }
   }
 
   this.extractComponentTemplateEjs = function(componentTemplate) {
@@ -4147,15 +4153,11 @@ exports = module.exports = function(jsh, cms){
 
     var componentType = $(element).attr('data-component');
     var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
-    if (!componentTemplate) {
-      return;
-    }
+    if (!componentTemplate) return;
+
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
-    if (componentId.length < 1) {
-      console.error(new Error('Component is missing [data-component-id] attribute.'));
-      return;
-    }
+    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return; }
     var componentInstance = {};
     XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', componentInstance, {
       _this: componentInstance,
@@ -4534,6 +4536,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
   this.getMaterialIcons = function(){
+    if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [
       [0xe84d,'materialicon_3d_rotation'],
       [0xeb3b,'materialicon_ac_unit'],
@@ -5495,6 +5498,10 @@ exports = module.exports = function(cms){
   this.loadQueue = [];
   this.isLoading = false;
   this.defaultLoadObj = {main:1};
+
+  this.onSquashedClick = [];
+  this.onMouseDown = [];
+  this.onMouseUp = [];
   
   this.StartLoading = function(obj){
     if(!obj) obj = _this.defaultLoadObj;

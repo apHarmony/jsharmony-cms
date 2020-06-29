@@ -268,6 +268,7 @@ module.exports = exports = function(module, funcs){
 
           //Get image width / height
           function(cb){
+            if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], media_ext)) return cb();
             HelperImg.size(tmp_file_path, function(err, size){
               if(err || !size || !size.width || !size.height) return cb();
               media_width = size.width;

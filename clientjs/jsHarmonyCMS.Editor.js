@@ -194,6 +194,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
   this.getMaterialIcons = function(){
+    if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [
       [0xe84d,'materialicon_3d_rotation'],
       [0xeb3b,'materialicon_ac_unit'],

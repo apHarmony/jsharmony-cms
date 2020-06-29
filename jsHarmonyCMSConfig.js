@@ -77,6 +77,7 @@ function jsHarmonyCMSConfig(){
 
   this.defaultEditorConfig = {};        //Default GUI editor config
                                         //Set widgets path: { widgets: '/templates/widget/index.html' }
+                                        //Enable Material Icons { materialIcons: true }
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing
