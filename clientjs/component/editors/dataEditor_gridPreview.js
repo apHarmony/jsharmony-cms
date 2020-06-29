@@ -45,7 +45,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dialog = new GridDialog(this._jsh, modelConfig, {
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,
     maxHeight: 800,
     minHeight: modelConfig.popup[1],

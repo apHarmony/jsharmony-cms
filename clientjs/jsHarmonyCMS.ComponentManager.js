@@ -58,9 +58,16 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.render = function(container){
-    $('.jsharmony_cms_component').not('.initialized').addClass('initialized mceNonEditable').each(function(){
+
+    $('.jsharmony_cms_component').not('.initialized').each(function(){
+
       var jobj = $(this);
+
       var component_id = jobj.data('id');
+      var isCmsComponent = !component_id && jobj.closest('[data-component]').length > 0;
+      if (isCmsComponent) return;
+
+      jobj.addClass('initialized mceNonEditable');
       var component_content = '';
       if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
       else if(!(component_id in _this.componentTemplates)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
@@ -72,12 +79,12 @@ exports = module.exports = function(jsh, cms){
       }
       jobj.html(component_content);
     });
-    if(container){
-      $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function(){
-        $(this).attr('data-component-id', _this.getNextComponentId());
-        _this.renderComponent(this);
-      });
-    }
+
+    $('[data-component]').not('.initialized').addClass('initialized').each(function() {
+      var jobj = $(this);
+      jobj.attr('data-component-id', _this.getNextComponentId());
+      _this.renderComponent(this);
+    });
   }
 
   this.extractComponentTemplateEjs = function(componentTemplate) {

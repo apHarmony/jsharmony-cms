@@ -2509,7 +2509,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataFormItemEditor jsHarmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: modelConfig.id,
     maxHeight: 800
   });
@@ -2764,7 +2764,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dialog = new GridDialog(this._jsh, modelConfig, {
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsHarmony_cms_component_dialog jsHarmony_cms_component_dataGridEditor jsHarmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,
     maxHeight: 800,
     minHeight: modelConfig.popup[1],
@@ -3134,7 +3134,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'jsHarmony_cms_component_dialog jsHarmony_cms_component_propertyFormEditor jsHarmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'jsharmony_cms_component_dialog jsharmony_cms_component_propertyFormEditor jsharmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: model.id
   };
 
@@ -4068,9 +4068,16 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.render = function(container){
-    $('.jsharmony_cms_component').not('.initialized').addClass('initialized mceNonEditable').each(function(){
+
+    $('.jsharmony_cms_component').not('.initialized').each(function(){
+
       var jobj = $(this);
+
       var component_id = jobj.data('id');
+      var isCmsComponent = !component_id && jobj.closest('[data-component]').length > 0;
+      if (isCmsComponent) return;
+
+      jobj.addClass('initialized mceNonEditable');
       var component_content = '';
       if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
       else if(!(component_id in _this.componentTemplates)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
@@ -4082,12 +4089,12 @@ exports = module.exports = function(jsh, cms){
       }
       jobj.html(component_content);
     });
-    if(container){
-      $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function(){
-        $(this).attr('data-component-id', _this.getNextComponentId());
-        _this.renderComponent(this);
-      });
-    }
+
+    $('[data-component]').not('.initialized').addClass('initialized').each(function() {
+      var jobj = $(this);
+      jobj.attr('data-component-id', _this.getNextComponentId());
+      _this.renderComponent(this);
+    });
   }
 
   this.extractComponentTemplateEjs = function(componentTemplate) {
