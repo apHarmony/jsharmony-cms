@@ -196,26 +196,9 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
     // Data was changed in the view
     this.dataUpdated();
 
-    // Need to maintain the scroll position
-    // after the grid re-renders
-    var scrollTop = this.$dialogWrapper.scrollTop();
-
     // A refresh is required by the current grid
     // system to ensure rows are re-drawn in correct order.
     this.forceRefresh();
-
-    // Since we don't really know how long it will take
-    // (or have a way to know when render is complete)
-    // we will just set the scroll every so often
-    // for a short period of time.
-    var self = this;
-    var refreshTime  = 800;
-    var refreshInterval = 50;
-    var remainingIntervals = refreshTime/refreshInterval;
-    var interval = setInterval(function() {
-      if (remainingIntervals-- < 2) clearInterval(interval);
-      self.$dialogWrapper.scrollTop(scrollTop);
-    }, refreshInterval);
   }
 }
 
@@ -243,9 +226,27 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
  * @private
  */
 DataEditor_GridPreviewController.prototype.forceRefresh = function() {
+
+  // Need to maintain the scroll position
+  // after the grid re-renders
+  var scrollTop = this.$dialogWrapper.scrollTop();
+
   var controller = this.xModel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Refresh();
+
+  // Since we don't really know how long it will take
+  // (or have a way to know when render is complete)
+  // we will just set the scroll every so often
+  // for a short period of time.
+  var self = this;
+  var refreshTime  = 800;
+  var refreshInterval = 50;
+  var remainingIntervals = refreshTime/refreshInterval;
+  var interval = setInterval(function() {
+    if (remainingIntervals-- < 2) clearInterval(interval);
+    self.$dialogWrapper.scrollTop(scrollTop);
+  }, refreshInterval);
 }
 
 /**
@@ -363,6 +364,14 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
       self._apiData.splice(index, 1);
     }
     self.dataUpdated();
+
+    setTimeout(function() {
+      // Re-render to ensure order-based logic
+      // is applied (EJS templates may depend on
+      // grid context variables such as row number)
+      self.forceCommit();
+      setTimeout(function() { self.forceRefresh() });
+    });
     return false;
   }
 
