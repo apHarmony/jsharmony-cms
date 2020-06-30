@@ -46,6 +46,7 @@ module.exports = exports = function(module, funcs){
     module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
       //If an error occurs loading the file, ignore it and load the default template instead
 
+      //Parse content
       var page_file_content = {};
       try{
         page_file_content = JSON.parse(JSON.stringify(template.default_content||'')) || {};
@@ -59,12 +60,33 @@ module.exports = exports = function(module, funcs){
         if(key in page_file.content) page_file_content[key] = page_file.content[key];
       }
       page_file.content = page_file_content;
+
+      //Parse properties
+      var default_properties = {};
+      try{
+        default_properties = _.extend(default_properties, JSON.parse(JSON.stringify(template.default_properties||'')) || {});
+      }
+      catch(ex){
+        module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_properties);
+      }
+      if(template.properties){
+        _.each(template.properties.fields, function(field){
+          if(field && field.name){
+            if(!(field.name in default_properties)){
+              default_properties[field.name] = ('default' in field) ? field.default : '';
+            }
+          }
+        });
+      }
+      
+
       if(!page_file.seo) page_file.seo = {};
       var client_page = {
         title: page.page_title||'',
         css: page_file.css||'',
         header: page_file.header||'',
         footer: page_file.footer||'',
+        properties: _.extend({}, default_properties, page_file.properties||{}),
         content: page_file.content||{},
         seo: {
           title: page_file.seo.title||'',
@@ -81,11 +103,13 @@ module.exports = exports = function(module, funcs){
         css: template.css||'',
         header: template.header||'',
         footer: template.footer||'',
+        properties: template.properties||{},
+        default_properties: default_properties||{},
         js: template.js||'',
         content_elements: template.content_elements||{},
         raw: template.raw||false
       };
-      
+
       return cb(null,{
         page: client_page,
         template: client_template,
@@ -255,7 +279,7 @@ module.exports = exports = function(module, funcs){
           return page_url;
         }
       }
-      
+
       return url;
     }
 
@@ -387,22 +411,21 @@ module.exports = exports = function(module, funcs){
             return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
           publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
-    
-          //Resolve Remote Templates
+
           _.each(components, function(component){
-            if(component.remote_template && component.remote_template.publish){
-              for(var key in publish_params){
-                component.remote_template.publish = Helper.ReplaceAll(component.remote_template.publish, '%%%' + key + '%%%', publish_params[key]);
+              if(component.remote_template && component.remote_template.editor){
+                for(var key in publish_params){
+                  component.remote_template.editor = Helper.ReplaceAll(component.remote_template.editor, '%%%' + key + '%%%', publish_params[key]);
+                }
               }
-            }
-          });
+            });
 
           return cb();
         },
       ], function(err){
         if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
 
-        res.end(JSON.stringify({ 
+        res.end(JSON.stringify({
           '_success': 1,
           'components': components
         }));
@@ -483,7 +506,7 @@ module.exports = exports = function(module, funcs){
             return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
           publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
-    
+
           //Parse menu templates
           for(var tmplname in module.MenuTemplates){
             var tmpl = module.MenuTemplates[tmplname];
@@ -498,7 +521,7 @@ module.exports = exports = function(module, funcs){
               var rslt_content_element = front_tmpl.content_elements[key];
               if('template' in content_element) rslt_content_element.template = content_element.template['editor'] || '';
               if('remote_template' in content_element) rslt_content_element.remote_template = content_element.remote_template['editor'] || '';
-              
+
               //Resolve Remote Templates
               if(rslt_content_element.remote_template){
                 for(var key in publish_params){
@@ -514,7 +537,7 @@ module.exports = exports = function(module, funcs){
       ], function(err){
         if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
 
-        res.end(JSON.stringify({ 
+        res.end(JSON.stringify({
           '_success': 1,
           'menuTemplates': menuTemplates
         }));
@@ -522,10 +545,10 @@ module.exports = exports = function(module, funcs){
     }
     else return next();
   }
-  
+
   exports.page = function (req, res, next) {
     var verb = req.method.toLowerCase();
-    
+
     var Q = req.query;
     var P = req.body;
     var appsrv = this;
@@ -538,7 +561,7 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
     var validate = null;
     var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-    
+
     if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     if(!req.params || !req.params.page_key) return next();
@@ -577,12 +600,12 @@ module.exports = exports = function(module, funcs){
     if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
     else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
     else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
-    
+
     var fields = [];
     var datalockstr = '';
     appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
     sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
-    
+
     verrors = _.merge(verrors, validate.Validate('B', sql_params));
     if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
@@ -606,7 +629,7 @@ module.exports = exports = function(module, funcs){
           if(Q.page_template_id.toString()!=(page.page_template_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The template has changed.'); }
         }
       }
-      
+
       if (verb == 'get'){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
@@ -686,7 +709,7 @@ module.exports = exports = function(module, funcs){
 
                   //Generate tree
                   menu.menu_item_tree = funcs.createMenuTree(menu.menu_items);
-                  
+
                   return menu_cb();
                 });
               }, cb);
@@ -727,7 +750,7 @@ module.exports = exports = function(module, funcs){
         ], function(err){
           if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
 
-          res.end(JSON.stringify({ 
+          res.end(JSON.stringify({
             '_success': 1,
             'page': clientPage.page,
             'template': clientPage.template,
@@ -750,6 +773,7 @@ module.exports = exports = function(module, funcs){
             css: page_file.css||'',
             header: page_file.header||'',
             footer: page_file.footer||'',
+            properties: page_file.properties||{},
             content: page_file.content||{},
             seo_title: page_file.seo_title||'',
             seo_keywords: page_file.seo_keywords||'',
@@ -762,7 +786,7 @@ module.exports = exports = function(module, funcs){
         */
 
         //Validate parameters
-        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&properties','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
         if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //XValidate
@@ -773,6 +797,7 @@ module.exports = exports = function(module, funcs){
         validate.AddValidator('_obj.css', 'CSS', 'B', []);
         validate.AddValidator('_obj.header', 'Header', 'B', []);
         validate.AddValidator('_obj.footer', 'Footer', 'B', []);
+        validate.AddValidator('_obj.properties', 'Properties', 'B', []);
         validate.AddValidator('_obj.content', 'Content', 'B', []);
         validate.AddValidator('_obj.seo.title', 'SEO Title', 'B', [XValidate._v_MaxLength(2048)]);
         validate.AddValidator('_obj.seo.keywords', 'SEO Keywords', 'B', []);
@@ -814,7 +839,7 @@ module.exports = exports = function(module, funcs){
         appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
         sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
         if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-        
+
         appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
           if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length || !rslt[0][0]) return Helper.GenError(req, res, -99999, 'Invalid database result');
@@ -835,7 +860,7 @@ module.exports = exports = function(module, funcs){
   exports.getPageEditorUrl = function(req, res, next){
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
-    
+
     var Q = req.query;
     var P = {};
 
@@ -845,7 +870,7 @@ module.exports = exports = function(module, funcs){
     var XValidate = jsh.XValidate;
 
     var model = jsh.getModel(req, module.namespace + 'Page_Tree');
-    
+
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     //Validate parameters
@@ -903,7 +928,7 @@ module.exports = exports = function(module, funcs){
         for(var key in dtparams){
           url = Helper.ReplaceAll(url, '%%%' + key + '%%%', dtparams[key]);
         }
-        
+
         res.end(JSON.stringify({ '_success': 1, editor: url }));
       });
       return;

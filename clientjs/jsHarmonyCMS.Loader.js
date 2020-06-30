@@ -22,6 +22,10 @@ exports = module.exports = function(cms){
   this.loadQueue = [];
   this.isLoading = false;
   this.defaultLoadObj = {main:1};
+
+  this.onSquashedClick = [];
+  this.onMouseDown = [];
+  this.onMouseUp = [];
   
   this.StartLoading = function(obj){
     if(!obj) obj = _this.defaultLoadObj;
@@ -50,7 +54,7 @@ exports = module.exports = function(cms){
       loader_obj.style.left = '0px';
       loader_obj.style.bottom = '0px';
       loader_obj.style.width = '100%';
-      loader_obj.style.zIndex = 2147483641;
+      loader_obj.style.zIndex = 2147483642;
       loader_obj.style.cursor = 'wait';
       document.body.appendChild(loader_obj);
 

@@ -22,18 +22,22 @@ var jsHarmonyCMSLoader = require('./jsHarmonyCMS.Loader.js');
 var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
-var jsHarmonyCMSComponentController = require('./jsHarmonyCMS.ComponentController.js');
+var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
+var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
 
-var jsHarmonyCMS = function(){
+var jsHarmonyCMS = function(options){
   var _this = this;
+
+  this._instance = '';
+  this.App = {}; //Variable data store for implementations
 
   this.loader = new jsHarmonyCMSLoader(this);
   this.util = new jsHarmonyCMSUtil(this);
   this.toolbar = undefined; //Loaded after init
   this.controller = undefined; //Loaded after init
   this.editor = undefined; //Loaded after init
-  this.componentController = undefined; //Loaded after init
+  this.componentManager = undefined; // Loaded after init
   this.menuController = undefined; //Loaded after init
   this.views = {
     'jsh_cms_editor.css': '',
@@ -52,10 +56,17 @@ var jsHarmonyCMS = function(){
   this.filePickerCallback = null;        //function(url)
 
   this.onInit = null;                    //function(jsh)
+  this.onLoad = null;                    //function(jsh)
+  this.onLoaded = null;                  //function(jsh)
   this.onGetControllerUrl = null;        //function() => url
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
+  this.onApplyProperties = null;         //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); }
+
+  for(var key in options){
+    if(key in _this) _this[key] = options[key];
+  }
 
 
   var loader = _this.loader;
@@ -93,17 +104,17 @@ var jsHarmonyCMS = function(){
 
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
-      _this.editor = new jsHarmonyCMSEditor(jsh, _this);
+      _this.editor = _this.createCoreEditor()
+      _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
 
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
-  
-      _this.componentController = new jsHarmonyCMSComponentController(jsh, _this);
+
       _this.menuController = new jsHarmonyCMSMenuController(jsh, _this);
-  
+
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
@@ -121,25 +132,30 @@ var jsHarmonyCMS = function(){
     util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
-      WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } }); 
+      WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
     });
     window.addEventListener('message', this.onmessage);
   }
-  
+
   this.load = function(){
+    if(_this.onLoad) _this.onLoad(jsh);
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
-      this.componentController.load();
+      this.componentManager.load();
       this.menuController.load();
     }
     else{
       loader.StopLoading();
       XExt.Alert('Site ID not defined in querystring');
     }
-    _this.controller.init();
+    _this.controller.init(function(err){
+      if(!err){
+        if(_this.onLoaded) _this.onLoaded(jsh);
+      }
+    });
   }
-  
+
   this.refreshLayout = function(){
     var ww = $(window).width();
     var wh = $(window).height();
@@ -151,14 +167,27 @@ var jsHarmonyCMS = function(){
     var ph = ((doch > wh) ? doch : wh);
     var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
     $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
-  
+
     var toolbarTop = 37;
     $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
   }
-  
+
   this.onmessage = function(event){
     var data = (event.data || '').toString();
     if(_this.editor && _this.editor.picker && _this.editor.picker.onmessage(event, data)) return;
+  }
+
+  this.createCoreEditor = function() {
+    var el = $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
+    return new jsHarmonyCMSEditor(jsh, _this, el[0]);
+  }
+
+  this.createJsHarmonyCMSEditor = function(toolbarElement) {
+    return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
+  }
+
+  this.createJsHarmonyCMSEditorPicker = function(editor) {
+    return new jsHarmonyCMSEditorPicker(jsh, _this, editor);
   }
 
   //Run Init
@@ -166,4 +195,4 @@ var jsHarmonyCMS = function(){
 }
 
 global.jsHarmonyCMS = jsHarmonyCMS;
-global.jsHarmonyCMSInstance = new jsHarmonyCMS();
+global.jsHarmonyCMSInstance = new jsHarmonyCMS({ _instance: 'jsHarmonyCMSInstance' });

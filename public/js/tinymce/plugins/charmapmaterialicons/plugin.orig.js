@@ -16,9 +16,7 @@
     };
 
     var insertChar = function (editor, chr) {
-      var evtChr;
-      if(chr.substr(0,13)=='materialicon_') evtChr = '<span class="material-icons">'+chr.substr(13)+'</span>';
-      else evtChr = fireInsertCustomChar(editor, chr).chr;
+      var evtChr = fireInsertCustomChar(editor, chr).chr;
       editor.execCommand('mceInsertContent', false, evtChr);
     };
 
@@ -211,7 +209,7 @@
     };
 
     var isArray$1 = global$1.isArray;
-    var UserDefined = 'Material Icons';
+    var UserDefined = 'User Defined';
     var getDefaultCharMap = function () {
       return [
         {
@@ -1558,8 +1556,8 @@
       return map(matches, function (m) {
         return {
           text: m[1],
-          value: (m[1].substr(0,13)=='materialicon_'?'materialicon_'+fromCodePoint(m[0]):fromCodePoint(m[0])),
-          icon: (m[1].substr(0,13)=='materialicon_'?'<i class="material-icons">'+fromCodePoint(m[0])+'</i>':fromCodePoint(m[0]))
+          value: fromCodePoint(m[0]),
+          icon: fromCodePoint(m[0])
         };
       });
     };
@@ -1659,7 +1657,7 @@
     var global$2 = tinymce.util.Tools.resolve('tinymce.util.Promise');
 
     var init = function (editor, all) {
-      editor.ui.registry.addAutocompleter('charmapmaterialicons', {
+      editor.ui.registry.addAutocompleter('charmap', {
         ch: ':',
         columns: 'auto',
         minChars: 2,
@@ -1677,14 +1675,14 @@
     };
 
     var register$1 = function (editor) {
-      editor.ui.registry.addButton('charmapmaterialicons', {
+      editor.ui.registry.addButton('charmap', {
         icon: 'insert-character',
         tooltip: 'Special character',
         onAction: function () {
           return editor.execCommand('mceShowCharmap');
         }
       });
-      editor.ui.registry.addMenuItem('charmapmaterialicons', {
+      editor.ui.registry.addMenuItem('charmap', {
         icon: 'insert-character',
         text: 'Special character...',
         onAction: function () {
@@ -1694,7 +1692,7 @@
     };
 
     function Plugin () {
-      global.add('charmapmaterialicons', function (editor) {
+      global.add('charmap', function (editor) {
         var charMap = getCharMap$1(editor);
         register(editor, charMap);
         register$1(editor);

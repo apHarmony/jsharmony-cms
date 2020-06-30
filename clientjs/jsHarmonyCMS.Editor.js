@@ -18,17 +18,19 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
+var registerPlugin = require('./component/tinyMceComponentPlugin');
 
-exports = module.exports = function(jsh, cms){
+exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
 
   var $ = jsh.$;
   var _ = jsh._;
   var XExt = jsh.XExt;
-  
+
   this.isEditing = false;
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.defaultConfig = {};
+  this.toolbarContainer = null;
 
   this.onBeginEdit = null; //function(editor){};
   this.onEndEdit = null; //function(editor){};
@@ -44,8 +46,10 @@ exports = module.exports = function(jsh, cms){
     if(!cb) cb = function(){};
 
     //Initialize Editor
-    $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
+    _this.initToolbarContainer(toolbarContainer);
     XExt.TinyMCE('', undefined, function(){
+
+      registerPlugin(cms.componentManager);
 
       //Change text labels
       window.tinymce.addI18n('en', {
@@ -61,13 +65,14 @@ exports = module.exports = function(jsh, cms){
         branding: false,
         browser_spellcheck: true,
         valid_elements: '+*[*],#p',
+        valid_children: '+h1[p],+h2[p],+h3[p],+h4[p],+h5[p],+h6[p]',
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
           'searchreplace visualblocks code fullscreen wordcount jshwidget',
-          'insertdatetime media table paste code noneditable'
+          'insertdatetime media table paste code noneditable jsharmony'
         ],
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen',
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen | jsHarmonyComponents',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
@@ -97,22 +102,34 @@ exports = module.exports = function(jsh, cms){
           url = url;
           return url;
         },
+        fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
         charmap_append: _this.getMaterialIcons(),
-        fixed_toolbar_container: '#jsharmony_cms_content_editor_toolbar',
       }, jsh.globalparams.defaultEditorConfig, _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
+          var firstFocus = true;
           editor.on('focus', function(){
+            //Fix bug where alignment not reset when switching between editors
+            if(firstFocus){
+              $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
+              firstFocus = false;
+            }
+            $('[data-component="header"]').css('pointer-events', 'none');
             _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
-            $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:1 },300);
+            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
             if(_this.onBeginEdit) _this.onBeginEdit(editor);
           });
           editor.on('blur', function(){
+            $('[data-component="header"]').css('pointer-events', 'auto');
             _this.isEditing = false;
-            $('#jsharmony_cms_content_editor_toolbar').stop(true).animate({ opacity:0 },300);
+            _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
             if(_this.onEndEdit) _this.onEndEdit(editor);
+          });
+          editor.on('jsHarmonyRenderComponent', function(e) {
+            var el = $(editor.targetElm).find('[data-component="' + e.componentType + '"][data-component-id="' + e.componentId + '"]')[0];
+            if (el) cms.componentManager.renderComponent(el);
           });
         }
       });
@@ -126,7 +143,12 @@ exports = module.exports = function(jsh, cms){
           '*': ''
         },
         menubar: false,
-        browser_spellcheck: true
+        browser_spellcheck: true,
+        init_instance_callback: function(editor){
+          editor.on('blur', function(){
+            if(_this.onEndEdit) _this.onEndEdit(editor);
+          });
+        }
       });
 
       return cb();
@@ -168,7 +190,18 @@ exports = module.exports = function(jsh, cms){
     return editor.getContent();
   }
 
+  this.initToolbarContainer = function(element) {
+    this.toolbarContainer = $(element);
+    var id = this.toolbarContainer.attr('id');
+    if (!id) {
+      do {
+        id = 'jsharmony_cms_editor_toolbar_' + Math.random().toString().replace('.', '');
+      } while($('#' + id).length > 0)
+      this.toolbarContainer.attr('id', id);
+    }
+  }
   this.getMaterialIcons = function(){
+    if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [
       [0xe84d,'materialicon_3d_rotation'],
       [0xeb3b,'materialicon_ac_unit'],

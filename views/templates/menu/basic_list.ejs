@@ -1,7 +1,7 @@
 <ul>
 <% (function(menu_item_tree){ let forEachMenuItem = function(menu_item_tree, depth){ depth=depth||1; _.each(menu_item_tree, function(menu_item){
   var menu_item_html = menu_item.menu_item_text;
-  if((menu_item.menu_item_type||'').toUpperCase() != 'HTML') menu_item_html = Helper.escapeHTML(menu_item_html);
+  if((menu_item.menu_item_type||'').toUpperCase() != 'HTML') menu_item_html = escapeHTML(menu_item_html);
   var menu_item_tag = (menu_item.menu_item_tag||'').toUpperCase();
   var spaces = '  ';
   for(var i=0;i<depth;i++) spaces += '    ';

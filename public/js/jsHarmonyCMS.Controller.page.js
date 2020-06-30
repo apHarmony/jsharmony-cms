@@ -17,11 +17,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-(function(cms){
+(new (function(cms){
   var _this = this;
   var jsh = cms.jsh;
   var XExt = jsh.XExt;
   var XValidate = jsh.XValidate;
+  var XPage = jsh.XPage;
   var $ = jsh.$;
   var _ = jsh._;
   var async = jsh.async;
@@ -30,7 +31,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.page_id = undefined;
   this.page_template_id = undefined;
 
+  this.type = 'page';
   this.hasChanges = false;
+  this.hasPropertiesError = false;
   this.page = null;
   this.template = null;
   this.sitemap = {};
@@ -38,17 +41,21 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.authors = [];
   this.role = '';
 
-  this.init = function(){
+  this.init = function(onComplete){
     if(jsh._GET['page_key']) _this.page_key = jsh._GET['page_key'];
     if(jsh._GET['page_id']) _this.page_id = jsh._GET['page_id'];
     if(jsh._GET['page_template_id']) _this.page_template_id = jsh._GET['page_template_id'];
 
     if(_this.page_key){
-      this.load(function(err){ cms.loader.StopLoading(); });
+      this.load(function(err){
+        cms.loader.StopLoading();
+        if(onComplete) onComplete(err);
+      });
     }
     else{
       cms.loader.StopLoading();
       XExt.Alert('Page Key not defined in querystring');
+      if(onComplete) onComplete(new Error('Page Key not defined in querystring'));
     }
   }
 
@@ -61,10 +68,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(cms.branch_id) qs.branch_id = cms.branch_id;
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
-    
+
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       XExt.waitUntil(
-        function(){ return (cms.componentController.isInitialized && cms.menuController.isInitialized); },
+        function(){ return (cms.componentManager.isInitialized && cms.menuController.isInitialized); },
         function(){
           if ('_success' in rslt) {
             //Populate arrays + create editor
@@ -77,7 +84,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             _this.authors = rslt.authors;
             _this.role = rslt.role;
             cms.views = _.extend(cms.views, rslt.views);
-            cms.readonly = (_this.role=='VIEWER')||(page_id);
+            cms.readonly = (_this.role=='VIEWER')||(_this.page_id);
             XExt.execif(!cms.isInitialized, function(f){
               _this.createWorkspace(f);
             }, function(){
@@ -102,6 +109,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     });
   };
 
+  this.loadProperties = function(){
+    if(_this.template.properties && _this.template.properties.onecolumn){
+      XPage.LayoutOneColumn($('.jsharmony_cms_page_settings_properties'), { reset: true });
+    }
+  }
+
   this.createWorkspace = function(cb){
     if(!_this.page) return;
 
@@ -121,42 +134,64 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     $('#jsharmony_cms_editor_bar .actions .button.save').on('click', function(){ _this.save(); });
     $('#jsharmony_cms_editor_bar .actions .button.autoHideEditorBar').on('click', function(){ cms.toolbar.toggleAutoHide(); });
 
+    //Initialize Properties
+    XExt.execif(!_.isEmpty(_this.template.properties),
+      function(f){
+        //Properties Button
+        var jtabbutton = $('.jsharmony_cms_page_settings_properties_button');
+        jtabbutton.show()
+        jtabbutton.data('ontabselected', cms._instance + ".controller.loadProperties();");
 
-    //Initialize Tag Control
-    XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
-
-    $(window).on('resize', function(){ cms.refreshLayout(); });
-    $(window).on('scroll', function(){ cms.refreshLayout(); });
-    cms.refreshLayout();
-
-    _.each($('.jsharmony_cms_content'), function(obj){
-      var jobj = $(obj);
-      if(!jobj.data('id')) XExt.Alert('jsharmony_cms_content area missing data-id attribute');
-      if(!obj.id) obj.id = 'jsharmony_cms_content_' + jobj.data('id');
-    });
-
-    if(cms.readonly){
-      $('.jsharmony_cms_content').prop('contenteditable', false);
-      if(cb) return cb();
-    }
-    else {
-      cms.editor.init(function(){
-        async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
-          cms.editor.attach('full', elem.id, {}, function(){ return editor_cb(); });
-        }, function(err){
-          //Initialize the title editor
-          cms.editor.attach('text', 'jsharmony_cms_title', {}, function(){ return cb(); });
+        //Initialize Properties Model
+        _this.template.properties = _.extend({
+          "id": "Customer",
+          "layout": "form",
+          "unbound": true,
+        }, _this.template.properties);
+        _this.template.properties.id = 'jsharmony_cms_page_properties';
+        _this.template.properties.onchange = 'var cms = '+cms._instance+'; if(cms.isInitialized && !cms.controller.hasChanges) cms.controller.getValues();'+(_this.template.properties.onchange||'');
+        XPage.LoadVirtualModel($('.jsharmony_cms_page_settings_properties')[0], _this.template.properties, function(){
+          f();
         });
-      });
-
-      $('.jsharmony_cms_content').on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
-      $('#jsharmony_cms_title').on('input keyup',function(){ _this.onTitleUpdate(this); });
-
-      $(window).bind('beforeunload', function(){
-        _this.getValues();
-        if(_this.hasChanges) return 'You have unsaved changes.  Are you sure you want to leave this page?';
-      });
-    }
+      },
+      function(){
+        //Initialize Tag Control
+        XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
+    
+        $(window).on('resize', function(){ cms.refreshLayout(); });
+        $(window).on('scroll', function(){ cms.refreshLayout(); });
+        cms.refreshLayout();
+    
+        _.each($('.jsharmony_cms_content'), function(obj){
+          var jobj = $(obj);
+          if(!jobj.data('id')) XExt.Alert('jsharmony_cms_content area missing data-id attribute');
+          if(!obj.id) obj.id = 'jsharmony_cms_content_' + jobj.data('id');
+        });
+    
+        if(cms.readonly){
+          $('.jsharmony_cms_content').prop('contenteditable', false);
+          if(cb) return cb();
+        }
+        else {
+          cms.editor.init(function(){
+            async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
+              cms.editor.attach('full', elem.id, {}, function(){ return editor_cb(); });
+            }, function(err){
+              //Initialize the title editor
+              cms.editor.attach('text', 'jsharmony_cms_title', {}, function(){ return cb(); });
+            });
+          });
+    
+          $('.jsharmony_cms_content').on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
+          $('#jsharmony_cms_title').on('input keyup',function(){ _this.onTitleUpdate(this); });
+    
+          $(window).bind('beforeunload', function(){
+            _this.getValues();
+            if(_this.hasChanges) return 'You have unsaved changes.  Are you sure you want to leave this page?';
+          });
+        }
+      }
+    );
   }
 
   this.render = function(){
@@ -172,7 +207,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       if(!cms.readonly) _this.page.content[key] = cms.editor.getContent(key);
     }
 
-    cms.componentController.render();
+    cms.componentManager.render();
     cms.menuController.render();
 
     //CSS
@@ -180,11 +215,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     cms.util.removeStyle('jsharmony_cms_page_style');
     cms.util.addStyle('jsharmony_cms_template_style',_this.template.css);
     cms.util.addStyle('jsharmony_cms_page_style',_this.page.css);
-    
+
     //Header
     var header = (_this.template.header||'')+(_this.page.header||'');
     if(header) cms.util.appendHTML($('head'), header);
-    
+
     //Footer
     cms.util.setHTML($('#jsharmony_cms_footer'), (_this.template.footer||'')+(_this.page.footer||''));
 
@@ -196,7 +231,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     _.each(['title','keywords','metadesc','canonical_url'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
     XExt.TagBox_Refresh(jeditorbar.find('.page_settings_tags_editor'), jeditorbar.find('.page_settings_tags'));
 
-    
+    //Properties
+    jsh.XModels['jsharmony_cms_page_properties'].controller.Render(_this.page.properties);
+    if(cms.onApplyProperties) cms.onApplyProperties(_this.page);
+
     if(cms.readonly){
       jeditorbar.find('.save').hide();
       jeditorbar.find('.readonly').show();
@@ -252,6 +290,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val();
       if(val != (_this.page.seo[key]||'')){ _this.page.seo[key] = val; _this.hasChanges = true; }
     });
+    _this.hasChanges = _this.hasChanges || !!XPage.GetChanges('jsharmony_cms_page_properties').length;
+    _this.hasPropertiesError = false;
+    if(!jsh.XModels['jsharmony_cms_page_properties'].controller.Commit(_this.page.properties, 'U')){
+      _this.hasChanges = true;
+      _this.hasPropertiesError = true;
+    }
     if(_this.hasChanges){
       $('#jsharmony_cms_editor_bar a.button.save').toggleClass('hasChanges', true);
     }
@@ -271,6 +315,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_metadesc', '_obj.seo.metadesc', 'SEO Meta Description', 'U', [ ]);
     validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_canonical_url', '_obj.seo.canonical_url', 'SEO Canonical URL', 'U', [ XValidate._v_MaxLength(2048) ]);
 
+    if(_this.hasPropertiesError){
+      cms.toolbar.showSettings();
+      $('#jsharmony_cms_editor_bar .xtab[for=jsharmony_cms_page_settings_properties]').click();
+      return false;
+    }
     if(!validation.ValidateControls('U', _this.page)){
       //Open settings if settings have an error
       var settings_error = false;
@@ -324,6 +373,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return {
       _: _,
       escapeHTML: XExt.xejs.escapeHTML,
+      stripTags: XExt.StripTags,
       page: _this.page,
       template: _this.template,
       sitemap: _this.sitemap,
@@ -336,6 +386,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return {
       _: _,
       escapeHTML: XExt.xejs.escapeHTML,
+      stripTags: XExt.StripTags,
       page: _this.page,
       template: _this.template,
       sitemap: _this.sitemap,
@@ -348,4 +399,4 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
   cms.controller = this;
 
-})(jsHarmonyCMSInstance);
+})(jsHarmonyCMSInstance));
