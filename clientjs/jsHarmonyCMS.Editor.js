@@ -64,7 +64,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         inline: true,
         branding: false,
         browser_spellcheck: true,
-        valid_elements: '+*[*],#p',
+        valid_elements: '+*[*],#p[*]',
         valid_children: '+h1[p],+h2[p],+h3[p],+h4[p],+h5[p],+h6[p]',
         entity_encoding: 'numeric',
         plugins: [

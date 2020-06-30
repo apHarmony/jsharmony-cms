@@ -182,7 +182,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             });
           });
     
-          $('.jsharmony_cms_content').on('input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
+          $('.jsharmony_cms_content').on('focus input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
           $('#jsharmony_cms_title').on('input keyup',function(){ _this.onTitleUpdate(this); });
     
           $(window).bind('beforeunload', function(){

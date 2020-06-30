@@ -296,30 +296,23 @@ JsHarmonyComponentPlugin.prototype.initialize = function(components) {
  * @param {string} componentType - the type of the component to insert.
  */
 JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentType) {
+  var cms = jsHarmonyCMSInstance;
+  var jsh = cms.jsh;
+  var $ = jsh.$;
 
   var domUtil = this._editor.dom;
   var selection = this._editor.selection;
 
   var currentNode = selection.getEnd();
 
-  var el2Id = domUtil.uniqueId();
-  var placeHolderEl1 = domUtil.create('div', {}, '');
-  var placeHolderEl2 = domUtil.create('div', { id: el2Id },  'b2');
+  var placeHolder = domUtil.create('div', { id: domUtil.uniqueId() },  '');
 
-  domUtil.insertAfter(placeHolderEl1, currentNode);
-  domUtil.insertAfter(placeHolderEl2, currentNode);
-
-  domUtil.replace(currentNode, placeHolderEl1)
-
-  selection.select(placeHolderEl2);
+  $(placeHolder).insertBefore(currentNode);
+  
+  selection.select(placeHolder);
   selection.collapse(false);
 
-  // Don't need to fire the insert event here.
-  // We have a parser filter that will detect the insert and
-  // fire the event.
   this._editor.insertContent(this.makeComponentContainer(componentType));
-
-  domUtil.remove(el2Id);
 }
 
 /**

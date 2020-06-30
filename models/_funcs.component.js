@@ -90,11 +90,13 @@ module.exports = exports = function(module, funcs){
     /** @type {XmlLikeNode} */
     const dataNode = { children: [], attribs: attribs || {}, name: nodeName, text: '' };
     dataNode.children = Object.entries(obj).map(kvp => {
-    /** @type {XmlLikeNode} */
+      var itemName = kvp[0];
+      if(itemName.indexOf('_jsh_browserDataTitle') > 0) itemName = Helper.ReplaceAll(itemName, '_jsh_browserDataTitle', '_desc');
+      /** @type {XmlLikeNode} */
       const itemNode = {
         attribs: {},
         children: [],
-        name: kvp[0],
+        name: itemName,
         text: `${kvp[1]}` // convert to string
       };
       return itemNode;
