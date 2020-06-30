@@ -4090,11 +4090,12 @@ exports = module.exports = function(jsh, cms){
       jobj.html(component_content);
     });
 
-    $('[data-component]').not('.initialized').addClass('initialized').each(function() {
-      var jobj = $(this);
-      jobj.attr('data-component-id', _this.getNextComponentId());
-      _this.renderComponent(this);
-    });
+    if(container){
+      $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function() {
+        $(this).attr('data-component-id', _this.getNextComponentId());
+        _this.renderComponent(this);
+      });
+    }
   }
 
   this.extractComponentTemplateEjs = function(componentTemplate) {
@@ -4457,7 +4458,13 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
+          var firstFocus = true;
           editor.on('focus', function(){
+            //Fix bug where alignment not reset when switching between editors
+            if(firstFocus){
+              $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
+              firstFocus = false;
+            }
             $('[data-component="header"]').css('pointer-events', 'none');
             _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
             _this.toolbarContainer.stop(true).animate({ opacity:1 },300);

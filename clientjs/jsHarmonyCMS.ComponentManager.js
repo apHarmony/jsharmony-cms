@@ -80,11 +80,12 @@ exports = module.exports = function(jsh, cms){
       jobj.html(component_content);
     });
 
-    $('[data-component]').not('.initialized').addClass('initialized').each(function() {
-      var jobj = $(this);
-      jobj.attr('data-component-id', _this.getNextComponentId());
-      _this.renderComponent(this);
-    });
+    if(container){
+      $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function() {
+        $(this).attr('data-component-id', _this.getNextComponentId());
+        _this.renderComponent(this);
+      });
+    }
   }
 
   this.extractComponentTemplateEjs = function(componentTemplate) {
