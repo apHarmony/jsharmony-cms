@@ -3267,6 +3267,7 @@ TemplateRenderer.render = function(config, type, jsh) {
       _: jsh._,
       escapeHTML: jsh.XExt.escapeHTML,
       stripTags: jsh.XExt.StripTags,
+      isInEditor: true,
     }
 
     var rendered = '';

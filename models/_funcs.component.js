@@ -255,6 +255,7 @@ module.exports = exports = function(module, funcs){
       _: _,
       escapeHTML: Helper.escapeHTML,
       stripTags: Helper.StripTags,
+      isInEditor: false,
     };
 
     let component = '';
