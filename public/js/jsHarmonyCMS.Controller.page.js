@@ -115,6 +115,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     }
   }
 
+  this.hasProperties = function(){
+    return !_.isEmpty(_this.template.properties);
+  }
+
   this.createWorkspace = function(cb){
     if(!_this.page) return;
 
@@ -135,7 +139,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     $('#jsharmony_cms_editor_bar .actions .button.autoHideEditorBar').on('click', function(){ cms.toolbar.toggleAutoHide(); });
 
     //Initialize Properties
-    XExt.execif(!_.isEmpty(_this.template.properties),
+    XExt.execif(_this.hasProperties(),
       function(f){
         //Properties Button
         var jtabbutton = $('.jsharmony_cms_page_settings_properties_button');
@@ -232,8 +236,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     XExt.TagBox_Refresh(jeditorbar.find('.page_settings_tags_editor'), jeditorbar.find('.page_settings_tags'));
 
     //Properties
-    jsh.XModels['jsharmony_cms_page_properties'].controller.Render(_this.page.properties);
-    if(cms.onApplyProperties) cms.onApplyProperties(_this.page);
+    if(_this.hasProperties()){
+      jsh.XModels['jsharmony_cms_page_properties'].controller.Render(_this.page.properties);
+      if(cms.onApplyProperties) cms.onApplyProperties(_this.page);
+    }
 
     if(cms.readonly){
       jeditorbar.find('.save').hide();
@@ -290,11 +296,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val();
       if(val != (_this.page.seo[key]||'')){ _this.page.seo[key] = val; _this.hasChanges = true; }
     });
-    _this.hasChanges = _this.hasChanges || !!XPage.GetChanges('jsharmony_cms_page_properties').length;
+    _this.hasChanges = _this.hasChanges;
     _this.hasPropertiesError = false;
-    if(!jsh.XModels['jsharmony_cms_page_properties'].controller.Commit(_this.page.properties, 'U')){
-      _this.hasChanges = true;
-      _this.hasPropertiesError = true;
+    if(_this.hasProperties()){
+      _this.hasChanges = _this.hasChanges || (!!XPage.GetChanges('jsharmony_cms_page_properties').length);
+      if(!jsh.XModels['jsharmony_cms_page_properties'].controller.Commit(_this.page.properties, 'U')){
+        _this.hasChanges = true;
+        _this.hasPropertiesError = true;
+      }
     }
     if(_this.hasChanges){
       $('#jsharmony_cms_editor_bar a.button.save').toggleClass('hasChanges', true);
