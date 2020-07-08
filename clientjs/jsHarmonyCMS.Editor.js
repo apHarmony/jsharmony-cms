@@ -18,7 +18,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
-var registerPlugin = require('./component/tinyMceComponentPlugin');
+var jsHarmonyCMSEditorTinyMCEPlugin = require('./jsHarmonyCMS.Editor.TinyMCEPlugin.js');
 
 exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
@@ -29,6 +29,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.isEditing = false;
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
+  this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
 
@@ -49,7 +50,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     _this.initToolbarContainer(toolbarContainer);
     XExt.TinyMCE('', undefined, function(){
 
-      registerPlugin(cms.componentManager);
+      _this.tinyMCEPlugin.register();
 
       //Change text labels
       window.tinymce.addI18n('en', {
@@ -64,7 +65,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         inline: true,
         branding: false,
         browser_spellcheck: true,
-        valid_elements: '+*[*],#p',
+        valid_elements: '+*[*],#p[*]',
         valid_children: '+h1[p],+h2[p],+h3[p],+h4[p],+h5[p],+h6[p]',
         entity_encoding: 'numeric',
         plugins: [

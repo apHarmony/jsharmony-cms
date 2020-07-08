@@ -221,6 +221,17 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
   controller.Commit();
 }
 
+DataEditor_GridPreviewController.prototype.showOverlay = function() {
+  this.$dialogWrapper.find('.refreshLoadingOverlay').remove();
+  this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="position:absolute;top:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
+}
+
+DataEditor_GridPreviewController.prototype.hideOverlay = function() {
+  this.$dialogWrapper.find('.refreshLoadingOverlay').fadeOut(function(){
+    $(this).remove();
+  });
+}
+
 /**
  * Refresh the grid.
  * @private
@@ -229,24 +240,17 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function() {
 
   // Need to maintain the scroll position
   // after the grid re-renders
-  var scrollTop = this.$dialogWrapper.scrollTop();
-
-  var controller = this.xModel.controller;
-  controller.editablegrid.CurrentCell = undefined;
-  controller.Refresh();
-
-  // Since we don't really know how long it will take
-  // (or have a way to know when render is complete)
-  // we will just set the scroll every so often
-  // for a short period of time.
   var self = this;
-  var refreshTime  = 800;
-  var refreshInterval = 50;
-  var remainingIntervals = refreshTime/refreshInterval;
-  var interval = setInterval(function() {
-    if (remainingIntervals-- < 2) clearInterval(interval);
+  var scrollTop = self.$dialogWrapper.scrollTop();
+
+  //Show overlay
+  self.showOverlay();
+  var controller = self.xModel.controller;
+  controller.editablegrid.CurrentCell = undefined;
+  controller.Refresh(function(){
+    self.hideOverlay();
     self.$dialogWrapper.scrollTop(scrollTop);
-  }, refreshInterval);
+  });
 }
 
 /**
@@ -358,6 +362,8 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
   }
 
   formApi.onDelete  = function(action, actionResult, keys) {
+    self.showOverlay();
+
     self._dataStore.deleteItem(keys[self._idFieldName]);
     var index = self._apiData.findIndex(function(item) { return item[self._idFieldName] === keys[self._idFieldName]});
     if (index > -1) {
@@ -369,7 +375,6 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
       // Re-render to ensure order-based logic
       // is applied (EJS templates may depend on
       // grid context variables such as row number)
-      self.forceCommit();
       setTimeout(function() { self.forceRefresh() });
     });
     return false;
@@ -424,6 +429,7 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
  */
 DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   this.xModel.controller.DeleteRow(rowId);
+
   var self = this;
   $('body').one('click', '.xdialogbox.xconfirmbox input[type="button"]', function(e) {
     var buttonValue = $(e.target).closest('input[type="button"]').attr('value');

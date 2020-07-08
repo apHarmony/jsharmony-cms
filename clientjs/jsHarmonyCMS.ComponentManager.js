@@ -98,16 +98,17 @@ exports = module.exports = function(jsh, cms){
      * It also means that the data EJS template might be in there as well.
      *
      * If the wrapper does not exist then the entire EJS string is the template
-     * (and the data EJS is NOT in there).
      **********/
     var $componentTemplateWrapper = $(componentRawEjs).filter('.componentTemplate');
-    if ($componentTemplateWrapper.length < 1)  return;
-    componentTemplate.templates.editor = $componentTemplateWrapper.html();
+    if ($componentTemplateWrapper.length){
+      componentTemplate.templates.editor = $componentTemplateWrapper.html();
+    }
 
-    var $componentDataTemplate = $(componentRawEjs).filter('.componentDataTemplate');
-    if ($componentDataTemplate.length < 1) return;
-    componentTemplate.data = componentTemplate.data || {};
-    componentTemplate.data.ejs = componentTemplate.data.ejs ? componentTemplate.data.ejs + '\r\n' + $componentDataTemplate.html() : $componentDataTemplate.html()
+    var $componentPreviewTemplate = $(componentRawEjs).filter('.componentPreviewTemplate');
+    if ($componentPreviewTemplate.length){
+      componentTemplate.data = componentTemplate.data || {};
+      componentTemplate.data.ejs = (componentTemplate.data.ejs ? componentTemplate.data.ejs + '\r\n' : '') + $componentPreviewTemplate.html();
+    }
   }
 
   this.loadTemplate = function(componentTemplate, complete_cb) {

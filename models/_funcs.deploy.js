@@ -913,7 +913,7 @@ module.exports = exports = function(module, funcs){
                   }
                   return sitemap_item.sitemap_item_link_dest;
                 },
-                isInEditor: false
+                isInEditor: false,
               });
               return rslt;
             }
