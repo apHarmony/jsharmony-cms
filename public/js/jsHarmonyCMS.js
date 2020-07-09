@@ -2354,7 +2354,6 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
   formApi.onInsert = function(action, actionResult, newRow) {
     newRow[self._idFieldName] = self._insertId;
     newRow.sequence = self.getNextSequenceNumber();
-    self._apiData.push(newRow);
     self._insertId = undefined;
 
     var dataStoreItem = self._modelTemplate.makePristineCopy(newRow, false);
