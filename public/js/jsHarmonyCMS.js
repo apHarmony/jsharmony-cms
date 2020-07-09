@@ -4761,14 +4761,16 @@ exports = module.exports = function(jsh, cms, editor){
 
     var currentNode = selection.getEnd();
 
-    var placeholder = domUtil.create('div', { id: domUtil.uniqueId() },  '');
+    var placeholderId = domUtil.uniqueId();
+    var placeholder = domUtil.create('div', { id: placeholderId }, '');
 
     $(placeholder).insertBefore(currentNode);
-    
+
     selection.select(placeholder);
     selection.collapse(false);
 
     this._editor.insertContent(this.createComponentContainer(componentType));
+    domUtil.remove(domUtil.select('#' + placeholderId));
   }
 
   /**
