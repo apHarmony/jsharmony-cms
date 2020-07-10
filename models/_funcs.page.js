@@ -786,6 +786,7 @@ module.exports = exports = function(module, funcs){
         */
 
         //Validate parameters
+        if(!('properties' in P)) P.properties = {};
         if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&properties','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
         if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 

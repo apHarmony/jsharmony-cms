@@ -238,6 +238,28 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     //Properties
     if(_this.hasProperties()){
       jsh.XModels['jsharmony_cms_page_properties'].controller.Render(_this.page.properties);
+      $("[data-jsharmony_cms_onApplyProperties]").each(function(){
+        var obj = this;
+        var jobj = $(this);
+        XExt.JSEval(jobj.attr('data-jsharmony_cms_onApplyProperties'), obj, {
+          page: _this.page,
+          toggle: function(){ jobj.toggle.apply(jobj, arguments); },
+          setClass: function(strClass){
+            var bodyClass = strClass||'';
+
+            jobj.removeClass(jobj.data('jsharmony_cms_properties_lastBodyClass')).addClass(bodyClass);
+            jobj.data('jsharmony_cms_properties_lastBodyClass', bodyClass)
+          },
+          setStyle: function(strStyle){
+            var origBodyStyle = jobj.data('jsharmony_cms_properties_origBodyStyle');
+            if(!origBodyStyle){
+              origBodyStyle = jobj.attr('style') + ';';
+              jobj.data('jsharmony_cms_properties_origBodyStyle', origBodyStyle);
+            }
+            jobj.attr('style', origBodyStyle + (strStyle||''))
+          },
+        });
+      });
       if(cms.onApplyProperties) cms.onApplyProperties(_this.page);
     }
 

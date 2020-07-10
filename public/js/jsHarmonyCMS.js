@@ -3633,6 +3633,7 @@ var JsHarmonyCMSComponent = require('./jsHarmonyCMS.Component');
 
 exports = module.exports = function(jsh, cms){
   var _this = this;
+  var _ = jsh._;
   var $ = jsh.$;
   var XExt = jsh.XExt;
   var async = jsh.async;
@@ -3769,23 +3770,28 @@ exports = module.exports = function(jsh, cms){
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
     if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return; }
-    var componentInstance = {};
-    XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', componentInstance, {
-      _this: componentInstance,
-      cms: cms,
-      jsh: jsh,
-      component: componentInstance
-    });
-    if (!_.isFunction(componentInstance.create))  {
-      componentInstance.create = function(componentConfig, element) {
-        var component = new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id);
-        component.onBeforeRender = componentInstance.onBeforeRender
-        component.onRender = componentInstance.onRender;
+
+    //Default component instance
+    var component = {
+      create: function(componentConfig, element) {
+        component = _.extend(new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id), component);
         component.render();
         _this.components[componentId] = component;
-      }
-    }
-    componentInstance.create(componentTemplate, element);
+      },
+      onBeforeRender: undefined,
+      onRender: undefined,
+    };
+
+    //Execute componentTemplate.js to set additional properties on component
+    XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', component, {
+      _this: component,
+      cms: cms,
+      jsh: jsh,
+      component: component
+    });
+
+    //Initialize component
+    component.create(componentTemplate, element);
     if ($(element).attr('data-is-insert')) {
       $(element).attr('data-is-insert', null);
       element.scrollIntoView(false);
@@ -4027,14 +4033,6 @@ exports = module.exports = function(jsh, cms, editor){
     editComponentData: 'jsharmonyEditComponentData'
   };
 
-  /**
-   * This defines event names that can be used for the plugin.
-   * @type {Object.<string, string>}
-   */
-  var EVENT_NAMES = {
-    renderComponent:  'jsHarmonyRenderComponent'
-  };
-
 
   /**
    * Register the JSH CMS Component plugin.
@@ -4067,6 +4065,8 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componentInfo) {
     var self = this;
 
+    if(!componentInfo || !componentInfo.length) return;
+
     self._editor.ui.registry.addMenuButton('jsHarmonyComponents', {
       icon: ICONS.widgets.name,
       text: 'Components',
@@ -4076,7 +4076,7 @@ exports = module.exports = function(jsh, cms, editor){
             type: 'menuitem',
             text: item.menuLabel,
             icon: item.iconId,
-            onAction: function() { self.insertComponentContent(item.componentType); }
+            onAction: function() { self.insertComponent(item.componentType); }
           }
         });
         cb(items)
@@ -4167,7 +4167,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @private
    * @param {object} e - the undo/redo event from the TinyMCE editor
    */
-  JsHarmonyComponentPlugin.prototype.handleUndoRedo = function(e) {
+  JsHarmonyComponentPlugin.prototype.onUndoRedo = function(e) {
     var self = this;
     var content = e.level.content;
     if (!content) return;
@@ -4178,7 +4178,7 @@ exports = module.exports = function(jsh, cms, editor){
         var id = node.attributes.map['data-component-id'];
         var type = node.attributes.map['data-component'];
         if (id && type) {
-          self._editor.fire(EVENT_NAMES.renderComponent, self.makeComponentEvent(id, type));
+          cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
         }
       }
     });
@@ -4240,8 +4240,8 @@ exports = module.exports = function(jsh, cms, editor){
     this.createContextToolbar(componentInfo);
     this.createComponentInsertMenu(componentInfo);
 
-    this._editor.on('undo', function(info) { self.handleUndoRedo(info); });
-    this._editor.on('redo', function(info) { self.handleUndoRedo(info); });
+    this._editor.on('undo', function(info) { self.onUndoRedo(info); });
+    this._editor.on('redo', function(info) { self.onUndoRedo(info); });
 
     this._editor.addCommand(COMMAND_NAMES.editComponentData, function() {
       var el = self._editor.selection.getStart();
@@ -4264,20 +4264,20 @@ exports = module.exports = function(jsh, cms, editor){
    * @private
    * @param {string} componentType - the type of the component to insert.
    */
-  JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentType) {
+  JsHarmonyComponentPlugin.prototype.insertComponent = function(componentType) {
     var domUtil = this._editor.dom;
     var selection = this._editor.selection;
 
     var currentNode = selection.getEnd();
 
-    var placeHolder = domUtil.create('div', { id: domUtil.uniqueId() },  '');
+    var placeholder = domUtil.create('div', { id: domUtil.uniqueId() },  '');
 
-    $(placeHolder).insertBefore(currentNode);
+    $(placeholder).insertBefore(currentNode);
     
-    selection.select(placeHolder);
+    selection.select(placeholder);
     selection.collapse(false);
 
-    this._editor.insertContent(this.makeComponentContainer(componentType));
+    this._editor.insertContent(this.createComponentContainer(componentType));
   }
 
   /**
@@ -4287,22 +4287,8 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {string} componentType - the type of component to create
    * @returns {string} - HTML string
    */
-  JsHarmonyComponentPlugin.prototype.makeComponentContainer = function(componentType) {
+  JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
     return '<div class="mceNonEditable" data-component="' + componentType + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
-  }
-
-  /**
-   * Create a component event.
-   * @private
-   * @param {string} componentId - the ID of the component that is the event target
-   * @param {string} componentType - the type of the component that is the event target
-   * @return {ComponentEvent}
-   */
-  JsHarmonyComponentPlugin.prototype.makeComponentEvent = function(componentId, componentType) {
-    return {
-      componentId: componentId,
-      componentType: componentType
-    };
   }
 
   /**
@@ -4346,7 +4332,7 @@ exports = module.exports = function(jsh, cms, editor){
       // Content is not actually in the DOM yet.
       // Wait for next loop
       setTimeout(function() {
-        self._editor.fire(EVENT_NAMES.renderComponent, self.makeComponentEvent(id, type));
+        cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
       });
     });
   }
@@ -4441,7 +4427,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
-          'searchreplace visualblocks code fullscreen wordcount jshwidget',
+          'searchreplace visualblocks code fullscreen wordcount jshwebsnippet',
           'insertdatetime media table paste code noneditable jsharmony'
         ],
         toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen | jsHarmonyComponents',
@@ -4450,7 +4436,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
           view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
-          insert: { title: 'Insert', items: 'image link media jshwidget codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
+          insert: { title: 'Insert', items: 'image link media jshwebsnippet codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | forecolor backcolor | removeformat' },
           tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
           table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
@@ -4499,10 +4485,6 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
             if(_this.onEndEdit) _this.onEndEdit(editor);
           });
-          editor.on('jsHarmonyRenderComponent', function(e) {
-            var el = $(editor.targetElm).find('[data-component="' + e.componentType + '"][data-component-id="' + e.componentId + '"]')[0];
-            if (el) cms.componentManager.renderComponent(el);
-          });
         }
       });
 
@@ -4511,6 +4493,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         branding: false,
         toolbar: '',
         valid_elements: '',
+        valid_children: '',
         valid_styles: {
           '*': ''
         },

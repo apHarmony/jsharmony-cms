@@ -5,7 +5,7 @@
       { "name": "showTitle", "caption": "Show Title", "type": "varchar", "length": "32", "default": "Y",
         "control": "checkbox", "controlparams": { "value_true": "Y", "value_false": "N" } },
 
-      { "name": "bodyClass", "caption": "Body CSS Classes", "type": "varchar", "length": 1024,
+      { "name": "bodyClass", "caption": "Body CSS Class", "type": "varchar", "length": 1024,
         "control": "textbox", "controlstyle": "width:400px", "validate": ["MaxLength:1024"]},
 
       { "name": "bodyStyle", "caption": "Body CSS Style", "type": "varchar", "length": 1024,

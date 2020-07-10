@@ -74,14 +74,6 @@ exports = module.exports = function(jsh, cms, editor){
     editComponentData: 'jsharmonyEditComponentData'
   };
 
-  /**
-   * This defines event names that can be used for the plugin.
-   * @type {Object.<string, string>}
-   */
-  var EVENT_NAMES = {
-    renderComponent:  'jsHarmonyRenderComponent'
-  };
-
 
   /**
    * Register the JSH CMS Component plugin.
@@ -114,6 +106,8 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componentInfo) {
     var self = this;
 
+    if(!componentInfo || !componentInfo.length) return;
+
     self._editor.ui.registry.addMenuButton('jsHarmonyComponents', {
       icon: ICONS.widgets.name,
       text: 'Components',
@@ -123,7 +117,7 @@ exports = module.exports = function(jsh, cms, editor){
             type: 'menuitem',
             text: item.menuLabel,
             icon: item.iconId,
-            onAction: function() { self.insertComponentContent(item.componentType); }
+            onAction: function() { self.insertComponent(item.componentType); }
           }
         });
         cb(items)
@@ -214,7 +208,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @private
    * @param {object} e - the undo/redo event from the TinyMCE editor
    */
-  JsHarmonyComponentPlugin.prototype.handleUndoRedo = function(e) {
+  JsHarmonyComponentPlugin.prototype.onUndoRedo = function(e) {
     var self = this;
     var content = e.level.content;
     if (!content) return;
@@ -225,7 +219,7 @@ exports = module.exports = function(jsh, cms, editor){
         var id = node.attributes.map['data-component-id'];
         var type = node.attributes.map['data-component'];
         if (id && type) {
-          self._editor.fire(EVENT_NAMES.renderComponent, self.makeComponentEvent(id, type));
+          cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
         }
       }
     });
@@ -287,8 +281,8 @@ exports = module.exports = function(jsh, cms, editor){
     this.createContextToolbar(componentInfo);
     this.createComponentInsertMenu(componentInfo);
 
-    this._editor.on('undo', function(info) { self.handleUndoRedo(info); });
-    this._editor.on('redo', function(info) { self.handleUndoRedo(info); });
+    this._editor.on('undo', function(info) { self.onUndoRedo(info); });
+    this._editor.on('redo', function(info) { self.onUndoRedo(info); });
 
     this._editor.addCommand(COMMAND_NAMES.editComponentData, function() {
       var el = self._editor.selection.getStart();
@@ -311,20 +305,20 @@ exports = module.exports = function(jsh, cms, editor){
    * @private
    * @param {string} componentType - the type of the component to insert.
    */
-  JsHarmonyComponentPlugin.prototype.insertComponentContent = function(componentType) {
+  JsHarmonyComponentPlugin.prototype.insertComponent = function(componentType) {
     var domUtil = this._editor.dom;
     var selection = this._editor.selection;
 
     var currentNode = selection.getEnd();
 
-    var placeHolder = domUtil.create('div', { id: domUtil.uniqueId() },  '');
+    var placeholder = domUtil.create('div', { id: domUtil.uniqueId() },  '');
 
-    $(placeHolder).insertBefore(currentNode);
+    $(placeholder).insertBefore(currentNode);
     
-    selection.select(placeHolder);
+    selection.select(placeholder);
     selection.collapse(false);
 
-    this._editor.insertContent(this.makeComponentContainer(componentType));
+    this._editor.insertContent(this.createComponentContainer(componentType));
   }
 
   /**
@@ -334,22 +328,8 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {string} componentType - the type of component to create
    * @returns {string} - HTML string
    */
-  JsHarmonyComponentPlugin.prototype.makeComponentContainer = function(componentType) {
+  JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
     return '<div class="mceNonEditable" data-component="' + componentType + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
-  }
-
-  /**
-   * Create a component event.
-   * @private
-   * @param {string} componentId - the ID of the component that is the event target
-   * @param {string} componentType - the type of the component that is the event target
-   * @return {ComponentEvent}
-   */
-  JsHarmonyComponentPlugin.prototype.makeComponentEvent = function(componentId, componentType) {
-    return {
-      componentId: componentId,
-      componentType: componentType
-    };
   }
 
   /**
@@ -393,7 +373,7 @@ exports = module.exports = function(jsh, cms, editor){
       // Content is not actually in the DOM yet.
       // Wait for next loop
       setTimeout(function() {
-        self._editor.fire(EVENT_NAMES.renderComponent, self.makeComponentEvent(id, type));
+        cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
       });
     });
   }

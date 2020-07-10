@@ -21,6 +21,7 @@ var JsHarmonyCMSComponent = require('./jsHarmonyCMS.Component');
 
 exports = module.exports = function(jsh, cms){
   var _this = this;
+  var _ = jsh._;
   var $ = jsh.$;
   var XExt = jsh.XExt;
   var async = jsh.async;
@@ -157,23 +158,28 @@ exports = module.exports = function(jsh, cms){
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
     if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return; }
-    var componentInstance = {};
-    XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', componentInstance, {
-      _this: componentInstance,
-      cms: cms,
-      jsh: jsh,
-      component: componentInstance
-    });
-    if (!_.isFunction(componentInstance.create))  {
-      componentInstance.create = function(componentConfig, element) {
-        var component = new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id);
-        component.onBeforeRender = componentInstance.onBeforeRender
-        component.onRender = componentInstance.onRender;
+
+    //Default component instance
+    var component = {
+      create: function(componentConfig, element) {
+        component = _.extend(new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id), component);
         component.render();
         _this.components[componentId] = component;
-      }
-    }
-    componentInstance.create(componentTemplate, element);
+      },
+      onBeforeRender: undefined,
+      onRender: undefined,
+    };
+
+    //Execute componentTemplate.js to set additional properties on component
+    XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', component, {
+      _this: component,
+      cms: cms,
+      jsh: jsh,
+      component: component
+    });
+
+    //Initialize component
+    component.create(componentTemplate, element);
     if ($(element).attr('data-is-insert')) {
       $(element).attr('data-is-insert', null);
       element.scrollIntoView(false);
