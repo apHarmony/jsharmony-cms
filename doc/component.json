@@ -1,22 +1,70 @@
 {
+  "id": "componentId",
   "title": "Component Name",
-  "content_elements": {
-    "content_element_name": {
-      "template": "...Content...", //Also populated from <content_name>.<content_element_name>.ejs -> Prepends to both "editor" and "publish" templates
-      "template": {
-        "editor": "...Content...",
-        "publish": "...Content...",
-      },
+  "caption": ["Item", "Items"],
+  // Icons can be specified using Google Material icon font name, as SVG, or as HTML
+  //  1. For Material Icon:"'material:<Google Material Icon Font Name>". Example: "material:photo_library"
+  //  2. For SVG: "svg:<SVG Code>". Example: "svg:<svg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'><path d='M0 0h24v24H0z' fill='none'/><path d='M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z'/></svg>"
+  //  3. For HTML: "html:<HTML Code>". Example: "html:<i class="iconClass">iconName</i>"
+  "icon": "material:photo_library",
+  "css": "...Content...", // Prepended by <templateBaseFileName>.css
+  "js": "...Content...", // Prepended by <templateBaseFileName>.js
+  "templates": {
+    "editor": "...Content...", // Prepended by <templateBaseFileName>.templates.editor.ejs
+    "publish": "...Content..." // Prepended by <templateBaseFileName>.templates.publish.ejs
+  },
+  "remote_template": {
+    "editor": "%%%editor_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%",
+    "publish": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%"
+  },
+  "properties": {
+    "ejs": "...Content...", // Prepended by <templateBaseFileName>.properties.ejs
+    "css": "...Content...", // Prepended by <templateBaseFileName>.properties.css
+    "js": "...Content...", // Prepended by <templateBaseFileName>.properties.js
+    "fields": [
+      { "name": "cssStyle", "caption": "CSS Style", "type": "varchar", "length": 1024,
+        "control": "textbox", "controlstyle": "width:260px", "validate": ["MaxLength:1024"]},
 
-      "remote_template": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%", //Appends to both "editor" and "publish" templates
-      "remote_template": {
-        "editor": "%%%editor_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%",
-        "publish": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%"
-      }
+      { "name": "cssClass", "caption": "CSS Class", "type": "varchar", "length": 1024,
+        "control": "textbox", "controlstyle": "width:260px", "validate": ["MaxLength:1024"]}
+    ]
+  },
+  "data": {
+    "layout": "grid_preview", // Can also be "form", "grid"
+    "ejs": "...Content...", // Prepended by <templateBaseFileName>.data.ejs
+    "css": "...Content...", // Prepended by <templateBaseFileName>.data.css
+    "js": "...Content...", // Prepended by <templateBaseFileName>.data.js
+    "templates": {
+      "gridRowPreview": ".rowPreview", // CSS selector for element defined in "ejs" used to render a grid row preview
+      "itemPreview": ".itemPreview" // CSS selector for element defined in "ejs" used to render item preview
     },
+    "popup": [1000, 200], // Width and height of grid popup window
+    "fields": [
+      // To use a link browser, set control to "link_browser":
+      { "name": "link", "control": "link_browser", "caption": "Link", "length": 1024, "validate": ["MaxLength:1024"], "controlstyle": "width:320px"},
+      // To use a media browser, set control to "media_browser":
+      { "name": "image", "control": "media_browser", "caption": "Image", "length": 1024, "validate": ["MaxLength:1024"], "controlstyle": "width:320px"},
+      // To use a WYSIWYG HTML editor:
+      //  1. Add the appropriate attribute to the element in the
+      //     EJS template that you wish to make editable
+      //    a. To use a full featured editor use the attribute: data-component-full-editor="<fieldName>"
+      //    b. To use a title only editor use the attribute: data-component-title-editor="<fieldName>"
+      // 2. Add the following field where the "name" property matches the attribute value from above.
+      { "name": "body", "type": "varchar", "control": "hidden", "caption": "" },
 
-    //If a "component_name.ejs" file exists:
-    //  1. content_elements.<content_name>.template will be auto-created if it does not exist
-    //  2. Content of the ejs file will be appended to content_elements.<content_name>.template
+      { "name": "content_layout", "type": "varchar", "control": "dropdown", "caption": "Content", "default": "all",
+        "lov": { "values": { "all": "Title + Body", "title": "Title Only", "body": "Body Only", "none": "None" } }}
+    ],
+    // Applies to form/item preview only. Can use other standard hooks as well.
+    "oninit": "_this.oninit_form()"
+
+    // Additional hooks are implicitly defined.
+    // To use the hook, simply bind "this" to a function with the same signature in the data JS.
+    // 1. onBeforeRenderGridRow(renderConfig): this hook is called before rendering a grid row. The renderConfig contains
+    //    an object that can be manipulated before being used to render the grid row.
+    // 2. onRenderGridRow(element, data, properties): this hook is called when the grid row is rendered.
+    // 3. onBeforeRenderDataItemPreview(renderConfig): this hook is called before rendering the item preview.The renderConfig contains
+    //    an object that can be manipulated before being used to render the item.
+    // 4. onRenderDataItemPreview(element, data, properties): this hook is called when the item preview is rendered.
   }
 }
