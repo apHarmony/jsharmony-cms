@@ -235,6 +235,14 @@ body .tox .tox-collection__item-label h6 {
   border: 1px solid #eee;
 }
 
+.jsharmony_cms_component_preview [data-component-full-editor],
+.jsharmony_cms_component_preview [data-component-title-editor] {
+  min-width: 10px;
+  min-height: 20px;
+  outline: 1px solid #b4d7ff;
+  outline-offset: -1px;
+}
+
 .jsharmony_cms_component.empty,
 .jsharmony_cms_component_preview.empty {
   display: flex;
@@ -290,6 +298,7 @@ body .tox .tox-collection__item-label h6 {
   border: 0;
   background: inherit;
   cursor: pointer;
+  font-size:19px;
 }
 
 .jsharmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar button[disabled] {
@@ -297,6 +306,9 @@ body .tox .tox-collection__item-label h6 {
 }
 .jsharmony_cms_component_dataGridEditor .xtbl_noresults .xgrid_norecords {
   display: none;
+}
+.jsharmony_cms_component_dataGridEditor .jsharmony_cms_component_preview {
+  user-select: none;
 }
 
 .jsharmony_cms_component  .material-icons,

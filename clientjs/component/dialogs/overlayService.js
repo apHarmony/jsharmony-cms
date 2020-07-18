@@ -1,10 +1,32 @@
+/*
+Copyright 2020 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /**
  * @classdesc A static service for ensuring the overlay appears
  * between the last modal in the modal stack and all other modals.
  * @class
  * @static
  */
-function OverlayService() {}
+function OverlayService(dialog) {
+  this.dialog = dialog;
+  this.jsh = dialog._jsh;
+}
 
 /**
  * @private
@@ -18,17 +40,17 @@ OverlayService._dialogStack = [];
  * @public
  * @static
 */
-OverlayService.popDialog = function() {
+OverlayService.prototype.popDialog = function() {
 
   OverlayService._dialogStack.pop();
   if (OverlayService._dialogStack.length < 1) {
-    $('.xdialogblock .childDialogOverlay').remove();
+    this.jsh.$('.xdialogblock .xdialogoverlay').remove();
     return;
   }
 
-  var $overlay = OverlayService.getOverlay();
-  var $dialog = $(OverlayService._dialogStack[OverlayService._dialogStack.length - 1]);
-  var zIndex = OverlayService.getZIndex($dialog);
+  var $overlay = this.getOverlay();
+  var $dialog = this.jsh.$(OverlayService._dialogStack[OverlayService._dialogStack.length - 1]);
+  var zIndex = this.getZIndex($dialog);
   $overlay.css('z-index', zIndex);
   $dialog.before($overlay);
 }
@@ -39,12 +61,12 @@ OverlayService.popDialog = function() {
  * @static
  * @param {(HTMLElement | JQuery)} dialog
 */
-OverlayService.pushDialog = function(dialog) {
-  var zIndex = OverlayService.getZIndex(dialog);
-  var $overlay = OverlayService.getOverlay();
+OverlayService.prototype.pushDialog = function(dialog) {
+  var zIndex = this.getZIndex(dialog);
+  var $overlay = this.getOverlay();
   $overlay.css('z-index', zIndex);
-  OverlayService._dialogStack.push($(dialog));
-  $(dialog).before($overlay);
+  OverlayService._dialogStack.push(this.jsh.$(dialog));
+  this.jsh.$(dialog).before($overlay);
 }
 
 /**
@@ -54,21 +76,15 @@ OverlayService.pushDialog = function(dialog) {
  * @static
  * @returns {JQuery}
  */
-OverlayService.getOverlay = function() {
-  var $dialogBlock = $('.xdialogblock');
-  var $childOverlay = $dialogBlock.find('.childDialogOverlay');
+OverlayService.prototype.getOverlay = function() {
+  var $dialogBlock = this.jsh.$('.xdialogblock');
+  var $childOverlay = $dialogBlock.find('.xdialogoverlay');
   if ($childOverlay.length > 0) {
     return $childOverlay;
   }
 
-  $childOverlay = $('<div class="childDialogOverlay"></div>');
+  $childOverlay = this.jsh.$('<div class="xdialogoverlay"></div>');
   $dialogBlock.prepend($childOverlay);
-
-  $childOverlay
-    .css('background-color', 'rgba(0,0,0,0.4)')
-    .css('position', 'absolute')
-    .css('width', '100%')
-    .css('height', '100%');
 
   $childOverlay.off('click').on('click', function() {
     $dialogBlock.click();
@@ -84,8 +100,8 @@ OverlayService.getOverlay = function() {
  * @param {(HTMLElement | JQuery)} element
  * @returns {number}
  */
-OverlayService.getZIndex = function(element) {
-  var zIndex = parseInt( $(element).css('zIndex'));
+OverlayService.prototype.getZIndex = function(element) {
+  var zIndex = parseInt(this.jsh.$(element).css('zIndex'));
   return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
 }
 

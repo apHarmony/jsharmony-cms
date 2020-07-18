@@ -9,7 +9,7 @@
     "caption":["Menu Item","Menu Items"],
     "hide_system_buttons" : ["print","export","help","delete"], 
     "buttons":[
-      { "link":"js:jsh.App[xmodel.parent].deleteMenuItem(xmodel.get('menu_item_id'));","icon":"delete","text":"Delete","actions":"D" }
+      { "name":"deleteMenuItem", "link":"js:jsh.App[xmodel.parent].deleteMenuItem(xmodel.get('menu_item_id'));","icon":"delete","text":"Delete","actions":"D" }
     ],
     "css": [".<%=model.class%>_divider { font-weight:bold;margin-top:24px;margin-bottom:8px;font-size:14px; }"],
     "oninit": "_this.oninit();",

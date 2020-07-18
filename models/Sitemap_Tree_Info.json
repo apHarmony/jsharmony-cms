@@ -9,7 +9,7 @@
     "caption":["Sitemap Item","Sitemap Items"],
     "hide_system_buttons" : ["print","export","help","delete"], 
     "buttons":[
-      { "link":"js:jsh.App[xmodel.parent].deleteSitemapItem(xmodel.get('sitemap_item_id'));","icon":"delete","text":"Delete","actions":"D" }
+      { "name":"deleteSitemapItem", "link":"js:jsh.App[xmodel.parent].deleteSitemapItem(xmodel.get('sitemap_item_id'));","icon":"delete","text":"Delete","actions":"D" }
     ],
     "css": [
       ".<%=model.class%>_divider { font-weight:bold;margin-top:24px;margin-bottom:8px;font-size:14px; }",

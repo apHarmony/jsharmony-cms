@@ -10,7 +10,7 @@
     "actions":"B",
     "roles": {"PUBLISHER": "B"},
     "sqlwhere":"deployment_sts in ('PENDING','RUNNING')",
-    "buttons":[{ "link":"Publish_Add","icon":"add","text":"Schedule Deployment" }],
+    "buttons":[{ "name":"scheduleDeployment", "link":"Publish_Add","icon":"add","text":"Schedule Deployment" }],
     "fields": [
       {"name":"deployment_id","key":true,"control":"hidden"},
       {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},

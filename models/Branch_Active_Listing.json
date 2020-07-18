@@ -15,7 +15,7 @@
     ],
     "nokey":true,
     "buttons":[
-      { "link":"update:Branch_Add_Empty","icon":"add","text":"New Empty Branch", "bindings": {} }
+      { "name":"addBranch", "link":"update:Branch_Add_Empty","icon":"add","text":"New Empty Branch", "bindings": {} }
     ],
     "fields": [
       {"name":"branch_desc","type":"varchar","control":"label","caption":"Current Branch","link":"js:jsh.System.ViewBranchSummary(xmodel, xmodel.get('branch_id'))",

@@ -1,4 +1,23 @@
+/*
+Copyright 2020 apHarmony
 
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var _ = require('lodash');
 var Convert  = require('../utils/convert');
 var GridDataStore = require('./gridDataStore');
 var DataEditor_Form = require('./dataEditor_form')
@@ -54,7 +73,7 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
   this.xModel = xModel;
 
   /** @private @type {JQuery} */
-  this.$dialogWrapper = $(dialogWrapper);
+  this.$dialogWrapper = this.jsh.$(dialogWrapper);
 
   /** @private @type {string} */
   this._idFieldName = dataModelTemplate_GridPreview.getIdFieldName();
@@ -227,8 +246,9 @@ DataEditor_GridPreviewController.prototype.showOverlay = function() {
 }
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
+  var self = this;
   this.$dialogWrapper.find('.refreshLoadingOverlay').fadeOut(function(){
-    $(this).remove();
+    self.jsh.$(this).remove();
   });
 }
 
@@ -274,7 +294,7 @@ DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = functio
  * @return {(Oobject | undefined)}
  */
 DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId) {
-  var slideId = $('.xrow.xrow_' + this.xModel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
+  var slideId = this.jsh.$('.xrow.xrow_' + this.xModel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
     .attr('data-item-id');
   return this._dataStore.getDataItem(slideId) || {};
 }
@@ -289,6 +309,7 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
   var maxItem =  _.max(this._dataStore.getDataArray(), function(item) {
     return typeof item.sequence == 'number' ? item.sequence : -1;
   });
+  if(!maxItem) return 1;
   return typeof maxItem.sequence == 'number' ? maxItem.sequence + 1 : 0;
 }
 
@@ -321,7 +342,7 @@ DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(row
  * @return {number}
  */
 DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId) {
-  var $el = $(this.$dialogWrapper).find('[data-component-template="gridRow"][data-item-id="' + itemId + '"]');
+  var $el = this.jsh.$(this.$dialogWrapper).find('[data-component-template="gridRow"][data-item-id="' + itemId + '"]');
   return this.getParentRowId($el);
 }
 
@@ -431,8 +452,8 @@ DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   this.xModel.controller.DeleteRow(rowId);
 
   var self = this;
-  $('body').one('click', '.xdialogbox.xconfirmbox input[type="button"]', function(e) {
-    var buttonValue = $(e.target).closest('input[type="button"]').attr('value');
+  self.jsh.$('body').one('click', '.xdialogbox.xconfirmbox input[type="button"]', function(e) {
+    var buttonValue = self.jsh.$(e.target).closest('input[type="button"]').attr('value');
     if (buttonValue === 'Yes') {
       setTimeout(function() {
         self.forceCommit();
@@ -481,7 +502,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   $row.empty().append(template);
 
-  var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, data, this._properties || {}, this.cms);
+  var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
   renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
 
   if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderConfig);
@@ -496,7 +517,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
         if (self.isReadOnly()) return;
-        var moveDown = $(e.target).closest('button[data-dir]').attr('data-dir') === 'next';
+        var moveDown = self.jsh.$(e.target).closest('button[data-dir]').attr('data-dir') === 'next';
         self.changeItemSequence(dataId, moveDown);
     });
 

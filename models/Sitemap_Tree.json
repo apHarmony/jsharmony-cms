@@ -13,8 +13,8 @@
     "oninit": "_this.oninit();",
     "onload": "_this.onload();",
     "buttons":[
-      { "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "WEBMASTER": "U" } },
-      { "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
+      { "name":"configureSitemaps", "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "WEBMASTER": "U" } },
+      { "name":"saveSitemap", "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
     ],
     "fields":[
       {"name":"sitemap_key","control":"hidden","type":"bigint","key":true},

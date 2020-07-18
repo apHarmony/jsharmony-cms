@@ -1,3 +1,23 @@
+/*
+Copyright 2020 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var _ = require('lodash');
 var DialogResizer = require('./dialogResizer');
 var OverlayService = require('./overlayService');
 
@@ -68,7 +88,9 @@ function Dialog(jsh, model, config) {
   this._$wrapper = this.makeDialog(this._id, this._config);
   this._destroyed = false;
 
-  $('body').append(this._$wrapper)
+  this.overlayService = new OverlayService(this);
+
+  this._jsh.$('body').append(this._$wrapper)
 
   /**
    * @public
@@ -163,7 +185,7 @@ Dialog.prototype.getScrollTop = function($wrapper) {
  */
 Dialog.prototype.load = function(callback) {
   var self = this;
-  this._jsh.XPage.LoadVirtualModel($(self.getFormSelector()), this._model, function(xModel) {
+  this._jsh.XPage.LoadVirtualModel(self._jsh.$(self.getFormSelector()), this._model, function(xModel) {
     callback(xModel);
   });
 }
@@ -176,7 +198,7 @@ Dialog.prototype.load = function(callback) {
  */
 Dialog.prototype.makeDialog = function(id, config) {
 
-  var $form = $('<div class="xdialogbox"></div>')
+  var $form = this._jsh.$('<div class="xdialogbox"></div>')
     .addClass(this._id)
     .attr('id', this._id)
     .css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null)
@@ -187,7 +209,7 @@ Dialog.prototype.makeDialog = function(id, config) {
     .css('width',  _.isNumber(config.width) ? config.width + 'px' : null)
     .addClass(config.cssClass || '');
 
-  var $wrapper = $('<div style="display: none;" class="xdialogbox-wrapper"></div>')
+  var $wrapper = this._jsh.$('<div style="display: none;" class="xdialogbox-wrapper"></div>')
     .attr('id', id)
     .append($form);
 
@@ -209,7 +231,7 @@ Dialog.prototype.open = function() {
   this.load(function(xModel) {
 
 
-    var $wrapper = $(formSelector);
+    var $wrapper = self._jsh.$(formSelector);
     self.registerLovs(xModel);
     var lastScrollTop = 0
     self._jsh.XExt.execif(self.onBeforeOpen,
@@ -220,9 +242,9 @@ Dialog.prototype.open = function() {
         /** @type {DialogResizer} */
         var dialogResizer = undefined;
 
-        self._jsh.XExt.CustomPrompt(formSelector, $(formSelector),
+        self._jsh.XExt.CustomPrompt(formSelector, self._jsh.$(formSelector),
           function(acceptFunc, cancelFunc) {
-            OverlayService.pushDialog($wrapper);
+            self.overlayService.pushDialog($wrapper);
             lastScrollTop = self.getScrollTop($wrapper);
             dialogResizer = new DialogResizer($wrapper[0], self._jsh);
             if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc);
@@ -243,7 +265,7 @@ Dialog.prototype.open = function() {
             dialogResizer.closeDialog();
             if(_.isFunction(self.onClose)) self.onClose();
             self.destroy();
-            OverlayService.popDialog();
+            self.overlayService.popDialog();
           },
           { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
         );
@@ -266,7 +288,7 @@ Dialog.prototype.registerLovs = function(xModel) {
     if (_.isArray(field.lov.values)) {
       lovs = field.lov.values;
     } else if (_.isObject(field.lov.values)) {
-      lovs = _.map(_.pairs(field.lov.values), function(kvp) {
+      lovs = _.map(_.toPairs(field.lov.values), function(kvp) {
         return { code_val: kvp[0], code_txt: kvp[1] };
       });
     }

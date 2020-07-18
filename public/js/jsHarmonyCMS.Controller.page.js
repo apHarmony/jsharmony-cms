@@ -207,7 +207,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     //Content
     for(var key in _this.template.content_elements){
-      cms.editor.setContent(key, _this.page.content[key])
+      cms.editor.setContent(key, _this.page.content[key] || '')
       if(!cms.readonly) _this.page.content[key] = cms.editor.getContent(key);
     }
 

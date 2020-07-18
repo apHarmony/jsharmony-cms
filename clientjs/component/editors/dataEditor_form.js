@@ -1,3 +1,23 @@
+/*
+Copyright 2020 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var _ = require('lodash');
 var FormDialog = require('../dialogs/formDialog');
 var ComponentTemplate = require('../componentModel/componentTemplate');
 var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
@@ -67,7 +87,7 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
   _.forEach(this._htmlEditors, function(editor) { editor.destroy(); });
 
   _.forEach($wrapper.find('[data-component-full-editor]'), function (editorEl) {
-    var $el = $(editorEl);
+    var $el = self._jsh.$(editorEl);
     var propName = $el.attr('data-component-full-editor');
     var editor = new HTMLPropertyEditorController('full', self._jsh, self._cms, $dialog, propName,  $el, $toolbar);
     editor.initialize(function() {});
@@ -75,7 +95,7 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
   });
 
   _.forEach($wrapper.find('[data-component-title-editor]'), function (editorEl) {
-    var $el = $(editorEl);
+    var $el = self._jsh.$(editorEl);
     var propName = $el.attr('data-component-title-editor');
     var editor = new HTMLPropertyEditorController('title', self._jsh, self._cms, $dialog, propName, $el, $toolbar);
     editor.initialize(function() {});
@@ -136,19 +156,19 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
     var editor = self._jsh.App[xModel.id];
-    var $dialog = $(dialogSelector);
+    var $dialog = self._jsh.$(dialogSelector);
     $dialog.css('opacity', '0');
     self._formSelector = dialogSelector; // remove this
 
     // Note that the toolbar HAS to be in the popup DOM hierarchy for focus/blur
     // events to work correctly.
-    $toolbar = $('<div class="jsharmony_cms_content_editor_toolbar"></div>')
+    $toolbar = self._jsh.$('<div class="jsharmony_cms_content_editor_toolbar"></div>')
       .css('position', 'fixed')
       .css('top', '37px')
       .css('left', '0')
       .css('width', '100%')
       .css('z-index', '999999');
-    $(dialogSelector).append($toolbar);
+    self._jsh.$(dialogSelector).append($toolbar);
 
     _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {
       var title = itemData[info.titleFieldName] || '';
@@ -315,7 +335,16 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   var self = this;
 
-  var renderConfig = TemplateRenderer.createRenderConfig(template, data, properties, this._cms);
+
+  var renderData = { item: data };
+  if(this._componentTemplate && 
+      this._componentTemplate._componentConfig && 
+      this._componentTemplate._componentConfig.data &&
+      (this._componentTemplate._componentConfig.data.layout == 'grid_preview')){
+    renderData = { items: [data] };
+  }
+
+  var renderConfig = TemplateRenderer.createRenderConfig(template, renderData, properties, this._cms);
   renderConfig.gridContext = this._gridContext;
 
   if (_.isFunction(this._onBeforeRenderDataItemPreview)) this._onBeforeRenderDataItemPreview(renderConfig);
@@ -327,7 +356,7 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
   if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties);
 
   setTimeout(function() {
-    _.forEach($($wrapper.children()[0]).find('[data-component]'), function(el) {
+    _.forEach(self._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
       self._cms.componentManager.renderComponent(el);
     });
   }, 50);

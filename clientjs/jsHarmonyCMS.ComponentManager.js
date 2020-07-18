@@ -1,5 +1,5 @@
 /*
-Copyright 2019 apHarmony
+Copyright 2020 apHarmony
 
 This file is part of jsHarmony.
 
@@ -42,7 +42,7 @@ exports = module.exports = function(jsh, cms){
           cms.loader.StartLoading(loadObj);
           _this.loadTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
-            _this.extractComponentTemplateEjs(component);
+            _this.parseTemplate(component);
             cb(err)
           });
         }, function(error){
@@ -89,7 +89,7 @@ exports = module.exports = function(jsh, cms){
     }
   }
 
-  this.extractComponentTemplateEjs = function(componentTemplate) {
+  this.parseTemplate = function(componentTemplate) {
     componentTemplate.templates = componentTemplate.templates || {};
     var componentRawEjs = componentTemplate.templates.editor || '';
 
@@ -100,15 +100,37 @@ exports = module.exports = function(jsh, cms){
      *
      * If the wrapper does not exist then the entire EJS string is the template
      **********/
-    var $componentTemplateWrapper = $(componentRawEjs).filter('.componentTemplate');
-    if ($componentTemplateWrapper.length){
-      componentTemplate.templates.editor = $componentTemplateWrapper.html();
+
+     //Preview template
+    var hasComponentSubTemplate = false;
+     if(componentRawEjs.indexOf('componentTemplate')>=0){
+      var $componentTemplateWrapper = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentTemplate');
+      hasComponentSubTemplate = !!$componentTemplateWrapper.length;
+      if (hasComponentSubTemplate){
+        componentTemplate.templates.editor = $componentTemplateWrapper.html();
+      }
     }
 
-    var $componentPreviewTemplate = $(componentRawEjs).filter('.componentPreviewTemplate');
-    if ($componentPreviewTemplate.length){
-      componentTemplate.data = componentTemplate.data || {};
-      componentTemplate.data.ejs = (componentTemplate.data.ejs ? componentTemplate.data.ejs + '\r\n' : '') + $componentPreviewTemplate.html();
+    //Parse data model
+    if(!_.isEmpty(componentTemplate.data)){
+
+      //Data model EJS
+      if(!componentTemplate.data.ejs) componentTemplate.data.ejs = '';
+      
+      var $componentPreviewTemplate = null;
+      if(componentRawEjs.indexOf('componentPreviewTemplate')>=0){
+        $componentPreviewTemplate = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentPreviewTemplate');
+        if ($componentPreviewTemplate.length){
+          componentTemplate.data.ejs += '\n' + $componentPreviewTemplate.html();
+        }
+        else $componentPreviewTemplate = null;
+      }
+      if(!$componentPreviewTemplate && !hasComponentSubTemplate) {
+        //For grid_preview and form layouts, use the component template as the preview template
+        if(componentTemplate.data && _.includes(['grid_preview','form'], componentTemplate.data.layout)){
+          componentTemplate.data.ejs += '\n' + componentRawEjs;
+        }
+      }
     }
   }
 

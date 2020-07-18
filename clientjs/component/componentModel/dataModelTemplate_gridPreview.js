@@ -1,3 +1,23 @@
+/*
+Copyright 2020 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var _ = require('lodash');
 var Cloner = require('../utils/cloner');
 var FieldModel = require('./fieldModel');
 
@@ -13,6 +33,9 @@ var FieldModel = require('./fieldModel');
  * @param {object} dataModel - the raw data model from the component config
  */
 function DataModelTemplate_GridPreview(componentTemplate, dataModel) {
+
+  /** @private @type {Object} */
+  this._jsh = componentTemplate._jsh;
 
   /** @private @type {string} */
   this._componentTemplateId = componentTemplate.getTemplateId();
@@ -87,14 +110,21 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   //--------------------------------------------------
   // Get templates
   //--------------------------------------------------
-  var $templates = $('<div>' + (modelConfig.ejs || '') + '</div>');
-  var rowTemplateSelector = (modelConfig.templates || {}).gridRowPreview;
-  var rowTemplateElement = rowTemplateSelector ? $templates.find(rowTemplateSelector) : undefined;
-  if (rowTemplateElement.length !== 1) {
-    throw new Error('Row template must contain a single root element. Found ' + rowTemplateElement.length + ' elements');
-  }
+  var templateHtml = '<div>' + modelConfig.ejs + '</div>';
 
-  this._rowTemplate = rowTemplateElement ? rowTemplateElement.html() : undefined;
+  var rowTemplate = '';
+  var selRowPreview = (modelConfig.templates || {}).gridRowPreview;
+  if(selRowPreview){
+    //If gridRowPreview is set, extract the template from the model.ejs file
+    var rowPreview = this._jsh.$(templateHtml).find(selRowPreview);
+    if (rowPreview.length > 1) throw new Error('Row template must contain a single root element. Found ' + rowPreview.length + ' elements');
+    rowTemplate = rowPreview ? rowPreview.html() : undefined;
+  }
+  else {
+    //If templates are not used, return the entire model.ejs as the template
+    rowTemplate = templateHtml;
+  }
+  this._rowTemplate = rowTemplate;
 
   return  model;
 }

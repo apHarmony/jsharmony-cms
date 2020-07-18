@@ -5,7 +5,7 @@
       //filename :: (Optional) Filename for publish.  If not defined, will default to <content_element_name>.html
       "filename": "main.top.html",
 
-      //tempalte :: (Optional) Render template source.  Can be empty.  Will be concatenated with <menu_name>.<content_element_name>.ejs, if it exists
+      //template :: (Optional) Render template source.  Can be empty.  Will be concatenated with <menu_name>.<content_element_name>.ejs, if it exists
       "template": "...EJS Content...",
 
       //remote_template :: (Optional) Remote template downloaded for render template source.

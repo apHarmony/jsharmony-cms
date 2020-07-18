@@ -9,7 +9,7 @@
     "title":"Branch Conflicts",
     "onload":"_this.onload(xmodel, callback);",
     "buttons":[
-      { "link":"js:_this.abortMerge(this)","icon":"delete","text":"Abort","class":"Branch_Conflicts_buttonAbort", "roles": {"AUTHOR": "U","PUBLISHER": "U"} }
+      { "name":"abortMerge", "link":"js:_this.abortMerge(this)","icon":"delete","text":"Abort","class":"Branch_Conflicts_buttonAbort", "roles": {"AUTHOR": "U","PUBLISHER": "U"} }
     ],
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},

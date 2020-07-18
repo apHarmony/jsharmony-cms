@@ -43,7 +43,7 @@ if(routetype == 'model'){
           state[model.namespace+'Media_Browser_Tab'] = { media_folder: media_folder };
           var tabs = {};
           tabs[modelid] = model.namespace+'Media_Browser_Tab';
-          res.end('***JSHARMONY_REDIRECT***\n'+req.baseurl+modelid+'?action=browse&state='+encodeURIComponent(JSON.stringify(state))+'&tabs='+encodeURIComponent(JSON.stringify(tabs)));
+          res.end('***JSHARMONY_REDIRECT***\n'+req.baseurl+modelid+'?action=update&state='+encodeURIComponent(JSON.stringify(state))+'&tabs='+encodeURIComponent(JSON.stringify(tabs)));
           return;
         });
       }

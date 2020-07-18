@@ -1,3 +1,23 @@
+/*
+Copyright 2020 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var _ = require('lodash');
 var ComponentTemplate = require('./component/componentModel/componentTemplate');
 var DataEditor_GridPreview = require('./component/editors/dataEditor_gridPreview');
 var PropertyEditor_Form = require('./component/editors/propertyEditor_form');
@@ -31,7 +51,7 @@ var TemplateRenderer = require('./component/templateRenderer');
 exports = module.exports = function(componentId, element, cms, jsh, componentConfigId) {
 
   /** @type {JQuery} */
-  var $element = $(element);
+  var $element = jsh.$(element);
 
   /** @type {ComponentTemplate} */
   var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh);
@@ -50,13 +70,16 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   this.id = undefined;
   Object.defineProperty(this, 'id', { get: function() { return componentId }});
 
+  /** @public @type {Object} */
+  this.domSerializer = new DomSerializer(jsh);
+
   /**
    * Get the data from the element's serialized data attribute value.
    * @private
    * @return {Object}
    */
   this.getData = function() {
-    return DomSerializer.getAttr($element, 'data-component-data');
+    return this.domSerializer.getAttr($element, 'data-component-data');
   }
 
   /**
@@ -67,7 +90,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.getProperties = function() {
     var model = componentTemplate.getPropertiesModelTemplate_Form();
-    var properties = DomSerializer.getAttr($element, 'data-component-properties');
+    var properties = this.domSerializer.getAttr($element, 'data-component-properties');
     return model.populateDataInstance(properties);
   }
 
@@ -160,15 +183,19 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     var config = componentTemplate.getComponentConfig()  || {};
     var template = (config.templates || {}).editor || '';
 
-    var data = this.getData();
+    var data = _.extend({}, this.getData(), { component_id: self.id });
     var props = this.getProperties();
-
 
     var renderConfig = TemplateRenderer.createRenderConfig(template, data, props, cms);
 
     if (_.isFunction(this.onBeforeRender)) this.onBeforeRender(renderConfig);
 
     var rendered = TemplateRenderer.render(renderConfig, 'component', jsh);
+
+    if(!rendered){
+      if(!template) rendered = '*** Component Rendering Error: Template Missing ***';
+      else rendered = '*** Component Rendering Error: Empty Result ***';
+    }
 
     $element.empty().append(rendered);
 
@@ -196,7 +223,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} data
    */
   this.saveData = function(data) {
-    DomSerializer.setAttr($element, 'data-component-data', data);
+    this.domSerializer.setAttr($element, 'data-component-data', data);
   }
 
   /**
@@ -206,7 +233,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} props
    */
   this.saveProperties = function(props) {
-    DomSerializer.setAttr($element, 'data-component-properties', props);
+    this.domSerializer.setAttr($element, 'data-component-properties', props);
   }
 
 

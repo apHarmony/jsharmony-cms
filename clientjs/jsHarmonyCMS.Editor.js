@@ -73,7 +73,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           'searchreplace visualblocks code fullscreen wordcount jshwebsnippet',
           'insertdatetime media table paste code noneditable jsharmony'
         ],
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image table fullscreen | jsHarmonyComponents',
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyComponents jsHarmonyCmsView',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {

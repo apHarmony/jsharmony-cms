@@ -116,12 +116,16 @@ jsHarmonyCMS.prototype.Init = function(cb){
 jsHarmonyCMS.prototype.LoadClientJS = function(){
   var _this = this;
   var editorjs = fs.readFileSync(path.join(_this.basepath, 'public/js/jsHarmonyCMS.js'), 'utf8');
+  var editorjsEJS = fs.readFileSync(path.join(_this.basepath, 'public/js/jsHarmonyCMS.js.ejs'), 'utf8');
+  var editorjsLocal = '';
   var modeldirs = _this.jsh.getModelDirs();
   for (var i = 0; i < modeldirs.length; i++) {
     var jspath = path.join(modeldirs[i].path, '../public/js/jsHarmonyCMS.local.js');
-    if (fs.existsSync(jspath)) editorjs += '\r\n' + fs.readFileSync(jspath);
+    if (fs.existsSync(jspath)) editorjsLocal += '\r\n' + fs.readFileSync(jspath);
   }
   _this.jsh.Cache['js/jsHarmonyCMS.js'] = editorjs;
+  _this.jsh.Cache['js/jsHarmonyCMS.js.ejs'] = editorjsEJS;
+  _this.jsh.Cache['js/jsHarmonyCMS.local.js'] = editorjsLocal;
 }
 
 //Load Templates
@@ -485,8 +489,15 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
       var baseurl = req.jshsite.baseurl||'';
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
       var cookie_suffix = Helper.GetCookieSuffix(req, jsh);
-      var editorjs = ejs.render(jsh.Cache['js/jsHarmonyCMS.js'], { jsh: jsh, req: req, baseurl: baseurl, cookie_suffix: cookie_suffix, _: _, Helper: Helper });
-      return res.end(editorjs);
+      var jsEJS = ejs.render(jsh.Cache['js/jsHarmonyCMS.js.ejs'], {
+        jsh: jsh, 
+        req: req, 
+        baseurl: baseurl, 
+        cookie_suffix: cookie_suffix, 
+        _: _, 
+        Helper: Helper
+      });
+      return res.end(jsh.Cache['js/jsHarmonyCMS.js'] + '\n' + jsEJS + '\n' + jsh.Cache['js/jsHarmonyCMS.local.js']);
     });
     server.app.use(jsHarmonyRouter.PublicRoot(path.join(__dirname, 'public')));
   });

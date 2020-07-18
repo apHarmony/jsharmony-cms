@@ -13,8 +13,8 @@
     "oninit": "_this.oninit();",
     "onload": "_this.onload();",
     "buttons":[
-      { "link":"js:_this.addMenuItem(null);","icon":"add","text":"Add Root Menu Item", "actions": "I" },
-      { "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
+      { "name":"addRootMenuItem", "link":"js:_this.addMenuItem(null);","icon":"add","text":"Add Root Menu Item", "actions": "I" },
+      { "name":"saveMenu", "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
     ],
     "fields":[
       {"name":"menu_key","control":"hidden","type":"bigint","key":true},

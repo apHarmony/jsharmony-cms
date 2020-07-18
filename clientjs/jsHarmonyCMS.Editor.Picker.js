@@ -54,7 +54,7 @@ exports = module.exports = function(jsh, cms, editor){
     var qs = { };
     var linkurl = _this.getParameters('media', value);
     if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
-    XExt.popupForm('jsHarmonyCMS/Media_Browser', 'browse', qs, { width: 1100, height: 600 });
+    XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
   }
 
   this.onmessage = function(event, data){

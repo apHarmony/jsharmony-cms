@@ -1,5 +1,5 @@
 /*
-Copyright 2019 apHarmony
+Copyright 2020 apHarmony
 
 This file is part of jsHarmony.
 
@@ -280,6 +280,22 @@ exports = module.exports = function(jsh, cms, editor){
 
     this.createContextToolbar(componentInfo);
     this.createComponentInsertMenu(componentInfo);
+
+    //Toggle Menu Button
+    self._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
+      text: 'View',
+      fetch: function (cb) {
+        return cb([
+          {
+            type: 'menuitem',
+            text: 'Toggle Menu',
+            onAction: function () {
+              $(self._editor.editorContainer).find('[role=menubar]').toggle();
+            }
+          },
+        ]);
+      }
+    });
 
     this._editor.on('undo', function(info) { self.onUndoRedo(info); });
     this._editor.on('redo', function(info) { self.onUndoRedo(info); });

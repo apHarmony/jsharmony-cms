@@ -46,8 +46,8 @@ var jsHarmonyCMS = function(options){
 
 
   this.jsh = undefined;
-  this._baseurl = '<%-Helper.escapeJS(baseurl)%>';
-  this._cookie_suffix = '<%-Helper.escapeJS(cookie_suffix)%>';
+  this._baseurl = jsHarmonyCMS._baseurl; //Populated by jsHarmonyCMS.js.ejs
+  this._cookie_suffix = jsHarmonyCMS._cookie_suffix; //Populated by jsHarmonyCMS.js.ejs
   this.readonly = false;
   this.isInitialized = false;
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
@@ -195,4 +195,3 @@ var jsHarmonyCMS = function(options){
 }
 
 global.jsHarmonyCMS = jsHarmonyCMS;
-global.jsHarmonyCMSInstance = new jsHarmonyCMS({ _instance: 'jsHarmonyCMSInstance' });

@@ -10,16 +10,16 @@
     "menu":"jsHarmonyCMS/Media_Listing",
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
-      { "link":"js:_this.addFile();","icon":"add","text":"Add File", "roles": {"AUTHOR": "I","PUBLISHER": "I"} },
-      { "link":"update:Media_Listing","icon":"search","text":"Search","bindings":{} },
-      { "link":"js:_this.toggleSidebar();","icon":"sidebar","text":"Toggle Sidebar" },
-      { "link":"js:_this.setSort('filename');","icon":"bullet","text":"File Name","group":"Sort By" },
-      { "link":"js:_this.setSort('date');","icon":"bullet","text":"Date","group":"Sort By" },
-      { "link":"js:_this.setSort('description');","icon":"bullet","text":"Description","group":"Sort By" },
-      { "link":"js:_this.setSort('size');","icon":"bullet","text":"Size","group":"Sort By" },
-      { "link":"js:_this.setSort('type');","icon":"bullet","text":"Type","group":"Sort By" },
-      { "link":"js:_this.setView('tiles');","icon":"tiles","text":"Tiles","group":"View" },
-      { "link":"js:_this.setView('details');","icon":"list","text":"Details","group":"View" }
+      { "name": "addFile", "link":"js:_this.addFile();","icon":"add","text":"Add File", "roles": {"AUTHOR": "I","PUBLISHER": "I"} },
+      { "name": "search", "link":"update:Media_Listing","icon":"search","text":"Search","bindings":{} },
+      { "name": "toggleSidebar", "link":"js:_this.toggleSidebar();","icon":"sidebar","text":"Toggle Sidebar" },
+      { "name": "sortFileName", "link":"js:_this.setSort('filename');","icon":"bullet","text":"File Name","group":"Sort By" },
+      { "name": "sortDate", "link":"js:_this.setSort('date');","icon":"bullet","text":"Date","group":"Sort By" },
+      { "name": "sortDescription", "link":"js:_this.setSort('description');","icon":"bullet","text":"Description","group":"Sort By" },
+      { "name": "sortSize", "link":"js:_this.setSort('size');","icon":"bullet","text":"Size","group":"Sort By" },
+      { "name": "sortType", "link":"js:_this.setSort('type');","icon":"bullet","text":"Type","group":"Sort By" },
+      { "name": "viewTiles", "link":"js:_this.setView('tiles');","icon":"tiles","text":"Tiles","group":"View" },
+      { "name": "viewDetails", "link":"js:_this.setView('details');","icon":"list","text":"Details","group":"View" }
     ],
     "hide_system_buttons" : ["print","export","help","delete"], 
     "oninit": "_this.oninit();",
@@ -135,7 +135,10 @@
       ".<%=model.class%>_file_info { display:none; }"
     ],
     "js": "jsh.App[modelid].isInEditor = true;",
-    "popup": [1000, 600]
+    "popup": [1000, 600],
+    "buttons":[
+      { "name": "search", "__REMOVE__": true }
+    ]
   },
   "Media_Browser_Tab": {
     "inherits": "Media_Browser",
