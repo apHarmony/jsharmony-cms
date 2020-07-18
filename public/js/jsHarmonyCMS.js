@@ -6483,26 +6483,6 @@ var jsHarmonyCMS = function(options){
       WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
     });
     window.addEventListener('message', this.onmessage);
-
-    /*
-    var iframeObserver = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        var nodes = mutation.addedNodes;
-        for (var i = 0; i < nodes.length; i++) {
-          console.log(nodes[i].nodeName);
-          if (nodes[i].nodeName == "DIV") {
-            var componentId = nodes[i].getAttribute('data-component-id');
-            if(componentId){
-              nodes[i].querySelectorAll('iframe').forEach(function(elem){
-                elem.setAttribute('sandbox', '');
-              });
-            }
-          }
-        }
-      })
-    });
-    iframeObserver.observe(document.documentElement, { childList: true, subtree: true });
-    */
   }
 
   this.load = function(){
