@@ -2,21 +2,28 @@
   "id": "componentId",
   "title": "Component Name",
   "caption": ["Item", "Items"],
+
   // Icons can be specified using Google Material icon font name, as SVG, or as HTML
   //  1. For Material Icon:"'material:<Google Material Icon Font Name>". Example: "material:photo_library"
   //  2. For SVG: "svg:<SVG Code>". Example: "svg:<svg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'><path d='M0 0h24v24H0z' fill='none'/><path d='M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z'/></svg>"
   //  3. For HTML: "html:<HTML Code>". Example: "html:<i class="iconClass">iconName</i>"
   "icon": "material:photo_library",
+
   "css": "...Content...", // Prepended by <templateBaseFileName>.css
   "js": "...Content...", // Prepended by <templateBaseFileName>.js
+
+  //Local templates can be used to load templates from the CMS
   "templates": {
     "editor": "...Content...", // Prepended by <templateBaseFileName>.templates.editor.ejs
     "publish": "...Content..." // Prepended by <templateBaseFileName>.templates.publish.ejs
   },
+
+  //Remote templates can be used to load templates from a remote site on edit or publish
   "remote_template": {
     "editor": "%%%editor_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%",
     "publish": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%"
   },
+
   "properties": {
     "ejs": "...Content...", // Prepended by <templateBaseFileName>.properties.ejs
     "css": "...Content...", // Prepended by <templateBaseFileName>.properties.css
@@ -35,8 +42,8 @@
     "css": "...Content...", // Prepended by <templateBaseFileName>.data.css
     "js": "...Content...", // Prepended by <templateBaseFileName>.data.js
     "templates": {
-      "gridRowPreview": ".rowPreview", // CSS selector for element defined in "ejs" used to render a grid row preview
-      "itemPreview": ".itemPreview" // CSS selector for element defined in "ejs" used to render item preview
+      "gridRowPreview": ".rowPreview", // CSS selector for element defined in "ejs" used to render a grid_preview row component preview
+      "itemPreview": ".itemPreview" // CSS selector for element defined in "ejs" used to render a form component preview
     },
     "popup": [1000, 200], // Width and height of grid popup window
     "fields": [
