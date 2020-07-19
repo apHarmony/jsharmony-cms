@@ -1,0 +1,202 @@
+{
+  "{schema}.branch_items":{ "object": [ ] },
+
+  // fill in all the merge columns so we don't have to duplicate every other statement to deal with conflict/non-conflict
+  "{schema}.merge_copy_src_edit_to_dst_merge":{
+    "params": ["src_branch_id", "dst_branch_id"],
+    "sql": [
+      "foreach(%%%{schema}.branch_items%%%, %%%EOL%%%, \"",
+        "update {tbl_branch_item} ",
+        "set ",
+          "{item}_merge_id=",
+            "(select {item}_id ",
+              "from ",
+                "(select {item}_id,{item}_key src_{item}_key ",
+                  "from {tbl_branch_item} ",
+                  "where branch_id=%%%src_branch_id%%% ",
+                ") tbl ",
+              "where src_{item}_key={item}_key ",
+            "),",
+          "branch_{item}_merge_action=",
+            "(select branch_{item}_action ",
+              "from ",
+                "(select branch_{item}_action,{item}_key src_{item}_key ",
+                  "from {tbl_branch_item} ",
+                  "where branch_id=%%%src_branch_id%%% ",
+                ") tbl ",
+              "where src_{item}_key={item}_key ",
+            ") ",
+        "where branch_id=%%%dst_branch_id%%% ",
+          "and {item}_merge_id is null ",
+          "and branch_{item}_merge_action is null ",
+          "and {item}_key in ",
+            "(select {item}_key ",
+              "from {tbl_branch_item} ",
+              "where branch_id=%%%src_branch_id%%% ",
+                "and (branch_{item}_action is not null)",
+            ");",
+      "\")",
+    ]
+  },
+
+  "{schema}.merge_clear_edit_on_public":{
+    "params": ["dst_branch_id"],
+    "sql": [
+      "foreach(%%%{schema}.branch_items%%%, %%%EOL%%%, \"",
+        "delete from {tbl_branch_item} where branch_id=%%%dst_branch_id%%% and branch_{item}_action='DELETE' and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);",
+        "update {tbl_branch_item} set branch_{item}_action=null,{item}_orig_id={item}_id where branch_id=%%%dst_branch_id%%% and (branch_{item}_action='ADD' or branch_{item}_action='UPDATE') and 'PUBLIC'=(select branch_type from {schema}.branch where branch_id=%%%dst_branch_id%%%);",
+      "\")",
+    ]
+  },
+
+  "{schema}.merge_overwrite":{
+    "params": ["src_branch_id", "dst_branch_id"],
+    "sql": [
+      "foreach(%%%{schema}.branch_items%%%, %%%EOL%%%, \"",
+        // not in source branch
+        "delete from {tbl_branch_item} where branch_id=%%%dst_branch_id%%% and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id=%%%src_branch_id%%%);",
+
+        // in source but marked as delete (no page id)
+        "delete from {tbl_branch_item} where branch_id=%%%dst_branch_id%%% and {item}_key in (select {item}_key from {tbl_branch_item} where branch_id=%%%src_branch_id%%% and branch_{item}_action='DELETE');",
+
+        "update {tbl_branch_item} set ",
+          "{item}_id=(select {item}_id ",
+            "from (select {item}_id,{item}_key src_{item}_key from {tbl_branch_item} where branch_id=%%%src_branch_id%%%) {item}_CUR ",
+            "where src_{item}_key={item}_key), ",
+          "{item}_orig_id=(select {item}_orig_id ",
+            "from (select {item}_orig_id,{item}_key src_{item}_key from {tbl_branch_item} where branch_id=%%%src_branch_id%%%) {item}_ORIG ",
+            "where src_{item}_key={item}_key), ",
+          "branch_{item}_action=(select branch_{item}_action ",
+            "from (select branch_{item}_action,{item}_key src_{item}_key from {tbl_branch_item} where branch_id=%%%src_branch_id%%%) {item}_ACTION ",
+            "where src_{item}_key={item}_key) ",
+        "where branch_id=%%%dst_branch_id%%% ",
+          "and {item}_key in (select {item}_key from {tbl_branch_item} where branch_id=%%%src_branch_id%%%);",
+
+        "insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id, branch_{item}_action) select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_orig_id, branch_{item}_action from {tbl_branch_item} where branch_id=%%%src_branch_id%%% and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id=%%%dst_branch_id%%%);",
+      "\")",
+    ]
+  },
+
+  "{schema}.merge_apply":{
+    "params": ["src_branch_id", "dst_branch_id"],
+    "sql": [
+      "foreach(%%%{schema}.branch_items%%%, %%%EOL%%%, \"",
+        "{schema}.merge_copy_src_edit_to_dst_merge(%%%src_branch_id%%%, %%%dst_branch_id%%%);",
+
+        "delete from {tbl_branch_item} where branch_id=%%%dst_branch_id%%% and branch_{item}_merge_action='DELETE';",
+
+        "update {tbl_branch_item} set {item}_id={item}_merge_id,branch_{item}_action='UPDATE' where branch_id=%%%dst_branch_id%%% and (branch_{item}_merge_action='ADD' or branch_{item}_merge_action='UPDATE') and branch_{item}_action='DELETE';",
+
+        "update {tbl_branch_item} set {item}_id={item}_merge_id where branch_id=%%%dst_branch_id%%% and (branch_{item}_merge_action='ADD' or branch_{item}_merge_action='UPDATE');",
+
+        "insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=%%%src_branch_id%%% and (branch_{item}_action='ADD' or branch_{item}_action='UPDATE') and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id=%%%dst_branch_id%%%);",
+      "\")",
+    ]
+  },
+  "{schema}.merge_changes":{
+    "params": ["src_branch_id", "dst_branch_id"],
+    "sql": [
+      "{schema}.merge_copy_src_edit_to_dst_merge(%%%src_branch_id%%%,  %%%dst_branch_id%%%);",
+
+      "foreach(%%%{schema}.branch_items%%%, %%%EOL%%%, \"",
+
+        // ADD on UPDATE/DELETE/unchanged: UPDATE with dst orig
+        "update {tbl_branch_item} set ",
+          "{item}_id={item}_merge_id, ",
+          "branch_{item}_action='UPDATE', ",
+          "{item}_merge_id=null, ",
+          "branch_{item}_merge_action=null ",
+        "where branch_id= %%%dst_branch_id%%% ",
+          "and (branch_{item}_action='DELETE' or branch_{item}_action='UPDATE' or branch_{item}_action is null) ",
+          "and branch_{item}_merge_action='ADD';",
+
+        // UPDATE/DELETE on ADD: use src orig
+        "update {tbl_branch_item} set ",
+          "{item}_id={item}_merge_id, ",
+          "branch_{item}_action=branch_{item}_merge_action, ",
+          "{item}_orig_id=( ",
+            "select {item}_orig_id ",
+            "from ( ",
+              "select ",
+                "{item}_orig_id, ",
+                "{item}_key src_{item}_key ",
+              "from {tbl_branch_item} ",
+              "where branch_id= %%%src_branch_id%%% ",
+            ") tbl ",
+            "where src_{item}_key={item}_key ",
+          "), ",
+          "{item}_merge_id=null, ",
+          "branch_{item}_merge_action=null ",
+        "where branch_id= %%%dst_branch_id%%% ",
+          "and branch_{item}_action='ADD' ",
+          "and (branch_{item}_merge_action='DELETE' or branch_{item}_merge_action='UPDATE');",
+
+        // Otherwise, use updated merge columns
+        "update {tbl_branch_item} set ",
+          "{item}_id={item}_merge_id, ",
+          "branch_{item}_action=branch_{item}_merge_action, ",
+          "{item}_merge_id=null, ",
+          "branch_{item}_merge_action=null ",
+        "where branch_id= %%%dst_branch_id%%% ",
+          "and (branch_{item}_merge_action is not null or {item}_merge_id is not null);",
+
+        // exists in src but not dst
+        "insert into {tbl_branch_item}( ",
+          "branch_id, ",
+          "{item}_key, ",
+          "{item}_id, ",
+          "{item}_orig_id, ",
+          "branch_{item}_action ",
+        ") select ",
+          " %%%dst_branch_id%%%, ",
+          "{item}_key, ",
+          "{item}_id, ",
+          "{item}_orig_id, ",
+          "branch_{item}_action ",
+        "from {tbl_branch_item} ",
+        "where branch_id= %%%src_branch_id%%% ",
+          "and (branch_{item}_action='ADD' ",
+            "or branch_{item}_action='UPDATE' ",
+            "or branch_{item}_action='DELETE') ",
+          "and {item}_key not in ",
+            "(select {item}_key ",
+            "from {tbl_branch_item} ",
+            "where branch_id= %%%dst_branch_id%%%);",
+      "\")",
+    ]
+  },
+  "{schema}.merge_rebase":{
+    "params": ["src_branch_id", "dst_branch_id"],
+    "sql": [
+      "foreach(%%%{schema}.branch_items%%%, %%%EOL%%%, \"",
+        // edit branch is the one being changed, so just copy merge conflict over to edit columns and continue as normal
+        "update {tbl_branch_item} ",
+        "set ",
+          "{item}_id={item}_merge_id, ",
+          "branch_{item}_action=branch_{item}_merge_action ",
+        "where branch_id= %%%dst_branch_id%%% ",
+          "and ({item}_merge_id is not null ",
+            "or branch_{item}_merge_action is not null);",
+
+        // unmodified/deleted items missing (or DELETE) in new base
+        "delete from {tbl_branch_item} where branch_id= %%%dst_branch_id%%% and (branch_{item}_action is null or branch_{item}_action='DELETE') and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null);",
+
+        // UPDATE, missing in new base (or DELETE) - turn into ADD
+        "update {tbl_branch_item} set {item}_orig_id=null, branch_{item}_action='ADD' where branch_id= %%%dst_branch_id%%% and branch_{item}_action='UPDATE' and  {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null);",
+
+        // unmodified items from new base
+        "update {tbl_branch_item} set {item}_id=(select {item}_id from (select {item}_id,{item}_key src_{item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%%) tbl where src_{item}_key={item}_key), {item}_orig_id=(select {item}_id from (select {item}_id,{item}_key src_{item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%%) tbl where src_{item}_key={item}_key) where branch_id= %%%dst_branch_id%%% and branch_{item}_action is null and {item}_key in (select {item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%%);",
+
+        // ADD, exists on base (and not DELETE) - turn into UPDATE.
+        // Orig id will be updated below, but has to exist for db validations
+        "update {tbl_branch_item} set {item}_orig_id={item}_id, branch_{item}_action='UPDATE' where branch_id= %%%dst_branch_id%%% and branch_{item}_action='ADD' and {item}_key in (select {item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null);",
+
+        // UPDATE/DELETE: update orig id with current id
+        "update {tbl_branch_item} set {item}_orig_id=(select {item}_id from (select {item}_id,{item}_key src_{item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%%) tbl where src_{item}_key={item}_key) where branch_id= %%%dst_branch_id%%% and (branch_{item}_action='DELETE' or branch_{item}_action='UPDATE') and {item}_key in (select {item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null);",
+
+        // new items from base (except DELETE)
+        "insert into {tbl_branch_item} (branch_id, {item}_key, {item}_id, {item}_orig_id) select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id= %%%dst_branch_id%%%);",
+      "\")",
+    ]
+  }
+}

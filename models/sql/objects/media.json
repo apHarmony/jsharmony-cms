@@ -1,0 +1,173 @@
+{
+  "code_media_type": {
+    "type": "code",
+    "code_type": "app",
+    "caption": "Media Type",
+    "init_data": [
+      { "code_val": "ARTWORK", "code_txt": "Artwork", "code_seq": 1 },
+      { "code_val": "CAD", "code_txt": "CAD File", "code_seq": 2 },
+      { "code_val": "DOC", "code_txt": "Document", "code_seq": 3 },
+      { "code_val": "ICON", "code_txt": "Icon", "code_seq": 4 },
+      { "code_val": "ILLUST", "code_txt": "Illustration", "code_seq": 5 },
+      { "code_val": "LOGO", "code_txt": "Logo", "code_seq": 6 },
+      { "code_val": "PHOTO", "code_txt": "Photo", "code_seq": 7 },
+      { "code_val": "SCREENSHOT", "code_txt": "Screenshot", "code_seq": 8 },
+      { "code_val": "OTHER", "code_txt": "Other", "code_seq": 9 }
+    ]
+  },
+
+  "media": {
+    "type": "table",
+    "caption": ["Media", "Media"],
+    "columns": [
+      { "name": "media_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "media_file_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "media_orig_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "media_desc", "type": "varchar", "length": 256 },
+      { "name": "media_path", "type": "varchar", "length": 2048, "null": false },
+      { "name": "media_folder", "type": "varchar", "length": 2048 },
+      { "name": "media_filename", "type": "varchar", "length": 2048 },
+      { "name": "media_tags", "type": "varchar", "length": -1 },
+      { "name": "media_type", "type": "varchar", "length": 32, "foreignkey": { "code_media_type": "code_val" } },
+      { "name": "media_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
+      { "name": "media_lang", "type": "varchar", "length": 32, "foreignkey": { "code_lang": "code_val" } },
+      { "name": "media_is_folder", "type": "int", "default": 0, "null": false },
+
+      { "name": "media_ext", "type": "varchar", "length": 16 },
+      { "name": "media_size", "type": "int" },
+      { "name": "media_width", "type": "int" },
+      { "name": "media_height", "type": "int" },
+      
+      { "name": "media_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "media_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "media_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "media_muser", "type": "varchar", "length": 20 },
+      { "name": "media_snotes", "type": "varchar", "length": -1 }
+    ],
+    "triggers": [
+      { "on": ["validate_insert"], "exec": [
+          "errorif((inserted(media_folder) is not null),'Cannot set media_folder - this is a calculated field');",
+          "errorif((inserted(media_filename) is not null),'Cannot set media_filename - this is a calculated field');",
+          "errorif((inserted(media_path) = ''),'Media path is required');",
+          "errorif(((inserted(media_ext) is null) and ({schema}.filename(inserted(media_path))<>'')),'Media file extension is required');",
+          "errorif(((inserted(media_size) is null) and ({schema}.filename(inserted(media_path))<>'')),'Media file size is required');",
+          "errorif(((inserted(media_is_folder) = 0) and ({schema}.filename(inserted(media_path))='')),'Media folders require media_is_folder=1');",
+          "errorif((inserted(media_filename) is not null) and (inserted(media_is_folder) = 1),'Cannot set media_filename on folder');"
+        ]
+      },
+      { "on": ["insert"], "exec": [
+          "setif(null(media.media_key),media_key,media.media_id);",
+          "setif(null(media.media_file_id) and ({schema}.filename(media.media_path)<>''),media_file_id,media.media_id);",
+          "setif(null(media.media_folder),media_folder,{schema}.dirname(media.media_path));",
+          "setif(null(media.media_filename),media_filename,(case media.media_is_folder when 1 then null else {schema}.filename(media.media_path) end));"
+        ]
+      },
+      { "on": ["validate_update"], "exec": [
+          "errorif(update(media_key) and (deleted(media_key) is not null),'Cannot update media_key');",
+          "errorif(update(media_file_id) and (deleted(media_file_id) is not null),'Cannot update media_file_id');",
+          "errorif(update(media_folder) and (deleted(media_folder) is not null),'Cannot update media_folder');",
+          "errorif(update(media_filename) and (deleted(media_filename) is not null),'Cannot update media_filename');",
+          "errorif(update(media_path) and (deleted(media_path) is not null),'Cannot update media_path');",
+          "errorif(update(media_filename) and (inserted(media_filename) is null) and (inserted(media_file_id) is not null),'Cannot set null media_filename on media with file');",
+          "errorif(update(media_is_folder) and (deleted(media_is_folder) is not null),'Cannot update media_is_folder');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(media_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "v_my_media": {
+    "type": "view",
+    "caption": ["Media", "Media"],
+    "tables": {
+      "media": {
+        "columns": [
+          "media_id",
+          "media_key",
+          "media_file_id",
+          "media_orig_id",
+          "media_desc",
+          "media_path",
+          "media_folder",
+          "media_filename",
+          "media_tags",
+          "media_type",
+          "media_is_folder",
+    
+          "media_ext",
+          "media_size",
+          "media_width",
+          "media_height",
+    
+          "media_review_sts",
+          "media_lang",
+          
+          "media_etstmp",
+          "media_euser",
+          "media_mtstmp",
+          "media_muser",
+
+          { "name": "media_uptstmp", "type": "datetime", "length": 7, "sqlselect": "(select media_etstmp from {schema}.media media_file where media_file.media_id = media.media_file_id )" },
+          { "name": "media_upuser", "type": "varchar", "length": 20, "sqlselect": "(select media_euser from {schema}.media media_file where media_file.media_id = media.media_file_id )" }
+
+        ]
+      },
+      "branch_media": {
+        "join_type": "inner",
+        "join_columns": {
+          "branch_media.media_id": "media.media_id",
+          "branch_media.branch_id": "{schema}.my_current_branch_id()"
+        }
+      }
+    },
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif(exists(select * from {schema}.v_my_media where (media_path=inserted(media_path))),'Media file name already exists');",
+            "errorif(exists(select * from {schema}.v_my_media where ((media_folder like (case when inserted(media_is_folder)=1 and {schema}.filename(inserted(media_path)) = '' then concat(inserted(media_path),'%') else concat(inserted(media_path),'/%') end)))),'Existing folder with the same name already exists');",
+            "with_insert_identity(media, media_id, ",
+            "  insert into media(media_file_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values(inserted(media_file_id), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
+            "  return_insert_key(media, media_key, (media_key=@@INSERT_ID));",
+            "  insert into branch_media(branch_id, media_key, media_id, branch_media_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
+            "  update branch_media set media_orig_id=media_id,branch_media_action=NULL where branch_id={schema}.my_current_branch_id() and media_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
+            "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif(exists(select * from {schema}.v_my_media where (media_path=inserted(media_path)) and media_key<>deleted(media_key)),'Media file name already exists');",
+            "errorif(exists(select * from {schema}.v_my_media where ((media_folder like (case when inserted(media_is_folder)=1 and {schema}.filename(inserted(media_path)) = '' then concat(inserted(media_path),'%') else concat(inserted(media_path),'/%') end))) and media_key<>deleted(media_key)),'Existing folder with the same name already exists');",
+            "with_insert_identity(media, media_id, ",
+            "  insert into media(media_key, media_file_id, media_orig_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values(deleted(media_key), (case when inserted(media_file_id) is null then null else deleted(media_file_id) end), deleted(media_id), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
+            "  update branch_media set media_id=@@INSERT_ID,branch_media_action=(case branch_media_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key);",
+            "  update branch_media set media_orig_id=media_id,branch_media_action=NULL where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and {schema}.my_current_branch_is_versioned()=0;",
+            "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+          "update branch_media set media_id=null,branch_media_action='DELETE' where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and ((branch_media_action is null) or (branch_media_action in ('UPDATE','DELETE')))",
+          "delete from branch_media where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and (branch_media_action='ADD' or {schema}.my_current_branch_is_versioned()=0)",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
+          "increment_changes()"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "Site_Deployment_Target": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[800,400],
+    "table":"{schema}.deployment_target",
+    "actions":"BIUD",
+    "roles": { "WEBMASTER": "BIUD" },
+    "caption":["Deployment Target","Deployment Targets"],
+    "title":"",
+    "fields": [
+      {"name":"site_id","actions":"BIU","foreignkey":1,"control":"hidden"},
+      {"name":"deployment_target_name","caption":"Name"},
+      {"name":"deployment_target_sts","caption":"Status"},
+      {"name":"deployment_target_publish_path","caption":"Path","control":"textbox","controlstyle":"width: 40em"},
+      {"name":"deployment_target_params","caption":"Params","control":"textarea","controlstyle":"width: 40em; height: 10em","validate":["IsJSON"],"format":"json"}
+    ]
+  }
+}

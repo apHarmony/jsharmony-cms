@@ -1,0 +1,17 @@
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_Change_Status">
+  <table border="0">
+    <tr>
+      <td class="head"><label><input type="radio" name="<%=model.class%>_Change_Status_option" value="COPY" checked="checked"> Copy</label></td>
+      <td>
+          Include pending changes from the source branch into this branch.<br/>
+          Choose this if the source branch changes have not yet been published.
+      </td>
+    </tr>
+    <tr>
+      <td class="head"><label><input type="radio" name="<%=model.class%>_Change_Status_option" value="RESET"> Reset</label></td>
+      <td>
+          Only new changes to the new branch will be published.
+      </td>
+    </tr>
+  </table>
+</script>

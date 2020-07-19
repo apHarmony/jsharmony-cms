@@ -1,0 +1,42 @@
+{
+  "Publish_Listing": {
+    "layout":"grid",
+    "table":"{schema}.v_my_deployment",
+    "caption":["Deployment","Deployments"],
+    "title":"Pending Deployments",
+    "menu":"jsHarmonyCMS/Publish_Listing",
+    "noresultsmessage":"No scheduled deployments.",
+    "tablestyle":"min-width:450px;",
+    "actions":"B",
+    "roles": {"PUBLISHER": "B"},
+    "sqlwhere":"deployment_sts in ('PENDING','RUNNING')",
+    "buttons":[{ "name":"scheduleDeployment", "link":"Publish_Add","icon":"add","text":"Schedule Deployment" }],
+    "fields": [
+      {"name":"deployment_id","key":true,"control":"hidden"},
+      {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
+      {"name":"deployment_target_name","caption":"Deployment Target","sqlselect":"(select deployment_target_name from {schema}.deployment_target where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
+      {"name":"deployment_tag","caption":"Tag","control":"label"},
+      {"name":"deployment_date","caption":"Scheduled For","validate":["IsDate"],"format":"date:'YYYY-MM-DD hh:mm A'","controlstyle":"width:145px;"},
+      {"name":"deployment_sts","caption":"Status"},
+      {"name":"branch_id","control":"hidden"},
+      {"name":"branch_desc","caption":"Deployment Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.v_my_deployment.branch_id)","link":"update:Branch_Summary&branch_id"},
+      {"name":"parent_branch_desc","caption":"Parent Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id=(select branch_parent_id from {schema}.branch where branch_id={schema}.v_my_deployment.branch_id))","link":"update:Branch_Summary&branch_id"},
+      {"name":"deployment_etstmp","caption":"Entered","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]},
+      {"name":"deployment_euser_fmt","caption":"Entered By","sqlselect":"(jsharmony.my_db_user_fmt(deployment_euser))","control":"label","actions":"B"},
+      {"caption":"View Log","control":"linkbutton","link":"update:Publish_Log","captionstyle":"text-align:center;","cellstyle":"text-align:center;"},
+      {"caption":"Cancel","control":"html","value":"<# if((data.deployment_sts||'').toString().toUpperCase()=='PENDING'){ #>Cancel<# } #>","link":"js:var deployment_id = xmodel.get('deployment_id', this); XExt.Confirm('Are you sure you want to cancel this deployment?',function(){ XForm.Post(xmodel.module_namespace+'Publish_Cancel', {}, { deployment_id: deployment_id }, function(rslt){ XPage.Refresh(); }); });","captionstyle":"text-align:center;","cellstyle":"text-align:center;"}
+    ]
+  },
+  "Publish_Cancel": {
+    "layout": "exec",
+    "title": "Cancel Deployment",
+    "actions": "U",
+    "roles": {"PUBLISHER": "BU"},
+    "sqlexec": [
+      "update {schema}.v_my_deployment set deployment_sts='CANCEL' where deployment_id=@deployment_id "
+    ],
+    "fields": [
+      {"name":"deployment_id", "actions":"BU", "type":"bigint", "caption":"Deployment ID", "validate": ["Required"]}
+    ]
+  }
+}

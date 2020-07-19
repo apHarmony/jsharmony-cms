@@ -1,0 +1,189 @@
+{
+  "page": {
+    "type": "table",
+    "caption": ["Page","Pages"],
+    "columns": [
+      { "name": "page_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "page_file_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "page_orig_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "page_title", "type": "varchar", "length": 1024 },
+      { "name": "page_path", "type": "varchar", "length": 2048, "null": false },
+      { "name": "page_folder", "type": "varchar", "length": 2048 },
+      { "name": "page_filename", "type": "varchar", "length": 2048 },
+      { "name": "page_tags", "type": "varchar", "length": -1 },
+      { "name": "page_author", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
+      { "name": "page_template_id", "type": "varchar", "length": 255 },
+      { "name": "page_is_folder", "type": "int", "default": 0, "null": false },
+
+      { "name": "page_seo_title", "type": "varchar", "length": 2048 },
+      { "name": "page_seo_canonical_url", "type": "varchar", "length": 2048 },
+      { "name": "page_seo_metadesc", "type": "varchar", "length": -1 },
+
+      { "name": "page_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_item_review_sts": "code_val" } },
+      { "name": "page_lang", "type": "varchar", "length": 32, "foreignkey": { "code_lang": "code_val" } },
+      
+      { "name": "page_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "page_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "page_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "page_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["validate_insert"], "exec": [
+          "errorif((inserted(page_folder) is not null),'Cannot set page_folder - this is a calculated field');",
+          "errorif((inserted(page_filename) is not null),'Cannot set page_filename - this is a calculated field');",
+          "errorif((inserted(page_path) = ''),'Page path is required');",
+          "errorif((inserted(page_filename) is not null) and (inserted(page_is_folder) = 1),'Cannot set page_filename on folder');"
+        ]
+      },
+      { "on": ["insert"], "exec": [
+          "setif(null(page.page_key),page_key,page.page_id);",
+          "setif(null(page.page_file_id) and ($ifnull(page_is_folder,0)=0),page_file_id,page.page_id);",
+          "setif(null(page.page_template_id) and ($ifnull(page_is_folder,0)=0),page_template_id,'default');",
+          "setif(null(page.page_author),page_author,jsharmony.my_sys_user_id());",
+          "setif(null(page.page_folder),page_folder,{schema}.dirname(page.page_path));",
+          "setif(null(page.page_filename),page_filename,(case when page_is_folder=1 then null when {schema}.filename(page.page_path) = '' then (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') else {schema}.filename(page.page_path) end));",
+          "setif(concat(page.page_folder,page_filename)<>page_path,page_path,concat(page.page_folder,page_filename));"
+        ]
+      },
+      { "on": ["validate_update"], "exec": [
+          "errorif(update(page_key) and (deleted(page_key) is not null),'Cannot update page_key');",
+          "errorif(update(page_file_id) and (deleted(page_file_id) is not null),'Cannot update page_file_id');",
+          "errorif(update(page_folder) and (deleted(page_folder) is not null),'Cannot update page_folder');",
+          "errorif(update(page_filename) and (deleted(page_filename) is not null),'Cannot update page_filename');",
+          "errorif(update(page_path) and (deleted(page_path) is not null and (({schema}.filename(deleted(page_path)) <> '') or (deleted(page_is_folder)=1))),'Cannot update page_path');",
+          "errorif(update(page_is_folder) and (deleted(page_is_folder) is not null),'Cannot update page_is_folder');",
+          "errorif(update(page_template_id) and (deleted(page_template_id) is not null),'Cannot update page_template_id');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(page_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { "page_path": "/index.html", "page_title": "Welcome", "page_author": 1, "page_template_id": "default", "_FILES": { "page_sample.json": "page/{{page_id}}.json" } },
+      { "page_path": "/style-guide.html", "page_title": "Style Guide", "page_author": 1, "page_template_id": "default", "_FILES": { "page_style_guide.json": "page/{{page_id}}.json" } }
+    ]
+  },
+
+  "category": {
+    "type": "table",
+    "caption": ["Category","Categories"],
+    "columns": [
+      { "name": "category_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "category_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "category_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
+      { "name": "category_seq", "type": "int" },
+      
+      { "name": "category_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "category_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "category_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "category_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(category_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(category_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "page_category_id": {
+    "type": "table",
+    "caption":["Page Category","Page Categories"],
+    "columns": [
+      { "name": "page_category_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false },
+      { "name": "category_id", "type": "bigint", "foreignkey": { "category": "category_id" }, "null": false }
+    ]
+  },
+
+  "v_my_page": {
+    "type": "view",
+    "caption": ["Page", "Pages"],
+    "tables": {
+      "page": {
+        "columns": [
+          "page_id",
+          "page_key",
+          "page_file_id",
+          "page_orig_id",
+          "page_title",
+          "page_path",
+          "page_folder",
+          "page_filename",
+          "page_tags",
+          "page_author",
+          "page_template_id",
+          "page_is_folder",
+    
+          "page_seo_title",
+          "page_seo_canonical_url",
+          "page_seo_metadesc",
+    
+          "page_review_sts",
+          "page_lang",
+          
+          "page_etstmp",
+          "page_euser",
+          "page_mtstmp",
+          "page_muser"
+        ]
+      },
+      "branch_page": {
+        "join_type": "inner",
+        "join_columns": {
+          "branch_page.page_id": "page.page_id",
+          "branch_page.branch_id": "{schema}.my_current_branch_id()"
+        }
+      }
+    },
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif(exists(select * from {schema}.v_my_page where (page_path=(case when page_is_folder=1 then inserted(page_path) when {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),(select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE')) else inserted(page_path) end))),'Page file name already exists');",
+            "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end)))),'Existing folder with the same name already exists');",
+            "with_insert_identity(page, page_id, ",
+            "  insert into page(page_file_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(inserted(page_file_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
+            "  return_insert_key(page, page_key, (page_key=@@INSERT_ID));",
+            "  insert into branch_page(branch_id, page_key, page_id, branch_page_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
+            "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
+            "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif(exists(select * from {schema}.v_my_page where (page_path=(case when page_is_folder=1 then inserted(page_path) when {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),(select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE')) else inserted(page_path) end)) and page_key<>deleted(page_key)),'Page file name already exists');",
+            "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end))) and page_key<>deleted(page_key)),'Existing folder with the same name already exists');",
+            "with_insert_identity(page, page_id, ",
+            "  insert into page(page_key, page_file_id, page_orig_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), deleted(page_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
+            "  update branch_page set page_id=@@INSERT_ID,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key);",
+            "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and {schema}.my_current_branch_is_versioned()=0;",
+            "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
+          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+          "update branch_page set page_id=null,branch_page_action='DELETE' where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and ((branch_page_action is null) or (branch_page_action in ('UPDATE','DELETE')))",
+          "delete from branch_page where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and (branch_page_action='ADD' or {schema}.my_current_branch_is_versioned()=0)",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",
+          "increment_changes()"
+        ]
+      }
+    ]
+  }
+}

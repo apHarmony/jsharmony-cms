@@ -1,0 +1,256 @@
+.xbody_<%=model.class%> {
+  width:100%; 
+  padding-right:20px; 
+  box-sizing:border-box;
+  padding-bottom:0px;
+}
+.xbody_<%=model.class%> .bcrumbs { 
+  width:100%; 
+  padding-right:20px; 
+  padding-bottom:15px;
+  box-sizing:border-box;
+}
+.<%=model.class%>_browser {
+  display:flex;
+  width:100%;
+  min-width:950px;
+  min-height:400px;
+  box-sizing:border-box;
+}
+.xelem<%=model.class%>.tree.media_folder {
+  height:auto;
+  min-height:400px;
+  box-sizing:border-box;
+  flex-shrink:0;
+}
+.<%=model.class%>_file_listing {
+  flex-grow:1;
+  margin-top:0px;
+  border-right:1px solid #aaa; 
+  border-bottom:1px solid #aaa;
+  border-top:1px solid #aaa;
+  position:relative;
+}
+.<%=model.class%>_file_listing.dragOver {
+  background-color:#f5f5ff;
+}
+.<%=model.class%>_file_listing_scroll {
+  overflow-y:auto;
+  width:100%;
+  height:100%;
+}
+.<%=model.class%>_file_tile_container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: first baseline;
+  padding:10px 15px;
+}
+.<%=model.class%>_file_tile {
+  max-width:150px;
+  margin:4px 4px;
+  padding:9px 12px 7px 12px;
+  flex-grow:1;
+  flex-shrink:1;
+  flex-basis:150px;
+}
+.<%=model.class%>_file_tile_empty {
+  flex-grow:1;
+  padding-top:23px;
+  text-align:center;
+  color:#bbb;
+  font-size:20px;
+}
+.<%=model.class%>_file_tile_empty a {
+  font-size:13px;
+  display:inline-block;
+  padding-top:15px;
+}
+.<%=model.class%>_file_tile:hover {
+  background-color:#f5f5ff;
+}
+.<%=model.class%>_file_tile.selected {
+  background-color:#eeeeff;
+  border:1px solid #ccccff;
+  padding:8px 11px 6px 11px;
+}
+.<%=model.class%>_file_tile img {
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+  margin-bottom:5px;
+} 
+.<%=model.class%>_file_tile img.default {
+  height:65px;
+}
+.<%=model.class%>_file_tile span {
+  display:block;
+  text-align:center;
+}
+
+.<%=model.class%>_file_listing_tbl {
+  width:100%;
+  box-sizing:border-box;
+}
+
+.<%=model.class%>_file_listing_tbl thead tr th {
+  background-color:#fcfcfc;
+  color:#333;
+  cursor:default;
+  padding-top:4px;
+  padding-bottom:3px;
+}
+.<%=model.class%>_file_listing_tbl th,
+.<%=model.class%>_file_listing_tbl td {
+  padding:2px 6px;
+}
+.<%=model.class%>_file_listing_tbl thead th.sortable:hover {
+  text-decoration:underline;
+}
+.<%=model.class%>_file_listing_tbl .icon {
+  width:14px;
+}
+.<%=model.class%>_file_listing_tbl tbody tr td {
+  border-top:1px solid transparent;
+  border-bottom:1px solid transparent;
+}
+.<%=model.class%>_file_listing_tbl tbody tr.<%=model.class%>_file_listing_row:hover {
+  background-color:#f5f5ff;
+}
+.<%=model.class%>_file_listing_tbl tbody tr.<%=model.class%>_file_listing_row.selected td {
+  background-color:#eeeeff;
+  border-top:1px solid #ccccff;
+  border-bottom:1px solid #ccccff;
+}
+.<%=model.class%>_file_listing_tbl tbody tr td {
+  cursor:default;
+}
+.<%=model.class%>_file_listing_tbl tbody tr td.media_filename {
+  padding-left:24px;
+  position:relative;
+}
+.<%=model.class%>_file_listing_tbl tbody tr td.media_filename img {
+  position:absolute;
+  top:1px;
+  left:5px;
+  height:16px;
+}
+
+.<%=model.class%>_file_info {
+  flex-shrink:0;
+  width:300px;
+  margin-top:0px;
+  border-right:1px solid #aaa; 
+  border-bottom:1px solid #aaa;
+  border-top:1px solid #aaa;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+}
+.<%=model.class%>_file_info_header {
+  background-color:#f5f5f5;
+  color:#333;
+  font-size:0.9em;
+  font-weight:bold;
+  border-bottom:1px solid #999;
+  padding:8px 15px 7px 15px;
+}
+.<%=model.class%>_file_info_body {
+  overflow-y:auto;
+}
+.<%=model.class%>_file_info_preview {
+  display:block;
+  margin:1px auto 1px auto;
+  max-width:100%;
+  box-sizing:border-box;
+  cursor: pointer;
+  padding:6px 6px 3px 6px;
+}
+.<%=model.class%>_file_info_items {
+  flex-grow:1;
+  padding:2px 8px 2px 8px;
+}
+.<%=model.class%>_file_info_item {
+  display:flex;
+  align-items: first baseline;
+  margin-bottom:4px;
+}
+.<%=model.class%>_file_info label {
+  display:block;
+  font-weight:bold;
+  margin-right:3px;
+  white-space:nowrap;
+  min-width: 36px;
+}
+.<%=model.class%>_file_info_item > span {
+  display:block;
+}
+.<%=model.class%>_file_info .<%=model.class%>_file_info_item > input {
+  margin:0;
+  flex-grow:1;
+}
+.<%=model.class%>_file_info .save_changes {
+  background-color:#faf8c2;
+  flex-grow: 1;
+  padding:3px 3px;
+  color:#333;
+  text-align:center;
+}
+.<%=model.class%>_file_info .save_changes img {
+  height: 14px;
+  position:relative;
+  top:2px;
+  margin-right: 3px;
+}
+.<%=model.class%>_file_info .media_tags_editor {
+  width:100%;;
+}
+.<%=model.class%>_file_info .media_tags_editor .xtag_input {
+  width:50px;
+}
+.<%=model.class%>_file_info_actions { display:flex; justify-content: space-evenly; margin-bottom:5px; margin-top:3px;  }
+.<%=model.class%>_file_info_actions a { color:#000; }
+.<%=model.class%>_file_info_actions a img,
+a.<%=model.class%>_file_info_view_revisions img { height:14px; position:relative; top:2px; margin-right: 6px; }
+.<%=model.class%>_file_info_rename img { height:14px; position:relative; top:2px; margin-left:7px; }
+
+.<%=model.class%>_drop_overlay {
+  position:absolute;
+  top:0px;
+  left:0px;
+  z-index:2;
+  background-color: rgba(255,255,255,0.5);
+  width:100%;
+  height:100%;
+  display:none;
+  padding:40px;
+  box-sizing:border-box;
+}
+.<%=model.class%>_drop_overlay_body {
+  border:4px dashed #aaa;
+  text-align:center;
+  vertical-align:center;
+  width:100%;
+  height:100%;
+  font-size:40px;
+  color: #aaa;
+  font-weight:bold;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+.<%=model.class%>_file_listing.dragOver .<%=model.class%>_drop_overlay {
+  display:block;
+}
+.<%=model.class%>_drop_overlay_body input {
+  margin-top:50px;
+  width:200px;
+}
+.<%=model.class%>_AddMedia.dragOver,
+.<%=model.class%>_ReplaceMedia.dragOver {
+  background-color:#f5f5ff;
+}
+.<%=model.class%>_file_context_menu .select { display:none; }
+.xbody.InEditor .<%=model.class%>_file_context_menu .select { display:block; }

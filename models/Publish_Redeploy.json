@@ -1,0 +1,38 @@
+{
+  "Publish_Redeploy": {
+    "layout":"form",
+    "table":"{schema}.v_my_deployment",
+    "title":"Schedule Redeployment",
+    "menu":"Publish",
+    "actions":"BIU",
+    "roles": {"PUBLISHER": "BIU"},
+    "onecolumn":true,
+    "fields": [
+      {"name":"deployment_id","key":true,"control":"hidden"},
+      {"control":"html","value":"<div style='font-weight:bold;padding:5px 0;'>Redeployment will publish an exact copy of what was previously published.  Any changes to templates, URLs, or dynamically generated content will not be applied.</div>"},
+      {"name":"site_name","control":"label","caption":"Site","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
+      {"name":"branch_desc","control":"label","caption":"Branch","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.v_my_deployment.branch_id)"},
+      {"name":"deployment_git_revision","control":"label","caption":"Revision"},
+      {"name":"deployment_target_id","control":"dropdown","caption":"Deployment Target","validate":["Required"],"unbound":true,
+        "lov":{"sql":"select deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_publish = 1 and deployment_target_sts='ACTIVE' and site_id in (select site_id from {schema}.deployment where deployment_id=@deployment_id) order by deployment_target_name"}},
+      {"name":"deployment_date","control":"textbox","caption":"Schedule Redeployment", "validate":["Required","IsDate"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;","unbound":true},
+      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"unbound":true,"default":"js:jsh.moment().format('YYYY-MM-DD')+' Redeployment'"},
+      {"control":"button","value":"Schedule Redeployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.publish();"}
+    ]
+  },
+  "Publish_Redeploy_Exec": {
+    "layout": "exec",
+    "title": "Redeploy",
+    "actions": "U",
+    "roles": {"PUBLISHER": "BU"},
+    "sqlexec": [
+      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_git_revision) select site_id, @deployment_target_id, branch_id, @deployment_date, @deployment_tag, deployment_git_revision from {schema}.v_my_deployment where deployment_id=@src_deployment_id"
+    ],
+    "fields": [
+      {"name":"src_deployment_id", "actions":"BU", "type":"bigint", "caption":"Source Deployment ID", "validate": ["Required"]},
+      {"name":"deployment_target_id", "actions":"BU", "type":"bigint", "caption":"Deployment Target ID", "validate": ["Required"]},
+      {"name":"deployment_date", "actions":"BU", "type": "datetime", "length": 7, "caption":"Deployment Date", "validate": ["Required"]},
+      {"name":"deployment_tag", "actions":"BU", "type":"varchar", "length": 256, "caption":"Deployment Tag", "validate": ["Required"]}
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "Branch_Add_Empty": {
+    "layout":"form",
+    "title":"New Empty Branch",
+    "menu":"Branches",
+    "onecolumn":true,
+    "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
+    "sqlselect":[
+      "select ",
+      "'USER' new_branch_type,",
+      "'' new_branch_name"
+    ],
+    "sqlupdate":"insert into {schema}.v_my_current_branch(branch_type, branch_name, site_id) values(@new_branch_type, @new_branch_name, @new_site_id);",
+    "hide_system_buttons":["print"],
+    "fields": [
+      {"name":"branch_id","type":"bigint","control":"hidden","key":true},
+      {"name":"source_site_name","control":"label","caption":"New Branch","controlstyle":"margin-right:0px;"},
+      {"name":"new_site_id","control":"dropdown","caption":"","caption_ext":"Site","validate":["Required"],"nl":false,
+        "lov":{"sql":"select site_id code_val, site_name code_txt from {schema}.site where site_sts='ACTIVE'","blank":"Select Site..."}},
+      {"control":"html","value":"/&nbsp;","nl":false},
+      {"name":"new_branch_type","actions":"BU","type":"varchar","control":"dropdown","caption":"","nl":false,
+        "controlstyle":"margin-right:0px;","validate":["Required"],"caption_ext":"Branch Location",
+        "lov":{ "sql": "select 'PUBLIC' code_val, 'public' code_txt where ({schema}.my_user_is_publisher() = 1) union all select 'USER' code_val, (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=jsharmony.my_sys_user_id()) code_txt" } },
+      {"control":"html","value":"&nbsp;/&nbsp;","nl":false},
+      {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"Branch Name"},
+      {"control":"button","value":"Clone","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; XForm.prototype.XExecutePost(xmodel.id+'/?branch_id='+xmodel.get('branch_id'), { new_site_id: xmodel.get('new_site_id'), new_branch_type: xmodel.get('new_branch_type'), new_branch_name: xmodel.get('new_branch_name') }, function(rslt){ xmodel.controller.form.ResetDirty(); XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Listing_Redirect'); });"}
+    ]
+  }
+}

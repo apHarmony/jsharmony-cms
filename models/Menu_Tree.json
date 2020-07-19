@@ -1,0 +1,52 @@
+{
+  "Menu_Tree": {
+    "layout":"form",
+    "table":"",
+    "actions":"BIUD",
+    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "title": { "sql": "select concat('Menu :: ',menu_name) from {schema}.v_my_menu where menu_key=@menu_key" },
+    "caption":["Menu","Menus"],
+    "unbound":true,
+    "menu":"Menus",
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "hide_system_buttons" : ["print","export","help","delete"], 
+    "oninit": "_this.oninit();",
+    "onload": "_this.onload();",
+    "buttons":[
+      { "name":"addRootMenuItem", "link":"js:_this.addMenuItem(null);","icon":"add","text":"Add Root Menu Item", "actions": "I" },
+      { "name":"saveMenu", "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
+    ],
+    "fields":[
+      {"name":"menu_key","control":"hidden","type":"bigint","key":true},
+	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
+      {"name": "menu_item_id", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
+       "unbound": 1, "always_editable":1,
+       "controlparams": {
+          "expand_all": true,
+          "item_context_menu": [
+            { "icon": "add", "text": "Add Submenu Item", "command": "_this.addMenuItem(context_item);", "actions": "I" },
+            { "icon": "delete", "text": "Delete", "command": "_this.deleteMenuItem(context_item);", "actions": "D" }
+          ],
+          "onmove": "return _this.menu_item_id_onmove(dragval, dropval, anchor, e);",
+          "drag_anchor_settings": { "anchors": ["top","bottom","full"] }
+        },
+        "onchange": "_this.menu_item_id_onchange(obj, newval, undoChange, e);"
+      },
+      {
+        "name": "Menu_Tree_Info",
+        "control": "subform",
+        "target": "Menu_Tree_Info",
+        "bindings": { "menu_item_id": "menu_item_id" },
+        "caption": "",
+        "actions": "BIUD"
+      },
+      {"control":"html", "value": "</div>"}
+	  ]
+  },
+  "Menu_Tree_Browse": {
+    "inherits": "Menu_Tree",
+    "actions": "B",
+    "breadcrumbs": "__REMOVEPROPERTY__",
+    "popup": [1000, 600]
+  }
+}

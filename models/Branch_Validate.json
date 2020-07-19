@@ -1,0 +1,21 @@
+{
+  "Branch_Validate": {
+    "layout":"form",
+    "title":"Validate Branch",
+    "menu":"Branches",
+    "onecolumn":true,
+    "roles": {"AUTHOR": "B","PUBLISHER": "B"},
+    "sqlselect":[
+      "select ",
+      "(select branch_desc from {schema}.v_my_branch_desc where branch_id=@branch_id) branch_name,",
+      "(select site_name from {schema}.v_my_branch_desc where branch_id=@branch_id) site_name,",
+      "(select branch_type from {schema}.v_my_branch_desc where branch_id=@branch_id) branch_type"
+    ],
+    "hide_system_buttons":["print"],
+    "onload":"_this.onload(xmodel, callback);",
+    "fields": [
+      {"name":"branch_id","type":"bigint","control":"hidden","key":true},
+      {"name":"branch_name","control":"label","caption":"Branch","captionstyle":"text-align:right;font-weight:bold;"}
+    ]
+  }
+}

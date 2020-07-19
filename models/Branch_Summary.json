@@ -1,0 +1,50 @@
+{
+  "Branch_Summary": {
+    "layout":"form",
+    "table":"{schema}.v_my_branch_desc",
+    "onecolumn":true,
+    "roles": {"PUBLISHER": "B", "AUTHOR": "B", "VIEWER": "B"},
+    "actions":"B",
+    "menu":"Branches",
+    "caption":["Branch","Branches"],
+    "title":"Branch Summary",
+    "onload":"_this.oninit(xmodel);",
+    "buttons":[
+      { "group": "Actions", "name":"mergeFromBranch", "link":"js:_this.mergeFromBranch(xmodel);","icon":"sidebar","text":"Merge Into Current Branch","class":"Branch_Summary_buttonMerge", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"completeMerge", "link":"update:Branch_Conflicts","icon":"sidebar","text":"Complete Merge In Progress","class":"Branch_Summary_buttonConflicts", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"cloneBranch", "link":"update:Branch_Clone","icon":"copy","text":"Clone", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"checkoutBranch", "link":"update:Branch_Checkout","icon":"edit","text":"Checkout / Edit Branch","class":"Branch_Summary_buttonCheckout" },
+      { "group": "Actions", "name":"renameBranch", "link":"js:_this.renameBranch(xmodel.get('branch_id', this))","icon":"edit","text":"Rename","class":"Branch_Summary_buttonRename", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"validateBranch", "link":"update:Branch_Validate","icon":"browse","text":"Validate", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"submitBranch", "link":"js:jsh.System.SubmitBranch(xmodel, xmodel.get('branch_id', this))","icon":"ok","text":"Submit for Review","class":"Branch_Summary_buttonPublish", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"publishBranch", "link":"update:Publish_Add_Branch&branch_id","icon":"target","text":"Publish", "roles": { "PUBLISHER": "B" } },
+      { "group": "Actions", "name":"archiveBranch", "link":"js:jsh.System.ArchiveBranch(xmodel.get('branch_id', this))","icon":"lock","text":"Archive","class":"Branch_Summary_buttonArchive", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"deleteBranch", "link":"update:Branch_Delete&branch_id","icon":"delete","text":"Delete","class":"Branch_Summary_buttonDelete", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
+    ],
+    "fields": [
+      { "name":"branch_id","control":"hidden","key":true},
+      { "name":"branch_sts","control":"hidden"},
+      { "name":"branch_name","control":"hidden"},
+      { "name":"branch_is_checked_out","control":"hidden"},
+      { "name":"branch_access","control":"hidden"},
+      { "name":"branch_merge_id","control":"hidden","sqlselect":"(select branch_merge_id from {schema}.branch where branch.branch_id=v_my_branch_desc.branch_id)"},
+      { "name":"src_branch_desc","control":"hidden","sqlselect":"branch_desc"},
+      { "name":"dst_branch_desc","control":"hidden","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_is_checked_out = 1)"},
+      { "name":"dst_branch_id","control":"hidden","sqlselect":"(select branch_id from {schema}.v_my_branch_desc where branch_is_checked_out = 1)"},
+      { "control":"subform","target":"Branch_Diff","actions":"BU","controlparams":{"panelstyle":"border:none;padding:0"}}
+    ]
+  },
+  "Branch_Rename": {
+    "layout": "exec",
+    "title": "Rename Branch",
+    "actions": "U",
+    "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
+    "sqlexec": [
+      "update {schema}.branch set branch_name=@branch_name where branch_id = (select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access='RW');"
+    ],
+    "fields": [
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"branch_name", "actions":"BU", "type":"varchar", "length":256 , "caption":"Branch Name", "validate": ["Required"]}
+    ]
+  }
+}

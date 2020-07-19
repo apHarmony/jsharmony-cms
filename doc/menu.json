@@ -1,0 +1,30 @@
+{
+  "title": "Site Menu",
+  "content_elements": {
+    "main_menu_top": {
+      //filename :: (Optional) Filename for publish.  If not defined, will default to <content_element_name>.html
+      "filename": "main.top.html",
+
+      //template :: (Optional) Render template source.  Can be empty.  Will be concatenated with <menu_name>.<content_element_name>.ejs, if it exists
+      "template": "...EJS Content...",
+
+      //remote_template :: (Optional) Remote template downloaded for render template source.
+      //                   If both template and remote_template are defined, they will be concatenated
+      "remote_template": "%%%publish_template_base_url%%%/templates/menu/main.top.html?source=1&_=%%%timestamp%%%"
+    },
+
+    //Alternate syntax with separate editor / publish templates
+    "main_menu_sidebar": {
+      "template": {
+        "editor": "...EJS Content...",
+        "publish": "...EJS Content...",
+      },
+      "remote_template": {
+        "editor": "%%%publish_template_base_url%%%/templates/menu/main.top.editor.html?source=1&_=%%%timestamp%%%",
+        "publish": "%%%publish_template_base_url%%%/templates/menu/main.top.publish.html?source=1&_=%%%timestamp%%%",
+      }
+    }
+
+    //If a "menu_name.ejs" file exists, it will be added to content_elements.<menu_name>.template
+  }
+}

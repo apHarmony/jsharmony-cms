@@ -1,0 +1,30 @@
+{
+  "Dashboard": {
+    "layout":"form",
+    "title":"Dashboard",
+    "caption":["","Dashboard","Dashboard"],
+    "roles": {"*":"B"},
+    "actions":"B",
+    "menu":"Dashboard",
+    "sqlselect": [
+      "select ",
+      "(select txt_body from jsharmony.txt where txt_process='CMS' and txt_attrib='Dashboard') as motd,",
+      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No branch currently checked out)') branch_desc,",
+      "(select count(note_id) from jsharmony.note where note_scope='S' and note_type='S') note_sys_count,",
+      "(select {schema}.my_current_branch_id()) branch_id",
+      "from jsharmony.single"
+    ],
+    "nokey": 1,
+    "onload":"jsh.$root('.Dashboard_MOTD').html(xmodel.controller.form.Data.motd); if(parseInt(xmodel.get('note_sys_count'))) jsh.$root('.xform'+xmodel.class+' .qnssl').show();",
+    "fields":[
+      {"name":"motd","type":"varchar","actions":"B","control":"hidden","caption":""},
+      {"name":"branch_desc","type":"varchar","control":"label","caption":"Current Branch","link":"js:jsh.System.ViewBranchSummary(xmodel, xmodel.get('branch_id'))",
+        "captionstyle":"border:1px solid #333;color:white;background-color:#333;padding:4px 11px;display:inline-block;",
+        "controlstyle":"border:1px solid #333;padding:4px 11px;display:inline-block;color:#000;"},
+      {"name":"qnssl","control":"subform","target":"jsHarmonyFactory/Dashboard_Note_Listing","bindings":{"note_scope":"'S'","note_type":"'S'"},"actions": "BIUD",
+      "caption":"System Notifications","controlstyle":"display:none;width:820px;float:left;margin-right:10px;margin-top:25px;","nl":true},
+      {"control":"html","value":"<div class='clear Dashboard_MOTD' style='padding-top:20px;'></div>"},
+      {"control":"html","value":"<div class='clear'></div>"}
+    ]
+  }
+}
