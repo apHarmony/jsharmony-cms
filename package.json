@@ -31,8 +31,8 @@
     "diff2html": "^2.12.1",
     "ejs": "^2.7.2",
     "js-beautify": "^1.10.2",
-    "jsharmony": "^1.1.135",
-    "jsharmony-factory": "^1.1.76",
+    "jsharmony": "^1.1.201",
+    "jsharmony-factory": "^1.1.97",
     "lodash": "^4.17.14"
   }
 }

@@ -20,7 +20,7 @@
 
         //Open Editor
         var url = rslt.editor;
-        window.open(url, '_blank', "width=1100,height=800");
+        window.open(url, '_blank', "width=1195,height=800");
       });
     }
     else {

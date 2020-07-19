@@ -70,7 +70,7 @@
     // 1. onBeforeRenderGridRow(renderConfig): this hook is called before rendering a grid row. The renderConfig contains
     //    an object that can be manipulated before being used to render the grid row.
     // 2. onRenderGridRow(element, data, properties): this hook is called when the grid row is rendered.
-    // 3. onBeforeRenderDataItemPreview(renderConfig): this hook is called before rendering the item preview.The renderConfig contains
+    // 3. onBeforeRenderDataItemPreview(renderConfig): this hook is called before rendering the item preview. The renderConfig contains
     //    an object that can be manipulated before being used to render the item.
     // 4. onRenderDataItemPreview(element, data, properties): this hook is called when the item preview is rendered.
   }
