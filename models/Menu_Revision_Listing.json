@@ -1,0 +1,28 @@
+{
+  "Menu_Revision_Listing": {
+    "layout":"grid",
+    "table":"{schema}.menu",
+    "actions":"B",
+    "roles": {"AUTHOR": "B","PUBLISHER": "B","VIEWER":"B"},
+    "caption":["Menu","Menus"],
+    "title":"Revision History",
+    "reselectafteredit": "row",
+    "sort":["vmenu_mtstmp"],
+    "grid_expand_search": true,
+    "hide_system_buttons" : ["clear"],
+    "rowclass":"<%=xejs.iif(datarow['menu_id']==jsh.App[xmodel.parent].revision_menu_id,'active_revision')%>",
+    "fields": [
+      {"name":"menu_id","caption":"ID","control":"hidden","key":true},
+      {"name":"revision_menu_key","caption":"Revision Key","control":"hidden","sqlwhere":"menu_key=@revision_menu_key","sqlselect":"menu_key"},
+      {"name":"menu_key","caption":"Key","control":"hidden"},
+      {"name":"menu_file_id","caption":"File ID","control":"hidden"},
+      {"control":"html","caption":"","cellstyle":"text-align:center;","link":"js:jsh.App[xmodel.parent].previewMenu(xmodel.controller.form.DataSet[jsh.XExt.XModel.GetRowID(modelid, this)]);","value":"<img height='14' src='/images/icon_browse.png' class='xicon' />"},
+      {"name":"menu_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"name":"menu_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(menu_muser))","control":"label","actions":"B"},
+      {"name":"menu_name","caption":"Menu Name","control":"label"},
+      {"name":"menu_tag","caption":"Tag","control":"label"},
+      {"name":"menu_template_id","caption":"Template","control":"label","lov":{ "values": "#CMS_MENU_TEMPLATES" }},
+      {"name":"menu_path","caption":"Path","control":"label","format":"js:return (val||'').toString().replace(/\\//g,'/\\u200B');"}
+    ]
+  }
+}

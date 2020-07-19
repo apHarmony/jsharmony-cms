@@ -1,0 +1,38 @@
+{
+  "Publish_Add": {
+    "layout":"form",
+    "unbound":true,
+    "title":"Schedule Deployment",
+    "menu":"Publish",
+    "actions":"BIU",
+    "roles": {"PUBLISHER": "BIU"},
+    "onecolumn":true,
+    "fields": [
+      {"name":"site_id","control":"dropdown","caption":"Site","validate":["Required"],
+        "lov":{"sql":"select site_id code_val, site_name code_txt from {schema}.site where site_sts='ACTIVE'"}},
+      {"name":"deployment_target_id","control":"dropdown","caption":"Deployment Target","validate":["Required"],
+        "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_publish = 1 and deployment_target_sts='ACTIVE' order by site_id,deployment_target_name"}},
+      {"name":"branch_id","control":"dropdown","caption":"Branch","validate":["Required"],
+        "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, branch_id code_val, branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' order by site_id,branch_desc"}},
+      {"name":"deployment_date","control":"textbox","caption":"Publish Date", "validate":["Required","IsDate"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;"},
+      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')+' Release'"},
+      {"control":"button","value":"Schedule Deployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.publish();"}
+    ]
+  },
+  "Publish_Add_Exec": {
+    "layout": "exec",
+    "title": "Add Deployment",
+    "actions": "U",
+    "roles": {"PUBLISHER": "BU"},
+    "sqlexec": [
+      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag) values(@site_id, @deployment_target_id, @branch_id, @deployment_date, @deployment_tag) "
+    ],
+    "fields": [
+      {"name":"site_id", "actions":"BU", "type":"bigint", "caption":"Site ID", "validate": ["Required"]},
+      {"name":"deployment_target_id", "actions":"BU", "type":"bigint", "caption":"Deployment Target ID", "validate": ["Required"]},
+      {"name":"branch_id", "actions":"BU", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
+      {"name":"deployment_date", "actions":"BU", "type": "datetime", "length": 7, "caption":"Deployment Date", "validate": ["Required"]},
+      {"name":"deployment_tag", "actions":"BU", "type":"varchar", "length": 256, "caption":"Deployment Tag", "validate": ["Required"]}
+    ]
+  }
+}

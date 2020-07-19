@@ -1,0 +1,23 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<% if(page.seo.title){ %><title><%=page.seo.title%></title><% } %>
+<% if(page.seo.keywords){ %><meta name="keywords" content="<%=page.seo.keywords%>" /><% } %>
+<% if(page.seo.metadesc){ %><meta name="description" content="<%=page.seo.metadesc%>" /><% } %>
+<% if(page.seo.canonical_url){ %><link rel="canonical" href="<%=page.seo.canonical_url%>" /><% } %>
+<% if(page.css){ %><style type="text/css">
+  <%-page.css%>
+</style><% } %>
+<% if(page.js){ %><script type="test/javascript">
+  <%-page.js%>
+</script><% } %>
+<%-page.head%>
+</head>
+
+<body class="<%=page.properties.bodyClass%>" style="<%=page.properties.bodyStyle%>">
+<% if(page.title && (page.properties.showTitle != 'N')){ %><h1><%-page.title%></h1><% } %>
+<%-page.content.body%>
+<%-page.footer%>
+</body>
+</html>

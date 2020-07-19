@@ -1,0 +1,38 @@
+{
+  "name": "jsharmony-cms",
+  "version": "1.0.1",
+  "description": "jsHarmony CMS",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apHarmony/jsharmony-cms"
+  },
+  "keywords": [
+    "jsHarmony",
+    "JavaScript",
+    "CMS"
+  ],
+  "author": "apHarmony <contact@apharmony.com> (http://www.apharmony.com/)",
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/apHarmony/jsharmony-cms/issues"
+  },
+  "homepage": "https://github.com/apHarmony/jsharmony-cms",
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  },
+  "dependencies": {
+    "async": "^2.6.2",
+    "cheerio": "^1.0.0-rc.3",
+    "diff-match-patch": "^1.0.4",
+    "diff2html": "^2.12.1",
+    "ejs": "^2.7.2",
+    "js-beautify": "^1.10.2",
+    "jsharmony": "^1.1.201",
+    "jsharmony-factory": "^1.1.97",
+    "lodash": "^4.17.14"
+  }
+}

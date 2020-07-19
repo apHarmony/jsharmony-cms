@@ -1,0 +1,29 @@
+{
+  "Branch_Active_Listing": {
+    "layout":"form",
+    "table":"{schema}.v_my_branch_desc",
+    "actions":"B",
+    "roles": {"*": "B"},
+    "caption":["Branch","Branches"],
+    "title":"Active Branches",
+    "menu":"jsHarmonyCMS/Branch_Active_Listing",
+    "sqlselect": [
+      "select ",
+      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No branch currently checked out)') branch_desc,",
+      "(select {schema}.my_current_branch_id()) branch_id",
+      "from jsharmony.single"
+    ],
+    "nokey":true,
+    "buttons":[
+      { "name":"addBranch", "link":"update:Branch_Add_Empty","icon":"add","text":"New Empty Branch", "bindings": {} }
+    ],
+    "fields": [
+      {"name":"branch_desc","type":"varchar","control":"label","caption":"Current Branch","link":"js:jsh.System.ViewBranchSummary(xmodel, xmodel.get('branch_id'))",
+        "captionstyle":"border:1px solid #333;color:white;background-color:#333;padding:4px 11px;display:inline-block;",
+        "controlstyle":"border:1px solid #333;padding:4px 11px;display:inline-block;color:#000;background-color:#c2ffb8;"},
+      {"name":"branch_id","control":"hidden"},
+      {"control":"subform","target":"Branch_Active_User_Listing","bindings":{},"controlclass":"no-border","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
+      {"control":"subform","target":"Branch_Active_Public_Listing","bindings":{},"controlclass":"no-border"}
+    ]
+  }
+}

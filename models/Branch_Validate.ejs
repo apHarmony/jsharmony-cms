@@ -1,0 +1,100 @@
+<hr/>
+<h3>Branch Errors</h3>
+<div class='clear validate_<%=model.class%>' style='margin-top:10px;margin-bottom:20px;'></div>
+<div class='spacer_<%=model.class%>'></div>
+
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_validate_listing">
+  <div class="clear"></div>
+
+  <!-- ---------- -->
+  <!-- NO CHANGES -->
+  <!-- ---------- -->
+  <# if(_.isEmpty(branch_validate)){ #>
+    <hr/>
+    <h4 class="<%=model.class%>_branch_validate_item_header">
+      No errors found in this branch
+    </h4>
+  <# } #>
+
+  <# _.each(branch_validate, function(branch_items, branch_item_type){ #>
+    <# _.each(branch_items, function(branch_item){ #>
+      <hr/>
+      <#-renderItemValidate(branch_item_type, branch_item)#>
+    <# }); #>
+  <# }); #>
+
+  <hr/>
+</script>
+
+<!-- ----- -->
+<!-- PAGES -->
+<!-- ----- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_validate_page">
+  <h4 class="<%=model.class%>_branch_validate_item_header">
+    <i class="material-icons branch_error_icon error">error</i>
+    PAGE &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.page_path)#>
+    <a href="#" class="preview view_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.page_template_id#>" data-page_filename="<#=branch_page.page_filename#>" data-page_id="<#=branch_page.page_id#>"><img src="/images/icon_browse.png" />View</a>
+  </h4>
+
+  <# _.each(branch_page.errors, function(errtxt){ #>
+    <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+  <# }); #>
+</script>
+
+<!-- ----- -->
+<!-- MEDIA -->
+<!-- ----- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_validate_media">
+  <h4 class="<%=model.class%>_branch_validate_item_header">
+    <i class="material-icons branch_error_icon error">error</i>
+    MEDIA &nbsp;&nbsp;<#-XExt.escapeHTML(branch_media.media_path)#>
+    <a href="#" class="preview view_media" data-media_key="<#=branch_media.media_key#>" data-media_id="<#=branch_media.media_id#>" data-media_ext="<#=branch_media.media_ext#>" data-media_width="<#=branch_media.media_width#>" data-media_height="<#=branch_media.media_height#>"><img src="/images/icon_browse.png" />View</a>
+  </h4>
+
+  <# _.each(branch_media.errors, function(errtxt){ #>
+    <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+  <# }); #>
+</script>
+
+
+<!-- ----- -->
+<!-- MENUS -->
+<!-- ----- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_validate_menu">
+  <h4 class="<%=model.class%>_branch_validate_item_header">
+    <i class="material-icons branch_error_icon error">error</i>
+    MENU &nbsp;&nbsp;<#-XExt.escapeHTML(branch_menu.menu_tag)#>
+    <a href="#" class="preview view_menu" data-menu_key="<#=branch_menu.menu_key#>" data-menu_id="<#=branch_menu.menu_id#>"><img src="/images/icon_browse.png" />View</a>
+  </h4>
+
+  <# _.each(branch_menu.errors, function(errtxt){ #>
+    <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+  <# }); #>
+</script>
+
+
+<!-- -------- -->
+<!-- SITEMAPS -->
+<!-- -------- -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_validate_sitemap">
+  <h4 class="<%=model.class%>_branch_validate_item_header">
+    <i class="material-icons branch_error_icon error">error</i>
+    SITEMAP &nbsp;&nbsp;<#-XExt.escapeHTML(branch_sitemap.sitemap_type)#>
+    <a href="#" class="preview view_sitemap" data-sitemap_key="<#=branch_sitemap.sitemap_key#>" data-sitemap_id="<#=branch_sitemap.sitemap_id#>"><img src="/images/icon_browse.png" />View</a>
+  </h4>
+
+  <# _.each(branch_sitemap.errors, function(errtxt){ #>
+    <div class="<%=model.class%>_validate_item"><b><#=errtxt#></div>
+  <# }); #>
+</script>
+
+<div style="display:none;">
+  <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90vh;box-sizing:border-box;display:flex;flex-direction:column;">
+    <h3 class="edit_page_title">Edit Page</h3>
+    <div align="left" style="padding-top:15px;display:flex;flex-direction:column;flex-grow:1;">
+      <textarea class="page_content default_focus" style="width:100%;box-sizing:border-box;flex-grow:1;"></textarea>
+
+      <div style="text-align:center;"><input type="button" value="Save" class="button_ok" style="margin-right:15px;margin-top:18px;" /> <input type="button" value="Cancel" class="button_cancel" style="margin-top:18px;" /></div>
+    </div>
+  </div>
+</div>

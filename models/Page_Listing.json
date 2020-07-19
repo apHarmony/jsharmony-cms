@@ -1,0 +1,32 @@
+{
+  "Page_Listing": {
+    "layout":"grid",
+    "table":"{schema}.v_my_page",
+    "sqlwhere":"page_is_folder = 0",
+    "actions":"BUD",
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "caption":["Page","Pages"],
+    "title":"Page Search",
+    "reselectafteredit": "row",
+    "sort":["^page_path"],
+    "menu":"Pages",
+    "rowlimit":250,
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "grid_expand_search": true,
+    "commitlevel": "row",
+    "oninit": "jsh.System.RequireBranch(xmodel);",
+    "fields": [
+      {"name":"page_key","key":true,"control":"hidden"},
+      {"name":"page_filename","control":"hidden"},
+      {"name":"page_path","caption":"Page Path","control":"textbox_M","controlstyle":"width:270px;"},
+      {"name":"page_title","caption":"Title","control":"label","actions":"B"},
+      {"name":"page_tags","caption":"Tags","control":"label","actions":"B"},
+      {"name":"page_seo_title","caption":"SEO Title","control":"label","actions":"B"},
+      {"name":"page_seo_canonical_url","caption":"Canonical URL","control":"label","actions":"B"},
+      {"name":"page_seo_metadesc","caption":"Meta Desc","control":"label","actions":"B"},
+      {"name":"page_template_id","caption":"Template","control":"label","lov":{ "values": "#CMS_PAGE_TEMPLATES" },"actions":"B"},
+      {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"},
+      {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"}
+    ]
+  }
+}

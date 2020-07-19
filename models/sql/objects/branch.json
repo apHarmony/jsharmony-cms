@@ -1,0 +1,525 @@
+{
+  "code_branch_type": {
+    "type": "code",
+    "caption": "Branch Type",
+    "init_data": [
+      { "code_val": "USER", "code_txt": "User", "code_seq": 1 },
+      { "code_val": "PUBLIC", "code_txt": "Public", "code_seq": 2 },
+      { "code_val": "DEPLOYMENT", "code_txt": "Deployment", "code_seq": 3 }
+    ]
+  },
+
+  "code_branch_sts": {
+    "type": "code",
+    "caption": "Branch Status",
+    "init_data": [
+      { "code_val": "ACTIVE", "code_txt": "Active", "code_seq": 1 },
+      { "code_val": "REVIEW", "code_txt": "Review", "code_seq": 2 },
+      { "code_val": "ARCHIVE", "code_txt": "Archive", "code_seq": 3 }
+    ]
+  },
+
+  "code_branch_review_sts": {
+    "type": "code",
+    "caption": "Branch Review Status",
+    "init_data": [
+      { "code_val": "APPROVED", "code_txt": "Approved", "code_seq": 1 },
+      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 2 },
+      { "code_val": "REJECTED", "code_txt": "Rejected", "code_seq": 3 }
+    ]
+  },
+
+  "code_branch_item_action": {
+    "type": "code",
+    "caption": "Branch Item Action",
+    "init_data": [
+      { "code_val": "ADD", "code_txt": "Add", "code_seq": 1 },
+      { "code_val": "DELETE", "code_txt": "Delete", "code_seq": 2 },
+      { "code_val": "UPDATE", "code_txt": "Update", "code_seq": 3 }
+    ]
+  },
+
+  "code_branch_merge_type": {
+    "type": "code",
+    "caption": "Branch Merge Type",
+    "init_data": [
+      { "code_val": "APPLY", "code_txt": "Apply", "code_seq": 1 },
+      { "code_val": "OVERWRITE", "code_txt": "Overwrite", "code_seq": 2 },
+      { "code_val": "CHANGES", "code_txt": "Changes", "code_seq": 3 },
+      { "code_val": "REBASE", "code_txt": "Rebase", "code_seq": 4 }
+    ]
+  },
+
+  "branch": {
+    "type": "table",
+    "caption": ["Branch", "Branches"],
+    "columns": [
+      { "name": "branch_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "branch_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_type": "code_val" }, "null": false },
+      { "name": "branch_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_sts": "code_val" }, "null": false },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
+
+      { "name": "branch_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_review_sts": "code_val" } },
+      { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
+      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
+      { "name": "branch_merge_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
+      { "name": "branch_merge_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_merge_type": "code_val" } },
+
+      { "name": "branch_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_sts_user", "type": "varchar", "length": 20 },
+      { "name": "branch_review_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_review_sts_user", "type": "varchar", "length": 20 },
+      { "name": "branch_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_muser", "type": "varchar", "length": 20 },
+      { "name": "branch_data_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_data_muser", "type": "varchar", "length": 20 },
+    ],
+    "unique": [
+      ["branch_name","branch_user_id","site_id"]
+    ],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
+          "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');",
+          "errorif(inserted(branch_merge_id)=inserted(branch_id),'Branch cannot merge with itself');",
+          "errorif((inserted(branch_merge_id) is not null) and (inserted(branch_merge_type) is null),'branch_merge_id requires branch_merge_type');"
+        ]
+      },
+      { "on": ["validate_update"], "exec": [
+        "errorif(update(branch_name) and exists(select * from {schema}.branch b2 where b2.branch_name=inserted(branch_name) and $ifnull(b2.branch_user_id,0)=$ifnull(inserted(branch_user_id),0) and b2.site_id=inserted(site_id)),'Another branch with the same name already exists');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(branch_sts),branch_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(branch_sts),branch_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(branch_review_sts),branch_review_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(branch_review_sts),branch_review_sts_user,%%%%%%jsh.map.current_user%%%%%%);",
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"update {tbl_branch_item} set {item}_merge_id=null,branch_{item}_merge_action=null where (branch_id=inserted(branch_id) and update(branch_merge_id))\")",
+          "setif((inserted(branch_merge_id) is null) and (inserted(branch_merge_type) is not null),branch_merge_type,null);",
+          "setif(inserted(branch_sts)='REVIEW' and inserted(branch_review_sts) is null,branch_review_sts,'PENDING');"
+        ]
+      },
+      {
+        "on": ["delete"], "exec": [
+          "update {schema}.branch set branch_parent_id = null where branch_parent_id = deleted(branch_id);"
+        ]
+      }
+    ],
+    "sample_data": [
+      { "branch_name": "master", "branch_type": "PUBLIC", "branch_sts": "ACTIVE", "site_id": 1 },
+      { "branch_name": "Test Branch", "branch_type": "USER", "branch_sts": "ACTIVE", "site_id": 1, "branch_user_id": 1 }
+    ]
+  },
+  
+  "branch_menu": {
+    "type": "table",
+    "caption": ["Branch Menu", "Branch Menus"],
+    "columns": [
+      { "name": "branch_menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "menu_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "branch_menu_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "menu_orig_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "menu_merge_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "branch_menu_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      
+      { "name": "branch_menu_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_menu_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_menu_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_menu_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","menu_key"]
+    ],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_menu_action)='DELETE' and null(inserted(menu_orig_id)),'menu_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_menu_action)='UPDATE' and null(inserted(menu_id)),'menu_id is required for UPDATE action');",
+          "errorif(inserted(branch_menu_action)='UPDATE' and null(inserted(menu_orig_id)),'menu_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_menu_action)='ADD' and null(inserted(menu_id)),'menu_id is required for ADD action');",
+          "errorif(inserted(branch_menu_action)='ADD' and not(null(inserted(menu_orig_id))),'menu_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_menu_merge_action) is not null or inserted(menu_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_menu_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_menu_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_menu.branch_menu_action='DELETE',menu_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
+    ],
+    "sample_data": [
+      { 
+        "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
+        "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Site Menu'))"},
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"},
+        "menu_orig_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Site Menu'))"}
+      },
+      { 
+        "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
+        "menu_key": {"sql":"(select top1(menu_key from {schema}.menu where menu_name='Footer Menu'))"},
+        "menu_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"},
+        "menu_orig_id": {"sql":"(select top1(menu_id from {schema}.menu where menu_name='Footer Menu'))"}
+      }
+    ]
+  },
+
+  "branch_page": {
+    "type": "table",
+    "caption": ["Branch Page", "Branch Pages"],
+    "columns": [
+      { "name": "branch_page_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "branch_page_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "page_orig_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "page_merge_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "branch_page_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      
+      { "name": "branch_page_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_page_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_page_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_page_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","page_key"]
+    ],
+    "data_keys": ["branch_id","page_key"],
+    "sample_data": [
+      { "branch_id": "1", "page_key": "1", "page_id": "1", "page_orig_id": "1" },
+      { "branch_id": "1", "page_key": "2", "page_id": "2", "page_orig_id": "2" }
+    ],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_page_action)='DELETE' and null(inserted(page_orig_id)),'page_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_page_action)='UPDATE' and null(inserted(page_id)),'page_id is required for UPDATE action');",
+          "errorif(inserted(branch_page_action)='UPDATE' and null(inserted(page_orig_id)),'page_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_page_action)='ADD' and null(inserted(page_id)),'page_id is required for ADD action');",
+          "errorif(inserted(branch_page_action)='ADD' and not(null(inserted(page_orig_id))),'page_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_page_merge_action) is not null or inserted(page_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_page_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_page_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_page.branch_page_action='DELETE',page_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
+    ]
+  },
+
+  "branch_media": {
+    "type": "table",
+    "caption": ["Branch Media", "Branch Media"],
+    "columns": [
+      { "name": "branch_media_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" }, "null": false , "actions": ["prevent_update"]},
+      { "name": "media_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "branch_media_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "media_orig_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "media_merge_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "branch_media_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      
+      { "name": "branch_media_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_media_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_media_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_media_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","media_key"]
+    ],
+    "data_keys": ["branch_id","media_key"],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_media_action)='DELETE' and null(inserted(media_orig_id)),'media_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_media_action)='UPDATE' and null(inserted(media_id)),'media_id is required for UPDATE action');",
+          "errorif(inserted(branch_media_action)='UPDATE' and null(inserted(media_orig_id)),'media_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_media_action)='ADD' and null(inserted(media_id)),'media_id is required for ADD action');",
+          "errorif(inserted(branch_media_action)='ADD' and not(null(inserted(media_orig_id))),'media_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_media_merge_action) is not null or inserted(media_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_media_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_media_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_media.branch_media_action='DELETE',media_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
+    ]
+  },
+
+  "branch_redirect": {
+    "type": "table",
+    "caption": ["Branch Redirect", "Branch Redirects"],
+    "columns": [
+      { "name": "branch_redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" }, "null": false , "actions": ["prevent_update"]},
+      { "name": "redirect_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "branch_redirect_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "redirect_orig_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "redirect_merge_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "branch_redirect_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      
+      { "name": "branch_redirect_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_redirect_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_redirect_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_redirect_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","redirect_key"]
+    ],
+    "data_keys": ["branch_id","redirect_key"],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_redirect_action)='DELETE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_redirect_action)='UPDATE' and null(inserted(redirect_id)),'redirect_id is required for UPDATE action');",
+          "errorif(inserted(branch_redirect_action)='UPDATE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_redirect_action)='ADD' and null(inserted(redirect_id)),'redirect_id is required for ADD action');",
+          "errorif(inserted(branch_redirect_action)='ADD' and not(null(inserted(redirect_orig_id))),'redirect_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_redirect_merge_action) is not null or inserted(redirect_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_redirect_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_redirect_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_redirect.branch_redirect_action='DELETE',redirect_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
+    ]
+  },
+
+  "branch_sitemap": {
+    "type": "table",
+    "caption": ["Branch Sitemap", "Branch Sitemaps"],
+    "columns": [
+      { "name": "branch_sitemap_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "sitemap_key", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "sitemap_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "branch_sitemap_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      { "name": "sitemap_orig_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "sitemap_merge_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "branch_sitemap_merge_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
+      
+      { "name": "branch_sitemap_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "branch_sitemap_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "branch_sitemap_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "branch_sitemap_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["branch_id","sitemap_key"]
+    ],
+    "data_keys": ["branch_id","sitemap_key"],
+    "triggers": [
+      { "on": ["validate_update", "validate_insert"], "exec": [
+          "errorif(inserted(branch_sitemap_action)='DELETE' and null(inserted(sitemap_orig_id)),'sitemap_orig_id is required for DELETE action');",
+          "errorif(inserted(branch_sitemap_action)='UPDATE' and null(inserted(sitemap_id)),'sitemap_id is required for UPDATE action');",
+          "errorif(inserted(branch_sitemap_action)='UPDATE' and null(inserted(sitemap_orig_id)),'sitemap_orig_id is required for UPDATE action');",
+          "errorif(inserted(branch_sitemap_action)='ADD' and null(inserted(sitemap_id)),'sitemap_id is required for ADD action');",
+          "errorif(inserted(branch_sitemap_action)='ADD' and not(null(inserted(sitemap_orig_id))),'sitemap_orig_id must be null for ADD action');",
+          "errorif((inserted(branch_sitemap_merge_action) is not null or inserted(sitemap_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(branch_sitemap_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(branch_sitemap_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(branch_sitemap.branch_sitemap_action='DELETE',sitemap_id,null);",
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = inserted(branch_id);"
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = deleted(branch_id);"
+        ]
+      },
+    ],
+    "sample_data": [
+      { 
+        "branch_id": {"sql":"(select top1(branch_id from {schema}.branch where branch_name='master' and branch_user_id is null))"},
+        "sitemap_key": {"sql":"(select top1(sitemap_key from {schema}.sitemap where sitemap_name='Primary Sitemap'))"},
+        "sitemap_id": {"sql":"(select top1(sitemap_id from {schema}.sitemap where sitemap_name='Primary Sitemap'))"},
+        "sitemap_orig_id": {"sql":"(select top1(sitemap_id from {schema}.sitemap where sitemap_name='Primary Sitemap'))"}
+      }
+    ]
+  },
+
+  "sys_user_branch": {
+    "type": "table",
+    "caption": ["User Branch", "User Branches"],
+    "columns": [
+      { "name": "sys_user_branch_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } } },
+      { "name": "sys_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": { "column": "sys_user_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"], "unique": true },
+
+      { "name": "sys_user_branch_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "sys_user_branch_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "sys_user_branch_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "sys_user_branch_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(sys_user_branch_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(sys_user_branch_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "data_keys": ["sys_user_id"],
+    "sample_data": [
+      { "branch_id": "1", "sys_user_id": "1" }
+    ]
+  },
+
+  "v_my_branch_access": {
+    "type": "view",
+    "caption": ["Branch", "Branches"],
+    "tables": {
+      "branch": {
+        "columns": [
+          "branch_id",
+          "branch_name",
+          "branch_type",
+          "branch_user_id",
+          "branch_parent_id",
+          "site_id",
+          "branch_sts",
+          "branch_mtstmp",
+          "branch_muser",
+          "branch_data_mtstmp",
+          "branch_data_muser",
+          { "name":"branch_is_checked_out", "type": "int", "sqlselect": "(case branch_id when {schema}.my_current_branch_id() then 1 else 0 end)" },
+          { "name":"branch_access", "type": "varchar", "length": "10", "sqlselect": "case when branch_type='DEPLOYMENT' then 'R' when {schema}.my_user_is_publisher() = 1 then 'RW' else decode(branch_type, 'PUBLIC', 'R', 'USER', decode(branch_sts,'ACTIVE','RW','R')) end" }
+        ]
+      },
+      "site": {
+        "columns": [
+          "site_name"
+        ],
+        "join_type": "inner",
+        "join_columns": {
+          "branch.site_id": "site.site_id"
+        }
+      }
+    },
+    "where": "branch_id in (select branch_id from {schema}.branch where branch_type='PUBLIC' or branch_type='DEPLOYMENT' or ({schema}.my_user_is_publisher() = 1) or (branch_user_id = jsharmony.my_sys_user_id()))"
+  },
+
+  "v_my_branch_desc": {
+    "type": "view",
+    "caption": ["Branch", "Branches"],
+    "tables": {
+      "v_my_branch_access": {
+        "columns": [
+          "branch_id",
+          "branch_name",
+          "branch_type",
+          "branch_user_id",
+          "branch_parent_id",
+          "site_id",
+          "site_name",
+          "branch_sts",
+          "branch_mtstmp",
+          "branch_muser",
+          "branch_data_mtstmp",
+          "branch_data_muser",
+          "branch_access",
+          "branch_is_checked_out",
+          { "name":"branch_desc", "type": "varchar", "length": -1, "sqlselect": "concat(site_name,'/',(case branch_type when 'DEPLOYMENT' then 'deployment' when 'PUBLIC' then 'public' else (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=branch_user_id) end),'/',branch_name,(case branch_access when 'R' then ' (Read-only)' else '' end))" }
+        ]
+      }
+    }
+  },
+
+  "v_my_current_branch": {
+    "type": "view",
+    "caption": ["Branch", "Branches"],
+    "tables": {
+      "jsharmony.sys_user": {
+        "columns": [
+          "sys_user_id"
+        ]
+      },
+      "sys_user_branch": {
+        "join_type": "left",
+        "join_columns": {
+          "sys_user_branch.sys_user_id": "jsharmony.sys_user.sys_user_id"
+        }
+      },
+      "v_my_branch_desc": {
+        "columns": [
+          "branch_id",
+          "branch_name",
+          "branch_type",
+          "branch_parent_id",
+          "site_id",
+          "site_name",
+          "branch_access",
+          "branch_desc",
+          { "name":"new_branch_id", "type": "bigint", "sqlselect": "sys_user_branch.branch_id" },
+          { "name":"new_branch_changes", "type": "varchar", "length": 8, "sqlselect": "null" }
+        ],
+        "join_type": "left",
+        "join_columns": {
+          "sys_user_branch.branch_id": "v_my_branch_desc.branch_id"
+        }
+      }
+    },
+    "where": "jsharmony.sys_user.sys_user_id = jsharmony.my_sys_user_id()",
+    "triggers": [
+      {"on": ["update"], "exec": [
+          "errorif((inserted(new_branch_id) is not null) and (not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id))),'User does not have access to branch')",
+          "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
+          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id) where sys_user_id = jsharmony.my_sys_user_id()"
+        ]
+      },
+      {"on": ["insert"], "exec": [
+          //Verify access to source branch
+          "errorif((inserted(branch_parent_id) is not null) and not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(branch_parent_id)),'User does not have access to source branch')",
+          //Verify non-duplicate branch name
+          "errorif(exists(select * from {schema}.branch where {schema}.branch.branch_type=inserted(branch_type) and {schema}.branch.branch_name=inserted(branch_name) and ({schema}.branch.branch_type='PUBLIC' or ({schema}.branch.branch_user_id=jsharmony.my_sys_user_id()))),'The target branch name already exists')",
+          //Verify access to target branch type
+          "errorif(exists(select 1 where (inserted(branch_type)='PUBLIC' or inserted(branch_type)='DEPLOYMENT') and ({schema}.my_user_is_publisher() = 0)),'User does not have access to add public branches')",
+          //Add user branch, if not defined
+          "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
+          //Insert branch
+          "clear_insert_identity()",
+          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', $ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
+          //Set user's current branch to cloned branch
+          "update {schema}.sys_user_branch set branch_id = last_insert_identity() where sys_user_id = jsharmony.my_sys_user_id()",
+          //Add all menu / pages / media / redirect / sitemap from other branch
+          //*Copy New Branch Changes*
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, branch_{item}_action, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, branch_{item}_action, {item}_orig_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'\")",
+          //*Reset New Branch Changes*
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and {item}_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'\")"
+        ]
+      }
+    ]
+  }
+}

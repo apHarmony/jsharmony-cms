@@ -1,0 +1,19 @@
+{
+  "Site_Deployment_Target_Role": {
+    "layout":"form",
+    "popup":[800,400],
+    "table":"{schema}.deployment_target",
+    "actions":"BIUD",
+    "roles": { "WEBMASTER": "BIUD" },
+    "caption":["Deployment Target Permissions"],
+    "title":"Permissions",
+    "fields": [
+      {"control":"subform","caption":"Publish","target":"Site_Deployment_Target_Role_Publish","bindings":{"deployment_target_id":"deployment_target_id","deployment_target_role_type":"'PUBLISH'"},
+        "controlstyle":"display:inline-block; margin-right:15px;"
+      },
+      {"control":"subform","caption":"Live Preview","target":"Site_Deployment_Target_Role_Editor","bindings":{"deployment_target_id":"deployment_target_id","deployment_target_role_type":"'EDITOR'"},
+        "controlstyle":"display:inline-block;"
+      }
+    ]
+  }
+}

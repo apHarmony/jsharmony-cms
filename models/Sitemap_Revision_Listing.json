@@ -1,0 +1,26 @@
+{
+  "Sitemap_Revision_Listing": {
+    "layout":"grid",
+    "table":"{schema}.sitemap",
+    "actions":"B",
+    "roles": {"AUTHOR": "B","PUBLISHER": "B","VIEWER":"B"},
+    "caption":["Sitemap","Sitemaps"],
+    "title":"Revision History",
+    "reselectafteredit": "row",
+    "sort":["vsitemap_mtstmp"],
+    "grid_expand_search": true,
+    "hide_system_buttons" : ["clear"],
+    "rowclass":"<%=xejs.iif(datarow['sitemap_id']==jsh.App[xmodel.parent].revision_sitemap_id,'active_revision')%>",
+    "fields": [
+      {"name":"sitemap_id","caption":"ID","control":"hidden","key":true},
+      {"name":"revision_sitemap_key","caption":"Revision Key","control":"hidden","sqlwhere":"sitemap_key=@revision_sitemap_key","sqlselect":"sitemap_key"},
+      {"name":"sitemap_key","caption":"Key","control":"hidden"},
+      {"name":"sitemap_file_id","caption":"File ID","control":"hidden"},
+      {"control":"html","caption":"","cellstyle":"text-align:center;","link":"js:jsh.App[xmodel.parent].previewSitemap(xmodel.controller.form.DataSet[jsh.XExt.XModel.GetRowID(modelid, this)]);","value":"<img height='14' src='/images/icon_browse.png' class='xicon' />"},
+      {"name":"sitemap_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
+      {"name":"sitemap_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(sitemap_muser))","control":"label","actions":"B"},
+      {"name":"sitemap_name","caption":"Sitemap Name","control":"label"},
+      {"name":"sitemap_type","caption":"Type","control":"label"}
+    ]
+  }
+}

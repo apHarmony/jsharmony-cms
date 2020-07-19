@@ -1,0 +1,194 @@
+{
+  "code_deployment_target_role_type": {
+    "type": "code",
+    "caption": "Deployment Target Role Type",
+    "init_data": [
+      { "code_val": "PUBLISH", "code_txt": "Publish", "code_seq": 1 },
+      { "code_val": "EDITOR", "code_txt": "Live Preview", "code_seq": 2 }
+    ]
+  },
+
+  "code_deployment_sts": {
+    "type": "code",
+    "caption": "Deployment Status",
+    "init_data": [
+      { "code_val": "CANCEL", "code_txt": "Canceled", "code_seq": 1 },
+      { "code_val": "COMPLETE", "code_txt": "Complete", "code_seq": 2 },
+      { "code_val": "PENDING", "code_txt": "Pending", "code_seq": 4 },
+      { "code_val": "RUNNING", "code_txt": "Running", "code_seq": 5 },
+      { "code_val": "FAILED", "code_txt": "Failed", "code_seq": 6 }
+    ]
+  },
+
+  "deployment_target": {
+    "type": "table",
+    "caption": ["Deployment Target","Deployment Targets"],
+    "columns": [
+      { "name": "deployment_target_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "deployment_target_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "deployment_target_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
+      { "name": "deployment_target_publish_path", "type": "varchar", "length": 2048 },
+      { "name": "deployment_target_params", "type": "varchar", "length": -1 },
+      
+      { "name": "deployment_target_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "deployment_target_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "deployment_target_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "deployment_target_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(deployment_target_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(deployment_target_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      },
+      {
+        "on": ["delete"], "exec": [
+          "update {schema}.sys_user_site set sys_user_site_editor = null where sys_user_site_editor = deleted(deployment_target_id);",
+          "update {schema}.site set site_default_editor = null where site_default_editor = deleted(deployment_target_id);",
+          "delete from {schema}.deployment_target_role where deployment_target_id = deleted(deployment_target_id);"
+        ]
+      }
+    ]
+  },
+
+  "deployment_target_role": {
+    "type": "table",
+    "caption": ["Deployment Target Role","Deployment Target Roles"],
+    "columns": [
+      { "name": "deployment_target_role_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "deployment_target_id", "type": "bigint", "null": false, "foreignkey": { "deployment_target": "deployment_target_id" }, "actions": ["prevent_update"] },
+      { "name": "sys_role_name", "type": "varchar", "length": 16, "null": false, "foreignkey": { "jsharmony.sys_role": "sys_role_name" }, "actions": ["prevent_update"] },
+      { "name": "deployment_target_role_type", "type": "varchar", "length": 32, "foreignkey": { "code_deployment_target_role_type": "code_val" }, "null": false },
+      
+      { "name": "deployment_target_role_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "deployment_target_role_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "deployment_target_role_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "deployment_target_role_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(deployment_target_role_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(deployment_target_role_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "deployment": {
+    "type": "table",
+    "caption": ["Deployment","Deployments"],
+    "columns": [
+      { "name": "deployment_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "deployment_tag", "type": "varchar", "length": 256, "null": false, "actions": ["prevent_update"] },
+      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": "branch_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "deployment_date", "type": "datetime", "length": 7, "null": false },
+      { "name": "deployment_sts", "type": "varchar", "length": 32, "foreignkey": { "code_deployment_sts": "code_val" }, "null": false, "default": "PENDING" },
+      { "name": "deployment_target_id", "type": "bigint", "null": false, "foreignkey": { "deployment_target": "deployment_target_id" }, "actions": ["prevent_update"] },
+      { "name": "deployment_git_revision", "type": "varchar", "length": 1024 },
+      
+      { "name": "deployment_sts_tstmp", "type": "datetime", "length": 7 },
+      { "name": "deployment_sts_user", "type": "varchar", "length": 20 },
+      { "name": "deployment_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "deployment_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "deployment_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "deployment_muser", "type": "varchar", "length": 20 }
+    ],
+    "triggers": [
+      { "on": ["validate_update"], "exec": [
+          "errorif((deleted(deployment_sts)<>'PENDING') and update(deployment_date),'Can only change deployment_date for deployment_sts PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='PENDING'),'Cannot change deployment_sts back to PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='CANCEL') and (deleted(deployment_sts)<>'PENDING'),'Can only set deployment_sts to CANCEL from PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='COMPLETE') and (deleted(deployment_sts)<>'RUNNING'),'Can only set deployment_sts to COMPLETE from RUNNING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='RUNNING') and (deleted(deployment_sts)<>'PENDING'),'Can only set deployment_sts to RUNNING from PENDING');",
+          "errorif(update(deployment_sts) and (inserted(deployment_sts)='FAILED') and (deleted(deployment_sts)<>'RUNNING'),'Can only set deployment_sts to FAILED from RUNNING');"
+        ]
+      },
+      { "on": ["update", "insert"], "exec": [
+          "set(deployment_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(deployment_muser,%%%%%%jsh.map.current_user%%%%%%);",
+          "setif(update(deployment_sts),deployment_sts_tstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "setif(update(deployment_sts),deployment_sts_user,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "v_my_deployment_target": {
+    "type": "view",
+    "caption": ["Deployment Target", "Deployment Targets"],
+    "tables": {
+      "deployment_target": {
+        "columns": [
+          "deployment_target_id",
+          "deployment_target_name",
+          "deployment_target_sts",
+          "site_id",
+          "deployment_target_publish_path",
+          "deployment_target_params",
+          { "name":"deployment_target_can_editor", "type": "int", "sqlselect": "case when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='EDITOR' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1 else 0 end" },
+          { "name":"deployment_target_can_publish", "type": "int", "sqlselect": "case when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1 else 0 end" }
+        ]
+      }
+    },
+    "where": "deployment_target_id in (select deployment_target_id from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id())"
+  },
+
+  "v_my_deployment": {
+    "type": "view",
+    "caption": ["Deployment","Deployments"],
+    "tables": {
+      "deployment": {
+        "columns": [
+          "deployment_id",
+          "deployment_tag",
+          "branch_id",
+          "deployment_date",
+          "deployment_sts",
+          "deployment_target_id",
+          "deployment_git_revision",
+
+          "deployment_etstmp",
+          "deployment_euser",
+          "deployment_mtstmp",
+          "deployment_muser"
+        ]
+      },
+      "v_my_deployment_target": {
+        "columns": [
+          "site_id"
+        ],
+        "join_type": "inner",
+        "join_columns": {
+          "deployment.deployment_target_id": "v_my_deployment_target.deployment_target_id",
+          "deployment_target_can_publish": "1"
+        }
+      }
+    },
+    "triggers": [
+      {"on": ["insert"], "exec": [
+          //Verify access
+          "errorif(not exists(select 1 from {schema}.v_my_deployment_target where v_my_deployment_target.deployment_target_id=inserted(deployment_target_id) and deployment_target_can_publish=1),'No access to publish to this deployment target.');",
+          //Verify non-duplicate tag name
+          "errorif(exists(select 1 from {schema}.deployment inner join {schema}.branch on {schema}.branch.branch_id={schema}.deployment.branch_id where deployment_tag=inserted(deployment_tag) and site_id=inserted(site_id)),'Deployment Tag must be unique for the site.');",
+          "errorif(exists(select 1 from {schema}.deployment inner join {schema}.deployment_target on {schema}.deployment_target.deployment_target_id={schema}.deployment.deployment_target_id where deployment_tag=inserted(deployment_tag) and site_id=(select site_id from deployment_target where deployment_target_id=inserted(deployment_target_id))),'Deployment Tag must be unique for the site.');",
+          //Verify deployment_target site_id matches branch site_id
+          "errorif(exists(select 1 where (select site_id from {schema}.branch where branch_id=inserted(branch_id))<>(select site_id from {schema}.deployment_target where deployment_target_id=inserted(deployment_target_id))),'Deployment Target and Branch Sites do not match')",
+          //Insert branch
+          "clear_insert_identity()",
+          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_id), 'DEPLOYMENT', inserted(deployment_tag), 'ARCHIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_id)), null)",
+          //Insert deployment
+          "insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts, deployment_git_revision) values(inserted(deployment_tag), last_insert_identity(), inserted(deployment_date), inserted(deployment_target_id), 'PENDING', inserted(deployment_git_revision))",
+          //Add all menu / pages / media / redirect / sitemap from other branch
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_id) and {item}_id is not null\")"
+        ]
+      },
+      {"on": ["update"], "exec": [
+          //Verify access
+          "errorif(not exists(select 1 from {schema}.v_my_deployment_target where v_my_deployment_target.deployment_target_id=(select deployment_target_id from {schema}.deployment where deployment_id = deleted(deployment_id)) and deployment_target_can_publish=1),'No access to cancel to this deployment.');",
+          "update {schema}.deployment set deployment_sts = 'CANCEL' where deployment_id = deleted(deployment_id)"
+        ]
+      }
+    ]
+  }
+}

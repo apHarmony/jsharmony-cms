@@ -1,0 +1,6 @@
+{
+  "menu_items": [
+    {"menu_item_id":1,"menu_item_parent_id":null,"menu_item_path":"/1/","menu_item_text":"Home","menu_item_type":"TEXT","menu_item_link_type":"PAGE","menu_item_link_dest":"1"},
+    {"menu_item_id":2,"menu_item_parent_id":null,"menu_item_path":"/2/","menu_item_text":"Style Guide","menu_item_type":"TEXT","menu_item_link_type":"PAGE","menu_item_link_dest":"2"}
+  ]
+}

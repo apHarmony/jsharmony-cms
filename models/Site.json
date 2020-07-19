@@ -1,0 +1,20 @@
+{
+  "Site": {
+    "layout":"form",
+    "table":"{schema}.site",
+    "title": {
+      "insert": "Add Site",
+      "update": { "sql": "select concat('Site :: ',site_name) from {schema}.site where site_id=@site_id" }
+    },
+    "caption":["Site","Sites"],
+    "popup": [960, 600],
+    "roles": { "WEBMASTER": "BIUD" },
+    "fields": [
+      {"name":"site_name","caption":"Site Name"},
+      {"name":"site_sts","caption":"Status"},
+      {"name":"site_default_editor","caption":"Default Editor Live Preview","control":"dropdown","lov":{ "blank": "(None)", "parent":"site_id", "sql2": "select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and deployment_target_sts='ACTIVE' order by deployment_target_name" }},
+
+      {"name":"Site_Deployment_Target_Listing","control":"subform","controlstyle":"width:860px;margin-top:20px;","target":"Site_Deployment_Target_Listing","caption":"Deployment Targets"}
+    ]
+  }
+}

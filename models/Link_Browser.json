@@ -1,0 +1,24 @@
+{
+  "Link_Browser_Base":{
+    "layout": "form", 
+    "title": "",
+    "unbound":true,
+    "actions": "BIUD",
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
+    "caption": [ 0, "Link", "Links" ],
+	  "tabpos":"bottom",
+	  "tabs":[
+	    {"name":"Pages","target":"Page_Browser_Tab","bindings":{}},
+  	  {"name":"Media","target":"Media_Browser_Tab","bindings":{}}
+    ],
+    "tabpanelstyle": "padding-top:15px;",
+    "css":[
+      ".xform_title { display:none !important; }"
+    ],
+    "hide_system_buttons": ["delete","print","help"],
+	  "popup": [1100, 600]
+  },
+  "Link_Browser":{
+    "inherits": "Link_Browser_Base"
+  }
+}
