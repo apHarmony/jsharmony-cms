@@ -70,16 +70,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
-          'searchreplace visualblocks code fullscreen wordcount jshwebsnippet',
-          'insertdatetime media table paste code noneditable jsharmony'
+          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms',
+          'insertdatetime media table paste code noneditable'
         ],
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyComponents jsHarmonyCmsView',
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet jsHarmonyCmsComponent jsHarmonyCmsView',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
           view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
-          insert: { title: 'Insert', items: 'image link media jshwebsnippet codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
+          insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | forecolor backcolor | removeformat' },
           tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
           table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },

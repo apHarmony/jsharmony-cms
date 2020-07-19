@@ -4509,6 +4509,10 @@ exports = module.exports = function(jsh, cms, editor){
     widgets: {
       name: 'material_widgets',
       html: '<span class="material-icons" style="font-family: \'Material Icons\' !important;font-size:18px;">widgets</span>'
+    },
+    search: {
+      name: 'search',
+      html: '<span class="material-icons" style="font-family: \'Material Icons\' !important;font-size:18px;">search</span>'
     }
   };
 
@@ -4529,9 +4533,9 @@ exports = module.exports = function(jsh, cms, editor){
    * @public
    */
   this.register = function() {
-    if (tinymce.PluginManager.get('jsharmony') != undefined) return;
+    if (tinymce.PluginManager.get('jsHarmonyCms') != undefined) return;
 
-    tinymce.PluginManager.add('jsharmony', function(editor, url) {
+    tinymce.PluginManager.add('jsHarmonyCms', function(editor, url) {
       new JsHarmonyComponentPlugin(editor);
     });
   }
@@ -4548,28 +4552,88 @@ exports = module.exports = function(jsh, cms, editor){
   }
 
   /**
-   * Create the menu button for picking components to insert.
+   * Create the menu items used by the toolbar buttons, nested menu, etc..
+   * @private
+   * @param {ComponentInfo[]} componentInfo
+   * @returns {object[]}
+   */
+  JsHarmonyComponentPlugin.prototype.createComponentMenuItems = function(componentInfo) {
+    var self = this;
+    return _.map(componentInfo, function(item) {
+      return {
+        type: 'menuitem',
+        text: item.menuLabel,
+        icon: item.iconId,
+        onAction: function() { self.insertComponent(item.componentType); }
+      }
+    });
+  }
+
+  /**
+   * Create the nested menu for picking components to insert.
    * @private
    * @param {ComponentInfo[]} componentInfo
    */
-  JsHarmonyComponentPlugin.prototype.createComponentInsertMenu = function(componentInfo) {
-    var self = this;
-
+  JsHarmonyComponentPlugin.prototype.createComponentMenuButton = function(componentInfo) {
     if(!componentInfo || !componentInfo.length) return;
 
-    self._editor.ui.registry.addMenuButton('jsHarmonyComponents', {
+    var self = this;
+    this._editor.ui.registry.addNestedMenuItem('jsHarmonyCmsComponent', {
+      text: 'Component',
       icon: ICONS.widgets.name,
-      text: 'Components',
+      getSubmenuItems: function() {
+        return self.createComponentMenuItems(componentInfo);
+      }
+    });
+  }
+
+  /**
+   * Create the toolbar menu button for picking components to insert.
+   * @private
+   * @param {ComponentInfo[]} componentInfo
+   */
+  JsHarmonyComponentPlugin.prototype.createComponentToolbarButton = function(componentInfo) {
+    if(!componentInfo || !componentInfo.length) return;
+
+    var self = this;
+    self._editor.ui.registry.addMenuButton('jsHarmonyCmsComponent', {
+      icon: ICONS.widgets.name,
+      text: 'Component',
       fetch: function(cb) {
-        items = _.map(componentInfo, function(item) {
-          return {
+        cb(self.createComponentMenuItems(componentInfo));
+      }
+    });
+  }
+
+  /**
+   * Create the "View" toolbar menu button, for hiding the menu and viewing source code.
+   * @private
+   * @param {ComponentInfo[]} componentInfo
+   */
+  JsHarmonyComponentPlugin.prototype.createViewToolbarButton = function(componentInfo) {
+    var self = this;
+    self._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
+      text: 'View',
+      icon: ICONS.search.name,
+      fetch: function (cb) {
+        return cb([
+          {
             type: 'menuitem',
-            text: item.menuLabel,
-            icon: item.iconId,
-            onAction: function() { self.insertComponent(item.componentType); }
-          }
-        });
-        cb(items)
+            icon: 'new-tab',
+            text: 'Toggle Menu',
+            onAction: function () {
+              $(self._editor.editorContainer).find('[role=menubar]').toggle();
+            }
+          },
+          {
+            type: 'menuitem',
+            icon: 'sourcecode',
+            text: 'Source Code',
+            onAction: function () {
+              self._editor.execCommand('mceCodeEditor');
+            }
+          },
+        ]);
       }
     });
   }
@@ -4727,24 +4791,11 @@ exports = module.exports = function(jsh, cms, editor){
       self._editor.ui.registry.addIcon(ICONS[key].name, ICONS[key].html);
     }
 
+    //Create menu buttons, toolbar buttons, and context menu buttons
     this.createContextToolbar(componentInfo);
-    this.createComponentInsertMenu(componentInfo);
-
-    //Toggle Menu Button
-    self._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
-      text: 'View',
-      fetch: function (cb) {
-        return cb([
-          {
-            type: 'menuitem',
-            text: 'Toggle Menu',
-            onAction: function () {
-              $(self._editor.editorContainer).find('[role=menubar]').toggle();
-            }
-          },
-        ]);
-      }
-    });
+    this.createComponentToolbarButton(componentInfo);
+    this.createViewToolbarButton();
+    this.createComponentMenuButton(componentInfo);
 
     this._editor.on('undo', function(info) { self.onUndoRedo(info); });
     this._editor.on('redo', function(info) { self.onUndoRedo(info); });
@@ -4935,16 +4986,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
-          'searchreplace visualblocks code fullscreen wordcount jshwebsnippet',
-          'insertdatetime media table paste code noneditable jsharmony'
+          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms',
+          'insertdatetime media table paste code noneditable'
         ],
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyComponents jsHarmonyCmsView',
+        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet jsHarmonyCmsComponent jsHarmonyCmsView',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
           view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
-          insert: { title: 'Insert', items: 'image link media jshwebsnippet codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
+          insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | forecolor backcolor | removeformat' },
           tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
           table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
