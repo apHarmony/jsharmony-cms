@@ -201,14 +201,14 @@ Dialog.prototype.makeDialog = function(id, config) {
   var $form = this._jsh.$('<div class="xdialogbox"></div>')
     .addClass(this._id)
     .attr('id', this._id)
-    .css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null)
-    .css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null)
-    .css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null)
-    .css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null)
-    .css('height',  _.isNumber(config.height) ? config.height + 'px' : null)
-    .css('width',  _.isNumber(config.width) ? config.width + 'px' : null)
     .addClass(config.cssClass || '');
-
+  if(config.maxWidth) $form.css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null);
+  if(config.maxHeight) $form.css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null);
+  if(config.minWidth) $form.css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null);
+  if(config.minHeight) $form.css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null);
+  if(config.height) $form.css('height',  _.isNumber(config.height) ? config.height + 'px' : null);
+  if(config.width) $form.css('width',  _.isNumber(config.width) ? config.width + 'px' : null);
+    
   var $wrapper = this._jsh.$('<div style="display: none;" class="xdialogbox-wrapper"></div>')
     .attr('id', id)
     .append($form);

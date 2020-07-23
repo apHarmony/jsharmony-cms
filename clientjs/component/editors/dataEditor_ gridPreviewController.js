@@ -242,7 +242,7 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
 
 DataEditor_GridPreviewController.prototype.showOverlay = function() {
   this.$dialogWrapper.find('.refreshLoadingOverlay').remove();
-  this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="position:absolute;top:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
+  this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="position:absolute;top:0px;left:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
 }
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {

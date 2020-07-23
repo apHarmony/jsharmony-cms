@@ -309,6 +309,7 @@ jsh.App[modelid] = new (function(){
       jfiles.on('click', function(e){ 
         XExt.HideContextMenu();
         _this.selectFile($(this).data('key'));
+        $(this).focus();
         e.preventDefault();
         e.stopImmediatePropagation();
       });
@@ -322,6 +323,11 @@ jsh.App[modelid] = new (function(){
         e.preventDefault();
         e.stopPropagation();
         XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', $(this).data('key'));
+      });
+      jfiles.on('keyup', function(e){
+        if(e.keyCode==46){ //Delete key
+          _this.deleteFile($(this).data('key'));
+        }
       });
       XExt.bindDragSource(jfiles);
     }

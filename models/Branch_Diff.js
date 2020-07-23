@@ -99,7 +99,7 @@ jsh.App[modelid] = new (function(){
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id  });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { source: 'branch_diff', branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id  });
   }
 
   this.previewMedia = function(obj){

@@ -2,7 +2,7 @@
   <div class="<%=model.class%>_file_listing_scroll">
     <div class="<%=model.class%>_file_tile_container">
       <# _.each(media_files, function(media_file){ #>
-        <div class="<%=model.class%>_file_tile" data-key="<#=media_file.media_key#>" data-value="media_key:<#=media_file.media_key#>">
+        <div class="<%=model.class%>_file_tile" tabindex="0" data-key="<#=media_file.media_key#>" data-value="media_key:<#=media_file.media_key#>">
           
           <# if(media_file.media_width && media_file.media_height){ #><img src="<%=jsh._BASEURL%>_funcs/media/<#=media_file.media_key#>/file_tile?media_file_id=<#=media_file.media_file_id#>" />
           <# } else { #><img src="<%=jsh._BASEURL%>images/icon_file.svg" class="default" /><# } #>

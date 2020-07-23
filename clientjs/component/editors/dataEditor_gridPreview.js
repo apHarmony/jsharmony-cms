@@ -67,7 +67,6 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,
-    maxHeight: 800,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
   });

@@ -272,7 +272,7 @@
         <# }); #>
 
         <div>
-          <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], (new_media.ext||'').toLowerCase())){ #>
+          <# if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], (new_media.ext||'').toLowerCase())){ #>
             <div class="diff_media_preview preview_media" data-media_key="<#=media_key#>" data-media_id="<#=new_media.id#>" data-media_ext="<#=new_media.ext#>" data-media_width="<#=new_media.width#>" data-media_height="<#=new_media.height#>">
               <#=desc#>:<br/>
               <img src="<%=jsh._BASEURL%>_funcs/media/<#=media_key#>/file_preview?media_id=<#=new_media.id#>" />

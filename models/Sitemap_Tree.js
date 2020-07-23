@@ -736,7 +736,7 @@ jsh.App[modelid] = new (function(){
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    var editorParams = { rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' };
+    var editorParams = { source: 'sitemap', rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' };
     if(options.readonly) editorParams.page_id = page_id;
 
     jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, editorParams);

@@ -128,6 +128,12 @@ module.exports = exports = function(module, funcs){
         var fpath = funcs.getMediaFile(media.media_file_id, media.media_ext, thumbnail_name, thumbnail_config);
         var fname = path.basename(media.media_filename);
 
+        if(thumbnail_config && thumbnail_config.format){
+          var fext = path.extname(fname);
+          if(fext.length > 1) fname = fname.substr(0, fname.length - fext.length) + '.' + thumbnail_config.format;
+          serveoptions.mime_override = '.' + thumbnail_config.format;
+        }
+
         var transformMedia = function(transform_callback){
           if('resize' in thumbnail_config) HelperImg.resize(srcpath, fpath, thumbnail_config.resize, thumbnail_config.format, transform_callback);
           else if('crop' in thumbnail_config) HelperImg.crop(srcpath, fpath, thumbnail_config.format, transform_callback);
@@ -268,7 +274,7 @@ module.exports = exports = function(module, funcs){
 
           //Get image width / height
           function(cb){
-            if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif'], media_ext)) return cb();
+            if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media_ext)) return cb();
             HelperImg.size(tmp_file_path, function(err, size){
               if(err || !size || !size.width || !size.height) return cb();
               media_width = size.width;

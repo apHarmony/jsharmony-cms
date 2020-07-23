@@ -148,8 +148,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
-    dialogId: modelConfig.id,
-    maxHeight: 800
+    dialogId: modelConfig.id
   });
 
   var $toolbar;

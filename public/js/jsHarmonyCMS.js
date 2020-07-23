@@ -1211,14 +1211,14 @@ Dialog.prototype.makeDialog = function(id, config) {
   var $form = this._jsh.$('<div class="xdialogbox"></div>')
     .addClass(this._id)
     .attr('id', this._id)
-    .css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null)
-    .css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null)
-    .css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null)
-    .css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null)
-    .css('height',  _.isNumber(config.height) ? config.height + 'px' : null)
-    .css('width',  _.isNumber(config.width) ? config.width + 'px' : null)
     .addClass(config.cssClass || '');
-
+  if(config.maxWidth) $form.css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null);
+  if(config.maxHeight) $form.css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null);
+  if(config.minWidth) $form.css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null);
+  if(config.minHeight) $form.css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null);
+  if(config.height) $form.css('height',  _.isNumber(config.height) ? config.height + 'px' : null);
+  if(config.width) $form.css('width',  _.isNumber(config.width) ? config.width + 'px' : null);
+    
   var $wrapper = this._jsh.$('<div style="display: none;" class="xdialogbox-wrapper"></div>')
     .attr('id', id)
     .append($form);
@@ -2227,7 +2227,7 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
 
 DataEditor_GridPreviewController.prototype.showOverlay = function() {
   this.$dialogWrapper.find('.refreshLoadingOverlay').remove();
-  this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="position:absolute;top:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
+  this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="position:absolute;top:0px;left:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
 }
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
@@ -2785,8 +2785,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
-    dialogId: modelConfig.id,
-    maxHeight: 800
+    dialogId: modelConfig.id
   });
 
   var $toolbar;
@@ -3070,7 +3069,6 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,
-    maxHeight: 800,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
   });
@@ -4018,27 +4016,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     $element.empty().append(rendered);
 
-    //Custom Double-Click handler to prevent issue where double-clicking on dialog (that closes after one click) triggers double-click on component underneath
-    var lastClickTime = 0;
-    var lastClickMouseX = 0;
-    var lastClickMouseY = 0;
-    $element.off('click.cmsComponent').on('click.cmsComponent', function(e){
-      var diffX = Math.abs(jsh.mouseX - lastClickMouseX);
-      var diffY = Math.abs(jsh.mouseY - lastClickMouseY);
-      var curTime = new Date().getTime();
-      var clickTimeDiff = curTime - lastClickTime;
-      lastClickTime = curTime;
-      
-      if((diffX <= 8) && (diffY <= 8) && (clickTimeDiff <= jsh.XExt.DOUBLECLICK_TIMEOUT)){
-        //Double-click
-        lastClickTime = 0;
-        var hasData = ((config.data || {}).fields || []).length > 0;
-        var hasProperties = ((config.properties || {}).fields || []).length > 0;
-        if(hasData) self.openDataEditor();
-        else if(hasProperties) self.openPropertiesEditor();
-      }
-      lastClickMouseX = jsh.mouseX;
-      lastClickMouseY = jsh.mouseY;
+    $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function(e){
+      var hasData = ((config.data || {}).fields || []).length > 0;
+      var hasProperties = ((config.properties || {}).fields || []).length > 0;
+      if(hasData) self.openDataEditor();
+      else if(hasProperties) self.openPropertiesEditor();
     });
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props);

@@ -199,27 +199,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     $element.empty().append(rendered);
 
-    //Custom Double-Click handler to prevent issue where double-clicking on dialog (that closes after one click) triggers double-click on component underneath
-    var lastClickTime = 0;
-    var lastClickMouseX = 0;
-    var lastClickMouseY = 0;
-    $element.off('click.cmsComponent').on('click.cmsComponent', function(e){
-      var diffX = Math.abs(jsh.mouseX - lastClickMouseX);
-      var diffY = Math.abs(jsh.mouseY - lastClickMouseY);
-      var curTime = new Date().getTime();
-      var clickTimeDiff = curTime - lastClickTime;
-      lastClickTime = curTime;
-      
-      if((diffX <= 8) && (diffY <= 8) && (clickTimeDiff <= jsh.XExt.DOUBLECLICK_TIMEOUT)){
-        //Double-click
-        lastClickTime = 0;
-        var hasData = ((config.data || {}).fields || []).length > 0;
-        var hasProperties = ((config.properties || {}).fields || []).length > 0;
-        if(hasData) self.openDataEditor();
-        else if(hasProperties) self.openPropertiesEditor();
-      }
-      lastClickMouseX = jsh.mouseX;
-      lastClickMouseY = jsh.mouseY;
+    $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function(e){
+      var hasData = ((config.data || {}).fields || []).length > 0;
+      var hasProperties = ((config.properties || {}).fields || []).length > 0;
+      if(hasData) self.openDataEditor();
+      else if(hasProperties) self.openPropertiesEditor();
     });
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props);
