@@ -479,7 +479,7 @@ describe('Merges - Matrix', function() {
   // pull page state as JS object and compare values
   // can compare multiple entries, but we only use one here
   function assertBranchState(branch_id, state, label, done) {
-    var sql = "select branch_page_action action, page_id id, page_orig_id orig_id from cms.branch_page where branch_id="+branch_id+"";
+    var sql = "select branch_page_action as action, page_id id, page_orig_id orig_id from cms.branch_page where branch_id="+branch_id+"";
     db.Recordset('', sql, [], {}, function (err, dbrslt, stats) {
       // log: async test exceptions don't appear under the right test heading
       // providing a message to deepStrictEqual doesn't print the diff.
@@ -660,7 +660,9 @@ describe('Merges - Matrix', function() {
 
   describe("Conflicts", function() {
 
-    before(resetBranch(testDstBranchId));
+    before(function(done) {
+      resetBranch(testDstBranchId)(done);
+    });
 
     describe("Matrix", function() {
       conflicts.forEach(function(row, dstIndex) {
