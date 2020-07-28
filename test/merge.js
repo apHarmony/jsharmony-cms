@@ -140,7 +140,7 @@ describe('Merges', function() {
   it('database initialized', function(done) {
     var sql = "select count(*) from cms.branch where branch_name='Merge Test Data: Base Branch';";
     db.Scalar('', sql, [], {}, function (err, dbrslt, stats) {
-      assert.strictEqual(dbrslt, 1, "test branch should exist");
+      assert.strictEqual(parseInt(dbrslt), 1, "test branch should exist");
       assert.notStrictEqual(testBaseBranchId, -1, "base branch id should be captured")
       assert.notStrictEqual(testEditBranchId, -1, "edit branch id should be captured")
       done(); 
