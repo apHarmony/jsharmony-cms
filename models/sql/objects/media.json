@@ -12,7 +12,8 @@
       { "code_val": "LOGO", "code_txt": "Logo", "code_seq": 6 },
       { "code_val": "PHOTO", "code_txt": "Photo", "code_seq": 7 },
       { "code_val": "SCREENSHOT", "code_txt": "Screenshot", "code_seq": 8 },
-      { "code_val": "OTHER", "code_txt": "Other", "code_seq": 9 }
+      { "code_val": "VIDEO", "code_txt": "Video", "code_seq": 9 },
+      { "code_val": "OTHER", "code_txt": "Other", "code_seq": 10 }
     ]
   },
 
