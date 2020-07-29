@@ -2291,11 +2291,11 @@ DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId
  * @returns {number}
  */
 DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
-  var maxItem =  _.max(this._dataStore.getDataArray(), function(item) {
-    return typeof item.sequence == 'number' ? item.sequence : -1;
+  var maxItem =  _.maxBy(this._dataStore.getDataArray(), function(item) {
+    return _.isNumber(item.sequence) ? item.sequence : -1;
   });
   if(!maxItem) return 1;
-  return typeof maxItem.sequence == 'number' ? maxItem.sequence + 1 : 0;
+  return  _.isNumber(maxItem.sequence) ? maxItem.sequence + 1 : 0;
 }
 
 /**
