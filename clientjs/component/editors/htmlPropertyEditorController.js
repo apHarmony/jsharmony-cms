@@ -121,7 +121,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons',
+        toolbar: 'backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons',
         valid_elements : 'a,strong/b,p,span[style|class],p[*],img[*],br[*]',
         plugins: ['link image charmapmaterialicons'],
         menubar: false,

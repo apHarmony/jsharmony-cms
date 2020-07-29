@@ -73,14 +73,14 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms',
           'insertdatetime media table paste code noneditable'
         ],
-        toolbar: 'formatselect | forecolor backcolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView',
+        toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
           view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
-          format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | forecolor backcolor | removeformat' },
+          format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
           table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
           help: { title: 'Help', items: 'help' }
@@ -128,6 +128,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
             if(_this.onEndEdit) _this.onEndEdit(editor);
           });
+          //Override background color icon
+          var allIcons = editor.ui.registry.getAll();
+          editor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
         }
       });
 

@@ -163,7 +163,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     // events to work correctly.
     $toolbar = self._jsh.$('<div class="jsharmony_cms_content_editor_toolbar"></div>')
       .css('position', 'fixed')
-      .css('top', '37px')
+      .css('top', '0px')
       .css('left', '0')
       .css('width', '100%')
       .css('z-index', '999999');
