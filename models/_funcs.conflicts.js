@@ -556,7 +556,7 @@ module.exports = exports = function(module, funcs){
         async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
           if(!branch_item.conflicts) return branch_item_cb();
 
-          var sql = "select {item}_key as key, {item}_id id, {item}_orig_id orig_id\
+          var sql = "select {item}_key as \"key\", {item}_id id, {item}_orig_id orig_id\
             from {tbl_item}\
             where {item}.{item}_key in \
                 (select {item}_key \
