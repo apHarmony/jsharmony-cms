@@ -348,6 +348,34 @@ exports = module.exports = function(jsh, cms, editor){
     this.createViewToolbarButton();
     this.createComponentMenuButton(componentInfo);
 
+    /*
+    this._editor.on('contextmenu', function(e){
+      if(!e.target) return;
+
+      var contextMenus = self._editor.ui.registry.getAll().contextMenus;
+      var activeMenus = false;
+      if(self._editor.settings.contextmenu) activeMenus = (self._editor.settings.contextmenu||'').split(' ');
+      var menus = [];
+      for(var menuName in contextMenus){
+        if(activeMenus && !_.includes(activeMenus, menuName)) continue;
+        var items = contextMenus[menuName].update(e.target);
+        if(items && items.length){
+          var ignoreMenu = false;
+          //Do not show link toolbar, if no link exists and no selection exists
+          if(menuName=='link'){
+            if(items.indexOf('unlink')<0) ignoreMenu = true;
+          }
+          
+          if(!ignoreMenu) menus.push(menuName);
+        }
+      }
+      //No context menus will be triggered by TinyMCE
+      if(!menus.length){
+        e.stopImmediatePropagation();
+      }
+    });
+    */
+
     this._editor.on('undo', function(info) { self.onUndoRedo(info); });
     this._editor.on('redo', function(info) { self.onUndoRedo(info); });
 

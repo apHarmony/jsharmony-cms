@@ -241,13 +241,20 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
 }
 
 DataEditor_GridPreviewController.prototype.showOverlay = function() {
-  this.$dialogWrapper.find('.refreshLoadingOverlay').remove();
-  this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="position:absolute;top:0px;left:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
+  var joverlay = this.$dialogWrapper.find('.refreshLoadingOverlay');
+  if(joverlay.length){
+    joverlay.stop(true);
+    joverlay.show();
+    joverlay.css('opacity', 1);
+  }
+  else {
+    this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="opacity:1;position:absolute;top:0px;left:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
+  }
 }
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
   var self = this;
-  this.$dialogWrapper.find('.refreshLoadingOverlay').fadeOut(function(){
+  this.$dialogWrapper.find('.refreshLoadingOverlay').stop().fadeOut(function(){
     self.jsh.$(this).remove();
   });
 }
@@ -256,7 +263,7 @@ DataEditor_GridPreviewController.prototype.hideOverlay = function() {
  * Refresh the grid.
  * @private
  */
-DataEditor_GridPreviewController.prototype.forceRefresh = function() {
+DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
 
   // Need to maintain the scroll position
   // after the grid re-renders
@@ -267,9 +274,16 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function() {
   self.showOverlay();
   var controller = self.xModel.controller;
   controller.editablegrid.CurrentCell = undefined;
-  controller.Refresh(function(){
+  controller.grid.Load(undefined, undefined, function(){
+    if(cb){
+      if(cb()===false){ //Do not hide overlay
+        self.$dialogWrapper.scrollTop(scrollTop);
+        return;
+      }
+    }
     self.hideOverlay();
     self.$dialogWrapper.scrollTop(scrollTop);
+    
   });
 }
 
@@ -385,18 +399,11 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
     self.showOverlay();
 
     self._dataStore.deleteItem(keys[self._idFieldName]);
-    var index = self._apiData.findIndex(function(item) { return item[self._idFieldName] === keys[self._idFieldName]});
-    if (index > -1) {
-      self._apiData.splice(index, 1);
-    }
-    self.dataUpdated();
+    //Commit Data
+    self._apiData.splice(0, self._apiData.length);
+    self._dataStore.getDataArray().forEach(a => self._apiData.push(a));
 
-    setTimeout(function() {
-      // Re-render to ensure order-based logic
-      // is applied (EJS templates may depend on
-      // grid context variables such as row number)
-      setTimeout(function() { self.forceRefresh() });
-    });
+    self.dataUpdated();
     return false;
   }
 
@@ -434,6 +441,17 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   dateEditor.open(this._dataStore.getDataItem(itemId), this._properties || {},  function(updatedData) {
       _.assign(currentData, updatedData)
+      var dataId = currentData[self._idFieldName];
+      var rowId = self.getRowIdFromItemId(dataId);
+
+      for(var key in currentData){
+        if(key in self.xModel.fields){
+          var oldval = self.xModel.get(key, rowId);
+          if(oldval !== currentData[key]){
+            self.xModel.set(key, updatedData[key], rowId);
+          }
+        }
+      }
       self.updateModelDataFromDataStore(rowId);
       self.dataUpdated();
       self.renderRow(currentData);
@@ -448,16 +466,14 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
  * @param {number} rowId - the ID of the row to delete.
  */
 DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
-  this.xModel.controller.DeleteRow(rowId);
-
   var self = this;
-  self.jsh.$('body').one('click', '.xdialogbox.xconfirmbox input[type="button"]', function(e) {
-    var buttonValue = self.jsh.$(e.target).closest('input[type="button"]').attr('value');
-    if (buttonValue === 'Yes') {
-      setTimeout(function() {
-        self.forceCommit();
-      });
-    }
+  self.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
+    //Perform Delete
+    self.xModel.controller.DeleteRow(rowId, { force: true });
+    setTimeout(function() {
+      self.forceCommit();
+      setTimeout(function() { self.forceRefresh() });
+    });
   });
 }
 
@@ -473,32 +489,29 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
   var template =
-        '<div tabindex="0" data-component-template="gridRow">' +
-          '<div class="toolbar">' +
-            '<button data-component-part="moveItem" data-dir="prev">' +
-              '<span class="material-icons" style="transform: rotate(-90deg)">' +
-                'chevron_right' +
-              '</span>' +
-            '</button>' +
-            '<button data-component-part="moveItem" data-dir="next">' +
-              '<span class="material-icons" style="transform: rotate(90deg)">' +
-                'chevron_right' +
-              '</span>' +
-            '</button>' +
-            '<button data-component-part="editButton" data-allowReadOnly>' +
-              '<span class="material-icons">' +
-                'edit' +
-              '</span>' +
-            '</button>' +
-            '<button data-component-part="deleteItem">' +
-              '<span class="material-icons">' +
-                'delete' +
-              '</span>' +
-            '</button>' +
-          '</div>' +
-          '<div data-component-part="preview"></div>' +
-        '</div>'
-
+      '<div class="toolbar">' +
+        '<button data-component-part="moveItem" data-dir="prev">' +
+          '<span class="material-icons" style="transform: rotate(-90deg)">' +
+            'chevron_right' +
+          '</span>' +
+        '</button>' +
+        '<button data-component-part="moveItem" data-dir="next">' +
+          '<span class="material-icons" style="transform: rotate(90deg)">' +
+            'chevron_right' +
+          '</span>' +
+        '</button>' +
+        '<button data-component-part="editButton" data-allowReadOnly>' +
+          '<span class="material-icons">' +
+            'edit' +
+          '</span>' +
+        '</button>' +
+        '<button data-component-part="deleteItem">' +
+          '<span class="material-icons">' +
+            'delete' +
+          '</span>' +
+        '</button>' +
+      '</div>' +
+      '<div data-component-part="preview"></div>'
   $row.empty().append(template);
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
