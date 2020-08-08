@@ -81,7 +81,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
-          tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
+          tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
           table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
           help: { title: 'Help', items: 'help' }
         },
