@@ -18,7 +18,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 var Helper = require('jsharmony/Helper');
 var HelperFS = require('jsharmony/HelperFS');
-var HelperImg = require('jsharmony/HelperImg');
 var multiparty = require('jsharmony/lib/multiparty');
 var _ = require('lodash');
 var path = require('path');
@@ -135,9 +134,9 @@ module.exports = exports = function(module, funcs){
         }
 
         var transformMedia = function(transform_callback){
-          if('resize' in thumbnail_config) HelperImg.resize(srcpath, fpath, thumbnail_config.resize, thumbnail_config.format, transform_callback);
-          else if('crop' in thumbnail_config) HelperImg.crop(srcpath, fpath, thumbnail_config.format, transform_callback);
-          else if('format' in thumbnail_config) HelperImg.resample(srcpath, fpath, thumbnail_config.format, transform_callback);
+          if('resize' in thumbnail_config) jsh.Extensions.image.resize(srcpath, fpath, thumbnail_config.resize, thumbnail_config.format, transform_callback);
+          else if('crop' in thumbnail_config) jsh.Extensions.image.crop(srcpath, fpath, thumbnail_config.format, transform_callback);
+          else if('format' in thumbnail_config) jsh.Extensions.image.resample(srcpath, fpath, thumbnail_config.format, transform_callback);
         }
 
         var serveFile = function(serve_callback){
@@ -275,7 +274,7 @@ module.exports = exports = function(module, funcs){
           //Get image width / height
           function(cb){
             if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media_ext)) return cb();
-            HelperImg.size(tmp_file_path, function(err, size){
+            jsh.Extensions.image.size(tmp_file_path, function(err, size){
               if(err || !size || !size.width || !size.height) return cb();
               media_width = size.width;
               media_height = size.height;
@@ -288,11 +287,11 @@ module.exports = exports = function(module, funcs){
             var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
             if(!media_width || !media_height) return cb();
             if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
-              HelperImg.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
+              jsh.Extensions.image.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
                 if(err) return cb(err);
                 media_height = null;
                 media_width = null;
-                HelperImg.size(tmp_file_path, function(err, size){
+                jsh.Extensions.image.size(tmp_file_path, function(err, size){
                   if(err || !size || !size.width || !size.height) return cb();
                   media_width = size.width;
                   media_height = size.height;
@@ -426,7 +425,7 @@ module.exports = exports = function(module, funcs){
             
             //Get image width / height
             function(cb){
-              HelperImg.size(tmp_file_path, function(err, size){
+              jsh.Extensions.image.size(tmp_file_path, function(err, size){
                 if(err || !size || !size.width || !size.height) return cb();
                 media_width = size.width;
                 media_height = size.height;
@@ -439,11 +438,11 @@ module.exports = exports = function(module, funcs){
               var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
               if(!media_width || !media_height) return cb();
               if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
-                HelperImg.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
+                jsh.Extensions.image.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
                   if(err) return cb(err);
                   media_height = null;
                   media_width = null;
-                  HelperImg.size(tmp_file_path, function(err, size){
+                  jsh.Extensions.image.size(tmp_file_path, function(err, size){
                     if(err || !size || !size.width || !size.height) return cb();
                     media_width = size.width;
                     media_height = size.height;

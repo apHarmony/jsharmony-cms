@@ -37,7 +37,7 @@ function jsHarmonyCMSConfig(){
 
   this.media_thumbnails = {
     file_tile: { resize: [150, 150], format: "jpg" },
-    file_preview: { resize: [300, 300] },
+    file_preview: { resize: [300, 300], format: "jpg" },
     small: { resize: [512, 384] },
     medium: { resize: [1024, 768] },
     large: { resize: [2048, 1538] },

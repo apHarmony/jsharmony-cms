@@ -94,7 +94,7 @@ jsHarmonyCMS.prototype.Init = function(cb){
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'publish_log'));
 
   if(!_.isEmpty(_this.Config.media_thumbnails)){
-    jsh.TestImageMagick('jsHarmonyCMS > Media Thumbnails');
+    jsh.Extensions.logDependency('image', 'jsHarmonyCMS > Media Thumbnails');
   }
 
   jsh.Config.onServerReady.push(function (cb, servers){
