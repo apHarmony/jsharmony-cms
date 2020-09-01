@@ -13,7 +13,7 @@
     "oninit": "_this.oninit();",
     "onload": "_this.onload();",
     "buttons":[
-      { "name":"configureSitemaps", "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "WEBMASTER": "U" } },
+      { "name":"configureSitemaps", "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "PUBLISHER": "U" } },
       { "name":"saveSitemap", "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
     ],
     "fields":[
