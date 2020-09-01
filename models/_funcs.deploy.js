@@ -341,7 +341,10 @@ module.exports = exports = function(module, funcs){
           var git_branch = Helper.ReplaceAll(publish_params.git_branch, '%%%SITE_ID%%%', deployment.site_id);
           var deployment_git_revision = (deployment.deployment_git_revision||'');
           function gitExec(git_cmd, params, cb, exec_options){
-            return shellExec(path.join(git_path, git_cmd), params, cb, exec_options);
+            return shellExec(path.join(git_path, git_cmd), params, function(err, rslt){
+              if(err) return cb(new Error('Git Error: ' + err.toString()), rslt);
+              return cb(err, rslt);
+            }, exec_options);
           }
 
           var farr = [];
@@ -497,7 +500,17 @@ module.exports = exports = function(module, funcs){
                       funcs.deploy_log_info(deployment_id, 'Initializing git in publish path: '+publish_path);
                       gitExec('git', ['init','-q'], function(err, rslt){
                         if(err) return git_cb(err);
-                        return git_cb();
+                        //Set git email
+                        funcs.deploy_log_info(deployment_id, 'Setting git email');
+                        gitExec('git', ['config','user.email','cms@localhost'], function(err, rslt){
+                          if(err) return git_cb(err);
+                          //Set git user
+                          funcs.deploy_log_info(deployment_id, 'Setting git user');
+                          gitExec('git', ['config','user.name','CMS'], function(err, rslt){
+                            if(err) return git_cb(err);
+                            return git_cb();
+                          });
+                        });
                       });
                     });
                   },
