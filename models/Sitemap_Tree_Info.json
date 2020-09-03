@@ -3,7 +3,7 @@
     "layout":"form",
     "table":"",
     "actions":"BIUD",
-    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
     "unbound":true,
     "title":"Edit Sitemap Item",
     "caption":["Sitemap Item","Sitemap Items"],

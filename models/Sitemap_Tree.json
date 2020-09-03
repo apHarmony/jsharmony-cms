@@ -3,7 +3,7 @@
     "layout":"form",
     "table":"",
     "actions":"BIUD",
-    "roles": {"AUTHOR": "B","PUBLISHER": "BIUD","VIEWER":"B"},
+    "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
     "title": { "sql": "select concat('Sitemap :: ',sitemap_name) from {schema}.v_my_sitemap where sitemap_key=@sitemap_key" },
     "caption":["Sitemap","Sitemaps"],
     "unbound":true,
@@ -13,7 +13,7 @@
     "oninit": "_this.oninit();",
     "onload": "_this.onload();",
     "buttons":[
-      { "name":"configureSitemaps", "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "PUBLISHER": "U" } },
+      { "name":"configureSitemaps", "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "AUTHOR": "U", "PUBLISHER": "U" } },
       { "name":"saveSitemap", "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
     ],
     "fields":[
