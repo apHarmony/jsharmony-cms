@@ -343,6 +343,7 @@ module.exports = exports = function(module, funcs){
     publish_params = publish_params || {};
     var rslt = url || '';
     for(var key in publish_params){
+      if(key == publish_params[key]) continue;
       rslt = Helper.ReplaceAll(rslt, '%%%' + key + '%%%', publish_params[key]);
     }
     if(rslt != url) return funcs.parseDeploymentUrl(rslt, publish_params);
