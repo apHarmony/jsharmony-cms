@@ -339,6 +339,16 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
+  exports.parseDeploymentUrl = function(url, publish_params){
+    publish_params = publish_params || {};
+    var rslt = url || '';
+    for(var key in publish_params){
+      rslt = Helper.ReplaceAll(rslt, '%%%' + key + '%%%', publish_params[key]);
+    }
+    if(rslt != url) return funcs.parseDeploymentUrl(rslt, publish_params);
+    return url;
+  }
+
   exports.templates_component = function(req, res, next){
     var verb = req.method.toLowerCase();
 
@@ -414,9 +424,7 @@ module.exports = exports = function(module, funcs){
 
           _.each(components, function(component){
               if(component.remote_template && component.remote_template.editor){
-                for(var key in publish_params){
-                  component.remote_template.editor = Helper.ReplaceAll(component.remote_template.editor, '%%%' + key + '%%%', publish_params[key]);
-                }
+                component.remote_template.editor = funcs.parseDeploymentUrl(component.remote_template.editor, publish_params);
               }
             });
 
@@ -524,9 +532,7 @@ module.exports = exports = function(module, funcs){
 
               //Resolve Remote Templates
               if(rslt_content_element.remote_template){
-                for(var key in publish_params){
-                  rslt_content_element.remote_template = Helper.ReplaceAll(rslt_content_element.remote_template, '%%%' + key + '%%%', publish_params[key]);
-                }
+                rslt_content_element.remote_template = funcs.parseDeploymentUrl(rslt_content_element.remote_template, publish_params);
               }
             }
             menuTemplates[tmplname] = front_tmpl;
@@ -867,6 +873,7 @@ module.exports = exports = function(module, funcs){
 
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
+    var cms = jsh.Modules['jsHarmonyCMS'];
     var dbtypes = appsrv.DB.types;
     var XValidate = jsh.XValidate;
 
@@ -926,9 +933,9 @@ module.exports = exports = function(module, funcs){
           page_id: (Q.page_id||'')
         });
 
-        for(var key in dtparams){
-          url = Helper.ReplaceAll(url, '%%%' + key + '%%%', dtparams[key]);
-        }
+        dtparams = _.extend(cms.Config.deployment_target_params, dtparams);
+
+        url = funcs.parseDeploymentUrl(url, dtparams);
 
         res.end(JSON.stringify({ '_success': 1, editor: url }));
       });

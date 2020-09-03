@@ -195,10 +195,7 @@ module.exports = exports = function(module, funcs){
         function(template_action_cb){
           if(!template.remote_template || !template.remote_template.publish) return template_action_cb();
 
-          var url = template.remote_template.publish;
-          for(var key in branchData.publish_params){
-            url = Helper.ReplaceAll(url, '%%%' + key + '%%%', branchData.publish_params[key]);
-          }
+          var url = funcs.parseDeploymentUrl(template.remote_template.publish, branchData.publish_params);
           funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
           wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
             if(err) return template_action_cb(err);
@@ -218,10 +215,7 @@ module.exports = exports = function(module, funcs){
 
             if(!content_element || !content_element.remote_template || !content_element.remote_template.publish) return content_element_cb();
 
-            var url = content_element.remote_template.publish;
-            for(var key in branchData.publish_params){
-              url = Helper.ReplaceAll(url, '%%%' + key + '%%%', branchData.publish_params[key]);
-            }
+            var url = funcs.parseDeploymentUrl(content_element.remote_template.publish, branchData.publish_params);
             funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
             wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
               if(err) return content_element_cb(err);
