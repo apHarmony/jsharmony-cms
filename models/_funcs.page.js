@@ -238,6 +238,7 @@ module.exports = exports = function(module, funcs){
       onError: function(err){ },
       removeClass: false,
       HTMLParser: false,
+      replaceComponents: false,
       branchData: {}
     }, options);
 
@@ -334,6 +335,79 @@ module.exports = exports = function(module, funcs){
         rtagidx = endofstr;
       }
       rtagidx = content.indexOf(rtag, rtagidx + 1);
+    }
+
+    function parseAttribute(content, attr, f){
+      var idx = 0;
+      var attrIdx = content.indexOf(attr);
+      while(attrIdx >= 0){
+        idx = attrIdx + attr.length;
+        var chr = content[idx];
+        while((idx < content.length)&&((chr=='\t')||(chr=='\n')||(chr=='\r')||(chr=='\f')||(chr==' '))) chr = content[++idx];
+        var delim = '';
+        var validAttr = (chr == '=');
+
+        if(validAttr){
+          chr = content[++idx];
+          while((idx < content.length)&&((chr=='\t')||(chr=='\n')||(chr=='\r')||(chr=='\f')||(chr==' '))) chr = content[++idx];
+
+          if(chr=='"'){ delim = '"'; chr = content[++idx]; }
+          else if(chr=="'"){ delim = "'"; chr = content[++idx]; }
+          else if(chr=='>'){ validAttr = false; }
+
+          //Read attribute value
+          if(validAttr){
+            var startPos = idx;
+            var endPos = idx;
+            var atEnd = false;
+
+            while(!atEnd && (idx < content.length)){
+              chr = content[idx];
+
+              if(delim = '"'){
+                if(chr == '"') atEnd = true;
+                else endPos++;
+              }
+              else if(delim = "'"){
+                if(chr == "'") atEnd = true;
+                else endPos++;
+              }
+              else {
+                if(chr == '>') atEnd = true;
+                else endPos++;
+              }
+              idx++;
+            }
+            if(f){
+              var oldVal = content.substr(startPos, endPos - startPos);
+              var newVal = f(oldVal);
+              content = content.substr(0, startPos) + newVal + content.substr(endPos);
+            }
+          }
+        }
+        attrIdx = content.indexOf(attr, idx);
+      }
+      return content;
+    }
+
+    function replaceBase64Attribute(content, attr){
+      return parseAttribute(content, 'data-component-data', function(val){
+        if(!val) return val;
+        var strval = val;
+        try{
+          strval = Buffer.from(strval,'base64').toString()
+        }
+        catch(ex){
+          throw new Error('Error parsing base 64 data: '+ex);
+        }
+        strval = exports.replaceBranchURLs(strval, options);
+        return Buffer.from(strval).toString('base64');
+      });
+    }
+
+    if(options.replaceComponents){
+      content = replaceBase64Attribute(content, 'data-component-data');
+      content = replaceBase64Attribute(content, 'data-component-properties');
     }
 
     return content;
@@ -727,7 +801,7 @@ module.exports = exports = function(module, funcs){
           function(cb){
 
             function replaceURLs(content, options){
-              var rslt = funcs.replaceBranchURLs(content, _.extend({}, options, {
+              var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
                 getMediaURL: function(media_key){
                   return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
                 },

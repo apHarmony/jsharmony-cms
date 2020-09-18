@@ -200,7 +200,7 @@ exports = module.exports = function(jsh, cms, editor){
       text: 'Spell Check',
       icon: 'spell-check',
       onAction: function () {
-        jsh.XExt.Alert('The editor users your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
+        jsh.XExt.Alert('The editor uses your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
       }
     });
   }

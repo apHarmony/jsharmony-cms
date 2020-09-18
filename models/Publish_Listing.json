@@ -16,7 +16,7 @@
       {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
       {"name":"deployment_target_name","caption":"Deployment Target","sqlselect":"(select deployment_target_name from {schema}.deployment_target where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
       {"name":"deployment_tag","caption":"Tag","control":"label"},
-      {"name":"deployment_date","caption":"Scheduled For","validate":["IsDate"],"format":"date:'YYYY-MM-DD hh:mm A'","controlstyle":"width:145px;"},
+      {"name":"deployment_date","caption":"Scheduled For","validate":["IsDate:'YYYY-MM-DD hh:mm A'"],"format":"date:'YYYY-MM-DD hh:mm A'","controlstyle":"width:145px;"},
       {"name":"deployment_sts","caption":"Status"},
       {"name":"branch_id","control":"hidden"},
       {"name":"branch_desc","caption":"Deployment Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.v_my_deployment.branch_id)","link":"update:Branch_Summary&branch_id"},

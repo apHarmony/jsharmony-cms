@@ -182,6 +182,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
               cms.editor.attach('full', elem.id, {}, function(){ return editor_cb(); });
             }, function(err){
               //Initialize the title editor
+              if(!$('#jsharmony_cms_title').length) return cb();
               cms.editor.attach('text', 'jsharmony_cms_title', {}, function(){ return cb(); });
             });
           });
@@ -201,6 +202,51 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.render = function(){
     if(!_this.page) return;
     var jeditorbar = $('#jsharmony_cms_editor_bar');
+
+    //Page Settings
+    var authors = [].concat(_this.authors);
+    if(_this.role=='PUBLISHER') authors.unshift({ code_val: '', code_txt: 'Please select...' });
+    XExt.RenderLOV(null, jeditorbar.find('.page_settings_author'), authors);
+    _.each(['title','tags','author','css','header','footer'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_'+key).val(_this.page[key]||''); });
+    _.each(['title','keywords','metadesc','canonical_url'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
+    XExt.TagBox_Refresh(jeditorbar.find('.page_settings_tags_editor'), jeditorbar.find('.page_settings_tags'));
+
+    //Properties
+    if(_this.hasProperties()){
+      jsh.XModels['jsharmony_cms_page_properties'].controller.Render(_this.page.properties);
+      $("[data-jsharmony_cms_onApplyProperties]").each(function(){
+        var obj = this;
+        var jobj = $(this);
+        XExt.JSEval(jobj.attr('data-jsharmony_cms_onApplyProperties'), obj, {
+          page: _this.page,
+          toggle: function(show){
+            if(show){
+              jobj.show();
+              jobj.data('jsharmony_cms_properties_toggle_hidden', '0');
+            }
+            else {
+              jobj.hide();
+              jobj.data('jsharmony_cms_properties_toggle_hidden', '1');
+            }
+          },
+          setClass: function(strClass){
+            var strClass = strClass||'';
+
+            jobj.removeClass(jobj.data('jsharmony_cms_properties_lastClass')).addClass(strClass);
+            jobj.data('jsharmony_cms_properties_lastClass', strClass)
+          },
+          setStyle: function(strStyle){
+            var origStyle = jobj.data('jsharmony_cms_properties_origStyle');
+            if(!origStyle){
+              origStyle = jobj.attr('style') + ';';
+              jobj.data('jsharmony_cms_properties_origStyle', origStyle);
+            }
+            jobj.attr('style', origStyle + (strStyle||''))
+          },
+        });
+      });
+      if(cms.onApplyProperties) cms.onApplyProperties(_this.page);
+    }
 
     //Title
     _this.renderTitle();
@@ -227,42 +273,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     //Footer
     cms.util.setHTML($('#jsharmony_cms_footer'), (_this.template.footer||'')+(_this.page.footer||''));
 
-    //Page Settings
-    var authors = [].concat(_this.authors);
-    if(_this.role=='PUBLISHER') authors.unshift({ code_val: '', code_txt: 'Please select...' });
-    XExt.RenderLOV(null, jeditorbar.find('.page_settings_author'), authors);
-    _.each(['title','tags','author','css','header','footer'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_'+key).val(_this.page[key]||''); });
-    _.each(['title','keywords','metadesc','canonical_url'], function(key){ jeditorbar.find('.page_settings').find('.page_settings_seo_'+key).val(_this.page.seo[key]||''); });
-    XExt.TagBox_Refresh(jeditorbar.find('.page_settings_tags_editor'), jeditorbar.find('.page_settings_tags'));
-
-    //Properties
-    if(_this.hasProperties()){
-      jsh.XModels['jsharmony_cms_page_properties'].controller.Render(_this.page.properties);
-      $("[data-jsharmony_cms_onApplyProperties]").each(function(){
-        var obj = this;
-        var jobj = $(this);
-        XExt.JSEval(jobj.attr('data-jsharmony_cms_onApplyProperties'), obj, {
-          page: _this.page,
-          toggle: function(){ jobj.toggle.apply(jobj, arguments); },
-          setClass: function(strClass){
-            var bodyClass = strClass||'';
-
-            jobj.removeClass(jobj.data('jsharmony_cms_properties_lastBodyClass')).addClass(bodyClass);
-            jobj.data('jsharmony_cms_properties_lastBodyClass', bodyClass)
-          },
-          setStyle: function(strStyle){
-            var origBodyStyle = jobj.data('jsharmony_cms_properties_origBodyStyle');
-            if(!origBodyStyle){
-              origBodyStyle = jobj.attr('style') + ';';
-              jobj.data('jsharmony_cms_properties_origBodyStyle', origBodyStyle);
-            }
-            jobj.attr('style', origBodyStyle + (strStyle||''))
-          },
-        });
-      });
-      if(cms.onApplyProperties) cms.onApplyProperties(_this.page);
-    }
-
     if(cms.readonly){
       jeditorbar.find('.save').hide();
       jeditorbar.find('.readonly').show();
@@ -273,16 +283,21 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.renderTitle = function(src){
     var jsrc = $(src);
     if(!src || (src.id != 'jsharmony_cms_title')){
-      if(cms.readonly) $('#jsharmony_cms_title').text(_this.page.title);
-      else window.tinymce.get('jsharmony_cms_title').setContent(_this.page.title);
+      if($('#jsharmony_cms_title').length){
+        if(cms.readonly) $('#jsharmony_cms_title').text(_this.page.title);
+        else window.tinymce.get('jsharmony_cms_title').setContent(_this.page.title);
+      }
     }
     if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val(_this.page.title);
     if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
     $('#jsharmony_cms_editor_bar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
     document.title = (_this.page.seo.title ? _this.page.seo.title : _this.page.title);
     var titleIsVisible = $('#jsharmony_cms_title').is(':visible');
-    if(titleIsVisible && !_this.page.title) $('#jsharmony_cms_title').hide();
-    else if(!titleIsVisible && _this.page.title) $('#jsharmony_cms_title').show();
+    var titleIsHiddenByProperties = ($('#jsharmony_cms_title').data('jsharmony_cms_properties_toggle_hidden') == '1');
+    if(!titleIsHiddenByProperties){
+      if(titleIsVisible && !_this.page.title) $('#jsharmony_cms_title').hide();
+      else if(!titleIsVisible && _this.page.title) $('#jsharmony_cms_title').show();
+    }
   }
 
   this.onTitleUpdate = function(src, val){
@@ -291,7 +306,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     var new_page_title = _this.page.title;
     var new_seo_title = _this.page.seo.title;
     var jsrc = $(src);
-    if(src.id=='jsharmony_cms_title') new_page_title = window.tinymce.get('jsharmony_cms_title').getContent();
+    if(src.id=='jsharmony_cms_title'){
+      if($('#jsharmony_cms_title').length) new_page_title = window.tinymce.get('jsharmony_cms_title').getContent();
+    }
     else if(jsrc.hasClass('page_settings_title')) new_page_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val();
     else if(jsrc.hasClass('page_settings_seo_title')) new_seo_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val();
     if(new_page_title != _this.page.title){ _this.page.title = new_page_title; _this.hasChanges = true; }
