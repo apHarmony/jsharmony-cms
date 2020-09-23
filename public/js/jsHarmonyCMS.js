@@ -2268,7 +2268,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
     }
     self.hideOverlay();
     self.$dialogWrapper.scrollTop(scrollTop);
-    
+
   });
 }
 
@@ -2604,6 +2604,7 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
 
   // Don't share references!
   _.extend(item, data);
+  this.xModel.controller.form.ResetDirty();
 }
 
 /**
@@ -4644,7 +4645,7 @@ exports = module.exports = function(jsh, cms, editor){
       text: 'Spell Check',
       icon: 'spell-check',
       onAction: function () {
-        jsh.XExt.Alert('The editor users your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
+        jsh.XExt.Alert('The editor uses your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
       }
     });
   }
@@ -6644,7 +6645,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.19';
+  var VERSION = '4.17.20';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
@@ -22220,7 +22221,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
      * // => [{ 'a': 4, 'b': 5, 'c': 6 }]
      *
      * // Checking for several possible values
-     * _.filter(users, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
+     * _.filter(objects, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
      * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matches(source) {
@@ -22257,7 +22258,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
      * // => { 'a': 4, 'b': 5, 'c': 6 }
      *
      * // Checking for several possible values
-     * _.filter(users, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
+     * _.filter(objects, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
      * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matchesProperty(path, srcValue) {

@@ -283,7 +283,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
     }
     self.hideOverlay();
     self.$dialogWrapper.scrollTop(scrollTop);
-    
+
   });
 }
 
@@ -619,6 +619,7 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
 
   // Don't share references!
   _.extend(item, data);
+  this.xModel.controller.form.ResetDirty();
 }
 
 /**
