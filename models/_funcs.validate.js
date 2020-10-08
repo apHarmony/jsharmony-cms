@@ -263,6 +263,7 @@ module.exports = exports = function(module, funcs){
               funcs.validate_logError(item_errors, 'page', page, err.toString());
             },
             branchData: branchData,
+            replaceComponents: true,
             removeClass: true
           });
         }

@@ -29,8 +29,9 @@ var DataEditor_GridPreviewController = require('./dataEditor_ gridPreviewControl
  * @param {ComponentTemplate} componentTemplate
  * @param {Object} cms
  * @param {Object} jsh
+ * @param {Object} component
  */
-function DataEditor_GridPreview(componentTemplate, cms, jsh) {
+function DataEditor_GridPreview(componentTemplate, cms, jsh, component) {
 
   /** @private @type {ComponentTemplate} */
   this._componentTemplate = componentTemplate;
@@ -40,6 +41,9 @@ function DataEditor_GridPreview(componentTemplate, cms, jsh) {
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {Object} */
+  this._component = component;
 }
 
 /**
@@ -78,7 +82,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
 
     dataController = new DataEditor_GridPreviewController(xModel, (data || {}).items, properties, self._jsh.$(dialogSelector),
-      self._cms, self._jsh, modelTemplate, self._componentTemplate);
+      self._cms, self._jsh, self._component, modelTemplate, self._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
       if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
@@ -88,8 +92,8 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       if (_.isFunction(componentInstance.onBeforeRenderGridRow)) componentInstance.onBeforeRenderGridRow(renderOptions);
     }
 
-    dataController.onRenderGridRow = function(element, data, properties) {
-      if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties);
+    dataController.onRenderGridRow = function(element, data, properties, cms, component) {
+      if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
     }
 
     var modelInterface = self._jsh.App[xModel.id];

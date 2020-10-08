@@ -321,7 +321,7 @@ module.exports = exports = function(module, funcs){
         //Get start of link
         var startOfLine = startofstr - 1;
         var startchar = /[\n<]/;
-        do{ if(startchar.test(content[startOfLine])) break; } while((--startOfLine >= 0) && ((startofstr - startOfLine) < 50));
+        do{ if(startchar.test(content[startOfLine])) break; } while((--startOfLine > 0) && ((startofstr - startOfLine) < 50));
 
         //Get end of link
         var endOfLine = endofstr;

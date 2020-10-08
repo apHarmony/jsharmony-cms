@@ -41,6 +41,8 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
+ * @param {Object} cms - the parent jsHarmonyCMSInstance
+ * @param {Object} component - the parent component
  */
 
 /**
@@ -53,10 +55,11 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {(JQuery | HTMLElement)} dialogWrapper
  * @param {Object} cms
  * @param {Object} jsh
+ * @param {Object} component
  * @param {DataModelTemplate_GridPreview} dataModelTemplate_GridPreview
  * @param {ComponentTemplate} componentTemplate
  */
-function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, dataModelTemplate_GridPreview, componentTemplate) {
+function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, component, dataModelTemplate_GridPreview, componentTemplate) {
 
   var self = this;
 
@@ -68,6 +71,9 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
 
   /** @private @type {Object} */
   this.cms = cms;
+
+  /** @private @type {Object} */
+  this.component = component;
 
   /** @private @type {Object} */
   this.xModel = xModel;
@@ -435,7 +441,7 @@ DataEditor_GridPreviewController.prototype.makeItemId = function() {
 DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   var self = this;
-  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh)
+  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, self.component)
   var currentData = this._dataStore.getDataItem(itemId);
   var rowId = this.getRowIdFromItemId(itemId);
 
@@ -558,7 +564,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   this.updateSequenceButtonViews();
 
-  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties);
+  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, self.cms, self.component);
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {

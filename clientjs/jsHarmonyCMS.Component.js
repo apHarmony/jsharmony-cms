@@ -38,6 +38,8 @@ var TemplateRenderer = require('./component/templateRenderer');
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
+ * @param {Object} cms - the parent jsHarmonyCMSInstance
+ * @param {Object} component - the parent component
  */
 
 /**
@@ -135,7 +137,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.openDataEditor_Form = function() {
     var self = this;
-    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh);
+    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh, self);
 
     var data = this.getData() || {};
     dataEditor.open(data.item || {}, this.getProperties() || {}, function(updatedData) {
@@ -150,7 +152,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.openDataEditor_GridPreview = function() {
     var self = this;
-    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh);
+    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh, self);
 
     dataEditor.open(this.getData(), this.getProperties() || {}, function(updatedData) {
       self.saveData(updatedData);
@@ -206,7 +208,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       else if(hasProperties) self.openPropertiesEditor();
     });
 
-    if (_.isFunction(this.onRender)) this.onRender($element[0], data, props);
+    if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
     setTimeout(function() {
       _.forEach($element.find('[data-component]'), function(el) {

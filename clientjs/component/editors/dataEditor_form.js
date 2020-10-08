@@ -37,6 +37,8 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
+ * @param {Object} cms - the parent jsHarmonyCMSInstance
+ * @param {Object} component - the parent component
  */
 
 
@@ -47,8 +49,9 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {(import('../templateRenderer').GridPreviewRenderContext | undefined)} gridContext
  * @param {Object} cms
  * @param {Object} jsh
+ * @param {Object} component
  */
-function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh) {
+function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh, component) {
 
   /** @private @type {ComponentTemplate} */
   this._componentTemplate = componentTemplate;
@@ -64,6 +67,9 @@ function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh) {
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {Object} */
+  this._component = component;
 
   /** @private @type {HTMLPropertyEditorController[]} */
   this._htmlEditors = [];
@@ -119,7 +125,10 @@ DataEditor_Form.prototype.createPicker = function() {
  * @param {boolean} enable
  */
 DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable) {
-  $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
+  var jctrl = $dialog.find('.xform_ctrl.' + info.titleFieldName);
+  if(jctrl.hasClass('editable')){
+    $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
+  }
 }
 
 /**
@@ -352,7 +361,7 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   $wrapper.empty().append(rendered);
 
-  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties);
+  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, self._cms, self._component);
 
   setTimeout(function() {
     _.forEach(self._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {

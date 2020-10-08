@@ -70,6 +70,7 @@ jsHarmonyCMS.prototype.Application = function(){
   jsh.AddModule(factory);
   jsh.AddModule(this);
   jsh.Sites[factory.mainSiteID] = _.extend(this.getFactoryConfig(),jsh.Sites[factory.mainSiteID]);
+  jsh.Config.valid_extensions.push('.js');
   jsh.Config.onConfigLoaded.push(function(cb){
     _this.LoadTemplates();
     _this.LoadClientJS();

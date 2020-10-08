@@ -12,7 +12,7 @@
   // There are two hooks that can be used in the render process
   // 1. onBeforeRender(renderConfig): this hook is called before rendering the component. The renderConfig contains
   //    an object that can be manipulated before being used to render the component.
-  // 2. onRender(element, data, properties): this hook is called when the component is rendered.
+  // 2. onRender(element, data, properties, cms, component): this hook is called when the component is rendered.
   "js": "...Content...", // Prepended by <templateBaseFileName>.js
 
   //Local templates can be used to load templates from the CMS
@@ -72,9 +72,9 @@
     // To use the hook, simply bind "this" to a function with the same signature in the data JS.
     // 1. onBeforeRenderGridRow(renderConfig): this hook is called before rendering a grid row. The renderConfig contains
     //    an object that can be manipulated before being used to render the grid row.
-    // 2. onRenderGridRow(element, data, properties): this hook is called when the grid row is rendered.
+    // 2. onRenderGridRow(element, data, properties, cms, component): this hook is called when the grid row is rendered.
     // 3. onBeforeRenderDataItemPreview(renderConfig): this hook is called before rendering the item preview. The renderConfig contains
     //    an object that can be manipulated before being used to render the item.
-    // 4. onRenderDataItemPreview(element, data, properties): this hook is called when the item preview is rendered.
+    // 4. onRenderDataItemPreview(element, data, properties, cms, component): this hook is called when the item preview is rendered.
   }
 }

@@ -2026,6 +2026,8 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
+ * @param {Object} cms - the parent jsHarmonyCMSInstance
+ * @param {Object} component - the parent component
  */
 
 /**
@@ -2038,10 +2040,11 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {(JQuery | HTMLElement)} dialogWrapper
  * @param {Object} cms
  * @param {Object} jsh
+ * @param {Object} component
  * @param {DataModelTemplate_GridPreview} dataModelTemplate_GridPreview
  * @param {ComponentTemplate} componentTemplate
  */
-function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, dataModelTemplate_GridPreview, componentTemplate) {
+function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, component, dataModelTemplate_GridPreview, componentTemplate) {
 
   var self = this;
 
@@ -2053,6 +2056,9 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
 
   /** @private @type {Object} */
   this.cms = cms;
+
+  /** @private @type {Object} */
+  this.component = component;
 
   /** @private @type {Object} */
   this.xModel = xModel;
@@ -2420,7 +2426,7 @@ DataEditor_GridPreviewController.prototype.makeItemId = function() {
 DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   var self = this;
-  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh)
+  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, self.component)
   var currentData = this._dataStore.getDataItem(itemId);
   var rowId = this.getRowIdFromItemId(itemId);
 
@@ -2543,7 +2549,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   this.updateSequenceButtonViews();
 
-  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties);
+  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, self.cms, self.component);
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
@@ -2687,6 +2693,8 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
+ * @param {Object} cms - the parent jsHarmonyCMSInstance
+ * @param {Object} component - the parent component
  */
 
 
@@ -2697,8 +2705,9 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {(import('../templateRenderer').GridPreviewRenderContext | undefined)} gridContext
  * @param {Object} cms
  * @param {Object} jsh
+ * @param {Object} component
  */
-function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh) {
+function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh, component) {
 
   /** @private @type {ComponentTemplate} */
   this._componentTemplate = componentTemplate;
@@ -2714,6 +2723,9 @@ function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh) {
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {Object} */
+  this._component = component;
 
   /** @private @type {HTMLPropertyEditorController[]} */
   this._htmlEditors = [];
@@ -3002,7 +3014,7 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   $wrapper.empty().append(rendered);
 
-  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties);
+  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, self._cms, self._component);
 
   setTimeout(function() {
     _.forEach(self._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
@@ -3044,8 +3056,9 @@ var DataEditor_GridPreviewController = require('./dataEditor_ gridPreviewControl
  * @param {ComponentTemplate} componentTemplate
  * @param {Object} cms
  * @param {Object} jsh
+ * @param {Object} component
  */
-function DataEditor_GridPreview(componentTemplate, cms, jsh) {
+function DataEditor_GridPreview(componentTemplate, cms, jsh, component) {
 
   /** @private @type {ComponentTemplate} */
   this._componentTemplate = componentTemplate;
@@ -3055,6 +3068,9 @@ function DataEditor_GridPreview(componentTemplate, cms, jsh) {
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {Object} */
+  this._component = component;
 }
 
 /**
@@ -3093,7 +3109,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
 
     dataController = new DataEditor_GridPreviewController(xModel, (data || {}).items, properties, self._jsh.$(dialogSelector),
-      self._cms, self._jsh, modelTemplate, self._componentTemplate);
+      self._cms, self._jsh, self._component, modelTemplate, self._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
       if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
@@ -3103,8 +3119,8 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       if (_.isFunction(componentInstance.onBeforeRenderGridRow)) componentInstance.onBeforeRenderGridRow(renderOptions);
     }
 
-    dataController.onRenderGridRow = function(element, data, properties) {
-      if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties);
+    dataController.onRenderGridRow = function(element, data, properties, cms, component) {
+      if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
     }
 
     var modelInterface = self._jsh.App[xModel.id];
@@ -3868,6 +3884,8 @@ var TemplateRenderer = require('./component/templateRenderer');
  * @param {HTMLElement} element
  * @param {Object} data - the component data
  * @param {Object} properties - the component properties
+ * @param {Object} cms - the parent jsHarmonyCMSInstance
+ * @param {Object} component - the parent component
  */
 
 /**
@@ -3965,7 +3983,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.openDataEditor_Form = function() {
     var self = this;
-    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh);
+    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh, self);
 
     var data = this.getData() || {};
     dataEditor.open(data.item || {}, this.getProperties() || {}, function(updatedData) {
@@ -3980,7 +3998,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.openDataEditor_GridPreview = function() {
     var self = this;
-    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh);
+    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh, self);
 
     dataEditor.open(this.getData(), this.getProperties() || {}, function(updatedData) {
       self.saveData(updatedData);
@@ -4036,7 +4054,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       else if(hasProperties) self.openPropertiesEditor();
     });
 
-    if (_.isFunction(this.onRender)) this.onRender($element[0], data, props);
+    if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
     setTimeout(function() {
       _.forEach($element.find('[data-component]'), function(el) {
@@ -4644,7 +4662,7 @@ exports = module.exports = function(jsh, cms, editor){
       text: 'Spell Check',
       icon: 'spell-check',
       onAction: function () {
-        jsh.XExt.Alert('The editor users your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
+        jsh.XExt.Alert('The editor uses your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
       }
     });
   }
@@ -6644,7 +6662,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.19';
+  var VERSION = '4.17.20';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
@@ -22220,7 +22238,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
      * // => [{ 'a': 4, 'b': 5, 'c': 6 }]
      *
      * // Checking for several possible values
-     * _.filter(users, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
+     * _.filter(objects, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
      * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matches(source) {
@@ -22257,7 +22275,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
      * // => { 'a': 4, 'b': 5, 'c': 6 }
      *
      * // Checking for several possible values
-     * _.filter(users, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
+     * _.filter(objects, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
      * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matchesProperty(path, srcValue) {
