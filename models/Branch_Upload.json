@@ -1,0 +1,39 @@
+{
+  "Branch_Upload": {
+    "layout":"form",
+    "title":"Upload New Branch",
+    "table":"",
+    "menu":"Branches",
+    "onecolumn":true,
+    "actions":"BU",
+    "roles": {"PUBLISHER": "BU"},
+    "hide_system_buttons":["print"],
+    "sqlselect":[
+      "select ",
+      "'USER' new_branch_type,",
+      "'' new_branch_name"
+    ],
+    "nokey": 1,
+    "fields": [
+      {"name":"branch_id","type":"bigint","control":"hidden","key":true},
+      {"name":"source_site_name","control":"label","caption":"New Branch Name","controlstyle":"margin-right:0px;"},
+      {"name":"new_site_id","control":"dropdown","caption":"","caption_ext":"Site","validate":["Required"],"nl":false,
+        "lov":{"sql":"select site_id code_val, site_name code_txt from {schema}.site where site_sts='ACTIVE'","blank":"Select Site..."}},
+      {"control":"html","value":"/&nbsp;","nl":false},
+      {"name":"new_branch_type","actions":"BU","type":"varchar","control":"dropdown","caption":"","nl":false,
+        "controlstyle":"margin-right:0px;","validate":["Required"],"caption_ext":"Branch Location",
+        "lov":{ "sql": "select 'PUBLIC' code_val, 'public' code_txt where ({schema}.my_user_is_publisher() = 1) union all select 'USER' code_val, (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=jsharmony.my_sys_user_id()) code_txt" } },
+      {"control":"html","value":"&nbsp;/&nbsp;","nl":false},
+      {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"Branch Name"},
+      {"name":"branch_content","type":"file","actions":"BU","nl":1,
+        "control":"file_upload","caption":"Upload Content","controlparams": {
+          "download_button": "Download Zip",
+          "upload_button": "Upload Zip",
+          "delete_button": "Delete",
+          "data_folder":"branch_upload"
+        },
+        "validate": ["Extension:['.ZIP']","Required"]},
+      {"control":"button","value":"Upload","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; jsh.System.UploadBranch(xmodel.get('new_site_id'),xmodel.get('new_branch_type'),xmodel.get('new_branch_name'),xmodel.get('branch_content'));"}
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "jsharmony-cms",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "jsHarmony CMS",
   "main": "index.js",
   "scripts": {
@@ -33,6 +33,8 @@
     "js-beautify": "^1.11.0",
     "jsharmony": "^1.1.201",
     "jsharmony-factory": "^1.1.97",
-    "lodash": "^4.17.19"
+    "lodash": "^4.17.19",
+    "yazl": "^2.5.1",
+    "yauzl": "^2.10.0"
   }
 }

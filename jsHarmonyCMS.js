@@ -351,6 +351,17 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         },
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_page(jsh, branchData, publish_params, callback); },
       },
+      download: {
+        columns: ['page_path','page_is_folder','page_title','page_tags','page_file_id','page_template_id','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'],
+        onGenerate: function(branch_items, branch_data, callback){
+          _.each(branch_items, function(branch_item){ if(branch_item.page_file_id) branch_data.data_files.push('page/'+branch_item.page_file_id+'.json'); });
+          return callback();
+        },
+      },
+      upload: {
+        onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validatePage(errors, branchItems, branchData, callback); },
+        onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importPage(dbtasks, branchItems, branchData, callback); },
+      },
     },
     'media': {
       name: 'media',
@@ -389,6 +400,17 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         },
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_media(jsh, branchData, publish_params, callback); },
       },
+      download: {
+        columns: ['media_path','media_is_folder','media_file_id','media_ext','media_size','media_width','media_height','media_desc','media_tags','media_type','media_lang'],
+        onGenerate: function(branch_items, branch_data, callback){
+          _.each(branch_items, function(branch_item){ if(branch_item.media_file_id) branch_data.data_files.push('media/'+branch_item.media_file_id.toString()+branch_item.media_ext); });
+          return callback();
+        },
+      },
+      upload: {
+        onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validateMedia(errors, branchItems, branchData, callback); },
+        onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importMedia(dbtasks, branchItems, branchData, callback); },
+      },
     },
     'menu': {
       name: 'menu',
@@ -418,6 +440,17 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_menu(jsh, branchData, publish_params, callback); },
         onDeploy_seq: -100,
       },
+      download: {
+        columns: ['menu_name','menu_tag','menu_file_id','menu_template_id','menu_path','menu_notes','menu_lang'],
+        onGenerate: function(branch_items, branch_data, callback){
+          _.each(branch_items, function(branch_item){ if(branch_item.menu_file_id) branch_data.data_files.push('menu/'+branch_item.menu_file_id+'.json'); });
+          return callback();
+        },
+      },
+      upload: {
+        onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validateMenu(errors, branchItems, branchData, callback); },
+        onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importMenu(dbtasks, branchItems, branchData, callback); },
+      },
     },
     'redirect': {
       name: 'redirect',
@@ -431,6 +464,13 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       },
       deploy: {
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_redirect(jsh, branchData, publish_params, callback); },
+      },
+      download: {
+        columns: ['redirect_url','redirect_url_type','redirect_seq','redirect_dest','redirect_http_code']
+      },
+      upload: {
+        onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validateRedirect(errors, branchItems, branchData, callback); },
+        onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importRedirect(dbtasks, branchItems, branchData, callback); },
       },
     },
     'sitemap': {
@@ -457,6 +497,17 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       },
       deploy: {
         onBeforeDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_getSitemaps(jsh, branchData, publish_params, callback); },
+      },
+      download: {
+        columns: ['sitemap_name','sitemap_type','sitemap_file_id','sitemap_notes','sitemap_lang'],
+        onGenerate: function(branch_items, branch_data, callback){
+          _.each(branch_items, function(branch_item){ if(branch_item.sitemap_file_id) branch_data.data_files.push('sitemap/'+branch_item.sitemap_file_id+'.json'); });
+          return callback();
+        },
+      },
+      upload: {
+        onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validateSitemap(errors, branchItems, branchData, callback); },
+        onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importSitemap(dbtasks, branchItems, branchData, callback); },
       },
     },
   };
@@ -561,6 +612,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/conflicts/resolve': _this.funcs.req_conflicts_resolve,
         '/_funcs/merge/:merge_type': _this.funcs.req_merge,
         '/_funcs/begin_merge': _this.funcs.req_begin_merge,
+        '/_funcs/branch/download/:branch_id': _this.funcs.branch_download,
+        '/_funcs/branch/upload': _this.funcs.branch_upload,
       }
     ]
   }

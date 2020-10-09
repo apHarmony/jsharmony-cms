@@ -41,6 +41,31 @@
     });
   }
 
+  jsh.System.DownloadBranch = function(branch_id) {
+    //Save Changes Before Executing
+    if (jsh.XPage.GetChanges().length > 0) return XExt.Alert('Please save pending changes before continuing.');
+
+    var url = jsh._BASEURL+'_funcs/branch/download/'+branch_id+'?source=js';
+    jsh.getFileProxy().prop('src', url);
+  }
+
+  jsh.System.UploadBranch = function(site_id, branch_type, branch_name, branch_content) {
+    XForm.Post('../_funcs/branch/upload', {}, 
+      {
+        site_id: site_id,
+        branch_type: branch_type,
+        branch_name: branch_name,
+        branch_content: branch_content,
+      },
+      function(rslt){
+        XExt.Alert('Upload completed successfully', function(){
+          //Redirect to page listing
+          XExt.navTo(jsh._BASEURL+'{namespace}Sitemap_Listing_Redirect', { force: true });
+        });
+      }
+    );
+  }
+
   jsh.System.SubmitBranch = function(xmodel, branch_id) {
     //Save Changes Before Executing
     if (jsh.XPage.GetChanges().length > 0) return XExt.Alert('Please save pending changes before continuing.');

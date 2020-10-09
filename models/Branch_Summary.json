@@ -19,6 +19,7 @@
       { "group": "Actions", "name":"submitBranch", "link":"js:jsh.System.SubmitBranch(xmodel, xmodel.get('branch_id', this))","icon":"ok","text":"Submit for Review","class":"Branch_Summary_buttonPublish", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
       { "group": "Actions", "name":"publishBranch", "link":"update:Publish_Add_Branch&branch_id","icon":"target","text":"Publish", "roles": { "PUBLISHER": "B" } },
       { "group": "Actions", "name":"archiveBranch", "link":"js:jsh.System.ArchiveBranch(xmodel.get('branch_id', this))","icon":"lock","text":"Archive","class":"Branch_Summary_buttonArchive", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
+      { "group": "Actions", "name":"downloadBranch", "link":"js:jsh.System.DownloadBranch(xmodel.get('branch_id', this))","icon":"download","text":"Download", "roles": { "PUBLISHER": "B" } },
       { "group": "Actions", "name":"deleteBranch", "link":"update:Branch_Delete&branch_id","icon":"delete","text":"Delete","class":"Branch_Summary_buttonDelete", "roles": {"AUTHOR": "B","PUBLISHER": "B"} }
     ],
     "fields": [
