@@ -171,7 +171,8 @@ exports = module.exports = function(jsh, cms){
     return 'jsharmony_cms_component_' + this.lastComponentId++;
   }
 
-  this.renderComponent = function(element) {
+  this.renderComponent = function(element, options) {
+    options = _.extend({ init: false }, options);
 
     var componentType = $(element).attr('data-component');
     var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
@@ -204,8 +205,10 @@ exports = module.exports = function(jsh, cms){
     component.create(componentTemplate, element);
     if ($(element).attr('data-is-insert')) {
       $(element).attr('data-is-insert', null);
-      element.scrollIntoView(false);
-      _this.components[componentId].openDataEditor();
+      if(!options.init){
+        element.scrollIntoView(false);
+        _this.components[componentId].openDataEditor();
+      }
     }
   }
 

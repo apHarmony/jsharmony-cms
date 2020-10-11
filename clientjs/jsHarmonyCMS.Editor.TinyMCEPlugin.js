@@ -458,8 +458,11 @@ exports = module.exports = function(jsh, cms, editor){
       var type = node.attributes.map['data-component'];
       // Content is not actually in the DOM yet.
       // Wait for next loop
+      var isInitialized = cms.isInitialized;
       setTimeout(function() {
-        cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
+        cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0], {
+          init: !isInitialized
+        });
       });
     });
   }

@@ -12,7 +12,9 @@
       branch_id: undefined,
       rawEditorDialog: '',
       page_id: undefined,
-      onComplete: undefined, //function(err){}
+      getURL: false,
+      async: true,
+      onComplete: undefined, //function(err, url){}
     }, options);
 
     async.waterfall([
@@ -25,7 +27,11 @@
         return;
       }
       var template = jsh.globalparams.PageTemplates[page_template_id];
-      if(!template) return XExt.Alert('Template is not defined');
+      if(!template){
+        var errmsg = 'Template is not defined';
+        if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
+        return XExt.Alert(errmsg);
+      }
 
       if(template.editor){
         var params = { page_template_id: page_template_id }
@@ -34,14 +40,22 @@
         _.each(['branch_id', 'page_id'], function(key){ if(options[key]) params[key] = options[key]; });
 
         XForm.Get('../_funcs/editor_url', params, {}, function(rslt){
-          if(!rslt || !rslt.editor) return XExt.Alert('Error generating editor URL');
+          if(!rslt || !rslt.editor){
+            var errmsg = 'Error generating editor URL';
+            if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
+            return XExt.Alert(errmsg);
+          }
 
           //Open Editor
           var url = rslt.editor;
+          if(options.getURL && options.onComplete) return options.onComplete(null, url);
           window.open(url, '_blank', "width=1195,height=800");
-        });
+        }, undefined, { async: options.async });
       }
       else {
+        //Raw Text has no dedicated editor
+        if(options.getURL && options.onComplete) return options.onComplete();
+
         //Edit Raw Text
 
         //Load content from server

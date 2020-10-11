@@ -172,6 +172,17 @@ jsh.App[modelid] = new (function(){
       else if(jobj.hasClass('page_view_revisions')) jsh.App[xmodel.parent].viewPageRevisions(page_key);
       else if(jobj.hasClass('page_duplicate')) jsh.App[xmodel.parent].duplicatePage(xmodel.get('sitemap_item_parent_id'), page_key);
     });
+    jpage_options.find('a.page_edit_content').on('mousedown', function(e){
+      var jobj = $(this);
+      //Right click
+      if(e.which==3){
+        //Resolve URL
+        var page_key = xmodel.get('sitemap_item_link_dest');
+        jsh.App[xmodel.parent].getEditorURL(page_key, function(url){
+          jobj.attr('href', url || '#');
+        });
+      }
+    });
   }
 
   this.browsePage = function(page_folder){

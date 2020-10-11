@@ -167,18 +167,26 @@ jsh.App[modelid] = new (function(){
     }
   }
 
-  this.sitemap_item_id_context_menu_onrender = function(sitemap_item_id, action){
+  this.sitemap_item_id_context_menu_onrender = function(sitemap_item_id, action, obj){
     if(action=='delete'){
       return (sitemap_item_id != 'ROOT');
     }
-    else if(action=='page'){
+    else if((action=='page')||(action=='edit')){
       sitemap_item_id = parseInt(sitemap_item_id);
       var sitemap_item = _this.getSitemapItem(sitemap_item_id);
       if(!sitemap_item) return false;
 
       if(sitemap_item.sitemap_item_link_type=='PAGE'){
         var page_key = sitemap_item.sitemap_item_link_dest;
-        if(page_key) return true;
+        if(page_key){
+          if(action=='edit'){
+            //Update URL
+            _this.getEditorURL(page_key, function(url){
+              $(obj).attr('href', url || '#');
+            });
+          }
+          return true;
+        }
       }
       return false;
     }
@@ -715,8 +723,20 @@ jsh.App[modelid] = new (function(){
     },1);
   }
 
+  this.getEditorURL = function(page_key, cb){
+    if(page_key) _this.getPageInfo(page_key, function(page){
+      _this.openPageEditor(page, {
+        getURL: true,
+        async: false,
+        onComplete: function(err, url){
+          return cb(url);
+        }
+      });
+    }, { async: false });
+  }
+
   this.getPageInfo = function(page_key, cb, options){
-    options = _.extend({ quiet: false }, options);
+    options = _.extend({ quiet: false, async: true }, options);
     page_key = parseInt(page_key);
     if(!page_key) return XExt.Alert('Page key is required');
 
@@ -729,11 +749,11 @@ jsh.App[modelid] = new (function(){
       }
       var page = rslt[execModel][0];
       return cb(page);
-    });
+    }, undefined, { async: options.async });
   }
 
   this.openPageEditor = function(page, options){
-    options = _.extend({ readonly: false }, options);
+    options = _.extend({ readonly: false, getURL: false, onComplete: undefined, async: true }, options);
 
     var page_key = page.page_key;
     var page_id = page.page_id;
@@ -744,6 +764,9 @@ jsh.App[modelid] = new (function(){
 
     var editorParams = { source: 'sitemap', rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' };
     if(options.readonly) editorParams.page_id = page_id;
+    if(options.getURL) editorParams.getURL = true;
+    if(options.onComplete) editorParams.onComplete = options.onComplete;
+    editorParams.async = options.async;
 
     jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, editorParams);
   }
