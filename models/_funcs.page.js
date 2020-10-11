@@ -391,7 +391,7 @@ module.exports = exports = function(module, funcs){
     }
 
     function replaceBase64Attribute(content, attr){
-      return parseAttribute(content, 'data-component-data', function(val){
+      return parseAttribute(content, attr, function(val){
         if(!val) return val;
         var strval = val;
         try{

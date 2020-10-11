@@ -151,6 +151,8 @@ module.exports = exports = function(module, funcs){
   exports.branch_upload = function (req, res, next) {
     var cms = module;
     var verb = req.method.toLowerCase();
+
+    var DEBUG_BRANCH_UPLOAD = false;
     
     var Q = req.query;
     var P = req.body;
@@ -285,18 +287,19 @@ module.exports = exports = function(module, funcs){
           }, function(err){
             if(err) return upload_cb(err);
 
-            /*
-            //For testing - fail so that transaction doesn't go through
-            dbtasks['fail'] = function (dbtrans, callback, transtbl) {
-              db.Command(branchData._DBContext, "select 1 fail err", [], {}, dbtrans, function (err, rslt) {
-                if (err != null) { err.sql = sql; }
-                callback(err, rslt);
-              });
+            if(DEBUG_BRANCH_UPLOAD){
+              //For testing - fail so that transaction doesn't go through
+              dbtasks['fail'] = function (dbtrans, callback, transtbl) {
+                db.Command(branchData._DBContext, "select 1 fail testerr", [], {}, dbtrans, function (err, rslt) {
+                  if (err != null) { err.sql = sql; }
+                  callback(err, rslt);
+                });
+              }
             }
-            */
 
             //Execute transactions
             db.ExecTransTasks(dbtasks, function (err, rslt) {
+              if (DEBUG_BRANCH_UPLOAD) return upload_cb();
               if (err != null) { appsrv.AppDBError(req, res, err); return; }
               upload_cb(null);
             });
@@ -318,6 +321,9 @@ module.exports = exports = function(module, funcs){
               }
             } },
             function(err){
+              //For testing
+              if(DEBUG_BRANCH_UPLOAD) return upload_cb(new Error('Testing Halted'));
+              //Return result
               if(err) return upload_cb(err);
               return upload_cb();
             }
@@ -426,7 +432,7 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var sql = 'select code_val, code_txt from ' + tableName + ' order by code_seq';
     appsrv.ExecRecordset(branchData._DBContext, funcs.replaceSchema(sql), [], {}, function (err, rslt) {
-      if (err != null) { err.sql = sql; err.model = model; return callback(err); }
+      if (err != null) { err.sql = sql; return callback(err); }
       if(!rslt || !rslt.length || !rslt[0]){ return callback(new Error('No data returned from database')); }
       branchData.LOVs[key] = {};
       _.each(rslt[0], function(row){
@@ -524,8 +530,12 @@ module.exports = exports = function(module, funcs){
         else {
           cols = ['page_path','page_title','page_tags','page_template_id','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'];
         }
-        var sql = "insert into {schema}.v_my_page("+cols.join(',')+") values ("+_.map(cols, function(col){ return '@' + col; }).join(',')+");";
-        sql += "select last_insert_rowid_override page_key from jsharmony_meta;";
+
+        var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{item}', 'page');
+        sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
+        sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
+
         var sql_ptypes = [
           dbtypes.Int,
           dbtypes.VarChar(2048),
@@ -553,7 +563,6 @@ module.exports = exports = function(module, funcs){
           if (err != null) { err.sql = sql; }
           //Store new page_id
           item.new_page_id = rslt;
-          branchData.page_mapping[item.new_page_id] = item;
           callback(err, rslt);
         });
       };
@@ -586,7 +595,7 @@ module.exports = exports = function(module, funcs){
           //Replace URLs
           function replaceURLs(content, options){
             var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
-              getMediaURL: function(media_key){
+              getMediaURL: function(media_key, _branchData, getLinkContent){
                 var orig_media_key = media_key;
                 var media_file_id = media_key;
                 if(branchData.media_mapping[orig_media_key]){
@@ -599,7 +608,10 @@ module.exports = exports = function(module, funcs){
                 var orig_page_key = page_key;
                 if(branchData.page_mapping[orig_page_key]) page_key = branchData.page_mapping[orig_page_key].new_page_id;
                 return branchData._baseurl+'_funcs/page/'+page_key+'/#@JSHCMS';
-              }
+              },
+              onError: function(err){
+                jsh.Log.error(err);
+              },
             }));
             return rslt;
           }
@@ -609,7 +621,9 @@ module.exports = exports = function(module, funcs){
             if(pageContent.content && pageContent.content.body) pageContent.content.body = replaceURLs(pageContent.content.body);
           }
           else {
-            if(pageContent.content) for(var key in pageContent.content){ pageContent.content[key] = replaceURLs(pageContent.content[key]); }
+            if(pageContent.content) for(var key in pageContent.content){
+              pageContent.content[key] = replaceURLs(pageContent.content[key]);
+            }
             _.each(['css','header','footer'], function(key){
               if(pageContent[key]) pageContent[key] = replaceURLs(pageContent[key], { HTMLParser: false });
             });
@@ -635,9 +649,9 @@ module.exports = exports = function(module, funcs){
     async.waterfall([
       function(cb){
         //Get all media from current database
-        var sql = 'select distinct media_file_id,media_size,media_ext from {schema}.media order by media_id';
+        var sql = 'select distinct media_file_id,media_size,media_ext from {schema}.media order by media_file_id';
         appsrv.ExecRecordset(branchData._DBContext, funcs.replaceSchema(sql), [], {}, function (err, rslt) {
-          if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+          if (err != null) { err.sql = sql; return cb(err); }
           if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('No data returned from database')); }
           branchData.media_files = {};
           _.each(rslt[0], function(item){
@@ -704,7 +718,7 @@ module.exports = exports = function(module, funcs){
               cols = ['media_is_folder','media_path'];
             }
             else {
-              cols = ['media_path','media_ext','media_size','media_width','media_width','media_desc','media_tags','media_type','media_lang'];
+              cols = ['media_path','media_ext','media_size','media_width','media_height','media_desc','media_tags','media_type','media_lang'];
             }
             var sql_ptypes = [
               dbtypes.Int,
@@ -740,14 +754,15 @@ module.exports = exports = function(module, funcs){
               cols.push('media_file_id');
             }
 
-            var sql = "insert into {schema}.v_my_media("+cols.join(',')+") values ("+_.map(cols, function(col){ return '@' + col; }).join(',')+");";
-            sql += "select last_insert_rowid_override media_key from jsharmony_meta;";
+            var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+            sql = Helper.ReplaceAll(sql, '{item}', 'media');
+            sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
+            sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
 
             db.Scalar(branchData._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, dbtrans, function (err, rslt) {
               if (err != null) { err.sql = sql; }
               //Store new media_id
               item.new_media_id = rslt;
-              branchData.media_mapping[item.new_media_id] = item;
               callback(err, rslt);
             });
           };
@@ -789,8 +804,12 @@ module.exports = exports = function(module, funcs){
       //Add menu to database
       dbtasks['menu_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
         cols = ['menu_name','menu_tag','menu_template_id','menu_path','menu_lang'];
-        var sql = "insert into {schema}.v_my_menu("+cols.join(',')+") values ("+_.map(cols, function(col){ return '@' + col; }).join(',')+");";
-        sql += "select last_insert_rowid_override menu_key from jsharmony_meta;";
+
+        var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{item}', 'menu');
+        sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
+        sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
+
         var sql_ptypes = [
           dbtypes.VarChar(256),
           dbtypes.VarChar(256),
@@ -874,8 +893,12 @@ module.exports = exports = function(module, funcs){
       //Add redirect to database
       dbtasks['redirect_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
         cols = ['redirect_url','redirect_url_type','redirect_seq','redirect_dest','redirect_http_code'];
-        var sql = "insert into {schema}.v_my_redirect("+cols.join(',')+") values ("+_.map(cols, function(col){ return '@' + col; }).join(',')+");";
-        sql += "select last_insert_rowid_override redirect_key from jsharmony_meta;";
+
+        var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{item}', 'redirect');
+        sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
+        sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
+
         var sql_ptypes = [
           dbtypes.VarChar(1024),
           dbtypes.VarChar(32),
@@ -912,8 +935,12 @@ module.exports = exports = function(module, funcs){
       //Add sitemap to database
       dbtasks['sitemap_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
         cols = ['sitemap_name','sitemap_type','sitemap_lang'];
-        var sql = "insert into {schema}.v_my_sitemap("+cols.join(',')+") values ("+_.map(cols, function(col){ return '@' + col; }).join(',')+");";
-        sql += "select last_insert_rowid_override sitemap_key from jsharmony_meta;";
+
+        var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{item}', 'sitemap');
+        sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
+        sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
+
         var sql_ptypes = [
           dbtypes.VarChar(256),
           dbtypes.VarChar(32),
