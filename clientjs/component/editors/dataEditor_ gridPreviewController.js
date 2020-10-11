@@ -497,12 +497,12 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var template =
       '<div class="toolbar">' +
         '<button data-component-part="moveItem" data-dir="prev">' +
-          '<span class="material-icons" style="transform: rotate(-90deg)">' +
+          '<span class="material-icons" style="display:inline-block; transform: rotate(-90deg)">' +
             'chevron_right' +
           '</span>' +
         '</button>' +
         '<button data-component-part="moveItem" data-dir="next">' +
-          '<span class="material-icons" style="transform: rotate(90deg)">' +
+          '<span class="material-icons" style="display:inline-block; transform: rotate(90deg)">' +
             'chevron_right' +
           '</span>' +
         '</button>' +
