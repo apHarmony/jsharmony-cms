@@ -443,7 +443,7 @@ jsh.App[modelid] = new (function(){
     if(!save_menu_items.length) save_menu_items = '';
 
     var url = jsh._BASEURL+'_funcs/menu/'+_this.menu_key;
-    XForm.Post(url, {}, { menu_items: save_menu_items }, function (rslt) { //On Success
+    XForm.Post(url, {}, { menu_items: JSON.stringify(save_menu_items) }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.has_changes = false;
       }

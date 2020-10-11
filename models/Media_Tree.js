@@ -6,6 +6,7 @@ jsh.App[modelid] = new (function(){
   this.VIEW = { 'tiles': 'Tiles', 'details': 'Details' };
 
   this.media_files = [];
+  this.sorted_media_files = [];
   this.selected_media_key = null;
   this.selected_media_file = null;
   this.state_default = {
@@ -279,10 +280,10 @@ jsh.App[modelid] = new (function(){
     options = _.extend({ refresh_sidebar: true }, options);
 
     //Sort Files
-    var sorted_media_files = [].concat(_this.media_files);
+    _this.sorted_media_files = [].concat(_this.media_files);
     var sort_key = _this.SORT_KEY[_this.state.file_sort.substr(1)];
     var sort_dir = (_this.state.file_sort[0]=='v'?-1:1);
-    sorted_media_files.sort(function(a,b){
+    _this.sorted_media_files.sort(function(a,b){
       var aval = a[sort_key];
       var bval = b[sort_key];
       if(aval > bval) return sort_dir*1;
@@ -293,7 +294,7 @@ jsh.App[modelid] = new (function(){
     //Render Files
     var tmpl = jsh.$root('.'+xmodel.class+'_template_file_listing_'+_this.state.file_view).html();
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
-    jcontainer.html(XExt.renderClientEJS(tmpl, { media_files: sorted_media_files, _: _, jsh: jsh }));
+    jcontainer.html(XExt.renderClientEJS(tmpl, { media_files: _this.sorted_media_files, _: _, jsh: jsh }));
     _this.bindEventsListing();
     if(options.refresh_sidebar) _this.selectFile(_this.selected_media_key);
 
@@ -327,6 +328,15 @@ jsh.App[modelid] = new (function(){
       jfiles.on('keyup', function(e){
         if(e.keyCode==46){ //Delete key
           _this.deleteFile($(this).data('key'));
+        }
+        else if(e.keyCode==113){ //F2 key
+          _this.renameFile($(this).data('key'));
+        }
+        else if((e.keyCode==37)||(e.keyCode==38)){ //Left / Up
+          _this.selectPrevFile($(this).data('key'));
+        }
+        else if((e.keyCode==39)||(e.keyCode==40)){ //Right / Down
+          _this.selectNextFile($(this).data('key'));
         }
       });
       XExt.bindDragSource(jfiles);
@@ -390,16 +400,28 @@ jsh.App[modelid] = new (function(){
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
     jcontainer.find('.selected').removeClass('selected');
     if(_this.state.file_view=='tiles'){
-      if(media_key) jcontainer.find('.'+xmodel.class+'_file_tile[data-key='+media_key+']').addClass('selected');
+      if(media_key) jcontainer.find('.'+xmodel.class+'_file_tile[data-key='+media_key+']').addClass('selected').focus();
     }
     else if(_this.state.file_view=='details'){
-      if(media_key) jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr[data-key='+media_key+']').addClass('selected');
+      if(media_key) jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr[data-key='+media_key+']').addClass('selected').focus();
     }
     _this.renderInfo(_this.selected_media_file);
     if(options.scrollIntoView){
       var jselected = jcontainer.find('.selected');
       if(jselected.length) jselected[0].scrollIntoView();
     }
+  }
+
+  this.selectPrevFile = function(media_key){
+    var curIndex = _.findIndex(_this.sorted_media_files, { media_key: media_key });
+    if(curIndex <= 0) return;
+    _this.selectFile(_this.sorted_media_files[curIndex - 1].media_key, { scrollIntoView: true });
+  }
+
+  this.selectNextFile = function(media_key){
+    var curIndex = _.findIndex(_this.sorted_media_files, { media_key: media_key });
+    if((curIndex < 0) || ((curIndex+1) >= _this.sorted_media_files.length)) return;
+    _this.selectFile(_this.sorted_media_files[curIndex + 1].media_key, { scrollIntoView: true });
   }
 
   this.viewFileDetails = function(media_key){

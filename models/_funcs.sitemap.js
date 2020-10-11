@@ -169,6 +169,15 @@ module.exports = exports = function(module, funcs){
 
         //XValidate
         var sitemap_content = P;
+        if (_.isString(sitemap_content.sitemap_items)){
+          try{
+            sitemap_content.sitemap_items = JSON.parse(sitemap_content.sitemap_items);
+          }
+          catch(ex){
+            Helper.GenError(req, res, -4, 'Invalid Parameters');
+            return;
+          }
+        }
         if (!_.isArray(sitemap_content.sitemap_items)) sitemap_content.sitemap_items = [];
         validate = new XValidate();
         verrors = {};

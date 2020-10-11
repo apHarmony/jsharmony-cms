@@ -53,6 +53,7 @@
   flex-grow:1;
   flex-shrink:1;
   flex-basis:150px;
+  word-break:break-word;
 }
 .<%=model.class%>_file_tile_empty {
   flex-grow:1;

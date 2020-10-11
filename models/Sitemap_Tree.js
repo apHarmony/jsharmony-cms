@@ -1024,7 +1024,7 @@ jsh.App[modelid] = new (function(){
     if(!save_sitemap_items.length) save_sitemap_items = '';
 
     var url = jsh._BASEURL+'_funcs/sitemap/'+_this.sitemap_key;
-    XForm.Post(url, {}, { sitemap_items: save_sitemap_items }, function (rslt) { //On Success
+    XForm.Post(url, {}, { sitemap_items: JSON.stringify(save_sitemap_items) }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.has_changes = false;
       }

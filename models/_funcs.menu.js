@@ -200,6 +200,15 @@ module.exports = exports = function(module, funcs){
 
         //XValidate
         var menu_content = P;
+        if (_.isString(menu_content.menu_items)){
+          try{
+            menu_content.menu_items = JSON.parse(menu_content.menu_items);
+          }
+          catch(ex){
+            Helper.GenError(req, res, -4, 'Invalid Parameters');
+            return;
+          }
+        }
         if (!_.isArray(menu_content.menu_items)) menu_content.menu_items = [];
         validate = new XValidate();
         verrors = {};
