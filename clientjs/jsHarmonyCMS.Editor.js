@@ -174,7 +174,10 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.setContent = function(id, val){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
-      window.setTimeout(function(){ $('#jsharmony_cms_content_'+id).html(val); },1);
+      window.setTimeout(function(){
+        $('#jsharmony_cms_content_'+id).html(val);
+        cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
+      },1);
     }
     else {
       var editor = window.tinymce.get('jsharmony_cms_content_'+id);
