@@ -1,0 +1,11 @@
+{
+  "Media_Editor": {
+    "layout": "form",
+    "title": "Media Editor",
+    "caption": "Media Editor",
+    "actions": "B",
+    "unbound": true,
+    "hide_system_buttons" : ["print","export","help","delete"],
+    "oninit": "_this.oninit(xmodel);"
+  }
+}

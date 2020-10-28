@@ -106,7 +106,14 @@ module.exports = exports = function(module, funcs){
       
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|width','|height','|download','|media_file_id','|media_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+        var validQueryParams = [
+          '|width','|height','|download','|media_file_id','|media_id', '|crop', '|resize','|flip_horizontal',
+          '|flip_vertical', '|rotate', '|invert', '|levels', '|sharpen', '|brightness', '|contrast', '|gamma'
+        ];
+        if (!appsrv.ParamCheck('Q', Q, validQueryParams)) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+        var transform = getTransformParameters(Q);
 
         //XValidate
         if(!thumbnail_config && (Q.width || Q.height)){
@@ -140,7 +147,18 @@ module.exports = exports = function(module, funcs){
         }
 
         var serveFile = function(serve_callback){
-          HelperFS.outputFile(req, res, fpath, fname, serve_callback, serveoptions);
+          if (transform) {
+            jsh.Extensions.image.transform(fpath, transform, (error, buffer, format) => {
+              if (error) {
+                serve_callback(error);
+              } else {
+                HelperFS.outputContent(req, res, buffer, HelperFS.getMimeType(format), undefined);
+                serve_callback();
+              }
+            })
+          } else {
+            HelperFS.outputFile(req, res, fpath, fname, serve_callback, serveoptions);
+          }
         }
 
         //Server media file
@@ -553,3 +571,122 @@ module.exports = exports = function(module, funcs){
 
   return exports;
 };
+
+function getTransformParameters(query) {
+
+  const convertNum = (value, asFloat) => {
+    const numValue = asFloat ? parseFloat(value) : parseInt(value);
+    return isNaN(numValue) ? undefined : numValue;
+  }
+
+  let hasTransform = false;
+  const transform = {};
+
+  if (query.brightness != undefined) {
+    hasTransform = true;
+    transform.brightness = convertNum(query.brightness, true);
+  }
+
+  if (query.contrast != undefined) {
+    hasTransform = true;
+    transform.contrast = convertNum(query.contrast, true);
+  }
+
+  if (query.crop != undefined) {
+    hasTransform = true;
+    const cropValues = query.crop.split(',');
+    transform.crop = {
+      x: convertNum(cropValues[0]),
+      y: convertNum(cropValues[1]),
+      width: convertNum(cropValues[2]),
+      height: convertNum(cropValues[3]),
+    }
+  }
+
+  if (query.flip_horizontal === '1') {
+    hasTransform = true;
+    transform.flip_horizontal = true;
+  }
+
+  if (query.flip_vertical === '1') {
+    hasTransform = true;
+    transform.flip_vertical = true;
+  }
+
+  if (query.gamma != undefined) {
+    hasTransform = true;
+    transform.gamma = convertNum(query.gamma, true);
+  }
+
+  if (query.invert === '1') {
+    hasTransform = true;
+    transform.invert = true;
+  }
+
+  if (query.levels != undefined) {
+    hasTransform = true;
+    const levelValues = query.levels.split(',');
+    transform.levels = {
+      r: convertNum(levelValues[0], true),
+      g: convertNum(levelValues[1], true),
+      b: convertNum(levelValues[2], true)
+    }
+  }
+
+  if (query.resize != undefined) {
+    hasTransform = true;
+    const resizeValues = query.resize.split(',');
+    transform.resize = {
+      width: convertNum(resizeValues[0]),
+      height: convertNum(resizeValues[1])
+    }
+  }
+
+  if (query.rotate != undefined) {
+    hasTransform = true;
+    transform.rotate = convertNum(query.rotate);
+  }
+
+  if (query.sharpen != undefined) {
+    hasTransform = true;
+    transform.sharpen = convertNum(query.sharpen, true);
+  }
+
+  return hasTransform ? transform : undefined;
+}
+
+/**
+ * @typedef {object} TransformOptions
+ * @property {(TransformCropOptions | undefined)} crop
+ * @property {(TransformResizeOptions | undefined)} resize
+ * @property {(TransformLevelsOptions | undefined)} levels
+ * @property {(boolean | undefined)} flip_horizontal
+ * @property {(boolean | undefined)} flip_vertical
+ * @property {(number | undefined)} rotate - 0, 90, 180, 270
+ * @property {(number | undefined)} sharpen - -1...1
+ * @property {(number | undefined)} brightness - -1...1
+ * @property {(number | undefined)} contrast - -1...1
+ * @property {(number | undefined)} gamma - -1...1
+ * @property {(boolean | undefined)} invert
+ */
+
+/**
+ * @typedef {object} TransformCropOptions
+ * @property {number} x
+ * @property {number} y
+ * @property {number} width
+ * @property {number} height
+ */
+
+/**
+ * @typedef {object} TransformResizeOptions
+ * @property {(number | undefined)} height
+ * @property {(number | undefined)} width
+ */
+
+/**
+ * @typedef {object} TransformLevelsOptions
+ * @property {(number | undefined)} r - -1...1
+ * @property {(number | undefined)} g - -1...1
+ * @property {(number | undefined)} b - -1...1
+ */
