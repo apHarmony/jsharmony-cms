@@ -41,8 +41,22 @@ else if(routetype == 'model'){
   var model = jsh.getModel(req, modelid);
   if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-  if(req.query.init_page_key){
-    jsh.AppSrv.ExecRow(req._DBContext, "select page_folder from {schema}.v_my_page where page_key=@page_key", [dbtypes.BigInt], { page_key: req.query.init_page_key }, function (err, rslt) {
+  let query = undefined;
+  let pTypes = undefined;
+  let qParams = undefined;
+  if(req.query.init_page_key) {
+    query = 'select page_folder from {schema}.v_my_page where page_key=@page_key';
+    pTypes = [dbtypes.BigInt];
+    qParams = { page_key: req.query.init_page_key };
+  } else if (req.query.init_path) {
+    if (!req.query.init_path.endsWith('/')) req.query.init_path = req.query.init_path + '/';
+    query = 'select page_folder from {schema}.v_my_page where substr(page_folder, 1, length(@page_folder)) = @page_folder';
+    pTypes = [dbtypes.NVarChar(req.query.init_path.length)];
+    qParams = { page_folder: req.query.init_path };
+  }
+
+  if (query) {
+    jsh.AppSrv.ExecRow(req._DBContext, query, pTypes, qParams, function (err, rslt) {
       if(err) callback();
       if(!rslt || !rslt.length || !rslt[0]) return callback();
 

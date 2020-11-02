@@ -4410,6 +4410,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms, editor){
   var _this = this;
   var XExt = jsh.XExt;
+  var lastMediaPath = undefined;
+  var lastLinkPath = undefined;
 
   this.getParameters = function(filePickerType, url){
     url = (url||'').toString();
@@ -4435,7 +4437,10 @@ exports = module.exports = function(jsh, cms, editor){
 
   this.openLink = function(cb, value, meta){
     cms.filePickerCallback = cb;
-    var qs = _this.getParameters('link', value);
+    var qs = { };
+    var linkurl = _this.getParameters('link', value); 
+    if(linkurl.init_media_key) qs.init_media_key = linkurl.init_media_key;
+    else if (lastLinkPath) qs.init_path = lastLinkPath;
     XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
 
@@ -4444,6 +4449,7 @@ exports = module.exports = function(jsh, cms, editor){
     var qs = { };
     var linkurl = _this.getParameters('media', value);
     if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
+    else if(lastMediaPath) qs.init_path = lastMediaPath;
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
   }
 
@@ -4454,9 +4460,11 @@ exports = module.exports = function(jsh, cms, editor){
       var jdata = JSON.parse(data);
       if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){}
       else if(jdata.media_key){
+        lastMediaPath = jdata.media_folder;
         cms.filePickerCallback(cms._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS', jdata);
       }
       else if(jdata.page_key){
+        lastLinkPath = jdata.page_folder;
         cms.filePickerCallback(cms._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS', jdata);
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
