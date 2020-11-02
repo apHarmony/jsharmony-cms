@@ -37,6 +37,7 @@ var jsHarmonyCMS = function(options){
   this.toolbar = undefined; //Loaded after init
   this.controller = undefined; //Loaded after init
   this.editor = undefined; //Loaded after init
+  this.editorToolbarDockPosition = 'top';
   this.componentManager = undefined; // Loaded after init
   this.menuController = undefined; //Loaded after init
   this.views = {
@@ -109,6 +110,11 @@ var jsHarmonyCMS = function(options){
 
       if(_this.onInit) _this.onInit(jsh);
 
+      _this.editor.onChangeDockPosition = function(position) { 
+        _this.editorToolbarDockPosition = position;
+        _this.refreshLayout();
+      }
+
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
@@ -166,10 +172,16 @@ var jsHarmonyCMS = function(options){
     var pw = ((docw > ww) ? docw : ww);
     var ph = ((doch > wh) ? doch : wh);
     var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
+    var toolbarh = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
     $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
 
-    var toolbarTop = 37;
-    $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
+    const anchorPos = this.editorToolbarDockPosition;
+    if (anchorPos === 'bottom') {
+      $('#jsharmony_cms_content_editor_toolbar').css('top', 'calc(100vh - ' + toolbarh + 'px)');
+    } else {
+      var toolbarTop = 37;
+      $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
+    }
   }
 
   this.onmessage = function(event){

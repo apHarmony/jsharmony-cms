@@ -20,6 +20,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSEditorTinyMCEPlugin = require('./jsHarmonyCMS.Editor.TinyMCEPlugin.js');
 
+const dockEditorToolbarCommandName = 'jsHarmonyDockEditorToolbar';
+
 exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
 
@@ -36,6 +38,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.onBeginEdit = null; //function(editor){};
   this.onEndEdit = null; //function(editor){};
 
+  /** @type {(pos: 'top' : 'bottom') => void } */
+  this.onChangeDockPosition = null;
 
   this.editorConfig = {
     base: null,
@@ -78,7 +82,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsharmonyDockToolbarMenu' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
@@ -110,6 +114,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(editor){
           var firstFocus = true;
+          _this.initToolbarDockMenu(editor);
           editor.on('focus', function(){
             //Fix bug where alignment not reset when switching between editors
             if(firstFocus){
@@ -171,6 +176,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
+  /** 
+   * @param {string} id
+   * @param {'top' | 'bottom'} position
+   */
+  this.setToolbarDockPosition = function(id, position) {
+    const editor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(!editor) throw new Error('Editor not found: '+id);
+    editor.execCommand(dockEditorToolbarCommandName, position);
+  }
+
   this.setContent = function(id, val){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
@@ -204,6 +219,47 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       this.toolbarContainer.attr('id', id);
     }
   }
+
+  this.initToolbarDockMenu = function(editor) {
+  
+    let dockPosition = 'top'
+    editor.addCommand(dockEditorToolbarCommandName, function(position) { 
+      dockPosition = position; 
+      if (_this.onChangeDockPosition) _this.onChangeDockPosition(position);
+    });
+    editor.addQueryValueHandler(dockEditorToolbarCommandName, function() { return dockPosition; });
+
+    editor.ui.registry.addNestedMenuItem('jsharmonyDockToolbarMenu', {
+      text: 'Dock Toolbar',
+      getSubmenuItems: function() {
+        return [
+          {
+            type: 'togglemenuitem',
+            text: 'Top',
+            onAction: function() {
+              editor.execCommand(dockEditorToolbarCommandName, 'top');
+            },
+            onSetup: function(api) {
+              api.setActive(editor.queryCommandValue(dockEditorToolbarCommandName) === 'top');
+              return function() {};
+            }
+          },
+          {
+            type: 'togglemenuitem',
+            text: 'Bottom',
+            onAction: function(a) {
+              editor.execCommand(dockEditorToolbarCommandName, 'bottom');
+            },
+            onSetup: function(api) {
+              api.setActive(editor.queryCommandValue(dockEditorToolbarCommandName) === 'bottom');
+              return function() {};
+            }
+          }
+        ]
+      }
+    });
+  }
+
   this.getMaterialIcons = function(){
     if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [
