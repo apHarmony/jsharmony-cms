@@ -2,7 +2,7 @@
  * @class
  * @param {JQuery} $imageEditor
  */
-export function ContrastEditor($imageEditor) {
+function ContrastEditor($imageEditor) {
 
   /** @private @type {JQuery} */
   this._$editor = $imageEditor.find('[data-editor="contrast"]');

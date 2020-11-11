@@ -1,10 +1,10 @@
-/** @typedef {import('./imageEditorController').RotateModel} RotateModel*/
+/** @typedef {import('./Media_Editor.imageEditorController').RotateModel} RotateModel*/
 
 /**
  * @class
  * @param {JQuery} $imageEditor
  */
-export function RotateEditor($imageEditor) {
+function RotateEditor($imageEditor) {
 
   this._$editor = $imageEditor.find('[data-editor="rotate"]');
 

@@ -11,7 +11,7 @@ const  jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
  * and available for use within the editor by name property.
  * @type {Object.<string, IconDefinition>}
  **/
-const PLUGIN_NAME = 'jsHarmonyImageTools'
+const PLUGIN_NAME = 'jsHarmonyCmsImageTools'
 
 const ICONS = {
   edit: {

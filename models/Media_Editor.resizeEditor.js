@@ -1,11 +1,12 @@
-import { Image } from './image';
+
+/** @typedef {import('./Media_Editor.image').Image} Image */
 
 /**
  * @class
  * @param {JQuery} $imageEditor
  * @param {Image} imageCanvas
  */
-export function ResizeEditor($imageEditor, imageCanvas) {
+function ResizeEditor($imageEditor, imageCanvas) {
   this._$editor = $imageEditor.find('[data-editor="resize"]');
 
   /** @private @type {Image} */

@@ -2,7 +2,7 @@
  * @class
  * @param {JQuery} $imageEditor
  */
-export function BrightnessEditor($imageEditor) {
+function BrightnessEditor($imageEditor) {
 
   /** @private @type {JQuery} */
   this._$editor = $imageEditor.find('[data-editor="brightness"]');

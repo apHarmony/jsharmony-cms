@@ -1,11 +1,8 @@
-import { CropEditor } from './cropEditor';
-
-
 /**
  * @class
  * @param {JQuery} $imageWrapper
  */
-export function Image($imageWrapper, imageUrl) {
+function Image($imageWrapper, imageUrl) {
 
   /** @private @type {JQuery} */
   this._$imageWrapper = $imageWrapper;

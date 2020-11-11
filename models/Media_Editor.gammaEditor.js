@@ -2,7 +2,7 @@
  * @class
  * @param {JQuery} $imageEditor
  */
-export function GammaEditor($imageEditor) {
+function GammaEditor($imageEditor) {
 
   /** @private @type {JQuery} */
   this._$editor = $imageEditor.find('[data-editor="gamma"]');

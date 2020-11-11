@@ -1,14 +1,15 @@
-import { Image } from './image';
-import { BottomToolbar } from './bottomToolbar';
-import { TopToolbar } from './topToolbar';
-import { RotateEditor } from './rotateEditor';
-import { ResizeEditor } from './resizeEditor';
-import { CropEditor} from './cropEditor';
-import { ContrastEditor } from './contrastEditor';
-import { ColorEditor } from './colorEditor';
-import { BrightnessEditor } from './brightnessEditor';
-import { GammaEditor } from './gammaEditor';
-import { SharpnessEditor } from './sharpnessEditor';
+
+/** @typedef {import('./Media_Editor.image').Image} Image */
+/** @typedef {import('./Media_Editor.bottomToolbar').BottomToolbar} BottomToolbar */
+/** @typedef {import('./Media_Editor.topToolbar').TopToolbar} TopToolbar */
+/** @typedef {import('./Media_Editor.rotateEditor').RotateEditor} RotateEditor */
+/** @typedef {import('./Media_Editor.resizeEditor').ResizeEditor} ResizeEditor */
+/** @typedef {import('./Media_Editor.cropEditor').CropEditor} CropEditor */
+/** @typedef {import('./Media_Editor.contrastEditor').ContrastEditor} */
+/** @typedef {import('./Media_Editor.colorEditor').ColorEditor} ColorEditor */
+/** @typedef {import('./Media_Editor.brightnessEditor').BrightnessEditor} BrightnessEditor */
+/** @typedef {import('./Media_Editor.gammaEditor').GammaEditor} GammaEditor */
+/** @typedef {import('./Media_Editor.sharpnessEditor').SharpnessEditor} SharpnessEditor */
 
 /**
  * @typedef {object} EditorBase
@@ -99,6 +100,7 @@ import { SharpnessEditor } from './sharpnessEditor';
  * @property {string | undefined} gamma - -1...1
  * @property {string | undefined} invert - 0 or 1 
  * @property {string | undefined} levels - "<red>,<green>,<blue>"
+ * @property {string | undefined} nocache - 1
  * @property {string| undefined} rotate - 0, 90, 180, 270
  * @property {string| undefined} resize - "<width>,<height>"
  * @property {string | undefined} sharpen - -1...1
@@ -125,7 +127,7 @@ import { SharpnessEditor } from './sharpnessEditor';
  * @property {string} url - scheme, host, port, path
  */
 
-export function ImageEditorController() {
+function ImageEditorController() {
 
   /** @private @type {InputImageInfo} */
   this._inputImageInfo = this.getInputImageInfo();
@@ -152,7 +154,7 @@ export function ImageEditorController() {
   this._topToolbar = new TopToolbar(this._$editor);
 
   /** @private @type {Image} */
-  this._image = new Image(this._$imageWrapper, this.buildUrl(this._inputImageInfo.zeroTransformUrlParts));
+  this._image = new Image(this._$imageWrapper, this.buildUrl(this._inputImageInfo.zeroTransformUrlParts, 'nocache=1'));
 
   /** @private @type {number} */
   this._zoomIncrement = 0;
@@ -252,12 +254,12 @@ ImageEditorController.prototype.buildModelFromQuery = function(query) {
   }
 
   if (queryObject.crop) {
-    const values = _.map(queryObject.crop.split(','), function(value) { return self.parseInt(value, 0); });
+    const values = _.map(queryObject.crop.split(','), function(value) { return self.parseFloat(value, 0); });
     // values: [x, y, width, height]
-    model.crop.window.x0 = values[0] / this._image.getOriginalWidth(); 
-    model.crop.window.x1 = (values[0] + values[2]) / this._image.getOriginalWidth();
-    model.crop.window.y0 = values[1] / this._image.getOriginalHeight();
-    model.crop.window.y1 = (values[1] + values[3]) / this._image.getOriginalHeight();
+    model.crop.window.x0 = values[0]; 
+    model.crop.window.x1 = values[0] + values[2];
+    model.crop.window.y0 = values[1];
+    model.crop.window.y1 = values[1] + values[3];
   }
 
   if (queryObject.brightness) {
@@ -335,24 +337,26 @@ ImageEditorController.prototype.buildQueryObjectFromModel = function(model) {
   if (flipVertical) query.flip_vertical = '1';
   if (rotationAngle) query.rotate = rotationAngle;
 
-
   const isCropFullImage =
     model.crop.window.x0 === 0 &&
     model.crop.window.x1 === 1 &&
     model.crop.window.y0 === 0 &&
     model.crop.window.y1 === 1;
   if (!isCropFullImage) {
-    const absCropWindow = this._editors.crop.editor.getAbsoluteCropWindow(model.crop.window, this._image.getOriginalWidth(), this._image.getOriginalHeight());
-    const hasCrop =
-      absCropWindow.height > 0 &&
-      absCropWindow.width > 0;
-  
+    const window = {
+      x: model.crop.window.x0,
+      y: model.crop.window.y0,
+      height: model.crop.window.y1 - model.crop.window.y0,
+      width: model.crop.window.x1 - model.crop.window.x0
+    };
+
+    const hasCrop = window.height > 0 && window.width > 0;
     if (hasCrop) {
       const values = [
-        absCropWindow.x || 0,
-        absCropWindow.y || 0,
-        absCropWindow.width || 0,
-        absCropWindow.height || 0,
+        window.x || 0,
+        window.y || 0,
+        window.width || 0,
+        window.height || 0,
       ];
       query.crop = values.join(',');
     }
@@ -402,6 +406,8 @@ ImageEditorController.prototype.buildQueryObjectFromModel = function(model) {
 
   const hasSharpnessChange = model.sharpness.sharpness !== 0;
   if (hasSharpnessChange) query.sharpen = model.sharpness.sharpness;
+
+  query.nocache = '1';
 
   return query;
 }
@@ -676,7 +682,7 @@ ImageEditorController.prototype.initialize = function() {
   this._bottomToolbar.onCancel = function() {
     window.close();
   }
-
+  
   this._bottomToolbar.onDone = function() {
     self.sendToEditor();
     window.close();
@@ -990,10 +996,13 @@ ImageEditorController.prototype.transformRelativeWindowToModel = function(window
 
   const rotationAngle = rotateModel.rotationAngle || 0;
   let transformedWindow = this.rotateRelativeWindow(window, (360 - rotationAngle) % 360);
-  if (rotateModel.flipHorizontal) {
+
+  const isSideways = rotationAngle === 90 || rotationAngle === 270;
+
+  if ((!isSideways && rotateModel.flipHorizontal) || (isSideways && rotateModel.flipVertical)) {
     transformedWindow = this.flipRelativeWindow(transformedWindow, 'horizontal');
   }
-  if (rotateModel.flipVertical) {
+  if ((!isSideways && rotateModel.flipVertical) || (isSideways && rotateModel.flipHorizontal)) {
     transformedWindow = this.flipRelativeWindow(transformedWindow, 'vertical');
   }
 

@@ -1,10 +1,10 @@
-/** @typedef {import('./imageEditorController').ColorModel} ColorModel */
+/** @typedef {import('./Media_Editor.imageEditorController.js').ColorModel} ColorModel */
 
 /**
  * @class
  * @param {JQuery} $imageEditor
  */
-export function ColorEditor($imageEditor) {
+function ColorEditor($imageEditor) {
   this._$editor = $imageEditor.find('[data-editor="color"]');
 
   /** @private @type {(ColorModel | undefined)} */

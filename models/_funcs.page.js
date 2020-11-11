@@ -23,6 +23,7 @@ var path = require('path');
 var fs = require('fs');
 var urlparser = require('url');
 var cheerio = require('cheerio');
+var querystring = require('querystring');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -233,7 +234,7 @@ module.exports = exports = function(module, funcs){
 
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
-      getMediaURL: function(media_key, branchData, getLinkContent){ return ''; },
+      getMediaURL: function(media_key, branchData, getLinkContent, query){ return ''; },
       getPageURL: function(page_key, branchData, getLinkContent){ return ''; },
       onError: function(err){ },
       removeClass: false,
@@ -244,6 +245,7 @@ module.exports = exports = function(module, funcs){
 
     function replaceURL(url, getLinkContent){
       if(!url) return url;
+      url = url.replace(/&amp;/g, '&');
       if(module.Config.onReplaceBranchURL){
         var customURL = module.Config.onReplaceBranchURL(url, options.branchData, getLinkContent, options);
         if(typeof customURL != 'undefined') return customURL;
@@ -256,7 +258,7 @@ module.exports = exports = function(module, funcs){
         var media_key = patharr[3];
         if(parseInt(media_key).toString()==media_key){
           try{
-            var media_url = options.getMediaURL(media_key, options.branchData, getLinkContent);
+            var media_url = options.getMediaURL(media_key, options.branchData, getLinkContent, urlparts.query);
           }
           catch(ex){
             if(options.onError) options.onError(ex);
@@ -802,8 +804,27 @@ module.exports = exports = function(module, funcs){
 
             function replaceURLs(content, options){
               var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
-                getMediaURL: function(media_key){
-                  return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
+                getMediaURL: function(media_key, branchData, getLinkContent, query){
+                  const validQueryParams = new Set([
+                    'brightness',
+                    'contrast',
+                    'crop',
+                    'flip_horizontal',
+                    'flip_vertical',
+                    'gamma',
+                    'invert',
+                    'levels',
+                    'resize',
+                    'rotate',
+                    'sharpen',
+                  ]);
+
+                  const filteredQuery = { media_file_id: media_file_ids[media_key] };
+                  _.forEach(_.entries(query), kvp => {
+                    if (validQueryParams.has(kvp[0])) filteredQuery[kvp[0]] = kvp[1];
+                  });
+
+                  return baseurl+'_funcs/media/'+media_key+'/?' + querystring.stringify(filteredQuery) +'#@JSHCMS';
                 },
                 getPageURL: function(page_key){
                   return baseurl+'_funcs/page/'+page_key+'/#@JSHCMS';

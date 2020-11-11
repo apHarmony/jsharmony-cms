@@ -73,7 +73,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
-          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms jsHarmonyImageTools',
+          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms jsHarmonyCmsImageTools',
           'insertdatetime media table paste code noneditable'
         ],
         toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView',

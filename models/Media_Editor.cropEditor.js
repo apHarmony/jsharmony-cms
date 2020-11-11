@@ -1,6 +1,6 @@
-import { Image } from './image'
 
-/** @typedef {import('./imageEditorController').RelativeCropWindow} RelativeCropWindow */
+/** @typedef {import('./Media_Editor.imageEditorController').RelativeCropWindow} RelativeCropWindow */
+/** @typedef {import('./Media_Editor.image').Image} Image */
 
 
 
@@ -10,7 +10,7 @@ import { Image } from './image'
  * @param {JQuery} $imageEditor
  * @param {Image} image
  */
-export function CropEditor($imageEditor, $imageWrapper, image) {
+function CropEditor($imageEditor, $imageWrapper, image) {
 
   /** @private @type {JQuery} */
   this._$editor = $imageEditor.find('[data-editor="crop"]');

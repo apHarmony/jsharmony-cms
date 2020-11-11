@@ -2,7 +2,7 @@
  * @class
  * @param {JQuery} $imageEditor
  */
-export function SharpnessEditor($imageEditor) {
+function SharpnessEditor($imageEditor) {
 
   /** @private @{JQuery} */
   this._$editor = $imageEditor.find('[data-editor="sharpness"]');

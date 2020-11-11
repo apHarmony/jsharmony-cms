@@ -1,7 +1,7 @@
 /**
  * @class
  */
-export function BottomToolbar($imageEditor) {
+function BottomToolbar($imageEditor) {
 
   /** @private @type {JQuery} */
   this._$toolbar = $imageEditor.find('.bottomToolbar');

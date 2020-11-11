@@ -1,7 +1,7 @@
 /**
  * @class
  */
-export function TopToolbar($imageEditor) {
+function TopToolbar($imageEditor) {
 
   this._$toolbar = $imageEditor.find('.topToolbar');
 
