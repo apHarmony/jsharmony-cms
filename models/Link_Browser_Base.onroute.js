@@ -18,21 +18,21 @@ if(routetype == 'model'){
     },
     function(){
       if(req.query.init_page_key || req.query.init_path){
-        let query = undefined;
-        let pTypes = undefined;
-        let qParams = undefined;
+        let sql = undefined;
+        let sql_ptypes = undefined;
+        let sql_params = undefined;
         if (req.query.init_page_key) {
-          query = "select page_folder from {schema}.v_my_page where page_key=@page_key";
-          pTypes = [dbtypes.BigInt];
-          qParams = { page_key: req.query.init_page_key };
+          sql = "select page_folder from {schema}.v_my_page where page_key=@page_key";
+          sql_ptypes = [dbtypes.BigInt];
+          sql_params = { page_key: req.query.init_page_key };
         }
         else {
           if (!req.query.init_path.endsWith('/')) req.query.init_path = req.query.init_path + '/';
-          query = "select page_folder from {schema}.v_my_page where substr(page_folder, 1, length(@page_folder)) = @page_folder";
-          pTypes = [dbtypes.NVarChar(req.query.init_path.length)];
-          qParams = { page_folder: req.query.init_path };
+          sql = "select page_folder from {schema}.v_my_page where substr(page_folder, 1, length(@page_folder)) = @page_folder";
+          sql_ptypes = [dbtypes.NVarChar(dbtypes.MAX)];
+          sql_params = { page_folder: req.query.init_path };
         }
-        jsh.AppSrv.ExecRow(req._DBContext, query, pTypes, qParams, function (err, rslt) {
+        jsh.AppSrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if(err) callback();
           if(!rslt || !rslt.length || !rslt[0]) return callback();
 
