@@ -20,7 +20,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSEditorTinyMCEPlugin = require('./jsHarmonyCMS.Editor.TinyMCEPlugin.js');
 
-const dockEditorToolbarCommandName = 'jsHarmonyDockEditorToolbar';
+const dockEditorToolbarCommandName = 'jsHarmonyCmsDockEditorToolbar';
 
 exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;

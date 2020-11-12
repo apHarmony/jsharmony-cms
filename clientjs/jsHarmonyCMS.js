@@ -172,15 +172,18 @@ var jsHarmonyCMS = function(options){
     var pw = ((docw > ww) ? docw : ww);
     var ph = ((doch > wh) ? doch : wh);
     var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-    var toolbarh = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
     $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
 
     const anchorPos = this.editorToolbarDockPosition;
     if (anchorPos === 'bottom') {
-      $('#jsharmony_cms_content_editor_toolbar').css('top', 'calc(100vh - ' + toolbarh + 'px)');
+      $('#jsharmony_cms_content_editor_toolbar')
+        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
+        .css('bottom', '0');
     } else {
       var toolbarTop = 37;
-      $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
+      $('#jsharmony_cms_content_editor_toolbar')
+        .css('top', toolbarTop+'px')
+        .css('bottom', '');
     }
   }
 
