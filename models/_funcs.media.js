@@ -36,7 +36,11 @@ module.exports = exports = function(module, funcs){
     }
     else if(thumbnail_config) throw new Error('Unsupported media file name: '+JSON.stringify(thumbnail_config));
     fname += media_ext;
-    return path.join(path.join(module.jsh.Config.datadir,'media'),fname);
+    return path.join(exports.getMediaFileFolder(), fname);
+  }
+
+  exports.getMediaFileFolder = function() {
+    return path.join(module.jsh.Config.datadir,'media');
   }
 
   exports.media = function (req, res, next) {
@@ -114,7 +118,7 @@ module.exports = exports = function(module, funcs){
         ];
         if (!appsrv.ParamCheck('Q', Q, validQueryParams)) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-        var transform = getTransformParameters(Q);
+        var transform = exports.getMediaTransformParameters(Q);
 
         //XValidate
         if(!thumbnail_config && (Q.width || Q.height)){
@@ -152,7 +156,7 @@ module.exports = exports = function(module, funcs){
 
         var serveFile = function(serve_callback){
           if (transform) {      
-            const transformFilename = getTransformFileName(media.media_file_id, path.extname(fpath).slice(1), transform);
+            const transformFilename = exports.getMediaTransformFileName(media.media_file_id, path.extname(fpath).slice(1), transform);
             const transformFilePath = path.join(path.dirname(fpath), transformFilename);
             fs.readFile(transformFilePath, (error, buffer) => {
               if (error && error.code === 'ENOENT') {
@@ -595,7 +599,7 @@ module.exports = exports = function(module, funcs){
    * @param {TransformOptions} transform
    * @returns {string | undefined}
    */
-  function getTransformFileName(mediaId, ext, transform) {
+  exports.getMediaTransformFileName = function(mediaId, ext, transform) {
 
     /**************************************************
      * File Name Format
@@ -671,7 +675,7 @@ module.exports = exports = function(module, funcs){
     return `${mediaId}._.${parts.join('.')}.${ext}`;
   }
 
-  function getTransformParameters(query) {
+  exports.getMediaTransformParameters = function(query) {
 
     const convertNum = (value, asFloat) => {
       const numValue = asFloat ? parseFloat(value) : parseInt(value);

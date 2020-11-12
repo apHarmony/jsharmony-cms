@@ -302,6 +302,7 @@ module.exports = exports = function(module, funcs){
             page_redirects: {},
 
             media_keys: {},
+            media_transforms: [],
 
             menus: {},
             menu_template_html: {},
@@ -932,9 +933,21 @@ module.exports = exports = function(module, funcs){
             try{
               page_content = funcs.replaceComponents(page_content, { components: branchData.component_html });
               page_content = funcs.replaceBranchURLs(page_content, {
-                getMediaURL: function(media_key){
+                getMediaURL: function(media_key, branchData, getLinkContent, query){                  
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
-                  return branchData.media_keys[media_key];
+
+                  let media_url = branchData.media_keys[media_key];
+                  const transform = funcs.getMediaTransformParameters(query);
+                  if (!transform) return media_url;
+
+                  const path_parts = path.parse(media_url);
+                  const ext = (path_parts.ext || '').replace(/^\./, '');
+                  const dest_filename = funcs.getMediaTransformFileName(path_parts.name, ext, transform);
+                  const src_filename = funcs.getMediaTransformFileName(media_key, ext, transform);
+                  media_url =  path_parts.dir + '/' + dest_filename;
+                  branchData.media_transforms.push({ media_key, dest_filename, src_filename });
+                  
+                  return media_url;
                 },
                 getPageURL: function(page_key){
                   if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
@@ -997,19 +1010,54 @@ module.exports = exports = function(module, funcs){
     appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; return cb(err); }
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
-      async.eachSeries(rslt[0], function(media, cb){
-        var srcpath = funcs.getMediaFile(media.media_file_id, media.media_ext);
-        fs.readFile(srcpath, null, function(err, media_content){
-          if(err) return cb(err);
 
-          var media_fpath = '';
-          try{
-            media_fpath = funcs.getMediaRelativePath(media, publish_params);
-          }
-          catch(ex){
-            return cb(ex);
-          }
-          if(!media_fpath) return cb(new Error('Media has no path: '+media.media_key));
+      const files_to_copy = [];
+      const existing_files = new Set();
+      const media_map = new Map();
+
+      for (let i = 0; i < rslt[0].length; i++) {
+        const media = rslt[0][i];
+        media_map.set(media.media_key.toString(), media);
+        
+        const src_path = funcs.getMediaFile(media.media_file_id, media.media_ext);
+        let media_fpath = undefined;
+        try {
+          media_fpath = funcs.getMediaRelativePath(media, publish_params);
+        } catch(ex) {
+          return cb(ex);
+        }
+        if(!media_fpath) return cb(new Error(`Media has no path: ${media.media_key}`));
+        files_to_copy.push({ dest: media_fpath, src: src_path });
+        existing_files.add(path.normalize(media_fpath.toLowerCase()));
+      }
+      
+      for (let i = 0; i < branchData.media_transforms.length; i++) {
+        const {media_key, dest_filename,  src_filename} = branchData.media_transforms[i];
+        const media = media_map.get(media_key)
+
+        if (!media) return cb(new Error(`Media not found: ${media_key}`));
+
+        const src_path = path.join(funcs.getMediaFileFolder(), src_filename);
+        let media_fpath = undefined;
+        try {
+          media_fpath = funcs.getMediaRelativePath(media, publish_params);
+        } catch(ex) {
+          return cb(ex);
+        }
+        if(!media_fpath) return cb(new Error(`Media has no path: ${dest_filename}`));
+        media_fpath = path.join(path.dirname(media_fpath), dest_filename);
+
+        if (existing_files.has(path.normalize(media_fpath.toLowerCase()))) return cb(new Error(`Cannot add transformed media. Media already exists: "${media_fpath}"`));
+
+        files_to_copy.push({ dest: media_fpath, src: src_path });
+      }
+
+      async.eachSeries(files_to_copy, (to_copy, cb) => {
+
+        const srcpath =  to_copy.src;
+        let media_fpath = to_copy.dest;
+        fs.readFile(srcpath, null, (err, media_content) => {
+          if(err) return cb(err);
 
           branchData.site_files[media_fpath] = {
             md5: crypto.createHash('md5').update(media_content).digest("hex")

@@ -19,6 +19,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
 var async = require('async');
+var path = require('path');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -95,6 +96,7 @@ module.exports = exports = function(module, funcs){
       _DBContext: dbcontext,
       page_keys: {},
       media_keys: {},
+      media_transforms: [],
       branch_id: branch_id,
       deployment_target_params: null,
     };
@@ -251,8 +253,18 @@ module.exports = exports = function(module, funcs){
         if(page.compiled.content) for(var key in page.compiled.content) allContent[key + ' content'] = page.compiled.content[key];
         for(var key in allContent){
           funcs.replaceBranchURLs(allContent[key], {
-            getMediaURL: function(media_key, branchData, getLinkContent){
+            getMediaURL: function(media_key, branchData, getLinkContent, query){
               if(!(media_key in branchData.media_keys)) throw new Error('<' + key + '>: Link to missing Media ID #'+media_key.toString()+': ...'+getLinkContent()+'...');
+
+              const transform = funcs.getMediaTransformParameters(query);
+              if (!transform) return '';
+
+              const media = branchData.media_keys[media_key];              
+              const path_parts = path.parse(media.media_path);
+              const ext = (path_parts.ext || '').replace(/^\./, '');
+              const dest_filename = funcs.getMediaTransformFileName(path_parts.name, ext, transform);
+              const dest_path = path.join(path.dirname(media.media_path), dest_filename);
+              branchData.media_transforms.push({media_key, dest_filename, dest_path});
               return '';
             },
             getPageURL: function(page_key, branchData, getLinkContent){
@@ -276,6 +288,17 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
+
+    // Ensure transformed images do not overwrite
+    // media files
+    const media_paths = new Set();
+    _.forEach(_.values(branchData.media_keys), media => media_paths.add(path.normalize(media.media_path.toLowerCase())));
+    _.forEach(branchData.media_transforms, info =>{
+      const dest = path.normalize(info.dest_path.toLowerCase());
+      if (media_paths.has(dest)) {
+        funcs.validate_logError(item_errors, '', {}, `Media transform overwrites media file. Path "${info.dest_path}`);
+      }
+    });
 
     //Validate Media Paths
     async.eachOfSeries(branchData.media_keys, function(media, media_id, media_cb){
