@@ -13,7 +13,7 @@
     "rowclass":"<%=xejs.iif(datarow['menu_id']==jsh.App[xmodel.parent].revision_menu_id,'active_revision')%>",
     "fields": [
       {"name":"menu_id","caption":"ID","control":"hidden","key":true},
-      {"name":"revision_menu_key","caption":"Revision Key","control":"hidden","sqlwhere":"menu_key=@revision_menu_key","sqlselect":"menu_key"},
+      {"name":"revision_menu_key","type":"bigint","caption":"Revision Key","control":"hidden","sqlwhere":"menu_key=@revision_menu_key","sqlselect":"menu_key"},
       {"name":"menu_key","caption":"Key","control":"hidden"},
       {"name":"menu_file_id","caption":"File ID","control":"hidden"},
       {"control":"html","caption":"","cellstyle":"text-align:center;","link":"js:jsh.App[xmodel.parent].previewMenu(xmodel.controller.form.DataSet[jsh.XExt.XModel.GetRowID(modelid, this)]);","value":"<img height='14' src='/images/icon_browse.png' class='xicon' />"},
