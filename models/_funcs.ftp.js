@@ -5,8 +5,8 @@ const fs = require('fs');
  * @typedef {object} ConnectionParams
  * @property {string} host
  * @property {string} password
- * @property {number | undefined} port
- * @property {string | undefined} private_key_path
+ * @property {number | undefined} [port]
+ * @property {string | undefined} [private_key_path]
  * @property {string} username
  */
 
@@ -49,7 +49,7 @@ module.exports = exports = function(module, funcs) {
   const exports = {};
 
   /**
-   * @param {'sftp' | 'ftp'} type
+   * @param {'sftp' | 'ftp' | 'ftps' } type
    * @param {ConnectionParams} connectionParams
    * @returns {FtpClient}
    */
@@ -63,7 +63,7 @@ module.exports = exports = function(module, funcs) {
      */
     function connect() {
 
-      if (type === 'ftp') {
+      if (type === 'ftp' || type === 'ftps') {
         let ftp = undefined;
         try {
           ftp   = require('ftp');
@@ -80,10 +80,7 @@ module.exports = exports = function(module, funcs) {
           port: connectionParams.port,
           user: connectionParams.username,
           password: connectionParams.password,
-          secure : true,
-          secureOptions : {
-            rejectUnauthorized: false // TODO: this should be true
-          },
+          secure : type === 'ftps',          
           connTimeout: 5000
         });
 

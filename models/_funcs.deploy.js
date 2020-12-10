@@ -441,7 +441,7 @@ module.exports = exports = function(module, funcs){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
-                else if(deploy_path.startsWith('ftp://') || deploy_path.startsWith('sftp://')) {
+                else if(/^((ftps)|(ftp)|(sftp)):\/\//.test(deploy_path)) {
                   return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
                 }
                 else return cb(new Error('Deployment Target path not supported'));
@@ -680,7 +680,7 @@ module.exports = exports = function(module, funcs){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
-                else if(deploy_path.startsWith('ftp://') || deploy_path.startsWith('sftp://')) {
+                else if(/^((ftps)|(ftp)|(sftp)):\/\//.test(deploy_path)) {
                   return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
                 }
                 else return cb(new Error('Deployment Target path not supported'));
@@ -1396,32 +1396,44 @@ module.exports = exports = function(module, funcs){
     }
 
     function ensureRemoteRootDirectory() {
+
+      // Need to build the tree so we
+      // can handle nested paths.
+      let child_path = remote_path;
+      const paths = [];
+      while (child_path !== '/') {
+        paths.unshift(child_path);
+        child_path = path.dirname(child_path);
+      }
+
+      if (paths.length < 1) return Promise.resolve();
+
       funcs.deploy_log_info(deployment_id, `Verifying remote publish directory exist in ${remote_host}${remote_path}`);
-      return client.ensureDirectories([remote_path]);
+      return client.ensureDirectories(paths);
     }
 
     function getClient() {
 
-
-      // Format: [s]ftp://USERNAME:PASSWORD@HOSTNAME[:PORT][/PATH]
-      const match = /^(s?ftp):\/\/(.+):(.+)@(.+)$/i.exec(deploy_path);
-      if (match == undefined) {
-        cb(new Error('Publish path is invalid. Example format: "ftp://username:password@host.com:80/path"'));
-        return;
-      }
-
-      const [ _, protocol, username, password, target_url ] = match;
-
-      const parsed_url = url.parse(`${protocol}://${target_url}`);
+      const parsed_url = url.parse(deploy_path);
+      const protocol = parsed_url.protocol.replace(/:$/, '') // Trim the trailing ":", if exists
       remote_path = parsed_url.path;
-      remote_host = parsed_url.host;
 
+      // remote_host is used for reporting. remote_hostname is used for connecting.
+      // remote_host includes port, remote_hostname does not.
+      remote_host = parsed_url.host; 
+      const remote_hostname = parsed_url.hostname;
+      const port =  (parsed_url.port != undefined) ? parseInt(parsed_url.port) : undefined;
+
+      // split at _FIRST_ ":" (username cannot contain ":", but password may)
+      const split_index = parsed_url.auth.indexOf(':');
+      const username = parsed_url.auth.slice(0, split_index);
+      const password = parsed_url.auth.slice(split_index + 1);
 
       /** @type {import('./_funcs.ftp').ConnectionParams} */
       const connectionParams = {
-        host: parsed_url.hostname,
+        host: remote_hostname,
         password,
-        port: parsed_url.port ? parseInt(parsed_url.port) : undefined,
+        port,
         private_key_path: undefined, // TODO: where to get this?
         username
       }
