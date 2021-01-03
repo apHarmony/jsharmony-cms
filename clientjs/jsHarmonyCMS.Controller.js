@@ -26,6 +26,9 @@ exports = module.exports = function(jsh, cms){
   this.init = function(cb){
   }
 
+  this.initDevMode = function(cb){
+  }
+
   this.load = function(cb){
   }
 

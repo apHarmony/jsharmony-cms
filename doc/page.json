@@ -5,8 +5,8 @@
     "footer": "Default Footer Content"
   },
   "remote_template": {
-    "editor": "%%%editor_base_url%%%/templates/page/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
-    "publish": "%%%publish_template_base_url%%%/templates/page/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
+    "editor": "https://server/templates/page/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
+    "publish": "https://server/templates/page/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
   },
   "content_elements": {
     "body": { "type": "htmleditor", "title": "Body" },
@@ -24,4 +24,8 @@
         "control": "textbox", "controlstyle": "width:400px", "validate": ["MaxLength:1024"]}
     ]
   }
+
+  //System Properties
+  "content": "<html><body>Page Content</body></html>" //Hard-coded page content
+  "content": { "content_element_name": "..." } //Hard-coded content element content.  Generally use "default_content" instead
 }

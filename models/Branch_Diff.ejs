@@ -1,6 +1,6 @@
 <hr/>
 <link rel="stylesheet" type="text/css" href="/css/diff2html.min.css">
-<h3>Branch Changes</h3>
+<h3>Branch Changes <div class="diff_editor_selection_container"></div></h3>
 <div class='clear diff_display' style='margin-top:10px;margin-bottom:20px;'></div>
 <div class='spacer_diff'></div>
 
@@ -222,12 +222,12 @@
   </h4>
 
   <# _.each(_.pick(branch_sitemap.diff,['sitemap_name']), function(val, key){ #>
-    <div class="<%=model.class%>_diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
+    <div class="diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
   <# }); #>
 
   <# _.each(_.pick(branch_sitemap.diff,['sitemap_items']), function(val, key){ if(val){ #>
-    <div class="<%=model.class%>_diff_head">Content - <#=map(key,'sitemap')#></div>
-    <div class="<%=model.class%>_diff"><#-val#></div>
+    <div class="diff_head">Content - <#=map(key,'sitemap')#></div>
+    <div class="diff"><#-val#></div>
   <# } }); #>
 </script>
 

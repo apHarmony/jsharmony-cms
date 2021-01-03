@@ -23,8 +23,8 @@
 
   //Remote templates can be used to load templates from a remote site on edit or publish
   "remote_template": {
-    "editor": "%%%editor_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%",
-    "publish": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%"
+    "editor": "https://server/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%",
+    "publish": "https://server/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%"
   },
 
   "properties": {

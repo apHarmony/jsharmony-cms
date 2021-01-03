@@ -20,8 +20,8 @@
     ],
     "fields": [
       {"name":"branch_desc","type":"varchar","control":"label","caption":"Current Branch","link":"js:jsh.System.ViewBranchSummary(xmodel, xmodel.get('branch_id'))",
-        "captionstyle":"border:1px solid #333;color:white;background-color:#333;padding:4px 11px;display:inline-block;",
-        "controlstyle":"border:1px solid #333;padding:4px 11px;display:inline-block;color:#000;background-color:#c2ffb8;"},
+        "captionclass":"headerInfo_caption",
+        "controlclass":"headerInfo_content"},
       {"name":"branch_id","control":"hidden"},
       {"control":"subform","target":"Branch_Active_User_Listing","bindings":{},"controlclass":"no-border","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
       {"control":"subform","target":"Branch_Active_Public_Listing","bindings":{},"controlclass":"no-border"}

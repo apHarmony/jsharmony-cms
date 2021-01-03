@@ -1,4 +1,12 @@
 {
+  "code_site_template_type": {
+    "type": "code",
+    "caption": "Site Template Type",
+    "init_data": [
+      { "code_val": "PAGE", "code_txt": "Page", "code_seq": 1 },
+    ]
+  },
+
   "site": {
     "type": "table",
     "caption": ["Site","Sites"],
@@ -7,6 +15,7 @@
       { "name": "site_name", "type": "varchar", "length": 256, "null": false, "unique": true },
       { "name": "site_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_default_editor", "type": "bigint" },
+      { "name": "site_default_page_template_id", "type": "varchar", "length": 255 },
       
       { "name": "site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -27,6 +36,35 @@
     ],
     "sample_data": [
       { "site_name": "Default Web Site" }
+    ]
+  },
+
+  "site_template": {
+    "type": "table",
+    "caption": ["Site Template","Site Templates"],
+    "columns": [
+      { "name": "site_template_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "site_id", "type": "bigint", "null": false, "foreignkey": { "site": "site_id" }, "actions": ["prevent_update"] },
+      { "name": "site_template_type", "type": "varchar", "length": 32, "foreignkey": { "code_site_template_type": "code_val" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "site_template_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "site_template_title", "type": "varchar", "length": 1024 },
+      { "name": "site_template_path", "type": "varchar", "length": -1 },
+      { "name": "site_template_config", "type": "varchar", "length": -1 },
+
+      { "name": "site_template_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "site_template_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "site_template_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "site_template_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["site_id","site_template_type","site_template_name"]
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(site_template_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(site_template_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
     ]
   },
   

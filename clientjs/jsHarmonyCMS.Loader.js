@@ -27,7 +27,7 @@ exports = module.exports = function(cms){
   this.onMouseDown = [];
   this.onMouseUp = [];
   
-  this.StartLoading = function(obj){
+  this.StartLoading = function(obj, desc){
     if(!obj) obj = _this.defaultLoadObj;
     
     var foundObj = false;

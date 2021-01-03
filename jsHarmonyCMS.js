@@ -47,15 +47,17 @@ function jsHarmonyCMS(name, options){
   _this.basepath = path.dirname(module.filename);
   _this.schema = options.schema;
 
-  _this.PageTemplates = {};
+  _this.SystemPageTemplates = {};
   _this.MenuTemplates = {};
   _this.Components = {};
-  _this.defaultPageTemplate = undefined;
   _this.defaultMenuTemplate = undefined;
   _this.Layouts = {};
   _this.Elements = {};
   _this.BranchItems = this.getDefaultBranchItems();
   _this.DeploymentJobReady = false;
+
+  _this.SFTPServer = null;
+  _this.PreviewServer = null;
 
   _this.funcs = new funcs(_this);
   _this.transform = new jsHarmonyCMSTransform(_this);
@@ -93,19 +95,47 @@ jsHarmonyCMS.prototype.Init = function(cb){
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'menu'));
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'sitemap'));
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'publish_log'));
+  HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'site'));
 
   if(!_.isEmpty(_this.Config.media_thumbnails)){
     jsh.Extensions.logDependency('image', 'jsHarmonyCMS > Media Thumbnails');
   }
 
+  jsh.AppSrv.modelsrv.srcfiles['jsHarmonyCMS.EditorSelection'] = jsh.getEJS('jsHarmonyCMS.EditorSelection');
+
   jsh.Config.onServerReady.push(function (cb, servers){
-    var sql = "update "+(_this.schema?_this.schema+'.':'')+"deployment set deployment_sts='FAILED' where deployment_sts='RUNNING';";
-    if(_this.Config.debug_params.auto_restart_failed_publish){
-      sql = "insert into "+(_this.schema?_this.schema+'.':'')+"deployment(deployment_tag, branch_id, deployment_date, deployment_target_id) select concat(deployment_tag,'#'), branch_id, deployment_date, deployment_target_id from "+(_this.schema?_this.schema+'.':'')+"deployment where deployment_sts='RUNNING';" + sql;
-    }
-    jsh.AppSrv.ExecCommand('system', sql, [], { }, function (err, rslt) {
+    async.parallel([
+
+      //Reset failed deployments
+      function(ready_cb){
+        var sql = "update "+(_this.schema?_this.schema+'.':'')+"deployment set deployment_sts='FAILED' where deployment_sts='RUNNING';";
+        if(_this.Config.debug_params.auto_restart_failed_publish){
+          sql = "insert into "+(_this.schema?_this.schema+'.':'')+"deployment(deployment_tag, branch_id, deployment_date, deployment_target_id) select concat(deployment_tag,'#'), branch_id, deployment_date, deployment_target_id from "+(_this.schema?_this.schema+'.':'')+"deployment where deployment_sts='RUNNING';" + sql;
+        }
+        jsh.AppSrv.ExecCommand('system', sql, [], { }, function (err, rslt) {
+          if (err) { jsh.Log.error(err); }
+          _this.DeploymentJobReady = true;
+          return ready_cb();
+        });
+      },
+
+      //Start SFTP
+      function(ready_cb){
+        if(!_this.Config.sftp || !_this.Config.sftp.enabled) return ready_cb();
+        var jsHarmonyCMSSFTPServer = require('./jsHarmonyCMSSFTPServer.js');
+        _this.SFTPServer = new jsHarmonyCMSSFTPServer(_this);
+        _this.SFTPServer.Run(ready_cb);
+      },
+
+      //Start Preview Server
+      function(ready_cb){
+        if(!_this.Config.preview_server || !_this.Config.preview_server.enabled) return ready_cb();
+        var jsHarmonyCMSPreviewServer = require('./jsHarmonyCMSPreviewServer.js');
+        _this.PreviewServer = new jsHarmonyCMSPreviewServer(_this);
+        _this.PreviewServer.Run(ready_cb);
+      },
+    ], function(err){
       if (err) { jsh.Log.error(err); }
-      _this.DeploymentJobReady = true;
       return cb();
     });
   });
@@ -179,7 +209,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
             else prependPropFile(tmpl.content, content_element_name, tmplbasepath + '.' + content_element_name + '.ejs');
             if(!('title' in tmpl.content_elements[content_element_name])) tmpl.content_elements[content_element_name].title = content_element_name;
           }
-          _this.PageTemplates[tmplname] = tmpl;
+          _this.SystemPageTemplates[tmplname] = tmpl;
         }
         else if(templateType=='menu'){
           //Load menu template files
@@ -246,33 +276,23 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     LoadTemplatesFolder('menu', path.normalize(modeldirs[i].path + '../views/templates/menu/'));
     LoadTemplatesFolder('component', path.normalize(modeldirs[i].path + '../views/templates/component/'));
   }
-  _this.PageTemplates['<Raw Text>'] = {
+  _this.SystemPageTemplates['<Raw Text>'] = {
     title: '<Raw Text>',
     raw: true,
     content_elements: { body: { type: 'texteditor', title: 'Body' } },
     content: {}
   };
 
-  //Load Page Templates
-  this.jsh.Config.macros.CMS_PAGE_TEMPLATES = [];
-  var frontend_PageTemplates = {};
-  for(var tmplname in this.PageTemplates){
-    var tmpl = this.PageTemplates[tmplname];
-    if(typeof _this.defaultPageTemplate == 'undefined') _this.defaultPageTemplate = tmplname;
-    this.jsh.Config.macros.CMS_PAGE_TEMPLATES.push({ "code_val": tmplname, "code_txt": tmpl.title });
-
-    var frontend_template = {
-      editor: undefined,
-      publish: undefined
-    };
-    if(tmpl.remote_template){
-      if('editor' in tmpl.remote_template) frontend_template.editor = tmpl.remote_template.editor;
-      if('publish' in tmpl.remote_template) frontend_template.publish = tmpl.remote_template.publish;
-    }
-    frontend_PageTemplates[tmplname] = frontend_template;
-  }
-  this.jsh.Sites['main'].globalparams.PageTemplates = frontend_PageTemplates;
-  this.jsh.Sites['main'].globalparams.defaultPageTemplate = _this.defaultPageTemplate;
+  
+  //List of Values for Page Templates
+  this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES = {
+    "sql":"select site_id code_val,'site_id' code_txt from "+(this.schema?this.schema+'.':'')+"branch where branch.branch_id="+(this.schema?this.schema+'.':'')+"my_current_branch_id()",
+    "post_process":"return jsh.Modules['"+this.name+"'].funcs.getCurrentPageTemplatesLOV(req._DBContext, values, {}, callback);",
+  };
+  this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK = _.extend({}, this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES);
+  this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK.post_process = "return jsh.Modules['"+this.name+"'].funcs.getCurrentPageTemplatesLOV(req._DBContext, values, { blank: true }, callback);";
+  
+  this.jsh.Sites['main'].globalparams.isWebmaster = function (req) { return Helper.HasRole(req, "WEBMASTER"); }
 
   //Load Menu Templates
   this.jsh.Config.macros.CMS_MENU_TEMPLATES = [];
@@ -310,7 +330,18 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       diff: {
         columns: ['page_path','page_title','page_tags','page_file_id','page_filename','page_template_id'],
         sqlwhere: "(old_page.page_is_folder=0 or new_page.page_is_folder=0)",
-        onBeforeDiff: function(branch_data, callback){ return _this.funcs.diff_getPages(branch_data, callback); },
+        onBeforeDiff: function(branch_data, callback){
+          async.parallel([
+            function(page_cb){
+              _this.funcs.getPageTemplates('deployment', branch_data.site_id, {}, function(err, pageTemplates){
+                if(err) return page_cb(err);
+                branch_data.page_templates = pageTemplates;
+                return page_cb();
+              });
+            },
+            function(page_cb){ return _this.funcs.diff_getPages(branch_data, page_cb); }
+          ], callback);
+        },
         onDiff: function(branch_items, branch_data, callback){ return _this.funcs.diff_page(branch_items, branch_data, callback); },
         field_mapping: {
           page_seo: {
@@ -333,19 +364,68 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       conflicts: {
         columns: ['page_path','page_title','page_tags','page_file_id','page_filename','page_template_id'],
         sqlwhere: "(src_orig_{item}.{item}_is_folder=0 or dst_orig_{item}.{item}_is_folder=0 or src_{item}.{item}_is_folder=0 or dst_{item}.{item}_is_folder=0)",
-        onBeforeConflicts: function(branch_data, callback){ return _this.funcs.conflicts_getPages(branch_data, callback); },
+        onBeforeConflicts: function(branch_data, callback){
+          async.parallel([
+            function(page_cb){
+              _this.funcs.getPageTemplates('deployment', branch_data.site_id, {}, function(err, pageTemplates){
+                if(err) return page_cb(err);
+                branch_data.page_templates = pageTemplates;
+                return page_cb();
+              });
+            },
+            function(page_cb){ return _this.funcs.conflicts_getPages(branch_data, page_cb); }
+          ], callback);
+        },
         onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_page(branch_items, branch_data, callback); },
       },
       validate: {
         error_columns: ['page_id','page_key','page_title','page_path','page_template_id','page_filename'],
-        onBeforeValidate: function(item_errors, branchData, callback){ return _this.funcs.validate_getPages(item_errors, branchData, callback); },
+        onBeforeValidate: function(item_errors, branchData, callback){
+          async.parallel([
+            //Page Templates
+            function(page_cb){
+              async.waterfall([
+                //Get page templates
+                function(page_template_cb){
+                  _this.funcs.getPageTemplates('deployment', branchData.site_id, {}, function(err, pageTemplates){
+                    if(err) return page_template_cb(err);
+                    branchData.page_templates = pageTemplates;
+                    return page_template_cb();
+                  });
+                },
+                //Download remote template defintions
+                function(page_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.page_templates, {}, {}, page_template_cb); },
+              ], page_cb);
+            },
+            //Get all branch pages from the database
+            function(page_cb){ return _this.funcs.validate_getPages(item_errors, branchData, page_cb); }
+          ], callback);
+        },
         onValidate: function(item_errors, branchData, callback){ return _this.funcs.validate_page(item_errors, branchData, callback); },
       },
       deploy: {
         onBeforeDeploy: function(jsh, branchData, publish_params, callback){
-          async.waterfall([
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.PageTemplates, branchData.page_template_html, {}, cb); },
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.Components, branchData.component_html, {}, cb); },
+          async.parallel([
+            //Page Templates
+            function(cb){
+              async.waterfall([
+                //Get page templates
+                function(page_template_cb){
+                  _this.funcs.getPageTemplates('deployment', branchData.site_id, {}, function(err, pageTemplates){
+                    if(err) return page_template_cb(err);
+                    branchData.page_templates = pageTemplates;
+                    return page_template_cb();
+                  });
+                },
+                //Download remote template defintions
+                function(page_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.page_templates, branchData.page_template_html, {}, page_template_cb); },
+                //Download remote template content
+                function(page_template_cb){ _this.funcs.downloadTemplates(branchData, branchData.page_templates, branchData.page_template_html, {}, page_template_cb); },
+              ], cb);
+            },
+            //Component Templates
+            function(cb){ _this.funcs.downloadTemplates(branchData, _this.Components, branchData.component_html, {}, cb); },
+            //Get all branch pages from the database
             function(cb){ _this.funcs.deploy_getPages(jsh, branchData, publish_params, cb); },
           ], callback);
         },
@@ -392,12 +472,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         onValidate: function(item_errors, branchData, callback){ return _this.funcs.validate_media(item_errors, branchData, callback); },
       },
       deploy: {
-        onBeforeDeploy: function(jsh, branchData, publish_params, callback){
-          async.waterfall([
-            function(cb){ _this.funcs.downloadTemplate(branchData, _this.MenuTemplates, branchData.menu_template_html, { content_element_templates: true }, cb); },
-            function(cb){ _this.funcs.deploy_getMedia(jsh, branchData, publish_params, callback); },
-          ], callback);
-        },
+        onBeforeDeploy: function(jsh, branchData, publish_params, callback){ _this.funcs.deploy_getMedia(jsh, branchData, publish_params, callback); },
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_media(jsh, branchData, publish_params, callback); },
       },
       download: {
@@ -437,6 +512,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         onValidate: function(item_errors, branchData, callback){ return _this.funcs.validate_menu(item_errors, branchData, callback); },
       },
       deploy: {
+        onBeforeDeploy: function(jsh, branchData, publish_params, callback){ _this.funcs.downloadTemplates(branchData, _this.MenuTemplates, branchData.menu_template_html, { content_element_templates: true }, callback); },
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_menu(jsh, branchData, publish_params, callback); },
         onDeploy_seq: -100,
       },
@@ -577,7 +653,6 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   return {
     cookie_samesite: 'none',
     globalparams: {
-      'PageTemplates': {},
       'MenuTemplates': {}
     },
     title: 'Content Management System',
@@ -596,6 +671,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     private_apps: [
       {
         '/_funcs/page/:page_key': _this.funcs.page,
+        '/_funcs/pageDev': _this.funcs.pageDev,
         '/_funcs/templates/component/:branch_id': _this.funcs.templates_component,
         '/_funcs/templates/menu/:branch_id': _this.funcs.templates_menu,
         '/_funcs/editor_url': _this.funcs.getPageEditorUrl,

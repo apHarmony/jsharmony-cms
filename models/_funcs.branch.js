@@ -65,7 +65,7 @@ module.exports = exports = function(module, funcs){
       validate = new XValidate();
       verrors = {};
       validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      sql = "select branch_id,branch_name from "+(module.schema?module.schema+'.':'')+"v_my_branch_access where branch_id=@branch_id and branch_access like 'R%'";
+      sql = "select branch_id,branch_name,site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_access where branch_id=@branch_id and branch_access like 'R%'";
 
       var fields = [];
       var datalockstr = '';
@@ -81,6 +81,7 @@ module.exports = exports = function(module, funcs){
         var branch = rslt[0][0];
         var branchData = {
           data_files: [],
+          site_id: branch.site_id,
         };
 
         async.waterfall([
@@ -197,9 +198,12 @@ module.exports = exports = function(module, funcs){
       var branchData = {
         _DBContext: req._DBContext,
         _baseurl: baseurl,
+        site_id: null,
         LOVs: {},
         branchItems: {},
         contentFiles: {},
+        pageTemplates: {},
+        site_id: P.site_id,
       };
 
       async.waterfall([
@@ -445,8 +449,17 @@ module.exports = exports = function(module, funcs){
   exports.branch_upload_validatePage = function(errors, branchItems, branchData, callback){
     async.waterfall([
       function(cb){
+        //Load Page Templates
+        funcs.getPageTemplates(branchData._DBContext, site_id, {}, function(err, pageTemplates){
+          if(err) return cb(err);
+          branchData.pageTemplates = pageTemplates;
+          return cb();
+        });
+      },
+      function(cb){
+        //Check pages for errors
         _.each(branchItems, function(item){
-          if(item.page_template_id && !(item.page_template_id in module.PageTemplates)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Invalid page template ID: '+item.page_template_id);
+          if(item.page_template_id && !(item.page_template_id in branchData.pageTemplates)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Page template ID not defined in current site: '+item.page_template_id);
           var contentFileName = 'data/page/'+item.page_file_id+'.json';
           if(!item.page_is_folder && item.page_file_id && !(contentFileName in branchData.contentFiles)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Missing content file: '+contentFileName);
         });
@@ -616,7 +629,7 @@ module.exports = exports = function(module, funcs){
             return rslt;
           }
           
-          var pageTemplate = module.PageTemplates[item.page_template_id];
+          var pageTemplate = branchData.pageTemplates[item.page_template_id];
           if(pageTemplate.raw){
             if(pageContent.content && pageContent.content.body) pageContent.content.body = replaceURLs(pageContent.content.body);
           }

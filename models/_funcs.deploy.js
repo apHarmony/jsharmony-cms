@@ -19,7 +19,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var Helper = require('jsharmony/Helper');
 var HelperFS = require('jsharmony/HelperFS');
 var _ = require('lodash');
-var url = require('url');
+var urlparser = require('url');
 var path = require('path');
 var ejs = require('ejs');
 var fs = require('fs');
@@ -181,17 +181,78 @@ module.exports = exports = function(module, funcs){
     return menu_fpath;
   }
 
-  exports.downloadTemplate = function(branchData, templates, template_html, options, download_cb){
+  exports.downloadRemoteTemplates = function(branchData, templates, template_html, options, download_cb){
+    var jsh = module.jsh;
+
+    async.eachOf(templates, function(template, template_name, template_cb){
+      if(template.location != 'REMOTE') return template_cb();
+      if(!template.remote_template) return template_cb();
+      async.waterfall([
+        //Download template.remote_template.publish or template.remote_template.editor
+        function(template_action_cb){
+          var url = '';
+          var isPublishTemplate = false;
+          if(template.remote_template.publish){
+            url = funcs.parseDeploymentUrl(template.remote_template.publish, branchData.publish_params);
+            isPublishTemplate = true;
+          }
+          else if(template.remote_template.editor){
+            url = funcs.parseDeploymentUrl(template.remote_template.editor, branchData.publish_params);
+          }
+          else return template_action_cb();
+
+          //Add cache-busting timestamp to URL
+          try{
+            var parsedUrl = new urlparser.URL(url);
+            if(!parsedUrl.searchParams.has('_')){
+              parsedUrl.searchParams.set('_', (Date.now()).toString());
+              url = parsedUrl.toString();
+            }
+          }
+          catch(ex){
+            return template_action_cb(ex);
+          }
+
+          if(branchData.publish_params) funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading remote template: '+url);
+          else jsh.Log.info('Downloading remote template: '+url);
+
+          wc.req(url, 'GET', {}, {}, undefined, function(err, res, templateContent){
+            if(err) return template_action_cb(err);
+            if(res && res.statusCode){
+              if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+              if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+            }
+            //Parse and merge template config
+            var templateConfig = funcs.readPageTemplateConfig(templateContent);
+            if(templateConfig && templateConfig.remote_template && templateConfig.remote_template.publish){
+              templateConfig.remote_template.publish = funcs.parseDeploymentUrl(templateConfig.remote_template.publish, branchData.publish_params, url);
+            }
+            _.merge(template, templateConfig);
+            
+            if(isPublishTemplate || !template.remote_template.publish){
+              template_html[template_name] = templateContent;
+            }
+            return template_action_cb();
+          });
+        },
+      ], template_cb);
+
+    }, download_cb);
+  }
+
+  exports.downloadTemplates = function(branchData, templates, template_html, options, download_cb){
     options = _.extend({ content_element_templates: false }, options);
     async.eachOf(templates, function(template, template_name, template_cb){
+      if(template_name in template_html) return template_cb(); //Already downloaded
+
       if(template.content && ('body' in template.content)){
-        template_html[template_name] = template.body;
+        template_html[template_name] = template.content.body;
       }
       else if(_.isString(template.content)) template_html[template_name] = template.content;
 
       async.waterfall([
 
-        //Download template.remote_template.publish
+        //Download template.remote_template.publish (for page, component)
         function(template_action_cb){
           if(!template.remote_template || !template.remote_template.publish) return template_action_cb();
 
@@ -199,12 +260,16 @@ module.exports = exports = function(module, funcs){
           funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
           wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
             if(err) return template_action_cb(err);
+            if(res && res.statusCode){
+              if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+              if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+            }
             template_html[template_name] = rslt;
             return template_action_cb();
           });
         },
 
-        //Download template.content_elements[].remote_template.publish
+        //Download template.content_elements[].remote_template.publish (for menu)
         function(template_action_cb){
           if(!options.content_element_templates) return template_action_cb();
           if(!(template_html[template_name])) template_html[template_name] = {};
@@ -219,6 +284,10 @@ module.exports = exports = function(module, funcs){
             funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
             wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
               if(err) return content_element_cb(err);
+              if(res && res.statusCode){
+                if(res.statusCode > 500) return content_element_cb(new Error(res.statusCode+' Error downloading template '+url));
+                if(res.statusCode > 400) return content_element_cb(new Error(res.statusCode+' Error downloading template '+url));
+              }
               template_html[template_name][content_element_name] += rslt;
               return content_element_cb();
             });
@@ -294,10 +363,12 @@ module.exports = exports = function(module, funcs){
           var branchData = {
             publish_params: publish_params,
             deployment: deployment,
+            site_id: deployment.site_id,
             component_html: {},
             site_files: {},
 
             page_keys: {},
+            page_templates: null,
             page_template_html: {},
             page_redirects: {},
 
@@ -865,7 +936,7 @@ module.exports = exports = function(module, funcs){
       if (err != null) { err.sql = sql; return cb(err); }
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment pages')); }
       async.eachSeries(rslt[0], function(page, cb){
-        funcs.getClientPage(page, branchData.sitemaps, function(err, clientPage){
+        funcs.getClientPage('deployment', page, branchData.sitemaps, branchData.site_id, { pageTemplates: branchData.page_templates }, function(err, clientPage){
           if(err) return cb(err);
 
           //Merge content with template
@@ -1284,7 +1355,7 @@ module.exports = exports = function(module, funcs){
     var cms = jsh.Modules['jsHarmonyCMS'];
     var deployment_id = deployment.deployment_id;
 
-    var s3url = url.parse(deploy_path);
+    var s3url = urlparser.parse(deploy_path);
     var AWS = require('aws-sdk');
     var s3 = new AWS.S3(cms.Config.aws_key);
     var bucket = s3url.hostname;

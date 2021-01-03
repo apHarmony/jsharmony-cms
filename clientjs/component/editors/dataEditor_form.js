@@ -175,7 +175,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       .css('top', '0px')
       .css('left', '0')
       .css('width', '100%')
-      .css('z-index', '999999');
+      .css('z-index', '1999999999');
     self._jsh.$(dialogSelector).append($toolbar);
 
     _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {

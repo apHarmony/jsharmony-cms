@@ -4,7 +4,7 @@
     "caption": "Deployment Target Role Type",
     "init_data": [
       { "code_val": "PUBLISH", "code_txt": "Publish", "code_seq": 1 },
-      { "code_val": "EDITOR", "code_txt": "Live Preview", "code_seq": 2 }
+      { "code_val": "EDITOR", "code_txt": "Preview / Editor", "code_seq": 2 }
     ]
   },
 

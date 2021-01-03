@@ -93,7 +93,7 @@ jsh.App[modelid] = new (function(){
       //Clear Values / Set Defaults
       jprompt.find('.page_filename').val('');
       jprompt.find('.page_title').val('');
-      jprompt.find('.page_template_id').val(jsh.globalparams.defaultPageTemplate);
+      jprompt.find('.page_template_id').val(jsh.XPage.getBreadcrumbs().site_default_page_template_id);
 
       var jfilename = jprompt.find('.page_filename');
       jprompt.find('.page_filename_default_document').off('click').on('click', function(){

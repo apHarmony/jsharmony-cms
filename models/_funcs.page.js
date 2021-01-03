@@ -32,90 +32,115 @@ module.exports = exports = function(module, funcs){
     return path.join(path.join(module.jsh.Config.datadir,'page'),page_file_id.toString()+'.json');
   }
 
-  exports.getClientPage = function(page, sitemaps, cb){
-    var appsrv = this;
-
+  exports.getClientPage = function(dbcontext, page, sitemaps, site_id, options, cb){
+    options = _.extend({ includeExtraContent: false, pageTemplates: null }, options);
     var page_file_id = page.page_file_id;
     var page_template_id = page.page_template_id;
-    if(!page_template_id) page_template_id = module.defaultPageTemplate;
-    var template = module.PageTemplates[page_template_id];
+    if(!page_template_id) return cb(new Error('Page template: '+page_template_id));
 
-    if(!template) return cb(new Error('Invalid page template: '+page_template_id));
+    var template = null;
 
-    //Load Page Content from disk
-    module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
-      //If an error occurs loading the file, ignore it and load the default template instead
+    if(options.pageTemplates) template = options.pageTemplates[page_template_id];
 
-      //Parse content
-      var page_file_content = {};
-      try{
-        page_file_content = JSON.parse(JSON.stringify(template.default_content||'')) || {};
-      }
-      catch(ex){
-        module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_content);
-      }
-      page_file = page_file || { };
-      if(!('content' in page_file)) page_file.content = {};
-      for(var key in template.content_elements){
-        if(key in page_file.content) page_file_content[key] = page_file.content[key];
-      }
-      page_file.content = page_file_content;
+    Helper.execif(!options.pageTemplates,
+      function(f){
+        funcs.getPageTemplate(dbcontext, site_id, page_template_id, function(err, pageTemplate){
+          if(err) return cb(err);
+          template = pageTemplate;
+          return f();
+        });
+      },
+      function(){
+        if(!template) return cb(new Error('Invalid page template: '+page_template_id));
 
-      //Parse properties
-      var default_properties = {};
-      try{
-        default_properties = _.extend(default_properties, JSON.parse(JSON.stringify(template.default_properties||'')) || {});
-      }
-      catch(ex){
-        module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_properties);
-      }
-      if(template.properties){
-        _.each(template.properties.fields, function(field){
-          if(field && field.name){
-            if(!(field.name in default_properties)){
-              default_properties[field.name] = ('default' in field) ? field.default : '';
+        //Load Page Content from disk
+        module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
+          //If an error occurs loading the file, ignore it and load the default template instead
+
+          //Add content elements if they do not exist
+          var template_content_elements = template.content_elements;
+          if(!template_content_elements) template_content_elements = { body: { type: 'htmleditor', title: 'Body' } };
+
+          //Parse content
+          var page_file_content = {};
+          try{
+            page_file_content = JSON.parse(JSON.stringify(template.default_content||'')) || {};
+          }
+          catch(ex){
+            module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_content);
+          }
+          page_file = page_file || { };
+          if(!('content' in page_file)) page_file.content = {};
+          for(var key in template_content_elements){
+            if(key in page_file.content) page_file_content[key] = page_file.content[key];
+          }
+          if(template.location == 'REMOTE'){
+            //Add extra content_areas that are not defined in template (if using in-template script config)
+            if(options.includeExtraContent){
+              for(var key in page_file.content){
+                if(!(key in page_file_content)) page_file_content[key] = page_file.content[key];
+              }
             }
           }
+          page_file.content = page_file_content;
+
+          //Parse properties
+          var default_properties = {};
+          try{
+            default_properties = _.extend(default_properties, JSON.parse(JSON.stringify(template.default_properties||'')) || {});
+          }
+          catch(ex){
+            module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_properties);
+          }
+          if(template.properties){
+            _.each(template.properties.fields, function(field){
+              if(field && field.name){
+                if(!(field.name in default_properties)){
+                  default_properties[field.name] = ('default' in field) ? field.default : '';
+                }
+              }
+            });
+          }
+          
+
+          if(!page_file.seo) page_file.seo = {};
+          var client_page = {
+            title: page.page_title||'',
+            css: page_file.css||'',
+            header: page_file.header||'',
+            footer: page_file.footer||'',
+            properties: _.extend({}, default_properties, page_file.properties||{}),
+            content: page_file.content||{},
+            seo: {
+              title: page_file.seo.title||'',
+              keywords: page_file.seo.keywords||'',
+              metadesc: page_file.seo.metadesc||'',
+              canonical_url: page_file.seo.canonical_url||'',
+            },
+            lang: page.page_lang||'',
+            tags: page.page_tags||'',
+            author: page.page_author,
+          };
+          var client_template = {
+            title: template.title||'',
+            css: template.css||'',
+            header: template.header||'',
+            footer: template.footer||'',
+            properties: template.properties||{},
+            default_properties: default_properties||{},
+            js: template.js||'',
+            content_elements: template_content_elements,
+            raw: template.raw||false
+          };
+
+          return cb(null,{
+            page: client_page,
+            template: client_template,
+            sitemap: funcs.getPageSitemapInfo(sitemaps, page.page_key)
+          });
         });
       }
-      
-
-      if(!page_file.seo) page_file.seo = {};
-      var client_page = {
-        title: page.page_title||'',
-        css: page_file.css||'',
-        header: page_file.header||'',
-        footer: page_file.footer||'',
-        properties: _.extend({}, default_properties, page_file.properties||{}),
-        content: page_file.content||{},
-        seo: {
-          title: page_file.seo.title||'',
-          keywords: page_file.seo.keywords||'',
-          metadesc: page_file.seo.metadesc||'',
-          canonical_url: page_file.seo.canonical_url||'',
-        },
-        lang: page.page_lang||'',
-        tags: page.page_tags||'',
-        author: page.page_author,
-      };
-      var client_template = {
-        title: template.title||'',
-        css: template.css||'',
-        header: template.header||'',
-        footer: template.footer||'',
-        properties: template.properties||{},
-        default_properties: default_properties||{},
-        js: template.js||'',
-        content_elements: template.content_elements||{},
-        raw: template.raw||false
-      };
-
-      return cb(null,{
-        page: client_page,
-        template: client_template,
-        sitemap: funcs.getPageSitemapInfo(sitemaps, page.page_key)
-      });
-    });
+    );
   }
 
   exports.getPageSitemapInfo = function(sitemaps, page_key){
@@ -229,6 +254,26 @@ module.exports = exports = function(module, funcs){
       children: children
     };
     return rslt;
+  }
+
+  exports.readPageTemplateConfig = function(templateContent){
+    var templateConfig = {};
+    try{
+      var $ = cheerio.load(templateContent, { xmlMode: true });
+      $('script[type="text/jsharmony-cms-template-config"]').each(function(){
+        var configScript = $(this).html();
+        var config = {};
+        try{
+          config = JSON.parse(configScript);
+        }
+        catch{
+        }
+        _.extend(templateConfig, config);
+      });
+    }
+    catch(ex){
+    }
+    return templateConfig;
   }
 
   exports.replaceBranchURLs = function(content, options){
@@ -413,14 +458,18 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
-  exports.parseDeploymentUrl = function(url, publish_params){
+  exports.parseDeploymentUrl = function(url, publish_params, baseUrl){
     publish_params = publish_params || {};
     var rslt = url || '';
     for(var key in publish_params){
       if(key == publish_params[key]) continue;
       rslt = Helper.ReplaceAll(rslt, '%%%' + key + '%%%', publish_params[key]);
     }
-    if(rslt != url) return funcs.parseDeploymentUrl(rslt, publish_params);
+    if(rslt != url) return funcs.parseDeploymentUrl(rslt, publish_params, baseUrl);
+    try{
+      if(baseUrl) url = new urlparser.URL(url, baseUrl).toString();
+    }
+    catch(ex){}
     return url;
   }
 
@@ -431,7 +480,7 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
     var XValidate = jsh.XValidate;
-    var cms = jsh.Modules['jsHarmonyCMS'];
+    var cms = module;
 
     if(!req.params || !req.params.branch_id) return next();
     var branch_id = req.params.branch_id;
@@ -524,7 +573,7 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
     var XValidate = jsh.XValidate;
-    var cms = jsh.Modules['jsHarmonyCMS'];
+    var cms = module;
 
     if(!req.params || !req.params.branch_id) return next();
     var branch_id = req.params.branch_id;
@@ -632,8 +681,8 @@ module.exports = exports = function(module, funcs){
 
     var Q = req.query;
     var P = req.body;
-    var appsrv = this;
     var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
     var XValidate = jsh.XValidate;
     var sql = '';
     var sql_ptypes = [];
@@ -697,7 +746,6 @@ module.exports = exports = function(module, funcs){
 
       //Get Page Template
       var page_template_id = page.page_template_id;
-      var page_template = module.PageTemplates[page_template_id];
 
       var baseurl = req.baseurl;
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
@@ -716,15 +764,27 @@ module.exports = exports = function(module, funcs){
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|page_id','&branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var authors = null;
         var clientPage = null;
         var media_file_ids = {};
         var sitemaps = {};
         var menus = {};
+        var site_id = null;
 
         async.waterfall([
+
+          //Get site
+          function(cb){
+            sql = "select v_my_branch_access.branch_id,branch_name,site_id from {schema}.v_my_branch_access inner join {schema}.branch_page on branch_page.branch_id=v_my_branch_access.branch_id where v_my_branch_access.branch_id=@branch_id and branch_access like 'R%' and (branch_page.page_key=(select page_key from {schema}.page where page_id=@page_id))";
+            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { page_id: page.page_id, branch_id: Q.branch_id }, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+              if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Branch or Page'); }
+              site_id = rslt[0][0].site_id;
+              return cb();
+            });
+          },
 
           //Get authors
           function(cb){
@@ -812,7 +872,7 @@ module.exports = exports = function(module, funcs){
               return rslt;
             }
 
-            funcs.getClientPage(page, sitemaps, function(err, _clientPage){
+            funcs.getClientPage(req._DBContext, page, sitemaps, site_id, { includeExtraContent: true }, function(err, _clientPage){
               if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
               clientPage = _clientPage;
               if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
@@ -939,6 +999,343 @@ module.exports = exports = function(module, funcs){
     });
   }
 
+  exports.pageDev = function (req, res, next) {
+    var verb = req.method.toLowerCase();
+
+    var Q = req.query;
+    var P = req.body;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
+
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    var referer = req.get('Referer');
+    if(referer){
+      var urlparts = urlparser.parse(referer, true);
+      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+      res.setHeader('Access-Control-Allow-Origin', remote_domain);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+      res.setHeader('Access-Control-Allow-Credentials', true);
+    }
+
+    //Get Branch ID
+    sql_ptypes = [];
+    sql_params = { };
+    validate = new XValidate();
+    verrors = {};
+    sql = 'select branch_id,site_id from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()';
+
+    var page_role = '';
+    if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
+    else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
+    else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
+
+    var fields = [];
+    var datalockstr = '';
+    appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
+    sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
+
+    verrors = _.merge(verrors, validate.Validate('B', sql_params));
+    if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Branch'); }
+
+      var devInfo = rslt[0][0];
+
+      var baseurl = req.baseurl;
+      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+
+      if (verb == 'get'){
+        if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+        //Validate parameters
+        if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+        var sitemaps = {};
+        var menus = {};
+        var page_template = {};
+
+        async.waterfall([
+
+          //Get sitemaps
+          function(cb){
+            appsrv.ExecRecordset(req._DBContext, "select sitemap_key, sitemap_file_id, sitemap_type from "+(module.schema?module.schema+'.':'')+"v_my_sitemap where (sitemap_file_id is not null)", [], {}, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+              _.each(rslt[0], function(sitemap){
+                sitemaps[sitemap.sitemap_type] = sitemap;
+              });
+              async.eachOfSeries(sitemaps, function(sitemap, sitemap_type, sitemap_cb){
+                funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+                  if(err) return sitemap_cb(err);
+                  if(!sitemap_content) return sitemap_cb(null);
+                  sitemap.sitemap_items = sitemap_content.sitemap_items;
+                  return sitemap_cb();
+                });
+              }, cb);
+            });
+          },
+
+          //Get menus
+          function(cb){
+            appsrv.ExecRecordset(req._DBContext, "select menu_key, menu_file_id, menu_name, menu_tag, menu_template_id, menu_path from "+(module.schema?module.schema+'.':'')+"v_my_menu where (menu_file_id is not null)", [], {}, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+              _.each(rslt[0], function(menu){
+                menus[menu.menu_tag] = menu;
+              });
+              async.eachOfSeries(menus, function(menu, menu_tag, menu_cb){
+                funcs.getClientMenu(menu, { }, function(err, menu_content){
+                  if(err) return menu_cb(err);
+                  if(!menu_content) return menu_cb(null);
+                  menu.menu_items = menu_content.menu_items;
+
+                  //Generate tree
+                  menu.menu_item_tree = funcs.createMenuTree(menu.menu_items);
+
+                  return menu_cb();
+                });
+              }, cb);
+            });
+          },
+
+          //Get page template
+          function(cb){
+            if(!Q.page_template_id) return cb();
+            funcs.getPageTemplate(req._DBContext, devInfo.site_id, Q.page_template_id, function(err, template){
+              if(err) return cb(err);
+              if (!template) return cb();
+              page_template = template;
+              return cb();
+            });
+          },
+
+        ], function(err){
+          if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
+
+          res.end(JSON.stringify({
+            '_success': 1,
+            'branch_id': devInfo.branch_id,
+            'sitemap': sitemaps,
+            'menus': menus,
+            'role': page_role,
+            'template': page_template,
+            'views': {
+              'jsh_cms_editor.css': (jsh.getEJS('jsh_cms_editor.css')||'')+(jsh.getEJS('jsh_cms_editor.css.ext')||''),
+              'jsh_cms_editor': jsh.getEJS('jsh_cms_editor')
+            }
+          }));
+        });
+      }
+      else return next();
+    });
+  }
+
+  exports.getPageTemplate = function(dbcontext, site_id, template_id, callback){
+    funcs.getPageTemplates(dbcontext, site_id, { target_template_id: template_id }, function(err, pageTemplates){
+      if(err) return callback(err);
+      return callback(null, pageTemplates[template_id]);
+    });
+  }
+
+  exports.getPageTemplates = function(dbcontext, site_id, options, callback){
+    options = _.extend({ target_template_id: null }, options);
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var cms = module;
+
+    var pageTemplates = {
+      //id = {
+      //  title: '...',
+      //  raw: true,
+      //  location: '...',  LOCAL,SYSTEM,REMOTE
+      //  path: '...',
+      //}
+    };
+    var systemTemplates = [];
+    var localTemplates = [];
+    var remoteTemplates = [];
+    
+    return async.parallel([
+      function(data_cb){
+        if(!site_id) return data_cb();
+        var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString(),'templates','pages');
+  
+        //Get all local site templates from site\#\templates\page
+        fs.exists(sitePath, function (exists) {
+          if (!exists) return data_cb(null);
+          fs.readdir(sitePath, function (err, files) {
+            if (err) return data_cb(err);
+            async.each(files, function(file, file_cb){
+              var ext = path.extname(file);
+              if((ext=='.htm') || (ext=='.html')){
+                var templateName = file.substr(0, file.length - ext.length);
+
+                if(options.target_template_id && (templateName != options.target_template_id)) return file_cb();
+                
+                fs.readFile(path.join(sitePath, file), 'utf8', function(err, templateContent){
+                  if(err) return file_cb(err);
+  
+                  //Read Page Template Config
+                  var templateConfig = funcs.readPageTemplateConfig(templateContent);
+  
+                  var templateTitle = templateConfig.title || templateName;
+                  localTemplates.push({
+                    site_template_type: 'PAGE',
+                    site_template_name: templateName,
+                    site_template_title: templateTitle,
+                    site_template_path: '/templates/pages/' + file,
+                    site_template_config: templateConfig,
+                    site_template_location: 'LOCAL',
+                    site_template_raw: !!templateConfig.raw,
+                  });
+                  return file_cb();
+                });
+              }
+              else file_cb();
+            }, data_cb);
+          });
+        });
+      },
+  
+      //Add local system template
+      function(data_cb){
+        for(var key in cms.SystemPageTemplates){
+          if(options.target_template_id && (key != options.target_template_id)) continue;
+
+          var pageTemplate = JSON.parse(JSON.stringify(cms.SystemPageTemplates[key]));
+          var templatePath = ' ';
+          if(pageTemplate.remote_template){
+            templatePath = pageTemplate.remote_template.editor || ' ';
+          }
+          systemTemplates.push({
+            site_template_type: 'PAGE',
+            site_template_name: key,
+            site_template_title: pageTemplate.title,
+            site_template_path: templatePath,
+            site_template_config: pageTemplate,
+            site_template_location: 'SYSTEM',
+            site_template_raw: !!pageTemplate.raw,
+          });
+        }
+        return data_cb();
+      },
+  
+      //Generate SQL
+      function(data_cb){      
+        //Remote Templates
+        var sql = "select site_template_id,site_id,site_template_type,site_template_name,site_template_title,site_template_path,site_template_config from "+(cms.schema?cms.schema+'.':'')+"site_template where site_id=@site_id";
+        appsrv.ExecRecordset(dbcontext, sql, [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
+          if(err) return data_cb(err);
+          if(!rslt || !rslt.length || !rslt[0]){ return data_cb(new Error('Error loading remote page templates')); }
+          _.each(rslt[0], function(row){
+            if(options.target_template_id && (row.site_template_name != options.target_template_id)) return;
+            remoteTemplates.push({
+              site_template_type: 'PAGE',
+              site_template_name: row.site_template_name,
+              site_template_title: row.site_template_title,
+              site_template_path: row.site_template_path,
+              site_template_config: row.site_template_config,
+              site_template_location: 'REMOTE',
+              site_template_raw: false,
+            });
+          });
+          return data_cb();
+        });
+      },
+    ], function(err){
+      if(err) return callback(err);
+
+      //Combine all templates into one array
+      _.each(remoteTemplates, function(template){ if(!(template.site_template_name in pageTemplates)) pageTemplates[template.site_template_name] = template; });
+      _.each(localTemplates, function(template){ if(!(template.site_template_name in pageTemplates)) pageTemplates[template.site_template_name] = template; });
+      _.each(systemTemplates, function(template){ if(!(template.site_template_name in pageTemplates)) pageTemplates[template.site_template_name] = template; });
+
+      for(var key in pageTemplates){
+        var template = pageTemplates[key];
+        var newTemplate = {
+          title: template.site_template_title,
+          raw: template.site_template_raw,
+          location: template.site_template_location,
+          path: template.site_template_path,
+        };
+        if(template.site_template_location == 'REMOTE'){
+          if(template.site_template_path){
+            newTemplate.remote_template = {
+              editor: template.site_template_path
+            };
+          }
+        }
+        if(template.site_template_config){
+          var templateConfig = {};
+          if(_.isString(template.site_template_config)){
+            try{
+              templateConfig = JSON.parse(template.site_template_config);
+            }
+            catch(ex){
+            }
+          }
+          else{
+            templateConfig = template.site_template_config;
+          }
+          _.merge(newTemplate, templateConfig);
+        }
+        if(!newTemplate.content_elements && (template.site_template_location != 'REMOTE')) newTemplate.content_elements = { body: { type: 'htmleditor', title: 'Body' } };
+        if(!newTemplate.content) newTemplate.content = {};
+        if(!('title' in newTemplate)) newTemplate.title = key;
+        pageTemplates[key] = newTemplate;
+      }
+      return callback(null, pageTemplates);
+    });
+  }
+
+  exports.getCurrentPageTemplatesLOV = function(dbcontext, values, options, cb){
+    options = _.extend({ blank:false }, options);
+    var site_id = null;
+    for(var i=0;i<values.length;i++){
+      if(values[i].code_txt=='site_id') site_id = parseInt(values[i].code_val);
+      if(values[i].code_val){
+        values.splice(i, 1);
+        i--;
+      }
+    }
+    if(!site_id) return;
+
+    funcs.getPageTemplates(dbcontext, site_id, {}, function(err, pageTemplates){
+      if(err) return cb(err);
+      if(!pageTemplates) return cb(new Error('Error loading page templates'));
+      
+      var rsltlov = [];
+      if(options.blank) rsltlov.push({ code_val: '', code_txt: '(None)' });
+      for(var key in pageTemplates){
+        rsltlov.push({ code_val: key, code_txt: (pageTemplates[key].title||key||'').toString() });
+      }
+      //Sort by name
+      rsltlov = rsltlov.sort(function(a,b){
+        var ua = a.code_txt.toUpperCase();
+        var ub = b.code_txt.toUpperCase();
+        if(ua > ub) return 1;
+        if(ua < ub) return -1;
+        return 0;
+      });
+      return cb(null, rsltlov);
+    });
+    return false;
+  }
+
   exports.getPageEditorUrl = function(req, res, next){
     var verb = req.method.toLowerCase();
     if (!req.body) req.body = {};
@@ -948,7 +1345,7 @@ module.exports = exports = function(module, funcs){
 
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
-    var cms = jsh.Modules['jsHarmonyCMS'];
+    var cms = module;
     var dbtypes = appsrv.DB.types;
     var XValidate = jsh.XValidate;
 
@@ -957,7 +1354,7 @@ module.exports = exports = function(module, funcs){
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     //Validate parameters
-    if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id', '|devMode', '|site_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
     if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
     validate = new XValidate();
@@ -966,53 +1363,113 @@ module.exports = exports = function(module, funcs){
     validate.AddValidator('_obj.page_key', 'Page Key', 'B', [ XValidate._v_IsNumeric() ]);
     validate.AddValidator('_obj.page_id', 'Page ID', 'B', [ XValidate._v_IsNumeric() ]);
     validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [ XValidate._v_IsNumeric() ]);
+    validate.AddValidator('_obj.site_id', 'Site ID', 'B', [ XValidate._v_IsNumeric() ]);
     verrors = _.merge(verrors, validate.Validate('B', Q));
     if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-    //Check to see if page template id exists
-    if(!(Q.page_template_id in module.PageTemplates)) { Helper.GenError(req, res, -1, 'Page Template not found'); return; }
-
-    var page_template = module.PageTemplates[Q.page_template_id];
-    if(!page_template || !page_template.remote_template || !page_template.remote_template.editor) { Helper.GenError(req, res, -9, 'Page Template does not have an editor defined'); return; }
+    //Only dev mode uses devMode and site_id parameters
 
     if (verb == 'get') {
-      var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id="+(module.schema?module.schema+'.':'')+"my_current_branch_id()";
-      appsrv.ExecRow(req._DBContext, sql, [], {}, function (err, rslt) {
-        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+      var sql = "select v_my_branch_desc.branch_id current_branch_id,v_my_branch_desc.site_id current_branch_site_id,v_my_branch_desc.site_id,deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()";
+      var sql_ptypes = [];
+      var sql_params = {};
 
-        var deployment_target_params = '';
-        if(rslt && rslt[0] && rslt[0].deployment_target_params){
-          deployment_target_params = rslt[0].deployment_target_params;
+      if(Q.devMode){
+        if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        sql = "select {schema}.my_current_branch_id() current_branch_id,(select site_id from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()) current_branch_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
+        sql_ptypes = [dbtypes.BigInt];
+        sql_params = { site_id: Q.site_id };
+      }
+      appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+        if (!rslt || !rslt.length || !rslt[0]) {
+          if(Q.devMode) Helper.GenError(req, res, -1, 'Site not found');
+          else Helper.GenError(req, res, -1, 'Branch not checked out');
         }
 
-        var url = page_template.remote_template.editor;
+        var deployment_target_params = rslt[0].deployment_target_params || '';
+        var site_id = rslt[0].site_id || null;
+        var current_branch_id = rslt[0].current_branch_id || null;
+        var current_branch_site_id = rslt[0].current_branch_site_id || null;
 
-        var dtparams = {
-          timestamp: (Date.now()).toString(),
-          branch_id: (Q.branch_id||'')
-        };
+        if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
 
-        if(deployment_target_params){
+        funcs.getPageTemplate(req._DBContext, site_id, Q.page_template_id, function(err, page_template){
+          if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+          if (!page_template) { Helper.GenError(req, res, -9, 'Page Template not found'); return; }
+
+          if(page_template.raw){
+            return res.end(JSON.stringify({ '_success': 1, raw: true }));
+          }
+
+          var url = '';
+          if(page_template.location == 'LOCAL'){
+            if(!cms.PreviewServer) return Helper.GenError(req, res, -9, 'LOCAL Templates require a Preview Server to be running');
+            url = path.join(cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]), page_template.path);
+            //Generate an error if the preview server branch is not checked out
+            if(current_branch_site_id != site_id) return Helper.GenError(req, res, -9, 'Please check out a branch on the same site you want to edit');
+          }
+          if(page_template.remote_template && page_template.remote_template.editor) {
+            url = page_template.remote_template.editor;
+          }
+          if(!url) return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
+
+          var dtparams = {
+            timestamp: (Date.now()).toString(),
+            branch_id: (Q.branch_id||'')
+          };
+
+          if(deployment_target_params){
+            try{
+              dtparams = _.extend(dtparams, JSON.parse(deployment_target_params));
+            }
+            catch(ex){
+              Helper.GenError(req, res, -9, 'Error reading deployment_target_params.  Please make sure the JSON syntax is correct');
+              return;
+            }
+          }
+
+          dtparams = _.extend(dtparams, {
+            page_template_id: Q.page_template_id,
+            page_key: (Q.page_key||''),
+            page_id: (Q.page_id||'')
+          });
+
+          dtparams = _.extend({}, cms.Config.deployment_target_params, dtparams);
+
+          url = funcs.parseDeploymentUrl(url, dtparams);
+
+          //Read URL and querystring
           try{
-            dtparams = _.extend(dtparams, JSON.parse(deployment_target_params));
+            var parsedUrl = new urlparser.URL(url);
+            dtparams._ = dtparams.timestamp;
+            if(Q.devMode) dtparams.page_template_location = page_template.location;
+            var changedUrl = false;
+            //Add any missing items to the querystring
+            _.each(['branch_id','page_id','page_key','page_template_id','_','page_template_location'], function(key){
+              if(parsedUrl.searchParams.has(key)) return;
+              if(dtparams[key]){
+                parsedUrl.searchParams.set(key, dtparams[key]);
+                changedUrl = true;
+              }
+            });
+            if(Q.devMode){
+              _.each(['branch_id','page_id','page_key'], function(key){
+                if(parsedUrl.searchParams.has(key)){
+                  parsedUrl.searchParams.delete(key);
+                  changedUrl = true;
+                }
+              });
+            }
+            if(changedUrl) url = parsedUrl.toString();
           }
           catch(ex){
-            Helper.GenError(req, res, -9, 'Error reading deployment_target_params.  Please make sure the JSON syntax is correct');
-            return;
+            jsh.Log.error(ex);
+            Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
           }
-        }
 
-        dtparams = _.extend(dtparams, {
-          page_template_id: Q.page_template_id,
-          page_key: (Q.page_key||''),
-          page_id: (Q.page_id||'')
+          res.end(JSON.stringify({ '_success': 1, editor: url }));
         });
-
-        dtparams = _.extend(cms.Config.deployment_target_params, dtparams);
-
-        url = funcs.parseDeploymentUrl(url, dtparams);
-
-        res.end(JSON.stringify({ '_success': 1, editor: url }));
       });
       return;
     }

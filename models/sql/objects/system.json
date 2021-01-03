@@ -81,7 +81,7 @@
       { "menu_group": "S", "menu_id": 50002, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Publish_Listing", "menu_seq": 50002, "menu_desc": "Publish", "menu_cmd": "jsHarmonyCMS/Publish_Listing" },
       { "menu_group": "S", "menu_id": 50003, "menu_id_parent": 500, "menu_name": "jsHarmonyCMS/Publish_History_Listing", "menu_seq": 50003, "menu_desc": "Publish History", "menu_cmd": "jsHarmonyCMS/Publish_History_Listing" },
 
-      { "menu_group": "S", "menu_id": 600, "menu_id_parent": 1, "menu_name": "Site", "menu_seq": 60000, "menu_desc": "Site", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
+      { "menu_group": "S", "menu_id": 600, "menu_id_parent": 1, "menu_name": "Sites", "menu_seq": 60000, "menu_desc": "Sites", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
       { "menu_group": "S", "menu_id": 60001, "menu_id_parent": 600, "menu_name": "jsHarmonyCMS/Site_Listing", "menu_seq": 60001, "menu_desc": "Sites", "menu_cmd": "jsHarmonyCMS/Site_Listing" },
       { "menu_group": "S", "menu_id": 60002, "menu_id_parent": 600, "menu_name": "jsHarmonyCMS/Category_Listing", "menu_seq": 60002, "menu_desc": "Categories", "menu_cmd": "jsHarmonyCMS/Category_Listing" }
 

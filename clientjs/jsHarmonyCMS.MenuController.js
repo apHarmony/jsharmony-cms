@@ -38,7 +38,7 @@ exports = module.exports = function(jsh, cms){
 
             //Load remote menu templates
             var loadObj = {};
-            cms.loader.StartLoading(loadObj);
+            cms.loader.StartLoading(loadObj, 'CMS Menu');
             $.ajax({
               type: 'GET',
               cache: false,

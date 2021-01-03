@@ -1,0 +1,32 @@
+{
+  "Site_Template_Page": {
+    "layout":"grid",
+    "table":"{schema}.site_template",
+    "title": "Page Templates",
+    "caption":["Page Template","Page Templates"],
+    "popup": [960, 600],
+    "roles": { "WEBMASTER": "BIUD" },
+    "commitlevel":"row",
+    "rowstyle":"background-color:#fff;border-bottom:1px solid #ddd;",
+    "sqlselect":"select site_template_id,site_id,site_template_type,site_template_name,site_template_title,site_template_location,site_template_path,site_template_config from %%%SITE_TEMPLATE%%% %%%SQLSUFFIX%%%",
+    "sqlwhere":"site_template_type='PAGE'",
+    "rowlimit":99999,
+    "sort":["^site_template_title"],
+    "tablestyle":"min-width:900px;",
+    "rowclass":"<%=xejs.iif((datarow['site_template_location']!='REMOTE'),'readonly')%>",
+    "css":[
+      ".xrow_<%=model.class%>.readonly .site_template_config_cell .xform_ctrl_textzoom_container { display:none; }",
+      ".xrow_<%=model.class%> .site_template_config_cell .xform_ctrl_textzoom_container { padding-bottom:3px;margin-top:1px; }",
+    ],
+    "fields": [
+      {"name":"site_id","actions":"BI","foreignkey":1,"control":"hidden"},
+      {"name":"site_template_type","actions":"I","control":"hidden","default":"PAGE"},
+      {"name":"site_template_name","caption":"Name","control":"textbox_S","validate":["Required"]},
+      {"name":"site_template_title","caption":"Title","validate":["Required"]},
+      {"name":"site_template_location","caption":"Location","actions":"B","sqlselect":"'REMOTE'","default":"REMOTE"},
+      {"name":"site_template_path","caption":"URL","control":"textbox_L","validate":["Required"]},
+      {"name":"site_template_config","caption":"Config","control":"textzoom","controlstyle":"display:none;","cellstyle":"text-align:center;","cellclass":"site_template_config_cell","validate":[{ "function": "IsJSON", "selector": ".site_template_config_cell .xform_ctrl_textzoom_container" }]},
+      {"control":"html","caption":"Preview","link":"js:_this.previewTemplate(this)","value":"<img src='/images/icon_browse.png' class='xicon' />"}
+    ]
+  }
+}

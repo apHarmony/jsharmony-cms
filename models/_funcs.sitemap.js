@@ -239,12 +239,15 @@ module.exports = exports = function(module, funcs){
 
     //Generate indexed list of sitemap items by ID
     var sitemap_items_by_id = {};
-    _.each(sitemap_items, function(sitemap_item){
+    for(var i=0;i<sitemap_items.length;i++){
+      var sitemap_item = sitemap_items[i];
+      sitemap_item.collection_index = i;
       sitemap_items_by_id[sitemap_item.sitemap_item_id] = sitemap_item;
       if(!sitemap_item.sitemap_item_parent_id){
         sitemap_item.sitemap_item_path_text = '/' + Helper.StripTags(sitemap_item.sitemap_item_text).trim() + '/';
+        sitemap_item.sitemap_item_collection_index_array = [sitemap_item.collection_index];
       }
-    });
+    }
 
     //Generate text path
     function getTextPath(sitemap_item){
@@ -252,6 +255,10 @@ module.exports = exports = function(module, funcs){
       if(!sitemap_item.sitemap_item_path_text){
         sitemap_item.sitemap_item_parents = getTextPath(sitemap_items_by_id[sitemap_item.sitemap_item_parent_id]);
         sitemap_item.sitemap_item_path_text = sitemap_item.sitemap_item_parents + Helper.StripTags(sitemap_item.sitemap_item_text).trim() + '/';
+
+        if(!sitemap_item.sitemap_item_collection_index_array){
+          sitemap_item.sitemap_item_collection_index_array = sitemap_items_by_id[sitemap_item.sitemap_item_parent_id].sitemap_item_collection_index_array.concat([sitemap_item.collection_index]);
+        }
       }
       return sitemap_item.sitemap_item_path_text;
     }
@@ -262,6 +269,17 @@ module.exports = exports = function(module, funcs){
     //Get text paths
     _.each(sitemap_items, function(sitemap_item){
       getTextPath(sitemap_item);
+    });
+
+    //Sort sitemap items
+    sitemap_items.sort(function(a,b){
+      for(var i=0;i<a.sitemap_item_collection_index_array.length;i++){
+        if(b.sitemap_item_collection_index_array.length <= i) return 1;
+        if(a.sitemap_item_collection_index_array[i] > b.sitemap_item_collection_index_array[i]) return 1;
+        if(a.sitemap_item_collection_index_array[i] < b.sitemap_item_collection_index_array[i]) return -1;
+      }
+      if(a.sitemap_item_collection_index_array.length < b.sitemap_item_collection_index_array.length) return -1;
+      return 0;
     });
 
     _.each(sitemap_items, function(sitemap_item){

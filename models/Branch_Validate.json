@@ -6,16 +6,17 @@
     "onecolumn":true,
     "roles": {"AUTHOR": "B","PUBLISHER": "B"},
     "sqlselect":[
-      "select ",
-      "(select branch_desc from {schema}.v_my_branch_desc where branch_id=@branch_id) branch_name,",
-      "(select site_name from {schema}.v_my_branch_desc where branch_id=@branch_id) site_name,",
-      "(select branch_type from {schema}.v_my_branch_desc where branch_id=@branch_id) branch_type"
+      "select branch_desc branch_name,site_name,branch_type,site_id,(select sys_user_site_editor from {schema}.v_my_site where v_my_site.site_id=v_my_branch_desc.site_id) sys_user_site_editor",
+      "from {schema}.v_my_branch_desc where branch_id=@branch_id"
     ],
     "hide_system_buttons":["print"],
     "onload":"_this.onload(xmodel, callback);",
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
-      {"name":"branch_name","control":"label","caption":"Branch","captionstyle":"text-align:right;font-weight:bold;"}
+      {"name":"branch_name","control":"label","caption":"Branch","captionstyle":"text-align:right;font-weight:bold;"},
+      {"name":"site_id","control":"hidden"},
+      {"name":"sys_user_site_editor","control":"hidden"},
+      "#CMS_SITE_EDITOR_LOV"
     ]
   }
 }

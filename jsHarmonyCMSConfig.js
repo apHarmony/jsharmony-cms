@@ -35,6 +35,19 @@ function jsHarmonyCMSConfig(){
     //secretAccessKey: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
   };
 
+  this.sftp = {
+    enabled: false,
+    serverPort: 22,
+    serverIp: '0.0.0.0',
+    clientIp: ['0.0.0.0/0'],  /* '127.0.0.1', '192.168.1.0/24', ... */
+  };
+
+  this.preview_server = {
+    enabled: false,
+    serverPort: 8088,
+    serverIp: '0.0.0.0',
+  };
+
   this.media_thumbnails = {
     file_tile: { resize: [150, 150], format: "jpg" },
     file_preview: { resize: [300, 300], format: "jpg" },
@@ -73,6 +86,7 @@ function jsHarmonyCMSConfig(){
     no_cache_client_js: false,          //Do not cache jsHarmonyCMS.js, always reload from disk
     auto_restart_failed_publish: false, //Do not cancel failed publish - instead auto-restart
     no_publish_complete: false,         //Leave publish in 'RUNNING' (for debugging, so that it will auto-restart with auto_restart_failed_publish flag)
+    sftp_log: false,                    //Log SFTP session
   };
 
   this.defaultEditorConfig = {};        //Default GUI editor config

@@ -171,12 +171,26 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
+  this.disableContentLinks = function(container){
+    $(container).find('a').each(function(){
+      var jobj = $(this);
+      var url = jobj.attr('href');
+      if(url.indexOf('#@JSHCMS') >= 0){
+        if(!jobj.data('disabled_links')){
+          jobj.data('disabled_links', '1');
+          jobj.on('click', function(e){ e.preventDefault(); });
+        }
+      }
+    });
+  }
+
   this.setContent = function(id, val){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
         $('#jsharmony_cms_content_'+id).html(val);
         cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
+        _this.disableContentLinks(document.getElementById('jsharmony_cms_content_'+id));
       },1);
     }
     else {

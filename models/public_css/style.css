@@ -1,6 +1,9 @@
-<%-(rootcss)%> .xtbl tbody tr.branch_checked_out {
+<%-(rootcss)%> .xtbl tbody tr.branch_checked_out,
+<%-(rootcss)%> .xtbl tbody tr.site_branch_checked_out,
+<%-(rootcss)%> .xtbl tbody tr.site_editor_current {
   background-color:#c2ffb8;
 }
+
 <%-(rootcss)%> .bcrumbs_branch_header {
   border:1px solid #333;
   color:white;
@@ -13,8 +16,39 @@
   padding:4px 11px;
   display:inline-block;
   color:#000;
+  margin-right:10px;
 }
 <%-(rootcss)%> .bcrumbs_branch_body a { color:#000; }
+
+<%-(rootcss)%> .diff_editor_selection_container {
+  display:inline-block;
+  font-weight: normal;
+  font-size: 0.8em;
+  margin-left: 20px;
+  position: relative;
+  top: -2px;
+}
+<%-(rootcss)%> .bcrumbs_editor_selection_container {
+  display:inline-block;
+}
+<%-(rootcss)%> .editor_selection_header {
+  border:1px solid #333;
+  color:white;
+  background-color:#333;
+  padding:4px 11px;
+  display:inline-block;
+}
+<%-(rootcss)%> .editor_selection_body {
+  box-sizing:border-box;
+  padding:0;
+  display:inline-block;
+  color:#000;
+}
+<%-(rootcss)%> .editor_selection {
+  padding:4px 11px 5px 11px;
+  outline:none;
+}
+
 <%-(rootcss)%> body .xtbl tbody tr.active_revision {
   background-color:#c2ffb8;
 }
@@ -135,4 +169,10 @@
   vertical-align: top;
   padding-top:5px;
   padding-bottom:7px;
+}
+<%-(rootcss)%> .headerInfo_caption {
+  border:1px solid #333;color:white;background-color:#333;padding:4px 11px;display:inline-block;
+}
+<%-(rootcss)%> .headerInfo_content {
+  border:1px solid #333;padding:4px 11px;display:inline-block;color:#000;background-color:#c2ffb8;
 }

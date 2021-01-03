@@ -33,7 +33,7 @@ Loading Animation: 2147483642
   right:0px;
   background-color:#f9f9f9;
 }
-#jsharmony_cms_editor_bar .button {
+#jsharmony_cms_editor_bar .jsharmony_cms_button {
   cursor:pointer;
   display:inline-block;
   font-size:15px;
@@ -45,34 +45,34 @@ Loading Animation: 2147483642
   height:36px;
   box-sizing:border-box;
 }
-#jsharmony_cms_editor_bar a.button:hover {
+#jsharmony_cms_editor_bar a.jsharmony_cms_button:hover {
   color:#555;
 }
-#jsharmony_cms_editor_bar a.button.static:hover {
+#jsharmony_cms_editor_bar a.jsharmony_cms_button.static:hover {
   color:#222;
   text-decoration:none;
   cursor:default;
 }
-#jsharmony_cms_editor_bar a.button.selected {
+#jsharmony_cms_editor_bar a.jsharmony_cms_button.selected {
   background-color:#f0f0f0;
 }
-#jsharmony_cms_editor_bar a.button.save.hasChanges {
+#jsharmony_cms_editor_bar a.jsharmony_cms_button.save.hasChanges {
   font-weight:bold;
 }
 
-#jsharmony_cms_editor_bar .button.icon {
+#jsharmony_cms_editor_bar .jsharmony_cms_button.icon {
   padding:4px 14px;
 }
-#jsharmony_cms_editor_bar .button.icon .material-icons {
+#jsharmony_cms_editor_bar .jsharmony_cms_button.icon .material-icons {
   position:relative;
   top:4px;
   font-size:20px;
 }
-#jsharmony_cms_editor_bar .button.texticon {
+#jsharmony_cms_editor_bar .jsharmony_cms_button.texticon {
   position:relative;
   padding-left:42px;
 }
-#jsharmony_cms_editor_bar .button.texticon .material-icons {
+#jsharmony_cms_editor_bar .jsharmony_cms_button.texticon .material-icons {
   position:absolute;
   left:18px;
   top:7px;
@@ -125,10 +125,18 @@ Loading Animation: 2147483642
   font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
 }
 
-#jsharmony_cms_editor_bar .page_settings table { width:100%; }
+#jsharmony_cms_editor_bar .page_settings .jsharmony_cms_page_settings_table {
+  width:100%;
+  display:table;
+}
 
-#jsharmony_cms_editor_bar .page_settings td {
+#jsharmony_cms_editor_bar .page_settings .jsharmony_cms_page_settings_row {
+  display:table-row;
+}
+
+#jsharmony_cms_editor_bar .page_settings .jsharmony_cms_page_settings_cell {
   padding-bottom:6px;
+  display:table-cell;
 }
 
 #jsharmony_cms_editor_bar .page_settings label {
@@ -186,11 +194,11 @@ Loading Animation: 2147483642
 }
 
 body .tox-tinymce-inline {
-  z-index: 9999;
+  z-index:99999999;
 }
 
 body .tox-tinymce-aux {
-  z-index: 10003;
+  z-index:100000003;
 }
 body .mce-content-body {
   overflow-wrap:normal;
@@ -213,7 +221,7 @@ body .tox .tox-collection__item-label h6 {
 
 #jsharmony_cms_content_editor_toolbar {
   position:fixed;
-  z-index: 9999;
+  z-index:99999999;
   top:40px;
   width:100%;
   opacity:0;
@@ -288,7 +296,7 @@ body .tox .tox-collection__item-label h6 {
 .jsharmony_cms_component_dataGridEditor > .xbodyhead {
   position:sticky;
   top:0px;
-  z-index:99999;
+  z-index:999999999;
   border-bottom:2px solid #eee;
   background-color:#fff;
   padding-top:20px;
@@ -454,4 +462,34 @@ body .tox .tox-collection__item-label h6 {
 .xdialogblock .jsharmony_cms_content_editor_toolbar .tox-dialog-wrap {
   width: 100vw;
   height: 100vh;
+}
+
+#jsharmony_cms_editor_errors {
+  display:none;
+  position:fixed;
+  top:0px;
+  left:0px;
+  width:100%;
+  background-color:#ffcec6;
+  box-shadow: 0px 2px 3px rgba(100,100,100,0.1);
+  z-index:2147483641;
+  font-family: 'Roboto', arial, helvetica, sans-serif !important;
+  min-height:37px;
+  overflow-y:scroll;
+  max-height:120px;
+  border-bottom:1px solid #ddd;
+}
+.jsharmony_cms_editor_error {
+  margin:10px 20px;
+}
+.jsharmony_cms_editor_error pre {
+  background-color:transparent;
+  margin-bottom:5px;
+}
+.jsharmony_cms_editor_errors_close {
+  position:absolute;
+  top:6;
+  right:6px;
+  cursor:pointer;
+  font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
 }

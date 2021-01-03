@@ -1,0 +1,51 @@
+<div class="<%=model.class%>_current_branch"></div>
+<div class="xaccordiontab"><img src="/images/icon_search.png" style="margin-right:7px;top:2px;height:14px;position:relative;" /> Page Templates Tips and URL Special Codes  </div>
+<div class="xaccordionbody">
+  <h3>Local vs Remote Templates</h3>
+  There are two types of page templates - REMOTE and LOCAL:
+  <ul>
+    <li>REMOTE templates are located outside of the CMS server, and must be individually defined in the grid below.</li>
+    <li>LOCAL templates are located in the site's SFTP "templates\pages" folder, and are automatically detected.</li>
+  </ul>
+
+  <h3>Special Codes</h3>
+  The following Special Codes can be used in the Page Template URL.  Special Codes are surrounded by three percent signs %%%:
+  <ul>
+    <li>%%%branch_id%%%</li>
+    <li>%%%page_key%%%</li>
+    <li>%%%page_id%%%</li>
+    <li>%%%page_template_id%%%</li>
+    <li>%%%timestamp%%% &nbsp; <i>(The current Unix timestamp)</i></li>
+    <li>%%%Any key defined in Deployment Target Params%%%</li>
+  </ul>
+  Any key defined in the Deployment Target "Params" JSON can be used as a code.  For example, if the Deployment Target "Params" is set to:
+  <pre>
+  {
+    "env": "staging",
+    "base_url": "https://staging.company.com"
+  }</pre>
+  The "env" and "base_url" Special Codes could be used as follows in the Page Template URL:
+  <pre>
+  %%%base_url%%%/templates/pages/default.html?env=%%%env%%%</pre>
+
+  <h3>Querystring Parameters for the Editor Template</h3>
+  The editor sends parameters to the template using the querystring.  The following querystring parameters will be automatically added to the URLs:
+  <ul>
+    <li>branch_id</li>
+    <li>page_key</li>
+    <li>page_id</li>
+    <li>page_template_id</li>
+    <li>_ &nbsp; <i>(Set to current timestamp for cache busting)</i></li>
+  </ul>
+
+  <h3>Separate Edit / Publish Templates</h3>
+  If different templates are required for "Edit" and "Publish", the URL defined in the Page Templates grid will be used as the Edit template, and the Publish template URL should be defined inside Edit template, in the &lt;script type="text/jsharmony-cms-template-config"&gt; script tag:
+  <pre>
+  &lt;script type="text/jsharmony-cms-template-config"&gt;
+  {
+    "remote_template": {
+      "publish": "%%%base_url%%%/templates/pages/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
+  }
+  &lt;/script&gt;</pre>
+</div>
+<div style="clear:both;height:5px;"></div>

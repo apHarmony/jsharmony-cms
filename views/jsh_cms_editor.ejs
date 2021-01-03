@@ -1,9 +1,9 @@
 <div id="jsharmony_cms_editor_bar" class="jsharmony_cms">
   <div class="actions"><!--
-    --><a class="button settings" onclick="return false;" title="Page Settings">Page Settings</a><!--
-    --><a class="button save" onclick="return false;" title="Save">Save</a><!--
-    --><a class="button static readonly" style="display:none;" onclick="return false;" title="Read Only">(Read Only)</a><!--
-    --><a class="button icon autoHideEditorBar" style="display:none;" onclick="return false;" title="Auto-hide"><i class="material-icons hide">vertical_align_top</i><i class="material-icons dock">vertical_align_bottom</i></a><!--
+    --><a class="jsharmony_cms_button settings" onclick="return false;" title="Page Settings">Page Settings</a><!--
+    --><a class="jsharmony_cms_button save" onclick="return false;" title="Save">Save</a><!--
+    --><a class="jsharmony_cms_button static readonly" style="display:none;" onclick="return false;" title="Read Only">(Read Only)</a><!--
+    --><a class="jsharmony_cms_button icon autoHideEditorBar" style="display:none;" onclick="return false;" title="Auto-hide"><i class="material-icons hide">vertical_align_top</i><i class="material-icons dock">vertical_align_bottom</i></a><!--
   --></div>
   <div class="title" ></div>
   <div class="page_settings" style="display:none;">
@@ -18,21 +18,42 @@
       </div>
       <div class="xpanel">
         <div class="xtabbody jsharmony_cms_page_settings_overview">
-          <table cellpadding="0" cellspacing="0" border="0">
-            <tr><td><label>Page Title:</label></td><td width="100%"><input type="text" class="page_settings_ctrl page_settings_title" /></td></tr>
-            <tr><td valign="top" style="padding-top:8px;"><label>Tags:</label></td><td><div class="page_settings_tags_editor xtagbox"></div><input type="text" class="page_settings_ctrl page_settings_tags xtagbox_base" /></td></tr>
-            <tr><td><label>Author:</label></td><td><select class="page_settings_author"></select></td></tr>
-          </table>
+          <div class="jsharmony_cms_page_settings_table">
+            <div class="jsharmony_cms_page_settings_row">
+              <div class="jsharmony_cms_page_settings_cell"><label>Page Title:</label></div>
+              <div class="jsharmony_cms_page_settings_cell" style="width:100%;"><input type="text" class="page_settings_ctrl page_settings_title" /></div>
+            </div>
+            <div class="jsharmony_cms_page_settings_row">
+              <div class="jsharmony_cms_page_settings_cell" style="vertical-align:top;padding-top:8px;"><label>Tags:</label></div>
+              <div class="jsharmony_cms_page_settings_cell"><div class="page_settings_tags_editor xtagbox"></div><input type="text" class="page_settings_ctrl page_settings_tags xtagbox_base" /></div>
+            </div>
+            <div class="jsharmony_cms_page_settings_row">
+              <div class="jsharmony_cms_page_settings_cell"><label>Author:</label></div>
+              <div class="jsharmony_cms_page_settings_cell"><select class="page_settings_author"></select></div>
+            </div>
+          </div>
         </div>
         <div class="xtabbody jsharmony_cms_page_settings_properties">
         </div>
         <div class="xtabbody jsharmony_cms_page_settings_seo">
-          <table cellpadding="0" cellspacing="0" border="0">
-            <tr><td><label>Title Tag:</label></td><td width="100%"><input type="text" class="page_settings_ctrl page_settings_seo_title" /></td></tr>
-            <tr><td><label>Meta Keywords:</label></td><td><input type="text" class="page_settings_ctrl page_settings_seo_keywords" /></td></tr>
-            <tr><td valign="top" style="padding-top:3px;"><label>Meta Description:</label></td><td><textarea class="page_settings_seo_metadesc small"></textarea></td></tr>
-            <tr><td><label>Canonical URL:</label></td><td><input type="text" class="page_settings_ctrl page_settings_seo_canonical_url" /></td></tr>
-          </table>
+          <div class="jsharmony_cms_page_settings_table">
+            <div class="jsharmony_cms_page_settings_row">
+              <div class="jsharmony_cms_page_settings_cell"><label>Title Tag:</label></div>
+              <div class="jsharmony_cms_page_settings_cell" style="width:100%;"><input type="text" class="page_settings_ctrl page_settings_seo_title" /></div>
+            </div>
+            <div class="jsharmony_cms_page_settings_row">
+              <div class="jsharmony_cms_page_settings_cell"><label>Meta Keywords:</label></div>
+              <div class="jsharmony_cms_page_settings_cell"><input type="text" class="page_settings_ctrl page_settings_seo_keywords" /></div>
+            </div>
+            <div class="jsharmony_cms_page_settings_row">
+              <div class="jsharmony_cms_page_settings_cell" style="vertical-align:top;padding-top:3px;"><label>Meta Description:</label>
+              </div>
+              <div class="jsharmony_cms_page_settings_cell"><textarea class="page_settings_seo_metadesc small"></textarea></div></div>
+            <div class="jsharmony_cms_page_settings_row">
+              <div class="jsharmony_cms_page_settings_cell"><label>Canonical URL:</label></div>
+              <div class="jsharmony_cms_page_settings_cell"><input type="text" class="page_settings_ctrl page_settings_seo_canonical_url" /></div>
+            </div>
+          </div>
         </div>
         <div class="xtabbody jsharmony_cms_page_settings_css">
           <textarea class="page_settings_css code"></textarea>
@@ -47,3 +68,4 @@
     </div>
   </div>
 </div>
+<div id="jsharmony_cms_editor_errors" class="jsharmony_cms"></div>

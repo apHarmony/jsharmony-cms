@@ -2832,7 +2832,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       .css('top', '0px')
       .css('left', '0')
       .css('width', '100%')
-      .css('z-index', '999999');
+      .css('z-index', '1999999999');
     self._jsh.$(dialogSelector).append($toolbar);
 
     _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {
@@ -4136,7 +4136,7 @@ exports = module.exports = function(jsh, cms){
         _this.componentTemplates = rslt.components;
         async.eachOf(_this.componentTemplates, function(component, key, cb) {
           var loadObj = {};
-          cms.loader.StartLoading(loadObj);
+          cms.loader.StartLoading(loadObj, 'CMS Components');
           _this.loadTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             _this.parseTemplate(component);
@@ -4355,6 +4355,9 @@ exports = module.exports = function(jsh, cms){
   this.hasChanges = false;
 
   this.init = function(cb){
+  }
+
+  this.initDevMode = function(cb){
   }
 
   this.load = function(cb){
@@ -5127,12 +5130,26 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
+  this.disableContentLinks = function(container){
+    $(container).find('a').each(function(){
+      var jobj = $(this);
+      var url = jobj.attr('href');
+      if(url.indexOf('#@JSHCMS') >= 0){
+        if(!jobj.data('disabled_links')){
+          jobj.data('disabled_links', '1');
+          jobj.on('click', function(e){ e.preventDefault(); });
+        }
+      }
+    });
+  }
+
   this.setContent = function(id, val){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
         $('#jsharmony_cms_content_'+id).html(val);
         cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
+        _this.disableContentLinks(document.getElementById('jsharmony_cms_content_'+id));
       },1);
     }
     else {
@@ -6128,7 +6145,7 @@ exports = module.exports = function(cms){
   this.onMouseDown = [];
   this.onMouseUp = [];
   
-  this.StartLoading = function(obj){
+  this.StartLoading = function(obj, desc){
     if(!obj) obj = _this.defaultLoadObj;
     
     var foundObj = false;
@@ -6233,7 +6250,7 @@ exports = module.exports = function(jsh, cms){
 
             //Load remote menu templates
             var loadObj = {};
-            cms.loader.StartLoading(loadObj);
+            cms.loader.StartLoading(loadObj, 'CMS Menu');
             $.ajax({
               type: 'GET',
               cache: false,
@@ -6310,9 +6327,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var $ = jsh.$;
+  var _ = jsh._;
 
   this.editorBarDocked = false;
   this.origMarginTop = undefined;
+  this.errors = [/*{ message: '...', type: 'text' (or 'html') }*/];
  
   this.render = function(){
     cms.util.addStyle('jsharmony_cms_editor_css',cms.views['jsh_cms_editor.css']);
@@ -6320,6 +6339,24 @@ exports = module.exports = function(jsh, cms){
     this.origMarginTop = $('body').css('margin-top');
     this.toggleAutoHide(false);
     jsh.InitControls();
+    this.renderErrors();
+  }
+
+  this.renderErrors = function(){
+    var jcontainer = $('#jsharmony_cms_editor_errors');
+    jcontainer.toggle(!!_this.errors.length);
+    jcontainer.empty();
+    if(jcontainer.length && _this.errors.length){
+      jcontainer.append($('<div class="jsharmony_cms_editor_errors_close">X</div>'));
+      for(var i=0;i<_this.errors.length;i++){
+        var error = _this.errors[i];
+        var jmessage = $('<div class="jsharmony_cms_editor_error"></div>');
+        if(error.type=='html') jmessage.html(error.message);
+        else jmessage.text(error.message);
+        jcontainer.append(jmessage);
+      }
+      jcontainer.find('.jsharmony_cms_editor_errors_close').on('click', function(){ $('#jsharmony_cms_editor_errors').hide(); });
+    }
   }
 
   this.toggleAutoHide = function(val){
@@ -6337,7 +6374,7 @@ exports = module.exports = function(jsh, cms){
   }
   
   this.toggleSettings = function(display, noSlide){
-    var jbutton = $('#jsharmony_cms_editor_bar .button.settings');
+    var jbutton = $('#jsharmony_cms_editor_bar .jsharmony_cms_button.settings');
     var prevdisplay = !!jbutton.hasClass('selected');
     if(typeof display == 'undefined') display = !prevdisplay;
     
@@ -6365,7 +6402,13 @@ exports = module.exports = function(jsh, cms){
   this.showSettings = function(noSlide){ this.toggleSettings(true, noSlide); }
 
   this.hideSettings = function(noSlide){ this.toggleSettings(false, noSlide); }
-
+  
+  this.showError = function(err) {
+    if(_.isString(err)) err = { message: err, type: 'text' };
+    err.type = (err.type=='html' ? 'html' : 'text');
+    _this.errors.push(err);
+    _this.renderErrors();
+  }
 
 }
 },{}],30:[function(require,module,exports){
@@ -6511,6 +6554,7 @@ var jsHarmonyCMS = function(options){
   this._baseurl = jsHarmonyCMS._baseurl; //Populated by jsHarmonyCMS.js.ejs
   this._cookie_suffix = jsHarmonyCMS._cookie_suffix; //Populated by jsHarmonyCMS.js.ejs
   this.readonly = false;
+  this.devMode = false;
   this.isInitialized = false;
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
 
@@ -6524,6 +6568,7 @@ var jsHarmonyCMS = function(options){
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
   this.onApplyProperties = null;         //function(page)
+  this.onRender = null;                  //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); }
 
   for(var key in options){
@@ -6540,7 +6585,7 @@ var jsHarmonyCMS = function(options){
 
 
   this.init = function(){
-    loader.StartLoading();
+    loader.StartLoading(undefined, 'CMS Init');
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
@@ -6606,16 +6651,27 @@ var jsHarmonyCMS = function(options){
       _this.branch_id = jsh._GET['branch_id'];
       this.componentManager.load();
       this.menuController.load();
+      _this.controller.init(function(err){
+        if(!err){
+          if(_this.onLoaded) _this.onLoaded(jsh);
+        }
+      });
     }
     else{
-      loader.StopLoading();
-      XExt.Alert('Site ID not defined in querystring');
-    }
-    _this.controller.init(function(err){
-      if(!err){
-        if(_this.onLoaded) _this.onLoaded(jsh);
+      if(jshInstance.globalparams.isWebmaster && _this.controller.initDevMode){
+        _this.devMode = true;
+        _this.controller.initDevMode(function(err){
+          loader.StopLoading();
+          if(!err){
+            if(_this.onLoaded) _this.onLoaded(jsh);
+          }
+        });
       }
-    });
+      else {
+        loader.StopLoading();
+        XExt.Alert('Branch ID not defined in querystring');
+      }
+    }
   }
 
   this.refreshLayout = function(){

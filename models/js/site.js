@@ -2,6 +2,7 @@
   var XExt = jsh.XExt;
   var XForm = jsh.XForm;
   var _ = jsh._;
+  var $ = jsh.$;
   var async = jsh.async;
 
   jsh.System.onOpenPageEditor = []; //function(callback, page_key, page_filename, page_template_id, options){}
@@ -10,10 +11,12 @@
     options = _.extend({
       source: undefined,
       branch_id: undefined,
+      site_id: undefined,
       rawEditorDialog: '',
       page_id: undefined,
       getURL: false,
       async: true,
+      devMode: false,
       onComplete: undefined, //function(err, url){}
     }, options);
 
@@ -26,77 +29,74 @@
         if(options.onComplete) options.onComplete(err);
         return;
       }
-      var template = jsh.globalparams.PageTemplates[page_template_id];
-      if(!template){
-        var errmsg = 'Template is not defined';
-        if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
-        return XExt.Alert(errmsg);
-      }
+      var params = { page_template_id: page_template_id }
+      if(page_key) params.page_key = page_key;
+      if(jsh.bcrumbs && jsh.bcrumbs.branch_id) params.branch_id = jsh.bcrumbs.branch_id;
+      _.each(['branch_id', 'site_id', 'page_id', 'devMode'], function(key){ if(options[key]) params[key] = options[key]; });
 
-      if(template.editor){
-        var params = { page_template_id: page_template_id }
-        if(page_key) params.page_key = page_key;
-        if(jsh.bcrumbs && jsh.bcrumbs.branch_id) params.branch_id = jsh.bcrumbs.branch_id;
-        _.each(['branch_id', 'page_id'], function(key){ if(options[key]) params[key] = options[key]; });
+      XForm.Get('../_funcs/editor_url', params, {}, function(template){
+        if(!template){
+          var errmsg = 'Template is not defined';
+          if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
+          return XExt.Alert(errmsg);
+        }
+        else if(template.raw){
+          //Raw Text has no dedicated editor
+          if(options.getURL && options.onComplete) return options.onComplete(null, null, template);
 
-        XForm.Get('../_funcs/editor_url', params, {}, function(rslt){
-          if(!rslt || !rslt.editor){
-            var errmsg = 'Error generating editor URL';
-            if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
-            return XExt.Alert(errmsg);
-          }
+          //Edit Raw Text
 
+          //Load content from server
+          var url = '../_funcs/page/'+page_key;
+          if(options.page_id) url += '?page_id=' + options.page_id;
+          XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+            if ('_success' in rslt) {
+              var page = rslt.page;
+              var readonly = !!options.page_id || (rslt.role=='VIEWER');
+              //var pagetemplate = rslt.template;
+              //var views = rslt.views;
+              //var authors = rslt.authors;
+              //var role = rslt.role;
+              
+              //Display Editor
+              var sel = options.rawEditorDialog;
+              if(!sel) return XExt.Alert('Raw Text Editor not defined');
+              XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
+                var jprompt = jsh.$root('.xdialogblock ' + sel);
+                jprompt.find('.edit_page_title').text('Edit: '+page_filename);
+                jprompt.find('.page_content').val(page.content.body||'');
+                jprompt.find('.page_content').prop('readonly', readonly);
+                jprompt.find('.button_ok').val(readonly?'Close':'Save');
+                jprompt.find('.button_cancel').toggle(!readonly);
+              }, function (success) { //onAccept
+                if(readonly) return success();
+                //Save content to server
+                var jprompt = jsh.$root('.xdialogblock ' + sel);
+                page.content.body = jprompt.find('.page_content').val();
+                url = '../_funcs/page/'+page_key;
+                XExt.CallAppFunc(url, 'post', page, success, function (err) { });
+              });
+            }
+            else{
+              if(options.onComplete) options.onComplete(new Error('Error Loading Page'));
+              XExt.Alert('Error loading page');
+            }
+          }, function (err) {
+            if(options.onComplete) options.onComplete(err);
+          });
+        }
+        else if(template.editor){
           //Open Editor
-          var url = rslt.editor;
-          if(options.getURL && options.onComplete) return options.onComplete(null, url);
+          var url = template.editor;
+          if(options.getURL && options.onComplete) return options.onComplete(null, url, template);
           window.open(url, '_blank', "width=1195,height=800");
-        }, undefined, { async: options.async });
-      }
-      else {
-        //Raw Text has no dedicated editor
-        if(options.getURL && options.onComplete) return options.onComplete();
-
-        //Edit Raw Text
-
-        //Load content from server
-        var url = '../_funcs/page/'+page_key;
-        if(options.page_id) url += '?page_id=' + options.page_id;
-        XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
-          if ('_success' in rslt) {
-            var page = rslt.page;
-            var readonly = !!options.page_id || (rslt.role=='VIEWER');
-            //var template = rslt.template;
-            //var views = rslt.views;
-            //var authors = rslt.authors;
-            //var role = rslt.role;
-            
-            //Display Editor
-            var sel = options.rawEditorDialog;
-            if(!sel) return XExt.Alert('Raw Text Editor not defined');
-            XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-              var jprompt = jsh.$root('.xdialogblock ' + sel);
-              jprompt.find('.edit_page_title').text('Edit: '+page_filename);
-              jprompt.find('.page_content').val(page.content.body||'');
-              jprompt.find('.page_content').prop('readonly', readonly);
-              jprompt.find('.button_ok').val(readonly?'Close':'Save');
-              jprompt.find('.button_cancel').toggle(!readonly);
-            }, function (success) { //onAccept
-              if(readonly) return success();
-              //Save content to server
-              var jprompt = jsh.$root('.xdialogblock ' + sel);
-              page.content.body = jprompt.find('.page_content').val();
-              url = '../_funcs/page/'+page_key;
-              XExt.CallAppFunc(url, 'post', page, success, function (err) { });
-            });
-          }
-          else{
-            if(options.onComplete) options.onComplete(new Error('Error Loading Page'));
-            XExt.Alert('Error loading page');
-          }
-        }, function (err) {
-          if(options.onComplete) options.onComplete(err);
-        });
-      }
+        }
+        else{
+          var errmsg = 'Error generating editor URL';
+          if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
+          return XExt.Alert(errmsg);
+        }
+      }, undefined, { async: options.async });
     });
   }
 
@@ -123,6 +123,39 @@
       var url = jsh._BASEURL+'_funcs/media/'+media_key+'/?download'+(qs?'&'+qs:'');
       jsh.getFileProxy().prop('src', url);
     }
+  }
+
+  jsh.System.renderEditorSelection = function(LOV_site_editor, site_id, sys_user_site_editor, options){
+    if(!LOV_site_editor || (LOV_site_editor.length <= 2)) return;
+    options = _.extend({ after: null, container: null, containerClass: '', }, options);
+    var jcontainer = null;
+    if(options.container) jcontainer = jsh.$root(container);
+    else if(options.containerClass && jsh.$root('.'+options.containerClass).length) jcontainer = jsh.$root('.'+options.containerClass);
+    else if(options.after){
+      jcontainer = $('<div></div>');
+      if(options.containerClass) jcontainer.addClass(options.containerClass);
+      jsh.$root(options.after).after(jcontainer);
+    }
+    else throw new Error('Either options.container, options.after, or an existing options.containerClass is required');
+
+    jcontainer.html(jsh.RenderEJS(jsh.GetEJS('jsHarmonyCMS.EditorSelection'),{
+      LOV_site_editor: LOV_site_editor,
+      sys_user_site_editor: sys_user_site_editor,
+    }));
+    var jEditorSelection = jcontainer.find('.editor_selection');
+    XExt.RenderLOV(null, jEditorSelection, LOV_site_editor);
+    jEditorSelection.val(sys_user_site_editor);
+    jEditorSelection.on('change', function(){
+      var new_sys_user_site_editor = $(this).val();
+      jsh.System.updateEditor(site_id, new_sys_user_site_editor);
+    });
+  }
+
+  jsh.System.updateEditor = function(site_id, sys_user_site_editor){
+    if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding a folder');
+
+    XForm.Post('{namespace}Site_Editor',{},{ site_id: site_id, sys_user_site_editor: sys_user_site_editor }, function(){
+    });
   }
 
 })(window.jshInstance);

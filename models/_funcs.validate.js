@@ -94,8 +94,10 @@ module.exports = exports = function(module, funcs){
     var branchData = {
       _DBContext: dbcontext,
       page_keys: {},
+      page_templates: null,
       media_keys: {},
       branch_id: branch_id,
+      site_id: null,
       deployment_target_params: null,
     };
 
@@ -103,13 +105,14 @@ module.exports = exports = function(module, funcs){
 
       //Get deployment_target_params for branch
       function(cb){
-        var sql = "select site_editor deployment_target_id,deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+        var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
         appsrv.ExecRow(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(rslt && rslt[0]){
             try{
               branchData.deployment_target_id = rslt[0].deployment_target_id;
               branchData.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
+              branchData.site_id = rslt[0].site_id;
             }
             catch(ex){}
           }
@@ -230,7 +233,7 @@ module.exports = exports = function(module, funcs){
 
     //Get page file content
     async.eachOfSeries(branchData.page_keys, function(page, page_id, page_cb){
-      funcs.getClientPage(page, null, function(err, clientPage){
+      funcs.getClientPage(branchData._DBContext, page, null, branchData.site_id, { pageTemplates: branchData.page_templates }, function(err, clientPage){
         if(err){ funcs.validate_logError(item_errors, 'page', page, err.toString()); return page_cb(); }
         if(!clientPage) return page_cb(null); 
         page.compiled = clientPage.page;

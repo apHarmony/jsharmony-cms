@@ -49,6 +49,7 @@ var jsHarmonyCMS = function(options){
   this._baseurl = jsHarmonyCMS._baseurl; //Populated by jsHarmonyCMS.js.ejs
   this._cookie_suffix = jsHarmonyCMS._cookie_suffix; //Populated by jsHarmonyCMS.js.ejs
   this.readonly = false;
+  this.devMode = false;
   this.isInitialized = false;
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
 
@@ -62,6 +63,7 @@ var jsHarmonyCMS = function(options){
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
   this.onApplyProperties = null;         //function(page)
+  this.onRender = null;                  //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); }
 
   for(var key in options){
@@ -78,7 +80,7 @@ var jsHarmonyCMS = function(options){
 
 
   this.init = function(){
-    loader.StartLoading();
+    loader.StartLoading(undefined, 'CMS Init');
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
@@ -144,16 +146,27 @@ var jsHarmonyCMS = function(options){
       _this.branch_id = jsh._GET['branch_id'];
       this.componentManager.load();
       this.menuController.load();
+      _this.controller.init(function(err){
+        if(!err){
+          if(_this.onLoaded) _this.onLoaded(jsh);
+        }
+      });
     }
     else{
-      loader.StopLoading();
-      XExt.Alert('Site ID not defined in querystring');
-    }
-    _this.controller.init(function(err){
-      if(!err){
-        if(_this.onLoaded) _this.onLoaded(jsh);
+      if(jshInstance.globalparams.isWebmaster && _this.controller.initDevMode){
+        _this.devMode = true;
+        _this.controller.initDevMode(function(err){
+          loader.StopLoading();
+          if(!err){
+            if(_this.onLoaded) _this.onLoaded(jsh);
+          }
+        });
       }
-    });
+      else {
+        loader.StopLoading();
+        XExt.Alert('Branch ID not defined in querystring');
+      }
+    }
   }
 
   this.refreshLayout = function(){

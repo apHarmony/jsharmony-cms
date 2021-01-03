@@ -38,6 +38,10 @@ module.exports = exports = function(module, funcs){
     var menu_template_id = menu.menu_template_id;
     if(!menu_template_id) menu_template_id = module.defaultMenuTemplate;
     var template = module.MenuTemplates[menu_template_id];
+    if(!template) template = {
+      title: menu_template_id,
+      content_elements: {}
+    }
 
     //Load Menu Content from disk
     module.jsh.ParseJSON(funcs.getMenuFile(menu_file_id), module.name, 'Menu File ID#'+menu_file_id, function(err, menu_content){
@@ -265,12 +269,15 @@ module.exports = exports = function(module, funcs){
 
     //Generate indexed list of menu items by ID
     var menu_items_by_id = {};
-    _.each(menu_items, function(menu_item){
+    for(var i=0;i<menu_items.length;i++){
+      var menu_item = menu_items[i];
+      menu_item.collection_index = i;
       menu_items_by_id[menu_item.menu_item_id] = menu_item;
       if(!menu_item.menu_item_parent_id){
         menu_item.menu_item_path_text = '/' + Helper.StripTags(menu_item.menu_item_text).trim() + '/';
+        menu_item.menu_item_collection_index_array = [menu_item.collection_index];
       }
-    });
+    }
 
     //Generate text path
     function getTextPath(menu_item){
@@ -278,7 +285,12 @@ module.exports = exports = function(module, funcs){
       if(!menu_item.menu_item_path_text){
         menu_item.menu_item_parents = getTextPath(menu_items_by_id[menu_item.menu_item_parent_id]);
         menu_item.menu_item_path_text = menu_item.menu_item_parents + Helper.StripTags(menu_item.menu_item_text).trim() + '/';
+        
+        if(!menu_item.menu_item_collection_index_array){
+          menu_item.menu_item_collection_index_array = menu_items_by_id[menu_item.menu_item_parent_id].menu_item_collection_index_array.concat([menu_item.collection_index]);
+        }
       }
+      menu_item.menu_item_path_array = (menu_item.menu_item_path_text||'').split('/');
       return menu_item.menu_item_path_text;
     }
 
@@ -288,6 +300,17 @@ module.exports = exports = function(module, funcs){
     //Get text paths
     _.each(menu_items, function(menu_item){
       getTextPath(menu_item);
+    });
+
+    //Sort menu items
+    menu_items.sort(function(a,b){
+      for(var i=0;i<a.menu_item_collection_index_array.length;i++){
+        if(b.menu_item_collection_index_array.length <= i) return 1;
+        if(a.menu_item_collection_index_array[i] > b.menu_item_collection_index_array[i]) return 1;
+        if(a.menu_item_collection_index_array[i] < b.menu_item_collection_index_array[i]) return -1;
+      }
+      if(a.menu_item_collection_index_array.length < b.menu_item_collection_index_array.length) return -1;
+      return 0;
     });
 
     _.each(menu_items, function(menu_item){

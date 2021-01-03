@@ -39,7 +39,7 @@ exports = module.exports = function(jsh, cms){
         _this.componentTemplates = rslt.components;
         async.eachOf(_this.componentTemplates, function(component, key, cb) {
           var loadObj = {};
-          cms.loader.StartLoading(loadObj);
+          cms.loader.StartLoading(loadObj, 'CMS Components');
           _this.loadTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             _this.parseTemplate(component);

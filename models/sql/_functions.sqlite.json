@@ -11,6 +11,12 @@
       "(select branch_id from {schema}.sys_user_branch where {schema}.sys_user_branch.sys_user_id=jsharmony.my_sys_user_id())"
     ]
   },
+  "{schema}.my_current_site_id":{
+    "params": [],
+    "sql": [
+      "(select site_id from {schema}.sys_user_branch inner join {schema}.branch on {schema}.branch.branch_id = {schema}.sys_user_branch.branch_id where {schema}.sys_user_branch.sys_user_id=jsharmony.my_sys_user_id())"
+    ]
+  },
   "{schema}.my_current_branch_is_editable":{
     "params": [],
     "sql": [

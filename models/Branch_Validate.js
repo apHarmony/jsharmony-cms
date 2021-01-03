@@ -63,6 +63,8 @@ jsh.App[modelid] = new (function(){
     jvalidate.html(XExt.renderClientEJS(tmpl, renderParams));
 
     XExt.trigger(_this.onRenderedValidate, jvalidate);
+
+    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), xmodel.get('site_id'), xmodel.get('sys_user_site_editor'), { containerClass: 'diff_editor_selection_container' });
   }
 
   this.previewPage = function(obj){
