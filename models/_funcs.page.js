@@ -764,7 +764,7 @@ module.exports = exports = function(module, funcs){
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|page_id','&branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var authors = null;
         var clientPage = null;
@@ -772,13 +772,16 @@ module.exports = exports = function(module, funcs){
         var sitemaps = {};
         var menus = {};
         var site_id = null;
+        var branch_id = Q.branch_id || page.branch_id;
+
+        if(!branch_id){ return Helper.GenError(req, res, -4, 'Invalid Parameters'); }
 
         async.waterfall([
 
           //Get site
           function(cb){
             sql = "select v_my_branch_access.branch_id,branch_name,site_id from {schema}.v_my_branch_access inner join {schema}.branch_page on branch_page.branch_id=v_my_branch_access.branch_id where v_my_branch_access.branch_id=@branch_id and branch_access like 'R%' and (branch_page.page_key=(select page_key from {schema}.page where page_id=@page_id))";
-            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { page_id: page.page_id, branch_id: Q.branch_id }, function (err, rslt) {
+            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { page_id: page.page_id, branch_id: branch_id }, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
               if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Branch or Page'); }
               site_id = rslt[0][0].site_id;

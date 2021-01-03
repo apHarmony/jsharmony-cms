@@ -326,6 +326,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           "unbound": true,
         }, _this.template.properties);
         _this.template.properties.id = 'jsharmony_cms_page_properties';
+        if(cms.readonly) _this.template.properties.actions = 'B';
         _this.template.properties.onchange = 'var cms = '+cms._instance+'; if(cms.isInitialized){ cms.controller.getValues(); cms.controller.renderHooks(); }'+(_this.template.properties.onchange||'');
         XPage.LoadVirtualModel($('.jsharmony_cms_page_settings_properties')[0], _this.template.properties, function(){
           f();
