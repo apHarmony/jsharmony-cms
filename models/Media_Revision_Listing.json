@@ -14,7 +14,7 @@
     "rowclass":"<%=xejs.iif(datarow['media_id']==jsh.XModels[xmodel.parent].get('revision_media_id'),'active_revision')%>",
     "fields": [
       {"name":"media_id","caption":"ID","control":"hidden","key":true},
-      {"name":"revision_media_key","caption":"Revision Key","control":"hidden","sqlwhere":"media_key=@revision_media_key","sqlselect":"media_key"},
+      {"name":"revision_media_key","type":"bigint","caption":"Revision Key","control":"hidden","sqlwhere":"media_key=@revision_media_key","sqlselect":"media_key"},
       {"name":"media_key","caption":"Key","control":"hidden"},
       {"name":"media_file_id","caption":"File ID","control":"hidden"},
       {"name":"media_ext","caption":"Extension","control":"hidden"},
