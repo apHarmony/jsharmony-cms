@@ -42,15 +42,18 @@ exports = module.exports = function(jsh, cms, editor){
         if(page_key.toString()==patharr[3]) return { init_page_key: page_key };
       }
     }
+    else if(filePickerType === 'link' && lastLinkPath) {
+      if(lastLinkPath.init_media_path) return { init_media_path: lastLinkPath.init_media_path };
+      else if(lastLinkPath.init_page_path) return { init_page_path: lastLinkPath.init_page_path };
+    } 
+    else if (filePickerType === 'media' && lastMediaPath) return { init_media_path: lastMediaPath };
+
     return {};
   }
 
   this.openLink = function(cb, value, meta){
     cms.filePickerCallback = cb;
-    var qs = { };
-    var linkurl = _this.getParameters('link', value); 
-    if(linkurl.init_media_key) qs.init_media_key = linkurl.init_media_key;
-    else if (lastLinkPath) qs.init_path = lastLinkPath;
+    var qs = _this.getParameters('link', value);
     XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', qs, { width: 1100, height: 600 });
   }
 
@@ -58,8 +61,8 @@ exports = module.exports = function(jsh, cms, editor){
     cms.filePickerCallback = cb;
     var qs = { };
     var linkurl = _this.getParameters('media', value);
-    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
-    else if(lastMediaPath) qs.init_path = lastMediaPath;
+    if(linkurl.init_media_key) qs.init_media_key = linkurl.init_media_key;
+    else if(linkurl.init_media_path) qs.init_media_path = linkurl.init_media_path;
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
   }
 
@@ -71,10 +74,11 @@ exports = module.exports = function(jsh, cms, editor){
       if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){}
       else if(jdata.media_key){
         lastMediaPath = jdata.media_folder;
+        lastLinkPath = { init_media_path: jdata.media_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS', jdata);
       }
       else if(jdata.page_key){
-        lastLinkPath = jdata.page_folder;
+        lastLinkPath = { init_page_path: jdata.page_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS', jdata);
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));

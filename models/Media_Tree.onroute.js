@@ -49,11 +49,11 @@ else if(routetype == 'model'){
     sql_ptypes = [dbtypes.BigInt];
     sql_params ={ media_key: req.query.init_media_key };
   }
-  else if (req.query.init_path) {
-    if (!req.query.init_path.endsWith('/')) req.query.init_path = req.query.init_path + '/';
+  else if (req.query.init_media_path) {
+    if (!req.query.init_media_path.endsWith('/')) req.query.init_media_path = req.query.init_media_path + '/';
     sql = "select media_folder from {schema}.v_my_media where substr(media_folder, 1, length(@media_folder))=@media_folder";
     sql_ptypes = [dbtypes.NVarChar(dbtypes.MAX)];
-    sql_params = { media_folder: req.query.init_path };
+    sql_params = { media_folder: req.query.init_media_path };
   }
 
   if (sql) {

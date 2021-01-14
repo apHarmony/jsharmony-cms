@@ -48,11 +48,11 @@ else if(routetype == 'model'){
     sql = 'select page_folder from {schema}.v_my_page where page_key=@page_key';
     sql_ptypes = [dbtypes.BigInt];
     sql_params = { page_key: req.query.init_page_key };
-  } else if (req.query.init_path) {
-    if (!req.query.init_path.endsWith('/')) req.query.init_path = req.query.init_path + '/';
+  } else if (req.query.init_page_path) {
+    if (!req.query.init_page_path.endsWith('/')) req.query.init_page_path = req.query.init_page_path + '/';
     sql = 'select page_folder from {schema}.v_my_page where substr(page_folder, 1, length(@page_folder)) = @page_folder';
     sql_ptypes = [dbtypes.NVarChar(dbtypes.MAX)];
-    sql_params = { page_folder: req.query.init_path };
+    sql_params = { page_folder: req.query.init_page_path };
   }
 
   if (sql) {
