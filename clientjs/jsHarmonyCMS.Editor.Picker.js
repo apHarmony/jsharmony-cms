@@ -20,8 +20,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms, editor){
   var _this = this;
   var XExt = jsh.XExt;
-  var lastMediaPath = undefined;
-  var lastLinkPath = undefined;
+  this.lastMediaPath = undefined;
+  this.lastLinkPath = undefined;
 
   this.getParameters = function(filePickerType, url){
     url = (url||'').toString();
@@ -42,11 +42,11 @@ exports = module.exports = function(jsh, cms, editor){
         if(page_key.toString()==patharr[3]) return { init_page_key: page_key };
       }
     }
-    else if(filePickerType === 'link' && lastLinkPath) {
-      if(lastLinkPath.init_media_path) return { init_media_path: lastLinkPath.init_media_path };
-      else if(lastLinkPath.init_page_path) return { init_page_path: lastLinkPath.init_page_path };
+    else if(filePickerType === 'link' && _this.lastLinkPath) {
+      if(_this.lastLinkPath.init_media_path) return { init_media_path: _this.lastLinkPath.init_media_path };
+      else if(_this.lastLinkPath.init_page_path) return { init_page_path: _this.lastLinkPath.init_page_path };
     } 
-    else if (filePickerType === 'media' && lastMediaPath) return { init_media_path: lastMediaPath };
+    else if (filePickerType === 'media' && _this.lastMediaPath) return { init_media_path: _this.lastMediaPath };
 
     return {};
   }
@@ -73,12 +73,12 @@ exports = module.exports = function(jsh, cms, editor){
       var jdata = JSON.parse(data);
       if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){}
       else if(jdata.media_key){
-        lastMediaPath = jdata.media_folder;
-        lastLinkPath = { init_media_path: jdata.media_folder };
+        _this.lastMediaPath = jdata.media_folder;
+        _this.lastLinkPath = { init_media_path: jdata.media_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS', jdata);
       }
       else if(jdata.page_key){
-        lastLinkPath = { init_page_path: jdata.page_folder };
+        _this.lastLinkPath = { init_page_path: jdata.page_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS', jdata);
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
