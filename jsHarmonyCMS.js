@@ -233,8 +233,8 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
             }
             if(_.isString(content_element.remote_template)){
               content_element.remote_templates = {
-                editor: content_element.remote_templates,
-                publish: content_element.remote_templates,
+                editor: content_element.remote_template,
+                publish: content_element.remote_template,
               }
               delete content_element.remote_template;
             }

@@ -45,7 +45,7 @@
   color:#000;
 }
 <%-(rootcss)%> .editor_selection {
-  padding:4px 11px 5px 11px;
+  padding:2px 11px 4px 11px;
   outline:none;
 }
 
