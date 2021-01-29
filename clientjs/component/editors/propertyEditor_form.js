@@ -69,30 +69,30 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var dialog = new FormDialog(this._jsh, model, dialogParams);
 
-  dialog.onAccept = function($dialog, xModel) {
-    if(!xModel.controller.Commit(data, 'U')) return false;
+  dialog.onAccept = function($dialog, xmodel) {
+    if(!xmodel.controller.Commit(data, 'U')) return false;
     data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   }
 
-  dialog.onCancel = function(options, $dialog, xModel) {
-    if (!options.force && xModel.controller.HasUpdates()) {
+  dialog.onCancel = function(options, $dialog, xmodel) {
+    if (!options.force && xmodel.controller.HasUpdates()) {
       self._jsh.XExt.Confirm('Close without saving changes?', function() {
-        xModel.controller.form.ResetDataset();
+        xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
       return false;
     }
   }
 
-  dialog.onClose = function($dialog, xModel) {
+  dialog.onClose = function($dialog, xmodel) {
     //Destroy model
-    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
-    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+    if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
+    if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
+    delete self._jsh.XModels[xmodel.id];
+    delete self._jsh.App[xmodel.id];
   }
 
   dialog.open(data);

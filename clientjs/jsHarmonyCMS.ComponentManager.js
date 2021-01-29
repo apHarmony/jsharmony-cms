@@ -32,15 +32,19 @@ exports = module.exports = function(jsh, cms){
   this.isInitialized = false;
   this.lastComponentId = 0;
 
-  this.load = function(onComplete){
-    var url = '../_funcs/templates/component/'+cms.branch_id;
+  this.load = function(onError){
+    _this.loadSystemComponentTemplates(onError);
+  }
+
+  this.loadSystemComponentTemplates = function(onError){
+    var url = '../_funcs/templates/components/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.componentTemplates = rslt.components;
         async.eachOf(_this.componentTemplates, function(component, key, cb) {
           var loadObj = {};
           cms.loader.StartLoading(loadObj, 'CMS Components');
-          _this.loadTemplate(component, function(err){
+          _this.loadRemoteTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             _this.parseTemplate(component);
             cb(err)
@@ -50,13 +54,50 @@ exports = module.exports = function(jsh, cms){
         });
       }
       else{
-        if(onComplete) onComplete(new Error('Error Loading Components'));
+        if(onError) onError(new Error('Error Loading Components'));
         XExt.Alert('Error loading components');
       }
     }, function (err) {
-      if(onComplete) onComplete(err);
+      if(onError) onError(err);
     });
   };
+
+  this.loadRemoteTemplate = function(componentTemplate, complete_cb) {
+    var url = (componentTemplate.remote_templates || {}).editor;
+    if (!url) return complete_cb();
+
+    _this.downloadRemoteTemplate(url, function(error, data){
+      if (error) {
+        complete_cb(error);
+      } else {
+        componentTemplate.templates = componentTemplate.templates || {};
+        var template = (componentTemplate.templates.editor || '');
+        data = data && template ? '\n' + data : data || '';
+        componentTemplate.templates.editor = (template + data) || _this.formatError('COMPONENT '+(componentTemplate.id||'').toUpperCase()+' NOT FOUND');
+        _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
+        complete_cb();
+      }
+    });
+  }
+
+  this.formatError = function(errmsg){
+    return '<span style="color:red;font-weight:bold;font-size:25px;white-space: pre;">*** '+XExt.escapeHTML(errmsg)+' ***</span>';
+  }
+
+  this.downloadRemoteTemplate = function(templateUrl, complete_cb) {
+    $.ajax({
+      type: 'GET',
+      cache: false,
+      url: templateUrl,
+      xhrFields: { withCredentials: true },
+      success: function(data){
+        return complete_cb(undefined, data);
+      },
+      error: function(xhr, status, err){
+        return complete_cb(err, undefined);
+      }
+    });
+  }
 
   this.render = function(container){
 
@@ -134,39 +175,6 @@ exports = module.exports = function(jsh, cms){
     }
   }
 
-  this.loadTemplate = function(componentTemplate, complete_cb) {
-    var url = (componentTemplate.remote_template || {}).editor;
-    if (!url) return complete_cb();
-
-    _this.loadRemoteTemplate(url, function(error, data){
-      if (error) {
-        complete_cb(error);
-      } else {
-        componentTemplate.templates = componentTemplate.templates || {};
-        var template = (componentTemplate.templates.editor || '');
-        data = data && template ? '\n' + data : data || '';
-        componentTemplate.templates.editor = (template + data) || '*** COMPONENT NOT FOUND ***';
-        _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
-        complete_cb();
-      }
-    });
-  }
-
-  this.loadRemoteTemplate = function(templateUrl, complete_cb) {
-    $.ajax({
-      type: 'GET',
-      cache: false,
-      url: templateUrl,
-      xhrFields: { withCredentials: true },
-      success: function(data){
-        return complete_cb(undefined, data);
-      },
-      error: function(xhr, status, err){
-        return complete_cb(err, undefined);
-      }
-    });
-  }
-
   this.getNextComponentId = function() {
     return 'jsharmony_cms_component_' + this.lastComponentId++;
   }
@@ -226,7 +234,7 @@ exports = module.exports = function(jsh, cms){
     if (componentConfig.data && componentConfig.data.css) {
       cssParts.push(componentConfig.data.css);
     }
-    var id = 'jsharmony_cms_component_' + componentType;
+    var id = 'jsharmony_cms_component_' + (componentConfig.className || jsh.XExt.escapeCSSClass(componentConfig.id, { nodash: true }));
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
   }

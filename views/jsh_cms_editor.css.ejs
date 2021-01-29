@@ -203,9 +203,24 @@ body .tox-tinymce-aux {
 body .mce-content-body {
   overflow-wrap:normal;
 }
+.jsHarmonyCMS_showEditorOutlines .mce-content-body {
+  outline: 1px dashed #b4d7ffaa;
+  outline-offset: -1px;
+}
+.jsharmony_cms_component_dataFormItemEditor .mce-content-body {
+  outline: 1px dashed #b4d7ffaa;
+  outline-offset: -1px;
+}
+.jsHarmonyCMS_hideEditorOutlines .jsharmony_cms_component_dataFormItemEditor .mce-content-body {
+  outline: none;
+}
 body .tox-collection__item-icon .material-icons {
   font-family: 'Material Icons';
   font-size:25px;
+}
+body .tox-toolbar__group .material-icons {
+  position:relative;
+  top:2px;
 }
 
 body .tox .tox-collection__item-label h1,
@@ -250,8 +265,6 @@ body .tox .tox-collection__item-label h6 {
 .jsharmony_cms_component_preview [data-component-title-editor] {
   min-width: 10px;
   min-height: 20px;
-  outline: 1px solid #b4d7ff;
-  outline-offset: -1px;
 }
 
 .jsharmony_cms_component.empty,
@@ -265,6 +278,12 @@ body .tox .tox-collection__item-label h6 {
   border: 1px solid #999;
   padding:20px 20px 25px 20px;
   text-align:center;
+}
+
+.jsharmony_cms_component_error {
+  color:red;
+  font-weight:bold;
+  font-family: 'Roboto', arial, helvetica, sans-serif;
 }
 
 .jsharmony_cms_component.empty h3,
@@ -315,24 +334,28 @@ body .tox .tox-collection__item-label h6 {
   font-family: 'Material Icons' !important;
 }
 
-.jsharmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar {
+.jsharmony_cms_component_dataGridEditor [data-component-template="gridRow"] .component_toolbar {
   position: relative;
   text-align:right;
   margin-bottom:6px;
   margin-top:24px;
   padding-right:1px;
+  background-color:transparent;
 }
 
-.jsharmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar button {
+.jsharmony_cms_component_dataGridEditor [data-component-template="gridRow"] .component_toolbar .component_toolbar_button {
   outline: none;
   border: 0;
   background: inherit;
   cursor: pointer;
   font-size:19px;
+  cursor:hand;
+  display:inline-block;
 }
 
-.jsharmony_cms_component_dataGridEditor [data-component-template="gridRow"] .toolbar button[disabled] {
+.jsharmony_cms_component_dataGridEditor [data-component-template="gridRow"] .component_toolbar .component_toolbar_button[disabled] {
   opacity: 0.3;
+  cursor:default;
 }
 .jsharmony_cms_component_dataGridEditor .xtbl_noresults .xgrid_norecords {
   display: none;
@@ -356,9 +379,8 @@ body .tox .tox-collection__item-label h6 {
   margin-bottom:2px;
 }
 
-.jsharmony_cms_preview_editor .jsharmony_cms_component_preview {
-  border:1px solid #b4d7ff;
-  display:inline-block;
+.jsharmony_cms_preview_editor.jsharmony_cms_component_preview {
+  border:1px solid #b4d7ff88;
 }
 
 .xdialogblock {
@@ -375,6 +397,15 @@ body .tox .tox-collection__item-label h6 {
 
 .xdialogbox .xform_caption {
   font-size: 1.1em;
+}
+
+.jsharmony_cms_component_dataGridEditor > .xtbl tbody,
+.jsharmony_cms_component_dataGridEditor > .xtbl thead,
+.jsharmony_cms_component_dataGridEditor > .xtbl tr,
+.jsharmony_cms_component_dataGridEditor > .xtbl td {
+  padding:0;
+  border:0;
+  background:none;
 }
 
 .xdialogbox .xform_caption.leading {
@@ -414,6 +445,8 @@ body .tox .tox-collection__item-label h6 {
   text-decoration: none;
   text-transform: capitalize;
   white-space: nowrap;
+  width:auto;
+  height:auto;
 }
 
 .xdialogbox input.button_ok,

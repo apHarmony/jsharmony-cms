@@ -44,7 +44,7 @@ module.exports = exports = function(module, funcs){
 
     Helper.execif(!options.pageTemplates,
       function(f){
-        funcs.getPageTemplate(dbcontext, site_id, page_template_id, function(err, pageTemplate){
+        funcs.getPageTemplate(dbcontext, site_id, page_template_id, {}, function(err, pageTemplate){
           if(err) return cb(err);
           template = pageTemplate;
           return f();
@@ -256,26 +256,6 @@ module.exports = exports = function(module, funcs){
     return rslt;
   }
 
-  exports.readPageTemplateConfig = function(templateContent){
-    var templateConfig = {};
-    try{
-      var $ = cheerio.load(templateContent, { xmlMode: true });
-      $('script[type="text/jsharmony-cms-template-config"]').each(function(){
-        var configScript = $(this).html();
-        var config = {};
-        try{
-          config = JSON.parse(configScript);
-        }
-        catch{
-        }
-        _.extend(templateConfig, config);
-      });
-    }
-    catch(ex){
-    }
-    return templateConfig;
-  }
-
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
       getMediaURL: function(media_key, branchData, getLinkContent){ return ''; },
@@ -445,14 +425,31 @@ module.exports = exports = function(module, funcs){
         catch(ex){
           throw new Error('Error parsing base 64 data: '+ex);
         }
-        strval = exports.replaceBranchURLs(strval, options);
+        strval = funcs.replaceBranchURLs(strval, options);
         return Buffer.from(strval).toString('base64');
       });
     }
 
     if(options.replaceComponents){
-      content = replaceBase64Attribute(content, 'data-component-data');
-      content = replaceBase64Attribute(content, 'data-component-properties');
+      try{
+        if(options.branchData && options.branchData.component_templates){
+          parseAttribute(content, 'data-component',function(val){
+            var componentType = val;
+            if(!(componentType in options.branchData.component_templates)){
+              var err = new Error('Undefined component "' + componentType + '" used in page');
+              if(options.onError) options.onError(err);
+              else throw err;
+            }
+            return val;
+          });
+        }
+        content = replaceBase64Attribute(content, 'data-component-data');
+        content = replaceBase64Attribute(content, 'data-component-properties');
+      }
+      catch(ex){
+        if(options.onError) options.onError(ex);
+        else throw ex;
+      }
     }
 
     return content;
@@ -471,209 +468,6 @@ module.exports = exports = function(module, funcs){
     }
     catch(ex){}
     return url;
-  }
-
-  exports.templates_component = function(req, res, next){
-    var verb = req.method.toLowerCase();
-
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-    var XValidate = jsh.XValidate;
-    var cms = module;
-
-    if(!req.params || !req.params.branch_id) return next();
-    var branch_id = req.params.branch_id;
-
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
-
-    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
-    //Get page
-    var sql_ptypes = [dbtypes.BigInt];
-    var sql_params = { 'branch_id': branch_id };
-    var validate = new XValidate();
-    var verrors = {};
-    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-
-    var deployment_target_params = '';
-
-    if (verb == 'get'){
-
-      var components = JSON.parse(JSON.stringify(module.Components));
-
-      async.waterfall([
-
-        //Check if branch exists
-        function(cb){
-          var sql = "select branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this branch'); }
-            return cb();
-          });
-        },
-
-        //Get deployment_target_params for branch
-        function(cb){
-          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]) deployment_target_params = rslt[0];
-            return cb();
-          });
-        },
-
-        //Generate components
-        function(cb){
-          var publish_params = {
-            timestamp: (Date.now()).toString()
-          };
-          try{
-            if(deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment_target_params));
-          }
-          catch(ex){
-            return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
-          }
-          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
-
-          _.each(components, function(component){
-              if(component.remote_template && component.remote_template.editor){
-                component.remote_template.editor = funcs.parseDeploymentUrl(component.remote_template.editor, publish_params);
-              }
-            });
-
-          return cb();
-        },
-      ], function(err){
-        if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-
-        res.end(JSON.stringify({
-          '_success': 1,
-          'components': components
-        }));
-      });
-    }
-    else return next();
-  }
-
-  exports.templates_menu = function(req, res, next){
-    var verb = req.method.toLowerCase();
-
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-    var XValidate = jsh.XValidate;
-    var cms = module;
-
-    if(!req.params || !req.params.branch_id) return next();
-    var branch_id = req.params.branch_id;
-
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
-
-    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
-    //Get page
-    var sql_ptypes = [dbtypes.BigInt];
-    var sql_params = { 'branch_id': branch_id };
-    var validate = new XValidate();
-    var verrors = {};
-    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-
-    var deployment_target_params = '';
-
-    if (verb == 'get'){
-
-      var menuTemplates = {};
-
-      async.waterfall([
-
-        //Check if branch exists
-        function(cb){
-          var sql = "select branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this branch'); }
-            return cb();
-          });
-        },
-
-        //Get deployment_target_params for branch
-        function(cb){
-          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]) deployment_target_params = rslt[0];
-            return cb();
-          });
-        },
-
-        //Generate menu templates
-        function(cb){
-          var publish_params = {
-            timestamp: (Date.now()).toString()
-          };
-          try{
-            if(deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment_target_params));
-          }
-          catch(ex){
-            return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
-          }
-          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
-
-          //Parse menu templates
-          for(var tmplname in module.MenuTemplates){
-            var tmpl = module.MenuTemplates[tmplname];
-            var front_tmpl = {
-              title: tmpl.title,
-              content_elements: {},
-            };
-
-            for(var key in tmpl.content_elements){
-              var content_element = tmpl.content_elements[key];
-              front_tmpl.content_elements[key] = {};
-              var rslt_content_element = front_tmpl.content_elements[key];
-              if('template' in content_element) rslt_content_element.template = content_element.template['editor'] || '';
-              if('remote_template' in content_element) rslt_content_element.remote_template = content_element.remote_template['editor'] || '';
-
-              //Resolve Remote Templates
-              if(rslt_content_element.remote_template){
-                rslt_content_element.remote_template = funcs.parseDeploymentUrl(rslt_content_element.remote_template, publish_params);
-              }
-            }
-            menuTemplates[tmplname] = front_tmpl;
-          }
-
-          return cb();
-        },
-      ], function(err){
-        if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-
-        res.end(JSON.stringify({
-          '_success': 1,
-          'menuTemplates': menuTemplates
-        }));
-      });
-    }
-    else return next();
   }
 
   exports.page = function (req, res, next) {
@@ -876,7 +670,7 @@ module.exports = exports = function(module, funcs){
             }
 
             funcs.getClientPage(req._DBContext, page, sitemaps, site_id, { includeExtraContent: true }, function(err, _clientPage){
-              if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+              if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
               clientPage = _clientPage;
               if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
               if(!clientPage.template.raw){
@@ -892,7 +686,7 @@ module.exports = exports = function(module, funcs){
             });
           }
         ], function(err){
-          if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
+          if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
 
           res.end(JSON.stringify({
             '_success': 1,
@@ -1117,7 +911,7 @@ module.exports = exports = function(module, funcs){
           //Get page template
           function(cb){
             if(!Q.page_template_id) return cb();
-            funcs.getPageTemplate(req._DBContext, devInfo.site_id, Q.page_template_id, function(err, template){
+            funcs.getPageTemplate(req._DBContext, devInfo.site_id, Q.page_template_id, {}, function(err, template){
               if(err) return cb(err);
               if (!template) return cb();
               page_template = template;
@@ -1126,7 +920,7 @@ module.exports = exports = function(module, funcs){
           },
 
         ], function(err){
-          if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
+          if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
 
           res.end(JSON.stringify({
             '_success': 1,
@@ -1144,199 +938,6 @@ module.exports = exports = function(module, funcs){
       }
       else return next();
     });
-  }
-
-  exports.getPageTemplate = function(dbcontext, site_id, template_id, callback){
-    funcs.getPageTemplates(dbcontext, site_id, { target_template_id: template_id }, function(err, pageTemplates){
-      if(err) return callback(err);
-      return callback(null, pageTemplates[template_id]);
-    });
-  }
-
-  exports.getPageTemplates = function(dbcontext, site_id, options, callback){
-    options = _.extend({ target_template_id: null }, options);
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-    var cms = module;
-
-    var pageTemplates = {
-      //id = {
-      //  title: '...',
-      //  raw: true,
-      //  location: '...',  LOCAL,SYSTEM,REMOTE
-      //  path: '...',
-      //}
-    };
-    var systemTemplates = [];
-    var localTemplates = [];
-    var remoteTemplates = [];
-    
-    return async.parallel([
-      function(data_cb){
-        if(!site_id) return data_cb();
-        var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString(),'templates','pages');
-  
-        //Get all local site templates from site\#\templates\page
-        fs.exists(sitePath, function (exists) {
-          if (!exists) return data_cb(null);
-          fs.readdir(sitePath, function (err, files) {
-            if (err) return data_cb(err);
-            async.each(files, function(file, file_cb){
-              var ext = path.extname(file);
-              if((ext=='.htm') || (ext=='.html')){
-                var templateName = file.substr(0, file.length - ext.length);
-
-                if(options.target_template_id && (templateName != options.target_template_id)) return file_cb();
-                
-                fs.readFile(path.join(sitePath, file), 'utf8', function(err, templateContent){
-                  if(err) return file_cb(err);
-  
-                  //Read Page Template Config
-                  var templateConfig = funcs.readPageTemplateConfig(templateContent);
-  
-                  var templateTitle = templateConfig.title || templateName;
-                  localTemplates.push({
-                    site_template_type: 'PAGE',
-                    site_template_name: templateName,
-                    site_template_title: templateTitle,
-                    site_template_path: '/templates/pages/' + file,
-                    site_template_config: templateConfig,
-                    site_template_location: 'LOCAL',
-                    site_template_raw: !!templateConfig.raw,
-                  });
-                  return file_cb();
-                });
-              }
-              else file_cb();
-            }, data_cb);
-          });
-        });
-      },
-  
-      //Add local system template
-      function(data_cb){
-        for(var key in cms.SystemPageTemplates){
-          if(options.target_template_id && (key != options.target_template_id)) continue;
-
-          var pageTemplate = JSON.parse(JSON.stringify(cms.SystemPageTemplates[key]));
-          var templatePath = ' ';
-          if(pageTemplate.remote_template){
-            templatePath = pageTemplate.remote_template.editor || ' ';
-          }
-          systemTemplates.push({
-            site_template_type: 'PAGE',
-            site_template_name: key,
-            site_template_title: pageTemplate.title,
-            site_template_path: templatePath,
-            site_template_config: pageTemplate,
-            site_template_location: 'SYSTEM',
-            site_template_raw: !!pageTemplate.raw,
-          });
-        }
-        return data_cb();
-      },
-  
-      //Generate SQL
-      function(data_cb){      
-        //Remote Templates
-        var sql = "select site_template_id,site_id,site_template_type,site_template_name,site_template_title,site_template_path,site_template_config from "+(cms.schema?cms.schema+'.':'')+"site_template where site_id=@site_id";
-        appsrv.ExecRecordset(dbcontext, sql, [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
-          if(err) return data_cb(err);
-          if(!rslt || !rslt.length || !rslt[0]){ return data_cb(new Error('Error loading remote page templates')); }
-          _.each(rslt[0], function(row){
-            if(options.target_template_id && (row.site_template_name != options.target_template_id)) return;
-            remoteTemplates.push({
-              site_template_type: 'PAGE',
-              site_template_name: row.site_template_name,
-              site_template_title: row.site_template_title,
-              site_template_path: row.site_template_path,
-              site_template_config: row.site_template_config,
-              site_template_location: 'REMOTE',
-              site_template_raw: false,
-            });
-          });
-          return data_cb();
-        });
-      },
-    ], function(err){
-      if(err) return callback(err);
-
-      //Combine all templates into one array
-      _.each(remoteTemplates, function(template){ if(!(template.site_template_name in pageTemplates)) pageTemplates[template.site_template_name] = template; });
-      _.each(localTemplates, function(template){ if(!(template.site_template_name in pageTemplates)) pageTemplates[template.site_template_name] = template; });
-      _.each(systemTemplates, function(template){ if(!(template.site_template_name in pageTemplates)) pageTemplates[template.site_template_name] = template; });
-
-      for(var key in pageTemplates){
-        var template = pageTemplates[key];
-        var newTemplate = {
-          title: template.site_template_title,
-          raw: template.site_template_raw,
-          location: template.site_template_location,
-          path: template.site_template_path,
-        };
-        if(template.site_template_location == 'REMOTE'){
-          if(template.site_template_path){
-            newTemplate.remote_template = {
-              editor: template.site_template_path
-            };
-          }
-        }
-        if(template.site_template_config){
-          var templateConfig = {};
-          if(_.isString(template.site_template_config)){
-            try{
-              templateConfig = JSON.parse(template.site_template_config);
-            }
-            catch(ex){
-            }
-          }
-          else{
-            templateConfig = template.site_template_config;
-          }
-          _.merge(newTemplate, templateConfig);
-        }
-        if(!newTemplate.content_elements && (template.site_template_location != 'REMOTE')) newTemplate.content_elements = { body: { type: 'htmleditor', title: 'Body' } };
-        if(!newTemplate.content) newTemplate.content = {};
-        if(!('title' in newTemplate)) newTemplate.title = key;
-        pageTemplates[key] = newTemplate;
-      }
-      return callback(null, pageTemplates);
-    });
-  }
-
-  exports.getCurrentPageTemplatesLOV = function(dbcontext, values, options, cb){
-    options = _.extend({ blank:false }, options);
-    var site_id = null;
-    for(var i=0;i<values.length;i++){
-      if(values[i].code_txt=='site_id') site_id = parseInt(values[i].code_val);
-      if(values[i].code_val){
-        values.splice(i, 1);
-        i--;
-      }
-    }
-    if(!site_id) return;
-
-    funcs.getPageTemplates(dbcontext, site_id, {}, function(err, pageTemplates){
-      if(err) return cb(err);
-      if(!pageTemplates) return cb(new Error('Error loading page templates'));
-      
-      var rsltlov = [];
-      if(options.blank) rsltlov.push({ code_val: '', code_txt: '(None)' });
-      for(var key in pageTemplates){
-        rsltlov.push({ code_val: key, code_txt: (pageTemplates[key].title||key||'').toString() });
-      }
-      //Sort by name
-      rsltlov = rsltlov.sort(function(a,b){
-        var ua = a.code_txt.toUpperCase();
-        var ub = b.code_txt.toUpperCase();
-        if(ua > ub) return 1;
-        if(ua < ub) return -1;
-        return 0;
-      });
-      return cb(null, rsltlov);
-    });
-    return false;
   }
 
   exports.getPageEditorUrl = function(req, res, next){
@@ -1357,7 +958,7 @@ module.exports = exports = function(module, funcs){
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     //Validate parameters
-    if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id', '|devMode', '|site_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id', '|devMode', '|site_id', '|render'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
     if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
     validate = new XValidate();
@@ -1397,7 +998,7 @@ module.exports = exports = function(module, funcs){
 
         if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
 
-        funcs.getPageTemplate(req._DBContext, site_id, Q.page_template_id, function(err, page_template){
+        funcs.getPageTemplate(req._DBContext, site_id, Q.page_template_id, { continueOnConfigError: true }, function(err, page_template){
           if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
           if (!page_template) { Helper.GenError(req, res, -9, 'Page Template not found'); return; }
 
@@ -1410,12 +1011,25 @@ module.exports = exports = function(module, funcs){
             if(!cms.PreviewServer) return Helper.GenError(req, res, -9, 'LOCAL Templates require a Preview Server to be running');
             url = path.join(cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]), page_template.path);
             //Generate an error if the preview server branch is not checked out
-            if(current_branch_site_id != site_id) return Helper.GenError(req, res, -9, 'Please check out a branch on the same site you want to edit');
+            if(current_branch_site_id != site_id) return Helper.GenError(req, res, -9, 'Please check out a branch in this site to preview the template');
           }
-          if(page_template.remote_template && page_template.remote_template.editor) {
-            url = page_template.remote_template.editor;
+          if(page_template.remote_templates && page_template.remote_templates.editor) {
+            url = page_template.remote_templates.editor;
           }
-          if(!url) return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
+          if(!url){
+            if(page_template.templates.editor){
+              //Return full page
+              if(Q.render){
+                var cmsBaseUrl = jsh.Servers['default'].getURLFromReq(req);
+                var content = funcs.generateEditorTemplate(page_template.templates.editor, { cmsBaseUrl: cmsBaseUrl });
+                return res.end(content);
+              }
+              //Append render=1 to current URL
+              url = req.protocol + '://' + req.get('host') + req.originalUrl + '&render=1';
+              return res.end(JSON.stringify({ '_success': 1, editor: url }));
+            }
+            else return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
+          }
 
           var dtparams = {
             timestamp: (Date.now()).toString(),

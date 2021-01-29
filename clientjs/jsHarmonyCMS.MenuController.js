@@ -27,14 +27,16 @@ exports = module.exports = function(jsh, cms){
   this.menuTemplates = {};
   this.isInitialized = false;
 
-  this.load = function(onComplete){
-    var url = '../_funcs/templates/menu/'+cms.branch_id;
+  this.load = function(onError){
+    var url = '../_funcs/templates/menus/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.menuTemplates = rslt.menuTemplates;
         async.eachOf(_this.menuTemplates, function(menu, menu_template_id, menu_cb){
           async.eachOf(menu.content_elements, function(content_element, content_element_name, content_element_cb){
-            if(!content_element.remote_template) return content_element_cb();
+            if(!content_element.remote_templates) return content_element_cb();
+            if(!content_element.templates) content_element.templates = {};
+            if(!content_element.templates.editor) content_element.templates.editor = '';
 
             //Load remote menu templates
             var loadObj = {};
@@ -42,16 +44,16 @@ exports = module.exports = function(jsh, cms){
             $.ajax({
               type: 'GET',
               cache: false,
-              url: content_element.remote_template,
+              url: content_element.remote_templates,
               xhrFields: { withCredentials: true },
               success: function(data){
                 cms.loader.StopLoading(loadObj);
-                content_element.template = (content_element.template||'')+data;
+                content_element.templates.editor = (content_element.templates.editor||'')+data;
                 return content_element_cb();
               },
               error: function(xhr, status, err){
                 cms.loader.StopLoading(loadObj);
-                content_element.template = '*** ERROR DOWNLOADING REMOTE MENU ***';
+                content_element.templates.editor = '*** ERROR DOWNLOADING REMOTE MENU ***';
                 return content_element_cb();
               }
             });
@@ -61,11 +63,11 @@ exports = module.exports = function(jsh, cms){
         });
       }
       else{
-        if(onComplete) onComplete(new Error('Error Loading Menus'));
+        if(onError) onError(new Error('Error Loading Menus'));
         XExt.Alert('Error loading menus');
       }
     }, function (err) {
-      if(onComplete) onComplete(err);
+      if(onError) onError(err);
     });
   };
 
@@ -85,7 +87,7 @@ exports = module.exports = function(jsh, cms){
         else if(!(content_element_name in menuTemplate.content_elements)) menu_content = '*** MENU ' + menu.menu_template_id + ' CONTENT ELEMENT NOT DEFINED: ' + content_element_name+' ***';
         else{
           var content_element = menuTemplate.content_elements[content_element_name];
-          menu_content = ejs.render(content_element.template || '', cms.controller.getMenuRenderParameters(menu_tag));
+          menu_content = ejs.render((content_element.templates && content_element.templates.editor) || '', cms.controller.getMenuRenderParameters(menu_tag));
         }
       }
       jobj.html(menu_content);

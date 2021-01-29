@@ -61,7 +61,19 @@ module.exports = exports = function(module, funcs){
             err.model = model;
             return appsrv.AppDBError(req, res, err);
           }
-          else return Helper.GenError(req, res, -99999, err.toString());
+          else{
+            rslt = {
+              _success: 1,
+              error_count: 1,
+              branch_validate: {
+                system: {
+                  system: {
+                    errors: [err.toString()]
+                  }
+                }
+              } 
+            };
+          }
         }
         rslt._success = 1;
         res.end(JSON.stringify(rslt));
@@ -95,6 +107,7 @@ module.exports = exports = function(module, funcs){
       _DBContext: dbcontext,
       page_keys: {},
       page_templates: null,
+      component_templates: null,
       media_keys: {},
       branch_id: branch_id,
       site_id: null,
@@ -111,10 +124,22 @@ module.exports = exports = function(module, funcs){
           if(rslt && rslt[0]){
             try{
               branchData.deployment_target_id = rslt[0].deployment_target_id;
-              branchData.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
+              try{
+                branchData.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
+              }
+              catch(ex){
+                return deploy_cb('Publish Target has invalid deployment_target_params: '+rslt[0].deployment_target_params);
+              }
               branchData.site_id = rslt[0].site_id;
             }
             catch(ex){}
+
+            var publish_params = {
+              timestamp: (Date.now()).toString()
+            };
+            publish_params = _.extend(publish_params, branchData.deployment_target_params);
+            publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
+            branchData.publish_params = publish_params;
           }
           return cb();
         });

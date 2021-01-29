@@ -134,7 +134,7 @@ var jsHarmonyCMS = function(options){
     util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
-      WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
+      WebFont.load({ google: { api: 'https://fonts.googleapis.com/css', families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
     });
     window.addEventListener('message', this.onmessage);
   }
@@ -144,8 +144,15 @@ var jsHarmonyCMS = function(options){
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
-      this.componentManager.load();
-      this.menuController.load();
+      async.parallel([
+        function(cb){ _this.componentManager.load(cb); },
+        function(cb){ _this.menuController.load(cb); },
+      ], function(err){
+        if(err){
+          loader.StopLoading();
+          return XExt.Alert(err.toString());
+        }
+      });
       _this.controller.init(function(err){
         if(!err){
           if(_this.onLoaded) _this.onLoaded(jsh);

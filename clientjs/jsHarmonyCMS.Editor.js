@@ -158,7 +158,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.attach = function(config_id, elem_id, options, cb){
     if(!(config_id in _this.editorConfig)) throw new Error('Editor config ' + (config_id||'').toString() + ' not defined');
-    var config = _.extend({ selector: '#' + elem_id }, _this.editorConfig[config_id], options);
+    var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
     if(cb) config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, cb);
     window.tinymce.init(config);
   }
@@ -171,16 +171,18 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
-  this.disableContentLinks = function(container){
+  this.disableLinks = function(container, options){
+    options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
     $(container).find('a').each(function(){
       var jobj = $(this);
-      var url = jobj.attr('href');
-      if(url.indexOf('#@JSHCMS') >= 0){
-        if(!jobj.data('disabled_links')){
-          jobj.data('disabled_links', '1');
-          jobj.on('click', function(e){ e.preventDefault(); });
-        }
+      if(options.onlyJSHCMSLinks){
+        var url = jobj.attr('href');
+        if(url.indexOf('#@JSHCMS') < 0) return;
       }
+
+      if(options.addFlag && jobj.data('disabled_links')) return;
+      if(options.addFlag) jobj.data('disabled_links', '1');
+      jobj.on('click', function(e){ e.preventDefault(); });
     });
   }
 
@@ -190,7 +192,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       window.setTimeout(function(){
         $('#jsharmony_cms_content_'+id).html(val);
         cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
-        _this.disableContentLinks(document.getElementById('jsharmony_cms_content_'+id));
+        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+id), { addFlag: true, onlyJSHCMSLinks: true });
       },1);
     }
     else {

@@ -61,7 +61,7 @@ function ComponentTemplate(componentConfig, jsh) {
     this._dataModelTemplate_FormPreview = new DataModelTemplate_FormPreview(this, this._componentConfig.data);
   }
   if (this._componentConfig.properties) {
-    this._componentConfig.data.fields = this.processBrowserFields(this._componentConfig.data.fields || []);
+    this._componentConfig.properties.fields = this.processBrowserFields(this._componentConfig.properties.fields || []);
     this._propertiesModelTemplate_Form = new PropertiesModelTemplate_Form(this, this._componentConfig.properties);
   }
 }
@@ -141,6 +141,15 @@ ComponentTemplate.prototype.getTemplateId = function() {
 }
 
 /**
+ * Gets the base class name for this component
+ * @public
+ * @returns {(string | undefined)}
+ */
+ComponentTemplate.prototype.getClassName = function() {
+  return this._componentConfig.className || jsh.XExt.escapeCSSClass(this._componentConfig.id, { nodash: true });
+}
+
+/**
  * @private
  * @param {object[]} fields
  * @returns {object[]}
@@ -167,6 +176,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
     field.mediaBrowserControlInfo = info;
     field.name = info.titleFieldName;
     field.control = 'textbox';
+    field.controlclass = 'xtextbox_M';
     field.type = 'varchar';
     field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeBrowserTitleControl) m.onChangeBrowserTitleControl("' + info.dataFieldName + '");  })()';
 

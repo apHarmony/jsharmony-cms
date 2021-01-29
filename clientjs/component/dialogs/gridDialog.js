@@ -38,7 +38,7 @@ var Dialog = require('./dialog');
 /**
  *  Called when the dialog is first opened
  * @callback GridDialog~beforeOpenCallback
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
  * @param {Function} onComplete - Should be called by handler when complete
  */
@@ -47,14 +47,14 @@ var Dialog = require('./dialog');
   * Called when the dialog is first opened
   * @callback GridDialog~dialogOpenedCallback
   * @param {JQuery} dialogWrapper - the dialog wrapper element
-  * @param {Object} xModel - the JSH model instance
+  * @param {Object} xmodel - the JSH model instance
   */
 
 /**
  * Called when the dialog closes
  * @callback GridDialog~closeCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  */
 
 /**
@@ -110,15 +110,15 @@ GridDialog.prototype.open = function() {
   });
 
   var controller = undefined;
-  var xModel = undefined;
+  var xmodel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel, onComplete) {
-    xModel = _xModel;
-    controller = _xModel.controller;
+  dialog.onBeforeOpen = function(_xmodel, onComplete) {
+    xmodel = _xmodel;
+    controller = _xmodel.controller;
     self.jsh.XExt.execif(self.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         if(onComplete) onComplete();
@@ -126,11 +126,11 @@ GridDialog.prototype.open = function() {
     );
   }
 
-  dialog.onOpened = function(_$dialog, _xModel, acceptFunc, cancelFunc) {
+  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.grid.Prop.Enabled = true;
     controller.Render(function() {
-      if (_.isFunction(self.onOpened)) self.onOpened(_$dialog, xModel);
+      if (_.isFunction(self.onOpened)) self.onOpened(_$dialog, xmodel);
     });
   }
 
@@ -146,7 +146,7 @@ GridDialog.prototype.open = function() {
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xModel);
+    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
   }
 
   dialog.open();

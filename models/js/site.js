@@ -7,6 +7,16 @@
 
   jsh.System.onOpenPageEditor = []; //function(callback, page_key, page_filename, page_template_id, options){}
 
+  jsh.System.OpenPageEditorUrl = function(url){
+    if(url && (url.substr(0,5)=='data:')){
+      var win = window.open(undefined, '_blank', "width=1195,height=800");
+      win.document.write('<body style="margin:0;padding:0;width:100%;height:100%;box-sizing:border-box;"><iframe src="' + XExt.escapeHTML(url) + '" frameBorder="0" style="width:100%;height:100%;box-sizing:border-box;"></iframe></body>');
+    }
+    else{
+      window.open(url, '_blank', "width=1195,height=800");
+    }
+  }
+
   jsh.System.OpenPageEditor = function(page_key, page_filename, page_template_id, options){
     options = _.extend({
       source: undefined,
@@ -89,7 +99,7 @@
           //Open Editor
           var url = template.editor;
           if(options.getURL && options.onComplete) return options.onComplete(null, url, template);
-          window.open(url, '_blank', "width=1195,height=800");
+          jsh.System.OpenPageEditorUrl(url);
         }
         else{
           var errmsg = 'Error generating editor URL';

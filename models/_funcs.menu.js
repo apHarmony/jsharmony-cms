@@ -58,8 +58,8 @@ module.exports = exports = function(module, funcs){
           filename: content_element.filename
         };
         if(options.target){
-          if('template' in content_element) menu_content.template.content_elements[key].template = content_element.template[options.target] || '';
-          if('remote_template' in content_element) menu_content.template.content_elements[key].remote_template = content_element.remote_template[options.target] || '';
+          if('templates' in content_element) menu_content.template.content_elements[key].templates = content_element.templates[options.target] || '';
+          if('remote_templates' in content_element) menu_content.template.content_elements[key].remote_templates = content_element.remote_templates[options.target] || '';
         }
       }
       return cb(null,menu_content);

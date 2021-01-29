@@ -85,8 +85,15 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       }
 
       cms.branch_id = rslt.branch_id;
-      cms.componentManager.load();
-      cms.menuController.load();
+      async.parallel([
+        function(cb){ cms.componentManager.load(cb); },
+        function(cb){ cms.menuController.load(cb); },
+      ], function(err){
+        if(err){
+          if(onComplete) onComplete(err);
+          else alert(err.toString());
+        }
+      });
 
       XExt.waitUntil(
         function(){ return (cms.componentManager.isInitialized && cms.menuController.isInitialized); },
@@ -130,20 +137,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     }, function (err) {
       if(onComplete) onComplete(err);
     });
-
-    //xxxxx
-    //4. Dynamically load templates from JSON in site
-    //5. Make sure "edit" works
-    //6. Make sure "publish" works
-    //7. Menu / sidebar (using DIV for content, "src" for remote definition)
-    //  a. Initially define inline, as EJS inside div
-    //  b. Then, move to separate files
-    //8. Components
-    //  a. Dynamically load from JSON in site
-    //  b. Dynamically generate form based on HTML tags
-    //9. Web Snippets
-    //  a. Option to render inline instead of in iframe
-    //9. "Hints" in Developer Mode on how to add editable areas, configure menus, etc.
   }
 
   this.load = function(onComplete){
@@ -200,7 +193,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.initTemplate = function(){
     var errors = [];
 
-    var jTemplateConfig = $('script[type="text/jsharmony-cms-template-config"]');
+    var jTemplateConfig = $('script[type="text/jsharmony-cms-page-config"]');
     jTemplateConfig.each(function(){
       var config = $(this).html();
       try{
@@ -209,13 +202,13 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           if(_this.page_template_location=='REMOTE'){
             if('title' in config) errors.push('The "title" template config property is not supported for REMOTE templates.  Please set the REMOTE template title using the Site -> Page Templates grid.');
           }
-          if(_.isString(config.remote_template)) errors.push('Invalid syntax for template config.remote_template.  Please use remote_template.publish property');
-          else if(config.remote_template && config.remote_template.editor) errors.push('Cannot define config.remote_template.editor within an editor template.  Only config.remote_template.publish is supported');
+          if(_.isString(config.remote_templates)) errors.push('Invalid syntax for template config.remote_templates.  Please use remote_templates.publish property');
+          else if(config.remote_templates && config.remote_templates.editor) errors.push('Cannot define config.remote_templates.editor within an editor template.  Only config.remote_templates.publish is supported');
         }
         _.merge(_this.template, config);
       }
       catch(ex){
-        console.log(ex);
+        XExt.Alert('Error parsing jsharmony-cms-page-config script tag: \r\n' + ex.toString());
       }
     });
 
@@ -234,6 +227,19 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         body: { type: "htmleditor", title: "Body" }
       };
     }
+
+    $('script').each(function(){
+      var url = ($(this).attr('src')||'').toString();
+      if(XExt.endsWith(url, '/jsHarmonyCMS.js')){
+        if(!$(this).hasClass('removeOnPublish') && !$(this).hasClass('keepOnPublish')){
+          errors.push({
+            message: 'jsHarmony CMS Editor script tag for "'+XExt.escapeHTML(url)+'" should have a "removeOnPublish" class so that it will not be deployed on publish.  If this is a different script that you do want to publish, please add the "keepOnPublish" class to the script tag instead to hide this message.<br/>' +
+            '<pre>&lt;script type="text/javascript" class="removeOnPublish" src="'+XExt.escapeHTML(url)+'"&gt;&lt;/script&gt;</pre>',
+            type: 'html'
+          });
+        }
+      }
+    });
 
     if(!$('#jsharmony_cms_title').length){
       errors.push({
@@ -256,7 +262,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       if(contentId in foundContent){ errors.push('Duplicate "jsharmony_cms_content" element with same data-id: "'+contentId+'"'); return }
       foundContent[contentId] = jobj;
       if(jobj.parent().closest('.jsharmony_cms_content').length){ errors.push('The "'+contentId+'" jsharmony_cms_content element cannot be inside of another Content Element (class:jsharmony_cms_content)'); }
-      if(!(contentId in _this.template.content_elements)){ errors.push('The "'+contentId+'" jsharmony_cms_content element is not defined in template.content_elements.  Please add it to the jsharmony-cms-template-config definition.'); }
+      if(!(contentId in _this.template.content_elements)){ errors.push('The "'+contentId+'" jsharmony_cms_content element is not defined in template.content_elements.  Please add it to the jsharmony-cms-page-config definition.'); }
     });
     for(var contentId in _this.template.content_elements){
       if(!(contentId in foundContent)) errors.push({
@@ -656,14 +662,26 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
   this.getComponentRenderParameters = function(component_id){
     return {
+      baseUrl: '',
+      data: { items: [], item: {} },
+      properties: {},
+      renderType: 'static',
       _: _,
       escapeHTML: XExt.xejs.escapeHTML,
       stripTags: XExt.StripTags,
+      isInEditor: true,
+      isInPageEditor: false,
+      isInComponentEditor: false,
+      items: [],
+      item: {},
+      component: {},
+      data_errors: [],
+      renderPlaceholder: function(){ return ''; },
+      //Additional parameters for static render
       page: _this.page,
       template: _this.template,
       sitemap: _this.sitemap,
       getSitemapURL: function(sitemap_item){ return '#'; },
-      isInEditor: true,
     }
   }
 

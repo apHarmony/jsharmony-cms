@@ -19,7 +19,7 @@ jsh.App[modelid] = new (function(){
         if(err) return XExt.Alert(err.toString());
         if(template && template.raw) return XExt.Alert('Raw Text / Raw HTML Templates use an inline editor');
         if(!url) return XExt.Alert(site_template_name + ' template does not have an editor defined');
-        window.open(url, '_blank', "width=1195,height=800");
+        jsh.System.OpenPageEditorUrl(url);
       }
     });
   }

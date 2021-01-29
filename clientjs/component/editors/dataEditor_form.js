@@ -162,8 +162,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   var $toolbar;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
-    var editor = self._jsh.App[xModel.id];
+  dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
+    var editor = self._jsh.App[xmodel.id];
     var $dialog = self._jsh.$(dialogSelector);
     $dialog.css('opacity', '0');
     self._formSelector = dialogSelector; // remove this
@@ -188,11 +188,11 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     });
 
     editor.onChangeData_noDebounce = function() {
-      if(!self._jsh.XModels[xModel.id]){ return; }
+      if(!self._jsh.XModels[xmodel.id]){ return; }
       var updatedData = {};
       _.forEach(modelConfig.fields, function(field) {
         if (field.type != undefined) {
-          updatedData[field.name] = xModel.get(field.name);
+          updatedData[field.name] = xmodel.get(field.name);
         }
       });
 
@@ -220,8 +220,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         // The change handler is attached to the title
         // so that will run and update the link control,
         // and then we override the link control.
-        xModel.set(info.titleFieldName, title);
-        xModel.set(browserControlName, url);
+        xmodel.set(info.titleFieldName, title);
+        xmodel.set(browserControlName, url);
         self.enableBrowserControl($dialog, info, false);
         editor.onChangeData();
       };
@@ -253,7 +253,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       // the link value must be set to the title value.
       var info = modelTemplate.getBrowserFieldInfo(browserControlName);
       if (info == undefined) return;
-      xModel.set(browserControlName, xModel.get(info.titleFieldName));
+      xmodel.set(browserControlName, xmodel.get(info.titleFieldName));
       editor.onChangeData();
     }
 
@@ -261,8 +261,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       var info = modelTemplate.getBrowserFieldInfo(linkControlName);
       if (info == undefined) return;
       self.enableBrowserControl($dialog, info, true);
-      xModel.set(linkControlName, '');
-      xModel.set(info.titleFieldName, '');
+      xmodel.set(linkControlName, '');
+      xmodel.set(info.titleFieldName, '');
       editor.onChangeData();
     }
 
@@ -272,8 +272,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     if(onComplete) onComplete();
   }
 
-  dialog.onOpened = function($dialog, xModel) {
-    var editor = self._jsh.App[xModel.id];
+  dialog.onOpened = function($dialog, xmodel) {
+    var editor = self._jsh.App[xmodel.id];
     // Manually call change to do initial render
     setTimeout(function() {
       editor.onChangeData_noDebounce();
@@ -283,30 +283,30 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     });
   }
 
-  dialog.onAccept = function($dialog, xModel) {
-    if(!xModel.controller.Commit(itemData, 'U')) return false;
+  dialog.onAccept = function($dialog, xmodel) {
+    if(!xmodel.controller.Commit(itemData, 'U')) return false;
     itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
   }
 
-  dialog.onCancel = function(options, $dialog, xModel) {
-    if (!options.force && xModel.controller.HasUpdates()) {
+  dialog.onCancel = function(options, $dialog, xmodel) {
+    if (!options.force && xmodel.controller.HasUpdates()) {
       self._jsh.XExt.Confirm('Close without saving changes?', function() {
-        xModel.controller.form.ResetDataset();
+        xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
       return false;
     }
   }
 
-  dialog.onClose = function($dialog, xModel) {
+  dialog.onClose = function($dialog, xmodel) {
     //Destroy model
-    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
-    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+    if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
+    if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
+    delete self._jsh.XModels[xmodel.id];
+    delete self._jsh.App[xmodel.id];
     _.forEach(self._htmlEditors, function(editor) { editor.destroy(); });
     if (_.isFunction(onCloseCb)) onCloseCb();
   }
@@ -345,10 +345,8 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
 
   var renderData = { item: data };
-  if(this._componentTemplate && 
-      this._componentTemplate._componentConfig && 
-      this._componentTemplate._componentConfig.data &&
-      (this._componentTemplate._componentConfig.data.layout == 'grid_preview')){
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
+  if(componentConfig && componentConfig.data && (componentConfig.data.layout == 'grid_preview')){
     renderData = { items: [data] };
   }
 
@@ -357,9 +355,11 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   if (_.isFunction(this._onBeforeRenderDataItemPreview)) this._onBeforeRenderDataItemPreview(renderConfig);
 
-  var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh);
+  var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh, this._cms, componentConfig);
 
   $wrapper.empty().append(rendered);
+
+  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper)
 
   if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, self._cms, self._component);
 

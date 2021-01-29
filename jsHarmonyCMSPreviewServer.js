@@ -21,8 +21,10 @@ var _ = require('lodash');
 var async = require('async');
 var fs = require('fs');
 var os = require('os');
+var path = require('path');
 var express = require('jsharmony/lib/express');
 var cookieParser = require('jsharmony/lib/cookie-parser');
+var compression = require('jsharmony/lib/compression');
 var https = require('https');
 var http = require('http');
 var webpath = require('path').posix;
@@ -62,6 +64,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
   }
   
   var app = express();
+  app.use(compression());
   app.jsh = jsh;
 
   function setNoCache(req, res){
@@ -101,7 +104,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
 
   //Get current branch / site ID
   app.all('*', function (req, res, next) {
-    jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema("select site_id from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"), [], {}, function (err, rslt) {
+    jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema("select site_id, branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"), [], {}, function (err, rslt) {
       if(err) return Helper.GenError(req, res, -99999, err.toString());
 
       if (!rslt || !rslt.length || !rslt[0] || !rslt[0].site_id){
@@ -111,10 +114,62 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
       }
 
       req.site_id = rslt[0].site_id;
+      req.branch_desc = rslt[0].branch_desc;
       return next();
     });
   });
-  
+
+  //Websnippets Listing
+  app.get('/templates/websnippets/?', function(req, res, next){
+    var rslt = []; //{"title": "Item 1", "description": "Long Description", "url": "/templates/websnippets/item1.html", "content": "..."}
+
+    var basepath = fspath.join(jsh.Config.datadir,'site',req.site_id.toString(), 'templates/websnippets');
+
+    async.waterfall([
+
+      //Recursively read all web snippets in folder and combine into file
+      function(gen_cb){
+        HelperFS.funcRecursive(basepath,
+          function(filepath, filerelativepath, file_cb){
+            var ext = path.extname(filepath);
+            //Only read HTML files
+            if(!_.includes(['.html','.htm'], ext)) return file_cb();
+            fs.readFile(filepath, 'utf8', function(err, content){
+              if(err) return file_cb(err);
+              //Parse each web snippet + extract <script type="text/jsharmony-cms-websnippet-config">
+              var templateParts = null;
+              try{
+                templateParts = cms.funcs.parseConfig(content, 'jsharmony-cms-websnippet-config', 'Websnippet Config: ' + filerelativepath);
+              }
+              catch(ex){
+                return file_cb(ex);
+              }
+              //Add websnippet to array
+              filerelativepath = HelperFS.convertWindowsToPosix(filerelativepath);
+              var templateConfig = {
+                title: filerelativepath,
+                description: '',
+                content: templateParts.content
+              }
+              if(templateParts.config.url) delete templateConfig.content;
+              _.extend(templateConfig, templateParts.config);
+              rslt.push(templateConfig);
+              return file_cb();
+            });
+          },
+          null,
+          null,
+          function(err){
+            return gen_cb(err);
+          }
+        );
+      },
+    ], function(err){
+      if(err) return Helper.GenError(req, res, -99999, err.toString());
+      res.end(JSON.stringify(rslt));
+    });
+  });
+
   //Return file from local branch
   app.all('*', function (req, res, next) {
     var rpath = req.path;
@@ -123,7 +178,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
       rpath = webpath.normalize(rpath);
     }
     catch(ex){
-      return jsh.Gen404(req, res);
+      return next();
     }
 
     var syspath = '';
@@ -135,17 +190,17 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
       function(path_cb){
         syspath = fspath.join(sitepath, rpath);
         fs.realpath(syspath, function(err, fullpath){
-          if(err) return jsh.Gen404(req, res);
+          if(err) return next();
           if(fullpath == sitepath) return path_cb();
-          if(fullpath.indexOf(sitepath + fspath.sep)!=0) return jsh.Gen404(req, res);
+          if(fullpath.indexOf(sitepath + fspath.sep)!=0) return next();
           fs.lstat(syspath, function(err, stats){
-            if(err) return jsh.Gen404(req, res);
+            if(err) return next();
             if(stats.isDirectory()) return path_cb();
             if(stats.isFile()){
               foundFile = true;
               return path_cb();
             }
-            return jsh.Gen404(req, res);
+            return next();
           });
         });
       },
@@ -163,18 +218,37 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
             foundFile = true;
             return path_cb();
           }
-          return jsh.Gen404(req, res);
+          return next();
         });
       },
 
       //Return file
       function(path_cb){
+        //Process templates
+        if(rpath.indexOf('/templates/pages/')==0){
+          //Only process HTML files
+          var ext = path.extname(syspath);
+          if(_.includes(['.html','.htm'], ext)){
+            fs.readFile(syspath, 'utf8', function(err, data){
+              if(err) return next();
+              var fcontent = cms.funcs.generateEditorTemplate(data, { cmsBaseUrl: req.baseurl });
+              res.end(fcontent);
+            });
+            return;
+          }
+        }
+
         HelperFS.outputFile(req, res, syspath, '', undefined, { attachment: false });
       },
 
     ], function(err){
-      return jsh.Gen404(req, res);
+      //404 Error
+      return next();
     });
+  });
+
+  app.all('*', function (req, res, next) {
+    jsh.Gen404(req, res, { view: 'jsHarmonyCMS.PreviewServer.404', renderParams: { branch_desc: req.branch_desc } });
   });
 
   //Error Handler

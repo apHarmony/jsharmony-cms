@@ -9,19 +9,19 @@
       "template": "...EJS Content...",
 
       //remote_template :: (Optional) Remote template downloaded for render template source.
-      //                   If both template and remote_template are defined, they will be concatenated
-      "remote_template": "https://server/templates/menu/main.top.html?source=1&_=%%%timestamp%%%"
+      //                   If both templates and remote_templates are defined, they will be concatenated
+      "remote_template": "https://server/templates/menus/main.top.html?source=1&_=%%%timestamp%%%"
     },
 
     //Alternate syntax with separate editor / publish templates
     "main_menu_sidebar": {
-      "template": {
+      "templates": {
         "editor": "...EJS Content...",
         "publish": "...EJS Content...",
       },
-      "remote_template": {
-        "editor": "https://server/templates/menu/main.sidebar.editor.html?source=1&_=%%%timestamp%%%",
-        "publish": "https://server/templates/menu/main.sidebar.publish.html?source=1&_=%%%timestamp%%%",
+      "remote_templates": {
+        "editor": "https://server/templates/menus/main.sidebar.editor.html?source=1&_=%%%timestamp%%%",
+        "publish": "https://server/templates/menus/main.sidebar.publish.html?source=1&_=%%%timestamp%%%",
       }
     }
 

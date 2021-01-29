@@ -5,6 +5,7 @@ var path = require('path');
 var async = require('async');
 var fs = require('fs');
 var Helper = require('../Helper.js');
+var HelperFS = require('../HelperFS.js');
 var ejsext = require('../lib/ejsext.js');
 var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
@@ -28,67 +29,77 @@ if((routetype == 'd')||(routetype == 'csv')){
   }
 
   var localTemplates = [
-    //site_template_type, site_template_name, site_template_title, site_template_path,site_template_config
+    //site_template_type, site_template_name, site_template_title, site_template_path,site_template_config,site_template_location
   ];
   
   return async.waterfall([
     function(data_cb){
       if(!site_id) return data_cb();
-      var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString(),'templates','pages');
+      var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString(),'templates','components');
 
-      //Get all local site templates from site\#\templates\pages
+      //Get all local site templates from site\#\templates\components
       fs.exists(sitePath, function (exists) {
         if (!exists) return data_cb(null);
-        fs.readdir(sitePath, function (err, files) {
-          if (err) return data_cb(err);
-          async.each(files, function(file, file_cb){
-            var ext = path.extname(file);
-            if((ext=='.htm') || (ext=='.html')){
-              var templateName = file.substr(0, file.length - ext.length);
-              var fpath = path.join(sitePath, file);
-              
-              fs.readFile(fpath, 'utf8', function(err, templateContent){
-                if(err) return file_cb(err);
-
-                //Read Page Template Config
-                var templateConfig = null;
-                try{
-                  templateConfig = cms.funcs.readPageTemplateConfig(templateContent, 'Local Page Template: '+file, { continueOnConfigError: true });
-                }
-                catch(ex){
-                  return file_cb(ex);
-                }
-
-                var templateTitle = templateConfig.title || templateName;
-                localTemplates.push({
-                  site_template_type: 'PAGE',
-                  site_template_name: templateName,
-                  site_template_title: templateTitle,
-                  site_template_path: '/templates/pages/' + file,
-                  site_template_config: null,
-                  site_template_location: 'LOCAL',
+        var files = [];
+        HelperFS.funcRecursive(sitePath,
+          function(filepath, filerelativepath, file_cb){
+            files.push({ filepath: filepath, filerelativepath: HelperFS.convertWindowsToPosix(filerelativepath) });
+            return file_cb();
+          },
+          null,
+          null,
+          function(err){
+            if(err) return data_cb(err);
+            
+            async.each(files, function(fileinfo, file_cb){
+              var file = fileinfo.filerelativepath;
+              var ext = path.extname(file);
+              if((ext=='.htm') || (ext=='.html')){
+                var templateName = file.substr(0, file.length - ext.length);
+                
+                fs.readFile(fileinfo.filepath, 'utf8', function(err, templateContent){
+                  if(err) return file_cb(err);
+  
+                  //Read Component Template Config
+                  var templateConfig = null;
+                  try{
+                    templateConfig = cms.funcs.readComponentTemplateConfig(templateContent, 'Local Component Template: ' + file, { continueOnConfigError: true });
+                  }
+                  catch(ex){
+                    return file_cb(ex);
+                  }
+  
+                  var templateTitle = templateConfig.title || templateName;
+                  localTemplates.push({
+                    site_template_type: 'COMPONENT',
+                    site_template_name: templateName,
+                    site_template_title: templateTitle,
+                    site_template_path: '/templates/components/' + file,
+                    site_template_config: null,
+                    site_template_location: 'LOCAL',
+                  });
+                  return file_cb();
                 });
-                return file_cb();
-              });
-            }
-            else file_cb();
-          }, data_cb);
-        });
+              }
+              else file_cb();
+            }, data_cb);
+          }
+        );
       });
     },
 
     //Add local system template
     function(data_cb){
-      for(var key in cms.SystemPageTemplates){
-        var pageTemplate = cms.SystemPageTemplates[key];
+      for(var key in cms.SystemComponentTemplates){
+        var templateConfig = cms.SystemComponentTemplates[key];
         var templatePath = ' ';
-        if(pageTemplate.remote_templates){
-          templatePath = pageTemplate.remote_templates.editor || ' ';
+        if(templateConfig.remote_templates){
+          templatePath = templateConfig.remote_templates.editor || ' ';
         }
         localTemplates.push({
-          site_template_type: 'PAGE',
+          site_template_type: 'COMPONENT',
           site_template_name: key,
-          site_template_title: pageTemplate.title,
+          site_template_title: templateConfig.title,
           site_template_path: templatePath,
           site_template_config: null,
           site_template_location: 'SYSTEM',

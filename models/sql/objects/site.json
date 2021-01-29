@@ -4,6 +4,7 @@
     "caption": "Site Template Type",
     "init_data": [
       { "code_val": "PAGE", "code_txt": "Page", "code_seq": 1 },
+      { "code_val": "COMPONENT", "code_txt": "Component", "code_seq": 2 },
     ]
   },
 

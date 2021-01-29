@@ -2,7 +2,7 @@
   "Site_Tabs": {
     "layout":"form",
     "onecolumn":true,
-    "popup":[960,600],
+    "popup":[1150,600],
     "table":"{schema}.site",
     "actions":"BIUD",
     "roles": { "WEBMASTER": "BIUD" },
@@ -10,7 +10,8 @@
     "tabpanelstyle": "min-width:700px;",
 	  "tabs":[
 	    {"name":"Overview","target":"Site"},
-  	  {"name":"Page Templates","target":"Site_Template_Page"}
+      {"name":"Page Templates","target":"Site_Template_Page"},
+      {"name":"Components","target":"Site_Template_Component"}
     ],
     "caption":["Site","Sites"],
     "title": {

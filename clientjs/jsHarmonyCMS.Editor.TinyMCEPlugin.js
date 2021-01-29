@@ -178,6 +178,22 @@ exports = module.exports = function(jsh, cms, editor){
           },
           {
             type: 'menuitem',
+            icon: 'visualblocks',
+            text: 'Toggle Outlines',
+            onAction: function () {
+              if(document && document.body){
+                var hasOutlines =  $(document.body).hasClass('jsHarmonyCMS_showEditorOutlines');
+                $(document.body).toggleClass('jsHarmonyCMS_hideEditorOutlines', hasOutlines);
+                $(document.body).toggleClass('jsHarmonyCMS_showEditorOutlines', !hasOutlines);
+                if(!jsh.xDialog.length){
+                  var editorManager = tinymce.util.Tools.resolve("tinymce.EditorManager");
+                  editorManager.activeEditor.focus();
+                }
+              }
+            }
+          },
+          {
+            type: 'menuitem',
             icon: 'sourcecode',
             text: 'Source Code',
             onAction: function () {
@@ -322,7 +338,7 @@ exports = module.exports = function(jsh, cms, editor){
     // Register component icons and build
     // component info.
     _.forEach(components, function(component) {
-      if (component.icon) {
+      if ((component.target == 'content') && component.icon) {
         // Icon name MUST be lowercase for TinyMce to work correctly.
         var iconRegistryName = ('cms_component_icon_' + component.id).toLowerCase();
         var iconMatch = /^(\w+):/.exec(component.icon);
@@ -415,7 +431,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @returns {string} - HTML string
    */
   JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
-    return '<div class="mceNonEditable" data-component="' + componentType + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
+    return '<div class="mceNonEditable" data-component="' + jsh.XExt.escapeHTML(componentType) + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
   }
 
   /**

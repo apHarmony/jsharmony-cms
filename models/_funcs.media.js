@@ -147,7 +147,7 @@ module.exports = exports = function(module, funcs){
         serveFile(function (err) {
           //Only executes upon error
           if (err != null) {
-            if (('code' in err) && (err.code == 'ENOENT')){
+            if(HelperFS.fileNotFound(err)){
               if(!thumbnail_config) return Helper.GenError(req, res, -33, 'Media file not found.');
               //Generate thumbnail
               transformMedia(function(err){
@@ -158,7 +158,7 @@ module.exports = exports = function(module, funcs){
                 //Try again to serve file
                 serveFile(function (err) {
                   if (err != null) {
-                    if (('code' in err) && (err.code == 'ENOENT')) return Helper.GenError(req, res, -33, 'Media file not found.');
+                    if (HelperFS.fileNotFound(err)) return Helper.GenError(req, res, -33, 'Media file not found.');
                     else return Helper.GenError(req, res, -99999, 'Error occurred during file operation (' + err.toString() + ')');
                   }
                 });

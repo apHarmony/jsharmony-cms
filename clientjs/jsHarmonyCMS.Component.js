@@ -192,7 +192,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     if (_.isFunction(this.onBeforeRender)) this.onBeforeRender(renderConfig);
 
-    var rendered = TemplateRenderer.render(renderConfig, 'component', jsh);
+    var rendered = TemplateRenderer.render(renderConfig, 'component', jsh, cms, config);
 
     if(!rendered){
       if(!template) rendered = '*** Component Rendering Error: Template Missing ***';

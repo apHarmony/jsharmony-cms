@@ -182,22 +182,24 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.downloadRemoteTemplates = function(branchData, templates, template_html, options, download_cb){
+    options = _.extend({ templateType: 'PAGE' }, options);
+
     var jsh = module.jsh;
 
     async.eachOf(templates, function(template, template_name, template_cb){
       if(template.location != 'REMOTE') return template_cb();
-      if(!template.remote_template) return template_cb();
+      if(!template.remote_templates) return template_cb();
       async.waterfall([
-        //Download template.remote_template.publish or template.remote_template.editor
+        //Download template.remote_templates.publish or template.remote_templates.editor
         function(template_action_cb){
           var url = '';
           var isPublishTemplate = false;
-          if(template.remote_template.publish){
-            url = funcs.parseDeploymentUrl(template.remote_template.publish, branchData.publish_params);
+          if(template.remote_templates.publish){
+            url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.publish_params);
             isPublishTemplate = true;
           }
-          else if(template.remote_template.editor){
-            url = funcs.parseDeploymentUrl(template.remote_template.editor, branchData.publish_params);
+          else if(template.remote_templates.editor){
+            url = funcs.parseDeploymentUrl(template.remote_templates.editor, branchData.publish_params);
           }
           else return template_action_cb();
 
@@ -210,6 +212,8 @@ module.exports = exports = function(module, funcs){
             }
           }
           catch(ex){
+            if(branchData.publish_params) funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading remote template: '+url);
+            else jsh.Log.info('Downloading remote template: '+url);
             return template_action_cb(ex);
           }
 
@@ -223,13 +227,30 @@ module.exports = exports = function(module, funcs){
               if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
             }
             //Parse and merge template config
-            var templateConfig = funcs.readPageTemplateConfig(templateContent);
-            if(templateConfig && templateConfig.remote_template && templateConfig.remote_template.publish){
-              templateConfig.remote_template.publish = funcs.parseDeploymentUrl(templateConfig.remote_template.publish, branchData.publish_params, url);
+            var templateConfig = null;
+            try{
+              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'Remote Page Template: '+url);
+              else if(options.templateType == 'COMPONENT') templateConfig = funcs.readComponentTemplateConfig(templateContent, 'Remote Component Template: '+url);
+              else throw new Error('Invalid Template Type: ' + options.templateType);
+            }
+            catch(ex){
+              return template_action_cb(ex);
+            }
+            if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
+              templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.publish_params, url);
             }
             _.merge(template, templateConfig);
             
-            if(isPublishTemplate || !template.remote_template.publish){
+            if(isPublishTemplate){
+              template_html[template_name] = templateContent;
+            }
+            else if(!template.remote_templates.publish){
+              try{
+                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(templateContent);
+              }
+              catch(ex){
+                return template_action_cb(new Error('Error parsing "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
+              }
               template_html[template_name] = templateContent;
             }
             return template_action_cb();
@@ -240,23 +261,97 @@ module.exports = exports = function(module, funcs){
     }, download_cb);
   }
 
+  exports.downloadLocalTemplates = function(branchData, templates, template_html, options, download_cb){
+    options = _.extend({ templateType: 'PAGE' }, options);
+
+    var jsh = module.jsh;
+    var sitePath = path.join(path.join(jsh.Config.datadir,'site'),(branchData.site_id||'').toString());
+
+    async.eachOf(templates, function(template, template_name, template_cb){
+      if(template.location != 'LOCAL') return template_cb();
+      if(!template.path) return template_cb();
+
+      async.waterfall([
+        function(template_action_cb){
+          var templatePath = path.join(sitePath, template.path);
+
+          fs.readFile(templatePath, 'utf8', function(err, templateContent){
+            if (HelperFS.fileNotFound(err)) return template_action_cb(new Error('Error downloading template - local template file not found: '+template.path));
+            if(err) return template_action_cb(new Error('Error downloading template: '+err.toString()));
+
+            //Parse and merge template config
+            var templateConfig = null;
+            try{
+              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'Local Page Template: '+template.path);
+              else if(options.templateType == 'COMPONENT') templateConfig = funcs.readComponentTemplateConfig(templateContent, 'Local Component Template: '+template.path);
+              else throw new Error('Invalid Template Type: ' + options.templateType);
+            }
+            catch(ex){
+              return template_action_cb(ex);
+            }
+
+            async.waterfall([
+              //Check publish template
+              function(template_process_cb){
+                if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
+                  if(templateConfig.remote_templates.publish.indexOf('//') < 0){
+                    //If path is local
+                    var publishTemplatePath = path.normalize(path.join(path.dirname(templatePath), templateConfig.remote_templates.publish));
+                    if(publishTemplatePath.indexOf(path.normalize(sitePath)+path.sep) != 0) return template_process_cb(new Error('Invalid remote_templates.publish path: '+templateConfig.remote_templates.publish));
+
+                    //Download local publish template
+                    fs.readFile(publishTemplatePath, 'utf8', function(err, publishTemplateContent){
+                      if (HelperFS.fileNotFound(err)) return template_process_cb(new Error('Error downloading publish template - publish template file not found: '+templateConfig.remote_templates.publish));
+                      if(err) return template_process_cb(new Error('Error downloading publish template: '+err.toString()));
+                      //Add publish template to template_html
+                      template_html[template_name] = publishTemplateContent;
+                      return template_process_cb();
+                    });
+                    return;
+                  }
+                  else {
+                    //If path is remote
+                    templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.publish_params, url);
+                  }
+                }
+                return template_process_cb();
+              },
+              //If no publish template, add to template_html
+              function(template_process_cb){
+                //Components already merged the config and post-processed it in getComponentTemplates
+                if(options.templateType != 'COMPONENT') _.merge(template, templateConfig);
+
+                if(!(template.remote_templates && template.remote_templates.publish)){
+                  try{
+                    if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(templateContent);
+                  }
+                  catch(ex){
+                    return template_action_cb(new Error('Error parsing "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
+                  }
+                  template_html[template_name] = templateContent;
+                }
+                return template_process_cb();
+              }
+            ], template_action_cb);
+          });
+        },
+      ], template_cb);
+
+    }, download_cb);
+  }
+
   exports.downloadTemplates = function(branchData, templates, template_html, options, download_cb){
     options = _.extend({ content_element_templates: false }, options);
     async.eachOf(templates, function(template, template_name, template_cb){
-      if(template_name in template_html) return template_cb(); //Already downloaded
-
-      if(template.content && ('body' in template.content)){
-        template_html[template_name] = template.content.body;
-      }
-      else if(_.isString(template.content)) template_html[template_name] = template.content;
 
       async.waterfall([
 
-        //Download template.remote_template.publish (for page, component)
+        //Download template.remote_templates.publish (for page, component)
         function(template_action_cb){
-          if(!template.remote_template || !template.remote_template.publish) return template_action_cb();
+          if(template_name in template_html) return template_action_cb(); //Already downloaded
+          if(!template.remote_templates || !template.remote_templates.publish) return template_action_cb();
 
-          var url = funcs.parseDeploymentUrl(template.remote_template.publish, branchData.publish_params);
+          var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.publish_params);
           funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
           wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
             if(err) return template_action_cb(err);
@@ -269,18 +364,19 @@ module.exports = exports = function(module, funcs){
           });
         },
 
-        //Download template.content_elements[].remote_template.publish (for menu)
+        //Download template.content_elements[].remote_templates.publish (for menu)
         function(template_action_cb){
+          if(template_name in template_html) return template_action_cb(); //Already downloaded
           if(!options.content_element_templates) return template_action_cb();
           if(!(template_html[template_name])) template_html[template_name] = {};
 
           async.eachOfSeries(template.content_elements, function(content_element, content_element_name, content_element_cb){
             template_html[template_name][content_element_name] = '';
-            if('template' in content_element) template_html[template_name][content_element_name] += content_element.template['publish'] || '';
+            if('template' in content_element) template_html[template_name][content_element_name] += content_element.templates.publish || '';
 
-            if(!content_element || !content_element.remote_template || !content_element.remote_template.publish) return content_element_cb();
+            if(!content_element || !content_element.remote_templates || !content_element.remote_templates.publish) return content_element_cb();
 
-            var url = funcs.parseDeploymentUrl(content_element.remote_template.publish, branchData.publish_params);
+            var url = funcs.parseDeploymentUrl(content_element.remote_templates.publish, branchData.publish_params);
             funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
             wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
               if(err) return content_element_cb(err);
@@ -293,6 +389,17 @@ module.exports = exports = function(module, funcs){
             });
           }, template_action_cb);
         },
+
+        //Add hard-coded templates to result
+        function(template_action_cb){
+          if(template.templates && ('publish' in template.templates)){
+            //Clear editor templates, if they were used
+            if(!(template.remote_templates && template.remote_templates.publish)) template_html[template_name] = '';
+            //Prepend hard-coded template
+            template_html[template_name] = template.templates.publish + (template_html[template_name]||'');
+          }
+          return template_action_cb();
+        }
       ], template_cb);
 
     }, download_cb);
@@ -338,6 +445,7 @@ module.exports = exports = function(module, funcs){
         function(deploy_cb){
           publish_tgt = deployment.publish_tgt;
           deployment_id = rslt[0].deployment_id;
+          funcs.deploy_log_info(deployment_id, 'Deploying: '+(deployment.deployment_tag||''));
           if(!publish_tgt){ return deploy_cb('Publish Target parameter is not defined'); }
           if(deployment.deployment_target_sts.toUpperCase() != 'ACTIVE'){ return deploy_cb('Deployment Target is not ACTIVE'); }
           var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
@@ -345,7 +453,7 @@ module.exports = exports = function(module, funcs){
           var default_page = deployment.default_page;
 
           var publish_params = {
-            timestamp: (Date.now()).toString()
+            timestamp: (Date.now()).toString(),
           };
           try{
             if(deployment.deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment.deployment_target_params));
@@ -364,13 +472,15 @@ module.exports = exports = function(module, funcs){
             publish_params: publish_params,
             deployment: deployment,
             site_id: deployment.site_id,
-            component_html: {},
             site_files: {},
 
             page_keys: {},
             page_templates: null,
             page_template_html: {},
             page_redirects: {},
+
+            component_templates: null,
+            component_template_html: {},
 
             media_keys: {},
 
@@ -647,6 +757,26 @@ module.exports = exports = function(module, funcs){
                 }, cb);
               },
 
+              //Copy site files to publish folder
+              function (cb){
+                var sitePath = path.join(path.join(jsh.Config.datadir,'site'),(branchData.site_id||'').toString());
+                fs.lstat(sitePath, function(err, stats){
+                  if(err){
+                    if (HelperFS.fileNotFound(err)) return cb(); //Not found
+                    return cb(err); //Other FS Error
+                  }
+                  HelperFS.copyRecursive(sitePath, publish_path,
+                    {
+                      forEachDir: function(dirpath, targetpath, relativepath, dir_cb){
+                        if(relativepath=='.git') return dir_cb(false);
+                        return dir_cb(true);
+                      }
+                    },
+                    cb
+                  );
+                });
+              },
+
               //Run onBeforeDeploy functions
               function(cb){
                 async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
@@ -779,17 +909,15 @@ module.exports = exports = function(module, funcs){
           }
         }
       ], function(err){
-        //In no_publish_complete debug mode, do not set finish the deployment
-        if(module.Config.debug_params.no_publish_complete){
-          if(err) console.log(err);
-          return;
-        }
         var deployment_sts = 'COMPLETE';
         if(err){
           funcs.deploy_log_error(deployment_id, err);
           deployment_sts = 'FAILED';
         }
         funcs.deploy_waitForLog(deployment_id, function(){
+          //In no_publish_complete debug mode, do not set finish the deployment
+          if(module.Config.debug_params.no_publish_complete) return;
+          //Otherwise, update deployment status
           var sql = "update "+(module.schema?module.schema+'.':'')+"deployment set deployment_sts=@deployment_sts where deployment_id=@deployment_id;";
           var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(32)];
           var sql_params = { deployment_id: deployment_id, deployment_sts: deployment_sts };
@@ -948,9 +1076,9 @@ module.exports = exports = function(module, funcs){
                 metadesc: clientPage.page.seo.metadesc||'',
                 canonical_url: clientPage.page.seo.canonical_url||'',
               },
-              css: (clientPage.template.css||'')+' '+(clientPage.page.css||''),
-              js: (clientPage.template.js||'')+' '+(clientPage.page.js||''),
-              header: (clientPage.template.header||'')+' '+(clientPage.page.header||''),
+              css: (clientPage.template.css||'')+(clientPage.template.css?' ':'')+(clientPage.page.css||''),
+              js: (clientPage.template.js||'')+(clientPage.template.js?' ':'')+(clientPage.page.js||''),
+              header: (clientPage.template.header||'')+(clientPage.template.header?' ':'')+(clientPage.page.header||''),
               content: clientPage.page.content||{},
               footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
               properties: _.extend({}, clientPage.template.default_properties, clientPage.page.properties),
@@ -970,11 +1098,24 @@ module.exports = exports = function(module, funcs){
             },
             renderComponent: function(id){
               if(!id) return '';
-              if(!(id in branchData.component_html)) return '<!-- Component '+Helper.escapeHTML(id)+' not found -->';
-              var rslt = ejs.render(branchData.component_html[id] || '', {
+              if(!(id in branchData.component_template_html)) return '<!-- Component '+Helper.escapeHTML(id)+' not found -->';
+              var rslt = ejs.render(branchData.component_template_html[id] || '', {
+                baseUrl: '',
+                data: { items: [], item: {} },
+                properties: {},
+                renderType: 'static',
                 _: _,
                 escapeHTML: Helper.escapeHTML,
                 stripTags: Helper.StripTags,
+                isInEditor: false,
+                isInPageEditor: false,
+                isInComponentEditor: false,
+                items: [],
+                item: {},
+                component: {},
+                data_errors: [],
+                renderPlaceholder: function(){ return ''; },
+                //Additional parameters for static render
                 page: clientPage.page,
                 template: clientPage.template,
                 sitemap: clientPage.sitemap,
@@ -991,7 +1132,6 @@ module.exports = exports = function(module, funcs){
                   }
                   return sitemap_item.sitemap_item_link_dest;
                 },
-                isInEditor: false,
               });
               return rslt;
             }
@@ -1001,7 +1141,8 @@ module.exports = exports = function(module, funcs){
             page_content = branchData.page_template_html[page.page_template_id]||'';
             page_content = ejs.render(page_content, ejsparams);
             try{
-              page_content = funcs.replaceComponents(page_content, { components: branchData.component_html });
+              page_content = funcs.replaceComponents(page_content, { components: branchData.component_template_html });
+              page_content = funcs.applyRenderTags(page_content, { page: ejsparams.page });
               page_content = funcs.replaceBranchURLs(page_content, {
                 getMediaURL: function(media_key){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());

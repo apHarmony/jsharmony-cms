@@ -90,7 +90,7 @@ function jsHarmonyCMSConfig(){
   };
 
   this.defaultEditorConfig = {};        //Default GUI editor config
-                                        //Set web snippets path: { webSnippets: '/templates/websnippets/index.html' }
+                                        //Web snippets listing path: { webSnippetsPath: '/templates/websnippets/' }
                                         //Enable Material Icons { materialIcons: true }
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'

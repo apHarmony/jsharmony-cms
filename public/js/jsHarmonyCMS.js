@@ -62,7 +62,7 @@ function ComponentTemplate(componentConfig, jsh) {
     this._dataModelTemplate_FormPreview = new DataModelTemplate_FormPreview(this, this._componentConfig.data);
   }
   if (this._componentConfig.properties) {
-    this._componentConfig.data.fields = this.processBrowserFields(this._componentConfig.data.fields || []);
+    this._componentConfig.properties.fields = this.processBrowserFields(this._componentConfig.properties.fields || []);
     this._propertiesModelTemplate_Form = new PropertiesModelTemplate_Form(this, this._componentConfig.properties);
   }
 }
@@ -142,6 +142,15 @@ ComponentTemplate.prototype.getTemplateId = function() {
 }
 
 /**
+ * Gets the base class name for this component
+ * @public
+ * @returns {(string | undefined)}
+ */
+ComponentTemplate.prototype.getClassName = function() {
+  return this._componentConfig.className || jsh.XExt.escapeCSSClass(this._componentConfig.id, { nodash: true });
+}
+
+/**
  * @private
  * @param {object[]} fields
  * @returns {object[]}
@@ -168,6 +177,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
     field.mediaBrowserControlInfo = info;
     field.name = info.titleFieldName;
     field.control = 'textbox';
+    field.controlclass = 'xtextbox_M';
     field.type = 'varchar';
     field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeBrowserTitleControl) m.onChangeBrowserTitleControl("' + info.dataFieldName + '");  })()';
 
@@ -245,6 +255,9 @@ function DataModelTemplate_FormPreview(componentTemplate, dataModel) {
   /** @private @type {Object} */
   this._jsh = componentTemplate._jsh;
 
+  /** @private @type {Object} */
+  this._componentTemplate = componentTemplate;
+
   /** @private @type {string} */
   this._componentTemplateId = componentTemplate.getTemplateId();
 
@@ -280,8 +293,10 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
     }
   });
 
+  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">'});
+  fields.push({ control:'html', value:'</div>'});
   fields.push({
-    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor" data-id="previewWrapper"></div>', 'block':true
+    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true
   });
 
   var model = _.extend({}, modelConfig);
@@ -293,6 +308,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   model.onecolumn = true;
   model.ejs = '';
   model.js = this._rawOriginalJs;
+  this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 
   var templateHtml = '<div>' + modelConfig.ejs + '</div>';
 
@@ -354,7 +370,7 @@ DataModelTemplate_FormPreview.prototype.getItemTemplate = function() {
  */
 DataModelTemplate_FormPreview.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
-  model.id = DataModelTemplate_FormPreview.getNextInstanceId(this._componentTemplateId);
+  model.id = DataModelTemplate_FormPreview.getNextInstanceId(this._componentTemplate);
 
   return model;
 }
@@ -373,10 +389,10 @@ DataModelTemplate_FormPreview.prototype.getModelJs = function() {
  * @private
  * @returns {string}
  */
-DataModelTemplate_FormPreview.getNextInstanceId = function(componentType ) {
+DataModelTemplate_FormPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_FormPreview._id == undefined) DataModelTemplate_FormPreview._id = 0;
   var id = DataModelTemplate_FormPreview._id++;
-  return 'DataModel_FormPreview_' + componentType + '_' + id;
+  return 'DataModel_FormPreview_' + componentTemplate.getClassName() + '_' + id;
 }
 
 /**
@@ -467,6 +483,9 @@ function DataModelTemplate_GridPreview(componentTemplate, dataModel) {
   /** @private @type {Object} */
   this._jsh = componentTemplate._jsh;
 
+  /** @private @type {Object} */
+  this._componentTemplate = componentTemplate;
+
   /** @private @type {string} */
   this._componentTemplateId = componentTemplate.getTemplateId();
 
@@ -511,7 +530,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   });
 
   fields.push({
-    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;',
+    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;display:block;',
     value: '<div tabindex="0" data-component-template="gridRow"></div>',
     ongetvalue: 'return;'
   });
@@ -526,16 +545,18 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   model.unbound = true;
   model.newrowposition = 'last';
   model.commitlevel= 'page';
-  model.hide_system_buttons = ['export', 'search', 'save'];
+  model.hide_system_buttons = ['export', 'search', 'save', 'add'];
   model.sort = [];
   model.buttons = [
-    {link: 'js:_this.close()', icon: 'ok', actions: 'IU', text: 'Done' }
+    {link: 'js:_this.close()', icon: 'ok', actions: 'BIU', text: 'Done' },
+    {link: 'js:_this.addItem()', icon: 'add', actions: 'I', text: 'Add', class: 'jsharmony_cms_component_dataGridEditor_insert' },
   ];
   model.getapi =   'return _this.getDataApi(xmodel, apitype)';
   model.onrowbind =   '_this.onRowBind(xmodel,jobj,datarow);';
   model.oncommit =  '_this.onCommit(xmodel, rowid, callback);';
   model.ejs =  '';
   model.sort = { [this._sequenceFieldName]: 'asc' };
+  this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 
   //--------------------------------------------------
   // Get templates
@@ -612,7 +633,7 @@ DataModelTemplate_GridPreview.prototype.getIdFieldName = function() {
  */
 DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
-  model.id = DataModelTemplate_GridPreview.getNextInstanceId(this._componentTemplateId);
+  model.id = DataModelTemplate_GridPreview.getNextInstanceId(this._componentTemplate);
 
   model.js =  function() {
     var gridApi = new jsh.XAPI.Grid.Static(modelid);
@@ -642,10 +663,10 @@ DataModelTemplate_GridPreview.prototype.getModelJs = function() {
  * @private
  * @returns {string}
  */
-DataModelTemplate_GridPreview.getNextInstanceId = function(componentType ) {
+DataModelTemplate_GridPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_GridPreview._id == undefined) DataModelTemplate_GridPreview._id = 0;
   var id = DataModelTemplate_GridPreview._id++;
-  return 'DataModel_GridPreview_' + componentType + '_' + id;
+  return 'DataModel_GridPreview_' + componentTemplate.getClassName() + '_' + id;
 }
 
 /**
@@ -911,12 +932,17 @@ var FieldModel = require('./fieldModel');
  */
 function PropertiesModelTemplate_Form(componentTemplate, propertiesModel) {
 
+  /** @private @type {Object} */
+  this._jsh = componentTemplate._jsh;
+
+  /** @private @type {Object} */
+  this._componentTemplate = componentTemplate;
+
   /** @private @type {string} */
   this._componentTemplateId = componentTemplate.getTemplateId();
 
   /** @private @type {object} */
   this._modelTemplate = {};
-
 
   this.buildTemplate(componentTemplate, propertiesModel);
 }
@@ -936,6 +962,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   model.unbound = true;
   model.layout = 'form';
   model.onecolumn = true;
+  this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 }
 
 /**
@@ -943,7 +970,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
  */
 PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
-  model.id = PropertiesModelTemplate_Form.getNextInstanceId(this._componentTemplateId);
+  model.id = PropertiesModelTemplate_Form.getNextInstanceId(this._componentTemplate);
 
   return model;
 }
@@ -953,10 +980,10 @@ PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
  * @private
  * @returns {string}
  */
-PropertiesModelTemplate_Form.getNextInstanceId = function(componentType ) {
+PropertiesModelTemplate_Form.getNextInstanceId = function(componentTemplate) {
   if (PropertiesModelTemplate_Form._id == undefined) PropertiesModelTemplate_Form._id = 0;
   var id = PropertiesModelTemplate_Form._id++;
-  return 'PropertiesModel_Form_' + componentType + '_' + id;
+  return 'PropertiesModel_Form_' + componentTemplate.getClassName() + '_' + id;
 }
 
 /**
@@ -1057,7 +1084,7 @@ var OverlayService = require('./overlayService');
 /**
  *  Called when the dialog is first opened
  * @callback Dialog~beforeOpenCallback
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {Function} onComplete - Should be called by handler when complete
  */
 
@@ -1078,7 +1105,7 @@ var OverlayService = require('./overlayService');
  *  Called when the dialog is first opened
  * @callback Dialog~openedCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {Function} acceptFunc - Call this function to trigger accept logic
  * @param {Function} cancelFunc - Call this function to trigger cancel logic
  */
@@ -1100,7 +1127,7 @@ function Dialog(jsh, model, config) {
 
   this.overlayService = new OverlayService(this);
 
-  this._jsh.$('body').append(this._$wrapper)
+  this._jsh.$(this._jsh.root).append(this._$wrapper)
 
   /**
    * @public
@@ -1195,8 +1222,8 @@ Dialog.prototype.getScrollTop = function($wrapper) {
  */
 Dialog.prototype.load = function(callback) {
   var self = this;
-  this._jsh.XPage.LoadVirtualModel(self._jsh.$(self.getFormSelector()), this._model, function(xModel) {
-    callback(xModel);
+  this._jsh.XPage.LoadVirtualModel(self._jsh.$(self.getFormSelector()), this._model, function(xmodel) {
+    callback(xmodel);
   });
 }
 
@@ -1238,15 +1265,15 @@ Dialog.prototype.open = function() {
   var self = this;
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
-  this.load(function(xModel) {
+  this.load(function(xmodel) {
 
 
     var $wrapper = self._jsh.$(formSelector);
-    self.registerLovs(xModel);
+    self.registerLovs(xmodel);
     var lastScrollTop = 0
     self._jsh.XExt.execif(self.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xModel, f);
+        self.onBeforeOpen(xmodel, f);
       },
       function(){
         /** @type {DialogResizer} */
@@ -1257,7 +1284,7 @@ Dialog.prototype.open = function() {
             self.overlayService.pushDialog($wrapper);
             lastScrollTop = self.getScrollTop($wrapper);
             dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc);
+            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
           },
           function(success) {
             lastScrollTop = self.getScrollTop($wrapper);
@@ -1287,9 +1314,9 @@ Dialog.prototype.open = function() {
 /**
  * Register the LOVs defined in the model.
  * @private
- * @param {Object} xModel
+ * @param {Object} xmodel
  */
-Dialog.prototype.registerLovs = function(xModel) {
+Dialog.prototype.registerLovs = function(xmodel) {
   _.forEach(this._model.fields, function(field) {
     if (field.type == undefined || field.lov == undefined) return;
 
@@ -1303,7 +1330,7 @@ Dialog.prototype.registerLovs = function(xModel) {
       });
     }
     if (lovs) {
-      xModel.controller.setLOV(field.name, lovs);
+      xmodel.controller.setLOV(field.name, lovs);
     }
   });
 }
@@ -1523,14 +1550,14 @@ var Dialog = require('./dialog');
  * Called when the dialog wants to accept/save the changes
  * @callback FormDialogConfig~acceptCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @returns {boolean} return true if accept/save was successful. A true return value will trigger modal close.
  */
 
 /**
  *  Called when the dialog is first opened
  * @callback FormDialogConfig~beforeOpenCallback
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
  * @param {Function} onComplete - Should be called by handler when complete
  */
@@ -1540,7 +1567,7 @@ var Dialog = require('./dialog');
  * @callback FormDialogConfig~cancelCallback
  * @param {Object} options
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @returns {boolean}
  */
 
@@ -1548,14 +1575,14 @@ var Dialog = require('./dialog');
  * Called when the dialog closes
  * @callback FormDialogConfig~closeCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  */
 
 /**
  * Called when the dialog is first opened
  * @callback FormDialogConfig~openedCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  */
 
 /**
@@ -1616,22 +1643,12 @@ FormDialog.prototype.augmentModel = function(model, config) {
   // Add cancel button first to maintain consistent
   // styles with TinyMce
   if (config.acceptButtonLabel) {
-    newFields.push({
-      name: 'save_button',
-      control: 'button',
-      value: config.acceptButtonLabel,
-      controlstyle: 'margin-right:10px; margin-top:15px;',
-    });
+    newFields.push({ name: 'save_button', control: 'button', value: config.acceptButtonLabel, controlstyle: 'margin-right:10px; margin-top:15px;' });
   }
   if (config.cancelButtonLabel) {
-    newFields.push({
-      name: 'cancel_button',
-      control: 'button',
-      value: config.cancelButtonLabel,
-      controlclass: 'secondary',
-      nl:false,
-    });
+    newFields.push({ name: 'cancel_button', control: 'button', value: config.cancelButtonLabel, controlclass: 'secondary', nl:false });
   }
+
   // Don't mutate the model!
   model.fields = newFields.length > 0 ? (model.fields || []).concat(newFields) : model.fields;
   return model;
@@ -1662,15 +1679,15 @@ FormDialog.prototype.open = function(data) {
   });
 
   var controller = undefined;
-  var xModel = undefined;
+  var xmodel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel, onComplete) {
-    xModel = _xModel;
-    controller = _xModel.controller;
+  dialog.onBeforeOpen = function(_xmodel, onComplete) {
+    xmodel = _xmodel;
+    controller = _xmodel.controller;
     self.jsh.XExt.execif(self.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         controller.Render(data, undefined, onComplete);
@@ -1679,24 +1696,24 @@ FormDialog.prototype.open = function(data) {
   }
 
 
-  dialog.onOpened = function(_$dialog, _xModel, acceptFunc, cancelFunc) {
+  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.form.Prop.Enabled = true;
-    $dialog.find('.save_button.xelem' + xModel.id).off('click').on('click', acceptFunc);
-    $dialog.find('.cancel_button.xelem' + xModel.id).off('click').on('click', cancelFunc);
-    if (_.isFunction(self.onOpened)) self.onOpened($dialog, xModel);
+    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc);
+    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc);
+    if (_.isFunction(self.onOpened)) self.onOpened($dialog, xmodel);
   }
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
-    var isSuccess = _.isFunction(self.onAccept) && self.onAccept($dialog, xModel);
+    var isSuccess = _.isFunction(self.onAccept) && self.onAccept($dialog, xmodel);
     if (isSuccess) success();
   }
 
   dialog.onCancel = function(options) {
-    if (!options.force && xModel.controller.HasUpdates()) {
+    if (!options.force && xmodel.controller.HasUpdates()) {
       self.jsh.XExt.Confirm('Close without saving changes?', function() {
-        xModel.controller.form.ResetDataset();
+        xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
       return false;
@@ -1708,7 +1725,7 @@ FormDialog.prototype.open = function(data) {
   // dialog closes.
   dialog.onClose = function() {
     controller.form.Prop.Enabled = false
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xModel);
+    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
   }
 
   dialog.open();
@@ -1757,7 +1774,7 @@ var Dialog = require('./dialog');
 /**
  *  Called when the dialog is first opened
  * @callback GridDialog~beforeOpenCallback
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
  * @param {Function} onComplete - Should be called by handler when complete
  */
@@ -1766,14 +1783,14 @@ var Dialog = require('./dialog');
   * Called when the dialog is first opened
   * @callback GridDialog~dialogOpenedCallback
   * @param {JQuery} dialogWrapper - the dialog wrapper element
-  * @param {Object} xModel - the JSH model instance
+  * @param {Object} xmodel - the JSH model instance
   */
 
 /**
  * Called when the dialog closes
  * @callback GridDialog~closeCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  */
 
 /**
@@ -1829,15 +1846,15 @@ GridDialog.prototype.open = function() {
   });
 
   var controller = undefined;
-  var xModel = undefined;
+  var xmodel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel, onComplete) {
-    xModel = _xModel;
-    controller = _xModel.controller;
+  dialog.onBeforeOpen = function(_xmodel, onComplete) {
+    xmodel = _xmodel;
+    controller = _xmodel.controller;
     self.jsh.XExt.execif(self.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         if(onComplete) onComplete();
@@ -1845,11 +1862,11 @@ GridDialog.prototype.open = function() {
     );
   }
 
-  dialog.onOpened = function(_$dialog, _xModel, acceptFunc, cancelFunc) {
+  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.grid.Prop.Enabled = true;
     controller.Render(function() {
-      if (_.isFunction(self.onOpened)) self.onOpened(_$dialog, xModel);
+      if (_.isFunction(self.onOpened)) self.onOpened(_$dialog, xmodel);
     });
   }
 
@@ -1865,7 +1882,7 @@ GridDialog.prototype.open = function() {
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xModel);
+    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
   }
 
   dialog.open();
@@ -2034,7 +2051,7 @@ var TemplateRenderer = require('../templateRenderer');
  * @class
  * @classdesc Controller for handling grid preview data editor.
  * @public
- * @param {Object} xModel
+ * @param {Object} xmodel
  * @param {Object} data - the data used to render the component.
  * @param {Object} properties - the component's configured properties (used to render the component)
  * @param {(JQuery | HTMLElement)} dialogWrapper
@@ -2044,7 +2061,7 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {DataModelTemplate_GridPreview} dataModelTemplate_GridPreview
  * @param {ComponentTemplate} componentTemplate
  */
-function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, component, dataModelTemplate_GridPreview, componentTemplate) {
+function DataEditor_GridPreviewController(xmodel, data, properties, dialogWrapper, cms, jsh, component, dataModelTemplate_GridPreview, componentTemplate) {
 
   var self = this;
 
@@ -2061,7 +2078,7 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
   this.component = component;
 
   /** @private @type {Object} */
-  this.xModel = xModel;
+  this.xmodel = xmodel;
 
   /** @private @type {JQuery} */
   this.$dialogWrapper = this.jsh.$(dialogWrapper);
@@ -2128,11 +2145,8 @@ DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
     rowData._insertId = id;
     $rowComponent.attr('data-item-id', id);
     setTimeout(function() {
-      self.openItemEditor(id);
       self.scrollToItemRow(id);
     });
-
-    this.forceCommit();
   } else {
     $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
     this.renderRow(rowData);
@@ -2226,7 +2240,7 @@ DataEditor_GridPreviewController.prototype.dataUpdated = function() {
  * @private
  */
 DataEditor_GridPreviewController.prototype.forceCommit = function() {
-  var controller = this.xModel.controller;
+  var controller = this.xmodel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Commit();
 }
@@ -2263,7 +2277,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
 
   //Show overlay
   self.showOverlay();
-  var controller = self.xModel.controller;
+  var controller = self.xmodel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.grid.Load(undefined, undefined, function(){
     if(cb){
@@ -2299,7 +2313,7 @@ DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = functio
  * @return {(Oobject | undefined)}
  */
 DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId) {
-  var slideId = this.jsh.$('.xrow.xrow_' + this.xModel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
+  var slideId = this.jsh.$('.xrow.xrow_' + this.xmodel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
     .attr('data-item-id');
   return this._dataStore.getDataItem(slideId) || {};
 }
@@ -2325,7 +2339,7 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
  * @return {number}
  */
 DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
-  return this.jsh.XExt.XModel.GetRowID(this.xModel.id, $element);
+  return this.jsh.XExt.XModel.GetRowID(this.xmodel.id, $element);
 }
 
 /**
@@ -2359,14 +2373,14 @@ DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId)
 DataEditor_GridPreviewController.prototype.initialize = function() {
 
   var self = this;
-  var modelInterface = this.jsh.App[this.xModel.id];
+  var modelInterface = this.jsh.App[this.xmodel.id];
 
   if (!_.isFunction(modelInterface.getDataApi)) {
-    throw new Error('model must have function "getDataApi(xModel, apiType)"');
+    throw new Error('model must have function "getDataApi(xmodel, apiType)"');
   }
 
-  var gridApi = modelInterface.getDataApi(this.xModel, 'grid');
-  var formApi = modelInterface.getDataApi(this.xModel, 'form');
+  var gridApi = modelInterface.getDataApi(this.xmodel, 'grid');
+  var formApi = modelInterface.getDataApi(this.xmodel, 'form');
 
   gridApi.dataset = this._apiData;
   formApi.dataset = this._apiData;
@@ -2380,8 +2394,8 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
     dataStoreItem = self._modelTemplate.populateDataInstance(dataStoreItem);
     self._dataStore.addNewItem(dataStoreItem);
 
-    actionResult[self.xModel.id] = {}
-    actionResult[self.xModel.id][self._idFieldName] = newRow[self._idFieldName];
+    actionResult[self.xmodel.id] = {}
+    actionResult[self.xmodel.id][self._idFieldName] = newRow[self._idFieldName];
     self.dataUpdated();
     self.renderRow(self._dataStore.getDataItem(newRow[self._idFieldName]));
   }
@@ -2421,25 +2435,57 @@ DataEditor_GridPreviewController.prototype.makeItemId = function() {
 
 /**
  * @private
+ */
+DataEditor_GridPreviewController.prototype.addItem = function() {
+  var self = this;
+
+  if (self.xmodel.controller.editablegrid.CurrentCell) if(!self.xmodel.controller.form.CommitRow()) return;
+  if (self.jsh.XPage.GetChanges().length > 0) { self.jsh.XExt.Alert('Please save all changes before adding a row.'); return; }
+
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, undefined, this.isReadOnly(), this.cms, this.jsh, self.component)
+
+  //Create a new item
+  var currentData = this.xmodel.controller.form.NewRow({ unbound: true });
+
+  //Open the form to edit the item
+  dataEditor.open(currentData, this._properties || {},  function(updatedData) {
+    _.assign(currentData, updatedData)
+    var rowId = self.xmodel.controller.AddRow();
+    for(var key in currentData){
+      if(key in self.xmodel.fields){
+        var oldval = self.xmodel.get(key, rowId);
+        if(oldval !== currentData[key]){
+          self.xmodel.set(key, updatedData[key], rowId);
+        }
+      }
+    }
+    self.updateModelDataFromDataStore(rowId);
+    self.dataUpdated();
+    self.forceCommit();
+    self.renderRow(currentData);
+  });
+}
+
+/**
+ * @private
  * @param {string} itemId - the ID of the item to edit
  */
 DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   var self = this;
-  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, self.component)
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, self.component)
   var currentData = this._dataStore.getDataItem(itemId);
-  var rowId = this.getRowIdFromItemId(itemId);
 
-  dateEditor.open(this._dataStore.getDataItem(itemId), this._properties || {},  function(updatedData) {
+  dataEditor.open(currentData, this._properties || {},  function(updatedData) {
       _.assign(currentData, updatedData)
       var dataId = currentData[self._idFieldName];
       var rowId = self.getRowIdFromItemId(dataId);
 
       for(var key in currentData){
-        if(key in self.xModel.fields){
-          var oldval = self.xModel.get(key, rowId);
+        if(key in self.xmodel.fields){
+          var oldval = self.xmodel.get(key, rowId);
           if(oldval !== currentData[key]){
-            self.xModel.set(key, updatedData[key], rowId);
+            self.xmodel.set(key, updatedData[key], rowId);
           }
         }
       }
@@ -2460,7 +2506,7 @@ DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   var self = this;
   self.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
     //Perform Delete
-    self.xModel.controller.DeleteRow(rowId, { force: true });
+    self.xmodel.controller.DeleteRow(rowId, { force: true });
     setTimeout(function() {
       self.forceCommit();
       setTimeout(function() { self.forceRefresh() });
@@ -2480,47 +2526,52 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
   var template =
-      '<div class="toolbar">' +
-        '<button data-component-part="moveItem" data-dir="prev">' +
+      '<div class="jsharmony_cms component_toolbar">' +
+        '<div class="component_toolbar_button" data-component-part="moveItem" data-dir="prev">' +
           '<span class="material-icons" style="display:inline-block; transform: rotate(-90deg)">' +
             'chevron_right' +
           '</span>' +
-        '</button>' +
-        '<button data-component-part="moveItem" data-dir="next">' +
+        '</div>' +
+        '<div class="component_toolbar_button" data-component-part="moveItem" data-dir="next">' +
           '<span class="material-icons" style="display:inline-block; transform: rotate(90deg)">' +
             'chevron_right' +
           '</span>' +
-        '</button>' +
-        '<button data-component-part="editButton" data-allowReadOnly>' +
+        '</div>' +
+        '<div class="component_toolbar_button" data-component-part="editButton" data-allowReadOnly>' +
           '<span class="material-icons">' +
             'edit' +
           '</span>' +
-        '</button>' +
-        '<button data-component-part="deleteItem">' +
+        '</div>' +
+        '<div class="component_toolbar_button" data-component-part="deleteItem">' +
           '<span class="material-icons">' +
             'delete' +
           '</span>' +
-        '</button>' +
+        '</div>' +
       '</div>' +
-      '<div data-component-part="preview"></div>'
+      '<div class="jsharmony_cms_component_preview" data-component-part="preview"></div>'
   $row.empty().append(template);
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
   renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
   if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderConfig);
 
-  var rendered = TemplateRenderer.render(renderConfig, 'gridRowDataPreview', this.jsh);
+  var rendered = TemplateRenderer.render(renderConfig, 'gridRowDataPreview', this.jsh, this.cms, componentConfig);
 
-  $row.find('[data-component-part="preview"]').empty().append(rendered);
+  var $wrapper = $row.find('[data-component-part="preview"]');
+
+  $wrapper.empty().append(rendered);
+
+  if(this.cms && this.cms.editor) this.cms.editor.disableLinks($wrapper)
 
   if (this.isReadOnly()) {
-    $row.find('button:not([data-allowReadOnly])').attr('disabled', true);
+    $row.find('.component_toolbar_button:not([data-allowReadOnly])').attr('disabled', true);
   } else {
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
         if (self.isReadOnly()) return;
-        var moveDown = self.jsh.$(e.target).closest('button[data-dir]').attr('data-dir') === 'next';
+        var moveDown = self.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
         self.changeItemSequence(dataId, moveDown);
     });
 
@@ -2603,14 +2654,14 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
 
   var idField = this._idFieldName;
   var data = this.getItemDataFromRowId(rowId);
-  var item = this.xModel.controller.form.DataSet.find(a => a[idField] === data[idField]);
+  var item = this.xmodel.controller.form.DataSet.find(a => a[idField] === data[idField]);
   if (!item) {
     return;
   }
 
   // Don't share references!
   _.extend(item, data);
-  this.xModel.controller.form.ResetDirty();
+  this.xmodel.controller.form.ResetDirty();
 }
 
 /**
@@ -2819,8 +2870,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   var $toolbar;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
-    var editor = self._jsh.App[xModel.id];
+  dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
+    var editor = self._jsh.App[xmodel.id];
     var $dialog = self._jsh.$(dialogSelector);
     $dialog.css('opacity', '0');
     self._formSelector = dialogSelector; // remove this
@@ -2845,11 +2896,11 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     });
 
     editor.onChangeData_noDebounce = function() {
-      if(!self._jsh.XModels[xModel.id]){ return; }
+      if(!self._jsh.XModels[xmodel.id]){ return; }
       var updatedData = {};
       _.forEach(modelConfig.fields, function(field) {
         if (field.type != undefined) {
-          updatedData[field.name] = xModel.get(field.name);
+          updatedData[field.name] = xmodel.get(field.name);
         }
       });
 
@@ -2877,8 +2928,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         // The change handler is attached to the title
         // so that will run and update the link control,
         // and then we override the link control.
-        xModel.set(info.titleFieldName, title);
-        xModel.set(browserControlName, url);
+        xmodel.set(info.titleFieldName, title);
+        xmodel.set(browserControlName, url);
         self.enableBrowserControl($dialog, info, false);
         editor.onChangeData();
       };
@@ -2910,7 +2961,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       // the link value must be set to the title value.
       var info = modelTemplate.getBrowserFieldInfo(browserControlName);
       if (info == undefined) return;
-      xModel.set(browserControlName, xModel.get(info.titleFieldName));
+      xmodel.set(browserControlName, xmodel.get(info.titleFieldName));
       editor.onChangeData();
     }
 
@@ -2918,8 +2969,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       var info = modelTemplate.getBrowserFieldInfo(linkControlName);
       if (info == undefined) return;
       self.enableBrowserControl($dialog, info, true);
-      xModel.set(linkControlName, '');
-      xModel.set(info.titleFieldName, '');
+      xmodel.set(linkControlName, '');
+      xmodel.set(info.titleFieldName, '');
       editor.onChangeData();
     }
 
@@ -2929,8 +2980,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     if(onComplete) onComplete();
   }
 
-  dialog.onOpened = function($dialog, xModel) {
-    var editor = self._jsh.App[xModel.id];
+  dialog.onOpened = function($dialog, xmodel) {
+    var editor = self._jsh.App[xmodel.id];
     // Manually call change to do initial render
     setTimeout(function() {
       editor.onChangeData_noDebounce();
@@ -2940,30 +2991,30 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     });
   }
 
-  dialog.onAccept = function($dialog, xModel) {
-    if(!xModel.controller.Commit(itemData, 'U')) return false;
+  dialog.onAccept = function($dialog, xmodel) {
+    if(!xmodel.controller.Commit(itemData, 'U')) return false;
     itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
   }
 
-  dialog.onCancel = function(options, $dialog, xModel) {
-    if (!options.force && xModel.controller.HasUpdates()) {
+  dialog.onCancel = function(options, $dialog, xmodel) {
+    if (!options.force && xmodel.controller.HasUpdates()) {
       self._jsh.XExt.Confirm('Close without saving changes?', function() {
-        xModel.controller.form.ResetDataset();
+        xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
       return false;
     }
   }
 
-  dialog.onClose = function($dialog, xModel) {
+  dialog.onClose = function($dialog, xmodel) {
     //Destroy model
-    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
-    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+    if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
+    if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
+    delete self._jsh.XModels[xmodel.id];
+    delete self._jsh.App[xmodel.id];
     _.forEach(self._htmlEditors, function(editor) { editor.destroy(); });
     if (_.isFunction(onCloseCb)) onCloseCb();
   }
@@ -3002,10 +3053,8 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
 
   var renderData = { item: data };
-  if(this._componentTemplate && 
-      this._componentTemplate._componentConfig && 
-      this._componentTemplate._componentConfig.data &&
-      (this._componentTemplate._componentConfig.data.layout == 'grid_preview')){
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
+  if(componentConfig && componentConfig.data && (componentConfig.data.layout == 'grid_preview')){
     renderData = { items: [data] };
   }
 
@@ -3014,9 +3063,11 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   if (_.isFunction(this._onBeforeRenderDataItemPreview)) this._onBeforeRenderDataItemPreview(renderConfig);
 
-  var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh);
+  var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh, this._cms, componentConfig);
 
   $wrapper.empty().append(rendered);
+
+  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper)
 
   if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, self._cms, self._component);
 
@@ -3108,11 +3159,11 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dataController;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
+  dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
 
-    self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
+    self.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', self._componentTemplate.getCaptions());
 
-    dataController = new DataEditor_GridPreviewController(xModel, (data || {}).items, properties, self._jsh.$(dialogSelector),
+    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, self._jsh.$(dialogSelector),
       self._cms, self._jsh, self._component, modelTemplate, self._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
@@ -3127,14 +3178,14 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
     }
 
-    var modelInterface = self._jsh.App[xModel.id];
+    var modelInterface = self._jsh.App[xmodel.id];
 
-    modelInterface.onRowBind = function(xModel, jobj, dataRow) {
+    modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
       if (!dataController) return;
       dataController.addRow(jobj, dataRow);
     }
 
-    modelInterface.onCommit = function(xModel, rowId, callback) {
+    modelInterface.onCommit = function(xmodel, rowId, callback) {
       callback();
     }
 
@@ -3142,20 +3193,24 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       self._jsh.XExt.CancelDialog();
     }
 
+    modelInterface.addItem = function() {
+      dataController.addItem();
+    }
+
     if(onComplete) onComplete();
   }
 
-  dialog.onOpened = function($dialog, xModel) {
+  dialog.onOpened = function($dialog, xmodel) {
     dataController.initialize();
   }
 
-  dialog.onClose = function($dialog, xModel) {
+  dialog.onClose = function($dialog, xmodel) {
     //Destroy model
-    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
-    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+    if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
+    if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
+    delete self._jsh.XModels[xmodel.id];
+    delete self._jsh.App[xmodel.id];
     delete self._jsh.App[componentInstanceId];
   }
 
@@ -3538,30 +3593,30 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var dialog = new FormDialog(this._jsh, model, dialogParams);
 
-  dialog.onAccept = function($dialog, xModel) {
-    if(!xModel.controller.Commit(data, 'U')) return false;
+  dialog.onAccept = function($dialog, xmodel) {
+    if(!xmodel.controller.Commit(data, 'U')) return false;
     data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   }
 
-  dialog.onCancel = function(options, $dialog, xModel) {
-    if (!options.force && xModel.controller.HasUpdates()) {
+  dialog.onCancel = function(options, $dialog, xmodel) {
+    if (!options.force && xmodel.controller.HasUpdates()) {
       self._jsh.XExt.Confirm('Close without saving changes?', function() {
-        xModel.controller.form.ResetDataset();
+        xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
       return false;
     }
   }
 
-  dialog.onClose = function($dialog, xModel) {
+  dialog.onClose = function($dialog, xmodel) {
     //Destroy model
-    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
-    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+    if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
+    if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
+    delete self._jsh.XModels[xmodel.id];
+    delete self._jsh.App[xmodel.id];
   }
 
   dialog.open(data);
@@ -3650,30 +3705,127 @@ TemplateRenderer.createRenderConfig = function(template, data, properties, cms) 
  * @param {('component' | 'gridRowDataPreview' | 'gridItemPreview')} type
  * @param {RenderConfig} config
  * @param {Object} jsh
+ * @param {Object} cms
  * @returns {string}
  */
-TemplateRenderer.render = function(config, type, jsh) {
+TemplateRenderer.render = function(config, type, jsh, cms, componentConfig) {
+  var _ = jsh._;
+  var XValidate = jsh.XValidate;
 
-    /** @type {RenderContext} */
-    var renderContext = {
-      baseUrl: config.baseUrl,
-      data: config.data,
-      properties: config.properties,
-      renderType: type,
-      gridContext: config.gridContext,
-      _: jsh._,
-      escapeHTML: jsh.XExt.escapeHTML,
-      stripTags: jsh.XExt.StripTags,
-      isInEditor: true,
+  var renderPlaceholder = function(params){
+    return jsh.RenderEJS(jsh.GetEJS('jsHarmonyCMS.ComponentPlaceholder'),_.extend({
+      componentConfig: componentConfig,
+      XExt: jsh.XExt,
+      errors: '',
+    }, params))
+  }
+
+  /** @type {RenderContext} */
+  var renderContext = {
+    baseUrl: config.baseUrl,
+    data: config.data,
+    properties: config.properties,
+    renderType: type,
+    gridContext: config.gridContext,
+    _: jsh._,
+    escapeHTML: jsh.XExt.escapeHTML,
+    stripTags: jsh.XExt.StripTags,
+    isInEditor: true,
+    isInPageEditor: true,
+    isInComponentEditor: ((type=='gridRowDataPreview') || (type=='gridItemPreview')),
+    items: null,     //= renderContext.data.items
+    item: null,      //= renderContext.data.item
+    component: null, //= renderContext.properties
+    data_errors: [],
+    renderPlaceholder: renderPlaceholder,
+  }
+
+  //Add "item" or "items" variable
+  if(!renderContext.data) renderContext.data = {};
+  if((componentConfig && (componentConfig.multiple_items)) || ('items' in renderContext.data)){
+    renderContext.items = (renderContext.data.items || []);
+    renderContext.item = new Proxy(new Object(), { get: function(target, prop, receiver){ throw new Error('Please add a "component-item" attribute to the container HTML element, to iterate over the items array.  For example:\r\n<div component-item><%=item.name%></div>'); } });
+  }
+  else{
+    renderContext.item = renderContext.data.item || {};
+    renderContext.items = [renderContext.item];
+  }
+  for(var i=0;i<renderContext.items.length;i++) renderContext.data_errors.push('');
+
+  //Add "component" variable
+  renderContext.component = renderContext.properties || {};
+  
+  if(componentConfig){
+
+    function generateValidators(model){
+      var xvalidate = new XValidate(jsh);
+      if(model){
+        _.each(model.fields, function(field){
+          if(field.validate && field.name){
+            for(var j=0;j<field.validate.length;j++){
+              var validator = jsh.XPage.ParseValidator(field.validate[j], { actions: 'BIU' }, field, 'BIU');
+              for(var i=0;i<validator.funcs.length;i++){
+                if(!_.isFunction(validator.funcs[i])) validator.funcs[i] = eval(validator.funcs[i]);
+              }
+              xvalidate.AddValidator('_obj.'+field.name, validator.caption, validator.actions, validator.funcs);
+            }
+          }
+        });
+      }
+      return xvalidate;
     }
 
-    var rendered = '';
-    try {
-      rendered = jsh.ejs.render(config.template || '', renderContext);
-    } catch (error) {
-      console.error(error);
+    function validate(xvalidate, data, desc){
+      var verrors = xvalidate.Validate('B', data||{});
+      if (!_.isEmpty(verrors)) return 'Error: ' + desc + '\n' + verrors[''].join('\n');
+      return '';
     }
-    return rendered
+
+    //Generate missing validators
+    var dataValidators = generateValidators(componentConfig.data);
+    var propertyValidators = generateValidators(componentConfig.properties);
+
+    //Show placeholder if editor_placeholder.items_empty=true, and multiple_items, and empty items array
+    if(componentConfig.editor_placeholder && componentConfig.editor_placeholder.items_empty){
+      if((componentConfig.multiple_items) && (!renderContext.items || !renderContext.items.length)){
+        return renderPlaceholder();
+      }
+    }
+
+    //Show placeholder if editor_placeholder.invalid_fields=true
+    if(componentConfig.editor_placeholder && componentConfig.editor_placeholder.invalid_fields){
+      //Single item, validation error in data or properties
+      if(!componentConfig.multiple_items){
+        var dataErrors = validate(dataValidators, renderContext.item, 'Component Data');
+        if(dataErrors) return renderPlaceholder({ errors: dataErrors });
+
+        var propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
+        if(propertyErrors) return renderPlaceholder({ errors: propertyErrors });
+      }
+      else if(componentConfig.multiple_items){
+        var propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
+        if(propertyErrors) return renderPlaceholder({ errors: propertyErrors });
+      }
+    }
+
+    if(componentConfig.multiple_items){
+      for(var i=0;i<renderContext.items.length;i++){
+        var dataErrors = validate(dataValidators, renderContext.items[i], 'Component Data');  
+        if(dataErrors) renderContext.data_errors[i] = dataErrors;
+      }
+    }
+  }
+
+  var rendered = '';
+  try {
+    rendered = jsh.ejs.render(config.template || '', renderContext);
+  } catch (error) {
+    rendered = cms.componentManager.formatError('Component Rendering Error: '+error.toString());
+    console.log('Render Context:');
+    console.log(renderContext);
+    console.error(error);
+  }
+  return rendered;
 }
 
 exports = module.exports = TemplateRenderer;
@@ -4042,7 +4194,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     if (_.isFunction(this.onBeforeRender)) this.onBeforeRender(renderConfig);
 
-    var rendered = TemplateRenderer.render(renderConfig, 'component', jsh);
+    var rendered = TemplateRenderer.render(renderConfig, 'component', jsh, cms, config);
 
     if(!rendered){
       if(!template) rendered = '*** Component Rendering Error: Template Missing ***';
@@ -4129,15 +4281,19 @@ exports = module.exports = function(jsh, cms){
   this.isInitialized = false;
   this.lastComponentId = 0;
 
-  this.load = function(onComplete){
-    var url = '../_funcs/templates/component/'+cms.branch_id;
+  this.load = function(onError){
+    _this.loadSystemComponentTemplates(onError);
+  }
+
+  this.loadSystemComponentTemplates = function(onError){
+    var url = '../_funcs/templates/components/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.componentTemplates = rslt.components;
         async.eachOf(_this.componentTemplates, function(component, key, cb) {
           var loadObj = {};
           cms.loader.StartLoading(loadObj, 'CMS Components');
-          _this.loadTemplate(component, function(err){
+          _this.loadRemoteTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             _this.parseTemplate(component);
             cb(err)
@@ -4147,13 +4303,50 @@ exports = module.exports = function(jsh, cms){
         });
       }
       else{
-        if(onComplete) onComplete(new Error('Error Loading Components'));
+        if(onError) onError(new Error('Error Loading Components'));
         XExt.Alert('Error loading components');
       }
     }, function (err) {
-      if(onComplete) onComplete(err);
+      if(onError) onError(err);
     });
   };
+
+  this.loadRemoteTemplate = function(componentTemplate, complete_cb) {
+    var url = (componentTemplate.remote_templates || {}).editor;
+    if (!url) return complete_cb();
+
+    _this.downloadRemoteTemplate(url, function(error, data){
+      if (error) {
+        complete_cb(error);
+      } else {
+        componentTemplate.templates = componentTemplate.templates || {};
+        var template = (componentTemplate.templates.editor || '');
+        data = data && template ? '\n' + data : data || '';
+        componentTemplate.templates.editor = (template + data) || _this.formatError('COMPONENT '+(componentTemplate.id||'').toUpperCase()+' NOT FOUND');
+        _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
+        complete_cb();
+      }
+    });
+  }
+
+  this.formatError = function(errmsg){
+    return '<span style="color:red;font-weight:bold;font-size:25px;white-space: pre;">*** '+XExt.escapeHTML(errmsg)+' ***</span>';
+  }
+
+  this.downloadRemoteTemplate = function(templateUrl, complete_cb) {
+    $.ajax({
+      type: 'GET',
+      cache: false,
+      url: templateUrl,
+      xhrFields: { withCredentials: true },
+      success: function(data){
+        return complete_cb(undefined, data);
+      },
+      error: function(xhr, status, err){
+        return complete_cb(err, undefined);
+      }
+    });
+  }
 
   this.render = function(container){
 
@@ -4231,39 +4424,6 @@ exports = module.exports = function(jsh, cms){
     }
   }
 
-  this.loadTemplate = function(componentTemplate, complete_cb) {
-    var url = (componentTemplate.remote_template || {}).editor;
-    if (!url) return complete_cb();
-
-    _this.loadRemoteTemplate(url, function(error, data){
-      if (error) {
-        complete_cb(error);
-      } else {
-        componentTemplate.templates = componentTemplate.templates || {};
-        var template = (componentTemplate.templates.editor || '');
-        data = data && template ? '\n' + data : data || '';
-        componentTemplate.templates.editor = (template + data) || '*** COMPONENT NOT FOUND ***';
-        _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
-        complete_cb();
-      }
-    });
-  }
-
-  this.loadRemoteTemplate = function(templateUrl, complete_cb) {
-    $.ajax({
-      type: 'GET',
-      cache: false,
-      url: templateUrl,
-      xhrFields: { withCredentials: true },
-      success: function(data){
-        return complete_cb(undefined, data);
-      },
-      error: function(xhr, status, err){
-        return complete_cb(err, undefined);
-      }
-    });
-  }
-
   this.getNextComponentId = function() {
     return 'jsharmony_cms_component_' + this.lastComponentId++;
   }
@@ -4323,7 +4483,7 @@ exports = module.exports = function(jsh, cms){
     if (componentConfig.data && componentConfig.data.css) {
       cssParts.push(componentConfig.data.css);
     }
-    var id = 'jsharmony_cms_component_' + componentType;
+    var id = 'jsharmony_cms_component_' + (componentConfig.className || jsh.XExt.escapeCSSClass(componentConfig.id, { nodash: true }));
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
   }
@@ -4650,6 +4810,22 @@ exports = module.exports = function(jsh, cms, editor){
           },
           {
             type: 'menuitem',
+            icon: 'visualblocks',
+            text: 'Toggle Outlines',
+            onAction: function () {
+              if(document && document.body){
+                var hasOutlines =  $(document.body).hasClass('jsHarmonyCMS_showEditorOutlines');
+                $(document.body).toggleClass('jsHarmonyCMS_hideEditorOutlines', hasOutlines);
+                $(document.body).toggleClass('jsHarmonyCMS_showEditorOutlines', !hasOutlines);
+                if(!jsh.xDialog.length){
+                  var editorManager = tinymce.util.Tools.resolve("tinymce.EditorManager");
+                  editorManager.activeEditor.focus();
+                }
+              }
+            }
+          },
+          {
+            type: 'menuitem',
             icon: 'sourcecode',
             text: 'Source Code',
             onAction: function () {
@@ -4794,7 +4970,7 @@ exports = module.exports = function(jsh, cms, editor){
     // Register component icons and build
     // component info.
     _.forEach(components, function(component) {
-      if (component.icon) {
+      if ((component.target == 'content') && component.icon) {
         // Icon name MUST be lowercase for TinyMce to work correctly.
         var iconRegistryName = ('cms_component_icon_' + component.id).toLowerCase();
         var iconMatch = /^(\w+):/.exec(component.icon);
@@ -4887,7 +5063,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @returns {string} - HTML string
    */
   JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
-    return '<div class="mceNonEditable" data-component="' + componentType + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
+    return '<div class="mceNonEditable" data-component="' + jsh.XExt.escapeHTML(componentType) + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
   }
 
   /**
@@ -5117,7 +5293,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.attach = function(config_id, elem_id, options, cb){
     if(!(config_id in _this.editorConfig)) throw new Error('Editor config ' + (config_id||'').toString() + ' not defined');
-    var config = _.extend({ selector: '#' + elem_id }, _this.editorConfig[config_id], options);
+    var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
     if(cb) config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, cb);
     window.tinymce.init(config);
   }
@@ -5130,16 +5306,18 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
-  this.disableContentLinks = function(container){
+  this.disableLinks = function(container, options){
+    options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
     $(container).find('a').each(function(){
       var jobj = $(this);
-      var url = jobj.attr('href');
-      if(url.indexOf('#@JSHCMS') >= 0){
-        if(!jobj.data('disabled_links')){
-          jobj.data('disabled_links', '1');
-          jobj.on('click', function(e){ e.preventDefault(); });
-        }
+      if(options.onlyJSHCMSLinks){
+        var url = jobj.attr('href');
+        if(url.indexOf('#@JSHCMS') < 0) return;
       }
+
+      if(options.addFlag && jobj.data('disabled_links')) return;
+      if(options.addFlag) jobj.data('disabled_links', '1');
+      jobj.on('click', function(e){ e.preventDefault(); });
     });
   }
 
@@ -5149,7 +5327,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       window.setTimeout(function(){
         $('#jsharmony_cms_content_'+id).html(val);
         cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
-        _this.disableContentLinks(document.getElementById('jsharmony_cms_content_'+id));
+        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+id), { addFlag: true, onlyJSHCMSLinks: true });
       },1);
     }
     else {
@@ -6239,14 +6417,16 @@ exports = module.exports = function(jsh, cms){
   this.menuTemplates = {};
   this.isInitialized = false;
 
-  this.load = function(onComplete){
-    var url = '../_funcs/templates/menu/'+cms.branch_id;
+  this.load = function(onError){
+    var url = '../_funcs/templates/menus/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.menuTemplates = rslt.menuTemplates;
         async.eachOf(_this.menuTemplates, function(menu, menu_template_id, menu_cb){
           async.eachOf(menu.content_elements, function(content_element, content_element_name, content_element_cb){
-            if(!content_element.remote_template) return content_element_cb();
+            if(!content_element.remote_templates) return content_element_cb();
+            if(!content_element.templates) content_element.templates = {};
+            if(!content_element.templates.editor) content_element.templates.editor = '';
 
             //Load remote menu templates
             var loadObj = {};
@@ -6254,16 +6434,16 @@ exports = module.exports = function(jsh, cms){
             $.ajax({
               type: 'GET',
               cache: false,
-              url: content_element.remote_template,
+              url: content_element.remote_templates,
               xhrFields: { withCredentials: true },
               success: function(data){
                 cms.loader.StopLoading(loadObj);
-                content_element.template = (content_element.template||'')+data;
+                content_element.templates.editor = (content_element.templates.editor||'')+data;
                 return content_element_cb();
               },
               error: function(xhr, status, err){
                 cms.loader.StopLoading(loadObj);
-                content_element.template = '*** ERROR DOWNLOADING REMOTE MENU ***';
+                content_element.templates.editor = '*** ERROR DOWNLOADING REMOTE MENU ***';
                 return content_element_cb();
               }
             });
@@ -6273,11 +6453,11 @@ exports = module.exports = function(jsh, cms){
         });
       }
       else{
-        if(onComplete) onComplete(new Error('Error Loading Menus'));
+        if(onError) onError(new Error('Error Loading Menus'));
         XExt.Alert('Error loading menus');
       }
     }, function (err) {
-      if(onComplete) onComplete(err);
+      if(onError) onError(err);
     });
   };
 
@@ -6297,7 +6477,7 @@ exports = module.exports = function(jsh, cms){
         else if(!(content_element_name in menuTemplate.content_elements)) menu_content = '*** MENU ' + menu.menu_template_id + ' CONTENT ELEMENT NOT DEFINED: ' + content_element_name+' ***';
         else{
           var content_element = menuTemplate.content_elements[content_element_name];
-          menu_content = ejs.render(content_element.template || '', cms.controller.getMenuRenderParameters(menu_tag));
+          menu_content = ejs.render((content_element.templates && content_element.templates.editor) || '', cms.controller.getMenuRenderParameters(menu_tag));
         }
       }
       jobj.html(menu_content);
@@ -6639,7 +6819,7 @@ var jsHarmonyCMS = function(options){
     util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
-      WebFont.load({ google: { families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
+      WebFont.load({ google: { api: 'https://fonts.googleapis.com/css', families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
     });
     window.addEventListener('message', this.onmessage);
   }
@@ -6649,8 +6829,15 @@ var jsHarmonyCMS = function(options){
     $('.jsharmony_cms_content').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
-      this.componentManager.load();
-      this.menuController.load();
+      async.parallel([
+        function(cb){ _this.componentManager.load(cb); },
+        function(cb){ _this.menuController.load(cb); },
+      ], function(err){
+        if(err){
+          loader.StopLoading();
+          return XExt.Alert(err.toString());
+        }
+      });
       _this.controller.init(function(err){
         if(!err){
           if(_this.onLoaded) _this.onLoaded(jsh);

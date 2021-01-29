@@ -77,11 +77,11 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dataController;
 
-  dialog.onBeforeOpen = function(xModel, dialogSelector, onComplete) {
+  dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
 
-    self.updateAddButtonText(dialogSelector + ' .xactions .xbuttoninsert', self._componentTemplate.getCaptions());
+    self.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', self._componentTemplate.getCaptions());
 
-    dataController = new DataEditor_GridPreviewController(xModel, (data || {}).items, properties, self._jsh.$(dialogSelector),
+    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, self._jsh.$(dialogSelector),
       self._cms, self._jsh, self._component, modelTemplate, self._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
@@ -96,14 +96,14 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
     }
 
-    var modelInterface = self._jsh.App[xModel.id];
+    var modelInterface = self._jsh.App[xmodel.id];
 
-    modelInterface.onRowBind = function(xModel, jobj, dataRow) {
+    modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
       if (!dataController) return;
       dataController.addRow(jobj, dataRow);
     }
 
-    modelInterface.onCommit = function(xModel, rowId, callback) {
+    modelInterface.onCommit = function(xmodel, rowId, callback) {
       callback();
     }
 
@@ -111,20 +111,24 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       self._jsh.XExt.CancelDialog();
     }
 
+    modelInterface.addItem = function() {
+      dataController.addItem();
+    }
+
     if(onComplete) onComplete();
   }
 
-  dialog.onOpened = function($dialog, xModel) {
+  dialog.onOpened = function($dialog, xmodel) {
     dataController.initialize();
   }
 
-  dialog.onClose = function($dialog, xModel) {
+  dialog.onClose = function($dialog, xmodel) {
     //Destroy model
-    if (xModel.controller && xModel.controller.OnDestroy) xModel.controller.OnDestroy();
-    if (typeof xModel.ondestroy != 'undefined') xModel.ondestroy(xModel);
+    if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
+    if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xModel.id];
-    delete self._jsh.App[xModel.id];
+    delete self._jsh.XModels[xmodel.id];
+    delete self._jsh.App[xmodel.id];
     delete self._jsh.App[componentInstanceId];
   }
 

@@ -26,6 +26,20 @@
   <hr/>
 </script>
 
+<!-- ------ -->
+<!-- SYSTEM -->
+<!-- ------ -->
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_validate_system">
+  <h4 class="<%=model.class%>_branch_validate_item_header">
+    <i class="material-icons branch_error_icon error">error</i>
+    SYSTEM
+  </h4>
+
+  <# _.each(branch_system.errors, function(errtxt){ #>
+    <pre class="<%=model.class%>_validate_item"><b><#-errtxt#></pre>
+  <# }); #>
+</script>
+
 <!-- ----- -->
 <!-- PAGES -->
 <!-- ----- -->

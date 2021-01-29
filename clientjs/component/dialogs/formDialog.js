@@ -41,14 +41,14 @@ var Dialog = require('./dialog');
  * Called when the dialog wants to accept/save the changes
  * @callback FormDialogConfig~acceptCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @returns {boolean} return true if accept/save was successful. A true return value will trigger modal close.
  */
 
 /**
  *  Called when the dialog is first opened
  * @callback FormDialogConfig~beforeOpenCallback
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
  * @param {Function} onComplete - Should be called by handler when complete
  */
@@ -58,7 +58,7 @@ var Dialog = require('./dialog');
  * @callback FormDialogConfig~cancelCallback
  * @param {Object} options
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @returns {boolean}
  */
 
@@ -66,14 +66,14 @@ var Dialog = require('./dialog');
  * Called when the dialog closes
  * @callback FormDialogConfig~closeCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  */
 
 /**
  * Called when the dialog is first opened
  * @callback FormDialogConfig~openedCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  */
 
 /**
@@ -134,22 +134,12 @@ FormDialog.prototype.augmentModel = function(model, config) {
   // Add cancel button first to maintain consistent
   // styles with TinyMce
   if (config.acceptButtonLabel) {
-    newFields.push({
-      name: 'save_button',
-      control: 'button',
-      value: config.acceptButtonLabel,
-      controlstyle: 'margin-right:10px; margin-top:15px;',
-    });
+    newFields.push({ name: 'save_button', control: 'button', value: config.acceptButtonLabel, controlstyle: 'margin-right:10px; margin-top:15px;' });
   }
   if (config.cancelButtonLabel) {
-    newFields.push({
-      name: 'cancel_button',
-      control: 'button',
-      value: config.cancelButtonLabel,
-      controlclass: 'secondary',
-      nl:false,
-    });
+    newFields.push({ name: 'cancel_button', control: 'button', value: config.cancelButtonLabel, controlclass: 'secondary', nl:false });
   }
+
   // Don't mutate the model!
   model.fields = newFields.length > 0 ? (model.fields || []).concat(newFields) : model.fields;
   return model;
@@ -180,15 +170,15 @@ FormDialog.prototype.open = function(data) {
   });
 
   var controller = undefined;
-  var xModel = undefined;
+  var xmodel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel, onComplete) {
-    xModel = _xModel;
-    controller = _xModel.controller;
+  dialog.onBeforeOpen = function(_xmodel, onComplete) {
+    xmodel = _xmodel;
+    controller = _xmodel.controller;
     self.jsh.XExt.execif(self.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         controller.Render(data, undefined, onComplete);
@@ -197,24 +187,24 @@ FormDialog.prototype.open = function(data) {
   }
 
 
-  dialog.onOpened = function(_$dialog, _xModel, acceptFunc, cancelFunc) {
+  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.form.Prop.Enabled = true;
-    $dialog.find('.save_button.xelem' + xModel.id).off('click').on('click', acceptFunc);
-    $dialog.find('.cancel_button.xelem' + xModel.id).off('click').on('click', cancelFunc);
-    if (_.isFunction(self.onOpened)) self.onOpened($dialog, xModel);
+    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc);
+    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc);
+    if (_.isFunction(self.onOpened)) self.onOpened($dialog, xmodel);
   }
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
-    var isSuccess = _.isFunction(self.onAccept) && self.onAccept($dialog, xModel);
+    var isSuccess = _.isFunction(self.onAccept) && self.onAccept($dialog, xmodel);
     if (isSuccess) success();
   }
 
   dialog.onCancel = function(options) {
-    if (!options.force && xModel.controller.HasUpdates()) {
+    if (!options.force && xmodel.controller.HasUpdates()) {
       self.jsh.XExt.Confirm('Close without saving changes?', function() {
-        xModel.controller.form.ResetDataset();
+        xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
       return false;
@@ -226,7 +216,7 @@ FormDialog.prototype.open = function(data) {
   // dialog closes.
   dialog.onClose = function() {
     controller.form.Prop.Enabled = false
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xModel);
+    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
   }
 
   dialog.open();

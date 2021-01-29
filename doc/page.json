@@ -4,9 +4,13 @@
     "body": "Default Page Content",
     "footer": "Default Footer Content"
   },
-  "remote_template": {
-    "editor": "https://server/templates/page/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
-    "publish": "https://server/templates/page/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
+  "templates": { //Templates as string
+    "editor": "...", // Prepended by <templateBaseFileName>.templates.editor.ejs
+    "publish": "...", // Prepended by <templateBaseFileName>.templates.publish.ejs
+  },
+  "remote_templates": { //Templates downloaded as URLs
+    "editor": "https://server/templates/pages/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
+    "publish": "https://server/templates/pages/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
   },
   "content_elements": {
     "body": { "type": "htmleditor", "title": "Body" },
@@ -26,6 +30,5 @@
   }
 
   //System Properties
-  "content": "<html><body>Page Content</body></html>" //Hard-coded page content
   "content": { "content_element_name": "..." } //Hard-coded content element content.  Generally use "default_content" instead
 }

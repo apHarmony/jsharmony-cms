@@ -450,7 +450,7 @@ module.exports = exports = function(module, funcs){
     async.waterfall([
       function(cb){
         //Load Page Templates
-        funcs.getPageTemplates(branchData._DBContext, site_id, {}, function(err, pageTemplates){
+        funcs.getPageTemplates(branchData._DBContext, site_id, { continueOnConfigError: true }, function(err, pageTemplates){
           if(err) return cb(err);
           branchData.pageTemplates = pageTemplates;
           return cb();
