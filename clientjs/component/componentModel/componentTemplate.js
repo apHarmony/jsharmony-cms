@@ -146,7 +146,7 @@ ComponentTemplate.prototype.getTemplateId = function() {
  * @returns {(string | undefined)}
  */
 ComponentTemplate.prototype.getClassName = function() {
-  return this._componentConfig.className || jsh.XExt.escapeCSSClass(this._componentConfig.id, { nodash: true });
+  return this._componentConfig.className || this._jsh.XExt.escapeCSSClass(this._componentConfig.id, { nodash: true });
 }
 
 /**
