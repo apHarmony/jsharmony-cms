@@ -1,0 +1,132 @@
+<div class="editorWrapper">
+  <div class="topWrapper">
+    <div class="topToolbar">
+      <button data-activate-editor="crop" class="iconButton" title="Crop"><span class="material-icons">crop</span></button>
+      <button data-activate-editor="resize" class="iconButton" title="Resize"><span class="material-icons">photo_size_select_small</span></button>
+      <button data-activate-editor="rotate" class="iconButton" title="Rotate"><span class="material-icons">rotate_right</span></button>
+      <button data-activate-editor="brightness" class="iconButton" title="Brightness"><span class="material-icons">flare</span></button>
+      <button data-activate-editor="sharpness" class="iconButton" title="Sharpness"><span class="material-icons">blur_on</span></button>
+      <button data-activate-editor="contrast" class="iconButton" title="Contrast"><span class="material-icons">tonality</span></button>
+      <button data-activate-editor="color" class="iconButton" title="Color"><span class="material-icons">palette</span></button>
+      <button data-activate-editor="gamma" class="iconButton" title="Gamma"><span class="utf-icon">Ɣ</span></button>
+      <button data-activate-editor="invert" class="iconButton" title="Invert"><span class="material-icons">invert_colors</span></button>
+    </div>
+    <div class="editorAreaWrapper" style="display:none">
+      <h3 data-editor-title-placeholder></h3>
+      <div class="editorToolsWrapper">
+        <div class="leftWrapper">
+          <button class="secondaryButton" data-action="closeEditor">Back</button>
+        </div>
+        <div class="rightWrapper">
+          <div data-editor="crop" data-editor-title="Crop Image" style="display:none">            
+            <div class="flexCenter">
+              <div>
+                <div>Width</div>
+                <input type="number" data-control-id="cropWidth" readonly>
+              </div>
+              <div>
+                <div>Height</div>
+                <input type="number" data-control-id="cropHeight" readonly>
+              </div>
+            </div>
+          </div>
+          <div data-editor="brightness" data-editor-title="Edit Brightness" style="display:none">
+            <div class="flexCenter">
+              <input data-control-id="brightnessRange" type="range" min="-1" max="1" step="0.01">
+            </div>
+          </div>
+          <div data-editor="color" data-editor-title="Edit Color Levels" style="display:none">
+            <div class="rangeGroup">
+              <div class="labeledRange">
+                <span class="label">Red</span>
+                <input data-control-id="redRange" type="range" min="-1" max="1" step="0.01">
+              </div>
+              <div class="labeledRange">
+                <span class="label">Green</span>
+                <input data-control-id="greenRange" type="range" min="-1" max="1" step="0.01">
+              </div>
+              <div class="labeledRange">
+                <span class="label">Blue</span>
+                <input data-control-id="blueRange" type="range" min="-1" max="1" step="0.01">
+              </div>
+            </div>
+          </div>
+          <div data-editor="contrast" data-editor-title="Edit Contrast" style="display:none">
+            <!-- <h3>Contrast</h3> -->
+            <div class="flexCenter">
+              <input data-control-id="contrastRange" type="range" min="-1" max="1" step="0.01">
+            </div>
+          </div>
+          <div data-editor="gamma" data-editor-title="Edit Gamma" style="display:none">
+            <div class="flexCenter">
+              <input data-control-id="gammaRange" type="range" min="-1" max="1" step="0.01">
+            </div>
+          </div>
+          <div data-editor="resize" data-editor-title="Resize Image" style="display:none">
+            <div class="flexCenter">
+              <div>
+                <div>Width</div>
+                <input type="number" data-control-id="resizeWidth">
+              </div>
+              <div>
+                <div>Height</div>
+                <div class="flexCenter">
+                  <input type="number" data-control-id="resizeHeight">
+                  <button data-action="unlockResizeRatio" class="iconButton" title="Unlock Ratio" style="display:none;"><span class="material-icons">lock</span></button>
+                  <button data-action="lockResizeRatio" class="iconButton" title="Lock Ratio" style="display:none;"><span class="material-icons">lock_open</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-editor="rotate" data-editor-title="Rotate Image" style="display:none">
+            <div class="flexCenter">
+              <button data-action="flipHorizontal" class="iconButton" title="Flip Horizontally"><span class="material-icons">flip</span></button>
+              <button data-action="flipVertical" class="iconButton" title="Flip Vertically"><span class="material-icons" style="transform: rotate(90deg)">flip</span></button>
+              <button data-action="rotateLeft" class="iconButton" title="Rotate Left"><span class="material-icons">rotate_left</span></button>
+              <button data-action="rotateRight" class="iconButton" title="Rotate Right"><span class="material-icons">rotate_right</span></button>
+            </div>
+          </div>
+          <div data-editor="sharpness" data-editor-title="Adjust Sharpness" style="display:none">
+            <!-- <h3>Sharpness</h3> -->
+            <div class="flexCenter">
+              <input data-control-id="sharpnessRange" type="range" min="-1" max="1" step="0.01">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="imageWrapper">
+    <div class="cropWindowContainer" style="display:none;">
+      <div class="cropShadow" data-crop-shadow="top"></div>
+      <div class="cropShadow" data-crop-shadow="bottom"></div>
+      <div class="cropShadow" data-crop-shadow="left"></div>
+      <div class="cropShadow" data-crop-shadow="right"></div>
+      <div class="cropWindow">
+        <div class="cropResizeHandle" data-crop-handle="topLeft"></div>
+        <div class="cropResizeHandle" data-crop-handle="topRight"></div>
+        <div class="cropResizeHandle" data-crop-handle="bottomLeft"></div>
+        <div class="cropResizeHandle" data-crop-handle="bottomRight"></div>
+      </div>
+    </div>
+    <img/>
+  </div>
+  <div class="bottomToolbar">
+    <button data-action="reset" class="iconButton" title="Reset"><span class="material-icons">undo</span></button>
+    <button data-action="zoomOut" class="iconButton" title="Zoom Out"><span class="material-icons">zoom_out</span></button>
+    <button data-action="zoomIn" class="iconButton" title="Zoom In"><span class="material-icons">zoom_in</span></button>
+    <button data-action="close" class="secondaryButton" style="margin-right:10px;">Cancel</button>
+    <button data-action="done" class="secondaryButton">Done</button>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
