@@ -91,6 +91,14 @@ module.exports = exports = function(module, funcs){
     if(!(key in item_errors)) item_errors[key] = _.extend(_.pick(item, error_columns), { errors: [] });
     item_errors[key].errors.push(errtxt);
   }
+
+  exports.validate_logSystemError = function(branchData, errtxt){
+    if(!branchData.branch_validate.system) branchData.branch_validate.system = {
+      system: { errors: [] }
+    };
+    branchData.branch_validate.system.system.errors.push(errtxt);
+  }
+
   
   exports.validate = function (dbcontext, branch_id, callback) {
     var jsh = module.jsh;
@@ -112,6 +120,7 @@ module.exports = exports = function(module, funcs){
       branch_id: branch_id,
       site_id: null,
       deployment_target_params: null,
+      branch_validate: branch_validate,
     };
 
     async.waterfall([
@@ -256,6 +265,13 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
 
+    //Validate templates
+    _.each(branchData.page_templates, function(page_template, page_template_id){
+      _.each(page_template.components, function(component, componentId){
+        if(componentId in branchData.component_templates){ funcs.validate_logSystemError(branchData, 'Page template "' + page_template.title + '" has an inline component "' + componentId + '" that is already defined as a '+(branchData.component_templates[componentId].location||'').toLowerCase()+' component.'); }
+      });
+    });
+
     //Get page file content
     async.eachOfSeries(branchData.page_keys, function(page, page_id, page_cb){
       funcs.getClientPage(branchData._DBContext, page, null, branchData.site_id, { pageTemplates: branchData.page_templates }, function(err, clientPage){
@@ -330,7 +346,7 @@ module.exports = exports = function(module, funcs){
     async.waterfall([
       //Get all menus
       function(cb){
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
+        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
           from "+(module.schema?module.schema+'.':'')+"menu menu \
           where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id)";
         var sql_ptypes = [dbtypes.BigInt];
@@ -355,30 +371,9 @@ module.exports = exports = function(module, funcs){
 
       //Get menu file content
       function(cb){
-        var menu_paths = {};
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, { }, function(err, menu_content){
+          funcs.getClientMenu(menu, function(err, menu_content){
             if(err){ funcs.validate_logError(item_errors, 'menu', menu, err.toString()); return menu_cb(); }
-            if(!menu_content || !menu_content.template){
-              funcs.validate_logError(item_errors, 'menu', menu, 'Menu template not found');
-              return menu_cb(null);
-            }
-
-            for(var content_element_name in menu_content.template.content_elements){
-              var menu_path = null;
-              try{
-                menu_path = funcs.getMenuRelativePath(menu, content_element_name);
-              }
-              catch(ex){
-                if(ex) funcs.validate_logError(item_errors, 'menu', menu, ex.toString());
-              }
-              if(!menu_path) funcs.validate_logError(item_errors, 'menu', menu, 'Menu does not have a valid path for content element '+content_element_name);
-              else{
-                menu_path_ucase = menu_path.trim().toUpperCase();
-                if(menu_paths[menu_path_ucase]) funcs.validate_logError(item_errors, 'menu', menu, 'Duplicate menu path: '+menu_path);
-                menu_paths[menu_path_ucase] = menu_path_ucase;
-              }
-            }
 
             //Validate URLs
             menu.menu_items = menu_content.menu_items||[];

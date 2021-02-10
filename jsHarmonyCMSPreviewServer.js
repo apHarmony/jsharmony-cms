@@ -136,13 +136,13 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
             if(!_.includes(['.html','.htm'], ext)) return file_cb();
             fs.readFile(filepath, 'utf8', function(err, content){
               if(err) return file_cb(err);
-              //Parse each web snippet + extract <script type="text/jsharmony-cms-websnippet-config">
+              //Parse each web snippet + extract <script type="text/cms-websnippet-config">
               var templateParts = null;
               try{
-                templateParts = cms.funcs.parseConfig(content, 'jsharmony-cms-websnippet-config', 'Websnippet Config: ' + filerelativepath);
+                templateParts = cms.funcs.parseConfig(content, 'cms-websnippet-config', 'websnippet config "' + filerelativepath + '"', { extractFromContent: true });
               }
               catch(ex){
-                return file_cb(ex);
+                return file_cb(new Error('Could not parse web snippet "' + filerelativepath+'": '+ex.toString()));
               }
               //Add websnippet to array
               filerelativepath = HelperFS.convertWindowsToPosix(filerelativepath);
@@ -231,7 +231,14 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
           if(_.includes(['.html','.htm'], ext)){
             fs.readFile(syspath, 'utf8', function(err, data){
               if(err) return next();
-              var fcontent = cms.funcs.generateEditorTemplate(data, { cmsBaseUrl: req.baseurl });
+              var fcontent = '';
+              try{
+                fcontent = cms.funcs.generateEditorTemplate(data, { cmsBaseUrl: req.baseurl });
+              }
+              catch(ex){
+                res.end('Error loading template: '+ex.toString());
+                return;
+              }
               res.end(fcontent);
             });
             return;

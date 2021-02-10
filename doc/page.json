@@ -27,8 +27,12 @@
       { "name": "bodyStyle", "caption": "Body CSS Style", "type": "varchar", "length": 1024,
         "control": "textbox", "controlstyle": "width:400px", "validate": ["MaxLength:1024"]}
     ]
-  }
+  },
+  "options": {
+    "title_element_required": true, //(Default true)  If set to false, will not require cms-title element on the page
+  },
 
   //System Properties
-  "content": { "content_element_name": "..." } //Hard-coded content element content.  Generally use "default_content" instead
+  "content": { "content_element_name": "..." }, //SYSTEM - Hard-coded content element content.  Generally use "default_content" instead
+  "components": { "component_name": { /* Component definition */ } } //SYSTEM - Inline page components
 }

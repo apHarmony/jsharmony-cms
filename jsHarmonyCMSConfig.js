@@ -66,16 +66,6 @@ function jsHarmonyCMSConfig(){
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     exec_post_deployment: undefined, //Execute shell command after deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
-    generate_redirect_files: undefined, //Execute when generating redirect files
-                                        //function(jsh, deployment, redirects, page_redirects, redirects_cb){
-                                        //  var redirect_files = { file_path1: file_contents1, file_path2: file_contents2 };
-                                        //  return redirects_cb(err, redirect_files);
-                                        //}
-    generate_menu_files: undefined, //Execute when generating menu files
-                                    //function(jsh, deployment, menus, menus_cb){
-                                    //  var menu_files = { file_path1: file_contents1, file_path2: file_contents2 };
-                                    //  return menus_cb(err, menu_files);
-                                    //}
     git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
     copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
   };
@@ -96,8 +86,11 @@ function jsHarmonyCMSConfig(){
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing
   this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, options){ return url; } //return a value (not undefined) to stop processing
-  this.onDeploy_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(); }
-  this.onValidate_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(); }
+  this.onDeploy_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err); }
+  this.onValidate_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err); }
+  this.onDeploy_GenerateRedirects = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err, generated_redirect_files); }
+                                          //    generated_redirect_files = { 'path1': 'file content1', 'path2': 'file content2' }
+  this.onDeploy_PostBuild = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err); }
 }
 
 jsHarmonyCMSConfig.prototype = new jsHarmonyConfig.Base();

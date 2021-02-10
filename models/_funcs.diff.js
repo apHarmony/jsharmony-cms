@@ -314,7 +314,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branch_data.branch_id };
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
+        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
           from "+(module.schema?module.schema+'.':'')+"menu menu \
           where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
                 menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
@@ -332,11 +332,10 @@ module.exports = exports = function(module, funcs){
       //Get menu file content
       function(cb){
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, { }, function(err, menu_content){
+          funcs.getClientMenu(menu, function(err, menu_content){
             if(err) return menu_cb(err);
             if(!menu_content) return menu_cb(null);
             menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, branch_data.page_keys, branch_data.media_keys);
-            menu.template_title = menu_content.template.title;
             return menu_cb();
           });
         }, cb);
@@ -408,11 +407,11 @@ module.exports = exports = function(module, funcs){
     if(!old_page || !new_page) return null;
     var diff = {};
     _.each(['css','header','footer'], function(key){
-      var key_diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
+      var key_diff = funcs.diffPageHTML(old_page.compiled[key], new_page.compiled[key]);
       if(key_diff) diff[key] = key_diff;
     });
     _.each(['properties'], function(key){
-      var key_diff = funcs.diffHTML(JSON.stringify(old_page.compiled[key],null,4), JSON.stringify(new_page.compiled[key], null, 4));
+      var key_diff = funcs.diffPageHTML(JSON.stringify(old_page.compiled[key],null,4), JSON.stringify(new_page.compiled[key], null, 4));
       if(key_diff) diff[key] = key_diff;
     });
     var old_content_keys = _.keys(old_page.compiled.content);
@@ -428,7 +427,7 @@ module.exports = exports = function(module, funcs){
 
     diff.content = {};
     for(var key in old_page.compiled.content){
-      var content_diff = funcs.diffHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
+      var content_diff = funcs.diffPageHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
       diff.content[key] = content_diff;
     }
     _.each(['page_title','template_title','page_tags'], function(key){
@@ -453,7 +452,7 @@ module.exports = exports = function(module, funcs){
     var diff = {};
     var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
     if(menu_items_diff) diff.menu_items = menu_items_diff;
-    _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
+    _.each(['menu_name','menu_tag'], function(key){
       if(old_menu[key] != new_menu[key]) diff[key] = new_menu[key];
     });
     return diff;
@@ -469,11 +468,17 @@ module.exports = exports = function(module, funcs){
     return diff;
   }
 
-  exports.diffHTML = function(a, b){
+  exports.diffPageHTML = function(a, b){
     if(a==b) return '';
 
-    a = funcs.prettyComponents(a);
-    b = funcs.prettyComponents(b);
+    a = funcs.renderComponentsPretty(a);
+    b = funcs.renderComponentsPretty(b);
+
+    return funcs.diffHTML(a, b);
+  }
+
+  exports.diffHTML = function(a, b){
+    if(a==b) return '';
 
     var diff_lines = dmp.diff_linesToChars_(a, b);
     var diff_lineText1 = diff_lines.chars1;

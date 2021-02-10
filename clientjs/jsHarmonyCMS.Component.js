@@ -136,14 +136,14 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {object} modelInstance - the model instance to render (model will be mutated).
    */
   this.openDataEditor_Form = function() {
-    var self = this;
-    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh, self);
+    var _this = this;
+    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh, _this);
 
     var data = this.getData() || {};
     dataEditor.open(data.item || {}, this.getProperties() || {}, function(updatedData) {
       data.item = updatedData;
-      self.saveData(data);
-      self.render();
+      _this.saveData(data);
+      _this.render();
     });
   }
 
@@ -151,12 +151,12 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @private
    */
   this.openDataEditor_GridPreview = function() {
-    var self = this;
-    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh, self);
+    var _this = this;
+    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh, _this);
 
     dataEditor.open(this.getData(), this.getProperties() || {}, function(updatedData) {
-      self.saveData(updatedData);
-      self.render();
+      _this.saveData(updatedData);
+      _this.render();
     });
   }
 
@@ -166,12 +166,12 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.openPropertiesEditor = function() {
 
-    var self = this;
+    var _this = this;
     var propertyEditor = new PropertyEditor_Form(componentTemplate, cms, jsh);
 
     propertyEditor.open(this.getProperties() || {}, function(data) {
-      self.saveProperties(data);
-      self.render();
+      _this.saveProperties(data);
+      _this.render();
     });
   }
 
@@ -181,11 +181,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.render = function() {
 
-    var self = this;
+    var _this = this;
     var config = componentTemplate.getComponentConfig()  || {};
     var template = (config.templates || {}).editor || '';
 
-    var data = _.extend({}, this.getData(), { component_id: self.id });
+    var data = _.extend({}, this.getData(), { component_id: _this.id });
     var props = this.getProperties();
 
     var renderConfig = TemplateRenderer.createRenderConfig(template, data, props, cms);
@@ -204,15 +204,15 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function(e){
       var hasData = ((config.data || {}).fields || []).length > 0;
       var hasProperties = ((config.properties || {}).fields || []).length > 0;
-      if(hasData) self.openDataEditor();
-      else if(hasProperties) self.openPropertiesEditor();
+      if(hasData) _this.openDataEditor();
+      else if(hasProperties) _this.openPropertiesEditor();
     });
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
     setTimeout(function() {
       _.forEach($element.find('[data-component]'), function(el) {
-        cms.componentManager.renderComponent(el);
+        cms.componentManager.renderContentComponent(el);
       });
     });
   }

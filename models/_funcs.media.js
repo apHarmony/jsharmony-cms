@@ -45,6 +45,7 @@ module.exports = exports = function(module, funcs){
     var P = req.body;
     var appsrv = this;
     var jsh = module.jsh;
+    var cms = module;
     var XValidate = jsh.XValidate;
     var sql = '';
     var sql_ptypes = [];
@@ -61,7 +62,7 @@ module.exports = exports = function(module, funcs){
       var media_key = req.params.media_key;
       var thumbnail_name = req.params.thumbnail;
       var thumbnail_config = null;
-      if(thumbnail_name) thumbnail_config = jsh.Modules['jsHarmonyCMS'].Config.media_thumbnails[thumbnail_name];
+      if(thumbnail_name) thumbnail_config = cms.Config.media_thumbnails[thumbnail_name];
 
       //Invalid Thumbnail
       if(thumbnail_name && !thumbnail_config) return next();
@@ -284,7 +285,7 @@ module.exports = exports = function(module, funcs){
 
           //Apply maximum image size, if applicable
           function(cb){
-            var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
+            var cmsConfig = cms.Config;
             if(!media_width || !media_height) return cb();
             if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
               jsh.Extensions.image.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
@@ -435,7 +436,7 @@ module.exports = exports = function(module, funcs){
             
             //Apply maximum image size, if applicable
             function(cb){
-              var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
+              var cmsConfig = cms.Config;
               if(!media_width || !media_height) return cb();
               if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
                 jsh.Extensions.image.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){

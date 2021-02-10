@@ -55,7 +55,7 @@ function DataEditor_GridPreview(componentTemplate, cms, jsh, component) {
  */
 DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb) {
 
-  var self = this;
+  var _this = this;
   var modelTemplate = this._componentTemplate.getDataModelTemplate_GridPreview();
   var modelConfig = modelTemplate.getModelInstance();
 
@@ -79,10 +79,10 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
 
-    self.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', self._componentTemplate.getCaptions());
+    _this.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', _this._componentTemplate.getCaptions());
 
-    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, self._jsh.$(dialogSelector),
-      self._cms, self._jsh, self._component, modelTemplate, self._componentTemplate);
+    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, _this._jsh.$(dialogSelector),
+      _this._cms, _this._jsh, _this._component, modelTemplate, _this._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
       if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
@@ -96,7 +96,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
     }
 
-    var modelInterface = self._jsh.App[xmodel.id];
+    var modelInterface = _this._jsh.App[xmodel.id];
 
     modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
       if (!dataController) return;
@@ -108,7 +108,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     }
 
     modelInterface.close = function() {
-      self._jsh.XExt.CancelDialog();
+      _this._jsh.XExt.CancelDialog();
     }
 
     modelInterface.addItem = function() {
@@ -127,9 +127,9 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xmodel.id];
-    delete self._jsh.App[xmodel.id];
-    delete self._jsh.App[componentInstanceId];
+    delete _this._jsh.XModels[xmodel.id];
+    delete _this._jsh.App[xmodel.id];
+    delete _this._jsh.App[componentInstanceId];
   }
 
   dialog.open();

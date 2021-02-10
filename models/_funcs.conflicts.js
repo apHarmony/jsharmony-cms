@@ -249,7 +249,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
         var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
+        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
           from "+(module.schema?module.schema+'.':'')+"menu menu \
           where\
                 menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@src_branch_id and branch_menu_action is not null) or \
@@ -272,11 +272,10 @@ module.exports = exports = function(module, funcs){
       //Get menu file content
       function(cb){
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, {}, function(err, menu_content){
+          funcs.getClientMenu(menu, function(err, menu_content){
             if(err) return menu_cb(err);
             if(!menu_content) return menu_cb(null);
             menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, branch_data.page_keys, branch_data.media_keys);
-            menu.template_title = menu_content.template.title;
             return menu_cb();
           });
         }, cb);

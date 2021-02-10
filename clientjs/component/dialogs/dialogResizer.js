@@ -114,9 +114,9 @@ DialogResizer.prototype.resize = function(wrapper) {
  * @param {HTMLElement} wrapper
  */
 DialogResizer.prototype.startIntervalResize = function(wrapper) {
-  var self = this;
+  var _this = this;
   this._execCleanUp = DialogResizer.addIntervalCallback(function() {
-    self.resize(wrapper);
+    _this.resize(wrapper);
   });
 }
 
@@ -128,9 +128,9 @@ DialogResizer.prototype.startIntervalResize = function(wrapper) {
  * @param {HTMLElement} wrapper
  */
 DialogResizer.prototype.startMutationObserver = function(wrapper) {
-  var self = this;
+  var _this = this;
   var observer = new MutationObserver(function() {
-    self.resize(wrapper);
+    _this.resize(wrapper);
   });
   observer.observe(wrapper, { childList: true, subtree: true });
   this._execCleanUp = function() {
@@ -145,9 +145,9 @@ DialogResizer.prototype.startMutationObserver = function(wrapper) {
  * @param {HTMLElement} wrapper
  */
 DialogResizer.prototype.startResizeObserver = function(wrapper) {
-  var self = this;
+  var _this = this;
   var observer = new ResizeObserver(function() {
-      self.resize(wrapper);
+      _this.resize(wrapper);
   });
   observer.observe(wrapper);
   this._execCleanUp = function() {

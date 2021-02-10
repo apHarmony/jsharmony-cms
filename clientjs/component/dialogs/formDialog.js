@@ -152,7 +152,7 @@ FormDialog.prototype.augmentModel = function(model, config) {
  * as values are changed.
  */
 FormDialog.prototype.open = function(data) {
-  var self = this;
+  var _this = this;
 
   /** @type {FormDialogConfig} */
   var config = this._config;
@@ -176,9 +176,9 @@ FormDialog.prototype.open = function(data) {
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    self.jsh.XExt.execif(self.onBeforeOpen,
+    _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
+        _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         controller.Render(data, undefined, onComplete);
@@ -192,18 +192,18 @@ FormDialog.prototype.open = function(data) {
     controller.form.Prop.Enabled = true;
     $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc);
     $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc);
-    if (_.isFunction(self.onOpened)) self.onOpened($dialog, xmodel);
+    if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
   }
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
-    var isSuccess = _.isFunction(self.onAccept) && self.onAccept($dialog, xmodel);
+    var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept($dialog, xmodel);
     if (isSuccess) success();
   }
 
   dialog.onCancel = function(options) {
     if (!options.force && xmodel.controller.HasUpdates()) {
-      self.jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this.jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -216,7 +216,7 @@ FormDialog.prototype.open = function(data) {
   // dialog closes.
   dialog.onClose = function() {
     controller.form.Prop.Enabled = false
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
   }
 
   dialog.open();

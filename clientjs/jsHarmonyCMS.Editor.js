@@ -33,8 +33,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.defaultConfig = {};
   this.toolbarContainer = null;
 
-  this.onBeginEdit = null; //function(editor){};
-  this.onEndEdit = null; //function(editor){};
+  this.onBeginEdit = null; //function(mceEditor){};
+  this.onEndEdit = null; //function(mceEditor){};
 
 
   this.editorConfig = {
@@ -108,29 +108,29 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       }, jsh.globalparams.defaultEditorConfig, _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
-        init_instance_callback: function(editor){
+        init_instance_callback: function(mceEditor){
           var firstFocus = true;
-          editor.on('focus', function(){
+          mceEditor.on('focus', function(){
             //Fix bug where alignment not reset when switching between editors
             if(firstFocus){
               $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
               firstFocus = false;
             }
             $('[data-component="header"]').css('pointer-events', 'none');
-            _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
+            _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
             _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
-            if(_this.onBeginEdit) _this.onBeginEdit(editor);
+            if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
           });
-          editor.on('blur', function(){
+          mceEditor.on('blur', function(){
             $('[data-component="header"]').css('pointer-events', 'auto');
             _this.isEditing = false;
             _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
-            if(_this.onEndEdit) _this.onEndEdit(editor);
+            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
           //Override background color icon
-          var allIcons = editor.ui.registry.getAll();
-          editor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
+          var allIcons = mceEditor.ui.registry.getAll();
+          mceEditor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
         }
       });
 
@@ -145,9 +145,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         },
         menubar: false,
         browser_spellcheck: true,
-        init_instance_callback: function(editor){
-          editor.on('blur', function(){
-            if(_this.onEndEdit) _this.onEndEdit(editor);
+        init_instance_callback: function(mceEditor){
+          mceEditor.on('blur', function(){
+            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
         }
       });
@@ -157,17 +157,22 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   }
 
   this.attach = function(config_id, elem_id, options, cb){
+    if(!cb) cb = function(){};
+    var cb_called = false;
+    var orig_cb = cb;
+    cb = function(err){ if(cb_called) return; cb_called = true; orig_cb(err); };
+    if(!$('#'+elem_id).length) return cb(new Error('Editor container element not found: #'+elem_id));
     if(!(config_id in _this.editorConfig)) throw new Error('Editor config ' + (config_id||'').toString() + ' not defined');
     var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
-    if(cb) config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, cb);
-    window.tinymce.init(config);
+    config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, function(){ return cb(); });
+    window.tinymce.init(config).catch(cb);
   }
 
   this.detach = function(id){
-    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-    if(editor){
-      if(_this.isEditing == id) editor.fire('blur');
-      editor.destroy();
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+id);
+    if(mceEditor){
+      if(_this.isEditing == id) mceEditor.fire('blur');
+      mceEditor.destroy();
     }
   }
 
@@ -186,28 +191,30 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     });
   }
 
-  this.setContent = function(id, val){
+  this.setContent = function(id, val, desc){
+    if(!desc) desc = id;
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
         $('#jsharmony_cms_content_'+id).html(val);
-        cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
+        cms.componentManager.renderContainerContentComponents(document.getElementById('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })));
         _this.disableLinks(document.getElementById('jsharmony_cms_content_'+id), { addFlag: true, onlyJSHCMSLinks: true });
       },1);
     }
     else {
-      var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-      if(!editor) throw new Error('Editor not found: '+id);
-      if(!_this.isInitialized) editor.undoManager.clear();
-      editor.setContent(val);
-      if(!_this.isInitialized) editor.undoManager.add();
+      var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+      if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+      if(!_this.isInitialized) mceEditor.undoManager.clear();
+      mceEditor.setContent(val);
+      if(!_this.isInitialized) mceEditor.undoManager.add();
     }
   }
 
-  this.getContent = function(id){
-    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-    if(!editor) throw new Error('Editor not found: '+id);
-    return editor.getContent();
+  this.getContent = function(id, desc){
+    if(!desc) desc = id;
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(!mceEditor) cms.fatalError('editor.getContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+    return mceEditor.getContent();
   }
 
   this.initToolbarContainer = function(element) {

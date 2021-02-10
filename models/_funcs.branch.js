@@ -638,7 +638,7 @@ module.exports = exports = function(module, funcs){
               pageContent.content[key] = replaceURLs(pageContent.content[key]);
             }
             _.each(['css','header','footer'], function(key){
-              if(pageContent[key]) pageContent[key] = replaceURLs(pageContent[key], { HTMLParser: false });
+              if(pageContent[key]) pageContent[key] = replaceURLs(pageContent[key]);
             });
           }
 
@@ -816,7 +816,7 @@ module.exports = exports = function(module, funcs){
     _.each(branchItems, function(item){
       //Add menu to database
       dbtasks['menu_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
-        cols = ['menu_name','menu_tag','menu_template_id','menu_path','menu_lang'];
+        cols = ['menu_name','menu_tag','menu_lang'];
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
         sql = Helper.ReplaceAll(sql, '{item}', 'menu');
@@ -833,8 +833,6 @@ module.exports = exports = function(module, funcs){
         var sql_params = {
           'menu_name':null,
           'menu_tag':null,
-          'menu_template_id':null,
-          'menu_path':null,
           'menu_lang':null
         };
         for(var key in item){ if(key in sql_params) sql_params[key] = item[key]; }

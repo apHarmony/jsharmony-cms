@@ -184,8 +184,8 @@ Dialog.prototype.getScrollTop = function($wrapper) {
  * @private
  */
 Dialog.prototype.load = function(callback) {
-  var self = this;
-  this._jsh.XPage.LoadVirtualModel(self._jsh.$(self.getFormSelector()), this._model, function(xmodel) {
+  var _this = this;
+  this._jsh.XPage.LoadVirtualModel(_this._jsh.$(_this.getFormSelector()), this._model, function(xmodel) {
     callback(xmodel);
   });
 }
@@ -225,49 +225,49 @@ Dialog.prototype.open = function() {
     throw new Error('Dialog ' + this._id + ' has already been destroyed.');
   }
 
-  var self = this;
+  var _this = this;
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
   this.load(function(xmodel) {
 
 
-    var $wrapper = self._jsh.$(formSelector);
-    self.registerLovs(xmodel);
+    var $wrapper = _this._jsh.$(formSelector);
+    _this.registerLovs(xmodel);
     var lastScrollTop = 0
-    self._jsh.XExt.execif(self.onBeforeOpen,
+    _this._jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xmodel, f);
+        _this.onBeforeOpen(xmodel, f);
       },
       function(){
         /** @type {DialogResizer} */
         var dialogResizer = undefined;
 
-        self._jsh.XExt.CustomPrompt(formSelector, self._jsh.$(formSelector),
+        _this._jsh.XExt.CustomPrompt(formSelector, _this._jsh.$(formSelector),
           function(acceptFunc, cancelFunc) {
-            self.overlayService.pushDialog($wrapper);
-            lastScrollTop = self.getScrollTop($wrapper);
-            dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
+            _this.overlayService.pushDialog($wrapper);
+            lastScrollTop = _this.getScrollTop($wrapper);
+            dialogResizer = new DialogResizer($wrapper[0], _this._jsh);
+            if (_.isFunction(_this.onOpened)) _this.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
           },
           function(success) {
-            lastScrollTop = self.getScrollTop($wrapper);
+            lastScrollTop = _this.getScrollTop($wrapper);
 
-            if (_.isFunction(self.onAccept)) self.onAccept(success);
+            if (_.isFunction(_this.onAccept)) _this.onAccept(success);
           },
           function(options) {
-            lastScrollTop = self.getScrollTop($wrapper);
-            if (_.isFunction(self.onCancel)) return self.onCancel(options);
+            lastScrollTop = _this.getScrollTop($wrapper);
+            if (_.isFunction(_this.onCancel)) return _this.onCancel(options);
             return false;
           },
           function() {
             if (oldActive) oldActive.focus();
-            self.setScrollTop(lastScrollTop, $wrapper);
+            _this.setScrollTop(lastScrollTop, $wrapper);
             dialogResizer.closeDialog();
-            if(_.isFunction(self.onClose)) self.onClose();
-            self.destroy();
-            self.overlayService.popDialog();
+            if(_.isFunction(_this.onClose)) _this.onClose();
+            _this.destroy();
+            _this.overlayService.popDialog();
           },
-          { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
+          { reuse: false, backgroundClose: _this._config.closeOnBackdropClick, restoreFocus: false }
         );
       }
     );

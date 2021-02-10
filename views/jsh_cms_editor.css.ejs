@@ -242,7 +242,7 @@ body .tox .tox-collection__item-label h6 {
   opacity:0;
 }
 
-.jsharmony_cms_content:after {
+[cms-content-editor]:after {
   content: "";
   display: table;
   clear: both;
@@ -252,7 +252,7 @@ body .tox .tox-collection__item-label h6 {
   outline: 2px solid #b4d7ff;
 }
 
-.jsharmony_cms_content.mce-content-body [contentEditable=false][data-mce-selected] {
+[cms-content-editor].mce-content-body [contentEditable=false][data-mce-selected] {
   cursor: pointer;
   outline: 1px dashed #b4d7ff;
 }
@@ -268,6 +268,7 @@ body .tox .tox-collection__item-label h6 {
 }
 
 .jsharmony_cms_component.empty,
+[cms-component].empty,
 .jsharmony_cms_component_preview.empty {
   display: flex;
   flex-flow: column nowrap;
@@ -287,6 +288,7 @@ body .tox .tox-collection__item-label h6 {
 }
 
 .jsharmony_cms_component.empty h3,
+[cms-component].empty h3,
 .jsharmony_cms_component_preview.empty h3 {
   margin: 5px;
   font-weight: normal;
@@ -295,6 +297,7 @@ body .tox .tox-collection__item-label h6 {
 }
 
 .jsharmony_cms_component.empty h4,
+[cms-component].empty h4,
 .jsharmony_cms_component_preview.empty h4 {
   font-weight:normal;
   font-size:16px;
@@ -303,6 +306,7 @@ body .tox .tox-collection__item-label h6 {
 }
 
 .jsharmony_cms_component.empty .material-icons,
+[cms-component].empty .material-icons,
 .jsharmony_cms_component_preview.empty .material-icons {
   font-size: 48px;
   color: #555;
@@ -365,6 +369,7 @@ body .tox .tox-collection__item-label h6 {
 }
 
 .jsharmony_cms_component  .material-icons,
+[cms-component] .material-icons,
 .jsharmony_cms_component_preview .material-icons {
   font-family: 'Material Icons' !important;
 }

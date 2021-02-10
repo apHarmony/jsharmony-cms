@@ -23,20 +23,18 @@ var _ = require('lodash');
 var async = require('async');
 var path = require('path');
 var fs = require('fs');
-var urlparser = require('url');
-var cheerio = require('cheerio');
 var parse5 = require('parse5');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
 
   exports.readPageTemplateConfig = function(templateContent, desc, options){
-    var templateParts = funcs.parseConfig(templateContent, 'jsharmony-cms-page-config', desc, options);
+    var templateParts = funcs.parseConfig(templateContent, 'cms-page-config', desc, options);
     return templateParts.config;
   }
   
   exports.readComponentTemplateConfig = function(templateContent, desc, options){
-    var templateParts = funcs.parseConfig(templateContent, 'jsharmony-cms-component-config', desc, options);
+    var templateParts = funcs.parseConfig(templateContent, 'cms-component-config', desc, options);
     return templateParts.config;
   }
 
@@ -64,17 +62,14 @@ module.exports = exports = function(module, funcs){
     }
 
     //Apply config.type
-    if('multiple_items' in config){
-      if(config.multiple_items){
-        if(!config.data.layout) config.data.layout = 'grid_preview';
-      }
-      else if(!config.multiple_items){
-        if(!config.data.layout) config.data.layout = 'form';
-      }
-      else throw new Error('Unrecognized Component config.type: '+config.type.toString());
-    }
-    else {
+    if(!('multiple_items' in config)){
       config.multiple_items = (config.data && ((config.data.layout == 'grid_preview') || (config.data.layout == 'grid'))) ? true : false;
+    }
+    
+    //Apply config.data.layout
+    if(!config.data.layout){
+      if(config.multiple_items) config.data.layout = 'grid_preview';
+      else config.data.layout = 'form';
     }
 
     //Add config.editor_placeholder
@@ -113,17 +108,17 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.parseConfig = function(content, configType, desc, options){
-    options = _.extend({ continueOnConfigError: false }, options);
+    options = _.extend({ continueOnConfigError: false, extractFromContent: false }, options);
     var rslt = {
       config: {},
       content: content,
     };
     var htdoc = null;
     try{
-      var htdoc = new funcs.HTMLDoc(content, { extractEJS: true });
+      var htdoc = new funcs.HTMLDoc(content, { extractEJS: 'parseOnly' });
       htdoc.applyNodes([
         { //Apply properties
-          pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/'+configType); },
+          pred: function(node){ return (htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/'+configType)) || (htdoc.isTag(node, configType)); },
           exec: function(node){
             var configScript = htdoc.getNodeContent(node);
             htdoc.removeNode(node);
@@ -132,7 +127,7 @@ module.exports = exports = function(module, funcs){
               config = jshParser.ParseJSON(configScript, desc, { trimErrors: true });
             }
             catch(ex){
-              if(options.continueOnConfigError) module.jsh.Log.info('Error parsing ' + configType + ' script tag in ' + desc + ': ' + ex.toString());
+              if(options.continueOnConfigError) module.jsh.Log.info(new Error('Could not parse ' + configType + ' in ' + desc + ': ' + ex.toString()));
               else throw ex;
             }
             _.extend(rslt.config, config);
@@ -141,123 +136,22 @@ module.exports = exports = function(module, funcs){
       ]);
     }
     catch(ex){
-      if(!options.continueOnConfigError) throw ex;
+      ex = new Error('Could not parse ' + configType + ' script tag in ' + desc + ': ' + ex.toString());
+      if(options.continueOnConfigError) module.jsh.Log.info(ex);
+      else throw ex;
     }
-    if(htdoc){
-      htdoc.restoreEJS();
+    if(htdoc && options.extractFromContent){
+      try{
+        htdoc.trimRemoved();
+      }
+      catch(ex){
+        ex = new Error('Could not parse ' + configType + ' in ' + desc + ': ' + ex.toString());
+        if(options.continueOnConfigError) module.jsh.Log.info(ex);
+        else throw ex;
+      }
       rslt.content = htdoc.content;
     }
     return rslt;
-  }
-
-  exports.templates_menus = function(req, res, next){
-    var verb = req.method.toLowerCase();
-
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-    var XValidate = jsh.XValidate;
-    var cms = module;
-
-    if(!req.params || !req.params.branch_id) return next();
-    var branch_id = req.params.branch_id;
-
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
-
-    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
-    //Get page
-    var sql_ptypes = [dbtypes.BigInt];
-    var sql_params = { 'branch_id': branch_id };
-    var validate = new XValidate();
-    var verrors = {};
-    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-
-    var deployment_target_params = '';
-
-    if (verb == 'get'){
-
-      var menuTemplates = {};
-
-      async.waterfall([
-
-        //Check if branch exists
-        function(cb){
-          var sql = "select branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this branch'); }
-            return cb();
-          });
-        },
-
-        //Get deployment_target_params for branch
-        function(cb){
-          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]) deployment_target_params = rslt[0];
-            return cb();
-          });
-        },
-
-        //Generate menu templates
-        function(cb){
-          var publish_params = {
-            timestamp: (Date.now()).toString()
-          };
-          try{
-            if(deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment_target_params));
-          }
-          catch(ex){
-            return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
-          }
-          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
-
-          //Parse menu templates
-          for(var tmplname in module.MenuTemplates){
-            var tmpl = module.MenuTemplates[tmplname];
-            var front_tmpl = {
-              title: tmpl.title,
-              content_elements: {},
-            };
-
-            for(var key in tmpl.content_elements){
-              var content_element = tmpl.content_elements[key];
-              front_tmpl.content_elements[key] = {};
-              var rslt_content_element = front_tmpl.content_elements[key];
-              if('template' in content_element) rslt_content_element.template = content_element.template['editor'] || '';
-              if('remote_templates' in content_element) rslt_content_element.remote_templates = content_element.remote_templates['editor'] || '';
-
-              //Resolve Remote Templates
-              if(rslt_content_element.remote_templates){
-                rslt_content_element.remote_templates = funcs.parseDeploymentUrl(rslt_content_element.remote_templates, publish_params);
-              }
-            }
-            menuTemplates[tmplname] = front_tmpl;
-          }
-
-          return cb();
-        },
-      ], function(err){
-        if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-
-        res.end(JSON.stringify({
-          '_success': 1,
-          'menuTemplates': menuTemplates
-        }));
-      });
-    }
-    else return next();
   }
 
   exports.getPageTemplate = function(dbcontext, site_id, template_id, options, callback){
@@ -274,7 +168,7 @@ module.exports = exports = function(module, funcs){
       site_template_type: 'PAGE',
       template_folder: 'pages',
       system_templates: cms.SystemPageTemplates,
-      script_config_type: 'jsharmony-cms-page-config',
+      script_config_type: 'cms-page-config',
     }, options);
 
     funcs.getSiteTemplates(dbcontext, site_id, options, function(err, rsltTemplates){
@@ -326,7 +220,7 @@ module.exports = exports = function(module, funcs){
       site_template_type: 'COMPONENT',
       template_folder: 'components',
       system_templates: cms.SystemComponentTemplates,
-      script_config_type: 'jsharmony-cms-component-config',
+      script_config_type: 'cms-component-config',
       withContent: false,
       includeLocalPath: false,
       recursive: true,
@@ -464,7 +358,7 @@ module.exports = exports = function(module, funcs){
                     //Read Template Config
                     var templateParts = null;
                     try{
-                      templateParts = funcs.parseConfig(templateContent, options.script_config_type, 'Local ' + options.site_template_type.toLowerCase() + ' template: ' + file, { continueOnConfigError: options.continueOnConfigError });
+                      templateParts = funcs.parseConfig(templateContent, options.script_config_type, 'local ' + options.site_template_type.toLowerCase() + ' template "' + file + '"', { continueOnConfigError: options.continueOnConfigError });
                     }
                     catch(ex){
                       return file_cb(ex);
@@ -627,9 +521,35 @@ module.exports = exports = function(module, funcs){
     }, options);
 
     var _this = this;
+    var whiteSpace = ' \t\n\r\v\f';
+    var JSHCMS_TAGS = [
+      'jsh-for-item',
+      'jsh-for-item-variable',
+      'jsh-foreach-item',
+      'jsh-foreach-item-separator',
+      'jsh-foreach-item-start',
+      'jsh-foreach-item-end',
+      'jsh-foreach-item-skip',
+      'jsh-foreach-item-variable',
+      'jsh-foreach-item-index',
+      'jsh-group-items',
+      'jsh-group-items-into',
+      'jsh-group-items-by',
+      'jsh-group-items-separator',
+      'jsh-group-items-subgroup',
+      'jsh-group-items-index',
+      'jsh-template',
+      'cms-content-editor',
+      'cms-content-editor-type',
+      'cms-component-editor-remove-class',
+      'cms-component-editor-add-class',
+    ];
+
+    this.origContent = _content;
     this.content = _content;
     this.offsets = []; //{ start, length }
     this.removed = []; //{ start, end }
+    this.pendingTrim = []; //{ start, end, type { node, content, attr } }
     this.ejsScripts = [];
     this.nodes = [];
 
@@ -641,11 +561,18 @@ module.exports = exports = function(module, funcs){
         var nextStartIdx = str.indexOf('<%', startIdx + 2);
         if((endIdx < 0) || ((nextStartIdx >= 0) && (nextStartIdx < endIdx))) throw new Error('EJS missing closing "%>" tag at Line '+(_this.content.substr(0, startIdx).split('\n').length));
         endIdx += 2;
+        var scriptContent = str.substr(startIdx, endIdx - startIdx);
+        var scriptType = 'standard';
+        if(scriptContent.substr(0,3)=='<%~') scriptType = 'containerSlurp';
         //Extract string
         _this.ejsScripts.push({
           start: startIdx,
           end: endIdx,
-          content: str.substr(startIdx, endIdx - startIdx),
+          content: scriptContent,
+          scriptType: scriptType,
+          container: null,
+          //index
+          //scriptType
         });
         //Replace with spaces
         str = str.substr(0, startIdx) + Helper.pad('', ' ', endIdx - startIdx) + str.substr(endIdx);
@@ -654,11 +581,144 @@ module.exports = exports = function(module, funcs){
       _this.content = str;
     }
 
-    this.restoreEJS = function(){
+    //Find containers for each containerSlurp script
+    this.findEJSContainers = function(){
+      var scripts = [];
+
       for(var i=0;i<_this.ejsScripts.length;i++){
         var ejsScript = _this.ejsScripts[i];
-        var startIdx = _this.offsetIndex(ejsScript.start);
-        var endIdx = startIdx + ejsScript.content.length;
+        if(ejsScript.container) continue;
+        if(ejsScript.scriptType != 'containerSlurp') continue;
+
+        //Check if script was removed
+        var skip = false;
+        for(var j=0;j<_this.removed.length;j++){
+          var removed = _this.removed[j];
+          if((removed.end - removed.start) <= 0) continue;
+          if((removed.start < ejsScript.end) && (removed.end > ejsScript.start)){
+            skip = true;
+            break;
+          }
+        }
+        //Part of script was removed
+        if(skip) continue;
+        //Add to scripts array
+        scripts.push(_.extend({type:'script',index:i}, ejsScript));
+      }
+
+      if(!scripts.length) return;
+
+      var allNodes = [].concat(scripts);
+      _this.applyNodes([
+        {
+          pred: function(node){
+            var nodeInfo = node.sourceCodeLocation;
+            if(!nodeInfo) return;
+            if(!nodeInfo.startTag) return;
+            if(nodeInfo.startTag) allNodes.push({start: nodeInfo.startTag.startOffset, end: nodeInfo.startTag.endOffset, node: node, type: 'startTag'});
+            if(nodeInfo.endTag) allNodes.push({start: nodeInfo.endTag.startOffset, end: nodeInfo.endTag.endOffset, node: node, type: 'endTag'});
+            if(nodeInfo.startTag && nodeInfo.endTag) allNodes.push({start: nodeInfo.startTag.endOffset, end: nodeInfo.endTag.startOffset, node: node, type: 'nodeBody'});
+            if(nodeInfo.attrs){
+              for(var attrName in nodeInfo.attrs){
+                var attrInfo = nodeInfo.attrs[attrName];
+                allNodes.push({start: attrInfo.startOffset, end: attrInfo.endOffset, node: node, type: 'nodeAttr', attrName: attrName});
+              }
+            }
+          },
+          exec: function(node){ }
+        },
+      ]);
+      allNodes.sort(function(a,b){
+        if(a.start < b.start) return -1;
+        if(a.start > b.start) return 1;
+        if((a.type=='script') && (b.type!='script')) return 1;
+        if((a.type!='script') && (b.type=='script')) return -1;
+        if(a.end < b.end) return -1;
+        if(a.end > b.end) return 1;
+        return 0;
+      });
+      for(var i=0;i<allNodes.length;i++){
+        var node = allNodes[i];
+        if(node.type=='script'){
+          for(var j=i-1;j>=0;j--){
+            var prevNode = allNodes[j];
+            if(node.end <= prevNode.end){
+              node.parent = prevNode;
+              break;
+            }
+          }
+        }
+      }
+      for(var i=0;i<scripts.length;i++){
+        var script = scripts[i];
+        try{
+          var container = {
+            start: script.start,
+            end: script.end
+          };
+          var parentMatch = script.parent;
+          //containerSlurp must be inside a parent element
+          if(!parentMatch) throw new Error('EJS container slurp <%~ tag must be inside an HTML element');
+
+          var node = parentMatch.node;
+          var nodeInfo = node.sourceCodeLocation;
+          //Make sure parent node was not deleted
+          if(node.removed) throw new Error('EJS container slurp <%~ tag should have been removed when node was removed');
+          
+          if(parentMatch.type=='nodeAttr'){
+            if(!(parentMatch.attrName in nodeInfo.attrs)) throw new Error('EJS container slurp <%~ tag should have been removed when node attribute was removed');
+            var attrVal = _this.getAttr(node, parentMatch.attrName);
+            //For nodeAttr, make sure attribute length matches
+            if(attrVal != Helper.pad('', ' ', script.content.length)) throw new Error('One EJS container slurp <%~ tag must be the only text within the attribute value, ex: <div style="<%~item.value%>"></div>');
+
+            container = {
+              start: nodeInfo.attrs[parentMatch.attrName].startOffset,
+              end: nodeInfo.attrs[parentMatch.attrName].endOffset,
+              offsetFrom: nodeInfo.attrs[parentMatch.attrName].offsetFrom,
+              type: 'nodeAttr',
+            };
+          }
+          
+          //For nodeBody, make sure content length matches
+          if(parentMatch.type=='nodeBody'){
+            var nodeContent = _this.getNodeContent(node);
+            //For nodeBody, make sure attribute length matches
+            if(nodeContent != Helper.pad('', ' ', script.content.length)) throw new Error('One EJS container slurp <%~ tag must be the only text within the node content, ex: <div><%~item.value%></div>');
+
+            container = {
+              start: nodeInfo.startTag.startOffset,
+              end: nodeInfo.endTag.endOffset,
+              type: 'nodeBody',
+            };
+          }
+
+          //For startTag or endTag, show an error - cannot slurp
+          if((parentMatch.type=='startTag')||(parentMatch.type=='endTag')){
+            throw new Error('EJS container slurp <%~ tags can only be used for attribute values or HTML element content');
+          }
+
+          //Update script tag
+          _this.ejsScripts[script.index].container = container;
+        }
+        catch(ex){
+          var errmsg = ex.message;
+          var lines = _this.origContent.substr(0,script.start).split('\n');
+          var line = lines.length;
+          var char = lines[lines.length-1].length;
+          errmsg = 'EJS Error at line '+line+', char '+char+' - '+errmsg + ': ' + script.content;
+          throw new Error(errmsg);
+        }
+      }
+    }
+
+    this.restoreEJS = function(options){
+      options = _.extend({ containerSlurp: true }, options);
+      if(options.containerSlurp) _this.findEJSContainers();
+
+      for(var i=0;i<_this.ejsScripts.length;i++){
+        var ejsScript = _this.ejsScripts[i];
+        var startIndex = _this.offsetIndex(ejsScript.start);
+        var endIndex = startIndex + ejsScript.content.length;
         //Check if script was removed
         var skip = false;
         for(var j=0;j<_this.removed.length;j++){
@@ -672,16 +732,96 @@ module.exports = exports = function(module, funcs){
         //Part of script was removed
         if(skip) continue;
         //Add script back
-        _this.content = _this.content.substr(0, startIdx) + ejsScript.content + _this.content.substr(endIdx);
+        if(options.containerSlurp && (ejsScript.scriptType=='containerSlurp')){
+          //Container Slurp
+          if(!ejsScript.container) throw new Error('EJS container slurp <%~ script container not found: '+ejsScript.content);
+
+
+          /*
+            Possible EJS script tags beginnings and endings:
+              <%
+              <%_
+              <%=
+              <%-
+
+              %>
+              -%>
+              _%>
+          */
+          var expr = '';
+          var scriptContent = ejsScript.content;
+          var firstFour = scriptContent.substr(0,4);
+          var lastThree = scriptContent.substr(scriptContent.length-3,3);
+          if(_.includes(['<%~-','<%~=','<%~_'], firstFour)){
+            scriptContent = '<%'+firstFour[3]+' '+scriptContent.substr(4);
+            expr = scriptContent.substr(4);
+          }
+          else{
+            scriptContent = '<%=' + scriptContent.substr(3);
+            expr = scriptContent.substr(3);
+          }
+
+          if(_.includes(['-%>','_%>'], lastThree)){
+            expr = expr.substr(0, expr.length - 3);
+          }
+          else {
+            expr = expr.substr(0, expr.length - 2);
+          }
+
+          //Get container
+          var container = ejsScript.container;
+          var containerStartIndex = _this.offsetIndex(container.start, container.offsetFrom);
+          var containerEndIndex = _this.offsetIndex(container.end, container.offsetFrom);
+          var pre = '<% if(!isNullUndefinedEmpty('+expr+')){ %>';
+          var post = '<% } %>';
+
+          //Replace script
+          _this.content = _this.content.substr(0, startIndex) + scriptContent + _this.content.substr(endIndex);
+
+          //Slurp back spaces for attributes
+          if(container.type == 'nodeAttr'){
+            while((containerStartIndex > 0) && whiteSpace.indexOf(_this.content[containerStartIndex-1])>=0) containerStartIndex--;
+          }
+
+          //Wrap script
+          _this.content = _this.content.substr(0, containerStartIndex) + pre + _this.content.substr(containerStartIndex, containerEndIndex - containerStartIndex) + post + _this.content.substr(containerEndIndex);
+          _this.offsets.push({ start: containerStartIndex, length: pre.length });
+          _this.offsets.push({ start: containerEndIndex + pre.length, length: post.length });
+        }
+        else {
+          //Standard Script
+          _this.content = _this.content.substr(0, startIndex) + ejsScript.content + _this.content.substr(endIndex);
+        }
       }
       _this.ejsScripts = [];
+    }
+
+    this.trimRemoved = function(){
+      for(var i=0;i<_this.pendingTrim.length;i++){
+        var snip = _this.pendingTrim[i];
+        if(snip.type=='attr'){
+          var startOffset = _this.offsetIndex(snip.start);
+          var endOffset = startOffset;
+          startOffset--;
+          while((startOffset>=0) && (whiteSpace.indexOf(_this.content[startOffset]) >= 0)) startOffset--;
+          startOffset++;
+          if(startOffset < endOffset){
+            _this.content = _this.content.substr(0, startOffset) + _this.content.substr(endOffset);
+            _this.offsets.push({ start: startOffset, length: startOffset - endOffset });
+            _this.removed.push({ start: startOffset, end: endOffset });
+          }
+        }
+      }
     }
 
     this.spliceContent = function(startIndex, endIndex, newContent){
       newContent = newContent || '';
       _this.content = _this.content.substr(0, startIndex) + newContent + _this.content.substr(endIndex);
       _this.offsets.push({ start: startIndex, length: (newContent.length + (startIndex - endIndex)) });
-      if(endIndex > startIndex) _this.removed.push({ start: startIndex, end: endIndex });
+      if(endIndex > startIndex){
+        _this.removed.push({ start: startIndex, end: endIndex });
+        _this.pendingTrim.push({ start: startIndex, end: endIndex, type: 'content' });
+      }
     }
 
     this.offsetIndex = function(index, from){
@@ -689,6 +829,7 @@ module.exports = exports = function(module, funcs){
       for(var i=from;i<_this.offsets.length;i++){
         if(index >= _this.offsets[i].start){
           index += _this.offsets[i].length;
+          if(index < 0) index = 0;
         }
       }
       return index;
@@ -710,7 +851,10 @@ module.exports = exports = function(module, funcs){
       var endIndex = _this.offsetIndex(nodeInfo.endOffset, nodeInfo.offsetFrom);
       _this.content = _this.content.substr(0, startIndex) + _this.content.substr(endIndex);
       _this.offsets.push({ start: startIndex, length: (startIndex - endIndex) });
-      if(!nodeInfo.offsetFrom) _this.removed.push({ start: nodeInfo.startOffset, end: nodeInfo.endOffset });
+      if(!nodeInfo.offsetFrom){
+        _this.removed.push({ start: nodeInfo.startOffset, end: nodeInfo.endOffset });
+        _this.pendingTrim.push({ start: nodeInfo.startOffset, end: nodeInfo.endOffset, type: 'node' });
+      }
       node.removed = true;
     }
 
@@ -722,7 +866,6 @@ module.exports = exports = function(module, funcs){
       if(!nodeInfo.endTag) return '';
       var startIndex = _this.offsetIndex(nodeInfo.startTag.endOffset, nodeInfo.startTag.offsetFrom);
       var endIndex = _this.offsetIndex(nodeInfo.endTag.startOffset, nodeInfo.startTag.offsetFrom);
-      
       return _this.content.substr(startIndex, endIndex - startIndex);
     }
 
@@ -748,6 +891,13 @@ module.exports = exports = function(module, funcs){
       return _this.content.substr(startIndex, endIndex - startIndex);
     }
 
+    this.removeChildren = function(childNodes){
+      _.each(childNodes, function(childNode){
+        _this.removeChildren(childNode.childNodes);
+        childNode.removed = true;
+      });
+    }
+
     this.replaceNodeContent = function(node, newContent, desc){
       if(node.removed) return;
       var nodeInfo = node.sourceCodeLocation;
@@ -759,7 +909,33 @@ module.exports = exports = function(module, funcs){
       
       _this.content = _this.content.substr(0, startIndex) + newContent + _this.content.substr(endIndex);
       _this.offsets.push({ start: startIndex, length: (startIndex - endIndex + newContent.length) });
-      if(!nodeInfo.startTag.offsetFrom) _this.removed.push({ start: nodeInfo.startTag.endOffset, end: nodeInfo.endTag.startOffset });
+      if(!nodeInfo.startTag.offsetFrom){
+        _this.removed.push({ start: nodeInfo.startTag.endOffset, end: nodeInfo.endTag.startOffset });
+        _this.pendingTrim.push({ start: nodeInfo.startTag.endOffset, end: nodeInfo.endTag.startOffset, type: 'content' });
+      }
+      //Remove children
+      _this.removeChildren(node.childNodes);
+    }
+
+    this.replaceNode = function(node, newContent, desc){
+      if(node.removed) return;
+      var nodeInfo = node.sourceCodeLocation;
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo.startTag) throw new Error('Error processing template: '+desc+' node missing start tag');
+      var startTag = nodeInfo.startTag;
+      var endTag = nodeInfo.endTag || startTag;
+      var startIndex = _this.offsetIndex(startTag.startOffset, startTag.offsetFrom);
+      var endIndex = _this.offsetIndex(endTag.endOffset, startTag.offsetFrom);
+      
+      _this.content = _this.content.substr(0, startIndex) + newContent + _this.content.substr(endIndex);
+      _this.offsets.push({ start: startIndex, length: (startIndex - endIndex + newContent.length) });
+      if(!startTag.offsetFrom){
+        _this.removed.push({ start: startTag.startOffset, end: endTag.endOffset });
+        _this.pendingTrim.push({ start: startTag.startOffset, end: endTag.endOffset, type: 'content' });
+      }
+      node.removed = true;
+      //Remove children
+      _this.removeChildren(node.childNodes);
     }
 
     this.wrapNode = function(node, pre, post, desc){
@@ -788,6 +964,12 @@ module.exports = exports = function(module, funcs){
       _this.content = _this.content.substr(0, startIndex) + pre + _this.content.substr(startIndex, endIndex - startIndex) + post + _this.content.substr(endIndex);
       _this.offsets.push({ start: startIndex, length: pre.length });
       _this.offsets.push({ start: endIndex + pre.length, length: post.length });
+    }
+
+    this.hasParent = function(node, pred){
+      if(!node || !node.tagName || node.removed) return false;
+      if(pred(node)) return true;
+      return _this.hasParent(node.parent);
     }
 
     this.findNodes = function(pred, tree, rslt){
@@ -858,7 +1040,7 @@ module.exports = exports = function(module, funcs){
       return undefined;
     }
 
-    this.removeAttr = function(node, key){
+    this.removeAttr = function(node, key, desc){
       if(node.removed) return;
       var nodeInfo = node.sourceCodeLocation;
       if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
@@ -872,7 +1054,10 @@ module.exports = exports = function(module, funcs){
         //while((startIndex > 0) && (_this.content[startIndex-1]==' ')) startIndex--; //Do not remove white-space (so that EJS replacement will work)
         _this.content = _this.content.substr(0, startIndex) + _this.content.substr(endIndex);
         _this.offsets.push({ start: startIndex + 1, length: (startIndex - endIndex) });
-        if(!attrInfo.offsetFrom) _this.removed.push({ start: attrInfo.startOffset, end: attrInfo.endOffset });
+        if(!attrInfo.offsetFrom){
+          _this.removed.push({ start: attrInfo.startOffset, end: attrInfo.endOffset });
+          _this.pendingTrim.push({ start: attrInfo.startOffset, end: attrInfo.endOffset, type: 'attr' });
+        }
         toDelete.push(attrName);
       }
       _.each(toDelete, function(attrName){ delete nodeInfo.attrs[attrName]; });
@@ -1016,7 +1201,6 @@ module.exports = exports = function(module, funcs){
       options = _.extend({ noEscape: false, logRemoved: false }, options);
       var existingClassTxt = (_this.getAttr(node, 'class') || '');
       if(!existingClassTxt) return false;
-      var whiteSpace = ' \t\n\r\v\f';
       var idx = -1;
       var newClassTxt = existingClassTxt;
       while((idx = newClassTxt.indexOf(className, idx + 1)) >= 0){
@@ -1061,6 +1245,15 @@ module.exports = exports = function(module, funcs){
       return rslt;
     }
 
+    this.getAndRemoveAttr = function(node, attrName, defaultValue){
+      var rslt = defaultValue;
+      if(_this.hasAttr(node, attrName)){
+        rslt = (_this.getAttr(node, attrName)||'').toString();
+        _this.removeAttr(node, attrName);
+      }
+      return rslt||'';
+    }
+
     this.serialize = function(){
       return parse5.serialize(this.nodes);
     }
@@ -1072,13 +1265,26 @@ module.exports = exports = function(module, funcs){
       if(options.noDuplicateAttributes){
         parseOptions.onParseError = function(err){
           if(err && (err.code == 'duplicate-attribute')){
-            throw new Error('Duplicate attribute at line '+err.startLine+', character '+err.startCol);
+            var startOffset = err.startOffset-1;
+            var endOffset = err.startOffset;
+            while((startOffset >= 0) && (whiteSpace.indexOf(content[startOffset]) < 0)) startOffset--;
+            startOffset++;
+            var attrName = (startOffset < endOffset) ? content.substr(startOffset, endOffset - startOffset).toLowerCase() : '';
+            if(_.includes(JSHCMS_TAGS,attrName)){
+              if(_this.origContent && (err.startLine == 1)){
+                var linePos = Helper.getCharPos(_this.origContent, err.startOffset);
+                err.startLine = linePos.line;
+                err.startCol = linePos.char;
+              }
+              throw new Error('Duplicate attribute "'+attrName+'" at line '+err.startLine+', character '+err.startCol);
+            }
           }
         }
       }
       return parse5.parse(content, parseOptions)
     }
     this.nodes = parseContent(this.content);
+    if(options.extractEJS=='parseOnly') this.restoreEJS({ containerSlurp: false });
   }
 
   exports.applyRenderTags = function(content, params){
@@ -1086,18 +1292,16 @@ module.exports = exports = function(module, funcs){
 
     //If no render tags, return
     var lcontent = content.toLowerCase();
-    if((lcontent.indexOf('data-jsharmony_cms_onrender') < 0) && (lcontent.indexOf('data-jsharmony_cms_onapplyproperties') < 0)) return content;
+    if(lcontent.indexOf('cms-onrender') < 0) return content;
 
     var htdoc = new funcs.HTMLDoc(content);
     htdoc.applyNodes([
       { //Apply properties
-        pred: function(node){ return htdoc.hasAttr(node, 'data-jsharmony_cms_onRender') || htdoc.hasAttr(node, 'data-jsharmony_cms_onApplyProperties'); },
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-onRender'); },
         exec: function(node){
-          var code = (htdoc.getAttr(node, 'data-jsharmony_cms_onRender')||'').toString();
-          code += (code ? ';' : '') + (htdoc.getAttr(node, 'data-jsharmony_cms_onApplyProperties')||'').toString();
+          var code = (htdoc.getAttr(node, 'cms-onRender')||'').toString();
           //Remove code from Doc
-          htdoc.removeAttr(node, 'data-jsharmony_cms_onRender');
-          htdoc.removeAttr(node, 'data-jsharmony_cms_onApplyProperties');
+          htdoc.removeAttr(node, 'cms-onRender');
           //Render Parameters
           var renderParams = _.extend({
             page: {}
@@ -1158,7 +1362,7 @@ module.exports = exports = function(module, funcs){
       var bodyNodeInfo = htparts.body.sourceCodeLocation;
       if(!bodyNodeInfo.startTag && !bodyNodeInfo.endTag) throw new Error('Error generating Editor Template - body tag does not have both a start tag and an end tag');
       //Add CMS Script
-      htdoc.spliceContent(bodyNodeInfo.startTag.endOffset, bodyNodeInfo.startTag.endOffset, '<script type="text/javascript" src="'+Helper.escapeHTMLAttr(options.cmsBaseUrl+'/js/jsHarmonyCMS.js')+'"></script>');
+      htdoc.spliceContent(bodyNodeInfo.startTag.endOffset, bodyNodeInfo.startTag.endOffset, '<script type="text/javascript" class="removeOnPublish" src="'+Helper.escapeHTMLAttr(options.cmsBaseUrl+'/js/jsHarmonyCMS.js')+'"></script>');
     }
 
     content = htdoc.content;
@@ -1171,35 +1375,101 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
-  exports.generateDeploymentTemplate = function(content){
+  exports.generateDeploymentTemplate = function(template, content){
     if(!content) return '';
+    if(!template) template = {};
+    if(!template.components) template.components = {};
+    if(!template.default_content) template.default_content = {};
 
-    var htdoc = new funcs.HTMLDoc(content);
+    var htdoc = new funcs.HTMLDoc(content, { extractEJS: 'parseOnly' });
+    
+    //First pass - extract page config and inline templates
+    htdoc.applyNodes([
+      { //Remove page config script
+        pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/cms-page-config'); },
+        exec: function(node){ htdoc.removeNode(node, 'Page Config Script'); }
+      },
+      { //Remove page config tag
+        pred: function(node){ return htdoc.isTag(node, 'cms-page-config'); },
+        exec: function(node){ htdoc.removeNode(node, 'Page Config Tag'); }
+      },
+      { //Remove inline components
+        pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/cms-component-template'); },
+        exec: function(node){
+          var componentTemplate = htdoc.getNodeContent(node, 'inline component template');
+          htdoc.removeNode(node, 'Inline Component Template');
+          var components = funcs.compileInlineComponents([componentTemplate]);
+          for(var componentId in components){
+            if(componentId in template.components) throw new Error('Page template contains duplicate inline component "' + componentId + '"');
+            template.components[componentId] = components[componentId];
+          }
+        }
+      },
+      { //Remove inline web snippets
+        pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/cms-websnippet-template'); },
+        exec: function(node){ htdoc.removeNode(node, 'Inline Websnippet Templates'); }
+      },
+    ]);
+    content = htdoc.content;
+    htdoc = new funcs.HTMLDoc(content, { extractEJS: true });
 
     var prevSeoTitle = false;
     var prevSeoKeywords = false;
     var prevSeoMetadesc = false;
     var prevSeoCanonicalUrl = false;
 
+    //Second pass - transform EJS
     htdoc.applyNodes([
-      { //Remove page config script
-        pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/jsharmony-cms-page-config'); },
-        exec: function(node){ htdoc.removeNode(node, 'Page Config Script'); }
-      },
       { //Replace page title
-        pred: function(node){ return htdoc.isTag(node, 'h1') && htdoc.hasAttr(node, 'id', 'jsharmony_cms_title'); },
+        pred: function(node){ return htdoc.isTag(node, 'h1') && htdoc.hasAttr(node, 'cms-title'); },
         exec: function(node){
           htdoc.replaceNodeContent(node, '<%=page.title%>', 'Title H1');
           htdoc.wrapNode(node, '<% if(page.title){ %>', '<% } %>', 'Title H1')
+          htdoc.removeAttr(node, 'cms-title');
         }
       },
       { //Add editable regions
-        pred: function(node){ return htdoc.hasAttr(node, 'data-id') && htdoc.hasClass(node, 'jsharmony_cms_content'); },
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-content-editor'); },
         exec: function(node){
           //Get data-id
-          var contentId = (htdoc.getAttr(node, 'data-id')||'').toString();
-          if(contentId){
-            htdoc.replaceNodeContent(node, '<%-page.content['+JSON.stringify(contentId)+']%>', 'Content '+contentId);
+          var contentId = (htdoc.getAttr(node, 'cms-content-editor')||'').toString();
+          var pageContentId = (Helper.beginsWith(contentId, 'page.content.')) ? contentId.substr(('page.content.').length) : contentId;
+          if(pageContentId){
+            var defaultContent = htdoc.getNodeContent(node, 'Content '+contentId);
+            htdoc.replaceNodeContent(node, '<%-page.content['+JSON.stringify(pageContentId)+']%>', 'Content '+contentId);
+            if(!(pageContentId in template.default_content)) template.default_content[pageContentId] = defaultContent;
+          }
+          htdoc.removeAttr(node, 'cms-content-editor');
+        }
+      },
+      { //Process Components
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-component') || htdoc.hasClass(node, 'jsharmony_cms_component'); },
+        exec: function(node){
+          //Get component id
+          var componentId = (htdoc.getAttr(node, 'cms-component')||'').toString();
+          if(!componentId) (htdoc.getAttr(node, 'data-id')||'').toString();
+          if(componentId){
+            var props = {
+              'cms-menu-tag': { renderParam: 'menu_tag', type: 'string'},
+              'cms-component-properties': { renderParam: 'properties', type: 'json'},
+              'cms-component-data': { renderParam: 'data', type: 'json'},
+            }
+            var renderOptions = {};
+            for(var propName in props){
+              var prop = props[propName];
+              if(htdoc.hasAttr(node, propName)){
+                var propVal = htdoc.getAttr(node, propName);
+                if(prop.type=='json'){
+                  propVal = jshParser.ParseJSON(propVal, componentId+' '+propName, { trimErrors: true });
+                }
+                renderOptions[prop.renderParam] = propVal;
+                htdoc.removeAttr(node, propName);
+              }
+            }
+            htdoc.removeAttr(node, 'cms-component', 'Component '+componentId);
+            htdoc.removeAttr(node, 'cms-component-properties', 'Component '+componentId);
+            htdoc.removeAttr(node, 'cms-component-data', 'Component '+componentId);
+            htdoc.replaceNodeContent(node, '<%-renderComponent('+JSON.stringify(componentId)+(!_.isEmpty(renderOptions)?', '+JSON.stringify(renderOptions):'')+')%>', 'Component '+componentId);
           }
         }
       },
@@ -1272,93 +1542,154 @@ module.exports = exports = function(module, funcs){
     else if(htparts.html) footerInsertPosition = htparts.html.sourceCodeLocation.endTag.startOffset;
     htdoc.insertHtml(footerInsertPosition, '<%-page.footer%>');
 
+    htdoc.restoreEJS();
+    htdoc.trimRemoved();
     return htdoc.content;
   }
 
   exports.generateComponentTemplate = function(component, content){
     var default_editor_content = {};
     if(!content) return '';
-    content = '<% var component_group_offset = 0; %>' + content;
+    content = '<% locals.renderTemplate = locals.renderTemplate.bind(null, locals); function getEJSOutput(f){ var pos = __output.length; f(); return __output.substr(pos); } %>' + content;
 
     var htdoc = new funcs.HTMLDoc(content, { extractEJS: true, noDuplicateAttributes: true });
 
     htdoc.applyNodes([
-      { //Remove page config script
-        pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/jsharmony-cms-component-config'); },
+      { //Remove component config script
+        pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/cms-component-config'); },
         exec: function(node){ htdoc.removeNode(node, 'Component Config Script'); }
       },
-      { //component-item
-        pred: function(node){ return htdoc.hasAttr(node, 'component-item'); },
+      { //Remove component config tag
+        pred: function(node){ return htdoc.isTag(node, 'cms-component-config') },
+        exec: function(node){ htdoc.removeNode(node, 'Component Config Tag'); }
+      },
+      { //jsh-group-items
+        pred: function(node){ return htdoc.hasAttr(node, 'jsh-group-items') || htdoc.hasAttr(node, 'jsh-group-items-into') || htdoc.hasAttr(node, 'jsh-group-items-by'); },
         exec: function(node){
-          htdoc.removeAttr(node, 'component-item');
-          htdoc.wrapNode(node, '<% for(var component_item_index=0;component_item_index<items.length;component_item_index++){ var item = items[component_item_index]; if(data_errors[component_group_offset+component_item_index]){ %><%-renderPlaceholder({ errors: data_errors[component_group_offset+component_item_index] })%><% } else { %>', '<% } } %>', 'component-item');
+          var itemsVariable = htdoc.getAndRemoveAttr(node, 'jsh-group-items').trim()||'items';
+          var groupInto = htdoc.getAndRemoveAttr(node, 'jsh-group-items-into').trim();
+          var groupBy = htdoc.getAndRemoveAttr(node, 'jsh-group-items-by').trim();
+          var subgroupVariable = htdoc.getAndRemoveAttr(node, 'jsh-group-items-subgroup').trim()||'items';
+          var subgroupIndex = htdoc.getAndRemoveAttr(node, 'jsh-group-items-index','jsh_group_index');
+          var subgroupSeparator = htdoc.getAndRemoveAttr(node, 'jsh-group-items-separator');
+
+          if(groupBy && groupInto) throw new Error('Cannot use both jsh-group-items-by and jsh-group-items-into in the same tag.  Please use a combined jsh-group-items-by expression instead');
+          if(!groupBy && !groupInto) throw new Error('Either jsh-group-items-by or jsh-group-items-into is required.  If grouping is not necessary, use a jsh-foreach-item expression instead');
+
+          var groupByFunc = function(groupFunc, items){
+            let rslt = {};
+            for(let i=0;i<items.length;i++){
+              let key = groupFunc(items[i], i);
+              if(!(key in rslt)) rslt[key] = [];
+              rslt[key].push(items[i]);
+            }
+            return rslt;
+          }
+
+          if(groupInto){
+            var groupIntoStr = groupInto;
+            groupInto = parseInt(groupIntoStr)||0;
+            if(groupInto.toString() != groupIntoStr) throw new Error('The jsh-group-items-into property must be a whole number');
+            if(groupInto <= 0) throw new Error('The jsh-group-items-into property must be greater than 0');
+            groupBy = 'Math.floor(jsh_group_item_index/'+groupInto.toString()+')+1';
+          }
+
+          var groupByStr = '('+_.map(groupByFunc.toString().split('\n'),function(line){ return line.trim(); }).join('')+')(function(item, jsh_group_item_index){return ('+groupBy+');}, '+itemsVariable+')';
+
+          htdoc.wrapNode(node, '<% (function(){ let jsh_groups = '+groupByStr+'; let jsh_subgroup_first = true; for(let '+subgroupIndex+' in jsh_groups){ let '+subgroupVariable+'=jsh_groups['+subgroupIndex+']; if(jsh_subgroup_first){ jsh_subgroup_first = false; }else{ %>'+subgroupSeparator+'<% } (function(){ %>','<% })(); } })(); %>');
         }
       },
-      { //component-group-every
-        pred: function(node){ return htdoc.hasAttr(node, 'component-group-every'); },
+      { //cms-component-editor-remove-class
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-component-editor-remove-class'); },
         exec: function(node){
-          var countStr = (htdoc.getAttr(node, 'component-group-every')||'').toString();
-          var count = parseInt(countStr);
-          if(!count || (count.toString() != countStr)) throw new Error('The component-group-every property must have a number of items per group, ex: component-group-every="3"');
-          htdoc.removeAttr(node, 'component-group-every');
-          htdoc.wrapNode(node, '<% for(var component_group_index=0;component_group_index<Math.ceil(items.length/'+count+');component_group_index++){ var component_group_parent_offset = component_group_offset; var component_subgroup_offset = component_group_index*'+count+'; var component_subgroup = items.slice(component_group_index*'+count+',(component_group_index+1)*'+count+'); (function(){ var component_group_offset = component_group_parent_offset + component_subgroup_offset; var items = component_subgroup; %>', '<% })(); } %>', 'component-group-every');
-        }
-      },
-      { //component-editor-remove-class
-        pred: function(node){ return htdoc.hasAttr(node, 'component-editor-remove-class'); },
-        exec: function(node){
-          var classNameStr = (htdoc.getAttr(node, 'component-editor-remove-class')||'').toString();
+          var classNameStr = (htdoc.getAttr(node, 'cms-component-editor-remove-class')||'').toString();
           var classNames = classNameStr.split(' ');
           for(var i=0;i<classNames.length;i++){
             var className = classNames[i].trim();
             if(!className) continue;
-            if(htdoc.removeClass(node, className, 'component-editor-remove-class', { noEscape: true })){
+            if(htdoc.removeClass(node, className, 'cms-component-editor-remove-class', { noEscape: true })){
               //Item removed
-              htdoc.addClass(node, '<%=(!isInComponentEditor?'+JSON.stringify(className)+':"")%>', 'component-editor-remove-class', { noEscape: true });
+              htdoc.addClass(node, '<%=(!isInComponentEditor?'+JSON.stringify(className)+':"")%>', 'cms-component-editor-remove-class', { noEscape: true });
             }
           }
-          htdoc.removeAttr(node, 'component-editor-remove-class');
+          htdoc.removeAttr(node, 'cms-component-editor-remove-class');
         }
       },
-      { //component-editor-add-class
-        pred: function(node){ return htdoc.hasAttr(node, 'component-editor-add-class'); },
+      { //cms-component-editor-add-class
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-component-editor-add-class'); },
         exec: function(node){
-          var classNameStr = (htdoc.getAttr(node, 'component-editor-add-class')||'').toString().trim();
+          var classNameStr = (htdoc.getAttr(node, 'cms-component-editor-add-class')||'').toString().trim();
           if(classNameStr){
-            htdoc.addClass(node, '<%=(isInComponentEditor?'+JSON.stringify(classNameStr)+':"")%>', 'component-editor-add-class', { noEscape: true });
+            htdoc.addClass(node, '<%=(isInComponentEditor?'+JSON.stringify(classNameStr)+':"")%>', 'cms-component-editor-add-class', { noEscape: true });
           }
-          htdoc.removeAttr(node, 'component-editor-add-class');
+          htdoc.removeAttr(node, 'cms-component-editor-add-class');
         }
       },
       { //cms-editor
-        pred: function(node){ return htdoc.hasAttr(node, 'cms-editor-for') || htdoc.hasAttr(node, 'cms-editor-type'); },
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-content-editor') || htdoc.hasAttr(node, 'cms-content-editor-type'); },
         exec: function(node){
-          var editorField = (htdoc.getAttr(node, 'cms-editor-for')||'').toString().trim();
-          var editorType = (htdoc.getAttr(node, 'cms-editor-type')||'').toString().toLowerCase().trim();
-          if(editorType && !editorField) throw new Error('The cms-editor-for attribute is required with the cms-editor-type attribute, ex: cms-editor-for="item.body" cms-editor-type="simple"');
-          if(!editorField) throw new Error('The cms-editor-for property must have an item.property name, ex: cms-editor-for="item.body"');
+          var editorField = (htdoc.getAttr(node, 'cms-content-editor')||'').toString().trim();
+          var editorType = (htdoc.getAttr(node, 'cms-content-editor-type')||'').toString().toLowerCase().trim();
+          if(editorType && !editorField) throw new Error('The cms-content-editor attribute is required with the cms-content-editor-type attribute, ex: cms-content-editor="item.body" cms-content-editor-type="simple"');
+          if(!editorField) throw new Error('The cms-content-editor property must have an item.property name, ex: cms-content-editor="item.body"');
           if(!editorType) editorType = 'full';
-          if(editorField.indexOf('item.')!=0) throw new Error('The "cms-editor-for" attribute must begin with "item.", ex. cms-editor-for="item.body"');
+          if(editorField.indexOf('item.')!=0) throw new Error('The "cms-content-editor" attribute must begin with "item.", ex. cms-content-editor="item.body"');
           editorField = editorField.substr(('item.').length);
-          htdoc.removeAttr(node, 'cms-editor-for');
-          htdoc.removeAttr(node, 'cms-editor-type');
+          htdoc.removeAttr(node, 'cms-content-editor');
+          htdoc.removeAttr(node, 'cms-content-editor-type');
           var tagName = (node.tagName||'').toString().toLowerCase();
           if(tagName=='p'){
             if(htdoc.hasAttr(node, 'cms-editor-on-p')) htdoc.removeAttr(node, 'cms-editor-on-p');
-            else throw new Error('A "cms-editor-for" attribute on a "p" tag will not work with line breaks.  Please add the "cms-editor-on-p" tag if this is intentional, ex. <p cms-editor-for="item.body" cms-editor-on-p></p>');
+            else throw new Error('A "cms-content-editor" attribute on a "p" tag will not work with line breaks.  Please add the "cms-editor-on-p" tag if this is intentional, ex. <p cms-content-editor="item.body" cms-editor-on-p></p>');
           }
-          if(htdoc.hasAttr(node, 'data-component-full-editor')) throw new Error('The "cms-editor-for" attribute cannot be used together with the "data-component-full-editor" attribute');
-          if(htdoc.hasAttr(node, 'data-component-title-editor')) throw new Error('The "cms-editor-for" attribute cannot be used together with the "data-component-title-editor" attribute');
+          if(htdoc.hasAttr(node, 'data-component-full-editor')) throw new Error('The "cms-content-editor" attribute cannot be used together with the "data-component-full-editor" attribute');
+          if(htdoc.hasAttr(node, 'data-component-title-editor')) throw new Error('The "cms-content-editor" attribute cannot be used together with the "data-component-title-editor" attribute');
           var attrName = '';
           if(editorType == 'full') attrName = 'data-component-full-editor';
           else if(editorType == 'simple') attrName = 'data-component-title-editor';
-          else throw new Error('Unsupport cms-editor-type: '+editorType);
+          else throw new Error('Unsupported cms-content-editor-type: '+editorType);
           
           htdoc.appendAttr(node, attrName, editorField);
-          var prevContent = (htdoc.getNodeContent(node, 'cms-editor-for content'));
+          var prevContent = htdoc.getNodeContent(node, 'cms-content-editor content');
           if(prevContent){ default_editor_content[editorField] = prevContent; }
           htdoc.replaceNodeContent(node, '<%-item.'+editorField+'%>');
           htdoc.wrapAttr(node, attrName, '<% if(renderType=="gridItemPreview"){ %>', '<% } %>');
+        }
+      },
+      { //jsh-template
+        pred: function(node){ return htdoc.hasAttr(node, 'jsh-template'); },
+        exec: function(node){
+          var templateName = (htdoc.getAttr(node, 'jsh-template')||'').toString();
+          htdoc.removeAttr(node, 'jsh-template');
+
+          var subgroupVariable = htdoc.getAndRemoveAttr(node, 'jsh-template-subgroup').trim()||'items';
+          
+          htdoc.wrapNode(node, '<% (locals.jsh_render_templates=locals.jsh_render_templates||{})['+JSON.stringify(templateName)+'] = function('+subgroupVariable+'){ %>', '<% } %>', 'jsh-template');
+        }
+      },
+      { //jsh-foreach-item
+        pred: function(node){ return htdoc.hasAttr(node, 'jsh-foreach-item'); },
+        exec: function(node){
+          var itemsVariable = htdoc.getAndRemoveAttr(node, 'jsh-foreach-item').trim()||'items';
+          var itemSeparator = htdoc.getAndRemoveAttr(node, 'jsh-foreach-item-separator');
+          var itemVariable = htdoc.getAndRemoveAttr(node, 'jsh-foreach-item-variable').trim()||'item';
+          var forEachStart = htdoc.getAndRemoveAttr(node, 'jsh-foreach-item-start').trim()||'1';
+          forEachStart = '(' + forEachStart + ')';
+          var forEachEnd = htdoc.getAndRemoveAttr(node, 'jsh-foreach-item-end').trim()||('(('+itemsVariable+')||[]).length');
+          forEachEnd = '(' + forEachEnd + ')';
+          var forEachSkip = htdoc.getAndRemoveAttr(node, 'jsh-foreach-item-skip').trim()||'0';
+          var forEachIndex = htdoc.getAndRemoveAttr(node, 'jsh-foreach-item-index','jsh_item_index');
+
+          htdoc.wrapNode(node, '<% for(let '+forEachIndex+'='+forEachStart+';'+forEachIndex+'<='+forEachEnd+';'+forEachIndex+'+=(1+'+forEachSkip+')){ let '+itemVariable+' = (('+itemsVariable+')||[])['+forEachIndex+'-1]; if('+forEachIndex+'>'+forEachStart+'){ %>'+itemSeparator+'<% } if(('+itemVariable+')&&('+itemVariable+').jsh_validation_errors){ %><%-renderPlaceholder({ errors: ('+itemVariable+').jsh_validation_errors })%><% } else { %>', '<% } } %>', 'jsh-foreach-item');
+        }
+      },
+      { //jsh-for-item
+        pred: function(node){ return htdoc.hasAttr(node, 'jsh-for-item'); },
+        exec: function(node){
+          var itemsVariable = htdoc.getAndRemoveAttr(node, 'jsh-for-item').trim()||'items';
+          var itemVariable = htdoc.getAndRemoveAttr(node, 'jsh-for-item-variable').trim()||'item';
+
+          htdoc.wrapNode(node, '<% (function(){ let '+itemVariable+'='+itemsVariable+'; if(!isNullUndefined('+itemVariable+')){ %>','<% } })(); %>','jsh-for-item');
         }
       },
     ]);
@@ -1375,6 +1706,7 @@ module.exports = exports = function(module, funcs){
     }
 
     htdoc.restoreEJS();
+    htdoc.trimRemoved();
     return htdoc.content;
 
   }

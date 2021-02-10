@@ -34,9 +34,9 @@
   </ul>
 
   <h3>Separate Edit / Publish Templates</h3>
-  If different templates are required for "Edit" and "Publish", the URL defined in the Component Templates grid will be used as the Edit template, and the Publish template URL should be defined inside Edit template, in the &lt;script type="text/jsharmony-cms-component-config"&gt; script tag:
+  If different templates are required for "Edit" and "Publish", the URL defined in the Component Templates grid will be used as the Edit template, and the Publish template URL should be defined inside Edit template, in the &lt;script type="text/cms-component-config"&gt; script tag:
   <pre>
-  &lt;script type="text/jsharmony-cms-component-config"&gt;
+  &lt;script type="text/cms-component-config"&gt;
   {
     "remote_templates": {
       "publish": "%%%base_url%%%/templates/components/banner.publish.html?source=1&_=%%%timestamp%%%"

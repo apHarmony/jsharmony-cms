@@ -47,7 +47,7 @@ function PropertyEditor_Form(componentTemplate, cms, jsh) {
  */
 PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
-  var self = this;
+  var _this = this;
   var modelTemplate = this._componentTemplate.getPropertiesModelTemplate_Form();
   var model = modelTemplate.getModelInstance();
 
@@ -78,7 +78,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   dialog.onCancel = function(options, $dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
-      self._jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this._jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -91,8 +91,8 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xmodel.id];
-    delete self._jsh.App[xmodel.id];
+    delete _this._jsh.XModels[xmodel.id];
+    delete _this._jsh.App[xmodel.id];
   }
 
   dialog.open(data);
