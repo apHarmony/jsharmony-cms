@@ -148,6 +148,7 @@ jsh.App[modelid] = new (function(){
     var page_key = xmodel.get('page_key', rowid);
     var page_title = xmodel.get('page_title', rowid);
     var page_path = xmodel.get('page_path', rowid);
+    var page_folder = xmodel.get('page_folder', rowid);
 
     if(window.opener && jsh._GET.CKEditor){
       window.opener.postMessage('ckeditor:'+JSON.stringify({ page_key: page_key, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
@@ -155,7 +156,7 @@ jsh.App[modelid] = new (function(){
     }
     else {
       if(!window.opener) return XExt.Alert('Parent editor not found');
-      window.opener.postMessage('cms_file_picker:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path  }), '*');
+      window.opener.postMessage('cms_file_picker:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path, page_folder: page_folder }), '*');
       window.close();
     }
   }

@@ -4931,6 +4931,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms, editor){
   var _this = this;
   var XExt = jsh.XExt;
+  this.lastMediaPath = undefined;
+  this.lastLinkPath = undefined;
 
   this.getParameters = function(filePickerType, url){
     url = (url||'').toString();
@@ -4951,6 +4953,12 @@ exports = module.exports = function(jsh, cms, editor){
         if(page_key.toString()==patharr[3]) return { init_page_key: page_key };
       }
     }
+    else if(filePickerType === 'link' && _this.lastLinkPath) {
+      if(_this.lastLinkPath.init_media_path) return { init_media_path: _this.lastLinkPath.init_media_path };
+      else if(_this.lastLinkPath.init_page_path) return { init_page_path: _this.lastLinkPath.init_page_path };
+    } 
+    else if (filePickerType === 'media' && _this.lastMediaPath) return { init_media_path: _this.lastMediaPath };
+
     return {};
   }
 
@@ -4964,7 +4972,8 @@ exports = module.exports = function(jsh, cms, editor){
     cms.filePickerCallback = cb;
     var qs = { };
     var linkurl = _this.getParameters('media', value);
-    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
+    if(linkurl.init_media_key) qs.init_media_key = linkurl.init_media_key;
+    else if(linkurl.init_media_path) qs.init_media_path = linkurl.init_media_path;
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
   }
 
@@ -4975,9 +4984,12 @@ exports = module.exports = function(jsh, cms, editor){
       var jdata = JSON.parse(data);
       if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){}
       else if(jdata.media_key){
+        _this.lastMediaPath = jdata.media_folder;
+        _this.lastLinkPath = { init_media_path: jdata.media_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS', jdata);
       }
       else if(jdata.page_key){
+        _this.lastLinkPath = { init_page_path: jdata.page_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS', jdata);
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
