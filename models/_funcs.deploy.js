@@ -90,6 +90,10 @@ module.exports = exports = function(module, funcs){
     return path.join(module.jsh.Config.datadir, 'publish_log', deployment_id + '.log');
   }
 
+  exports.deployment_getChangeFileName = function (deployment_id) {
+    return path.join(module.jsh.Config.datadir, 'publish_log', deployment_id + '.changes.log');
+  }
+
   exports.deploy_log = function (deployment_id, txt, logtype){
     var jsh = module.jsh;
     jsh.Log[logtype](txt);
@@ -103,6 +107,13 @@ module.exports = exports = function(module, funcs){
 
   exports.deploy_log_info = function (deployment_id, txt){
     funcs.deploy_log(deployment_id, txt, 'info');
+  }
+
+  exports.deploy_log_change = function (deployment_id, txt){
+    var jsh = module.jsh;
+    if(!jsh.Config.logdir) return;
+    var logfile = funcs.deployment_getChangeFileName(deployment_id);
+    fs.appendFile(logfile, txt+'\r\n', function(){});
   }
 
   exports.deploy = function (deployment_id, onComplete) {
@@ -1484,6 +1495,7 @@ module.exports = exports = function(module, funcs){
           var srcpath = path.join(publish_path, fname);
           var dstpath = path.join(deploy_path, fname);
           funcs.deploy_log_info(deployment_id, 'Copying file '+dstpath);
+          funcs.deploy_log_change(deployment_id, fname);
           HelperFS.copyFile(srcpath, dstpath, file_cb);
         }, fs_cb);
       }
@@ -1554,6 +1566,7 @@ module.exports = exports = function(module, funcs){
           var page_fpath = path.join(publish_path, page_path);
           var fstream = fs.createReadStream(page_fpath);
           funcs.deploy_log_info(deployment_id, 'Uploading: '+page_path);
+          funcs.deploy_log_change(deployment_id, page_path);
           s3.upload({ Bucket: bucket, Key: page_bpath, Body: fstream }, function(err, data){
             if(err) return page_cb(err);
             return page_cb();
@@ -1606,6 +1619,58 @@ module.exports = exports = function(module, funcs){
 
       if (verb == 'get') {
         var logfile = funcs.deployment_getLogFileName(deployment_id);
+        var log = '';
+
+        fs.exists(logfile, function(exists){
+          Helper.execif(exists,
+            function(f){
+              fs.readFile(logfile, 'utf8', function(err, data){
+                if(err) return f();
+                log = data;
+                return f();
+              });
+            },
+            function(){
+              res.end(JSON.stringify({ '_success': 1, deployment: deployment, log: log }));
+            }
+          );
+        });
+        return;
+      }
+      return next();
+    });
+  }
+
+  exports.deployment_change_log = function (req, res, next) {
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+
+    var Q = req.query;
+    var P = {};
+    if (req.body && ('data' in req.body)){
+      try{ P = JSON.parse(req.body.data); }
+      catch(ex){ Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    }
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    var model = jsh.getModel(req, module.namespace + 'Publish_Changed_Files');
+
+    var deployment_id = req.params.deployment_id;
+    if(!deployment_id) return next();
+    if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
+
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    var sql = "select deployment_id, deployment_sts, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
+    appsrv.ExecRow(req._DBContext, sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
+      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+      if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment ID');
+      var deployment = rslt[0];
+
+      if (verb == 'get') {
+        var logfile = funcs.deployment_getChangeFileName(deployment_id);
         var log = '';
 
         fs.exists(logfile, function(exists){

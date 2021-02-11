@@ -739,6 +739,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/sitemap/:sitemap_key/': _this.funcs.sitemap,
         '/_funcs/deploy': _this.funcs.deploy_req,
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
+        '/_funcs/deployment_change_log/:deployment_id': _this.funcs.deployment_change_log,
         '/_funcs/diff': _this.funcs.diff,
         '/_funcs/validate': _this.funcs.validate_req,
         '/_funcs/conflicts': _this.funcs.req_conflicts,
