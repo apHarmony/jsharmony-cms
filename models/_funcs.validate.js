@@ -268,7 +268,7 @@ module.exports = exports = function(module, funcs){
     //Validate templates
     _.each(branchData.page_templates, function(page_template, page_template_id){
       _.each(page_template.components, function(component, componentId){
-        if(componentId in branchData.component_templates){ funcs.validate_logSystemError(branchData, 'Page template "' + page_template.title + '" has an inline component "' + componentId + '" that is already defined as a '+(branchData.component_templates[componentId].location||'').toLowerCase()+' component.'); }
+        if(componentId in branchData.component_templates){ funcs.validate_logSystemError(branchData, 'Page template "' + page_template.title + '" has an inline component "' + componentId + '" that is already defined as a site component.'); }
       });
     });
 

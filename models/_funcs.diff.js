@@ -450,7 +450,7 @@ module.exports = exports = function(module, funcs){
 
   exports.menuDiff = function(old_menu, new_menu){
     var diff = {};
-    var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
+    var menu_items_diff = funcs.diffText(old_menu.menu_items_text, new_menu.menu_items_text);
     if(menu_items_diff) diff.menu_items = menu_items_diff;
     _.each(['menu_name','menu_tag'], function(key){
       if(old_menu[key] != new_menu[key]) diff[key] = new_menu[key];
@@ -460,7 +460,7 @@ module.exports = exports = function(module, funcs){
 
   exports.sitemapDiff = function(old_sitemap, new_sitemap){
     var diff = {};
-    var sitemap_items_diff = funcs.diffHTML(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
+    var sitemap_items_diff = funcs.diffText(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
     if(sitemap_items_diff) diff.sitemap_items = sitemap_items_diff;
     _.each(['sitemap_name','sitemap_type'], function(key){
       if(old_sitemap[key] != new_sitemap[key]) diff[key] = new_sitemap[key];
@@ -474,10 +474,10 @@ module.exports = exports = function(module, funcs){
     a = funcs.renderComponentsPretty(a);
     b = funcs.renderComponentsPretty(b);
 
-    return funcs.diffHTML(a, b);
+    return funcs.diffText(a, b);
   }
 
-  exports.diffHTML = function(a, b){
+  exports.diffText = function(a, b){
     if(a==b) return '';
 
     var diff_lines = dmp.diff_linesToChars_(a, b);

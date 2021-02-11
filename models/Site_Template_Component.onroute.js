@@ -88,7 +88,7 @@ if((routetype == 'd')||(routetype == 'csv')){
       });
     },
 
-    //Add local system template
+    //Add local system templates
     function(data_cb){
       for(var key in cms.SystemComponentTemplates){
         var templateConfig = cms.SystemComponentTemplates[key];

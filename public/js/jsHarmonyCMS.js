@@ -2835,15 +2835,6 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
 }
 
 /**
- * Create a new instance of the jsHarmonyCMSEditorPicker
- * @private
- * @returns {object}
- */
-DataEditor_Form.prototype.createPicker = function() {
-  return this._cms.createJsHarmonyCMSEditorPicker(undefined);
-}
-
-/**
  * @private
  * @param {JQuery} $dialog
  * @param {MediaBrowserControlInfo} info
@@ -2952,9 +2943,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       };
 
       if (info.browserType === 'link') {
-
         if (info == undefined) return;
-        _this.openLinkBrowser(function(url, data) {
+        _this._cms.editor.picker.openLink(function(url, data) {
           var title = url||'';
           if(data){
             if(data.page_path) title = data.page_path;
@@ -2962,13 +2952,15 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
             else if(data.item_path) title = data.item_path;
           }
           update(url, title);
-        });
-      } else if (info.browserType === 'media') {
-          _this.openMediaBrowser(function(url, data) {
-            var title = data.media_path;
-            update(url, title);
-          });
-      } else {
+        }, xmodel.get(browserControlName));
+      }
+      else if (info.browserType === 'media') {
+        _this._cms.editor.picker.openMedia(function(url, data) {
+          var title = data.media_path;
+          update(url, title);
+        }, xmodel.get(browserControlName));
+      }
+      else {
         console.warn(new Error('Unknown browser type ' + info.browserType));
       }
     }
@@ -3037,24 +3029,6 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
   }
 
   dialog.open(itemData);
-}
-
-/**
- * Open a link browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataEditor_Form.prototype.openLinkBrowser = function(cb) {
-  this.createPicker().openLink(cb, '');
-}
-
-/**
- * Open a medial browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataEditor_Form.prototype.openMediaBrowser = function(cb) {
-  this.createPicker().openMedia(cb, '');
 }
 
 /**
@@ -4930,7 +4904,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-exports = module.exports = function(jsh, cms, editor){
+exports = module.exports = function(jsh, cms){
   var _this = this;
   var XExt = jsh.XExt;
   
@@ -5638,7 +5612,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   var XExt = jsh.XExt;
 
   this.isEditing = false;
-  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
+  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
@@ -5779,7 +5753,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   }
 
   this.detach = function(id){
-    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+id);
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(mceEditor){
       if(_this.isEditing == id) mceEditor.fire('blur');
       mceEditor.destroy();
@@ -5816,9 +5790,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
-        $('#jsharmony_cms_content_'+id).html(val);
+        $('#jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })).html(val);
         cms.componentManager.renderContainerContentComponents(document.getElementById('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })));
-        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+id), { addFlag: true, onlyJSHCMSLinks: true });
+        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })), { addFlag: true, onlyJSHCMSLinks: true });
       },1);
     }
     else {
@@ -7103,7 +7077,6 @@ var jsHarmonyCMSLoader = require('./jsHarmonyCMS.Loader.js');
 var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
-var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSControllerExtensions = require('./jsHarmonyCMS.ControllerExtensions.js');
 
@@ -7303,10 +7276,6 @@ var jsHarmonyCMS = function(options){
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
   }
 
-  this.createJsHarmonyCMSEditorPicker = function(editor) {
-    return new jsHarmonyCMSEditorPicker(jsh, _this, editor);
-  }
-
   //Run Init
   _this.init();
 }
@@ -7314,7 +7283,7 @@ var jsHarmonyCMS = function(options){
 global.jsHarmonyCMS = jsHarmonyCMS;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.ControllerExtensions.js":24,"./jsHarmonyCMS.Editor.Picker.js":25,"./jsHarmonyCMS.Editor.js":27,"./jsHarmonyCMS.Loader.js":28,"./jsHarmonyCMS.Toolbar.js":29,"./jsHarmonyCMS.Util.js":30}],32:[function(require,module,exports){
+},{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.ControllerExtensions.js":24,"./jsHarmonyCMS.Editor.js":27,"./jsHarmonyCMS.Loader.js":28,"./jsHarmonyCMS.Toolbar.js":29,"./jsHarmonyCMS.Util.js":30}],32:[function(require,module,exports){
 (function (global){
 /**
  * @license

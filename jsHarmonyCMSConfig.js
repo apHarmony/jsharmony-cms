@@ -60,7 +60,6 @@ function jsHarmonyCMSConfig(){
   this.deployment_target_params = { //Default deployment target parameters
     page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
     media_subfolder: '',  //Relative path from publish folder to media subfolder, ex. 'media/'
-    menu_subfolder: '',   //Relative path from publish folder to menu subfolder, ex. 'menus/'
     content_url: '/',     //Absolute path from website root to CMS publish folder, ex. '/content/'
     exec_pre_deployment: undefined,  //Execute shell command after populating publish folder, before deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }

@@ -22,7 +22,6 @@ var jsHarmonyCMSLoader = require('./jsHarmonyCMS.Loader.js');
 var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
-var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSControllerExtensions = require('./jsHarmonyCMS.ControllerExtensions.js');
 
@@ -220,10 +219,6 @@ var jsHarmonyCMS = function(options){
 
   this.createJsHarmonyCMSEditor = function(toolbarElement) {
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
-  }
-
-  this.createJsHarmonyCMSEditorPicker = function(editor) {
-    return new jsHarmonyCMSEditorPicker(jsh, _this, editor);
   }
 
   //Run Init

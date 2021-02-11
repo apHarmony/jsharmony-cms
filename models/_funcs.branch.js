@@ -450,7 +450,7 @@ module.exports = exports = function(module, funcs){
     async.waterfall([
       function(cb){
         //Load Page Templates
-        funcs.getPageTemplates(branchData._DBContext, site_id, { continueOnConfigError: true }, function(err, pageTemplates){
+        funcs.getPageTemplates(branchData._DBContext, branchData.site_id, { continueOnConfigError: true }, function(err, pageTemplates){
           if(err) return cb(err);
           branchData.pageTemplates = pageTemplates;
           return cb();
@@ -459,7 +459,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         //Check pages for errors
         _.each(branchItems, function(item){
-          if(item.page_template_id && !(item.page_template_id in branchData.pageTemplates)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Page template ID not defined in current site: '+item.page_template_id);
+          if(item.page_template_id && !(item.page_template_id in branchData.pageTemplates)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Page Template "'+item.page_template_id+'" not defined in current site');
           var contentFileName = 'data/page/'+item.page_file_id+'.json';
           if(!item.page_is_folder && item.page_file_id && !(contentFileName in branchData.contentFiles)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Missing content file: '+contentFileName);
         });
@@ -826,8 +826,6 @@ module.exports = exports = function(module, funcs){
         var sql_ptypes = [
           dbtypes.VarChar(256),
           dbtypes.VarChar(256),
-          dbtypes.VarChar(255),
-          dbtypes.VarChar(2048),
           dbtypes.VarChar(32),
         ];
         var sql_params = {

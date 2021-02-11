@@ -163,7 +163,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             _this.hasChanges = false;
             $('#jsharmony_cms_editor_bar a.jsharmony_cms_button.save').toggleClass('hasChanges', false);
             _this.page = rslt.page;
-            _this.template = rslt.template;
+            if(!cms.isInitialized) _this.template = rslt.template;
             _this.sitemap = rslt.sitemap;
             _this.menus = rslt.menus||{};
             _this.authors = rslt.authors;
@@ -442,7 +442,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             contentId = 'page.content.'+contentId;
             jobj.attr('cms-content-editor', contentId);
           }
-          if(!obj.id) obj.id = 'jsharmony_cms_content_' + XExt.escapeCSSClass(contentId);
+          if(!obj.id) obj.id = 'jsharmony_cms_content_' + XExt.escapeCSSClass(contentId, { nodash: true });
           var pageContentId = _this.getPageContentId(contentId);
           if(!(pageContentId in _this.page.content)){
             _this.page.content[pageContentId] = jobj.html();

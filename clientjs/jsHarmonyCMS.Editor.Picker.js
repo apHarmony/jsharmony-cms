@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-exports = module.exports = function(jsh, cms, editor){
+exports = module.exports = function(jsh, cms){
   var _this = this;
   var XExt = jsh.XExt;
   

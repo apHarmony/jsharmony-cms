@@ -167,7 +167,7 @@ module.exports = exports = function(module, funcs){
         function(cb){
           for(var component_name in components){
             var component = components[component_name];
-            if(!(component.templates && component.templates.editor)) continue;
+            if(!(component.templates && component.templates.editor) && !(component.remote_templates && component.remote_templates.editor)) continue;
             try{
               funcs.parseComponentTemplateConfigExtensions(component);
             }
@@ -334,16 +334,16 @@ module.exports = exports = function(module, funcs){
         return generate_cb(ex);
       }
       //Generate component export templates
-      _.each(template.export, function(exportItem, exportFile){
+      _.each(template.export, function(exportItem, exportIndex){
         if(!(template_name in branchData.component_export_template_html)) branchData.component_export_template_html[template_name] = {};
         var component_export_templates = branchData.component_export_template_html[template_name];
 
         if(template.optimization && template.optimization.bare_ejs_templates) { /* Do nothing */ }
-        else if(exportFile in component_export_templates){
+        else if(exportIndex in component_export_templates){
           //Pass null for "component" parameter, so that default field values will not be updated from export templates
-          component_export_templates[exportFile] = funcs.generateComponentTemplate(null, component_export_templates[exportFile]);
+          component_export_templates[exportIndex] = funcs.generateComponentTemplate(null, component_export_templates[exportIndex]);
         }
-        else component_export_templates[exportFile] = '';
+        else component_export_templates[exportIndex] = '';
       });
       return generate_cb();
     }, callback);
@@ -357,20 +357,23 @@ module.exports = exports = function(module, funcs){
    * @param {string} nodeName - the name of the top element
    * @param {Object.<string, string>} attribs
    */
-  function parsePrettyComponentConfig(obj, nodeName, attribs) {
+  function parsePrettyComponentConfig(nodeName, obj, attribs) {
     /** @type {XmlLikeNode} */
     const dataNode = { children: [], attribs: attribs || {}, name: nodeName, text: '' };
-    dataNode.children = Object.entries(obj).map(kvp => {
+    Object.entries(obj).map(kvp => {
       var itemName = kvp[0];
-      if(itemName.indexOf('_jsh_browserDataTitle') > 0) itemName = Helper.ReplaceAll(itemName, '_jsh_browserDataTitle', '_desc');
+      if(Helper.endsWith(itemName, '_jsh_browserDataTitle')) itemName = Helper.ReplaceAll(itemName, '_jsh_browserDataTitle', '_desc');
+      if(Helper.endsWith(itemName, '_browserButton')) return;
+      if(Helper.endsWith(itemName, '_resetButton')) return;
+      if(itemName=='component_preview') return;
       /** @type {XmlLikeNode} */
       const itemNode = {
         attribs: {},
         children: [],
         name: itemName,
-        text: `${kvp[1]}` // convert to string
+        text: (Helper.isNullUndefined(kvp[1])?'':kvp[1]).toString()
       };
-      return itemNode;
+      dataNode.children.push(itemNode);
     });
     return dataNode;
   }
@@ -658,13 +661,18 @@ module.exports = exports = function(module, funcs){
     const topNode = { attribs: {}, children: [], name: componentType, text: '' };
 
     // Add properties
-    topNode.children.push(parsePrettyComponentConfig(componentProperties, 'properties'));
+    topNode.children.push(parsePrettyComponentConfig('properties', componentProperties));
 
     // Add data
-    const dataItems = componentData.item ? [componentData.item] : componentData.items || [];
-    dataItems.forEach((item, i) => topNode.children.push(parsePrettyComponentConfig(item, 'data', { item: i + 1 })));
+    var dataItems = [];
+    if(componentData){
+      if(_.isArray(componentData)) dataItems = componentData;
+      else dataItems = [componentData];
+    }
+    dataItems.forEach((item, i) => topNode.children.push(parsePrettyComponentConfig('data', item, { item: i + 1 })));
 
-    return renderComponentNodePretty(topNode);
+    var rslt = renderComponentNodePretty(topNode);
+    return rslt;
   }
 
   /**

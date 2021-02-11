@@ -110,15 +110,6 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
 }
 
 /**
- * Create a new instance of the jsHarmonyCMSEditorPicker
- * @private
- * @returns {object}
- */
-DataEditor_Form.prototype.createPicker = function() {
-  return this._cms.createJsHarmonyCMSEditorPicker(undefined);
-}
-
-/**
  * @private
  * @param {JQuery} $dialog
  * @param {MediaBrowserControlInfo} info
@@ -227,9 +218,8 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       };
 
       if (info.browserType === 'link') {
-
         if (info == undefined) return;
-        _this.openLinkBrowser(function(url, data) {
+        _this._cms.editor.picker.openLink(function(url, data) {
           var title = url||'';
           if(data){
             if(data.page_path) title = data.page_path;
@@ -237,13 +227,15 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
             else if(data.item_path) title = data.item_path;
           }
           update(url, title);
-        });
-      } else if (info.browserType === 'media') {
-          _this.openMediaBrowser(function(url, data) {
-            var title = data.media_path;
-            update(url, title);
-          });
-      } else {
+        }, xmodel.get(browserControlName));
+      }
+      else if (info.browserType === 'media') {
+        _this._cms.editor.picker.openMedia(function(url, data) {
+          var title = data.media_path;
+          update(url, title);
+        }, xmodel.get(browserControlName));
+      }
+      else {
         console.warn(new Error('Unknown browser type ' + info.browserType));
       }
     }
@@ -312,24 +304,6 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
   }
 
   dialog.open(itemData);
-}
-
-/**
- * Open a link browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataEditor_Form.prototype.openLinkBrowser = function(cb) {
-  this.createPicker().openLink(cb, '');
-}
-
-/**
- * Open a medial browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataEditor_Form.prototype.openMediaBrowser = function(cb) {
-  this.createPicker().openMedia(cb, '');
 }
 
 /**

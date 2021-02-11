@@ -1387,40 +1387,34 @@ describe('Component Export', function() {
           'folder2/file1.html': '',
         },
         component_export_template_html: {
-          'menu/top': {
-            '*': funcs.generateComponentTemplate(null, templateCode)
-          }
+          'menu/top': [
+            funcs.generateComponentTemplate(null, templateCode)
+          ]
         },
         component_templates: {
           'menu/top': {
-            'export': {
-              '*': {}
-            }
+            'export': [
+              {}
+            ]
           }
-        }
+        },
       },
-      fsOps: {
-        siteFiles: {},
-        addedFiles: {},
-        addedFilesUpper: {},
-        deletedFilesUpper: {},
-      }
     };
-    for(var fname in rslt.branchData.site_files) rslt.fsOps.siteFiles[fname.toUpperCase()] = fname;
+    rslt.branchData.fsOps = funcs.deploy_getFS(rslt.branchData.site_files);
     return rslt;
   }
 
   it('Wildcard Export - Add File', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); %>');
-    funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
-    assert(params.fsOps.addedFiles['menu/menu1.html'] == 'Menu content');
+    funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
+    assert(params.branchData.fsOps.addedFiles['menu/menu1.html'] == 'Menu content');
     return done();
   });
 
   it('Wildcart Export - Add File Conflict', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); addFile("folder1/file1.html"); %>');
     assert.throws(function(){
-      funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
+      funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     }, /file already exists/);
     return done();
   });
@@ -1428,7 +1422,7 @@ describe('Component Export', function() {
   it('Wildcart Export - Invalid File Name', function(done) {
     var params = getParams('<% addFile("menu\\\\menu1.html", "Menu content"); %>');
     assert.throws(function(){
-      funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
+      funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     }, /is not allowed in file path/);
     return done();
   });
@@ -1436,7 +1430,7 @@ describe('Component Export', function() {
   it('Wildcart Export - Invalid File Name \\', function(done) {
     var params = getParams('<% addFile("/menu/menu1.html", "Menu content"); %>');
     assert.throws(function(){
-      funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
+      funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     }, /File path cannot begin with/);
     return done();
   });
@@ -1444,30 +1438,30 @@ describe('Component Export', function() {
   it('Wildcart Export - Invalid File Name %', function(done) {
     var params = getParams('<% addFile("menu/menu1|.html", "Menu content"); %>');
     assert.throws(function(){
-      funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
+      funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     }, /Invalid characters in file path/);
     return done();
   });
 
   it('Wildcart Export - Delete Added File', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); %>');
-    funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
-    assert(_.isEmpty(params.fsOps.addedFiles));
+    funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
+    assert(_.isEmpty(params.branchData.fsOps.addedFiles));
     return done();
   });
 
   it('Wildcart Export - Delete Site File', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("folder1/file1.html"); %>');
-    funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
-    assert(params.fsOps.addedFiles['menu/menu1.html'] == 'Menu content');
-    assert(params.fsOps.deletedFilesUpper['FOLDER1/FILE1.HTML']=='folder1/file1.html');
+    funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
+    assert(params.branchData.fsOps.addedFiles['menu/menu1.html'] == 'Menu content');
+    assert(params.branchData.fsOps.deletedFilesUpper['FOLDER1/FILE1.HTML']=='folder1/file1.html');
     return done();
   });
 
   it('Wildcart Export - Cannot Delete Added File Twice', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); deleteFile("menu/menu1.html"); %>');
     assert.throws(function(){
-      funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
+      funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     }, /file not found/);
     return done();
   });
@@ -1475,22 +1469,22 @@ describe('Component Export', function() {
   it('Wildcart Export - Cannot Delete Site File Twice', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("folder1/file1.html"); deleteFile("folder1/file1.html"); %>');
     assert.throws(function(){
-      funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
+      funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     }, /file already deleted/);
     return done();
   });
 
   it('Wildcart Export - Can Add and Delete Twice', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); %>');
-    funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
-    assert(_.isEmpty(params.fsOps.addedFiles));
+    funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
+    assert(_.isEmpty(params.branchData.fsOps.addedFiles));
     return done();
   });
 
   it('Wildcart Export - Delete Twice with HasFile', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); if(hasFile("menu/menu1.html")) deleteFile("menu/menu1.html"); if(hasFile("menu/menu1.html")) deleteFile("menu/menu1.html"); %>');
-    funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
-    assert(_.isEmpty(params.fsOps.addedFiles));
+    funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
+    assert(_.isEmpty(params.branchData.fsOps.addedFiles));
     return done();
   });
 
@@ -1501,9 +1495,9 @@ describe('Component Export', function() {
       '<% }) } %>',
       '<% addFile("file1", getTemplate("abc")); addFile("file2", getTemplate("abc&d")); %>'
     ].join(''));
-    funcs.deploy_exportComponentRender(jsh, params.branchData, null, params.fsOps, 'menu/top', params.branchData.component_templates['menu/top'].export['*'], '*');
-    assert(params.fsOps.addedFiles['file1'] == '<div>abc</div>');
-    assert(params.fsOps.addedFiles['file2'] == '<div>abc&amp;d</div>');
+    funcs.deploy_exportComponentRender(jsh, params.branchData, null,  'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
+    assert(params.branchData.fsOps.addedFiles['file1'] == '<div>abc</div>');
+    assert(params.branchData.fsOps.addedFiles['file2'] == '<div>abc&amp;d</div>');
     return done();
   });
 });

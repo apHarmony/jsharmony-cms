@@ -320,7 +320,8 @@ module.exports = exports = function(module, funcs){
         var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString());
         var normalizedSitePath = path.normalize(sitePath);
         var templatePath = path.join(sitePath, 'templates', options.template_folder);
-        var publishTemplatePaths = [];
+        var publishTemplatePaths = {};
+        var exportTemplatePaths = {};
   
         //Get all local site templates from site\#\templates\[options.template_folder]
         fs.exists(templatePath, function (exists) {
@@ -381,13 +382,28 @@ module.exports = exports = function(module, funcs){
                       if(publishTemplatePath.indexOf('//') < 0){
                         publishTemplatePath = path.normalize(path.join(path.dirname(filepath), publishTemplatePath));
                         if(publishTemplatePath.indexOf(normalizedSitePath+path.sep) == 0){
-                          publishTemplatePaths.push({
-                            path: HelperFS.convertWindowsToPosix(publishTemplatePath.substr(normalizedSitePath.length)),
+                          publishTemplatePaths[HelperFS.convertWindowsToPosix(publishTemplatePath.substr(normalizedSitePath.length))] = {
                             source: localTemplate.site_template_path,
-                          });
+                          };
                         }
                         //Do not allow an editor template to reference itself as a publish template
                         if(publishTemplatePath == filepath) return file_cb(new Error('Error processing local template ' + localTemplate.site_template_path + ': An Editor template cannot target itself as the Publish template.  Remove the remote_templates.publish property to auto-generate a publish template based on the current editor template.'));
+                      }
+                    }
+                    if(templateConfig && templateConfig.export) for(var i=0;i<templateConfig.export.length;i++){
+                      var exportItem = templateConfig.export[i];
+                      var exportTemplatePath = exportItem.remote_template;
+                      if(!exportTemplatePath) continue;
+                      
+                      if(exportTemplatePath.indexOf('//') < 0){
+                        exportTemplatePath = path.normalize(path.join(path.dirname(filepath), exportTemplatePath));
+                        if(exportTemplatePath.indexOf(normalizedSitePath+path.sep) == 0){
+                          exportTemplatePaths[HelperFS.convertWindowsToPosix(exportTemplatePath.substr(normalizedSitePath.length))] = {
+                            source: localTemplate.site_template_path,
+                          };
+                        }
+                        //Do not allow an editor template to reference itself as an export template
+                        if(exportTemplatePath == filepath) return file_cb(new Error('Error processing local template ' + localTemplate.site_template_path + ': An Editor template cannot target itself as the Export template.  Remove the export[].remote_template property to auto-generate an export template based on the current editor template.'));
                       }
                     }
                     return file_cb();
@@ -396,20 +412,34 @@ module.exports = exports = function(module, funcs){
                 else file_cb();
               }, function(err){
                 if(err) return data_cb(err);
-                //Go through each publish template
-                for(var i=0;i<publishTemplatePaths.length;i++){
-                  //Find publish template
-                  for(var j=0;j<localTemplates.length;j++){
-                    if(publishTemplatePaths[i].path == localTemplates[j].site_template_path){
-                      var publishTemplate = localTemplates[j];
-                      //Remove Publish Templates
-                      localTemplates.splice(j, 1);
-                      j--;
-                      //Do not allow publish templates to have a templateConfig
-                      if(!_.isEmpty(publishTemplate.site_template_config)){
-                        return data_cb(new Error('Error processing publish template ' + publishTemplate.site_template_path + ': Publish templates cannot contain a "' + options.script_config_type + '" script tag.  This template is used as a publish template by '+publishTemplatePaths[i].source+' via the remote_templates.publish property.\r\n\r\nPlease make sure not to use Editor templates as Publish templates.  Remove the remote_templates.publish property from the Editor template to auto-generate a Publish template based on the current editor template.'));
-                      }
+                //Go through each local template
+                for(var i=0;i<localTemplates.length;i++){
+                  var localTemplate = localTemplates[i];
+
+                  //If local template is a publish template
+                  if(localTemplate.site_template_path in publishTemplatePaths){
+                    //Do not allow publish templates to have a templateConfig
+                    if(!_.isEmpty(localTemplate.site_template_config)){
+                      var source = publishTemplatePaths[localTemplate.site_template_path].source;
+                      return data_cb(new Error('Error processing publish template ' + localTemplate.site_template_path + ': Publish templates cannot contain a "' + options.script_config_type + '" script tag.  This template is used as a publish template by '+source+' via the remote_templates.publish property.\r\n\r\nPlease make sure not to use Editor templates as Publish templates.  Remove the remote_templates.publish property from the Editor template to auto-generate a Publish template based on the current editor template.'));
                     }
+                    //Remove template
+                    localTemplates.splice(i, 1);
+                    i--;
+                    continue;
+                  }
+
+                  //If local template is an export template
+                  if(localTemplate.site_template_path in exportTemplatePaths){
+                    //Do not allow export templates to have a templateConfig
+                    if(!_.isEmpty(localTemplate.site_template_config)){
+                      var source = exportTemplatePaths[localTemplate.site_template_path].source;
+                      return data_cb(new Error('Error processing export template ' + localTemplate.site_template_path + ': Export templates cannot contain a "' + options.script_config_type + '" script tag.  This template is used as a export template by '+source+' via the export[].remote_template property.\r\n\r\nPlease make sure not to use Editor templates as Export templates.  Remove the export[].remote_template property from the Editor template to auto-generate an Export template based on the current editor template.'));
+                    }
+                    //Remove template
+                    localTemplates.splice(i, 1);
+                    i--;
+                    continue;
                   }
                 }
                 return data_cb();
@@ -419,7 +449,7 @@ module.exports = exports = function(module, funcs){
         });
       },
   
-      //Add local system template
+      //Add local system templates
       function(data_cb){
         for(var key in options.system_templates){
           if(options.target_template_id && (key != options.target_template_id)) continue;

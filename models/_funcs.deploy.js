@@ -227,8 +227,10 @@ module.exports = exports = function(module, funcs){
               //Download export templates
               function(template_publish_cb){
                 if(options.templateType != 'COMPONENT') return template_publish_cb();
-                async.eachOf(templateConfig.export, function(exportItem, exportFile, export_cb){
-                  var exportErrorPrefix = 'Error in "'+template_name+'" '+options.templateType.toLowerCase()+', "'+exportFile+'" export - ';
+                async.eachOf(templateConfig.export, function(exportItem, exportIndex, export_cb){
+                  var exportDesc = '#'+(exportIndex+1).toString();
+                  if(exportItem.export_path) exportDesc = '"' + exportItem.export_path + '"';
+                  var exportErrorPrefix = 'Error in "'+template_name+'" '+options.templateType.toLowerCase()+', export '+exportDesc+' - ';
                   if(!(template_name in options.exportTemplates)) options.exportTemplates[template_name] = {};
                   Helper.execif(exportItem.remote_template,
                     //Initialize remote template
@@ -245,14 +247,14 @@ module.exports = exports = function(module, funcs){
                         if (HelperFS.fileNotFound(err)) return export_cb(new Error(exportErrorPrefix + 'File not found: '+exportItem.remote_template));
                         if(err) return export_cb(new Error(exportErrorPrefix + 'Could not download remote_template: '+err.toString()));
                         //Add export template to exportTemplates
-                        options.exportTemplates[template_name][exportFile] = exportTemplateContent;
+                        options.exportTemplates[template_name][exportIndex] = exportTemplateContent;
                         return done();
                       });
                     },
                     //If no publish template, add current template to exportTemplates
                     function(){
                       if(!(exportItem.remote_template)){
-                        options.exportTemplates[template_name][exportFile] = templateContent;
+                        options.exportTemplates[template_name][exportIndex] = templateContent;
                       }
                       return export_cb();
                     }
@@ -341,13 +343,13 @@ module.exports = exports = function(module, funcs){
             }
 
             //Parse URLs for export templates
-            _.each((options.templateType == 'COMPONENT') && template.export, function(exportItem, exportFile){
+            _.each((options.templateType == 'COMPONENT') && template.export, function(exportItem, exportIndex){
               if(!(template_name in options.exportTemplates)) options.exportTemplates[template_name] = {};
               if(exportItem.remote_template){
                 exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.publish_params, url);
               }
               if(!exportItem.remote_template){
-                options.exportTemplates[template_name][exportFile] = templateContent;
+                options.exportTemplates[template_name][exportIndex] = templateContent;
               }
             });
 
@@ -402,12 +404,12 @@ module.exports = exports = function(module, funcs){
         //Download component export templates
         function(template_download_cb){
           if(options.templateType != 'COMPONENT') return template_download_cb();
-          async.eachOf(template.export, function(exportItem, exportFile, export_cb){
+          async.eachOf(template.export, function(exportItem, exportIndex, export_cb){
             if(!(template_name in options.exportTemplates)) options.exportTemplates[template_name] = {};
             async.waterfall([
               //Download remote_template
               function(template_action_cb){
-                if(exportFile in options.exportTemplates[template_name]) return template_action_cb(); //Already downloaded
+                if(exportIndex in options.exportTemplates[template_name]) return template_action_cb(); //Already downloaded
                 if(!exportItem.remote_template) return template_action_cb();
 
                 var url = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.publish_params);
@@ -418,7 +420,7 @@ module.exports = exports = function(module, funcs){
                     if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
                     if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
                   }
-                  options.exportTemplates[template_name][exportFile] = rslt;
+                  options.exportTemplates[template_name][exportIndex] = rslt;
                   return template_action_cb();
                 });
               },
@@ -427,9 +429,9 @@ module.exports = exports = function(module, funcs){
               function(template_action_cb){
                 if(exportItem.template){
                   //Clear editor templates, if they were used
-                  if(!exportItem.remote_template) options.exportTemplates[template_name][exportFile] = '';
+                  if(!exportItem.remote_template) options.exportTemplates[template_name][exportIndex] = '';
                   //Prepend hard-coded template
-                  options.exportTemplates[template_name][exportFile] = exportItem.template + (options.exportTemplates[template_name][exportFile]||'');
+                  options.exportTemplates[template_name][exportIndex] = exportItem.template + (options.exportTemplates[template_name][exportIndex]||'');
                 }
                 return template_action_cb();
               }
@@ -864,6 +866,11 @@ module.exports = exports = function(module, funcs){
 
               //Run onDeploy_PostBuild functions
               function(cb){
+
+                //File system operations for PostBuild functions
+                branchData.fsOps = funcs.deploy_getFS(branchData.site_files);
+
+                //Run onDeploy_PostBuild operations
                 var branchItemTypes = funcs.getDeploymentSortedBranchItemTypes();
                 async.eachSeries(branchItemTypes, function(branch_item_type, branch_item_cb){
                   var branch_item = cms.BranchItems[branch_item_type];
@@ -878,7 +885,38 @@ module.exports = exports = function(module, funcs){
                   if(err) return cb(err);
                   Helper.execif(module.Config.onDeploy_PostBuild,
                     function(f){ module.Config.onDeploy_PostBuild(jsh, branchData, publish_params, f); },
-                    cb
+                    function(err){
+                      if(err) return cb(err);
+
+                      //Save generated files to publish folder
+                      async.waterfall([
+                        //Perform file delete operations
+                        function(file_cb){
+                          async.eachOf(branchData.fsOps.deletedFilesUpper, function(fpath, fpathUpper, delete_cb){
+                            if(!(fpath in branchData.site_files)) return delete_cb(new Error('Could not delete "' + fpath + '" - file not found in site_files'));
+                            delete branchData.site_files[fpath];
+                            fpath = path.join(publish_params.publish_path, fpath);
+                            fs.unlink(fpath, delete_cb);
+                          }, file_cb);
+                        },
+                
+                        //Perform file add operations
+                        function(file_cb){
+                          async.eachOf(branchData.fsOps.addedFiles, function(fcontent, fpath, redirect_cb){
+                            branchData.site_files[fpath] = {
+                              md5: crypto.createHash('md5').update(fcontent).digest("hex")
+                            };
+                            fpath = path.join(publish_params.publish_path, fpath);
+                          
+                            HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
+                              if(err) return redirect_cb(err);
+                              //Save redirect to publish folder
+                              fs.writeFile(fpath, fcontent, 'utf8', redirect_cb);
+                            });
+                          }, file_cb);
+                        },
+                      ], cb);
+                    }
                   );
                 });
               },
@@ -993,6 +1031,54 @@ module.exports = exports = function(module, funcs){
         });
       });
     });
+  }
+
+  exports.deploy_getFS = function(site_files){
+    var fsOps = {
+      siteFiles: {},
+      addedFiles: {},
+      addedFilesUpper: {},
+      deletedFilesUpper: {},
+    }
+    for(var fname in site_files) fsOps.siteFiles[fname.toUpperCase()] = fname;
+
+    fsOps.getValidFilePath = function(filePath){
+      filePath = (filePath||'').toString();
+      if(!filePath.trim()) throw new Error('Invalid empty file path');
+      if(filePath.indexOf('\\') >= 0) throw new Error('Character \\ is not allowed in file path: "' + filePath + '"');
+      if(HelperFS.cleanPath(filePath) != filePath) throw new Error('Invalid characters in file path: "' + filePath + '"');
+      if(filePath[0]=='/') throw new Error('File path cannot begin with / character: "' + filePath + '"');
+      if((filePath.indexOf('/../')>0) || (filePath.indexOf('../')==0)) throw new Error('Directory tranversals not allowed in file path: "' + filePath + '"');
+      if((filePath.indexOf('/./')>0) || (filePath.indexOf('./')==0)) throw new Error('Directory tranversals not allowed in file path: "' + filePath + '"');
+      return filePath;
+    }
+    fsOps.hasFile = function(filePath){
+      var filePathUpper = filePath.toUpperCase();
+      if(filePathUpper in fsOps.addedFilesUpper) return true;
+      else if(filePathUpper in fsOps.deletedFilesUpper) return false;
+      else if(filePathUpper in fsOps.siteFiles) return true;
+      else return false;
+    };
+    fsOps.addFile = function(filePath, fileContent){
+      filePath = fsOps.getValidFilePath(filePath);
+      if(!(filePath||'').toString().trim()) throw new Error('Cannot add "'+filePath+'" - invalid file name');
+      if(fsOps.hasFile(filePath)) throw new Error('Cannot add file "' + filePath + '" - file already exists');
+      fsOps.addedFiles[filePath] = fileContent||'';
+      fsOps.addedFilesUpper[filePath.toUpperCase()] = filePath;
+    };
+    fsOps.deleteFile = function(filePath){
+      if(!(filePath||'').toString().trim()) throw new Error('Cannot delete "'+filePath+'" - invalid file name');
+      var filePathUpper = filePath.toUpperCase();
+      if(filePathUpper in fsOps.addedFilesUpper){
+        delete fsOps.addedFiles[fsOps.addedFilesUpper[filePathUpper]];
+        delete fsOps.addedFilesUpper[filePathUpper];
+      }
+      else if(filePathUpper in fsOps.deletedFilesUpper) throw new Error('Cannot delete "'+filePath+'" - file already deleted');
+      else if(filePathUpper in fsOps.siteFiles) fsOps.deletedFilesUpper[filePathUpper] = filePath;
+      else throw new Error('Cannot delete "'+filePath+'" - file not found');
+    };
+    return fsOps;
+
   }
 
   exports.deploy_getSitemaps = function(jsh, branchData, publish_params, cb){
@@ -1115,7 +1201,7 @@ module.exports = exports = function(module, funcs){
     for(var page_template_id in branchData.page_templates){
       var page_template = branchData.page_templates[page_template_id];
       if(page_template.components) for(var componentId in page_template.components){
-        if(componentId in branchData.component_templates){ return cb(new Error('Page template "' + page_template.title + '" has an inline component "' + componentId + '" that is already defined as a '+(branchData.component_templates[componentId].location||'').toLowerCase()+' component.')); }
+        if(componentId in branchData.component_templates){ return cb(new Error('Page template "' + page_template.title + '" has an inline component "' + componentId + '" that is already defined as a site component.')); }
       }
     }
 
@@ -1262,46 +1348,10 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.deploy_exportComponentRender = function(jsh, branchData, publish_params, fsOps, template_name, exportItem, exportFile){
-    
-    var getValidFilePath = function(filePath){
-      filePath = (filePath||'').toString();
-      if(!filePath.trim()) throw new Error('Invalid empty file path');
-      if(filePath.indexOf('\\') >= 0) throw new Error('Character \\ is not allowed in file path: "' + filePath + '"');
-      if(HelperFS.cleanPath(filePath) != filePath) throw new Error('Invalid characters in file path: "' + filePath + '"');
-      if(filePath[0]=='/') throw new Error('File path cannot begin with / character: "' + filePath + '"');
-      if((filePath.indexOf('/../')>0) || (filePath.indexOf('../')==0)) throw new Error('Directory tranversals not allowed in file path: "' + filePath + '"');
-      if((filePath.indexOf('/./')>0) || (filePath.indexOf('./')==0)) throw new Error('Directory tranversals not allowed in file path: "' + filePath + '"');
-      return filePath;
-    }
-    var hasFile = function(filePath){
-      var filePathUpper = filePath.toUpperCase();
-      if(filePathUpper in fsOps.addedFilesUpper) return true;
-      else if(filePathUpper in fsOps.deletedFilesUpper) return false;
-      else if(filePathUpper in fsOps.siteFiles) return true;
-      else return false;
-    };
-    var addFile = function(filePath, fileContent){
-      filePath = getValidFilePath(filePath);
-      if(!(filePath||'').toString().trim()) throw new Error('Cannot add "'+filePath+'" - invalid file name');
-      if(hasFile(filePath)) throw new Error('Cannot add file "' + filePath + '" - file already exists');
-      fsOps.addedFiles[filePath] = fileContent||'';
-      fsOps.addedFilesUpper[filePath.toUpperCase()] = filePath;
-    };
-    var deleteFile = function(filePath){
-      if(!(filePath||'').toString().trim()) throw new Error('Cannot delete "'+filePath+'" - invalid file name');
-      var filePathUpper = filePath.toUpperCase();
-      if(filePathUpper in fsOps.addedFilesUpper){
-        delete fsOps.addedFiles[fsOps.addedFilesUpper[filePathUpper]];
-        delete fsOps.addedFilesUpper[filePathUpper];
-      }
-      else if(filePathUpper in fsOps.deletedFilesUpper) throw new Error('Cannot delete "'+filePath+'" - file already deleted');
-      else if(filePathUpper in fsOps.siteFiles) fsOps.deletedFilesUpper[filePathUpper] = filePath;
-      else throw new Error('Cannot delete "'+filePath+'" - file not found');
-    };
+  exports.deploy_exportComponentRender = function(jsh, branchData, publish_params, template_name, exportItem, exportIndex){
 
-    if(!(template_name in branchData.component_export_template_html) || !(exportFile in branchData.component_export_template_html[template_name])){
-      return '<!-- Export Component '+Helper.escapeHTML(template_name + ' - ' + exportFile)+' not found -->';
+    if(!(template_name in branchData.component_export_template_html) || !(exportIndex in branchData.component_export_template_html[template_name])){
+      return '<!-- Export Component '+Helper.escapeHTML(template_name + ' - Export #' + (exportIndex+1))+' not found -->';
     }
 
     var renderOptions = {
@@ -1327,9 +1377,9 @@ module.exports = exports = function(module, funcs){
       branchData: branchData,
       publish_params: publish_params,
 
-      addFile: addFile,
-      deleteFile: deleteFile,
-      hasFile: hasFile,
+      addFile: branchData.fsOps.addFile,
+      deleteFile: branchData.fsOps.deleteFile,
+      hasFile: branchData.fsOps.hasFile,
     };
     
     if(renderOptions.menu_tag){
@@ -1339,27 +1389,19 @@ module.exports = exports = function(module, funcs){
       _.each(renderParams.menu.items, function(menu_item){ menu_item.selected = false; });
     }
 
-    var rslt = funcs.renderComponent(branchData.component_export_template_html[template_name][exportFile] || '', null, renderOptions, renderParams);
-    if(exportFile.indexOf('*')<0){
-      addFile(getValidFilePath(exportFile), rslt);
+    var rslt = funcs.renderComponent(branchData.component_export_template_html[template_name][exportIndex] || '', null, renderOptions, renderParams);
+    if(exportItem.export_path){
+      branchData.fsOps.addFile(branchData.fsOps.getValidFilePath(exportItem.export_path), rslt);
     }
   }
 
   exports.deploy_exportComponents = function(jsh, branchData, publish_params, cb){
-    var fsOps = {
-      siteFiles: {},
-      addedFiles: {},
-      addedFilesUpper: {},
-      deletedFilesUpper: {},
-    }
-    for(var fname in branchData.site_files) fsOps.siteFiles[fname.toUpperCase()] = fname;
-
     //Get all components
     async.eachOfSeries(branchData.component_templates, function(template, template_name, generate_cb){
-      async.eachOfSeries(template.export, function(exportItem, exportFile, export_cb){
+      async.eachOfSeries(template.export, function(exportItem, exportIndex, export_cb){
 
         try{
-          funcs.deploy_exportComponentRender(jsh, branchData, publish_params, fsOps, template_name, exportItem, exportFile);
+          funcs.deploy_exportComponentRender(jsh, branchData, publish_params, template_name, exportItem, exportIndex);
         }
         catch(ex){
           return export_cb('Error exporting component "'+template_name+'": '+ex.message);
@@ -1367,37 +1409,7 @@ module.exports = exports = function(module, funcs){
 
         return export_cb();
       }, generate_cb);
-    }, function(err){
-      if(err) return cb(err);
-
-      async.waterfall([
-        //Perform file delete operations
-        function(file_cb){
-          async.eachOf(fsOps.deletedFilesUpper, function(fpath, fpathUpper, delete_cb){
-            if(!(fpath in branchData.site_files)) return delete_cb(new Error('Could not delete "' + fpath + '" - file not found in site_files'));
-            delete branchData.site_files[fpath];
-            fpath = path.join(publish_params.publish_path, fpath);
-            fs.unlink(fpath, delete_cb);
-          }, file_cb);
-        },
-
-        //Perform file add operations
-        function(file_cb){
-          async.eachOf(fsOps.addedFiles, function(fcontent, fpath, redirect_cb){
-            branchData.site_files[fpath] = {
-              md5: crypto.createHash('md5').update(fcontent).digest("hex")
-            };
-            fpath = path.join(publish_params.publish_path, fpath);
-          
-            HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
-              if(err) return redirect_cb(err);
-              //Save redirect to publish folder
-              fs.writeFile(fpath, fcontent, 'utf8', redirect_cb);
-            });
-          }, file_cb);
-        },
-      ], cb);
-    });
+    }, cb);
   }
 
   exports.deploy_media = function(jsh, branchData, publish_params, cb){

@@ -28,7 +28,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   var XExt = jsh.XExt;
 
   this.isEditing = false;
-  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
+  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
@@ -169,7 +169,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   }
 
   this.detach = function(id){
-    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+id);
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(mceEditor){
       if(_this.isEditing == id) mceEditor.fire('blur');
       mceEditor.destroy();
@@ -206,9 +206,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
-        $('#jsharmony_cms_content_'+id).html(val);
+        $('#jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })).html(val);
         cms.componentManager.renderContainerContentComponents(document.getElementById('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })));
-        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+id), { addFlag: true, onlyJSHCMSLinks: true });
+        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })), { addFlag: true, onlyJSHCMSLinks: true });
       },1);
     }
     else {
