@@ -205,6 +205,47 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.createToolbarDockMenu = function() {
+    var _this = this;
+
+    var dockPosition = 'top'
+    _this._editor.addCommand('jsHarmonyCmsDockEditorToolbar', function(position) { 
+      dockPosition = position;
+      cms.setToolbarPosition(position);
+    });
+    _this._editor.addQueryValueHandler('jsHarmonyCmsDockEditorToolbar', function() { return dockPosition; });
+
+    _this._editor.ui.registry.addNestedMenuItem('jsharmonyCmsDockToolbar', {
+      text: 'Dock Toolbar',
+      getSubmenuItems: function() {
+        return [
+          {
+            type: 'togglemenuitem',
+            text: 'Top',
+            onAction: function() {
+              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'top');
+            },
+            onSetup: function(api) {
+              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'top');
+              return function() {};
+            }
+          },
+          {
+            type: 'togglemenuitem',
+            text: 'Bottom',
+            onAction: function(a) {
+              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'bottom');
+            },
+            onSetup: function(api) {
+              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'bottom');
+              return function() {};
+            }
+          }
+        ]
+      }
+    });
+  }
+
   /**
    * Create menu button for Spell Check
    * @private
@@ -378,6 +419,7 @@ exports = module.exports = function(jsh, cms, editor){
     this.createContextToolbar(componentInfo);
     this.createComponentToolbarButton(componentInfo);
     this.createViewToolbarButton();
+    if(!this._editor.settings.isjsHarmonyCmsComponent) this.createToolbarDockMenu();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
 

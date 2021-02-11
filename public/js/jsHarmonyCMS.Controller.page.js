@@ -523,7 +523,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     //Content
     for(var key in _this.template.content_elements){
-      cms.editor.setContent('page.content.'+key, _this.page.content[key] || '')
+      cms.editor.setContent('page.content.'+key, _this.page.content[key] || '');
+
+      var dockPosition = _this.template.content_elements[key].dock_toolbar;
+      if (dockPosition) cms.editor.setToolbarDockPosition(key, dockPosition);
+      
       if(!cms.readonly) _this.page.content[key] = cms.editor.getContent('page.content.'+key);
     }
 

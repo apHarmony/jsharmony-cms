@@ -130,6 +130,8 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
       throw new Error('Unknown editor type "' + _this._editorType + '"');
     }
 
+    config.isjsHarmonyCmsComponent = true;
+
     _this._editor.attach(configType, _this._contentId, config, function() {
       _this.render();
       callback();

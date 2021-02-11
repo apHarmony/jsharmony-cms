@@ -184,9 +184,21 @@ var jsHarmonyCMS = function(options){
     var ph = ((doch > wh) ? doch : wh);
     var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
     $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
+  }
 
-    var toolbarTop = 37;
-    $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
+  this.setToolbarPosition = function(anchorPos){
+    anchorPos = anchorPos || 'top';
+    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_editor_bar_dock_bottom', (anchorPos == 'bottom'));
+    if (anchorPos == 'bottom') {
+      $('#jsharmony_cms_content_editor_toolbar')
+        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
+        .css('bottom', '0');
+    } else {
+      var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
+      $('#jsharmony_cms_content_editor_toolbar')
+        .css('top', barh+'px')
+        .css('bottom', '');
+    }
   }
 
   this.onmessage = function(event){
