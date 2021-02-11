@@ -14,7 +14,7 @@
   },
   "content_elements": {
     "body": { "type": "htmleditor", "title": "Body" },
-    "footer": { "type": "htmleditor", "title": "Footer" }
+    "footer": { "type": "htmleditor", "title": "Footer", "dock_toolbar": "top" } //(Optional) dock_toolbar :: "top" or "bottom"
   },
   "properties": {
     "fields": [

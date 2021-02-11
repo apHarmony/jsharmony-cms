@@ -36,7 +36,6 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.onBeginEdit = null; //function(mceEditor){};
   this.onEndEdit = null; //function(mceEditor){};
 
-
   this.editorConfig = {
     base: null,
     full: null,
@@ -78,7 +77,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsharmonyCmsDockToolbar' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
@@ -118,6 +117,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             }
             $('[data-component="header"]').css('pointer-events', 'none');
             _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
+            cms.setToolbarPosition(mceEditor.queryCommandValue('jsHarmonyCmsDockEditorToolbar'));
             _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
             if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
@@ -176,6 +176,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
+  /** 
+   * @param {string} id
+   * @param {'top' | 'bottom'} position
+   */
+  this.setToolbarDockPosition = function(id, position) {
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(!mceEditor) throw new Error('Editor not found: '+id);
+    mceEditor.execCommand('jsHarmonyCmsDockEditorToolbar', position);
+  }
+
   this.disableLinks = function(container, options){
     options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
     $(container).find('a').each(function(){
@@ -227,6 +237,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       this.toolbarContainer.attr('id', id);
     }
   }
+
   this.getMaterialIcons = function(){
     if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [

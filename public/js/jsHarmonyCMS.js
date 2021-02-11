@@ -3508,6 +3508,8 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
       throw new Error('Unknown editor type "' + _this._editorType + '"');
     }
 
+    config.isjsHarmonyCmsComponent = true;
+
     _this._editor.attach(configType, _this._contentId, config, function() {
       _this.render();
       callback();
@@ -5205,6 +5207,47 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.createToolbarDockMenu = function() {
+    var _this = this;
+
+    var dockPosition = 'top'
+    _this._editor.addCommand('jsHarmonyCmsDockEditorToolbar', function(position) { 
+      dockPosition = position;
+      cms.setToolbarPosition(position);
+    });
+    _this._editor.addQueryValueHandler('jsHarmonyCmsDockEditorToolbar', function() { return dockPosition; });
+
+    _this._editor.ui.registry.addNestedMenuItem('jsharmonyCmsDockToolbar', {
+      text: 'Dock Toolbar',
+      getSubmenuItems: function() {
+        return [
+          {
+            type: 'togglemenuitem',
+            text: 'Top',
+            onAction: function() {
+              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'top');
+            },
+            onSetup: function(api) {
+              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'top');
+              return function() {};
+            }
+          },
+          {
+            type: 'togglemenuitem',
+            text: 'Bottom',
+            onAction: function(a) {
+              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'bottom');
+            },
+            onSetup: function(api) {
+              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'bottom');
+              return function() {};
+            }
+          }
+        ]
+      }
+    });
+  }
+
   /**
    * Create menu button for Spell Check
    * @private
@@ -5378,6 +5421,7 @@ exports = module.exports = function(jsh, cms, editor){
     this.createContextToolbar(componentInfo);
     this.createComponentToolbarButton(componentInfo);
     this.createViewToolbarButton();
+    if(!this._editor.settings.isjsHarmonyCmsComponent) this.createToolbarDockMenu();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
 
@@ -5602,7 +5646,6 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.onBeginEdit = null; //function(mceEditor){};
   this.onEndEdit = null; //function(mceEditor){};
 
-
   this.editorConfig = {
     base: null,
     full: null,
@@ -5644,7 +5687,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsharmonyCmsDockToolbar' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
@@ -5684,6 +5727,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             }
             $('[data-component="header"]').css('pointer-events', 'none');
             _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
+            cms.setToolbarPosition(mceEditor.queryCommandValue('jsHarmonyCmsDockEditorToolbar'));
             _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
             cms.refreshLayout();
             if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
@@ -5742,6 +5786,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
+  /** 
+   * @param {string} id
+   * @param {'top' | 'bottom'} position
+   */
+  this.setToolbarDockPosition = function(id, position) {
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(!mceEditor) throw new Error('Editor not found: '+id);
+    mceEditor.execCommand('jsHarmonyCmsDockEditorToolbar', position);
+  }
+
   this.disableLinks = function(container, options){
     options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
     $(container).find('a').each(function(){
@@ -5793,6 +5847,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       this.toolbarContainer.attr('id', id);
     }
   }
+
   this.getMaterialIcons = function(){
     if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [
@@ -7210,9 +7265,21 @@ var jsHarmonyCMS = function(options){
     var ph = ((doch > wh) ? doch : wh);
     var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
     $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
+  }
 
-    var toolbarTop = 37;
-    $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
+  this.setToolbarPosition = function(anchorPos){
+    anchorPos = anchorPos || 'top';
+    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_editor_bar_dock_bottom', (anchorPos == 'bottom'));
+    if (anchorPos == 'bottom') {
+      $('#jsharmony_cms_content_editor_toolbar')
+        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
+        .css('bottom', '0');
+    } else {
+      var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
+      $('#jsharmony_cms_content_editor_toolbar')
+        .css('top', barh+'px')
+        .css('bottom', '');
+    }
   }
 
   this.onmessage = function(event){
