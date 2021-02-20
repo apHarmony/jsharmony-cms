@@ -5075,6 +5075,8 @@ exports = module.exports = function(jsh, cms, editor){
   function JsHarmonyComponentPlugin(editor) {
 
     this._editor = editor;
+    this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions);
+
     this.initialize(cms.componentManager.componentTemplates);
   }
 
@@ -5132,12 +5134,29 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_menu = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_toolbar = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarDock = function(dockPosition){
+    var _this = this;
+    _this.toolbarOptions.dock = dockPosition || 'auto';
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
   /**
    * Create the "View" toolbar menu button, for hiding the menu and viewing source code.
    * @private
-   * @param {ComponentInfo[]} componentInfo
    */
-  JsHarmonyComponentPlugin.prototype.createViewToolbarButton = function(componentInfo) {
+  JsHarmonyComponentPlugin.prototype.createToolbarViewOptions = function() {
     var _this = this;
     _this._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
       text: 'View',
@@ -5146,10 +5165,16 @@ exports = module.exports = function(jsh, cms, editor){
         return cb([
           {
             type: 'menuitem',
-            icon: 'new-tab',
             text: 'Toggle Menu',
             onAction: function () {
-              $(_this._editor.editorContainer).find('[role=menubar]').toggle();
+              _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+            }
+          },
+          {
+            type: 'menuitem',
+            text: 'Toggle Toolbar',
+            onAction: function () {
+              _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
             }
           },
           {
@@ -5181,15 +5206,23 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
-  JsHarmonyComponentPlugin.prototype.createToolbarDockMenu = function() {
+  JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
+    //if(!this._editor.settings.isjsHarmonyCmsComponent) 
     var _this = this;
 
-    var dockPosition = 'top'
-    _this._editor.addCommand('jsHarmonyCmsDockEditorToolbar', function(position) { 
-      dockPosition = position;
-      cms.setToolbarPosition(position);
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleMenu', {
+      text: 'Toggle Menu',
+      onAction: function () {
+        _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+      }
     });
-    _this._editor.addQueryValueHandler('jsHarmonyCmsDockEditorToolbar', function() { return dockPosition; });
+
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleToolbar', {
+      text: 'Toggle Toolbar',
+      onAction: function () {
+        _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
+      }
+    });
 
     _this._editor.ui.registry.addNestedMenuItem('jsharmonyCmsDockToolbar', {
       text: 'Dock Toolbar',
@@ -5199,10 +5232,11 @@ exports = module.exports = function(jsh, cms, editor){
             type: 'togglemenuitem',
             text: 'Top',
             onAction: function() {
-              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'top');
+              if(_.includes(['top','top_offset','auto'],_this.toolbarOptions.orig_dock)) _this.setToolbarDock(_this.toolbarOptions.orig_dock);
+              else _this.setToolbarDock('auto');
             },
             onSetup: function(api) {
-              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'top');
+              api.setActive((_this.toolbarOptions.dock === 'top')||(_this.toolbarOptions.dock === 'top_offset')||(_this.toolbarOptions.dock === 'auto'));
               return function() {};
             }
           },
@@ -5210,10 +5244,10 @@ exports = module.exports = function(jsh, cms, editor){
             type: 'togglemenuitem',
             text: 'Bottom',
             onAction: function(a) {
-              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'bottom');
+              _this.setToolbarDock('bottom');
             },
             onSetup: function(api) {
-              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'bottom');
+              api.setActive(_this.toolbarOptions.dock === 'bottom');
               return function() {};
             }
           }
@@ -5394,8 +5428,8 @@ exports = module.exports = function(jsh, cms, editor){
     //Create menu buttons, toolbar buttons, and context menu buttons
     this.createContextToolbar(componentInfo);
     this.createComponentToolbarButton(componentInfo);
-    this.createViewToolbarButton();
-    if(!this._editor.settings.isjsHarmonyCmsComponent) this.createToolbarDockMenu();
+    this.createToolbarViewOptions();
+    this.createMenuViewOptions();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
 
@@ -5411,6 +5445,12 @@ exports = module.exports = function(jsh, cms, editor){
       var el = _this._editor.selection.getStart();
       _this.openPropertiesEditor(el);
     });
+    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) { 
+      _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
+      if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
+      if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = toolbarOptions.show_menu || toolbarOptions.show_toolbar;
+    });
+    this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
 
     this._editor.on('init', function() {
       _this._editor.serializer.addNodeFilter('div', function(nodes) { _this.serializerFilter(nodes); });
@@ -5616,6 +5656,13 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
+  this.defaultToolbarOptions = {
+    dock: "auto",
+    show_menu: true,
+    show_toolbar: true,
+    orig_dock: undefined,
+    orig_toolbar_or_menu: undefined,
+  };
 
   this.onBeginEdit = null; //function(mceEditor){};
   this.onEndEdit = null; //function(mceEditor){};
@@ -5661,7 +5708,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsharmonyCmsDockToolbar' },
+          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsHarmonyCmsToggleMenu jsHarmonyCmsToggleToolbar jsharmonyCmsDockToolbar' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
@@ -5701,15 +5748,41 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             }
             $('[data-component="header"]').css('pointer-events', 'none');
             _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
-            cms.setToolbarPosition(mceEditor.queryCommandValue('jsHarmonyCmsDockEditorToolbar'));
-            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
+            if(_this.toolbarContainer.length){
+              var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
+              wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
+            }
+            _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
+              //If dock=bottom, slide up
+              _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
+              _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
+            }
+            else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              //Top-offset
+              _this.toolbarContainer.stop(true).css({ opacity:1 });
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            }
+            
             cms.refreshLayout();
             if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
           });
           mceEditor.on('blur', function(){
             $('[data-component="header"]').css('pointer-events', 'auto');
             _this.isEditing = false;
-            _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
+            var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
+            var dockPosition = _this.getDockPosition(mceEditor);
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              _this.toolbarContainer.stop(true).css({ opacity:0 });
+              clearClasses();
+              cms.toolbar.refreshOffsets();
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
+            }
             if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
           //Override background color icon
@@ -5764,10 +5837,11 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
    * @param {string} id
    * @param {'top' | 'bottom'} position
    */
-  this.setToolbarDockPosition = function(id, position) {
+  this.setToolbarOptions = function(id, toolbarOptions) {
+    if(!toolbarOptions) return;
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(!mceEditor) throw new Error('Editor not found: '+id);
-    mceEditor.execCommand('jsHarmonyCmsDockEditorToolbar', position);
+    mceEditor.execCommand('jsHarmonyCmsSetToolbarOptions', toolbarOptions);
   }
 
   this.disableLinks = function(container, options){
@@ -5820,6 +5894,86 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       } while($('#' + id).length > 0)
       this.toolbarContainer.attr('id', id);
     }
+  }
+
+  this.onEditorInitialized = function(){
+    if(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()){
+      window.tinymce.activeEditor.fire('focus');
+    }
+  }
+
+  this.getDockPosition = function(mceEditor){
+    if(!mceEditor) throw new Error('Editor is required');
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    var dockPosition = toolbarOptions.dock;
+    if(!dockPosition) dockPosition = 'auto';
+    //Calculate auto
+    if(dockPosition=='auto'){
+      //Check if content would overlap editor
+      var contentOffset = $(mceEditor.contentAreaContainer).offset();
+      if(!contentOffset) return 'top';
+      var contentOffsetTop = contentOffset.top;
+      var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
+      contentOffsetTop += parseInt(contentStyles.paddingTop);
+      contentOffsetTop -= cms.toolbar.currentOffsetTop;
+      var editorToolbarHeight = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
+      if(editorToolbarHeight > contentOffsetTop){
+        if(cms.toolbar.dockPosition == 'top_offset') return 'top_offset';
+      }
+      return 'top';
+    }
+    return dockPosition;
+  }
+
+  this.getOffsetTop = function(){
+    if(!window.tinymce) return 0;
+    var mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return 0;
+    var dockPosition = _this.getDockPosition(mceEditor);
+    if(dockPosition=='top_offset'){
+      return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
+    }
+    return 0;
+  }
+
+  this.renderContentEditorToolbar = function(mceEditor, options){
+    if(!window.tinymce) return;
+    if(!mceEditor) mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return;
+    options = _.extend({ onFocus: false }, options);
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    if(options.onFocus){
+      if(!toolbarOptions.show_menu && !toolbarOptions.show_toolbar){
+        if(toolbarOptions.orig_toolbar_or_menu) toolbarOptions.show_toolbar = true;
+      }
+    }
+    toolbarOptions = _.extend({}, _this.defaultToolbarOptions, toolbarOptions);
+
+    var jContentToolbar = $('#jsharmony_cms_content_editor_toolbar');
+
+    console.log(toolbarOptions);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
+
+    var dockPosition = _this.getDockPosition(mceEditor);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
+    var isPageToolbarBottom = jContentToolbar.hasClass('jsharmony_cms_page_toolbar_bottom');
+
+    var barh = cms.toolbar.getHeight();
+    if (dockPosition == 'bottom') {
+      //Bottom Dock Position
+      jContentToolbar
+        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
+        .css('bottom', isPageToolbarBottom ? barh+'px' : '0');
+    } else {
+      //Top Dock Position
+      
+      jContentToolbar
+        .css('top', isPageToolbarBottom ? '0' : barh + 'px')
+        .css('bottom', '');
+    }
+    cms.toolbar.refreshOffsets();
   }
 
   this.getMaterialIcons = function(){
@@ -6789,6 +6943,7 @@ exports = module.exports = function(cms){
   this.onSquashedClick = [];
   this.onMouseDown = [];
   this.onMouseUp = [];
+  this.onLoadingComplete = [];
   
   this.StartLoading = function(obj, desc){
     if(!obj) obj = _this.defaultLoadObj;
@@ -6845,8 +7000,14 @@ exports = module.exports = function(cms){
     if(this.loadQueue.length) return;
 
     this.isLoading = false;
-    if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut();
-    else document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+    var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); }
+    if(cms.jsh){
+      cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut('normal', function(){ triggerLoadingComplete(); });
+    }
+    else{
+      document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+      triggerLoadingComplete();
+    }
   }
 
   this.ClearLoading = function(){
@@ -6879,17 +7040,56 @@ exports = module.exports = function(jsh, cms){
   var $ = jsh.$;
   var _ = jsh._;
 
-  this.editorBarDocked = false;
-  this.origMarginTop = undefined;
+  this.editorBarDocked = true;
+  this.origMarginTop = [];
+  this.currentOffsetTop = 0;
+  this.dockPosition = 'top_offset';
   this.errors = [/*{ message: '...', type: 'text' (or 'html') }*/];
  
   this.render = function(){
     cms.util.addStyle('jsharmony_cms_editor_css',cms.views['jsh_cms_editor.css']);
     jsh.root.append(cms.views['jsh_cms_editor']);
-    this.origMarginTop = $('body').css('margin-top');
-    this.toggleAutoHide(false);
     jsh.InitControls();
     this.renderErrors();
+  }
+
+  this.getHeight = function(){
+    return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
+  }
+
+  this.saveOrigOffsets = function(){
+    _.filter($('*').toArray(), function(elem){
+      if(elem.id=='jsHarmonyCMSLoading') return;
+      var computedStyles = window.getComputedStyle(elem);
+      if((elem.tagName && (elem.tagName.toUpperCase()=='BODY')) || (computedStyles.position=='fixed')){
+        var jelem = $(elem);
+        if(typeof jelem.attr('cms-toolbar-offsetid') != 'undefined') return;
+        if(jelem.parent().closest('[cms-content-editor]').length) return;
+        var offsetId = _this.origMarginTop.length;
+        jelem.attr('cms-toolbar-offsetid', offsetId);
+        _this.origMarginTop[offsetId] = computedStyles.marginTop;
+      }
+    });
+  }
+
+  this.getOffsetTop = function(){
+    var offsetTop = 0;
+    if(this.editorBarDocked){
+      if(_this.dockPosition == 'top_offset') offsetTop += _this.getHeight();
+    }
+    if(cms.editor) offsetTop += cms.editor.getOffsetTop();
+    return offsetTop;
+  }
+
+  this.refreshOffsets = function(){
+    var offsetTop = _this.getOffsetTop();
+
+    for(var i=0;i<_this.origMarginTop.length;i++){
+      var newMarginTop = _this.origMarginTop[i];
+      if(offsetTop) newMarginTop = newMarginTop ? 'calc(' + newMarginTop + ' + ' + offsetTop + 'px)' : offsetTop+'px';
+      $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', newMarginTop);
+    }
+    this.currentOffsetTop = offsetTop;
   }
 
   this.renderErrors = function(){
@@ -6912,52 +7112,72 @@ exports = module.exports = function(jsh, cms){
   this.toggleAutoHide = function(val){
     if(typeof val =='undefined') val = !this.editorBarDocked;
     this.editorBarDocked = !!val;
-
-    if(this.editorBarDocked){
-      $('body').css('margin-top', this.origMarginTop);
-    }
-    else {
-      var barHeight = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-      $('body').css('margin-top', barHeight+'px');
-    }
-    $('#jsharmony_cms_editor_bar .autoHideEditorBar').toggleClass('enabled',!val);
+    this.refreshOffsets();
+    $('#jsharmony_cms_page_toolbar .autoHideEditorBar').toggleClass('enabled',!val);
   }
   
-  this.toggleSettings = function(display, noSlide){
-    var jbutton = $('#jsharmony_cms_editor_bar .jsharmony_cms_button.settings');
+  this.toggleSlideoutButton = function(button, display, noSlide){
+    var jbutton;
+    if(!button) return;
+    if(_.isString(button)) jbutton = $('#jsharmony_cms_page_toolbar .jsharmony_cms_button.'+button);
+    else jbutton = $(button);
+    $('#jsharmony_cms_page_toolbar .jsharmony_cms_button[data-slideout].selected').not(jbutton).each(function(){
+      _this.toggleSlideoutButton(this, false, true);
+      //Disable slide if another button is already selected
+      noSlide = true;
+    });
     var prevdisplay = !!jbutton.hasClass('selected');
     if(typeof display == 'undefined') display = !prevdisplay;
     
     if(prevdisplay==display) return;
     else {
-      var jsettings = $('#jsharmony_cms_editor_bar .page_settings');
+      var jslideout = $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container.'+jbutton.data('slideout'));
       if(display){
         //Open
         jbutton.addClass('selected');
-        jsettings.stop(true);
-        if(noSlide) jsettings.show();
-        else jsettings.slideDown();
+        jslideout.stop(true);
+        if(noSlide) jslideout.show();
+        else jslideout.slideDown();
       }
       else {
         //Close
         if(!cms.controller.validate()) return;
         jbutton.removeClass('selected');
-        jsettings.stop(true);
-        if(noSlide) jsettings.hide();
-        else jsettings.slideUp();
+        jslideout.stop(true);
+        if(noSlide) jslideout.hide();
+        else jslideout.slideUp();
       }
     }
   }
 
-  this.showSettings = function(noSlide){ this.toggleSettings(true, noSlide); }
+  this.showSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, true, noSlide); }
 
-  this.hideSettings = function(noSlide){ this.toggleSettings(false, noSlide); }
+  this.hideSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, false, noSlide); }
   
   this.showError = function(err) {
     if(_.isString(err)) err = { message: err, type: 'text' };
     err.type = (err.type=='html' ? 'html' : 'text');
     _this.errors.push(err);
     _this.renderErrors();
+  }
+
+  this.setDockPosition = function(dockPosition){
+    _this.dockPosition = dockPosition || 'top_offset';
+    _this.refreshOffsets();
+    $('#jsharmony_cms_page_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
+    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
+
+    if(_this.dockPosition == 'bottom'){
+      $('#jsharmony_cms_page_toolbar').css('opacity', 0);
+      var dockAnimation = function(){
+        var barHeight = _this.getHeight();
+        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' })
+        $('#jsharmony_cms_page_toolbar').animate({ bottom: '0px' }, function(){ this.style.bottom = null; });
+      };
+      if(cms.isInitialized) dockAnimation();
+      else cms.loader.onLoadingComplete.push(dockAnimation);
+    }
+    cms.editor.renderContentEditorToolbar();
   }
 
 }
@@ -7163,6 +7383,7 @@ var jsHarmonyCMS = function(options){
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
+      _this.toolbar.saveOrigOffsets();
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
@@ -7236,23 +7457,8 @@ var jsHarmonyCMS = function(options){
     var doch = $(document).height();
     var pw = ((docw > ww) ? docw : ww);
     var ph = ((doch > wh) ? doch : wh);
-    var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-    $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
-  }
-
-  this.setToolbarPosition = function(anchorPos){
-    anchorPos = anchorPos || 'top';
-    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_editor_bar_dock_bottom', (anchorPos == 'bottom'));
-    if (anchorPos == 'bottom') {
-      $('#jsharmony_cms_content_editor_toolbar')
-        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
-        .css('bottom', '0');
-    } else {
-      var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-      $('#jsharmony_cms_content_editor_toolbar')
-        .css('top', barh+'px')
-        .css('bottom', '');
-    }
+    var barh = _this.toolbar.getHeight();
+    $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').css('max-height', (wh-barh)+'px');
   }
 
   this.onmessage = function(event){

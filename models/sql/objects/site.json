@@ -8,6 +8,16 @@
     ]
   },
 
+  "code_sys_user_site_access": {
+    "type": "code",
+    "caption": "User Site Access",
+    "init_data": [
+      { "code_val": "VIEWER", "code_txt": "Viewer", "code_seq": 1 },
+      { "code_val": "AUTHOR", "code_txt": "Author", "code_seq": 2 },
+      { "code_val": "PUBLISHER", "code_txt": "Publisher", "code_seq": 3 },
+    ]
+  },
+
   "site": {
     "type": "table",
     "caption": ["Site","Sites"],
@@ -17,6 +27,7 @@
       { "name": "site_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_default_editor", "type": "bigint" },
       { "name": "site_default_page_template_id", "type": "varchar", "length": 255 },
+      { "name": "site_default_page_filename", "type": "varchar", "length": 255, "default": "index.html", "null": false },
       
       { "name": "site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -77,6 +88,7 @@
       { "name": "sys_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": { "column": "sys_user_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "sys_user_site_editor", "type": "bigint", "foreignkey": { "deployment_target": { "column": "deployment_target_id" } } },
+      { "name": "sys_user_site_access", "type": "varchar", "length": 32, "foreignkey": { "code_sys_user_site_access": "code_val" } },
 
       { "name": "sys_user_site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "sys_user_site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -90,6 +102,10 @@
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and site_id = inserted(site_id))),'Target Editor not available for this site')",
           "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')"
+        ]
+      },
+      { "on": ["validate_insert"], "exec": [
+          "errorif((inserted(sys_user_id) in (select sys_user_id from {schema}.sys_user_site where site_id = inserted(site_id))),'User is already added to this site')",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -155,6 +171,79 @@
       {"on": ["update"], "exec": [
           "insert into {schema}.sys_user_site(sys_user_id,site_id) select jsharmony.my_sys_user_id(), inserted(site_id) where not exists(select * from {schema}.sys_user_site where sys_user_id=jsharmony.my_sys_user_id() and site_id=inserted(site_id))",
           "update {schema}.sys_user_site set sys_user_site_editor = inserted(sys_user_site_editor) where sys_user_id=jsharmony.my_sys_user_id() and site_id = inserted(site_id)",
+          "increment_changes()"
+        ]
+      }
+    ]
+  },
+
+  "v_sys_user_site_access_split": {
+    "type": "view",
+    "caption": ["Site Access", "Site Access"],
+    "tables": {
+      "site": {
+        "columns": [
+          "site_id",
+        ],
+      },
+      "webmasters": {
+        "columns": [
+          "webmaster_sys_user_id",
+        ],
+        "sql": "select sys_user_role.sys_user_id webmaster_sys_user_id from jsharmony.sys_user_role where sys_user_role.sys_role_name='WEBMASTER' union select null webmaster_sys_user_id",
+        "join_type": "left",
+      },
+      "sys_user_site": {
+        "columns": [
+          "sys_user_site_id",
+          "sys_user_id",
+          "sys_user_site_access",
+        ],
+        "join_type": "left",
+        "join_columns": {
+          "sys_user_site.site_id": "site.site_id",
+          "webmasters.webmaster_sys_user_id": "null",
+        }
+      },
+    },
+    "where": "((webmaster_sys_user_id is not null) or (sys_user_id not in (select sys_user_id from jsharmony.sys_user_role where sys_user_role.sys_role_name='WEBMASTER')))",
+  },
+
+  "v_sys_user_site_access": {
+    "type": "view",
+    "caption": ["Site Access", "Site Access"],
+    "tables": {
+      "v_sys_user_site_access_split": {
+        "columns": [
+          "sys_user_site_id",
+          "site_id",
+          { "name":"sys_user_id", "type": "bitint", "sqlselect": "case when webmaster_sys_user_id is not null then webmaster_sys_user_id else sys_user_id end" },
+          { "name":"sys_user_site_access", "type": "varchar", "length": 32, "sqlselect": "case when webmaster_sys_user_id is not null then 'WEBMASTER' else sys_user_site_access end" },
+        ],
+      },
+    },
+    "where": "(webmaster_sys_user_id is not null or sys_user_id is not null)",
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif(exists(select sys_user_id from jsharmony.sys_user_role where sys_role_name='WEBMASTER' and sys_user_id=inserted(sys_user_id)),'Cannot add access - user already has WEBMASTER permission');",
+            "with_insert_identity(sys_user_site, sys_user_site_id, ",
+            "  insert into sys_user_site(sys_user_id, site_id, sys_user_site_access) values(inserted(sys_user_id), inserted(site_id), inserted(sys_user_site_access)),",
+            "  return_insert_key(sys_user_site, sys_user_site_id, (sys_user_site_id=@@INSERT_ID));",
+            "  increment_changes()",
+            ")"
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "update sys_user_site set sys_user_site_access=inserted(sys_user_site_access) where site_id=deleted(site_id) and sys_user_id=deleted(sys_user_id);",
+            "increment_changes()",
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "delete from sys_user_site where site_id=deleted(site_id) and sys_user_id=deleted(sys_user_id);",
           "increment_changes()"
         ]
       }

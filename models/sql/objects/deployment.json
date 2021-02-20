@@ -42,6 +42,10 @@
           "set(deployment_target_muser,%%%%%%jsh.map.current_user%%%%%%);"
         ]
       },
+      { "on": ["insert"], "exec": [
+          "insert into {schema}.deployment_target_role(deployment_target_id, sys_role_name, deployment_target_role_type) select get_insert_key(deployment_target,deployment_target_id),'*',code_val from {schema}.code_deployment_target_role_type where code_val in ('EDITOR','PUBLISH');",
+        ]
+      },
       {
         "on": ["delete"], "exec": [
           "update {schema}.sys_user_site set sys_user_site_editor = null where sys_user_site_editor = deleted(deployment_target_id);",

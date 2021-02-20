@@ -60,6 +60,17 @@ module.exports = exports = function(module, funcs){
           //Add content elements if they do not exist
           var template_content_elements = template.content_elements;
           if(!template_content_elements) template_content_elements = { body: { type: 'htmleditor', title: 'Body' } };
+          for(var key in template_content_elements){
+            template_content_elements[key] = _.extend({
+              type: 'htmleditor',
+            }, template_content_elements[key]);
+            
+            template_content_elements[key].editor_toolbar = _.extend({
+              dock: "auto",
+              show_menu: true,
+              show_toolbar: true,
+            }, template_content_elements[key].editor_toolbar);
+          }
 
           //Parse content
           var page_file_content = {};
@@ -101,9 +112,14 @@ module.exports = exports = function(module, funcs){
               }
             });
           }
+
           template.options = _.extend({
             title_element_required: true,
-          }, template.options)
+          }, template.options);
+
+          template.options.page_toolbar = _.extend({
+            dock: "top_offset"
+          }, template.options.page_toolbar);
           
 
           if(!page_file.seo) page_file.seo = {};

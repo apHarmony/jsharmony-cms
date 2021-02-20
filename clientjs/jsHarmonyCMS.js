@@ -108,6 +108,7 @@ var jsHarmonyCMS = function(options){
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
+      _this.toolbar.saveOrigOffsets();
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
@@ -181,23 +182,8 @@ var jsHarmonyCMS = function(options){
     var doch = $(document).height();
     var pw = ((docw > ww) ? docw : ww);
     var ph = ((doch > wh) ? doch : wh);
-    var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-    $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
-  }
-
-  this.setToolbarPosition = function(anchorPos){
-    anchorPos = anchorPos || 'top';
-    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_editor_bar_dock_bottom', (anchorPos == 'bottom'));
-    if (anchorPos == 'bottom') {
-      $('#jsharmony_cms_content_editor_toolbar')
-        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
-        .css('bottom', '0');
-    } else {
-      var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-      $('#jsharmony_cms_content_editor_toolbar')
-        .css('top', barh+'px')
-        .css('bottom', '');
-    }
+    var barh = _this.toolbar.getHeight();
+    $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').css('max-height', (wh-barh)+'px');
   }
 
   this.onmessage = function(event){

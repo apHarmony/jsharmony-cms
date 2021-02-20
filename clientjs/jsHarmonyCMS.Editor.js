@@ -32,6 +32,13 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
+  this.defaultToolbarOptions = {
+    dock: "auto",
+    show_menu: true,
+    show_toolbar: true,
+    orig_dock: undefined,
+    orig_toolbar_or_menu: undefined,
+  };
 
   this.onBeginEdit = null; //function(mceEditor){};
   this.onEndEdit = null; //function(mceEditor){};
@@ -77,7 +84,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsharmonyCmsDockToolbar' },
+          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsHarmonyCmsToggleMenu jsHarmonyCmsToggleToolbar jsharmonyCmsDockToolbar' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
@@ -117,15 +124,41 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             }
             $('[data-component="header"]').css('pointer-events', 'none');
             _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
-            cms.setToolbarPosition(mceEditor.queryCommandValue('jsHarmonyCmsDockEditorToolbar'));
-            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
+            if(_this.toolbarContainer.length){
+              var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
+              wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
+            }
+            _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
+              //If dock=bottom, slide up
+              _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
+              _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
+            }
+            else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              //Top-offset
+              _this.toolbarContainer.stop(true).css({ opacity:1 });
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            }
+            
             cms.refreshLayout();
             if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
           });
           mceEditor.on('blur', function(){
             $('[data-component="header"]').css('pointer-events', 'auto');
             _this.isEditing = false;
-            _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
+            var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
+            var dockPosition = _this.getDockPosition(mceEditor);
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              _this.toolbarContainer.stop(true).css({ opacity:0 });
+              clearClasses();
+              cms.toolbar.refreshOffsets();
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
+            }
             if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
           //Override background color icon
@@ -180,10 +213,11 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
    * @param {string} id
    * @param {'top' | 'bottom'} position
    */
-  this.setToolbarDockPosition = function(id, position) {
+  this.setToolbarOptions = function(id, toolbarOptions) {
+    if(!toolbarOptions) return;
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(!mceEditor) throw new Error('Editor not found: '+id);
-    mceEditor.execCommand('jsHarmonyCmsDockEditorToolbar', position);
+    mceEditor.execCommand('jsHarmonyCmsSetToolbarOptions', toolbarOptions);
   }
 
   this.disableLinks = function(container, options){
@@ -236,6 +270,86 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       } while($('#' + id).length > 0)
       this.toolbarContainer.attr('id', id);
     }
+  }
+
+  this.onEditorInitialized = function(){
+    if(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()){
+      window.tinymce.activeEditor.fire('focus');
+    }
+  }
+
+  this.getDockPosition = function(mceEditor){
+    if(!mceEditor) throw new Error('Editor is required');
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    var dockPosition = toolbarOptions.dock;
+    if(!dockPosition) dockPosition = 'auto';
+    //Calculate auto
+    if(dockPosition=='auto'){
+      //Check if content would overlap editor
+      var contentOffset = $(mceEditor.contentAreaContainer).offset();
+      if(!contentOffset) return 'top';
+      var contentOffsetTop = contentOffset.top;
+      var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
+      contentOffsetTop += parseInt(contentStyles.paddingTop);
+      contentOffsetTop -= cms.toolbar.currentOffsetTop;
+      var editorToolbarHeight = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
+      if(editorToolbarHeight > contentOffsetTop){
+        if(cms.toolbar.dockPosition == 'top_offset') return 'top_offset';
+      }
+      return 'top';
+    }
+    return dockPosition;
+  }
+
+  this.getOffsetTop = function(){
+    if(!window.tinymce) return 0;
+    var mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return 0;
+    var dockPosition = _this.getDockPosition(mceEditor);
+    if(dockPosition=='top_offset'){
+      return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
+    }
+    return 0;
+  }
+
+  this.renderContentEditorToolbar = function(mceEditor, options){
+    if(!window.tinymce) return;
+    if(!mceEditor) mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return;
+    options = _.extend({ onFocus: false }, options);
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    if(options.onFocus){
+      if(!toolbarOptions.show_menu && !toolbarOptions.show_toolbar){
+        if(toolbarOptions.orig_toolbar_or_menu) toolbarOptions.show_toolbar = true;
+      }
+    }
+    toolbarOptions = _.extend({}, _this.defaultToolbarOptions, toolbarOptions);
+
+    var jContentToolbar = $('#jsharmony_cms_content_editor_toolbar');
+
+    console.log(toolbarOptions);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
+
+    var dockPosition = _this.getDockPosition(mceEditor);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
+    var isPageToolbarBottom = jContentToolbar.hasClass('jsharmony_cms_page_toolbar_bottom');
+
+    var barh = cms.toolbar.getHeight();
+    if (dockPosition == 'bottom') {
+      //Bottom Dock Position
+      jContentToolbar
+        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
+        .css('bottom', isPageToolbarBottom ? barh+'px' : '0');
+    } else {
+      //Top Dock Position
+      
+      jContentToolbar
+        .css('top', isPageToolbarBottom ? '0' : barh + 'px')
+        .css('bottom', '');
+    }
+    cms.toolbar.refreshOffsets();
   }
 
   this.getMaterialIcons = function(){

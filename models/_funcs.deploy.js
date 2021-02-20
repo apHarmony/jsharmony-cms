@@ -55,28 +55,25 @@ module.exports = exports = function(module, funcs){
 
     var sql = "select \
       (param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_path,\
-      (param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') default_page,\
       (select deployment_id from "+(module.schema?module.schema+'.':'')+"deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc) deployment_id";
     appsrv.ExecRow(req._DBContext, sql, [], {}, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       var publish_tgt = '';
-      var default_page = '';
       if(rslt && rslt[0]){
         publish_tgt = rslt[0].publish_path;
-        default_page = rslt[0].default_page;
       }
       if(!publish_tgt) { Helper.GenError(req, res, -9, 'Publish Target parameter is not defined'); return; }
       var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
       publish_path = path.normalize(publish_path);
 
       if (verb == 'get') {
-        res.end(JSON.stringify({ '_success': 1, publish_path: publish_path, default_page: default_page }));
+        res.end(JSON.stringify({ '_success': 1, publish_path: publish_path }));
         return;
       }
       else if (verb == 'post') {
         if(rslt && rslt[0] && rslt[0].deployment_id){
           funcs.deploy(rslt[0].deployment_id, function(){
-            res.end(JSON.stringify({ '_success': 1, publish_path: publish_path, default_page: default_page }));
+            res.end(JSON.stringify({ '_success': 1, publish_path: publish_path }));
           });
         }
         else return Helper.GenError(req, res, -9, 'No scheduled deployments');
@@ -130,7 +127,7 @@ module.exports = exports = function(module, funcs){
     while(page_fpath.substr(0,1)=='/') page_fpath = page_fpath.substr(1);
 
     var is_folder = (page_fpath[page_fpath.length-1]=='/');
-    if(is_folder) page_fpath += publish_params.default_page;
+    if(is_folder) page_fpath += publish_params.site_default_page_filename;
     if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
     if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
     if(publish_params) page_fpath = publish_params.page_subfolder + page_fpath;
@@ -465,12 +462,13 @@ module.exports = exports = function(module, funcs){
 
     //Update deployment to running status
     var sql = "select \
-        deployment_id, site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_sts, deployment_git_revision, \
+        deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_sts, deployment_git_revision, \
         d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
-        (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') default_page \
+        site.site_default_page_filename site_default_page_filename \
         from "+(module.schema?module.schema+'.':'')+"deployment d \
         inner join "+(module.schema?module.schema+'.':'')+"deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
+        inner join "+(module.schema?module.schema+'.':'')+"site site on site.site_id = dt.site_id\
         where deployment_sts='PENDING' and deployment_id=@deployment_id\
       ";
     appsrv.ExecRow('deployment', sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
@@ -501,7 +499,6 @@ module.exports = exports = function(module, funcs){
           if(deployment.deployment_target_sts.toUpperCase() != 'ACTIVE'){ return deploy_cb('Deployment Target is not ACTIVE'); }
           var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
           publish_path = path.normalize(publish_path);
-          var default_page = deployment.default_page;
 
           var publish_params = {
             timestamp: (Date.now()).toString(),
@@ -513,7 +510,7 @@ module.exports = exports = function(module, funcs){
             return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
           publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
-          publish_params.default_page = default_page;
+          publish_params.site_default_page_filename = deployment.site_default_page_filename;
           publish_params.publish_path = publish_path;
           publish_params.deployment_id = deployment_id;
           publish_params.deployment_target_id = deployment.deployment_target_id;
@@ -1144,8 +1141,8 @@ module.exports = exports = function(module, funcs){
         if(page_urlpath){
           branchData.page_keys[page.page_key] = page_cmspath;
           branchData.page_redirects[page_cmspath] = page_urlpath;
-          if(path.basename(page_cmspath)==publish_params.default_page){
-            var page_dir = ((page_cmspath=='/'+publish_params.default_page) ? '/' : path.dirname(page_cmspath)+'/');
+          if(path.basename(page_cmspath)==publish_params.site_default_page_filename){
+            var page_dir = ((page_cmspath=='/'+publish_params.site_default_page_filename) ? '/' : path.dirname(page_cmspath)+'/');
             branchData.page_redirects[page_dir] = page_urlpath;
             branchData.page_keys[page.page_key] = page_dir;
           }

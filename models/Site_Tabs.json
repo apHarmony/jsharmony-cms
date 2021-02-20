@@ -9,7 +9,8 @@
     "tabpos":"top",
     "tabpanelstyle": "min-width:700px;",
 	  "tabs":[
-	    {"name":"Overview","target":"Site"},
+      {"name":"Overview","target":"Site"},
+      {"name":"User Access","target":"Site_User"},
       {"name":"Page Templates","target":"Site_Template_Page"},
       {"name":"Components","target":"Site_Template_Component"}
     ],

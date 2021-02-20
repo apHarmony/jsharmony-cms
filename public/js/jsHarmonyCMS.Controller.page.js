@@ -131,6 +131,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             _this.render();
             if(!cms.isInitialized){
               cms.onTemplateLoaded(function(){
+                cms.editor.onEditorInitialized();
                 cms.isInitialized = true;
                 if(onComplete) onComplete();
               });
@@ -161,7 +162,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           if ('_success' in rslt) {
             //Populate arrays + create editor
             _this.hasChanges = false;
-            $('#jsharmony_cms_editor_bar a.jsharmony_cms_button.save').toggleClass('hasChanges', false);
+            $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save').toggleClass('hasChanges', false);
             _this.page = rslt.page;
             if(!cms.isInitialized) _this.template = rslt.template;
             _this.sitemap = rslt.sitemap;
@@ -326,10 +327,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var jobj = $(this);
       var contentId = jobj.attr('cms-content-editor');
       if(!contentId){ errors.push('HTML element with "cms-content-editor" attribute missing value.  The value is required to define the name of the content area, ex: <div cms-content-editor="page.content.body"></div>'); return; }
-      if(contentId in foundContent){ errors.push('Duplicate "cms-content-editor" element with same editable area: "'+contentId+'"'); return }
-      foundContent[contentId] = jobj;
+      var fullContentId = _this.getFullPageContentId(contentId);
+      if(fullContentId in foundContent){ errors.push('Duplicate "cms-content-editor" element with same editable area: "'+contentId+'"'); return }
+      foundContent[fullContentId] = jobj;
       if(jobj.parent().closest('[cms-content-editor]').length){ errors.push('The "'+contentId+'" cms-content-editor element cannot be inside of another Content Element (attr:cms-content-editor)'); }
-      var pageContentId = _this.getPageContentId(contentId);
+      var pageContentId = _this.getPageContentId(fullContentId);
       if(!(pageContentId in _this.template.content_elements)){ errors.push('The "'+contentId+'" cms-content-editor element is not defined in template.content_elements.  Please add it to the cms-page-config definition.'); }
     });
     for(var pageContentId in _this.template.content_elements){
@@ -375,12 +377,22 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return (XExt.beginsWith(contentId, 'page.content.') ? contentId.substr(('page.content.').length) : '');
   }
 
+  this.getFullPageContentId = function(contentId){
+    if(!contentId) return '';
+    if(contentId.indexOf('page.content.')!=0) return 'page.content.'+contentId;
+    return contentId;
+  }
+
   this.createWorkspace = function(cb){
     if(!_this.page && !cms.devMode) return;
 
     //Initialize Page Toolbar
     cms.toolbar.render();
-    if(cms.devMode) $('#jsharmony_cms_editor_bar a.jsharmony_cms_button.save').hide();
+    cms.toolbar.setDockPosition(_this.template && _this.template.options && _this.template.options.page_toolbar && _this.template.options.page_toolbar.dock);
+    if(cms.devMode){
+      $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save').hide();
+      $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.template_tips').removeClass('jsharmony_cms_button_hidden');
+    }
 
     //Add "jsharmony_cms_editor" class to body if it does not exist
     $('body').not('.jsharmony_cms_editor').addClass('jsharmony_cms_editor');
@@ -396,13 +408,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(js) _this.appendHTML($('head'), '<script type="text/javascript">'+js+'</script>');
 
     //Initialize Settings Controls
-    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
-    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
-    $('#jsharmony_cms_editor_bar .actions .jsharmony_cms_button.settings').on('click', function(){ cms.toolbar.toggleSettings(); });
-    $('#jsharmony_cms_editor_bar .actions .jsharmony_cms_button.save').on('click', function(){ _this.save(); });
-    $('#jsharmony_cms_editor_bar .actions .jsharmony_cms_button.autoHideEditorBar').on('click', function(){ cms.toolbar.toggleAutoHide(); });
+    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
+    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_seo_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
+    $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
+    $('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.template_tips').on('click', function(){ cms.toolbar.toggleSlideoutButton('template_tips'); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.settings').on('click', function(){ cms.toolbar.toggleSlideoutButton('settings'); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.save').on('click', function(){ _this.save(); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.autoHideEditorBar').on('click', function(){ cms.toolbar.toggleAutoHide(); });
 
     //Initialize Properties
     XExt.execif(_this.hasProperties(),
@@ -427,7 +440,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       },
       function(){
         //Initialize Tag Control
-        XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
+        XExt.TagBox_Render($('#jsharmony_cms_page_toolbar .page_settings_tags_editor'), $('#jsharmony_cms_page_toolbar .page_settings_tags'));
     
         $(window).on('resize', function(){ cms.refreshLayout(); });
         $(window).on('scroll', function(){ cms.refreshLayout(); });
@@ -473,7 +486,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
               if(!$('[cms-title]').length) return cb();
               $('[cms-title]').not(':visible').addClass('hidden');
               $('[cms-title]')[0].id = 'jsharmony_cms_title_editor';
-              cms.editor.attach('text', 'jsharmony_cms_title_editor', {}, function(){ return cb(); });
+              cms.editor.attach('text', 'jsharmony_cms_title_editor', {}, function(){
+                //All editors initialized
+                return cb();
+              });
             });
           });
     
@@ -492,7 +508,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
   this.render = function(){
     if(!_this.page) return;
-    var jeditorbar = $('#jsharmony_cms_editor_bar');
+    var jeditorbar = $('#jsharmony_cms_page_toolbar');
 
     //Delete extra content areas
     _.each(_.keys(_this.page.content), function(contentId){
@@ -525,8 +541,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     for(var key in _this.template.content_elements){
       cms.editor.setContent('page.content.'+key, _this.page.content[key] || '');
 
-      var dockPosition = _this.template.content_elements[key].dock_toolbar;
-      if (dockPosition) cms.editor.setToolbarDockPosition(key, dockPosition);
+      cms.editor.setToolbarOptions('page.content.'+key, _this.template.content_elements[key].editor_toolbar);
       
       if(!cms.readonly) _this.page.content[key] = cms.editor.getContent('page.content.'+key);
     }
@@ -625,9 +640,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         else window.tinymce.get('jsharmony_cms_title_editor').setContent(_this.page.title);
       }
     }
-    if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val(_this.page.title);
-    if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
-    $('#jsharmony_cms_editor_bar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
+    if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').val(_this.page.title);
+    if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
+    $('#jsharmony_cms_page_toolbar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title)+' &nbsp;<b>(Dev Mode)</b>');
     document.title = (_this.page.seo.title ? _this.page.seo.title : _this.page.title);
     if($('[cms-title]').length && !$('[cms-title]').hasClass('hidden')){
       var titleIsVisible = $('[cms-title]').is(':visible');
@@ -648,8 +663,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(src.id=='jsharmony_cms_title_editor'){
       if($('[cms-title]').length) new_page_title = window.tinymce.get('jsharmony_cms_title_editor').getContent();
     }
-    else if(jsrc.hasClass('page_settings_title')) new_page_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val();
-    else if(jsrc.hasClass('page_settings_seo_title')) new_seo_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val();
+    else if(jsrc.hasClass('page_settings_title')) new_page_title = $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').val();
+    else if(jsrc.hasClass('page_settings_seo_title')) new_seo_title = $('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title').val();
     if(new_page_title != _this.page.title){ _this.page.title = new_page_title; _this.hasChanges = true; }
     if(new_seo_title != _this.page.seo.title){ _this.page.seo.title = new_seo_title; _this.hasChanges = true; }
     _this.renderTitle(src);
@@ -667,11 +682,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       }
     }
     _.each(['tags','author','css','header','footer'], function(key){
-      var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).val();
+      var val = $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_'+key).val();
       if(val != (_this.page[key]||'')){ _this.page[key] = val; _this.hasChanges = true; }
     });
     _.each(['keywords','metadesc','canonical_url'], function(key){
-      var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val();
+      var val = $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_seo_'+key).val();
       if(val != (_this.page.seo[key]||'')){ _this.page.seo[key] = val; _this.hasChanges = true; }
     });
     _this.hasChanges = _this.hasChanges;
@@ -684,7 +699,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       }
     }
     if(_this.hasChanges){
-      $('#jsharmony_cms_editor_bar a.jsharmony_cms_button.save').toggleClass('hasChanges', true);
+      $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save').toggleClass('hasChanges', true);
       _this.renderHooks();
     }
   }
@@ -695,26 +710,26 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     //Validate
     var validation = new XValidate(jsh);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_title', '_obj.title', 'Page Title', 'U', [ XValidate._v_MaxLength(1024) ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_tags', '_obj.tags', 'Tags', 'U', [ ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_author', '_obj.author', 'Author', 'U', [ XValidate._v_Required() ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title', '_obj.seo.title', 'SEO Title Tag', 'U', [ XValidate._v_MaxLength(2048) ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_keywords', '_obj.seo.keywords', 'SEO Meta Keywords', 'U', [ ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_metadesc', '_obj.seo.metadesc', 'SEO Meta Description', 'U', [ ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_canonical_url', '_obj.seo.canonical_url', 'SEO Canonical URL', 'U', [ XValidate._v_MaxLength(2048) ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_title', '_obj.title', 'Page Title', 'U', [ XValidate._v_MaxLength(1024) ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_tags', '_obj.tags', 'Tags', 'U', [ ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_author', '_obj.author', 'Author', 'U', [ XValidate._v_Required() ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title', '_obj.seo.title', 'SEO Title Tag', 'U', [ XValidate._v_MaxLength(2048) ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_keywords', '_obj.seo.keywords', 'SEO Meta Keywords', 'U', [ ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_metadesc', '_obj.seo.metadesc', 'SEO Meta Description', 'U', [ ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_canonical_url', '_obj.seo.canonical_url', 'SEO Canonical URL', 'U', [ XValidate._v_MaxLength(2048) ]);
 
     if(_this.hasPropertiesError){
-      cms.toolbar.showSettings();
-      $('#jsharmony_cms_editor_bar .xtab[for=jsharmony_cms_page_settings_properties]').click();
+      cms.toolbar.showSlideoutButton('settings');
+      $('#jsharmony_cms_page_toolbar .xtab[for=jsharmony_cms_page_settings_properties]').click();
       return false;
     }
     if(!validation.ValidateControls('U', _this.page)){
       //Open settings if settings have an error
       var settings_error = false;
-      _.each(['title','tags','author'], function(key){ if($('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_editor_bar .xtab[for=jsharmony_cms_page_settings_overview]').click(); } });
-      if(!settings_error) _.each(['title','keywords','metadesc','canonical_url'], function(key){ if($('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_editor_bar .xtab[for=jsharmony_cms_page_settings_seo]').click(); } });
+      _.each(['title','tags','author'], function(key){ if($('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_page_toolbar .xtab[for=jsharmony_cms_page_settings_overview]').click(); } });
+      if(!settings_error) _.each(['title','keywords','metadesc','canonical_url'], function(key){ if($('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_seo_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_page_toolbar .xtab[for=jsharmony_cms_page_settings_seo]').click(); } });
       if(settings_error){
-        cms.toolbar.showSettings();
+        cms.toolbar.showSlideoutButton('settings');
       }
       return false;
     }
@@ -736,7 +751,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
 
-    cms.toolbar.hideSettings(true);
+    cms.toolbar.hideSlideoutButton('settings', true);
     XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.hasChanges = false;

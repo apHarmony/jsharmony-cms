@@ -1,12 +1,409 @@
-<div id="jsharmony_cms_editor_bar" class="jsharmony_cms">
+<div id="jsharmony_cms_page_toolbar" class="jsharmony_cms">
   <div class="actions"><!--
-    --><a class="jsharmony_cms_button settings" onclick="return false;" title="Page Settings">Page Settings</a><!--
+    --><a class="jsharmony_cms_button template_tips jsharmony_cms_button_hidden" onclick="return false;" title="Template Tips" data-slideout="template_tips">Template Tips</a><!--
+    --><a class="jsharmony_cms_button settings" onclick="return false;" title="Page Settings" data-slideout="page_settings">Page Settings</a><!--
     --><a class="jsharmony_cms_button save" onclick="return false;" title="Save">Save</a><!--
     --><a class="jsharmony_cms_button static readonly" style="display:none;" onclick="return false;" title="Read Only">(Read Only)</a><!--
     --><a class="jsharmony_cms_button icon autoHideEditorBar" style="display:none;" onclick="return false;" title="Auto-hide"><i class="material-icons hide">vertical_align_top</i><i class="material-icons dock">vertical_align_bottom</i></a><!--
   --></div>
   <div class="title" ></div>
-  <div class="page_settings" style="display:none;">
+  <div class="jsharmony_cms_tabcontrol_container template_tips" style="display:none;">
+    <div class="xtabcontrol">
+      <div class="xtabs">
+        <a href="#" class="xtab" for="jsharmony_cms_template_tips_overview">Overview</a>
+        <a href="#" class="xtab" for="jsharmony_cms_template_tips_page_templates">Page Templates</a>
+        <a href="#" class="xtab" for="jsharmony_cms_template_tips_component_templates">Component Templates</a>
+        <a href="#" class="xtab" for="jsharmony_cms_template_tips_websnippet_templates">Web Snippet Templates</a>
+      </div>
+      <div class="xpanel">
+        <div class="xtabbody jsharmony_cms_template_tips_overview">
+          <div class="jsharmony_cms_template_tips_body">
+            <div class="jsharmony_cms_template_tips_body">
+              <h2>Template Tips</h2>
+              Please click on one of the tabs above for examples of common tags used in Page Templates, Component Templates, or Web Snippet Templates.
+            </div>
+          </div>
+        </div>
+        <div class="xtabbody jsharmony_cms_template_tips_page_templates">
+          <div class="jsharmony_cms_template_tips_body">
+            <h2>Page Templates</h2>
+            <pre>
+-- cms-title
+&lt;h1 cms-title&gt;Page Title&lt;/h1&gt;
+
+-- cms-content-editor
+&lt;div cms-content-editor="page.content.body"&gt;&lt;/div&gt;
+&lt;div cms-content-editor="body"&gt;&lt;/div&gt;
+
+-- cms-onRender
+&lt;body cms-onRender="addClass(page.properties.bodyClass);  addStyle(page.properties.bodyStyle);"&gt;
+&lt;h1 cms-title cms-onRender="showIf(page.properties.showTitle!='N');"&gt;Page Title&lt;/h1&gt;
+
+-- cms-component
+&lt;div cms-component="sidebar"&gt;&lt;/div&gt;
+&lt;div cms-component="menus/main.top" cms-menu-tag="main"&gt;&lt;/div&gt;
+&lt;div cms-component="tiles" cms-component-properties='{"cssClass":"testClass"}' cms-component-data='[{"image":"test"}]'&gt;&lt;/div&gt;
+
+-- Page Config
+&lt;cms-page-config&gt;...&lt;/cms-page-config&gt;
+&lt;script type="text/cms-page-config"&gt;
+  {
+    "title": "Generic",
+    "content_elements": {
+      "subhead": { "type": "text", "title": "Subhead" },
+      "body": { "type": "htmleditor", "title": "Body" }
+    },
+    "options": {
+      "page_toolbar": { "dock": "top" }
+    },
+    "properties": {
+      "fields": [
+        { "name": "showTitle", "caption": "Show Title", "type": "varchar", "length": "32", "default": "Y",
+          "control": "checkbox", "controlparams": { "value_true": "Y", "value_false": "N" } },
+
+        { "name": "showSubhead", "caption": "Show Subhead", "type": "varchar", "length": "32", "default": "Y",
+          "control": "checkbox", "controlparams": { "value_true": "Y", "value_false": "N" } },
+  
+        { "name": "bodyClass", "caption": "Body CSS Class", "type": "varchar", "length": 1024,
+          "control": "textbox", "controlstyle": "width:400px", "validate": ["MaxLength:1024"]},
+  
+        { "name": "bodyStyle", "caption": "Body CSS Style", "type": "varchar", "length": 1024,
+          "control": "textbox", "controlstyle": "width:400px", "validate": ["MaxLength:1024"]}
+      ]
+    }
+  }
+&lt;/script&gt;
+
+===========================
+JavaScript CMS Editor Hooks
+===========================
+cms.onInit: function(jsh){ }
+  * Fired after the core jsHarmony script is loaded, but before jsHarmony CMS scripts are loaded
+  if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onInit = function(jsh){ /* Code Here */ }
+
+this.onLoad: function(jsh){ }
+  * Fired after the core jsHarmony CMS is loaded, but before the Page Editor is loaded
+  if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onLoad = function(jsh){ /* Code Here */ }
+
+cms.onLoaded: function(jsh){ }
+  * Fired when the jsHarmony CMS Page Editor is fully loaded
+  if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onLoaded = function(jsh){ /* Code Here */ }
+
+cms.onRender: function(page){ }
+  * Fired each time the Page Editor renders the page content (on load and after each save)
+  if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onRender = function(page){ /* Code Here */ }
+
+cms.onGetControllerUrl: function() => url
+  * Fired on initialization.  Can be used to return the URL of a custom CMS Page Controller.
+  * See jsharmony-cms/clientjs/jsHarmonyCMS.Controller.js for a template
+  if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onGetControllerUrl = function(){ return 'https://domain/path/to/controller.js'; }
+
+cms.onGetFilePickerParameters: function(filePickerType, url){ }
+  * Override the standard file picker querystring parameters
+  if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onFilePickerCallback = function(filePickerType, url){
+    if(overrideFilePicker){
+      return { init_page_path: 'path/to/page'; }
+    }
+  }
+  
+cms.onFilePickerCallback: function(jdata){ }
+  * Override the standard file picker completion callback
+  if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onFilePickerCallback = function(jdata){
+    if(overrideFilePicker){
+      //Handle response
+      var cms = jsHarmonyCMSInstance;
+      cms.filePickerCallback('path/to/path#@JSHCMS', jdata);
+      return true;
+    }
+  }
+            </pre>
+          </div>
+        </div>
+        <div class="xtabbody jsharmony_cms_template_tips_component_templates">
+          <div class="jsharmony_cms_template_tips_body">
+            <h2>Component Templates</h2>
+            <pre>
+================
+Component Config
+================
+&lt;cms-component-config&gt;...&lt;/cms-component-config&gt;
+&lt;script type="text/cms-component-config"&gt;
+{
+  "title": "Tiles",
+  "icon": "material:view_module",
+  "multiple_items": true,
+  "remote_templates": {
+    "publish": "localpublishtiles.publish.html"
+  },
+  "component_properties": [
+    { "name": "cssStyle", "caption": "CSS Style" },
+    { "name": "cssClass", "caption": "CSS Class" },
+  ],
+  "item_properties": [
+    { "name": "image", "caption": "Image", "control": "media_browser", "validate": ["Required"]},
+    { "name": "link", "caption": "Link", "control": "link_browser"},
+    { "name": "cssClass", "caption": "CSS Class"},
+    { "name": "title", "control": "htmleditor" },
+    { "name": "body", "control": "htmleditor" },
+  ]
+}
+&lt;/script&gt;
+&lt;script type="text/cms-component-config"&gt;
+{
+  "title": "Routers",
+  "target": "page",
+  "export": [
+    {
+      "export_path": "menus/main.html",
+      "menu_tag": "top",
+    }
+  ]
+}
+&lt;/script&gt;
+
+====
+Tags
+====
+jsh-for-item
+jsh-for-item="item"
+jsh-for-item-variable="menuitem"
+
+jsh-foreach-item
+jsh-foreach-item="item collection"
+jsh-foreach-item-separator=" "
+jsh-foreach-item-start="2"
+jsh-foreach-item-end="4"
+jsh-foreach-item-skip="2"
+jsh-foreach-item-variable="menuitem"
+jsh-foreach-item-index="i"
+
+jsh-group-items
+jsh-group-items="item collection"
+jsh-group-items-into="3"
+jsh-group-items-by="item.type"
+jsh-group-items-subgroup="items"
+jsh-group-items-index="cnt"
+jsh-group-items-separator=" "
+
+jsh-template="templateName"
+jsh-template-subgroup="items"
+
+cms-content-editor
+cms-content-editor-type
+cms-component-editor-remove-class
+cms-component-editor-add-class
+
+===================
+EJS Container Slurp
+===================
+&lt;%~...%&gt;
+
+=========
+Functions
+=========
+escapeHTML
+*escapeRegEx
+*renderTemplate(templateName, items)
+*iif(condition, valueTrue, valueFalse)
+*getEJSOutput(f)
+  var str = getEJSOutput(function(){ -%&gt;HTML&lt;% })
+*addFile(filePath, fileContent)
+*hasFile(filePath)
+*deletefile(filePath)
+
+===============
+Menu Properties
+===============
+menu
+  --menu_tag
+  --menu_template_id
+  --menu_key
+  --template
+  menu_item_tree
+  --menu_items
+  -------
+  *tree
+  *items
+  *allItems
+  *topItems
+  *currentItem
+  zz*items
+  zz*children
+  zz*parents = [top parent, next level, next level, current item]
+
+menuItem
+  *id
+  *children
+  *getSiblings()
+  *parents
+  *parent
+  *depth
+  -------
+  *html
+  *text
+  *tag
+  *class
+  *style
+  *href
+  *onclick
+  *target
+  *selected (only with PAGE)
+  ----
+  menu_item_id: undefined,
+  menu_item_parent_id: null,
+  menu_item_path: undefined,
+  menu_item_text: '',
+  menu_item_type: 'TEXT', //TEXT(default),HTML
+  menu_item_tag: undefined,
+  menu_item_style: undefined,
+  menu_item_class: undefined,
+  menu_item_link_type: undefined, //PAGE,MEDIA,URL,JS
+  menu_item_link_dest: undefined,
+  menu_item_link_target: undefined, //NEWWIN
+  ----
+  menu_item_children
+
+==================
+Sitemap Properties
+==================
+
+sitemap
+  item
+  parents
+  children
+  sitemap_items
+  *tree
+  *root
+  *allItems
+  *topItems
+  *currentItem
+
+sitemapItem
+  *id
+  *children
+  *siblings
+  *parents
+  *parent
+  *depth
+  --------
+  *html
+  *text
+  *class
+  *style
+  *href
+  *target
+  *onclick
+  *selected
+  --------------
+  sitemap_item_id: undefined,
+  sitemap_item_parent_id: null,
+  sitemap_item_path: undefined,
+  sitemap_item_text: '',
+  sitemap_item_type: 'TEXT', //TEXT(default),HTML
+  sitemap_item_tag: undefined,
+  sitemap_item_style: undefined,
+  sitemap_item_class: undefined,
+  sitemap_item_exclude_from_breadcrumbs: 0,
+  sitemap_item_exclude_from_parent_menu: 0,
+  sitemap_item_hide_menu_parents: 0,
+  sitemap_item_hide_menu_siblings: 0,
+  sitemap_item_hide_menu_children: 0,
+  sitemap_item_link_type: undefined, //PAGE,MEDIA,URL,JS
+  sitemap_item_link_dest: undefined,
+  sitemap_item_link_target: undefined, //NEWWIN
+  -------
+  sitemap_item_siblings
+
+========
+Examples
+========
+
+Content Component
+-----------------
+&lt;section class="tiles &lt;%=component.cssClass%&gt;" style="&lt;%=component.cssStyle%&gt;"&gt;
+  &lt;div jsh-group-items-into="3" class="inner flex flex-3" cms-component-editor-remove-class="flex-3"&gt;
+    &lt;div jsh-foreach-item class="flex-item box &lt;%=item.cssClass%&gt;"&gt;
+      &lt;div class="image fit"&gt;
+        &lt;img src="&lt;%=item.image%&gt;" alt="&lt;%=item.title%&gt;" /&gt;
+      &lt;/div&gt;
+      &lt;div class="content"&gt;
+        &lt;a href="&lt;%~item.link%&gt;"&gt;
+          &lt;h3 cms-content-editor="item.title" cms-content-editor-type="simple"&gt;Default Title&lt;/h3&gt;
+          &lt;div cms-content-editor="item.body"&gt;Default Body &lt;b&gt;Text&lt;/b&gt;&lt;/div&gt;
+        &lt;/a&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/section&gt;
+
+
+Simple Menu
+-----------
+&lt;div jsh-foreach-item="menu.topItems" jsh-foreach-item-separator=" " class="nav_button_container &lt;%-item.class%&gt;" style="&lt;%~item.style%&gt;"&gt;
+  &lt;a href="&lt;%~item.href%&gt;" onclick="&lt;%~item.onclick%&gt;" target="&lt;%~item.target%&gt;"&gt;&lt;%-item.html%&gt;&lt;/a&gt;
+&lt;/div&gt;
+
+Nested Menu
+-----------
+&lt;ul jsh-template="menu"&gt;
+  &lt;li jsh-foreach-item class="&lt;%~item.class%&gt;" style="&lt;%~item.style%&gt;"&gt;
+    &lt;a href="&lt;%~item.href%&gt;" onclick="&lt;%~item.onclick%&gt;" target="&lt;%~item.target%&gt;"&gt;&lt;%-item.html%&gt;&lt;/a&gt;
+    &lt;%-renderTemplate('menu', item.children)%&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;%-renderTemplate('menu', menu.tree)%&gt;
+
+
+Sidebar
+-------
+&lt;div class="xsidenav"&gt;
+  &lt;div jsh-for-item="sitemap.root" class="xsidenav_head" style="&lt;%~item.style%&gt;"&gt;
+    &lt;div class="xsidenav_item"&gt;
+      &lt;a href="&lt;%~item.href%&gt;" onclick="&lt;%~item.onclick%&gt;" target="&lt;%~item.target%&gt;"&gt;&lt;%-item.html%&gt;&lt;/a&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="xsidenav_tree"&gt;
+    &lt;ul jsh-template="sitemap-items"&gt;
+      &lt;li jsh-foreach-item class="&lt;%~item.class%&gt;" style="&lt;%~item.style%&gt;"&gt;
+        &lt;div class="xsidenav_item &lt;%=iif(item.selected,"selected")%&gt;"&gt;
+          &lt;a href="&lt;%~item.href%&gt;" onclick="&lt;%~item.onclick%&gt;" target="&lt;%~item.target%&gt;"&gt;&lt;%-item.html%&gt;&lt;/a&gt;
+        &lt;/div&gt;
+        &lt;%-renderTemplate("sitemap-items", item.children)%&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;%-renderTemplate("sitemap-items", ((!sitemap.parents && (sitemap.tree.length &gt; 1)) ? sitemap.tree : sitemap.root.children))%&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+Breadcrumbs
+-----------
+&lt;div jsh-for-item="sitemap.currentItem"&gt;
+  &lt;% var breadcrumbs = _.filter(sitemap.parents.concat(sitemap.currentItem), function(item){ return !item.sitemap_item_exclude_from_breadcrumbs }); %&gt;
+  &lt;a jsh-foreach-item="breadcrumbs" jsh-foreach-item-separator="&nbsp;/&nbsp;" href="&lt;%~(!item.selected && item.href)%&gt;" onclick="&lt;%~item.onclick%&gt;" target="&lt;%~item.target%&gt;"&gt;&lt;span class="&lt;%~iif(item.selected,'current_page')%&gt;"&gt;&lt;%-item.html%&gt;&lt;/span&gt;&lt;/a&gt;
+&lt;/div&gt;
+
+            </pre>
+          </div>
+        </div>
+        <div class="xtabbody jsharmony_cms_template_tips_websnippet_templates">
+          <div class="jsharmony_cms_template_tips_body">
+            <h2>Web Snippet Templates</h2>
+            <pre>
+-- Web Snippet Config
+&lt;cms-websnippet-config&gt;...&lt;/cms-websnippet-config&gt;
+&lt;script type="text/cms-websnippet-config"&gt;
+{
+  "title": "Button: Call to Action",
+  "description": "Link button used as a Call to Action",
+}
+&lt;/script&gt;
+            </pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="jsharmony_cms_tabcontrol_container page_settings" style="display:none;">
     <div class="xtabcontrol">
       <div class="xtabs">
         <a href="#" class="xtab" for="jsharmony_cms_page_settings_overview">Overview</a>

@@ -99,6 +99,8 @@ exports = module.exports = function(jsh, cms, editor){
   function JsHarmonyComponentPlugin(editor) {
 
     this._editor = editor;
+    this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions);
+
     this.initialize(cms.componentManager.componentTemplates);
   }
 
@@ -156,12 +158,29 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_menu = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_toolbar = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarDock = function(dockPosition){
+    var _this = this;
+    _this.toolbarOptions.dock = dockPosition || 'auto';
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
   /**
    * Create the "View" toolbar menu button, for hiding the menu and viewing source code.
    * @private
-   * @param {ComponentInfo[]} componentInfo
    */
-  JsHarmonyComponentPlugin.prototype.createViewToolbarButton = function(componentInfo) {
+  JsHarmonyComponentPlugin.prototype.createToolbarViewOptions = function() {
     var _this = this;
     _this._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
       text: 'View',
@@ -170,10 +189,16 @@ exports = module.exports = function(jsh, cms, editor){
         return cb([
           {
             type: 'menuitem',
-            icon: 'new-tab',
             text: 'Toggle Menu',
             onAction: function () {
-              $(_this._editor.editorContainer).find('[role=menubar]').toggle();
+              _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+            }
+          },
+          {
+            type: 'menuitem',
+            text: 'Toggle Toolbar',
+            onAction: function () {
+              _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
             }
           },
           {
@@ -205,15 +230,23 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
-  JsHarmonyComponentPlugin.prototype.createToolbarDockMenu = function() {
+  JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
+    //if(!this._editor.settings.isjsHarmonyCmsComponent) 
     var _this = this;
 
-    var dockPosition = 'top'
-    _this._editor.addCommand('jsHarmonyCmsDockEditorToolbar', function(position) { 
-      dockPosition = position;
-      cms.setToolbarPosition(position);
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleMenu', {
+      text: 'Toggle Menu',
+      onAction: function () {
+        _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+      }
     });
-    _this._editor.addQueryValueHandler('jsHarmonyCmsDockEditorToolbar', function() { return dockPosition; });
+
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleToolbar', {
+      text: 'Toggle Toolbar',
+      onAction: function () {
+        _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
+      }
+    });
 
     _this._editor.ui.registry.addNestedMenuItem('jsharmonyCmsDockToolbar', {
       text: 'Dock Toolbar',
@@ -223,10 +256,11 @@ exports = module.exports = function(jsh, cms, editor){
             type: 'togglemenuitem',
             text: 'Top',
             onAction: function() {
-              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'top');
+              if(_.includes(['top','top_offset','auto'],_this.toolbarOptions.orig_dock)) _this.setToolbarDock(_this.toolbarOptions.orig_dock);
+              else _this.setToolbarDock('auto');
             },
             onSetup: function(api) {
-              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'top');
+              api.setActive((_this.toolbarOptions.dock === 'top')||(_this.toolbarOptions.dock === 'top_offset')||(_this.toolbarOptions.dock === 'auto'));
               return function() {};
             }
           },
@@ -234,10 +268,10 @@ exports = module.exports = function(jsh, cms, editor){
             type: 'togglemenuitem',
             text: 'Bottom',
             onAction: function(a) {
-              _this._editor.execCommand('jsHarmonyCmsDockEditorToolbar', 'bottom');
+              _this.setToolbarDock('bottom');
             },
             onSetup: function(api) {
-              api.setActive(_this._editor.queryCommandValue('jsHarmonyCmsDockEditorToolbar') === 'bottom');
+              api.setActive(_this.toolbarOptions.dock === 'bottom');
               return function() {};
             }
           }
@@ -418,8 +452,8 @@ exports = module.exports = function(jsh, cms, editor){
     //Create menu buttons, toolbar buttons, and context menu buttons
     this.createContextToolbar(componentInfo);
     this.createComponentToolbarButton(componentInfo);
-    this.createViewToolbarButton();
-    if(!this._editor.settings.isjsHarmonyCmsComponent) this.createToolbarDockMenu();
+    this.createToolbarViewOptions();
+    this.createMenuViewOptions();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
 
@@ -435,6 +469,12 @@ exports = module.exports = function(jsh, cms, editor){
       var el = _this._editor.selection.getStart();
       _this.openPropertiesEditor(el);
     });
+    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) { 
+      _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
+      if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
+      if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = toolbarOptions.show_menu || toolbarOptions.show_toolbar;
+    });
+    this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
 
     this._editor.on('init', function() {
       _this._editor.serializer.addNodeFilter('div', function(nodes) { _this.serializerFilter(nodes); });

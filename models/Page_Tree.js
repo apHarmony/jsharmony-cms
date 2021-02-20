@@ -163,8 +163,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.getDefaultPage = function(){
-    if(xmodel.controller.form.LOVs.default_page && xmodel.controller.form.LOVs.default_page[0]) return xmodel.controller.form.LOVs.default_page[0].param_cur_val;
-    return '';
+    return jsh.XPage.getBreadcrumbs().site_default_page_filename;
   }
 
   this.page_folder_onmove = function(dragval, dropval, anchor, e) {

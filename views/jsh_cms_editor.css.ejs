@@ -4,7 +4,7 @@ Editor Bar: 2147483640
 Dialog Block: 2147483641 (So that validation errors show up over Editor Bar)
 Loading Animation: 2147483642
 */
-#jsharmony_cms_editor_bar {
+#jsharmony_cms_page_toolbar {
   position:fixed;
   top:0px;
   left:0px;
@@ -15,7 +15,13 @@ Loading Animation: 2147483642
   font-family: 'Roboto', arial, helvetica, sans-serif !important;
   min-height:37px;
 }
-#jsharmony_cms_editor_bar .title {
+#jsharmony_cms_page_toolbar.jsharmony_cms_page_toolbar_bottom {
+  top:auto;
+  bottom:0px;
+  box-shadow: 0px -2px 3px rgba(100,100,100,0.02);
+  border-top:1px solid #d2d2d2;
+}
+#jsharmony_cms_page_toolbar .title {
   font-size:15px;
   padding-top:5px;
   padding-left:20px;
@@ -28,12 +34,12 @@ Loading Animation: 2147483642
   border-bottom:1px solid #d2d2d2;
   box-sizing:border-box;
 }
-#jsharmony_cms_editor_bar .actions {
+#jsharmony_cms_page_toolbar .actions {
   position:fixed;
   right:0px;
   background-color:#f9f9f9;
 }
-#jsharmony_cms_editor_bar .jsharmony_cms_button {
+#jsharmony_cms_page_toolbar .jsharmony_cms_button {
   cursor:pointer;
   display:inline-block;
   font-size:15px;
@@ -45,55 +51,58 @@ Loading Animation: 2147483642
   height:36px;
   box-sizing:border-box;
 }
-#jsharmony_cms_editor_bar a.jsharmony_cms_button:hover {
+#jsharmony_cms_page_toolbar a.jsharmony_cms_button:hover {
   color:#555;
 }
-#jsharmony_cms_editor_bar a.jsharmony_cms_button.static:hover {
+#jsharmony_cms_page_toolbar a.jsharmony_cms_button.static:hover {
   color:#222;
   text-decoration:none;
   cursor:default;
 }
-#jsharmony_cms_editor_bar a.jsharmony_cms_button.selected {
+#jsharmony_cms_page_toolbar a.jsharmony_cms_button.selected {
   background-color:#f0f0f0;
 }
-#jsharmony_cms_editor_bar a.jsharmony_cms_button.save.hasChanges {
+#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save.hasChanges {
   font-weight:bold;
 }
 
-#jsharmony_cms_editor_bar .jsharmony_cms_button.icon {
+#jsharmony_cms_page_toolbar .jsharmony_cms_button.icon {
   padding:4px 14px;
 }
-#jsharmony_cms_editor_bar .jsharmony_cms_button.icon .material-icons {
+#jsharmony_cms_page_toolbar .jsharmony_cms_button.icon .material-icons {
   position:relative;
   top:4px;
   font-size:20px;
 }
-#jsharmony_cms_editor_bar .jsharmony_cms_button.texticon {
+#jsharmony_cms_page_toolbar .jsharmony_cms_button.texticon {
   position:relative;
   padding-left:42px;
 }
-#jsharmony_cms_editor_bar .jsharmony_cms_button.texticon .material-icons {
+#jsharmony_cms_page_toolbar .jsharmony_cms_button.texticon .material-icons {
   position:absolute;
   left:18px;
   top:7px;
   font-size:19px;
 }
-#jsharmony_cms_editor_bar .material-icons {
+#jsharmony_cms_page_toolbar .jsharmony_cms_button.jsharmony_cms_button_hidden {
+  display:none;
+}
+#jsharmony_cms_page_toolbar .material-icons {
   font-family: 'Material Icons' !important;
 }
-#jsharmony_cms_editor_bar .autoHideEditorBar .hide { display:none; }
-#jsharmony_cms_editor_bar .autoHideEditorBar .dock { display:inline-block; }
-#jsharmony_cms_editor_bar .autoHideEditorBar.enabled .hide { display:inline-block; }
-#jsharmony_cms_editor_bar .autoHideEditorBar.enabled .dock { display:none; }
+#jsharmony_cms_page_toolbar .autoHideEditorBar .hide { display:none; }
+#jsharmony_cms_page_toolbar .autoHideEditorBar .dock { display:inline-block; }
+#jsharmony_cms_page_toolbar .autoHideEditorBar.enabled .hide { display:inline-block; }
+#jsharmony_cms_page_toolbar .autoHideEditorBar.enabled .dock { display:none; }
 
-#jsharmony_cms_editor_bar .page_settings {
+#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container {
   background-color: #fff;
   padding: 12px 20px;
   overflow-y:auto;
   box-sizing:border-box;
 }
 
-#jsharmony_cms_editor_bar .page_settings a.xtab {
+#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container a.xtab {
   font-size:1.15em;
   background-color:transparent;
   border-top:none;
@@ -101,17 +110,17 @@ Loading Animation: 2147483642
   border-left:none;
   border-bottom:2px solid transparent;
 }
-#jsharmony_cms_editor_bar .page_settings a.xtab.selected {
+#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container a.xtab.selected {
   border-bottom:2px solid #222;
   color:#222;
 }
-#jsharmony_cms_editor_bar .page_settings .xtabcontrol .xpanel {
+#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container .xtabcontrol .xpanel {
   border:none;
 }
-#jsharmony_cms_editor_bar .page_settings .xtabs {
+#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container .xtabs {
 }
 
-#jsharmony_cms_editor_bar .page_settings textarea {
+#jsharmony_cms_page_toolbar .page_settings textarea {
   padding:2px 5px;
   box-sizing:border-box;
   width:100%;
@@ -119,64 +128,75 @@ Loading Animation: 2147483642
   font-size:1.1em;
 }
 
-#jsharmony_cms_editor_bar .page_settings textarea.code {
+#jsharmony_cms_page_toolbar .page_settings textarea.code {
   height:250px;
   font-size:1em;
   font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
 }
 
-#jsharmony_cms_editor_bar .page_settings .jsharmony_cms_page_settings_table {
+#jsharmony_cms_page_toolbar .page_settings .jsharmony_cms_page_settings_table {
   width:100%;
   display:table;
 }
 
-#jsharmony_cms_editor_bar .page_settings .jsharmony_cms_page_settings_row {
+#jsharmony_cms_page_toolbar .page_settings .jsharmony_cms_page_settings_row {
   display:table-row;
 }
 
-#jsharmony_cms_editor_bar .page_settings .jsharmony_cms_page_settings_cell {
+#jsharmony_cms_page_toolbar .page_settings .jsharmony_cms_page_settings_cell {
   padding-bottom:6px;
   display:table-cell;
 }
 
-#jsharmony_cms_editor_bar .page_settings label {
+#jsharmony_cms_page_toolbar .page_settings label {
   font-size:1.1em;
   white-space:nowrap;
   padding-right:6px;
 }
 
-#jsharmony_cms_editor_bar .page_settings input.page_settings_ctrl {
+#jsharmony_cms_page_toolbar .page_settings input.page_settings_ctrl {
   box-sizing:border-box;
   width:100%;
   font-size:1.1em;
   padding:2px 5px;
 }
 
-#jsharmony_cms_editor_bar .page_settings .page_settings_tags_editor {
+#jsharmony_cms_page_toolbar .page_settings .page_settings_tags_editor {
   width:100%;
 }
 
-#jsharmony_cms_editor_bar .page_settings .page_settings_tags_editor input {
+#jsharmony_cms_page_toolbar .page_settings .page_settings_tags_editor input {
   font-size:1.1em;
 }
 
-#jsharmony_cms_editor_bar .jsharmony_cms_page_settings_properties .xbodyhead {
+#jsharmony_cms_page_toolbar .jsharmony_cms_page_settings_properties .xbodyhead {
   padding-top: 0px;
 }
 
-#jsharmony_cms_editor_bar .jsharmony_cms_page_settings_properties .xform_caption {
+#jsharmony_cms_page_toolbar .jsharmony_cms_page_settings_properties .xform_caption {
   font-size:1.1em;
   padding-right:6px;
 }
 
-#jsharmony_cms_editor_bar .jsharmony_cms_page_settings_properties input {
+#jsharmony_cms_page_toolbar .jsharmony_cms_page_settings_properties input {
   padding: 2px 5px;
   font-size:1.1em;
   margin-top:0px;
   margin-bottom:6px;
 }
 
-#jsharmony_cms_editor_bar .bluebutton {
+#jsharmony_cms_page_toolbar .jsharmony_cms_template_tips_body {
+  overflow:auto;
+  max-height:400px;
+  padding-top:15px;
+}
+
+#jsharmony_cms_page_toolbar .jsharmony_cms_template_tips_body pre {
+  font-size:1em;
+  background-color:transparent;
+}
+
+#jsharmony_cms_page_toolbar .bluebutton {
   display:inline-block;
   padding:6px 20px;
   color:white;
@@ -189,8 +209,16 @@ Loading Animation: 2147483642
   margin-bottom:6px;
   font-weight:400;
 }
-#jsharmony_cms_editor_bar a.bluebutton:hover {
+#jsharmony_cms_page_toolbar a.bluebutton:hover {
   background-color:#3c89ef;
+}
+
+#jsharmony_cms_content_editor_toolbar.jsharmony_cms_content_editor_toolbar_hide_menu [role=menubar] {
+  display:none;
+}
+
+#jsharmony_cms_content_editor_toolbar.jsharmony_cms_content_editor_toolbar_hide_toolbar [role=group] {
+  display:none;
 }
 
 body .tox-tinymce-inline {
@@ -222,7 +250,7 @@ body .tox-toolbar__group .material-icons {
   position:relative;
   top:2px;
 }
-.jsharmony_cms_editor_bar_dock_bottom .tox.tox-tinymce-aux .tox-toolbar__overflow {
+.jsharmony_cms_content_editor_toolbar_dock_bottom .tox.tox-tinymce-aux .tox-toolbar__overflow {
   top:-79px !important;
 }
 

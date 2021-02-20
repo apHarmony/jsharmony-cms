@@ -2,7 +2,7 @@
   "macros": {
     "CMS_BRANCH_BREADCRUMBS": {
       "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><a href='<%=jsh._BASEURL%>{namespace}Branch_Summary?action=update&branch_id=<#=bcrumbs.branch_id#>'><#=bcrumbs.branch_desc||'\u00A0'#></a></div>",
-      "sql": "select branch_id, branch_desc, v_my_branch_desc.site_id, site_default_page_template_id, sys_user_site_editor, site_editor from {schema}.v_my_branch_desc inner join {schema}.site on site.site_id = v_my_branch_desc.site_id inner join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()"
+      "sql": "select branch_id, branch_desc, v_my_branch_desc.site_id, site_default_page_template_id, site_default_page_filename,sys_user_site_editor, site_editor from {schema}.v_my_branch_desc inner join {schema}.site on site.site_id = v_my_branch_desc.site_id inner join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()"
     },
     "CMS_SITE_EDITOR_LOV": {
       "control":"hidden",
