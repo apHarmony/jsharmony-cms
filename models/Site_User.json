@@ -1,25 +1,14 @@
 {
   "Site_User": {
-    "layout":"grid",
-    "table":"{schema}.v_sys_user_site_access",
-    "title": "User Access",
+    "layout":"form",
+    "title": "",
+    "table":"{schema}.site",
     "caption":["Site User","Site Users"],
     "popup": [960, 600],
-    "roles": { "WEBMASTER": "BIUD" },
-    "commitlevel":"row",
-    "rowclass":"<%=xejs.iif((datarow['sys_user_site_access']=='WEBMASTER'),'readonly')%>",
-    "rowstyle":"background-color:#fff;border-bottom:1px solid #ddd;",
-    "rowlimit":99999,
+    "roles": { "WEBMASTER": "B" },
     "fields": [
-      {"name":"sys_user_site_id","actions":"B","key":1,"control":"hidden"},
-      {"name":"site_id","actions":"BI","foreignkey":1,"control":"hidden"},
-      {"name":"sys_user_id","actions":"BI","caption": "User",
-        "lov":{
-          "sql": "select sys_user_id as code_val,(jsharmony.get_sys_user_name(sys_user_id)) as code_txt from jsharmony.sys_user order by (jsharmony.get_sys_user_name(sys_user_id))",
-        },
-        "sqlsort":"(jsharmony.get_sys_user_name(sys_user_id))"
-      },
-      {"name":"sys_user_site_access","caption":"Access","control":"dropdown","lov":{"blank":"(None)","schema":"cms","code":"sys_user_site_access"}},
+      {"control":"subform","target":"Site_User_Site","controlclass":"no-border","controlparams":{"grid_save_before_update": true,"panelstyle":"width:auto;"}},
+      {"control":"subform","target":"Site_User_System","bindings":{},"controlclass":"no-border"}
     ]
   },
 

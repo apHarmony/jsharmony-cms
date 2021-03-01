@@ -38,7 +38,7 @@ module.exports = exports = function(module, funcs){
     var XValidate = jsh.XValidate;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Diff');
+    var model = jsh.getModel(req, module.namespace + 'Branch_Validate');
     
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
@@ -55,28 +55,30 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      funcs.validate(req._DBContext, branch_id, function(err, rslt){
-        if(err){
-          if(err.sql){
-            err.model = model;
-            return appsrv.AppDBError(req, res, err);
-          }
-          else{
-            rslt = {
-              _success: 1,
-              error_count: 1,
-              branch_validate: {
-                system: {
+      funcs.validateBranchAccess(req, res, branch_id, 'R%', ['AUTHOR','PUBLISHER','WEBMASTER'], function(){
+        funcs.validate(req._DBContext, branch_id, function(err, rslt){
+          if(err){
+            if(err.sql || err.frontend_visible){
+              if(err.sql) err.model = model;
+              return appsrv.AppDBError(req, res, err);
+            }
+            else{
+              rslt = {
+                _success: 1,
+                error_count: 1,
+                branch_validate: {
                   system: {
-                    errors: [err.toString()]
+                    system: {
+                      errors: [err.toString()]
+                    }
                   }
-                }
-              } 
-            };
+                } 
+              };
+            }
           }
-        }
-        rslt._success = 1;
-        res.end(JSON.stringify(rslt));
+          rslt._success = 1;
+          res.end(JSON.stringify(rslt));
+        });
       });
     }
     else {
@@ -127,9 +129,10 @@ module.exports = exports = function(module, funcs){
 
       //Get deployment_target_params for branch
       function(cb){
-        var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+        var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
         appsrv.ExecRow(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
+          if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target branch', -11));
           if(rslt && rslt[0]){
             try{
               branchData.deployment_target_id = rslt[0].deployment_target_id;

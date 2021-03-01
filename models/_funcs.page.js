@@ -409,11 +409,11 @@ module.exports = exports = function(module, funcs){
       sql_ptypes.push(dbtypes.BigInt);
       sql_params.page_id = Q.page_id;
       validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
-      sql += ' from '+(module.schema?module.schema+'.':'')+'page where page_key=@page_key and page_id=@page_id';
+      sql += ' from {schema}.page where page_key=@page_key and page_id=@page_id and site_id={schema}.my_current_site_id()';
     }
     else{
-      sql += ',(select '+(module.schema?module.schema+'.':'')+'my_current_branch_id()) branch_id';
-      sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key';
+      sql += ',(select {schema}.my_current_branch_id()) branch_id';
+      sql += ' from {schema}.v_my_page where page_key=@page_key';
     }
 
     var page_role = '';
@@ -429,9 +429,12 @@ module.exports = exports = function(module, funcs){
     verrors = _.merge(verrors, validate.Validate('B', sql_params));
     if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-    appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
+      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){
+        if(Q.page_id) return Helper.GenError(req, res, -4, 'Page not found in current site');
+        return Helper.GenError(req, res, -4, 'Page not found in current branch');
+      }
       var page = rslt[0][0];
 
       //Get Page Template
@@ -482,13 +485,13 @@ module.exports = exports = function(module, funcs){
           //Get authors
           function(cb){
             if(Helper.HasRole(req, 'PUBLISHER')){
-              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from jsharmony.sys_user_role where sys_role_name in ('PUBLISHER','AUTHOR')) order by code_txt";
+              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from {schema}.v_sys_user_site_access where site_id=@site_id and sys_user_site_access in ('WEBMASTER','PUBLISHER','AUTHOR')) order by code_txt";
             }
             else {
               sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"page where page_id=@page_id) order by code_txt";
             }
 
-            appsrv.ExecRecordset(req._DBContext, sql, [dbtypes.BigInt], { page_id: page.page_id }, function (err, rslt) {
+            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt, dbtypes.BigInt], { page_id: page.page_id, site_id: site_id }, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
               if(!rslt || !rslt.length || !rslt[0]){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
               authors = rslt[0];
@@ -739,7 +742,7 @@ module.exports = exports = function(module, funcs){
 
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Branch'); }
+      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a branch'); }
 
       var devInfo = rslt[0][0];
 
@@ -844,13 +847,13 @@ module.exports = exports = function(module, funcs){
     //Only dev mode uses devMode and site_id parameters
 
     if (verb == 'get') {
-      var sql = "select v_my_branch_desc.branch_id current_branch_id,v_my_branch_desc.site_id current_branch_site_id,v_my_branch_desc.site_id,deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()";
+      var sql = "select v_my_branch_desc.branch_id current_branch_id,v_my_branch_desc.site_id current_branch_site_id,v_my_branch_desc.site_id,deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id={schema}.my_current_branch_id()";
       var sql_ptypes = [];
       var sql_params = {};
 
       if(Q.devMode){
         if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select {schema}.my_current_branch_id() current_branch_id,(select site_id from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()) current_branch_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
+        sql = "select {schema}.my_current_branch_id() current_branch_id,(select site_id from {schema}.v_my_branch_desc where v_my_branch_desc.branch_id={schema}.my_current_branch_id()) current_branch_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { site_id: Q.site_id };
       }

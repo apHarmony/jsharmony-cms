@@ -175,9 +175,9 @@ module.exports = exports = function(module, funcs){
       sql_ptypes.push(dbtypes.BigInt);
       sql_params.menu_id = Q.menu_id;
       validate.AddValidator('_obj.menu_id', 'Menu ID', 'B', [XValidate._v_IsNumeric()]);
-      sql += ' from '+(module.schema?module.schema+'.':'')+'menu where menu_key=@menu_key and menu_id=@menu_id';
+      sql += ' from {schema}.menu where menu_key=@menu_key and menu_id=@menu_id and site_id={schema}.my_current_site_id()';
     }
-    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_menu where menu_key=@menu_key';
+    else sql += ' from {schema}.v_my_menu where menu_key=@menu_key';
     
     var fields = [];
     var datalockstr = '';
@@ -186,7 +186,7 @@ module.exports = exports = function(module, funcs){
     
     verrors = _.merge(verrors, validate.Validate('B', sql_params));
     if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-    appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Menu ID'); }
       var menu = rslt[0][0];

@@ -25,7 +25,7 @@
     "caption": ["Deployment Target","Deployment Targets"],
     "columns": [
       { "name": "deployment_target_id", "type": "bigint", "key": true, "identity": true, "null": false },
-      { "name": "deployment_target_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "deployment_target_name", "type": "varchar", "length": 256, "null": false },
       { "name": "deployment_target_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "deployment_target_publish_path", "type": "varchar", "length": 2048 },
@@ -35,6 +35,9 @@
       { "name": "deployment_target_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
       { "name": "deployment_target_mtstmp", "type": "datetime", "length": 7 },
       { "name": "deployment_target_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["deployment_target_name","site_id"]
     ],
     "triggers": [
       { "on": ["update", "insert"], "exec": [
@@ -130,12 +133,33 @@
           "site_id",
           "deployment_target_publish_path",
           "deployment_target_params",
-          { "name":"deployment_target_can_editor", "type": "int", "sqlselect": "case when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='EDITOR' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1 else 0 end" },
-          { "name":"deployment_target_can_publish", "type": "int", "sqlselect": "case when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1 else 0 end" }
+          {
+            "name":"deployment_target_can_editor", "type": "int",
+            "sqlselect": [
+              "case ",
+              "  when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='EDITOR' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  when exists(select * from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id and dtr.deployment_target_role_type='EDITOR' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  else 0 end"
+            ]
+          },
+          {
+            "name":"deployment_target_can_publish", "type": "int", 
+            "sqlselect": [
+              "case ",
+              "  when {schema}.my_user_is_publisher(deployment_target.site_id) = 0 then 0",
+              "  when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  when exists(select * from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  else 0 end"
+            ]
+          }
         ]
       }
     },
-    "where": "deployment_target_id in (select deployment_target_id from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id())"
+    "where": [
+      "deployment_target_id in (select deployment_target_id from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id())",
+      "or",
+      "deployment_target_id in (select deployment_target_id from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id)"
+    ]
   },
 
   "v_my_deployment": {

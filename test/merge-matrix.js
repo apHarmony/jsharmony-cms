@@ -582,11 +582,11 @@ describe('Merges - Matrix', function() {
       function(cb){
           // create test pages
           var sql = 
-          "insert into cms.page(page_path) values('Merge Test Data: src orig');\
-          insert into cms.page(page_key, page_path) select page_key, 'Merge Test Data: dst orig' from cms.page where page_path = 'Merge Test Data: src orig';\
-          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
-          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
-          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
+          "insert into cms.page(site_id,page_path) values((select site_id from cms.site where site_name='Merge Test Data'), 'Merge Test Data: src orig');\
+          insert into cms.page(site_id,page_key, page_path) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: dst orig' from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
+          insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
           select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%'"
           db.Recordset('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);

@@ -35,54 +35,6 @@ module.exports = exports = function(module, funcs){
     funcs.deploy_exec(deployment_id, done);
   }, 1);
 
-  exports.deploy_req = function (req, res, next) {
-    var verb = req.method.toLowerCase();
-    if (!req.body) req.body = {};
-
-    var Q = req.query;
-    var P = {};
-    if (req.body && ('data' in req.body)){
-      try{ P = JSON.parse(req.body.data); }
-      catch(ex){ Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-    }
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-
-    var model = jsh.getModel(req, module.namespace + 'Publish_Add');
-
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
-    var sql = "select \
-      (param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_path,\
-      (select deployment_id from "+(module.schema?module.schema+'.':'')+"deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc) deployment_id";
-    appsrv.ExecRow(req._DBContext, sql, [], {}, function (err, rslt) {
-      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      var publish_tgt = '';
-      if(rslt && rslt[0]){
-        publish_tgt = rslt[0].publish_path;
-      }
-      if(!publish_tgt) { Helper.GenError(req, res, -9, 'Publish Target parameter is not defined'); return; }
-      var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
-      publish_path = path.normalize(publish_path);
-
-      if (verb == 'get') {
-        res.end(JSON.stringify({ '_success': 1, publish_path: publish_path }));
-        return;
-      }
-      else if (verb == 'post') {
-        if(rslt && rslt[0] && rslt[0].deployment_id){
-          funcs.deploy(rslt[0].deployment_id, function(){
-            res.end(JSON.stringify({ '_success': 1, publish_path: publish_path }));
-          });
-        }
-        else return Helper.GenError(req, res, -9, 'No scheduled deployments');
-        return;
-      }
-      return next();
-    });
-  }
-
   exports.deployment_getLogFileName = function (deployment_id) {
     return path.join(module.jsh.Config.datadir, 'publish_log', deployment_id + '.log');
   }
@@ -1745,33 +1697,35 @@ module.exports = exports = function(module, funcs){
 
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-    var sql = "select deployment_id, deployment_sts, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
+    var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
     appsrv.ExecRow(req._DBContext, sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment ID');
       var deployment = rslt[0];
 
-      if (verb == 'get') {
-        var logfile = funcs.deployment_getLogFileName(deployment_id);
-        var log = '';
+      funcs.validateBranchAccess(req, res, deployment.branch_id, 'R%', ['PUBLISHER','WEBMASTER'], function(){
+        if (verb == 'get') {
+          var logfile = funcs.deployment_getLogFileName(deployment_id);
+          var log = '';
 
-        fs.exists(logfile, function(exists){
-          Helper.execif(exists,
-            function(f){
-              fs.readFile(logfile, 'utf8', function(err, data){
-                if(err) return f();
-                log = data;
-                return f();
-              });
-            },
-            function(){
-              res.end(JSON.stringify({ '_success': 1, deployment: deployment, log: log }));
-            }
-          );
-        });
-        return;
-      }
-      return next();
+          fs.exists(logfile, function(exists){
+            Helper.execif(exists,
+              function(f){
+                fs.readFile(logfile, 'utf8', function(err, data){
+                  if(err) return f();
+                  log = data;
+                  return f();
+                });
+              },
+              function(){
+                res.end(JSON.stringify({ '_success': 1, deployment: deployment, log: log }));
+              }
+            );
+          });
+          return;
+        }
+        return next();
+      });
     });
   }
 

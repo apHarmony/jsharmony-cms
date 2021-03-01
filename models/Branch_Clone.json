@@ -25,7 +25,7 @@
       {"control":"html","value":"/&nbsp;","nl":false},
       {"name":"new_branch_type","actions":"BU","type":"varchar","control":"dropdown","caption":"","nl":false,
         "controlstyle":"margin-right:0px;","validate":["Required"],"caption_ext":"Branch Location",
-        "lov":{ "sql": "select 'PUBLIC' code_val, 'public' code_txt where ({schema}.my_user_is_publisher() = 1) union all select 'USER' code_val, (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=jsharmony.my_sys_user_id()) code_txt" } },
+        "lov":{ "sql": "select 'PUBLIC' code_val, 'public' code_txt where ({schema}.my_user_is_publisher({schema}.my_current_site_id()) = 1) union all select 'USER' code_val, (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=jsharmony.my_sys_user_id()) code_txt" } },
       {"control":"html","value":"&nbsp;/&nbsp;","nl":false},
       {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"Branch Name"},
       {"control":"html","value":"<div class='<%=model.class%>_Change_Status'></div>","caption":"Change Status","captionstyle":"vertical-align:top;font-weight:bold;padding-top:3px;"},

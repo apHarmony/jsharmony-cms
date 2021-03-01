@@ -168,4 +168,47 @@
     });
   }
 
+  jsh.System.renderCurrentSite = function(site_id, site_name){
+    jsh.globalparams.site_id = site_id;
+    jsh.globalparams.site_name = site_name;
+
+    //Render site dropdown in header
+    jsh.$root('.xlogo .xsublogo').html(XExt.renderEJS(jsh.GetEJS('jsHarmonyCMS.SiteSelection')));
+    jsh.$root('.xlogo .xsublogo').attr('onclick','return false;').off('click').on('click', function(e){
+      var jobj = $(this);
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      if(jobj.hasClass('selected') || jsh.$root('.jsHarmonyCms_site_selection_dropdown').is(':visible')){
+        jsh.$root('.jsHarmonyCms_site_selection_dropdown').remove();
+        return;
+      }
+
+      var execModel = '{namespace}Site_Listing';
+      XForm.Get(execModel, { rowstart: 0, rowcount: 99999 }, { }, function(rslt){
+        if(!rslt || !rslt[execModel] || !rslt[execModel].length || !rslt[execModel][0]){
+          XExt.Alert('No sites found');
+        }
+        else {
+          var sites = rslt[execModel];
+          jsh.$root('.jsHarmonyCms_site_selection_dropdown').remove();
+          jsh.root.append(XExt.renderEJS(jsh.$root('.jsHarmonyCms_template_site_selection_dropdown').html(), undefined, { sites: sites }));
+          var jpos = jobj.offset();
+          XExt.ShowContextMenu('.jsHarmonyCms_site_selection_dropdown', undefined, undefined, { top: jpos.top + jobj.outerHeight() - 1, left: jpos.left - 1 });
+        }
+      });
+    });
+  }
+
+  jsh.on('jsh_render_init', function(){
+    jsh.System.renderCurrentSite(jsh.globalparams.site_id, jsh.globalparams.site_name);
+  });
+
+  jsh.System.setCurrentSite = function(site_id, source){
+    if(site_id == jsh.globalparams.site_id) return;
+    if(!source) source = window.location.href;
+    var url = jsh._BASEURL + '_funcs/site/checkout?' + $.param({site_id:site_id, source: source});
+    window.location.href = url;
+  }
+
 })(window.jshInstance);

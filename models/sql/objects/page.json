@@ -5,6 +5,7 @@
     "columns": [
       { "name": "page_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "page_file_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "page_orig_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "page_title", "type": "varchar", "length": 1024 },
@@ -110,6 +111,7 @@
         "columns": [
           "page_id",
           "page_key",
+          "site_id",
           "page_file_id",
           "page_orig_id",
           "page_title",
@@ -150,7 +152,7 @@
             "errorif(exists(select * from {schema}.v_my_page where (page_path=inserted(page_path))),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end)))),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
-            "  insert into page(page_file_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(inserted(page_file_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
+            "  insert into page(site_id, page_file_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values({schema}.my_current_site_id(), inserted(page_file_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
             "  return_insert_key(page, page_key, (page_key=@@INSERT_ID));",
             "  insert into branch_page(branch_id, page_key, page_id, branch_page_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
             "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
@@ -167,7 +169,7 @@
             "errorif(exists(select * from {schema}.v_my_page where (page_path=inserted(page_path)) and page_key<>deleted(page_key)),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end))) and page_key<>deleted(page_key)),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
-            "  insert into page(page_key, page_file_id, page_orig_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), deleted(page_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
+            "  insert into page(site_id, page_key, page_file_id, page_orig_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(deleted(site_id), deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), deleted(page_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
             "  update branch_page set page_id=@@INSERT_ID,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key);",
             "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",

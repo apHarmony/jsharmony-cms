@@ -474,7 +474,7 @@ module.exports = exports = function(module, funcs){
 
       //Get deployment target params
       function(cb){
-        var sql = "select site_editor deployment_target_id,deployment_target_params,branch.site_id from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@dst_branch_id";
+        var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@dst_branch_id";
         appsrv.ExecRow(context, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
@@ -701,6 +701,7 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('U', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
+      //Validate user has access to branch
       var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
       appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }

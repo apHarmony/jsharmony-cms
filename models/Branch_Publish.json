@@ -5,7 +5,7 @@
     "actions": "U",
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
     "sqlexec": [
-      "update {schema}.branch set branch_sts='REVIEW',branch_review_sts='PENDING' where branch_id=@branch_id and (({schema}.my_user_is_publisher() = 1) or (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_type='USER' and branch_sts='ACTIVE' and branch_access='RW')));",
+      "update {schema}.branch set branch_sts='REVIEW',branch_review_sts='PENDING' where branch_id=@branch_id and (({schema}.my_user_is_publisher(branch.site_id) = 1) or (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_type='USER' and branch_sts='ACTIVE' and branch_access='RW')));",
       "update {schema}.v_my_current_branch set new_branch_id = null where branch_id = @branch_id;"
     ],
     "fields": [

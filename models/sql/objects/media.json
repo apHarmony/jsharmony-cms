@@ -23,6 +23,7 @@
     "columns": [
       { "name": "media_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" } },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "media_file_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
       { "name": "media_orig_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
       { "name": "media_desc", "type": "varchar", "length": 256 },
@@ -90,6 +91,7 @@
         "columns": [
           "media_id",
           "media_key",
+          "site_id",
           "media_file_id",
           "media_orig_id",
           "media_desc",
@@ -134,7 +136,7 @@
             "errorif(exists(select * from {schema}.v_my_media where (media_path=inserted(media_path))),'Media file name already exists');",
             "errorif(exists(select * from {schema}.v_my_media where ((media_folder like (case when inserted(media_is_folder)=1 and {schema}.filename(inserted(media_path)) = '' then concat(inserted(media_path),'%') else concat(inserted(media_path),'/%') end)))),'Existing folder with the same name already exists');",
             "with_insert_identity(media, media_id, ",
-            "  insert into media(media_file_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values(inserted(media_file_id), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
+            "  insert into media(site_id, media_file_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values({schema}.my_current_site_id(), inserted(media_file_id), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
             "  return_insert_key(media, media_key, (media_key=@@INSERT_ID));",
             "  insert into branch_media(branch_id, media_key, media_id, branch_media_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
             "  update branch_media set media_orig_id=media_id,branch_media_action=NULL where branch_id={schema}.my_current_branch_id() and media_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
@@ -151,7 +153,7 @@
             "errorif(exists(select * from {schema}.v_my_media where (media_path=inserted(media_path)) and media_key<>deleted(media_key)),'Media file name already exists');",
             "errorif(exists(select * from {schema}.v_my_media where ((media_folder like (case when inserted(media_is_folder)=1 and {schema}.filename(inserted(media_path)) = '' then concat(inserted(media_path),'%') else concat(inserted(media_path),'/%') end))) and media_key<>deleted(media_key)),'Existing folder with the same name already exists');",
             "with_insert_identity(media, media_id, ",
-            "  insert into media(media_key, media_file_id, media_orig_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values(deleted(media_key), (case when inserted(media_file_id) is null then null else deleted(media_file_id) end), deleted(media_id), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
+            "  insert into media(site_id, media_key, media_file_id, media_orig_id, media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height, media_review_sts, media_lang, media_is_folder) values(deleted(site_id), deleted(media_key), (case when inserted(media_file_id) is null then null else deleted(media_file_id) end), deleted(media_id), inserted(media_desc), inserted(media_path), inserted(media_tags), inserted(media_type), inserted(media_ext), inserted(media_size), inserted(media_width), inserted(media_height), inserted(media_review_sts), inserted(media_lang), $ifnull(inserted(media_is_folder),0)),",
             "  update branch_media set media_id=@@INSERT_ID,branch_media_action=(case branch_media_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key);",
             "  update branch_media set media_orig_id=media_id,branch_media_action=NULL where branch_id={schema}.my_current_branch_id() and media_key = deleted(media_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",

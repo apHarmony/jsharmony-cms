@@ -98,8 +98,8 @@ module.exports = exports = function(module, funcs){
 
         //Get deployment_target_params for branch
         function(cb){
-          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
-          appsrv.ExecScalar(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_site where site_id=@site_id";
+          appsrv.ExecScalar(req._DBContext, sql, [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) deployment_target_params = rslt[0];
             return cb();

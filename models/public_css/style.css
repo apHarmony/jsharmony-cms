@@ -1,9 +1,16 @@
 <%-(rootcss)%> .xtbl tbody tr.branch_checked_out,
-<%-(rootcss)%> .xtbl tbody tr.site_branch_checked_out,
+<%-(rootcss)%> .xtbl tbody tr.site_checked_out,
 <%-(rootcss)%> .xtbl tbody tr.site_editor_current {
   background-color:#c2ffb8;
 }
-
+<%-(rootcss)%> .bcrumbs_site_header a {
+  font-weight: bold;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position:relative;
+  top:1px;
+}
 <%-(rootcss)%> .bcrumbs_branch_header {
   border:1px solid #333;
   color:white;
@@ -17,6 +24,9 @@
   display:inline-block;
   color:#000;
   margin-right:10px;
+}
+<%-(rootcss)%> .bcrumbs_branch_body_highlight {
+  background-color:#c2ffb8;
 }
 <%-(rootcss)%> .bcrumbs_branch_body a { color:#000; }
 
@@ -171,8 +181,49 @@
   padding-bottom:7px;
 }
 <%-(rootcss)%> .headerInfo_caption {
-  border:1px solid #333;color:white;background-color:#333;padding:4px 11px;display:inline-block;
+  border:1px solid #333;color:white;background-color:#333;padding:4px 11px;display:inline-block;width:115px;box-sizing:border-box;
 }
 <%-(rootcss)%> .headerInfo_content {
   border:1px solid #333;padding:4px 11px;display:inline-block;color:#000;background-color:#c2ffb8;
+}
+<%-(rootcss)%> .headerInfo_site {
+  position: relative;
+  padding-left: 36px;
+}
+<%-(rootcss)%> .headerInfo_site .material-icons {
+  font-size: 27px;
+  position: absolute;
+  top: -5px;
+  left: 0px;
+}
+<%-(rootcss)%> .xlogoimg {
+  top:-1px;
+}
+<%-(rootcss)%> .jsHarmonyCms_site_selection {
+  border:1px solid #c5d2e7;
+  background-image: url(/images/arrow_down.png);
+  background-repeat: no-repeat;
+  background-position: right 7px;
+  padding: 2px 21px 1px 26px;
+  position: relative;
+  top: 1px;
+}
+<%-(rootcss)%> .jsHarmonyCms_site_selection .material-icons,
+<%-(rootcss)%> .xcontext_menu.jsHarmonyCms_site_selection_dropdown a .material-icons {
+  font-size: 13px;
+  position: absolute;
+  top: 4px;
+  left: 7px;
+  font-weight: normal;
+}
+<%-(rootcss)%> .xcontext_menu.jsHarmonyCms_site_selection_dropdown a {
+  padding: 2px 21px 1px 26px;
+  background-color:#24528f;
+  color:#fff;
+  letter-spacing:1px;
+  font-size:12px;
+  position:relative;
+}
+<%-(rootcss)%> .xcontext_menu.jsHarmonyCms_site_selection_dropdown a:hover {
+  text-decoration:underline;
 }

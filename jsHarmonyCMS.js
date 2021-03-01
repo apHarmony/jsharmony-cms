@@ -101,6 +101,7 @@ jsHarmonyCMS.prototype.Init = function(cb){
 
   jsh.AppSrv.modelsrv.srcfiles['jsHarmonyCMS.EditorSelection'] = jsh.getEJS('jsHarmonyCMS.EditorSelection');
   jsh.AppSrv.modelsrv.srcfiles['jsHarmonyCMS.ComponentPlaceholder'] = jsh.getEJS('jsHarmonyCMS.ComponentPlaceholder');
+  jsh.AppSrv.modelsrv.srcfiles['jsHarmonyCMS.SiteSelection'] = jsh.getEJS('jsHarmonyCMS.SiteSelection');
 
   jsh.Config.onServerReady.push(function (cb, servers){
     async.parallel([
@@ -265,10 +266,20 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     "sql":"select site_id code_val,'site_id' code_txt from "+(this.schema?this.schema+'.':'')+"branch where branch.branch_id="+(this.schema?this.schema+'.':'')+"my_current_branch_id()",
     "post_process":"return jsh.Modules['"+this.name+"'].funcs.getCurrentPageTemplatesLOV(req._DBContext, values, {}, callback);",
   };
-  this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK = _.extend({}, this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES);
+  this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK = _.extend({ "blank": "(None)" }, this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES);
   this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK.post_process = "return jsh.Modules['"+this.name+"'].funcs.getCurrentPageTemplatesLOV(req._DBContext, values, { blank: true }, callback);";
   
   this.jsh.Sites['main'].globalparams.isWebmaster = function (req) { return Helper.HasRole(req, "WEBMASTER"); }
+  this.jsh.Sites['main'].globalparams.site_id = function (req) { return req.gdata.site_id; }
+  this.jsh.Sites['main'].globalparams.site_name = function (req) { return req.gdata.site_name; }
+
+  //Chain to onAuthComplete
+  if(!this.jsh.Sites['main'].auth) this.jsh.Sites['main'].auth = {};
+  this.jsh.Sites['main'].auth.onAuthComplete = Helper.chainToEnd(this.jsh.Sites['main'].auth.onAuthComplete, function(req, user_info, jsh){
+    if(!req.gdata) req.gdata = {};
+    req.gdata.site_id = user_info.site_id;
+    req.gdata.site_name = user_info.site_name;
+  });
 
   //Add defaultEditorConfig to client-side variables
   this.jsh.Sites['main'].globalparams.defaultEditorConfig = _this.Config.defaultEditorConfig;
@@ -686,7 +697,6 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/media/': _this.funcs.media,
         '/_funcs/menu/:menu_key/': _this.funcs.menu,
         '/_funcs/sitemap/:sitemap_key/': _this.funcs.sitemap,
-        '/_funcs/deploy': _this.funcs.deploy_req,
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/diff': _this.funcs.diff,
         '/_funcs/validate': _this.funcs.validate_req,
@@ -696,6 +706,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/begin_merge': _this.funcs.req_begin_merge,
         '/_funcs/branch/download/:branch_id': _this.funcs.branch_download,
         '/_funcs/branch/upload': _this.funcs.branch_upload,
+        '/_funcs/site/checkout': _this.funcs.site_checkout,
       }
     ]
   }

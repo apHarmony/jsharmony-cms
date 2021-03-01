@@ -6,6 +6,7 @@
     "actions":"BIUD",
     "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
     "onecolumn":true,
+    "sqlwhere":"page_key in (select page_key from {schema}.branch_page where branch_id={schema}.my_current_branch_id())",
     "popup":[980,600],
     "fields": [
       {"name":"page_title","caption":"Title","control":"textbox_M"},

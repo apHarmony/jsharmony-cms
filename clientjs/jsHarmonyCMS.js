@@ -157,7 +157,7 @@ var jsHarmonyCMS = function(options){
       });
     }
     else{
-      if(jshInstance.globalparams.isWebmaster && _this.controller.initDevMode){
+      if(jsh.globalparams.isWebmaster && _this.controller.initDevMode){
         _this.devMode = true;
         _this.controller.initDevMode(function(err){
           loader.StopLoading();

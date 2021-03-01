@@ -327,7 +327,6 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
     var jContentToolbar = $('#jsharmony_cms_content_editor_toolbar');
 
-    console.log(toolbarOptions);
     jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
     jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
 

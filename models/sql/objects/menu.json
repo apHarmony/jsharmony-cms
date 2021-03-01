@@ -5,6 +5,7 @@
     "columns": [
       { "name": "menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "menu_file_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "menu_orig_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "menu_name", "type": "varchar", "length": 256, "null": false },
@@ -52,6 +53,7 @@
         "columns": [
           "menu_id",
           "menu_key",
+          "site_id",
           "menu_file_id",
           "menu_orig_id",
           "menu_name",
@@ -82,7 +84,7 @@
             "errorif(exists(select * from {schema}.v_my_menu where menu_name=inserted(menu_name)),'Menu name already exists');",
             "errorif(exists(select * from {schema}.v_my_menu where menu_tag=inserted(menu_tag)),'Menu tag already exists');",
             "with_insert_identity(menu, menu_id, ",
-            "  insert into menu(menu_name, menu_tag, menu_review_sts, menu_lang) values(inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
+            "  insert into menu(site_id, menu_name, menu_tag, menu_review_sts, menu_lang) values({schema}.my_current_site_id(), inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
             "  return_insert_key(menu, menu_key, (menu_key=@@INSERT_ID));",
             "  insert into branch_menu(branch_id, menu_key, menu_id, branch_menu_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
             "  update branch_menu set menu_orig_id=menu_id,branch_menu_action=NULL where branch_id={schema}.my_current_branch_id() and menu_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
@@ -99,7 +101,7 @@
             "errorif(exists(select * from {schema}.v_my_menu where menu_name=inserted(menu_name) and menu_key<>deleted(menu_key)),'Menu name already exists');",
             "errorif(exists(select * from {schema}.v_my_menu where menu_tag=inserted(menu_tag) and menu_key<>deleted(menu_key)),'Menu tag already exists');",
             "with_insert_identity(menu, menu_id, ",
-            "  insert into menu(menu_key, menu_file_id, menu_orig_id, menu_name, menu_tag, menu_review_sts, menu_lang) values(deleted(menu_key), (case when inserted(menu_file_id) is null then null else deleted(menu_file_id) end), deleted(menu_id), inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
+            "  insert into menu(site_id, menu_key, menu_file_id, menu_orig_id, menu_name, menu_tag, menu_review_sts, menu_lang) values(deleted(site_id), deleted(menu_key), (case when inserted(menu_file_id) is null then null else deleted(menu_file_id) end), deleted(menu_id), inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
             "  update branch_menu set menu_id=@@INSERT_ID,branch_menu_action=(case branch_menu_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and menu_key = deleted(menu_key);",
             "  update branch_menu set menu_orig_id=menu_id,branch_menu_action=NULL where branch_id={schema}.my_current_branch_id() and menu_key = deleted(menu_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",

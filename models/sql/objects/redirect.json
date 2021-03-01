@@ -28,6 +28,7 @@
     "columns": [
       { "name": "redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "redirect_orig_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
       { "name": "redirect_url", "type": "varchar", "length": 1024, "null": false },
       { "name": "redirect_url_type", "type": "varchar", "length": 32, "foreignkey": { "code_redirect_url_type": "code_val" }, "null": false, "default": "EXACT" },
@@ -66,6 +67,7 @@
         "columns": [
           "redirect_id",
           "redirect_key",
+          "site_id",
           "redirect_orig_id",
           "redirect_url",
           "redirect_url_type",
@@ -93,7 +95,7 @@
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
             "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "with_insert_identity(redirect, redirect_id, ",
-            "  insert into redirect(redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
+            "  insert into redirect(site_id, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values({schema}.my_current_site_id(), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
             "  return_insert_key(redirect, redirect_key, (redirect_key=@@INSERT_ID));",
             "  insert into branch_redirect(branch_id, redirect_key, redirect_id, branch_redirect_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
             "  update branch_redirect set redirect_orig_id=redirect_id,branch_redirect_action=NULL where branch_id={schema}.my_current_branch_id() and redirect_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
@@ -108,7 +110,7 @@
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
             "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
             "with_insert_identity(redirect, redirect_id, ",
-            "  insert into redirect(redirect_key, redirect_orig_id, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(deleted(redirect_key), deleted(redirect_id), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
+            "  insert into redirect(site_id, redirect_key, redirect_orig_id, redirect_url, redirect_url_type, redirect_seq, redirect_dest, redirect_http_code) values(deleted(site_id), deleted(redirect_key), deleted(redirect_id), inserted(redirect_url), inserted(redirect_url_type), inserted(redirect_seq), inserted(redirect_dest), inserted(redirect_http_code)),",
             "  update branch_redirect set redirect_id=@@INSERT_ID,branch_redirect_action=(case branch_redirect_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key);",
             "  update branch_redirect set redirect_orig_id=redirect_id,branch_redirect_action=NULL where branch_id={schema}.my_current_branch_id() and redirect_key = deleted(redirect_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",

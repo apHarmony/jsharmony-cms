@@ -8,9 +8,10 @@
     "title":"Revision History",
     "reselectafteredit": "row",
     "sort":["vmenu_mtstmp"],
+    "sqlwhere":"menu_key in (select menu_key from {schema}.branch_menu where branch_id={schema}.my_current_branch_id())",
     "grid_expand_search": true,
     "hide_system_buttons" : ["clear"],
-    "rowclass":"<%=xejs.iif(datarow['menu_id']==jsh.App[xmodel.parent].revision_menu_id,'active_revision')%>",
+    "rowclass":"<%=xejs.iif(xmodel.parent&&(datarow['menu_id']==jsh.App[xmodel.parent].revision_menu_id),'active_revision')%>",
     "fields": [
       {"name":"menu_id","caption":"ID","control":"hidden","key":true},
       {"name":"revision_menu_key","type":"bigint","caption":"Revision Key","control":"hidden","sqlwhere":"menu_key=@revision_menu_key","sqlselect":"menu_key"},

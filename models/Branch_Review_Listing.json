@@ -7,8 +7,10 @@
     "caption":["Branch","Branches"],
     "title":"Branch Review",
     "menu":"jsHarmonyCMS/Branch_Review_Listing",
+    "breadcrumbs":"#CMS_SITE_BREADCRUMBS",
+    "oninit": "jsh.System.RequireSite(xmodel);",
     "noresultsmessage":"No branches waiting for review.",
-    "sqlwhere":"branch_sts='REVIEW'",
+    "sqlwhere":"branch_sts='REVIEW' and (site_id={schema}.my_current_site_id())",
     "tablestyle":"min-width:400px;",
     "fields": [
       {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site where {schema}.site.site_id={schema}.branch.site_id)"},

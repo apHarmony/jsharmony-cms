@@ -112,9 +112,9 @@ module.exports = exports = function(module, funcs){
       sql_ptypes.push(dbtypes.BigInt);
       sql_params.sitemap_id = Q.sitemap_id;
       validate.AddValidator('_obj.sitemap_id', 'Sitemap ID', 'B', [XValidate._v_IsNumeric()]);
-      sql += ' from '+(module.schema?module.schema+'.':'')+'sitemap where sitemap_key=@sitemap_key and sitemap_id=@sitemap_id';
+      sql += ' from {schema}.sitemap where sitemap_key=@sitemap_key and sitemap_id=@sitemap_id and site_id={schema}.my_current_site_id()';
     }
-    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_sitemap where sitemap_key=@sitemap_key';
+    else sql += ' from {schema}.v_my_sitemap where sitemap_key=@sitemap_key';
     
     var fields = [];
     var datalockstr = '';
@@ -123,7 +123,7 @@ module.exports = exports = function(module, funcs){
     
     verrors = _.merge(verrors, validate.Validate('B', sql_params));
     if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-    appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Sitemap ID'); }
       var sitemap = rslt[0][0];

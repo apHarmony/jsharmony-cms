@@ -1,0 +1,15 @@
+{
+  "Site_User_System": {
+    "layout":"grid",
+    "table":"{schema}.v_sys_user_site_system_access",
+    "title": "System-wide Permissions",
+    "caption":["System-wide Permission","System-wide Permissions"],
+    "roles": { "WEBMASTER": "B" },
+    "sort": ["^sys_user_name"],
+    "fields": [
+      {"name":"sys_user_name","caption":"User","sqlselect":"(jsharmony.get_sys_user_name(sys_user_id))"},
+      {"name":"sys_role_desc","caption":"Access","sqlselect":"(select sys_role_desc from jsharmony.sys_role where sys_role.sys_role_name=v_sys_user_site_system_access.sys_role_name)"},
+    ]
+  },
+
+}

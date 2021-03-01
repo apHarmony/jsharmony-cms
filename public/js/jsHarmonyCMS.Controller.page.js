@@ -541,9 +541,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     for(var key in _this.template.content_elements){
       cms.editor.setContent('page.content.'+key, _this.page.content[key] || '');
 
-      cms.editor.setToolbarOptions('page.content.'+key, _this.template.content_elements[key].editor_toolbar);
-      
-      if(!cms.readonly) _this.page.content[key] = cms.editor.getContent('page.content.'+key);
+      if(!cms.readonly){
+        cms.editor.setToolbarOptions('page.content.'+key, _this.template.content_elements[key].editor_toolbar);
+        _this.page.content[key] = cms.editor.getContent('page.content.'+key);
+      }
     }
 
     cms.componentManager.renderPageComponents();
@@ -785,6 +786,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     if(!renderOptions) renderOptions = {};
     if(renderOptions.menu_tag){
+      if(!(renderOptions.menu_tag in _this.menus)) throw new Error('Menu tag "'+renderOptions.menu_tag+'" is not defined');
       additionalRenderParams.menu = _this.menus[renderOptions.menu_tag];
       delete renderOptions.menu_tag;
     }

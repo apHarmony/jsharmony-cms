@@ -60,76 +60,78 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      var branch_data = {
-        _DBContext: req._DBContext,
-        branch_id: branch_id,
-        deployment_target_params: undefined,
-        site_id: null,
-        page_templates: null,
-        deployment_target_id: undefined,
-      };
-      var branch_diff = {};
+      funcs.validateBranchAccess(req, res, branch_id, 'R%', undefined, function(){
+        var branch_data = {
+          _DBContext: req._DBContext,
+          branch_id: branch_id,
+          deployment_target_params: undefined,
+          site_id: null,
+          page_templates: null,
+          deployment_target_id: undefined,
+        };
+        var branch_diff = {};
 
-      async.waterfall([
+        async.waterfall([
 
-        //Get deployment_target_params for branch
-        function(cb){
-          var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
-          appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; return cb(err); }
-            if(rslt && rslt[0]){
-              try{
-                branch_data.deployment_target_id = rslt[0].deployment_target_id;
-                branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
-                branch_data.site_id = rslt[0].site_id;
+          //Get deployment_target_params for branch
+          function(cb){
+            var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
+            appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+              if (err != null) { err.sql = sql; return cb(err); }
+              if(rslt && rslt[0]){
+                try{
+                  branch_data.deployment_target_id = rslt[0].deployment_target_id;
+                  branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
+                  branch_data.site_id = rslt[0].site_id;
+                }
+                catch(ex){}
               }
-              catch(ex){}
-            }
-            return cb();
-          });
-        },
+              return cb();
+            });
+          },
 
-        //Run onBeforeDiff functions
-        function(cb){
-          async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-            if(!branch_item.diff) return branch_item_cb();
-            Helper.execif(branch_item.diff.onBeforeDiff,
-              function(f){
-                branch_item.diff.onBeforeDiff(branch_data, f);
-              },
-              branch_item_cb
-            );
-          }, cb);
-        },
-
-        //Get all branch data
-        function(cb){
-          async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-            if(!branch_item.diff) return branch_item_cb();
-            var sql = "select branch_{item}.{item}_key, branch_{item}.branch_{item}_action, branch_{item}.{item}_id, branch_{item}.{item}_orig_id" +
-              _.map(branch_item.diff.columns || [], function(column_name){ return ', old_{item}.' + column_name + ' old_' + column_name + ', new_{item}.' + column_name + ' new_' + column_name + ' '; }).join('') +
-              "from {tbl_branch_item} branch_{item} \
-                left outer join {tbl_item} old_{item} on old_{item}.{item}_id=branch_{item}.{item}_orig_id \
-                left outer join {tbl_item} new_{item} on new_{item}.{item}_id=branch_{item}.{item}_id \
-              where branch_id=@branch_id and branch_{item}_action is not null" + (branch_item.diff.sqlwhere ? ' and (' + branch_item.diff.sqlwhere + ')' : '');
-            appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(rslt && rslt[0]) branch_diff[branch_item_type] = rslt[0];
-
-              //Run onDiff function
-              Helper.execif(branch_item.diff.onDiff,
+          //Run onBeforeDiff functions
+          function(cb){
+            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+              if(!branch_item.diff) return branch_item_cb();
+              Helper.execif(branch_item.diff.onBeforeDiff,
                 function(f){
-                  branch_item.diff.onDiff(branch_diff[branch_item_type], branch_data, f);
+                  branch_item.diff.onBeforeDiff(branch_data, f);
                 },
                 branch_item_cb
               );
-            });
-          }, cb);
-        },
-      ], function(err){
-        if(err) return Helper.GenError(req, res, -99999, err.toString());
-        var rslt = { _success: 1, branch_diff: _.pickBy(branch_diff, function(branch_items){ return !!branch_items.length; }) };
-        res.end(JSON.stringify(rslt));
+            }, cb);
+          },
+
+          //Get all branch data
+          function(cb){
+            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+              if(!branch_item.diff) return branch_item_cb();
+              var sql = "select branch_{item}.{item}_key, branch_{item}.branch_{item}_action, branch_{item}.{item}_id, branch_{item}.{item}_orig_id" +
+                _.map(branch_item.diff.columns || [], function(column_name){ return ', old_{item}.' + column_name + ' old_' + column_name + ', new_{item}.' + column_name + ' new_' + column_name + ' '; }).join('') +
+                "from {tbl_branch_item} branch_{item} \
+                  left outer join {tbl_item} old_{item} on old_{item}.{item}_id=branch_{item}.{item}_orig_id \
+                  left outer join {tbl_item} new_{item} on new_{item}.{item}_id=branch_{item}.{item}_id \
+                where branch_id=@branch_id and branch_{item}_action is not null" + (branch_item.diff.sqlwhere ? ' and (' + branch_item.diff.sqlwhere + ')' : '');
+              appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(rslt && rslt[0]) branch_diff[branch_item_type] = rslt[0];
+
+                //Run onDiff function
+                Helper.execif(branch_item.diff.onDiff,
+                  function(f){
+                    branch_item.diff.onDiff(branch_diff[branch_item_type], branch_data, f);
+                  },
+                  branch_item_cb
+                );
+              });
+            }, cb);
+          },
+        ], function(err){
+          if(err) return Helper.GenError(req, res, -99999, err.toString());
+          var rslt = { _success: 1, branch_diff: _.pickBy(branch_diff, function(branch_items){ return !!branch_items.length; }) };
+          res.end(JSON.stringify(rslt));
+        });
       });
       return;
     }

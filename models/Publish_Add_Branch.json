@@ -6,7 +6,9 @@
     "menu":"Publish",
     "actions":"BIU",
     "roles": {"PUBLISHER": "BIU"},
+    "sqlwhere":"(site_id={schema}.my_current_site_id())",
     "onecolumn":true,
+    "onload": "_this.onload();",
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
       {"name":"site_id","control":"hidden"},

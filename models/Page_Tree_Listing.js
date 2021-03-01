@@ -2,14 +2,7 @@ jsh.App[modelid] = new (function(){
   var _this = this;
 
   this.oninit = function(xmodel){
-    xmodel.controller.grid.OnLoadError = function(err){
-      if(err && err.Number==-14){
-        XExt.Alert('Please checkout a branch', function(){
-          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true });
-        });
-        return true;
-      }
-    }
+    jsh.System.RequireBranch(xmodel);
 
     if(XExt.hasAction(xmodel.actions, 'IU')){
       xmodel.controller.grid.NoResultsMessage = "<a href='#' class='xgrid_norecords' onclick=\""+jsh._instance+".App['"+xmodel.id+"'].addFile(); return false;\"><img src='<%-jsh._PUBLICURL%>images/icon_insert.png' alt='Add' title='Add' />Add Page</a>";

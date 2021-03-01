@@ -66,10 +66,31 @@ exports = module.exports = function(jsh, cms){
   this.refreshOffsets = function(){
     var offsetTop = _this.getOffsetTop();
 
+    var startingOffsets = [];
     for(var i=0;i<_this.origMarginTop.length;i++){
-      var newMarginTop = _this.origMarginTop[i];
-      if(offsetTop) newMarginTop = newMarginTop ? 'calc(' + newMarginTop + ' + ' + offsetTop + 'px)' : offsetTop+'px';
-      $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', newMarginTop);
+      if(_this.origMarginTop[i] === null) continue;
+      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      if(jelem.length){
+        startingOffsets[i] = jelem.first().offset().top;
+      }
+    }
+
+    for(var i=0;i<_this.origMarginTop.length;i++){
+      if(_this.origMarginTop[i] === null) continue;
+      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      if(jelem.length){
+        if(offsetTop){
+          var curTop = jelem.first().offset().top;
+          if(curTop != startingOffsets[i]){ _this.origMarginTop[i] = null; continue; }
+          else {
+            var newMarginTop = _this.origMarginTop[i] ? 'calc(' + _this.origMarginTop[i] + ' + ' + offsetTop + 'px)' : offsetTop+'px';
+            $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', newMarginTop);
+          }
+        }
+        else {
+          $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', _this.origMarginTop[i]);
+        }
+      }
     }
     this.currentOffsetTop = offsetTop;
   }

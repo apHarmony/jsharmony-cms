@@ -7,7 +7,7 @@ var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
 
 if(routetype == 'd'){
-  jsh.AppSrv.ExecRow(req._DBContext, "select deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()", [], { }, function (err, rslt) {
+  jsh.AppSrv.ExecRow(req._DBContext, "select deployment_target_params from {schema}.v_my_site where site_id={schema}.my_current_site_id()", [], { }, function (err, rslt) {
     if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, "An unexpected error has occurred"); return; }
 
     var root_txt = '(Root)';

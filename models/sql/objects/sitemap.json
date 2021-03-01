@@ -14,6 +14,7 @@
     "columns": [
       { "name": "sitemap_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "sitemap_key", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "sitemap_file_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
       { "name": "sitemap_orig_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
       { "name": "sitemap_name", "type": "varchar", "length": 256, "null": false },
@@ -60,6 +61,7 @@
         "columns": [
           "sitemap_id",
           "sitemap_key",
+          "site_id",
           "sitemap_file_id",
           "sitemap_orig_id",
           "sitemap_name",
@@ -90,7 +92,7 @@
             "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_name=inserted(sitemap_name)),'Sitemap name already exists');",
             "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_type=inserted(sitemap_type)),'Sitemap already exists for this sitemap_type');",
             "with_insert_identity(sitemap, sitemap_id, ",
-            "  insert into sitemap(sitemap_name, sitemap_type, sitemap_review_sts, sitemap_lang) values(inserted(sitemap_name), inserted(sitemap_type), inserted(sitemap_review_sts), inserted(sitemap_lang)),",
+            "  insert into sitemap(site_id, sitemap_name, sitemap_type, sitemap_review_sts, sitemap_lang) values({schema}.my_current_site_id(), inserted(sitemap_name), inserted(sitemap_type), inserted(sitemap_review_sts), inserted(sitemap_lang)),",
             "  return_insert_key(sitemap, sitemap_key, (sitemap_key=@@INSERT_ID));",
             "  insert into branch_sitemap(branch_id, sitemap_key, sitemap_id, branch_sitemap_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
             "  update branch_sitemap set sitemap_orig_id=sitemap_id,branch_sitemap_action=NULL where branch_id={schema}.my_current_branch_id() and sitemap_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
@@ -106,7 +108,7 @@
             "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_name=inserted(sitemap_name) and sitemap_key<>deleted(sitemap_key)),'Sitemap name already exists');",
             "errorif(exists(select * from {schema}.v_my_sitemap where sitemap_type=inserted(sitemap_type) and sitemap_key<>deleted(sitemap_key)),'Sitemap already exists for this sitemap_type');",
             "with_insert_identity(sitemap, sitemap_id, ",
-            "  insert into sitemap(sitemap_key, sitemap_file_id, sitemap_orig_id, sitemap_name, sitemap_type, sitemap_review_sts, sitemap_lang) values(deleted(sitemap_key), (case when inserted(sitemap_file_id) is null then null else deleted(sitemap_file_id) end), deleted(sitemap_id), inserted(sitemap_name), inserted(sitemap_type), inserted(sitemap_review_sts), inserted(sitemap_lang)),",
+            "  insert into sitemap(site_id, sitemap_key, sitemap_file_id, sitemap_orig_id, sitemap_name, sitemap_type, sitemap_review_sts, sitemap_lang) values(deleted(site_id), deleted(sitemap_key), (case when inserted(sitemap_file_id) is null then null else deleted(sitemap_file_id) end), deleted(sitemap_id), inserted(sitemap_name), inserted(sitemap_type), inserted(sitemap_review_sts), inserted(sitemap_lang)),",
             "  update branch_sitemap set sitemap_id=@@INSERT_ID,branch_sitemap_action=(case branch_sitemap_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and sitemap_key = deleted(sitemap_key);",
             "  update branch_sitemap set sitemap_orig_id=sitemap_id,branch_sitemap_action=NULL where branch_id={schema}.my_current_branch_id() and sitemap_key = deleted(sitemap_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  increment_changes()",
