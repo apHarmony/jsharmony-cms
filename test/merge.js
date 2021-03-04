@@ -97,7 +97,7 @@ describe('Merges', function() {
     /* Clear previous branchs */
     var sql = "\
     delete from cms.branch_page where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-    delete from cms.page where page_path like 'Merge Test Data:%';\
+    delete from cms.page where page_path like '/test/:%';\
     delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
     delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
     delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\

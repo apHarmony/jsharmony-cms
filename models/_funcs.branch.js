@@ -1135,5 +1135,151 @@ module.exports = exports = function(module, funcs){
     });
   }
 
+  var branchArchivePath = function(branch_id) {
+    return path.join(module.jsh.Config.datadir, 'branch', branch_id + '.json');
+  }
+
+  var branchArchiveColumns = function(dbtypes){
+    return {
+      'branch_{item}_id': dbtypes.BigInt,
+      'branch_id': dbtypes.BigInt,
+      '{item}_key': dbtypes.BigInt,
+      '{item}_id': dbtypes.BigInt,
+      'branch_{item}_action': dbtypes.VarChar(32),
+      '{item}_orig_id': dbtypes.BigInt,
+      'branch_{item}_etstmp': dbtypes.DateTime(7),
+      'branch_{item}_euser': dbtypes.VarChar(20),
+      'branch_{item}_mtstmp': dbtypes.DateTime(7),
+      'branch_{item}_muser': dbtypes.VarChar(20),
+    };
+  };
+
+  var asMs = function(record, field) {
+    if (typeof(record[field]) == 'string') record[field] = Date.parse(record[field]);
+  }
+
+  exports.branch_indexToFile = function (dbcontext, branch_id, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = {branch_id: branch_id};
+
+    async.waterfall([
+      function(parameters_cb){
+        var sql = "select branch_id from {schema}.v_my_branch_access where (branch_id=@branch_id and branch_access like 'R%');"
+        sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
+        appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; parameters_cb(err); return; }
+          if (rslt[0].length!=1) { parameters_cb( Helper.NewError('You dont have access to those branches (or they dont exist)',-11)); return; }
+          parameters_cb(null);
+        });
+      },
+      function(dir_cb){
+        fs.mkdir(path.join(module.jsh.Config.datadir, 'branch'), {recursive:true}, dir_cb);
+      },
+      function(index_cb){
+        var branchData = {};
+        var columns = _.without(_.keys(branchArchiveColumns(dbtypes)), 'branch_id');
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          var sql = "select ";
+          sql += _.map(columns || [], function(colname){ return 'branch_{item}.'+colname; }).join(',');
+
+          sql += " from {tbl_branch_item} branch_{item}"
+
+          sql += " where branch_{item}.branch_id=@branch_id";
+
+          appsrv.ExecRecordset(dbcontext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; return branch_item_cb(err); }
+            if(!rslt || !rslt.length || !rslt[0]){ return branch_item_cb(new Error('Error retrieving branch data')); }
+            branchData[branch_item_type] = rslt[0];
+            return branch_item_cb();
+          });
+        }, function() { return index_cb(null, branchData);} );
+      },
+      function(branchData, convert_cb){
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          async.eachOfSeries(branchData[branch_item_type], function(record, record_index, record_cb) {
+            asMs(record, 'branch_'+branch_item_type+'_etstmp');
+            asMs(record, 'branch_'+branch_item_type+'_mtstmp');
+            record_cb();
+          }, branch_item_cb);
+        }, function(err) {return convert_cb(err, branchData);});
+      },
+      function(branchData, write_cb){
+        fs.writeFile(branchArchivePath(branch_id), JSON.stringify(branchData, null, 2), 'utf8', write_cb);
+      },
+      function(delete_cb){
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          var sql = "delete from {tbl_branch_item} where branch_id=@branch_id";
+          appsrv.ExecCommand(dbcontext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return branch_item_cb(err); }
+            return branch_item_cb();
+          });
+        }, function() { return delete_cb(null);} );
+      },
+    ], callback);
+  }
+
+  exports.branch_indexFromFile = function (dbcontext, branch_id, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = {branch_id: branch_id};
+
+    async.waterfall([
+      function(parameters_cb){
+        var sql = "select branch_id from {schema}.v_my_branch_access where (branch_id=@branch_id and branch_access='RW');"
+        sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
+        appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; parameters_cb(err); return; }
+          if (rslt[0].length!=1) { parameters_cb( Helper.NewError('You dont have access to those branches (or they dont exist)',-11)); return; }
+          parameters_cb(null);
+        });
+      },
+      function(read_cb){
+        fs.readFile(branchArchivePath(branch_id), read_cb);
+      },
+      function(data, parse_cb){
+        json = JSON.parse(data);
+        if(json && json.page) return parse_cb(null, json);
+        parse_cb(new Error('Error unarchiving branch data'));
+      },
+      function(branchData, insert_cb){
+        var bac = branchArchiveColumns(dbtypes);
+        var columns = _.keys(bac);
+        var sql_ptypes = _.values(bac);
+
+        var sql = "insert into {tbl_branch_item}(";
+        sql += _.map(columns || [], function(colname){ return colname; }).join(',');
+        sql += ") values(";
+        sql += _.map(columns || [], function(colname){ return '@'+colname; }).join(',');
+        sql += ")";
+
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          async.eachOfSeries(branchData[branch_item_type], function(record, record_index, record_cb) {
+            var sql_params = {};
+            for(var key in bac){
+              sql_params[cms.applyBranchItemSQL(branch_item_type, key)] = null;
+            };
+            sql_params['branch_id'] = branch_id;
+            for(var key in record){ if(key in sql_params) sql_params[key] = record[key]; }
+
+            appsrv.ExecCommand(dbcontext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+              if (err != null) { err.sql = sql; return record_cb(err); }
+              return record_cb();
+            });
+          }, branch_item_cb);
+        }, insert_cb);
+      },
+      function(delete_cb){
+        fs.unlink(branchArchivePath(branch_id), delete_cb);
+      },
+    ], callback);
+  }
+
   return exports;
 };
