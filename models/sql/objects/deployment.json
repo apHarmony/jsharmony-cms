@@ -46,7 +46,7 @@
         ]
       },
       { "on": ["insert"], "exec": [
-          "insert into {schema}.deployment_target_role(deployment_target_id, sys_role_name, deployment_target_role_type) select get_insert_key(deployment_target,deployment_target_id),'*',code_val from {schema}.code_deployment_target_role_type where code_val in ('EDITOR','PUBLISH');",
+          "insert into {schema}.deployment_target_role(deployment_target_id, sys_role_name, deployment_target_role_type) select inserted(deployment_target_id),'*',code_val from {schema}.code_deployment_target_role_type where code_val in ('EDITOR','PUBLISH');",
         ]
       },
       {

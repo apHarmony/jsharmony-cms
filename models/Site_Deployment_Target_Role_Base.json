@@ -6,7 +6,7 @@
     "roles": { "WEBMASTER": "BU" },
     "caption":["Role","Roles"],
     "title":"",
-    "sqlwhere":"sys_role_name not in ('VIEWER','AUTHOR','PUBLISHER')",
+    "sqlwhere":"(sys_role_name is null or sys_role_name not in ('VIEWER','AUTHOR','PUBLISHER'))",
     "fields":[
       {"name":"deployment_target_id","foreignkey":1},
       {"name":"deployment_target_role_type","foreignkey":1},
