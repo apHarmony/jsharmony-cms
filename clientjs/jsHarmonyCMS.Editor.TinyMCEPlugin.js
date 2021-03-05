@@ -87,7 +87,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (tinymce.PluginManager.get('jsHarmonyCms') != undefined) return;
 
     tinymce.PluginManager.add('jsHarmonyCms', function(editor, url) {
-      new JsHarmonyComponentPlugin(editor);
+      return new JsHarmonyComponentPlugin(editor);
     });
   }
 
@@ -397,6 +397,14 @@ exports = module.exports = function(jsh, cms, editor){
     parser.parse(content);
   }
 
+  JsHarmonyComponentPlugin.prototype.setToolbarOptions = function(toolbarOptions){
+    var _this = this;
+
+    _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
+    if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
+    if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = !!toolbarOptions.show_menu || toolbarOptions.show_toolbar;
+  }
+
   /**
    * Initialize the plugin.
    * Do not call this more than one time per editor instance.
@@ -459,6 +467,9 @@ exports = module.exports = function(jsh, cms, editor){
 
     this._editor.on('undo', function(info) { _this.onUndoRedo(info); });
     this._editor.on('redo', function(info) { _this.onUndoRedo(info); });
+    this._editor.on('setToolbarOptions', function(e){
+      if(e && e.toolbarOptions) _this.setToolbarOptions(e.toolbarOptions);
+    });
 
     this._editor.addCommand(COMMAND_NAMES.editComponentData, function() {
       var el = _this._editor.selection.getStart();
@@ -470,9 +481,7 @@ exports = module.exports = function(jsh, cms, editor){
       _this.openPropertiesEditor(el);
     });
     this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) { 
-      _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
-      if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
-      if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = toolbarOptions.show_menu || toolbarOptions.show_toolbar;
+      _this.setToolbarOptions(toolbarOptions);
     });
     this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
 

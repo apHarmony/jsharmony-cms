@@ -76,11 +76,13 @@ var OverlayService = require('./overlayService');
  /**
   * @class
   * @param {Object} jsh
+  * @param {Object} cms
   * @param {Object} model - the model that will be loaded into the virtual model
   * @param {DialogConfig} config - the dialog configuration
   */
-function Dialog(jsh, model, config) {
+function Dialog(jsh, cms, model, config) {
   this._jsh = jsh;
+  this._cms = cms;
   this._model = model;
   this._id = config.dialogId ? config.dialogId : this.getNextId();
   /** @type {DialogConfig} */
@@ -228,6 +230,9 @@ Dialog.prototype.open = function() {
   var _this = this;
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
+  var hasToolbarOffset = !!_this._cms.editor.getOffsetTop();
+  var wasAtTop = !$(document).scrollTop();
+
   this.load(function(xmodel) {
 
 
@@ -243,31 +248,35 @@ Dialog.prototype.open = function() {
         var dialogResizer = undefined;
 
         _this._jsh.XExt.CustomPrompt(formSelector, _this._jsh.$(formSelector),
-          function(acceptFunc, cancelFunc) {
+          function(acceptFunc, cancelFunc) { //onInit
             _this.overlayService.pushDialog($wrapper);
             lastScrollTop = _this.getScrollTop($wrapper);
             dialogResizer = new DialogResizer($wrapper[0], _this._jsh);
             if (_.isFunction(_this.onOpened)) _this.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
           },
-          function(success) {
-            lastScrollTop = _this.getScrollTop($wrapper);
-
+          function(success) { //onAccept
             if (_.isFunction(_this.onAccept)) _this.onAccept(success);
           },
-          function(options) {
-            lastScrollTop = _this.getScrollTop($wrapper);
+          function(options) { //onCancel
             if (_.isFunction(_this.onCancel)) return _this.onCancel(options);
             return false;
           },
-          function() {
-            if (oldActive) oldActive.focus();
-            _this.setScrollTop(lastScrollTop, $wrapper);
+          function() { //onClosed
             dialogResizer.closeDialog();
             if(_.isFunction(_this.onClose)) _this.onClose();
             _this.destroy();
             _this.overlayService.popDialog();
           },
-          { reuse: false, backgroundClose: _this._config.closeOnBackdropClick, restoreFocus: false }
+          {
+            reuse: false,
+            backgroundClose: _this._config.closeOnBackdropClick,
+            restoreFocus: false,
+            onClosing: function(cb){
+              if (oldActive) oldActive.focus();
+              _this.setScrollTop(lastScrollTop, $wrapper);
+              return cb();
+            }
+          }
         );
       }
     );

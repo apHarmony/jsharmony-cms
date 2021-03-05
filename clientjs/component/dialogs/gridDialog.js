@@ -60,11 +60,13 @@ var Dialog = require('./dialog');
 /**
  * @class
  * @param {Object} jsh
+ * @param {Object} cms
  * @param {Object} model
  * @param {GridDialogConfig} config
  */
-function GridDialog(jsh, model, config) {
+function GridDialog(jsh, cms, model, config) {
   this.jsh = jsh;
+  this.cms = cms;
   this._model = model;
   this._config = config || {};
 
@@ -97,7 +99,7 @@ GridDialog.prototype.open = function() {
   /** @type {GridDialogConfig} */
   var config = this._config;
 
-  var dialog = new Dialog(this.jsh, this._model, {
+  var dialog = new Dialog(this.jsh, this.cms, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
     dialogId: config.dialogId,

@@ -227,29 +227,31 @@ exports = module.exports = function(jsh, cms){
     return 'jsharmony_cms_component_' + this.lastComponentId++;
   }
 
-  this.renderContainerContentComponents = function(container){
-    $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function() {
-      $(this).attr('data-component-id', _this.getNextComponentId());
-      _this.renderContentComponent(this);
-    });
+  this.renderContainerContentComponents = function(container, callback){
+    var items = $(container).find('[data-component]').not('.initialized').addClass('initialized');
+    async.each(items, function(item, item_cb){
+      $(item).attr('data-component-id', _this.getNextComponentId());
+      _this.renderContentComponent(item, undefined, item_cb);
+    }, callback);
   }
 
-  this.renderContentComponent = function(element, options) {
+  this.renderContentComponent = function(element, options, callback) {
+    if(!callback) callback = function(){};
     options = _.extend({ init: false }, options);
 
     var componentType = $(element).attr('data-component');
     var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
-    if (!componentTemplate) return;
+    if (!componentTemplate) return callback();
 
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
-    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return; }
+    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return callback(); }
 
     //Default component instance
     var component = {
       create: function(componentConfig, element) {
         component = _.extend(new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id), component);
-        component.render();
+        component.render(callback);
         _this.components[componentId] = component;
       },
       onBeforeRender: undefined,
@@ -270,7 +272,7 @@ exports = module.exports = function(jsh, cms){
       $(element).attr('data-is-insert', null);
       if(!options.init){
         element.scrollIntoView(false);
-        _this.components[componentId].openDataEditor();
+        _this.components[componentId].openDefaultEditor();
       }
     }
   }

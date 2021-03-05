@@ -67,7 +67,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
   var componentInstance = this._jsh.App[componentInstanceId] || {};
 
 
-  var dialog = new GridDialog(this._jsh, modelConfig, {
+  var dialog = new GridDialog(this._jsh, this._cms, modelConfig, {
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,

@@ -296,7 +296,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
  * @returns {GridPreviewRenderContext}
  */
 DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = function(itemId) {
-  var itemIndex = this._dataStore.getItemIndexById(itemId);
+  var itemIndex = itemId ? this._dataStore.getItemIndexById(itemId) : this._dataStore.count();
   /** @type {GridPreviewRenderContext} */
   var retVal = {
     rowIndex: itemIndex
@@ -440,7 +440,7 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
   if (_this.xmodel.controller.editablegrid.CurrentCell) if(!_this.xmodel.controller.form.CommitRow()) return;
   if (_this.jsh.XPage.GetChanges().length > 0) { _this.jsh.XExt.Alert('Please save all changes before adding a row.'); return; }
 
-  var dataEditor =  new DataEditor_Form(this._componentTemplate, undefined, this.isReadOnly(), this.cms, this.jsh, _this.component)
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(null), this.isReadOnly(), this.cms, this.jsh, _this.component)
 
   //Create a new item
   var currentData = this.xmodel.controller.form.NewRow({ unbound: true });

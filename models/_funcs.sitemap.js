@@ -308,16 +308,18 @@ module.exports = exports = function(module, funcs){
       getTextPath(sitemap_item);
     });
 
-    //Sort sitemap items
-    sitemap_items.sort(function(a,b){
-      for(var i=0;i<a.sitemap_item_collection_index_array.length;i++){
-        if(b.sitemap_item_collection_index_array.length <= i) return 1;
-        if(a.sitemap_item_collection_index_array[i] > b.sitemap_item_collection_index_array[i]) return 1;
-        if(a.sitemap_item_collection_index_array[i] < b.sitemap_item_collection_index_array[i]) return -1;
-      }
-      if(a.sitemap_item_collection_index_array.length < b.sitemap_item_collection_index_array.length) return -1;
-      return 0;
-    });
+    if(options.text){
+      //Sort sitemap items
+      sitemap_items.sort(function(a,b){
+        for(var i=0;i<a.sitemap_item_collection_index_array.length;i++){
+          if(b.sitemap_item_collection_index_array.length <= i) return 1;
+          if(a.sitemap_item_collection_index_array[i] > b.sitemap_item_collection_index_array[i]) return 1;
+          if(a.sitemap_item_collection_index_array[i] < b.sitemap_item_collection_index_array[i]) return -1;
+        }
+        if(a.sitemap_item_collection_index_array.length < b.sitemap_item_collection_index_array.length) return -1;
+        return 0;
+      });
+    }
 
     _.each(sitemap_items, function(sitemap_item){
       //Delete non-essential info

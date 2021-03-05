@@ -453,7 +453,9 @@ module.exports = exports = function(module, funcs){
               var pretty_sitemap_item = pretty_sitemap_items[i];
               if((sitemap_item.sitemap_item_link_type||'').toString()=='PAGE'){
                 var page_key = parseInt(sitemap_item.sitemap_item_link_dest);
-                if(!(page_key in branchData.page_keys)) funcs.validate_logError(item_errors, 'sitemap', sitemap, 'Sitemap item "' + pretty_sitemap_item.sitemap_item + '" links to missing Page ID #'+page_key.toString());
+                if(!(page_key in branchData.page_keys)){
+                  funcs.validate_logError(item_errors, 'sitemap', sitemap, 'Sitemap item "' + pretty_sitemap_item.sitemap_item + '" links to missing Page ID #'+page_key.toString());
+                }
                 else sitemap_item.sitemap_item_link_dest = branchData.page_keys[page_key];
               }
               else if((sitemap_item.sitemap_item_link_type||'').toString()=='MEDIA'){

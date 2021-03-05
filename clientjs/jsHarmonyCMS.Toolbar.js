@@ -63,8 +63,15 @@ exports = module.exports = function(jsh, cms){
     return offsetTop;
   }
 
+  this.getComputedOffsetTop = function(elem){
+    var computedStyles = window.getComputedStyle(elem);
+    return computedStyles.marginTop;
+  }
+
   this.refreshOffsets = function(){
     var offsetTop = _this.getOffsetTop();
+    var origBodyOffset = null;
+    var scrollTop = $(document).scrollTop();
 
     var startingOffsets = [];
     for(var i=0;i<_this.origMarginTop.length;i++){
@@ -72,6 +79,9 @@ exports = module.exports = function(jsh, cms){
       var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
       if(jelem.length){
         startingOffsets[i] = jelem.first().offset().top;
+        if(jelem[0].tagName=='BODY'){
+          origBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+        }
       }
     }
 
@@ -89,6 +99,13 @@ exports = module.exports = function(jsh, cms){
         }
         else {
           $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', _this.origMarginTop[i]);
+        }
+        //If changing body offset
+        if(scrollTop && (jelem[0].tagName=='BODY')){
+          var newBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+          if(scrollTop && (origBodyOffset != newBodyOffset)){
+            $(document).scrollTop(scrollTop + (parseInt(newBodyOffset) - parseInt(origBodyOffset)));
+          }
         }
       }
     }

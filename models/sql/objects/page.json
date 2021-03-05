@@ -65,8 +65,8 @@
       }
     ],
     "sample_data": [
-      { "page_path": "/index.html", "page_title": "Welcome", "page_author": 1, "page_template_id": "default", "_FILES": { "page_sample.json": "page/{{page_id}}.json" } },
-      { "page_path": "/style-guide.html", "page_title": "Style Guide", "page_author": 1, "page_template_id": "default", "_FILES": { "page_style_guide.json": "page/{{page_id}}.json" } }
+      { "site_id": 1, "page_path": "/index.html", "page_title": "Welcome", "page_author": 1, "page_template_id": "default", "_FILES": { "page_sample.json": "page/{{page_id}}.json" } },
+      { "site_id": 1, "page_path": "/style-guide.html", "page_title": "Style Guide", "page_author": 1, "page_template_id": "default", "_FILES": { "page_style_guide.json": "page/{{page_id}}.json" } }
     ]
   },
 

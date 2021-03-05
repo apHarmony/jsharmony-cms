@@ -542,8 +542,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       cms.editor.setContent('page.content.'+key, _this.page.content[key] || '');
 
       if(!cms.readonly){
-        cms.editor.setToolbarOptions('page.content.'+key, _this.template.content_elements[key].editor_toolbar);
         _this.page.content[key] = cms.editor.getContent('page.content.'+key);
+        cms.editor.setToolbarOptions('page.content.'+key, _this.template.content_elements[key].editor_toolbar);
       }
     }
 
@@ -609,12 +609,42 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   //addStyle, setStyle
   this.renderFunctions.addStyle = function(strStyle){
     var jobj = $(this);
-    var origStyle = jobj.data('jsharmony_cms_properties_origStyle');
-    if(!origStyle){
-      origStyle = jobj.attr('style') + ';';
-      jobj.data('jsharmony_cms_properties_origStyle', origStyle);
+
+    var lastStyle = {};
+    try{
+      lastStyle = JSON.parse(jobj.data('jsharmony_cms_properties_lastStyle')||'{}');
     }
-    jobj.attr('style', origStyle + (strStyle||''))
+    catch(ex){}
+
+    for(var key in lastStyle){
+      this.style[key] = lastStyle[key];
+    }
+
+    var origStyleText = jobj.attr('style');
+    origStyleText += (XExt.endsWith(origStyleText.trim(),';')?'':';');
+    origStyleText += strStyle;
+
+    var origStyle = {};
+    for(var i=0;i<this.style.length;i++){
+      var key = this.style[i];
+      var val = this.style[key];
+      origStyle[key] = val;
+    }
+
+    jobj.attr('style', origStyleText + (strStyle||''));
+    jobj.attr('style', this.style.cssText);
+
+    var lastStyle = {};
+    for(var i=0;i<this.style.length;i++){
+      var key = this.style[i];
+      var val = this.style[key];
+      if(!(key in origStyle)) lastStyle[key] = null;
+      else if(val != origStyle[key]){
+        lastStyle[key] = origStyle[key];
+      }
+    }
+
+    jobj.data('jsharmony_cms_properties_lastStyle', JSON.stringify(lastStyle))
   };
   this.renderFunctions.setStyle = this.renderFunctions.addStyle;
 
@@ -643,7 +673,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     }
     if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').val(_this.page.title);
     if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
-    $('#jsharmony_cms_page_toolbar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title)+' &nbsp;<b>(Dev Mode)</b>');
+    $('#jsharmony_cms_page_toolbar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title)+(cms.devMode ? ' &nbsp;<b>(Dev Mode)</b>' : ''));
     document.title = (_this.page.seo.title ? _this.page.seo.title : _this.page.title);
     if($('[cms-title]').length && !$('[cms-title]').hasClass('hidden')){
       var titleIsVisible = $('[cms-title]').is(':visible');

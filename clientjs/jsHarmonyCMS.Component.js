@@ -175,11 +175,21 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     });
   }
 
+  this.openDefaultEditor = function(){
+    var _this = this;
+    var config = componentTemplate.getComponentConfig()  || {};
+    var hasData = ((config.data || {}).fields || []).length > 0;
+    var hasProperties = ((config.properties || {}).fields || []).length > 0;
+    if(hasData) _this.openDataEditor();
+    else if(hasProperties) _this.openPropertiesEditor();
+  }
+
   /**
    * Render the component
    * @public
    */
-  this.render = function() {
+  this.render = function(callback) {
+    if(!callback) callback = function(){};
 
     var _this = this;
     var config = componentTemplate.getComponentConfig()  || {};
@@ -202,18 +212,19 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     $element.empty().append(rendered);
 
     $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function(e){
-      var hasData = ((config.data || {}).fields || []).length > 0;
-      var hasProperties = ((config.properties || {}).fields || []).length > 0;
-      if(hasData) _this.openDataEditor();
-      else if(hasProperties) _this.openPropertiesEditor();
+      _this.openDefaultEditor();
     });
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
     setTimeout(function() {
-      _.forEach($element.find('[data-component]'), function(el) {
-        cms.componentManager.renderContentComponent(el);
-      });
+      jsh.async.each(
+        $element.find('[data-component]'), 
+        function(el, el_cb) {
+          cms.componentManager.renderContentComponent(el, undefined, el_cb);
+        },
+        callback
+      );
     });
   }
 

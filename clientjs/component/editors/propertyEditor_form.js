@@ -67,7 +67,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     dialogParams.minWidth = model.popup[0];
   }
 
-  var dialog = new FormDialog(this._jsh, model, dialogParams);
+  var dialog = new FormDialog(this._jsh, this._cms, model, dialogParams);
 
   dialog.onAccept = function($dialog, xmodel) {
     if(!xmodel.controller.Commit(data, 'U')) return false;

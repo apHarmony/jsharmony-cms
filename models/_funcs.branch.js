@@ -1088,7 +1088,7 @@ module.exports = exports = function(module, funcs){
       sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_branch_access.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
-      if (err != null) { err.sql = sql; callback(err); return; }
+      if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
       if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target branch');
       callback(null);
     });
@@ -1111,7 +1111,7 @@ module.exports = exports = function(module, funcs){
       sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_site.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
-      if (err != null) { err.sql = sql; callback(err); return; }
+      if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
       if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target branch');
       callback(null);
     });

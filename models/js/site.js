@@ -58,7 +58,10 @@
 
           //Load content from server
           var url = '../_funcs/page/'+page_key;
-          if(options.page_id) url += '?page_id=' + options.page_id;
+          var qs = {};
+          if(options.page_id) qs.page_id = options.page_id;
+          if(options.branch_id) qs.branch_id = options.branch_id;
+          if(!_.isEmpty(qs)) url += '?' + $.param(qs);
           XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
             if ('_success' in rslt) {
               var page = rslt.page;
@@ -193,7 +196,7 @@
           var sites = rslt[execModel];
           jsh.$root('.jsHarmonyCms_site_selection_dropdown').remove();
           jsh.root.append(XExt.renderEJS(jsh.$root('.jsHarmonyCms_template_site_selection_dropdown').html(), undefined, { sites: sites }));
-          var jpos = jobj.offset();
+          var jpos = jobj.find('.jsHarmonyCms_site_selection').offset();
           XExt.ShowContextMenu('.jsHarmonyCms_site_selection_dropdown', undefined, undefined, { top: jpos.top + jobj.outerHeight() - 1, left: jpos.left - 1 });
         }
       });

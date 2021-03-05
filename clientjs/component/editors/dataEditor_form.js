@@ -143,7 +143,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   var itemData = modelTemplate.populateDataInstance(itemData || {});
 
-  var dialog = new FormDialog(this._jsh, modelConfig, {
+  var dialog = new FormDialog(this._jsh, this._cms, modelConfig, {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,

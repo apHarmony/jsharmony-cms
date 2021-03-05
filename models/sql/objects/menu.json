@@ -40,8 +40,8 @@
       }
     ],
     "sample_data": [
-      { "menu_name": "Site Menu", "menu_tag": "site_menu", "_FILES": { "menu_site.json": "menu/{{menu_id}}.json" } },
-      { "menu_name": "Footer Menu", "menu_tag": "footer_menu", "_FILES": { "menu_footer.json": "menu/{{menu_id}}.json" } }
+      { "site_id": 1, "menu_name": "Site Menu", "menu_tag": "site_menu", "_FILES": { "menu_site.json": "menu/{{menu_id}}.json" } },
+      { "site_id": 1, "menu_name": "Footer Menu", "menu_tag": "footer_menu", "_FILES": { "menu_footer.json": "menu/{{menu_id}}.json" } }
     ]
   },
 

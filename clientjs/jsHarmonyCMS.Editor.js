@@ -217,7 +217,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if(!toolbarOptions) return;
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(!mceEditor) throw new Error('Editor not found: '+id);
-    mceEditor.execCommand('jsHarmonyCmsSetToolbarOptions', toolbarOptions);
+    mceEditor.fire('setToolbarOptions', {toolbarOptions:toolbarOptions});
   }
 
   this.disableLinks = function(container, options){
@@ -226,7 +226,11 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       var jobj = $(this);
       if(options.onlyJSHCMSLinks){
         var url = jobj.attr('href');
-        if(url.indexOf('#@JSHCMS') < 0) return;
+        //If it is not a jsHarmony Internal Link
+        if(url.indexOf('#@JSHCMS') < 0){
+          //If it is not inside of a component
+          if(!jobj.closest('[data-component]').length) return;
+        }
       }
 
       if(options.addFlag && jobj.data('disabled_links')) return;
@@ -237,16 +241,19 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.setContent = function(id, val, desc){
     if(!desc) desc = id;
+    var containerId = 'jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true });
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
-        $('#jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })).html(val);
-        cms.componentManager.renderContainerContentComponents(document.getElementById('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })));
-        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true })), { addFlag: true, onlyJSHCMSLinks: true });
+        $('#'+containerId).html(val);
+        cms.componentManager.renderContainerContentComponents(document.getElementById(containerId), function(err){
+          if(err) throw new Error(err);
+          _this.disableLinks(document.getElementById(containerId), { addFlag: true, onlyJSHCMSLinks: true });
+        });
       },1);
     }
     else {
-      var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+      var mceEditor = window.tinymce.get(containerId);
       if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
       if(!_this.isInitialized) mceEditor.undoManager.clear();
       mceEditor.setContent(val);
@@ -278,6 +285,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
   }
 
+  this.getContentEditorTopOffset = function(mceEditor){
+    var contentOffset = $(mceEditor.contentAreaContainer).offset();
+    if(!contentOffset) return undefined;
+    var contentOffsetTop = contentOffset.top;
+    var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
+    contentOffsetTop += parseInt(contentStyles.paddingTop);
+    contentOffsetTop -= cms.toolbar.currentOffsetTop;
+    return contentOffsetTop;
+  }
+
   this.getDockPosition = function(mceEditor){
     if(!mceEditor) throw new Error('Editor is required');
     var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
@@ -286,12 +303,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     //Calculate auto
     if(dockPosition=='auto'){
       //Check if content would overlap editor
-      var contentOffset = $(mceEditor.contentAreaContainer).offset();
-      if(!contentOffset) return 'top';
-      var contentOffsetTop = contentOffset.top;
-      var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
-      contentOffsetTop += parseInt(contentStyles.paddingTop);
-      contentOffsetTop -= cms.toolbar.currentOffsetTop;
+      var contentOffsetTop = _this.getContentEditorTopOffset(mceEditor);
+      if(typeof contentOffsetTop == 'undefined') return 'top';
       var editorToolbarHeight = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
       if(editorToolbarHeight > contentOffsetTop){
         if(cms.toolbar.dockPosition == 'top_offset') return 'top_offset';

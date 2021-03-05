@@ -79,12 +79,14 @@ var Dialog = require('./dialog');
 /**
  * @class
  * @param {Object} jsh
+ * @param {Object} cms
  * @param {Object} model
  * @param {FormDialogConfig} config
  */
-function FormDialog(jsh, model, config) {
+function FormDialog(jsh, cms, model, config) {
 
   this.jsh = jsh;
+  this.cms = cms;
   this._model = this.augmentModel(model, config);
   this._config = config;
 
@@ -157,7 +159,7 @@ FormDialog.prototype.open = function(data) {
   /** @type {FormDialogConfig} */
   var config = this._config;
 
-  var dialog = new Dialog(this.jsh, this._model, {
+  var dialog = new Dialog(this.jsh, this.cms, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
     dialogId: config.dialogId,

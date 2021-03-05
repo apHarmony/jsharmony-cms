@@ -49,7 +49,7 @@
       }
     ],
     "sample_data": [
-      { "sitemap_name": "Primary Sitemap", "sitemap_type": "PRIMARY", "_FILES": { "sitemap_sample.json": "sitemap/{{sitemap_id}}.json" } }
+      { "_FILES": { "sitemap_sample.json": "sitemap/1.json" } }
     ]
   },
 
