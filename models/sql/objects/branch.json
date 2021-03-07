@@ -62,7 +62,7 @@
 
       { "name": "branch_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_review_sts": "code_val" } },
       { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
-      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
+      { "name": "branch_parent_id", "type": "bigint" }, //trigger: "foreignkey": { "branch": { "column": "branch_id" } }
       { "name": "branch_merge_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
       { "name": "branch_merge_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_merge_type": "code_val" } },
 
@@ -85,7 +85,8 @@
           "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
           "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');",
           "errorif(inserted(branch_merge_id)=inserted(branch_id),'Branch cannot merge with itself');",
-          "errorif((inserted(branch_merge_id) is not null) and (inserted(branch_merge_type) is null),'branch_merge_id requires branch_merge_type');"
+          "errorif((inserted(branch_merge_id) is not null) and (inserted(branch_merge_type) is null),'branch_merge_id requires branch_merge_type');",
+          "errorif((inserted(branch_parent_id) is not null) and not exists(select branch_id from {schema}.branch where branch_id=inserted(branch_parent_id)),'Branch Parent ID not found');",
         ]
       },
       { "on": ["validate_update"], "exec": [
@@ -106,7 +107,8 @@
       },
       {
         "on": ["delete"], "exec": [
-          "update {schema}.branch set branch_parent_id = null where branch_parent_id = deleted(branch_id);"
+          "update {schema}.branch set branch_parent_id = null where branch_parent_id = deleted(branch_id);",
+          "update {schema}.sys_user_site set branch_id = null where branch_id = deleted(branch_id);",
         ]
       }
     ],

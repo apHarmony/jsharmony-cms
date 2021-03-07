@@ -127,7 +127,7 @@
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "sys_user_site_editor", "type": "bigint", "foreignkey": { "deployment_target": { "column": "deployment_target_id" } } },
       { "name": "sys_user_site_access", "type": "varchar", "length": 32, "foreignkey": { "code_sys_user_site_access": "code_val" } },
-      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "null" } } },
+      { "name": "branch_id", "type": "bigint" },
 
       { "name": "sys_user_site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "sys_user_site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -137,14 +137,12 @@
     "unique": [
       ["sys_user_id", "site_id"]
     ],
+    "dependencies": ["{schema}.branch"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and site_id = inserted(site_id))),'Target Editor not available for this site')",
-          "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')"
-        ]
-      },
-      { "on": ["validate_insert"], "exec": [
-          "errorif((inserted(sys_user_id) in (select sys_user_id from {schema}.sys_user_site where site_id = inserted(site_id))),'User is already added to this site')",
+          "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')",
+          "errorif((inserted(branch_id) is not null) and not exists(select branch_id from {schema}.branch where branch_id=inserted(branch_id)),'Branch ID not found');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -164,7 +162,7 @@
     "data_keys": ["sys_user_id"],
     "sample_data": [
       { "sys_user_id": "1", "site_id": "1", "branch_id": "1" }
-    ]
+    ],
   },
 
   "v_my_site_editor": {
@@ -205,7 +203,6 @@
       },
       "sys_user_session": {
         "columns": [
-          "sys_user_id",
           "site_id",
         ],
         "join_type": "left",
@@ -307,6 +304,7 @@
         }
       },
     },
+    "dependencies": ["{schema}.v_sys_user_site_system_access"]
   },
 
   "v_my_session_role": {
@@ -336,9 +334,9 @@
       "v_sys_user_site_access_split": {
         "columns": [
           "sys_user_site_id",
-          { "name": "sys_user_role_id", "sqlselect": "role_sys_user_role_id"},
+          { "name": "sys_user_role_id", "type": "bigint", "sqlselect": "role_sys_user_role_id"},
           "site_id",
-          { "name":"sys_user_id", "type": "bitint", "sqlselect": "case when role_sys_user_id is not null then role_sys_user_id else sys_user_id end" },
+          { "name":"sys_user_id", "type": "bigint", "sqlselect": "case when role_sys_user_id is not null then role_sys_user_id else sys_user_id end" },
           { "name":"sys_user_site_access", "type": "varchar", "length": 32, "sqlselect": "$ifnull(role_sys_role_name, sys_user_site_access)" },
           { "name":"sys_user_site_system_access", "type": "varchar", "length": 32, "sqlselect": "(case when role_sys_user_id is not null then 1 else 0 end)" },
         ],

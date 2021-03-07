@@ -44,6 +44,14 @@
 
   "jsharmony.sys_user_role": {
     "type":"table",
+    "sql_create": "",
+    "sql_drop": "",
+    "columns": [
+      { "name": "sys_user_id", "type": "bigint", "key": true, "null": false },
+      { "name": "sys_user_role_id", "type": "bigint", "null": false },
+      { "name": "sys_role_name", "type": "varchar", "length": 16, "null": false },
+      { "name": "sys_user_role_snotes", "type": "varchar", "length": 255 },
+    ],
     "init_data": [
       { "sys_user_id": 1, "sys_role_name": "VIEWER" },
       { "sys_user_id": 1, "sys_role_name": "AUTHOR" },
@@ -52,11 +60,13 @@
     ],
     "triggers": [
       { "prefix": "{schema}_", "on": ["update"], "exec": [
-          "update sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null)",
+          "update {schema}.sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
+          "update {schema}.sys_user_site set branch_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
         ]
       },
       { "prefix": "{schema}_", "on": ["delete"], "exec": [
-          "update sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null and ((sys_user_role_id is null) or (sys_user_role_id<>deleted(sys_user_role_id))))",
+          "update {schema}.sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null and ((sys_user_role_id is null) or (sys_user_role_id<>deleted(sys_user_role_id))));",
+          "update {schema}.sys_user_site set branch_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
         ]
       }
     ],
