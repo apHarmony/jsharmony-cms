@@ -1,6 +1,6 @@
 {
   "main_sql_auth": [
-    "select sys_user.sys_user_id,sys_user_hash,sys_user_sts,sys_user_fname,sys_user_lname,sys_user_lastlogin_tstmp,sys_user_email,site_id,$ifnull((select site_name from {schema}.site where site.site_id=sys_user_session.site_id),'(No site selected)') site_name from jsharmony.sys_user left outer join {schema}.sys_user_session on sys_user_session.sys_user_id = sys_user.sys_user_id where lower(sys_user_email)=lower(@sys_user_email);",
+    "select sys_user.sys_user_id,sys_user_hash,sys_user_sts,sys_user_fname,sys_user_lname,sys_user_lastlogin_tstmp,sys_user_email,site_id,$ifnull((select site_name from {schema}.site where site.site_id=sys_user_session.site_id),'(No site selected)') site_name from jsharmony.sys_user left outer join {schema}.sys_user_session on sys_user_session.sys_user_id = sys_user.sys_user_id where lower(sys_user_email)=lower(@sys_user_email) order by case when sys_user_sts='ACTIVE' then 1 else 2 end;",
 
     "select sys_role.sys_role_name",
     "  from jsharmony.sys_role ",

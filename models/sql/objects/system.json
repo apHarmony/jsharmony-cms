@@ -66,7 +66,7 @@
       },
       { "prefix": "{schema}_", "on": ["delete"], "exec": [
           "update {schema}.sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null and ((sys_user_role_id is null) or (sys_user_role_id<>deleted(sys_user_role_id))));",
-          "update {schema}.sys_user_site set branch_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
+          "update {schema}.sys_user_site set branch_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null and ((sys_user_role_id is null) or (sys_user_role_id<>deleted(sys_user_role_id))));",
         ]
       }
     ],
