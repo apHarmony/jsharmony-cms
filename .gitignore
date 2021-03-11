@@ -1,4 +1,5 @@
 /node_modules
 /create-release.cmd
 /yarn.lock
+/yarn-error.log
 /package-lock.json

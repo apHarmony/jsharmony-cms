@@ -35,6 +35,9 @@ function ModuleFunctions(module){
   _.extend(this, require('./_funcs.conflicts.js')(module, this));
   _.extend(this, require('./_funcs.merge.js')(module, this));
   _.extend(this, require('./_funcs.branch.js')(module, this));
+  _.extend(this, require('./_funcs.ftp.js')(module, this));
+  _.extend(this, require('./_funcs.ftpClientWrapper.js')(module, this));
+  _.extend(this, require('./_funcs.sftpClientWrapper.js')(module, this));
 }
 
 exports = module.exports = ModuleFunctions;

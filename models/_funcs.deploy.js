@@ -624,6 +624,9 @@ module.exports = exports = function(module, funcs){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
+                else if(/^((ftps)|(ftp)|(sftp)):\/\//.test(deploy_path)) {
+                  return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
+                }
                 else return cb(new Error('Deployment Target path not supported'));
               },
 
@@ -929,6 +932,9 @@ module.exports = exports = function(module, funcs){
                 else if(deploy_path.indexOf('s3://')==0){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
+                }
+                else if(/^((ftps)|(ftp)|(sftp)):\/\//.test(deploy_path)) {
+                  return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
                 }
                 else return cb(new Error('Deployment Target path not supported'));
               },
@@ -1587,6 +1593,226 @@ module.exports = exports = function(module, funcs){
         }, fs_cb);
       }
     ], cb);
+  }
+
+  exports.deploy_ftp = function(deployment, publish_path, deploy_path, site_files, cb) {
+
+    let local_manifest = undefined;
+    const deployment_id = deployment.deployment_id;
+    const overwrite_all = deployment.publish_params.publish_overwrite_all;
+    const delete_excess_files = deployment.publish_params.publish_delete_missing_files;
+    const ftp_file_util = funcs.ftpFileInfoUtil();
+    const file_cache_info_path = 'config/.cms_files';
+    let remote_file_info_cache = undefined;
+    let remote_files = undefined;
+    let remote_path = '';
+    let remote_host = '';
+    let upload_info = undefined;
+
+    /** @type {import('./_funcs.ftp').FtpClient} */
+    let client = undefined;
+
+    // Start deployment!
+    deploy();
+
+    function deleteExcessFiles() {
+
+      if (upload_info.files_to_delete.length < 1) return Promise.resolve();
+
+      let current_index = 1;
+      const total = upload_info.files_to_delete.length;
+      const files_to_delete = upload_info.files_to_delete.map(p => path.join(remote_path, p).replace(/\\/g,  '/'));
+
+      funcs.deploy_log_info(deployment_id, `Deleting ${total} remote files from ${remote_host}${remote_path}`);
+      return client.deleteFiles(files_to_delete, p => {
+        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host + p}`);
+      });
+    }
+
+    function deleteExcessFolders() {
+
+      if (upload_info.folders_to_delete.length < 1) return Promise.resolve();
+
+      let current_index = 1;
+      const total = upload_info.folders_to_delete.length
+      const folders_to_delete = upload_info.folders_to_delete.map(p => path.join(remote_path, p).replace(/\\/g,  '/'));
+
+        funcs.deploy_log_info(deployment_id, `Deleting ${total} remote directories from ${remote_host}`);
+        return client.deleteDirectoriesRecursive(folders_to_delete, p => {
+          funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host + p}`);
+        });
+    }
+
+    function deploy() {
+
+      try {
+        client = getClient();
+      } catch (error) {
+        cb(error);
+        return;
+      }
+
+      funcs.deploy_log_info(deployment_id, `Connecting to ${remote_host}`);
+      client.connect()
+      .then(() => ensureRemoteRootDirectory())
+      .then(() => populateLocalManifest())
+      .then(() => populateRemoteFileInfoCache())
+      .then(() => populateRemoteFiles())
+      .then(() => {
+
+        const ignore_files = {
+          [file_cache_info_path]: {},
+          [path.dirname(file_cache_info_path)]: {}
+        };
+
+        upload_info = ftp_file_util.createUploadInfo(
+          local_manifest,
+          remote_file_info_cache,
+          remote_files,
+          ignore_files,
+          overwrite_all,
+          delete_excess_files
+        );
+
+        funcs.deploy_log_info(deployment_id, `Found ${upload_info.modified_file_count} modified files.`);
+        funcs.deploy_log_info(deployment_id, `Found ${upload_info.matching_file_count} matching files.`);
+        funcs.deploy_log_info(deployment_id, `Found ${upload_info.missing_file_in_remote_count} missing files.`);
+        funcs.deploy_log_info(deployment_id, `Found ${upload_info.missing_file_in_local_count} extra files.`);
+        funcs.deploy_log_info(deployment_id, `Found ${upload_info.missing_folder_in_local_count} extra directories.`);
+      })
+      .then(() => deleteExcessFiles())
+      .then(() => deleteExcessFolders())
+      .then(() => ensureRemoteDirectories())
+      .then(() => uploadFiles())
+      .then(() => uploadFileInfoCache())
+      .catch(err => err)
+      .then(err => {
+        client.end();
+        cb(err);
+      });
+    }
+
+    function ensureRemoteDirectories() {
+
+      if (upload_info.folders_to_create.length < 1) return Promise.resolve();
+
+      let current_index = 1;
+      const total = upload_info.folders_to_create.length;
+
+      funcs.deploy_log_info(deployment_id, `Verifying ${total} remote directories exist in ${remote_host}${remote_path}`);
+      const dirs = upload_info.folders_to_create.map(p => path.join(remote_path, p).replace(/\\/g,  '/'));
+      return client.ensureDirectories(dirs, p => {
+        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Verifying directory exists ${remote_host + p}`);
+      });
+    }
+
+    function ensureRemoteRootDirectory() {
+
+      // Need to build the tree so we
+      // can handle nested paths.
+      let child_path = remote_path;
+      const paths = [];
+      while (child_path !== '/') {
+        paths.unshift(child_path);
+        child_path = path.dirname(child_path);
+      }
+
+      if (paths.length < 1) return Promise.resolve();
+
+      funcs.deploy_log_info(deployment_id, `Verifying remote publish directory exist in ${remote_host}${remote_path}`);
+      return client.ensureDirectories(paths);
+    }
+
+    function getClient() {
+
+      const parsed_url = url.parse(deploy_path);
+      const protocol = parsed_url.protocol.replace(/:$/, '') // Trim the trailing ":", if exists
+      remote_path = parsed_url.path;
+
+      // remote_host is used for reporting. remote_hostname is used for connecting.
+      // remote_host includes port, remote_hostname does not.
+      remote_host = parsed_url.host; 
+      const remote_hostname = parsed_url.hostname;
+      const port =  (parsed_url.port != undefined) ? parseInt(parsed_url.port) : undefined;
+
+      // split at _FIRST_ ":" (username cannot contain ":", but password may)
+      const split_index = parsed_url.auth.indexOf(':');
+      const username = parsed_url.auth.slice(0, split_index);
+      const password = parsed_url.auth.slice(split_index + 1);
+
+      /** @type {import('./_funcs.ftp').ConnectionParams} */
+      const connectionParams = {
+        host: remote_hostname,
+        password,
+        port,
+        private_key_path: undefined, // TODO: where to get this?
+        username
+      }
+
+      return funcs.ftpClientAdapter(protocol, connectionParams);
+    }
+
+    function populateRemoteFiles() {
+      funcs.deploy_log_info(deployment_id, `Retrieving all file info from ${remote_host}${remote_path}`);
+      return client.getDirectoryListRecursive(remote_path, remote_path, p => {
+        funcs.deploy_log_info(deployment_id, `Retrieving directory list for ${remote_host}${p}`);
+      })
+      .then(files => remote_files = files || []);
+    }
+
+    function populateLocalManifest() {
+      funcs.deploy_log_info(deployment_id, `Building local manifest`);
+      return ftp_file_util.createLocalManifest(publish_path, site_files).then(manifest => local_manifest = manifest);
+    }
+
+    function populateRemoteFileInfoCache() {
+      funcs.deploy_log_info(deployment_id, `Retrieving file info cache from ${remote_host}${remote_path}`);
+      return client.readFile(remote_path + '/' + file_cache_info_path).then(file_info_cache => {
+        remote_file_info_cache = file_info_cache ?  JSON.parse(file_info_cache) : undefined;
+      });
+    }
+
+    function uploadFiles() {
+      const files_to_upload = [];
+      const path_mapper = rel_path => {
+        return {
+          local_path: path.join(publish_path, rel_path),
+          dest_path: path.join(remote_path, rel_path).replace(/\\/g, '/')
+        }
+      };
+
+      upload_info.files_to_upload.forEach(p => files_to_upload.push(path_mapper(p)));
+
+      let current_index = 1;
+      const total = files_to_upload.length;
+
+      if (total < 1) return Promise.resolve();
+
+      funcs.deploy_log_info(deployment_id, `Uploading ${total} files to ${remote_host}${remote_path}`);
+      return client.writeFiles(files_to_upload, p => {
+        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Uploading file to ${remote_host + p}`);
+      });
+    }
+
+    function uploadFileInfoCache() {
+
+      const file_info = {
+        files: {}
+      };
+
+      local_manifest.file_index.forEach((info, file) => {
+        file_info.files[file] = info;
+      });
+
+      const file_info_string = JSON.stringify(file_info, null, 2);
+      const upload_path = path.join(remote_path, file_cache_info_path).replace(/\\/g, '/');
+
+      funcs.deploy_log_info(deployment_id, `Uploading file info cache to ${remote_host}${upload_path}`);
+
+      return client.ensureDirectories([path.dirname(upload_path)]).then(() => {
+        return client.writeString(file_info_string, upload_path);
+      });
+    }
   }
 
   exports.deploy_s3 = function(deployment, publish_path, deploy_path, site_files, cb){
