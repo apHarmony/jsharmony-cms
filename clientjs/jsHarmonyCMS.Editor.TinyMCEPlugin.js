@@ -87,7 +87,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (tinymce.PluginManager.get('jsHarmonyCms') != undefined) return;
 
     tinymce.PluginManager.add('jsHarmonyCms', function(editor, url) {
-      new JsHarmonyComponentPlugin(editor);
+      return new JsHarmonyComponentPlugin(editor);
     });
   }
 
@@ -99,6 +99,8 @@ exports = module.exports = function(jsh, cms, editor){
   function JsHarmonyComponentPlugin(editor) {
 
     this._editor = editor;
+    this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions);
+
     this.initialize(cms.componentManager.componentTemplates);
   }
 
@@ -109,13 +111,13 @@ exports = module.exports = function(jsh, cms, editor){
    * @returns {object[]}
    */
   JsHarmonyComponentPlugin.prototype.createComponentMenuItems = function(componentInfo) {
-    var self = this;
+    var _this = this;
     return _.map(componentInfo, function(item) {
       return {
         type: 'menuitem',
         text: item.menuLabel,
         icon: item.iconId,
-        onAction: function() { self.insertComponent(item.componentType); }
+        onAction: function() { _this.insertComponent(item.componentType); }
       }
     });
   }
@@ -128,12 +130,12 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentMenuButton = function(componentInfo) {
     if(!componentInfo || !componentInfo.length) return;
 
-    var self = this;
+    var _this = this;
     this._editor.ui.registry.addNestedMenuItem('jsHarmonyCmsComponent', {
       text: 'Component',
       icon: ICONS.widgets.name,
       getSubmenuItems: function() {
-        return self.createComponentMenuItems(componentInfo);
+        return _this.createComponentMenuItems(componentInfo);
       }
     });
   }
@@ -146,34 +148,73 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentToolbarButton = function(componentInfo) {
     if(!componentInfo || !componentInfo.length) return;
 
-    var self = this;
-    self._editor.ui.registry.addMenuButton('jsHarmonyCmsComponent', {
+    var _this = this;
+    _this._editor.ui.registry.addMenuButton('jsHarmonyCmsComponent', {
       icon: ICONS.widgets.name,
       text: 'Component',
       fetch: function(cb) {
-        cb(self.createComponentMenuItems(componentInfo));
+        cb(_this.createComponentMenuItems(componentInfo));
       }
     });
+  }
+
+  JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_menu = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_toolbar = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarDock = function(dockPosition){
+    var _this = this;
+    _this.toolbarOptions.dock = dockPosition || 'auto';
+    cms.editor.renderContentEditorToolbar(_this._editor);
   }
 
   /**
    * Create the "View" toolbar menu button, for hiding the menu and viewing source code.
    * @private
-   * @param {ComponentInfo[]} componentInfo
    */
-  JsHarmonyComponentPlugin.prototype.createViewToolbarButton = function(componentInfo) {
-    var self = this;
-    self._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
+  JsHarmonyComponentPlugin.prototype.createToolbarViewOptions = function() {
+    var _this = this;
+    _this._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
       text: 'View',
       icon: ICONS.search.name,
       fetch: function (cb) {
         return cb([
           {
             type: 'menuitem',
-            icon: 'new-tab',
             text: 'Toggle Menu',
             onAction: function () {
-              $(self._editor.editorContainer).find('[role=menubar]').toggle();
+              _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+            }
+          },
+          {
+            type: 'menuitem',
+            text: 'Toggle Toolbar',
+            onAction: function () {
+              _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
+            }
+          },
+          {
+            type: 'menuitem',
+            icon: 'visualblocks',
+            text: 'Toggle Outlines',
+            onAction: function () {
+              if(document && document.body){
+                var hasOutlines =  $(document.body).hasClass('jsHarmonyCMS_showEditorOutlines');
+                $(document.body).toggleClass('jsHarmonyCMS_hideEditorOutlines', hasOutlines);
+                $(document.body).toggleClass('jsHarmonyCMS_showEditorOutlines', !hasOutlines);
+                if(!jsh.xDialog.length){
+                  var editorManager = tinymce.util.Tools.resolve("tinymce.EditorManager");
+                  editorManager.activeEditor.focus();
+                }
+              }
             }
           },
           {
@@ -181,10 +222,60 @@ exports = module.exports = function(jsh, cms, editor){
             icon: 'sourcecode',
             text: 'Source Code',
             onAction: function () {
-              self._editor.execCommand('mceCodeEditor');
+              _this._editor.execCommand('mceCodeEditor');
             }
           },
         ]);
+      }
+    });
+  }
+
+  JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
+    //if(!this._editor.settings.isjsHarmonyCmsComponent) 
+    var _this = this;
+
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleMenu', {
+      text: 'Toggle Menu',
+      onAction: function () {
+        _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+      }
+    });
+
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleToolbar', {
+      text: 'Toggle Toolbar',
+      onAction: function () {
+        _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
+      }
+    });
+
+    _this._editor.ui.registry.addNestedMenuItem('jsharmonyCmsDockToolbar', {
+      text: 'Dock Toolbar',
+      getSubmenuItems: function() {
+        return [
+          {
+            type: 'togglemenuitem',
+            text: 'Top',
+            onAction: function() {
+              if(_.includes(['top','top_offset','auto'],_this.toolbarOptions.orig_dock)) _this.setToolbarDock(_this.toolbarOptions.orig_dock);
+              else _this.setToolbarDock('auto');
+            },
+            onSetup: function(api) {
+              api.setActive((_this.toolbarOptions.dock === 'top')||(_this.toolbarOptions.dock === 'top_offset')||(_this.toolbarOptions.dock === 'auto'));
+              return function() {};
+            }
+          },
+          {
+            type: 'togglemenuitem',
+            text: 'Bottom',
+            onAction: function(a) {
+              _this.setToolbarDock('bottom');
+            },
+            onSetup: function(api) {
+              api.setActive(_this.toolbarOptions.dock === 'bottom');
+              return function() {};
+            }
+          }
+        ]
       }
     });
   }
@@ -195,7 +286,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {ComponentInfo[]} componentInfo
    */
   JsHarmonyComponentPlugin.prototype.createSpellCheckMessageMenuButton = function() {
-    var self = this;
+    var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsSpellCheckMessage', {
       text: 'Spell Check',
       icon: 'spell-check',
@@ -213,22 +304,22 @@ exports = module.exports = function(jsh, cms, editor){
    */
   JsHarmonyComponentPlugin.prototype.createContextToolbar = function(componentInfos) {
 
-    var self = this;
+    var _this = this;
     var propButtonId = 'jsharmonyComponentPropEditor';
     var dataButtonId = 'jsharmonyComponentDataEditor';
 
-    self._editor.ui.registry.addButton(dataButtonId, {
+    _this._editor.ui.registry.addButton(dataButtonId, {
       tooltip: 'Edit',
       text: 'Edit',
       icon:  ICONS.edit.name,
-      onAction: function() { self._editor.execCommand(COMMAND_NAMES.editComponentData); }
+      onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentData); }
     });
 
-    self._editor.ui.registry.addButton(propButtonId, {
+    _this._editor.ui.registry.addButton(propButtonId, {
       tooltip: 'Configure',
       text: 'Configure',
       icon: ICONS.settings.name,
-      onAction: function() { self._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
+      onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
     });
 
     var dataAndPropsToolbar = dataButtonId + ' ' + propButtonId;
@@ -237,11 +328,11 @@ exports = module.exports = function(jsh, cms, editor){
 
     var toolbarPredicate = function(enableData, enableProps) {
       return function(node) {
-        var isComponent = self._editor.dom.is(node, '[data-component]');
+        var isComponent = _this._editor.dom.is(node, '[data-component]');
         if (!isComponent) {
           return false;
         }
-        var componentType = self._editor.dom.getAttrib(node, 'data-component');
+        var componentType = _this._editor.dom.getAttrib(node, 'data-component');
         var componentInfo = _.find(componentInfos, function(info) { return info.componentType === componentType });
         if (!componentInfo) {
           return false;
@@ -252,7 +343,7 @@ exports = module.exports = function(jsh, cms, editor){
 
     var addToolbar = function(toolBarConfig, predicate) {
       var contextId = 'jsharmonyComponentContextToolbar_' + toolBarConfig;
-      self._editor.ui.registry.addContextToolbar(contextId, {
+      _this._editor.ui.registry.addContextToolbar(contextId, {
         predicate: predicate,
         items: toolBarConfig,
         scope: 'node',
@@ -289,7 +380,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {object} e - the undo/redo event from the TinyMCE editor
    */
   JsHarmonyComponentPlugin.prototype.onUndoRedo = function(e) {
-    var self = this;
+    var _this = this;
     var content = e.level.content;
     if (!content) return;
     var parser = new tinymce.html.DomParser({validate: false});
@@ -299,11 +390,19 @@ exports = module.exports = function(jsh, cms, editor){
         var id = node.attributes.map['data-component-id'];
         var type = node.attributes.map['data-component'];
         if (id && type) {
-          cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
+          cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
         }
       }
     });
     parser.parse(content);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarOptions = function(toolbarOptions){
+    var _this = this;
+
+    _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
+    if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
+    if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = !!toolbarOptions.show_menu || toolbarOptions.show_toolbar;
   }
 
   /**
@@ -314,7 +413,7 @@ exports = module.exports = function(jsh, cms, editor){
    */
   JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
-    var self = this;
+    var _this = this;
 
     /** @type {ComponentInfo[]} */
     var componentInfo = [];
@@ -322,7 +421,7 @@ exports = module.exports = function(jsh, cms, editor){
     // Register component icons and build
     // component info.
     _.forEach(components, function(component) {
-      if (component.icon) {
+      if ((component.target == 'content') && component.icon) {
         // Icon name MUST be lowercase for TinyMce to work correctly.
         var iconRegistryName = ('cms_component_icon_' + component.id).toLowerCase();
         var iconMatch = /^(\w+):/.exec(component.icon);
@@ -341,7 +440,7 @@ exports = module.exports = function(jsh, cms, editor){
           icon = component.icon;
         }
 
-        self._editor.ui.registry.addIcon(iconRegistryName, icon);
+        _this._editor.ui.registry.addIcon(iconRegistryName, icon);
 
         componentInfo.push({
           componentType: component.id,
@@ -355,32 +454,41 @@ exports = module.exports = function(jsh, cms, editor){
 
     // Register icons
     for (var key in ICONS) {
-      self._editor.ui.registry.addIcon(ICONS[key].name, ICONS[key].html);
+      _this._editor.ui.registry.addIcon(ICONS[key].name, ICONS[key].html);
     }
 
     //Create menu buttons, toolbar buttons, and context menu buttons
     this.createContextToolbar(componentInfo);
     this.createComponentToolbarButton(componentInfo);
-    this.createViewToolbarButton();
+    this.createToolbarViewOptions();
+    this.createMenuViewOptions();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
 
-    this._editor.on('undo', function(info) { self.onUndoRedo(info); });
-    this._editor.on('redo', function(info) { self.onUndoRedo(info); });
+    this._editor.on('undo', function(info) { _this.onUndoRedo(info); });
+    this._editor.on('redo', function(info) { _this.onUndoRedo(info); });
+    this._editor.on('setToolbarOptions', function(e){
+      if(e && e.toolbarOptions) _this.setToolbarOptions(e.toolbarOptions);
+    });
 
     this._editor.addCommand(COMMAND_NAMES.editComponentData, function() {
-      var el = self._editor.selection.getStart();
-      self.openDataEditor(el);
+      var el = _this._editor.selection.getStart();
+      _this.openDataEditor(el);
     });
 
     this._editor.addCommand(COMMAND_NAMES.editComponentProperties, function() {
-      var el = self._editor.selection.getStart();
-      self.openPropertiesEditor(el);
+      var el = _this._editor.selection.getStart();
+      _this.openPropertiesEditor(el);
     });
+    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) { 
+      _this.setToolbarOptions(toolbarOptions);
+    });
+    this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
 
     this._editor.on('init', function() {
-      self._editor.serializer.addNodeFilter('div', function(nodes) { self.serializerFilter(nodes); });
-      self._editor.parser.addAttributeFilter('data-component', function(nodes) { self.parseFilter(nodes); });
+      _this._editor.serializer.addNodeFilter('div', function(nodes) { _this.serializerFilter(nodes); });
+      _this._editor.parser.addAttributeFilter('data-component', function(nodes) { _this.renderContentComponents(nodes); });
+      _this._editor.parser.addAttributeFilter('cms-component', function(nodes) { _this.replacePageComponentsWithContentComponents(nodes); });
     });
   }
 
@@ -415,7 +523,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @returns {string} - HTML string
    */
   JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
-    return '<div class="mceNonEditable" data-component="' + componentType + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
+    return '<div class="mceNonEditable" data-component="' + jsh.XExt.escapeHTML(componentType) + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
   }
 
   /**
@@ -449,22 +557,84 @@ exports = module.exports = function(jsh, cms, editor){
    * @private
    * @param {Array.<object>} nodes - a list of TinyMce nodes
    */
-  JsHarmonyComponentPlugin.prototype.parseFilter = function(nodes) {
-    var self = this;
+  JsHarmonyComponentPlugin.prototype.renderContentComponents = function(nodes) {
+    var _this = this;
     _.each(nodes, function(node) {
       var id = cms.componentManager.getNextComponentId();
       // var id = node.attributes.map['data-component-id'];
       node.attr('data-component-id', id);
-      var type = node.attributes.map['data-component'];
       // Content is not actually in the DOM yet.
       // Wait for next loop
       var isInitialized = cms.isInitialized;
       setTimeout(function() {
-        cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0], {
+        cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0], {
           init: !isInitialized
         });
       });
     });
+  }
+
+  /**
+   * Replace cms-component elements with data-component
+   * @private
+   * @param {Array.<object>} nodes - a list of TinyMce nodes
+   */
+  JsHarmonyComponentPlugin.prototype.replacePageComponentsWithContentComponents = function(nodes) {
+    var _this = this;
+    _.each(nodes, function(node) {
+      var cmsComponent = node.attr('cms-component');
+      var cmsComponentData = node.attr('cms-component-data');
+      var cmsComponentProperties = node.attr('cms-component-properties');
+      if(cmsComponent){
+        node.attr('data-component', cmsComponent);
+        node.attr('cms-component', null);
+        
+        var nodeClass = (node.attr('class')||'');
+        if(nodeClass) nodeClass += ' ';
+        nodeClass += 'mceNonEditable';
+        node.attr('class', nodeClass);
+        node.attr('contenteditable', "false");
+
+        var defaultProperties = {};
+        var defaultData = {};
+        var component = cms.componentManager.componentTemplates[cmsComponent];
+        if(component){
+          defaultProperties = cms.componentManager.getDefaultValues(component.properties);
+          defaultData = cms.componentManager.getDefaultValues(component.data);
+        }
+        
+        if(cmsComponentData){
+          try{
+            cmsComponentData = JSON.parse(cmsComponentData);
+            if(_.isArray(cmsComponentData)){
+              for(var i=0;i<cmsComponentData.length;i++){ cmsComponentData[i] = _.extend({}, defaultData, cmsComponentData[i]); }
+              cmsComponentData = {items: cmsComponentData};
+            }
+            else{
+              cmsComponentData = _.extend({}, defaultData, cmsComponentData);
+              cmsComponentData = {item: cmsComponentData};
+            }
+            cmsComponentData = JSON.stringify(cmsComponentData);
+          }
+          catch(ex){
+          }
+          node.attr('data-component-data', btoa(cmsComponentData));
+          node.attr('cms-component-data', null);
+        }
+        if(cmsComponentProperties){
+          try{
+            cmsComponentProperties = JSON.parse(cmsComponentProperties);
+            cmsComponentProperties = _.extend({}, defaultProperties, cmsComponentProperties);
+            cmsComponentProperties = JSON.stringify(cmsComponentProperties);
+          }
+          catch(ex){
+          }
+          node.attr('data-component-properties', btoa(cmsComponentProperties));
+          node.attr('cms-component-properties', null);
+        }
+      }
+    });
+    _this.renderContentComponents(nodes);
   }
 
   /**

@@ -28,14 +28,20 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   var XExt = jsh.XExt;
 
   this.isEditing = false;
-  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
+  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
+  this.defaultToolbarOptions = {
+    dock: "auto",
+    show_menu: true,
+    show_toolbar: true,
+    orig_dock: undefined,
+    orig_toolbar_or_menu: undefined,
+  };
 
-  this.onBeginEdit = null; //function(editor){};
-  this.onEndEdit = null; //function(editor){};
-
+  this.onBeginEdit = null; //function(mceEditor){};
+  this.onEndEdit = null; //function(mceEditor){};
 
   this.editorConfig = {
     base: null,
@@ -78,7 +84,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsHarmonyCmsToggleMenu jsHarmonyCmsToggleToolbar jsharmonyCmsDockToolbar' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
@@ -108,29 +114,56 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       }, jsh.globalparams.defaultEditorConfig, _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
-        init_instance_callback: function(editor){
+        init_instance_callback: function(mceEditor){
           var firstFocus = true;
-          editor.on('focus', function(){
+          mceEditor.on('focus', function(){
             //Fix bug where alignment not reset when switching between editors
             if(firstFocus){
               $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
               firstFocus = false;
             }
             $('[data-component="header"]').css('pointer-events', 'none');
-            _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
-            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
+            var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
+            if(_this.toolbarContainer.length){
+              var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
+              wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
+            }
+            _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
+              //If dock=bottom, slide up
+              _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
+              _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
+            }
+            else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              //Top-offset
+              _this.toolbarContainer.stop(true).css({ opacity:1 });
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            }
+            
             cms.refreshLayout();
-            if(_this.onBeginEdit) _this.onBeginEdit(editor);
+            if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
           });
-          editor.on('blur', function(){
+          mceEditor.on('blur', function(){
             $('[data-component="header"]').css('pointer-events', 'auto');
             _this.isEditing = false;
-            _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
-            if(_this.onEndEdit) _this.onEndEdit(editor);
+            var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
+            var dockPosition = _this.getDockPosition(mceEditor);
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              _this.toolbarContainer.stop(true).css({ opacity:0 });
+              clearClasses();
+              cms.toolbar.refreshOffsets();
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
+            }
+            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
           //Override background color icon
-          var allIcons = editor.ui.registry.getAll();
-          editor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
+          var allIcons = mceEditor.ui.registry.getAll();
+          mceEditor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
         }
       });
 
@@ -145,9 +178,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         },
         menubar: false,
         browser_spellcheck: true,
-        init_instance_callback: function(editor){
-          editor.on('blur', function(){
-            if(_this.onEndEdit) _this.onEndEdit(editor);
+        init_instance_callback: function(mceEditor){
+          mceEditor.on('blur', function(){
+            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
         }
       });
@@ -157,41 +190,82 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   }
 
   this.attach = function(config_id, elem_id, options, cb){
+    if(!cb) cb = function(){};
+    var cb_called = false;
+    var orig_cb = cb;
+    cb = function(err){ if(cb_called) return; cb_called = true; orig_cb(err); };
+    if(!$('#'+elem_id).length) return cb(new Error('Editor container element not found: #'+elem_id));
     if(!(config_id in _this.editorConfig)) throw new Error('Editor config ' + (config_id||'').toString() + ' not defined');
-    var config = _.extend({ selector: '#' + elem_id }, _this.editorConfig[config_id], options);
-    if(cb) config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, cb);
-    window.tinymce.init(config);
+    var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
+    config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, function(){ return cb(); });
+    window.tinymce.init(config).catch(cb);
   }
 
   this.detach = function(id){
-    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-    if(editor){
-      if(_this.isEditing == id) editor.fire('blur');
-      editor.destroy();
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(mceEditor){
+      if(_this.isEditing == id) mceEditor.fire('blur');
+      mceEditor.destroy();
     }
   }
 
-  this.setContent = function(id, val){
+  /** 
+   * @param {string} id
+   * @param {'top' | 'bottom'} position
+   */
+  this.setToolbarOptions = function(id, toolbarOptions) {
+    if(!toolbarOptions) return;
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(!mceEditor) throw new Error('Editor not found: '+id);
+    mceEditor.fire('setToolbarOptions', {toolbarOptions:toolbarOptions});
+  }
+
+  this.disableLinks = function(container, options){
+    options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
+    $(container).find('a').each(function(){
+      var jobj = $(this);
+      if(options.onlyJSHCMSLinks){
+        var url = jobj.attr('href');
+        //If it is not a jsHarmony Internal Link
+        if(url.indexOf('#@JSHCMS') < 0){
+          //If it is not inside of a component
+          if(!jobj.closest('[data-component]').length) return;
+        }
+      }
+
+      if(options.addFlag && jobj.data('disabled_links')) return;
+      if(options.addFlag) jobj.data('disabled_links', '1');
+      jobj.on('click', function(e){ e.preventDefault(); });
+    });
+  }
+
+  this.setContent = function(id, val, desc){
+    if(!desc) desc = id;
+    var containerId = 'jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true });
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
-        $('#jsharmony_cms_content_'+id).html(val);
-        cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
+        $('#'+containerId).html(val);
+        cms.componentManager.renderContainerContentComponents(document.getElementById(containerId), function(err){
+          if(err) throw new Error(err);
+          _this.disableLinks(document.getElementById(containerId), { addFlag: true, onlyJSHCMSLinks: true });
+        });
       },1);
     }
     else {
-      var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-      if(!editor) throw new Error('Editor not found: '+id);
-      if(!_this.isInitialized) editor.undoManager.clear();
-      editor.setContent(val);
-      if(!_this.isInitialized) editor.undoManager.add();
+      var mceEditor = window.tinymce.get(containerId);
+      if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+      if(!_this.isInitialized) mceEditor.undoManager.clear();
+      mceEditor.setContent(val);
+      if(!_this.isInitialized) mceEditor.undoManager.add();
     }
   }
 
-  this.getContent = function(id){
-    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-    if(!editor) throw new Error('Editor not found: '+id);
-    return editor.getContent();
+  this.getContent = function(id, desc){
+    if(!desc) desc = id;
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(!mceEditor) cms.fatalError('editor.getContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+    return mceEditor.getContent();
   }
 
   this.initToolbarContainer = function(element) {
@@ -204,6 +278,92 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       this.toolbarContainer.attr('id', id);
     }
   }
+
+  this.onEditorInitialized = function(){
+    if(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()){
+      window.tinymce.activeEditor.fire('focus');
+    }
+  }
+
+  this.getContentEditorTopOffset = function(mceEditor){
+    var contentOffset = $(mceEditor.contentAreaContainer).offset();
+    if(!contentOffset) return undefined;
+    var contentOffsetTop = contentOffset.top;
+    var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
+    contentOffsetTop += parseInt(contentStyles.paddingTop);
+    contentOffsetTop -= cms.toolbar.currentOffsetTop;
+    return contentOffsetTop;
+  }
+
+  this.getDockPosition = function(mceEditor){
+    if(!mceEditor) throw new Error('Editor is required');
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    var dockPosition = toolbarOptions.dock;
+    if(!dockPosition) dockPosition = 'auto';
+    //Calculate auto
+    if(dockPosition=='auto'){
+      //Check if content would overlap editor
+      var contentOffsetTop = _this.getContentEditorTopOffset(mceEditor);
+      if(typeof contentOffsetTop == 'undefined') return 'top';
+      var editorToolbarHeight = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
+      if(editorToolbarHeight > contentOffsetTop){
+        if(cms.toolbar.dockPosition == 'top_offset') return 'top_offset';
+      }
+      return 'top';
+    }
+    return dockPosition;
+  }
+
+  this.getOffsetTop = function(){
+    if(!window.tinymce) return 0;
+    var mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return 0;
+    var dockPosition = _this.getDockPosition(mceEditor);
+    if(dockPosition=='top_offset'){
+      return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
+    }
+    return 0;
+  }
+
+  this.renderContentEditorToolbar = function(mceEditor, options){
+    if(!window.tinymce) return;
+    if(!mceEditor) mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return;
+    options = _.extend({ onFocus: false }, options);
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    if(options.onFocus){
+      if(!toolbarOptions.show_menu && !toolbarOptions.show_toolbar){
+        if(toolbarOptions.orig_toolbar_or_menu) toolbarOptions.show_toolbar = true;
+      }
+    }
+    toolbarOptions = _.extend({}, _this.defaultToolbarOptions, toolbarOptions);
+
+    var jContentToolbar = $('#jsharmony_cms_content_editor_toolbar');
+
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
+
+    var dockPosition = _this.getDockPosition(mceEditor);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
+    var isPageToolbarBottom = jContentToolbar.hasClass('jsharmony_cms_page_toolbar_bottom');
+
+    var barh = cms.toolbar.getHeight();
+    if (dockPosition == 'bottom') {
+      //Bottom Dock Position
+      jContentToolbar
+        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
+        .css('bottom', isPageToolbarBottom ? barh+'px' : '0');
+    } else {
+      //Top Dock Position
+      
+      jContentToolbar
+        .css('top', isPageToolbarBottom ? '0' : barh + 'px')
+        .css('bottom', '');
+    }
+    cms.toolbar.refreshOffsets();
+  }
+
   this.getMaterialIcons = function(){
     if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [

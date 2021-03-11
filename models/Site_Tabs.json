@@ -1,0 +1,25 @@
+{
+  "Site_Tabs": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[1150,600],
+    "table":"{schema}.site",
+    "actions":"BIUD",
+    "roles": { "WEBMASTER": "BIUD" },
+    "tabpos":"top",
+    "tabpanelstyle": "min-width:700px;",
+	  "tabs":[
+      {"name":"Overview","target":"Site"},
+      {"name":"User Access","target":"Site_User"},
+      {"name":"Page Templates","target":"Site_Template_Page"},
+      {"name":"Components","target":"Site_Template_Component"}
+    ],
+    "caption":["Site","Sites"],
+    "title": {
+      "insert": "Add Site",
+      "update": { "sql": "select concat('Site :: ',site_name) from {schema}.site where site_id=@site_id" }
+    },
+    "fields": [
+    ]
+  }
+}

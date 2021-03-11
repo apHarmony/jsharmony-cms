@@ -17,10 +17,8 @@
       {"name":"menu_name","caption":"Menu Name","control":"textbox_M"},
       {"control":"html","caption":"Menu Items","link":"js:_this.openMenuEditor(this)","value":"<img src='/images/icon_edit.png' class='xicon' />"},
       {"name":"menu_tag","caption":"Tag","control":"textbox_M"},
-      {"name":"menu_template_id","caption":"Template","control":"dropdown","lov":{ "values": "#CMS_MENU_TEMPLATES" }},
-      {"name":"menu_path","caption":"Path","control":"textbox_M"},
       {"name":"menu_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
-      {"control":"html","caption":"Revisions","link":"js:_this.viewRevisions(this)","value":"<img src='/images/icon_browse.png' class='xicon' />","roles":{"PUBLISHER":"*"}},
+      {"control":"html","caption":"Revisions","link":"js:_this.viewRevisions(this)","value":"<img src='/images/icon_browse.png' class='xicon' />","roles":{"AUTHOR":"*","PUBLISHER":"*"}},
       {"name":"revision_menu","unbound":true,"control":"hidden","bindings":{"revision_menu_key":"js:if(xmodel) return jsh.App[xmodel.id].revision_menu_key;"},
         "popuplov": {"target": "Menu_Revision_Listing", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
       }

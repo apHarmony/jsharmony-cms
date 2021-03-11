@@ -45,6 +45,7 @@ module.exports = exports = function(module, funcs){
     var P = req.body;
     var appsrv = this;
     var jsh = module.jsh;
+    var cms = module;
     var XValidate = jsh.XValidate;
     var sql = '';
     var sql_ptypes = [];
@@ -61,7 +62,7 @@ module.exports = exports = function(module, funcs){
       var media_key = req.params.media_key;
       var thumbnail_name = req.params.thumbnail;
       var thumbnail_config = null;
-      if(thumbnail_name) thumbnail_config = jsh.Modules['jsHarmonyCMS'].Config.media_thumbnails[thumbnail_name];
+      if(thumbnail_name) thumbnail_config = cms.Config.media_thumbnails[thumbnail_name];
 
       //Invalid Thumbnail
       if(thumbnail_name && !thumbnail_config) return next();
@@ -72,13 +73,13 @@ module.exports = exports = function(module, funcs){
       validate = new XValidate();
       verrors = {};
       validate.AddValidator('_obj.media_key', 'Media Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      sql = 'select media_key,media_file_id,media_filename,media_path,media_ext from '+(module.schema?module.schema+'.':'')+'v_my_media where media_key=@media_key';
+      sql = 'select media_key,media_file_id,media_filename,media_path,media_ext from {schema}.v_my_media where media_key=@media_key';
 
       if(Q.media_id){
         sql_ptypes.push(dbtypes.BigInt);
         sql_params.media_id = Q.media_id;
         validate.AddValidator('_obj.media_id', 'Media ID', 'B', [XValidate._v_IsNumeric()]);
-        sql = 'select media_key,media_file_id,media_filename,media_path,media_ext from '+(module.schema?module.schema+'.':'')+'media where media_key=@media_key and media_id=@media_id';
+        sql = 'select media_key,media_file_id,media_filename,media_path,media_ext from {schema}.media where media_key=@media_key and media_id=@media_id and site_id={schema}.my_current_site_id()';
       }
       
       var fields = [];
@@ -89,7 +90,7 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+      appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
         if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
         if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Media ID'); }
         var media = rslt[0][0];
@@ -147,7 +148,7 @@ module.exports = exports = function(module, funcs){
         serveFile(function (err) {
           //Only executes upon error
           if (err != null) {
-            if (('code' in err) && (err.code == 'ENOENT')){
+            if(HelperFS.fileNotFound(err)){
               if(!thumbnail_config) return Helper.GenError(req, res, -33, 'Media file not found.');
               //Generate thumbnail
               transformMedia(function(err){
@@ -158,7 +159,7 @@ module.exports = exports = function(module, funcs){
                 //Try again to serve file
                 serveFile(function (err) {
                   if (err != null) {
-                    if (('code' in err) && (err.code == 'ENOENT')) return Helper.GenError(req, res, -33, 'Media file not found.');
+                    if (HelperFS.fileNotFound(err)) return Helper.GenError(req, res, -33, 'Media file not found.');
                     else return Helper.GenError(req, res, -99999, 'Error occurred during file operation (' + err.toString() + ')');
                   }
                 });
@@ -284,7 +285,7 @@ module.exports = exports = function(module, funcs){
 
           //Apply maximum image size, if applicable
           function(cb){
-            var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
+            var cmsConfig = cms.Config;
             if(!media_width || !media_height) return cb();
             if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
               jsh.Extensions.image.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){
@@ -435,7 +436,7 @@ module.exports = exports = function(module, funcs){
             
             //Apply maximum image size, if applicable
             function(cb){
-              var cmsConfig = jsh.Modules['jsHarmonyCMS'].Config;
+              var cmsConfig = cms.Config;
               if(!media_width || !media_height) return cb();
               if(cmsConfig.media_thumbnails && cmsConfig.media_thumbnails.maximum && cmsConfig.media_thumbnails.maximum.resize){
                 jsh.Extensions.image.resize(tmp_file_path, tmp_file_path, cmsConfig.media_thumbnails.maximum.resize, undefined, function(err){

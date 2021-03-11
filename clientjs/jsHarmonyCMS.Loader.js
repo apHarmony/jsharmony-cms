@@ -26,8 +26,9 @@ exports = module.exports = function(cms){
   this.onSquashedClick = [];
   this.onMouseDown = [];
   this.onMouseUp = [];
+  this.onLoadingComplete = [];
   
-  this.StartLoading = function(obj){
+  this.StartLoading = function(obj, desc){
     if(!obj) obj = _this.defaultLoadObj;
     
     var foundObj = false;
@@ -82,8 +83,14 @@ exports = module.exports = function(cms){
     if(this.loadQueue.length) return;
 
     this.isLoading = false;
-    if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut();
-    else document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+    var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); }
+    if(cms.jsh){
+      cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut('normal', function(){ triggerLoadingComplete(); });
+    }
+    else{
+      document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+      triggerLoadingComplete();
+    }
   }
 
   this.ClearLoading = function(){

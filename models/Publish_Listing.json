@@ -5,11 +5,13 @@
     "caption":["Deployment","Deployments"],
     "title":"Pending Deployments",
     "menu":"jsHarmonyCMS/Publish_Listing",
+    "breadcrumbs":"#CMS_SITE_BREADCRUMBS",
+    "oninit": "jsh.System.RequireSite(xmodel);",
     "noresultsmessage":"No scheduled deployments.",
     "tablestyle":"min-width:450px;",
     "actions":"B",
     "roles": {"PUBLISHER": "B"},
-    "sqlwhere":"deployment_sts in ('PENDING','RUNNING')",
+    "sqlwhere":"deployment_sts in ('PENDING','RUNNING') and (site_id={schema}.my_current_site_id())",
     "buttons":[{ "name":"scheduleDeployment", "link":"Publish_Add","icon":"add","text":"Schedule Deployment" }],
     "fields": [
       {"name":"deployment_id","key":true,"control":"hidden"},
@@ -33,7 +35,7 @@
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
-      "update {schema}.v_my_deployment set deployment_sts='CANCEL' where deployment_id=@deployment_id "
+      "update {schema}.v_my_deployment set deployment_sts='CANCEL' where deployment_id=@deployment_id"
     ],
     "fields": [
       {"name":"deployment_id", "actions":"BU", "type":"bigint", "caption":"Deployment ID", "validate": ["Required"]}

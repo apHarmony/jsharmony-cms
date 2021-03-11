@@ -4,7 +4,7 @@
 <div class='spacer_diff'></div>
 
 <script type="text/x-jsharmony-template" class="<%=model.class%>_template_diff_listing">
-  <h3>Branch Changes (<#=numResolved #>/<#=numConflicts #> conflicts resolved)</h3>
+  <h3>Branch Changes (<#=numResolved #>/<#=numConflicts #> conflicts resolved) <div class="diff_editor_selection_container"></h3>
   <div class="clear"></div>
 
   <!-- ---------- -->
@@ -391,7 +391,7 @@
       <# } #>
 
       <div class="branch_diff_item_details">
-        <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
+        <# _.each(_.pick(diff,['menu_name']), function(val, key){ #>
           <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
         <# }); #>
 
@@ -547,7 +547,7 @@
   <# if(branch_sitemap_action=='DELETE'){ #>
     <i class="material-icons branch_action_icon delete">remove_circle</i>
     DELETED SITEMAP: <#-XExt.escapeHTML(old_sitemap.type)#>
-    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=old_sitemap.key#>" data-sitemap_id="<#=old_sitemap.id#>"><img src="/images/icon_browse.png" />Prev</a>
+    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=sitemap_key#>" data-sitemap_id="<#=old_sitemap.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_sitemap_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
@@ -564,7 +564,7 @@
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_sitemap.type)#>
   <# } #>
   <# if(new_sitemap.id!=null){ #>
-    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=new_sitemap.key#>" data-sitemap_id="<#=new_sitemap.id#>"><img src="/images/icon_browse.png" />Preview</a>
+    <a href="#" class="preview preview_sitemap" data-sitemap_key="<#=sitemap_key#>" data-sitemap_id="<#=new_sitemap.id#>"><img src="/images/icon_browse.png" />Preview</a>
   <# } #>
 </script>
 
@@ -598,12 +598,12 @@
 
       <div class="branch_diff_item_details">
         <# _.each(_.pick(diff,['sitemap_name']), function(val, key){ #>
-          <div class="<%=model.class%>_diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
+          <div class="diff_item"><b>New <#=map(key,'sitemap')#></b>: <#=val#></div>
         <# }); #>
 
         <# _.each(_.pick(diff,['sitemap_items']), function(val, key){ if(val){ #>
-          <div class="<%=model.class%>_diff_head">Content - <#=map(key,'sitemap')#></div>
-          <div class="<%=model.class%>_diff"><#-val#></div>
+          <div class="diff_head">Content - <#=map(key,'sitemap')#></div>
+          <div class="diff"><#-val#></div>
         <# } }); #>
       </div>
     </div>

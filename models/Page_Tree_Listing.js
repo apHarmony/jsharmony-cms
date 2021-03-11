@@ -2,14 +2,7 @@ jsh.App[modelid] = new (function(){
   var _this = this;
 
   this.oninit = function(xmodel){
-    xmodel.controller.grid.OnLoadError = function(err){
-      if(err && err.Number==-14){
-        XExt.Alert('Please checkout a branch', function(){
-          XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true });
-        });
-        return true;
-      }
-    }
+    jsh.System.RequireBranch(xmodel);
 
     if(XExt.hasAction(xmodel.actions, 'IU')){
       xmodel.controller.grid.NoResultsMessage = "<a href='#' class='xgrid_norecords' onclick=\""+jsh._instance+".App['"+xmodel.id+"'].addFile(); return false;\"><img src='<%-jsh._PUBLICURL%>images/icon_insert.png' alt='Add' title='Add' />Add Page</a>";
@@ -93,7 +86,7 @@ jsh.App[modelid] = new (function(){
       //Clear Values / Set Defaults
       jprompt.find('.page_filename').val('');
       jprompt.find('.page_title').val('');
-      jprompt.find('.page_template_id').val(jsh.globalparams.defaultPageTemplate);
+      jprompt.find('.page_template_id').val(jsh.XPage.getBreadcrumbs().site_default_page_template_id);
 
       var jfilename = jprompt.find('.page_filename');
       jprompt.find('.page_filename_default_document').off('click').on('click', function(){
@@ -148,6 +141,7 @@ jsh.App[modelid] = new (function(){
     var page_key = xmodel.get('page_key', rowid);
     var page_title = xmodel.get('page_title', rowid);
     var page_path = xmodel.get('page_path', rowid);
+    var page_folder = xmodel.get('page_folder', rowid);
 
     if(window.opener && jsh._GET.CKEditor){
       window.opener.postMessage('ckeditor:'+JSON.stringify({ page_key: page_key, CKEditorFuncNum: jsh._GET.CKEditorFuncNum }), '*');
@@ -155,7 +149,7 @@ jsh.App[modelid] = new (function(){
     }
     else {
       if(!window.opener) return XExt.Alert('Parent editor not found');
-      window.opener.postMessage('cms_file_picker:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path  }), '*');
+      window.opener.postMessage('cms_file_picker:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path, page_folder: page_folder }), '*');
       window.close();
     }
   }

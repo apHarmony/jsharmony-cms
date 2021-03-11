@@ -36,8 +36,10 @@ jsh.App[modelid] = new (function(){
   }
 
   this.onload = function(){
+    var bcrumbs = jsh.XPage.getBreadcrumbs();
     _this.refreshLayout();
     _this.state.page_folder = xmodel.get('page_folder');
+    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.$root('.bcrumbs_branch_body'), containerClass: 'bcrumbs_editor_selection_container' });
   }
 
   this.ongetstate = function(){ return _this.state; }
@@ -161,8 +163,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.getDefaultPage = function(){
-    if(xmodel.controller.form.LOVs.default_page && xmodel.controller.form.LOVs.default_page[0]) return xmodel.controller.form.LOVs.default_page[0].param_cur_val;
-    return '';
+    return jsh.XPage.getBreadcrumbs().site_default_page_filename;
   }
 
   this.page_folder_onmove = function(dragval, dropval, anchor, e) {

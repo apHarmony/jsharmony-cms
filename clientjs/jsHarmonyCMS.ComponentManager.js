@@ -27,22 +27,25 @@ exports = module.exports = function(jsh, cms){
   var async = jsh.async;
   var ejs = jsh.ejs;
 
-  this.componentTemplates = null;
+  this.componentTemplates = {};
   this.components = {};
   this.isInitialized = false;
   this.lastComponentId = 0;
 
-  this.load = function(onComplete){
-    var url = '../_funcs/templates/component/'+cms.branch_id;
+  this.load = function(onError){
+    _this.loadSystemComponentTemplates(onError);
+  }
+
+  this.loadSystemComponentTemplates = function(onError){
+    var url = '../_funcs/templates/components/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.componentTemplates = rslt.components;
-        async.eachOf(_this.componentTemplates, function(component, key, cb) {
+        async.eachOf(rslt.components, function(component, componentId, cb) {
           var loadObj = {};
-          cms.loader.StartLoading(loadObj);
-          _this.loadTemplate(component, function(err){
+          cms.loader.StartLoading(loadObj, 'CMS Components');
+          _this.downloadRemoteTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
-            _this.parseTemplate(component);
+            _this.addTemplate(componentId, component);
             cb(err)
           });
         }, function(error){
@@ -50,43 +53,129 @@ exports = module.exports = function(jsh, cms){
         });
       }
       else{
-        if(onComplete) onComplete(new Error('Error Loading Components'));
+        if(onError) onError(new Error('Error Loading Components'));
         XExt.Alert('Error loading components');
       }
     }, function (err) {
-      if(onComplete) onComplete(err);
+      if(onError) onError(err);
     });
   };
 
-  this.render = function(container){
+  this.addTemplate = function(componentId, componentTemplate){
+    if(componentId in _this.componentTemplates) return cms.fatalError('Could not add duplicate Component Template "'+componentId+'" - it has already been added');
+    _this.componentTemplates[componentId] = componentTemplate;
+    _this.parseTemplate(componentTemplate);
+    _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
+  }
 
-    $('.jsharmony_cms_component').not('.initialized').each(function(){
+  this.downloadRemoteTemplate = function(componentTemplate, complete_cb) {
+    var url = (componentTemplate.remote_templates || {}).editor;
+    if (!url) return complete_cb();
 
+    $.ajax({
+      type: 'GET',
+      cache: false,
+      url: url,
+      xhrFields: { withCredentials: true },
+      success: function(data){
+        componentTemplate.templates = componentTemplate.templates || {};
+        var template = (componentTemplate.templates.editor || '');
+        data = data && template ? '\n' + data : data || '';
+        componentTemplate.templates.editor = (template + data) || _this.formatComponentError('COMPONENT '+(componentTemplate.id||'').toUpperCase()+' NOT FOUND');
+        complete_cb();
+      },
+      error: function(xhr, status, err){
+        complete_cb(error);
+      }
+    });
+  }
+
+  this.compileTemplates = function(componentTemplates, cb) {
+    XExt.CallAppFunc('../_funcs/templates/compile_components', 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
+      if ('_success' in rslt) {
+        var components = rslt.components;
+        return cb(null, components);
+      }
+      else{
+        return cb(new Error('Error Compiling Inline Components'));
+      }
+    }, function (err) {
+      if(err.Message) return cb(new Error('Error Compiling Inline Components - ' + err.Message));
+      return cb(new Error('Error Compiling Inline Components'));
+    });
+  }
+
+  this.formatComponentError = function(errmsg){
+    return '<span style="color:red;font-weight:bold;font-size:25px;white-space: pre-wrap;">*** '+XExt.escapeHTML(errmsg)+' ***</span>';
+  }
+
+  this.renderPageComponents = function(){
+    $('.jsharmony_cms_component,[cms-component]').not('.initialized').each(function(){
       var jobj = $(this);
+      if(jobj.closest('[cms-content-editor]').length) return; //Do not render components in content editor
+      var component_id = jobj.attr('cms-component');
+      if(!component_id){
+        component_id = jobj.data('id');
+        jobj.attr('cms-component', component_id);
+      }
 
-      var component_id = jobj.data('id');
-      var isCmsComponent = !component_id && jobj.closest('[data-component]').length > 0;
-      if (isCmsComponent) return;
+      var isContentComponent = !component_id && jobj.closest('[data-component]').length > 0;
+      if (isContentComponent) return;
 
       jobj.addClass('initialized mceNonEditable');
       var component_content = '';
-      if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
-      else if(!(component_id in _this.componentTemplates)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
+      if(!component_id) component_content = _this.formatComponentError('*** COMPONENT MISSING data-id ATTRIBUTE ***');
+      else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
       else{
         var component = _this.componentTemplates[component_id];
         var templates = component != undefined ? component.templates : undefined
         var editorTemplate = (templates || {}).editor;
-        component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component_id));
+        var renderOptions = {};
+        //Parse component properties
+        var props = {
+          'cms-menu-tag': { renderOption: 'menu_tag', type: 'string'},
+          'cms-component-properties': { renderOption: 'properties', type: 'json'},
+          'cms-component-data': { renderOption: 'data', type: 'json'},
+        }
+        var renderOptions = {};
+        var hasError = false;
+        for(var propName in props){
+          var prop = props[propName];
+          var propVal = jobj.attr(propName);
+          if(typeof propVal != 'undefined'){
+            if(prop.type=='json'){
+              if(propVal === '') propVal = '{}';
+              try{
+                propVal = JSON.parse(propVal);
+              }
+              catch(ex){
+                component_content = _this.formatComponentError('*** INVALID JSON IN COMPONENT "' + component_id+'", property "'+propName+'": '+ex.toString()+' *** ');
+                hasError = true;
+              }
+            }
+            renderOptions[prop.renderOption] = propVal;
+          }
+        }
+        //Render component
+        try{
+          if(!hasError) component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component, renderOptions));
+        }
+        catch(ex){
+          cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
+        }
       }
       jobj.html(component_content);
     });
+  }
 
-    if(container){
-      $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function() {
-        $(this).attr('data-component-id', _this.getNextComponentId());
-        _this.renderComponent(this);
-      });
-    }
+  this.getDefaultValues = function(model){
+    var rslt = {};
+    if(model) _.each(model.fields, function(field){
+      if(field && field.name && ('default' in field)){
+        rslt[field.name] = field.default;
+      }
+    });
+    return rslt;
   }
 
   this.parseTemplate = function(componentTemplate) {
@@ -134,59 +223,35 @@ exports = module.exports = function(jsh, cms){
     }
   }
 
-  this.loadTemplate = function(componentTemplate, complete_cb) {
-    var url = (componentTemplate.remote_template || {}).editor;
-    if (!url) return complete_cb();
-
-    _this.loadRemoteTemplate(url, function(error, data){
-      if (error) {
-        complete_cb(error);
-      } else {
-        componentTemplate.templates = componentTemplate.templates || {};
-        var template = (componentTemplate.templates.editor || '');
-        data = data && template ? '\n' + data : data || '';
-        componentTemplate.templates.editor = (template + data) || '*** COMPONENT NOT FOUND ***';
-        _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
-        complete_cb();
-      }
-    });
-  }
-
-  this.loadRemoteTemplate = function(templateUrl, complete_cb) {
-    $.ajax({
-      type: 'GET',
-      cache: false,
-      url: templateUrl,
-      xhrFields: { withCredentials: true },
-      success: function(data){
-        return complete_cb(undefined, data);
-      },
-      error: function(xhr, status, err){
-        return complete_cb(err, undefined);
-      }
-    });
-  }
-
   this.getNextComponentId = function() {
     return 'jsharmony_cms_component_' + this.lastComponentId++;
   }
 
-  this.renderComponent = function(element, options) {
+  this.renderContainerContentComponents = function(container, callback){
+    var items = $(container).find('[data-component]').not('.initialized').addClass('initialized');
+    async.each(items, function(item, item_cb){
+      $(item).attr('data-component-id', _this.getNextComponentId());
+      _this.renderContentComponent(item, undefined, item_cb);
+    }, callback);
+  }
+
+  this.renderContentComponent = function(element, options, callback) {
+    if(!callback) callback = function(){};
     options = _.extend({ init: false }, options);
 
     var componentType = $(element).attr('data-component');
     var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
-    if (!componentTemplate) return;
+    if (!componentTemplate) return callback();
 
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
-    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return; }
+    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return callback(); }
 
     //Default component instance
     var component = {
       create: function(componentConfig, element) {
         component = _.extend(new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id), component);
-        component.render();
+        component.render(callback);
         _this.components[componentId] = component;
       },
       onBeforeRender: undefined,
@@ -207,7 +272,7 @@ exports = module.exports = function(jsh, cms){
       $(element).attr('data-is-insert', null);
       if(!options.init){
         element.scrollIntoView(false);
-        _this.components[componentId].openDataEditor();
+        _this.components[componentId].openDefaultEditor();
       }
     }
   }
@@ -226,8 +291,61 @@ exports = module.exports = function(jsh, cms){
     if (componentConfig.data && componentConfig.data.css) {
       cssParts.push(componentConfig.data.css);
     }
-    var id = 'jsharmony_cms_component_' + componentType;
+    var id = 'jsharmony_cms_component_' + (componentConfig.className || jsh.XExt.escapeCSSClass(componentConfig.id, { nodash: true }));
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
+  }
+
+  this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
+    additionalRenderParams = additionalRenderParams || {};
+    renderOptions = _.extend({ data: null, properties: null, renderType: 'component', templateName: null }, renderOptions);
+    var defaultProperties = {};
+    var defaultData = {};
+    if(component){
+      var defaultProperties = cms.componentManager.getDefaultValues(component.properties);
+      var defaultData = cms.componentManager.getDefaultValues(component.data);
+    }
+    var properties = _.extend({}, defaultProperties, renderOptions.properties);
+    var data = { items: [], item: _.extend({}, defaultData) };
+    var rslt = _.extend({
+      baseUrl: '',
+      data: data,
+      properties: properties,
+      renderType: renderOptions.renderType,
+      _: _,
+      escapeHTML: XExt.xejs.escapeHTML,
+      escapeRegEx: XExt.escapeRegEx,
+      stripTags: XExt.StripTags,
+      isNullUndefinedEmpty: XExt.isNullUndefinedEmpty,
+      isNullUndefined: XExt.isNullUndefined,
+      iif: XExt.xejs.iif,
+      isInEditor: true,
+      isInPageEditor: false,
+      isInComponentEditor: false,
+      items: data.items,
+      item: data.item,
+      component: properties,
+      renderPlaceholder: function(){ return ''; },
+      renderTemplate: function(locals, templateName, items){
+        if(!items || (_.isArray(items) && !items.length)) return '';
+        templateName = templateName || '';
+        if(!locals.jsh_render_templates || !(templateName in locals.jsh_render_templates)) throw new Error('renderTemplate Error: Template not found: "'+templateName+'"');
+        return locals.jsh_render_templates[templateName](items||[]);
+      },
+    }, additionalRenderParams);
+
+    if(renderOptions.data){
+      if(_.isArray(renderOptions.data)){
+        data.items = _.map(renderOptions.data, function(item){ return _.extend({}, defaultData, item); });
+        data.item = new Proxy(new Object(), { get: function(target, prop, receiver){ throw new Error('Since component data is an array, assuming this is a multiple_items component.  Please add a "jsh-foreach-item" attribute to the container HTML element, to iterate over the items array.  For example:\r\n<div jsh-foreach-item><%=item.name%></div>'); } });
+      }
+      else {
+        data.item = _.extend(data.item, renderOptions.data);
+        data.items = [data.item];
+      }
+      rslt.items = data.items;
+      rslt.item = data.item;
+    }
+    return rslt;
   }
 }

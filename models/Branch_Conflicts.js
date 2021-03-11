@@ -7,7 +7,6 @@ jsh.App[modelid] = new (function(){
   this.dst_branch_desc = 'Destination';
   this.branch_conflicts = {};
 
-  this.deployment_target_params = {};
   this.numConflicts = 0;
   this.numResolved = 0;
   this.numUnresolved = 0;
@@ -39,7 +38,6 @@ jsh.App[modelid] = new (function(){
 
         _this.src_branch_desc = rslt.src_branch_desc;
         _this.dst_branch_desc = rslt.dst_branch_desc;
-        _this.deployment_target_params = rslt.deployment_target_params;
         _this.branch_conflicts = rslt.branch_conflicts;
         _this.processData();
         
@@ -123,6 +121,8 @@ jsh.App[modelid] = new (function(){
     XExt.trigger(_this.onRenderedConflicts, jdiff);
 
     jdiff.find('.button_execute_merge').on('click', function(e){ _this.executeMerge(this); e.preventDefault(); });
+
+    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), xmodel.get('site_id'), xmodel.get('sys_user_site_editor'), { containerClass: 'diff_editor_selection_container' });
   }
 
   this.previewPage = function(obj){
@@ -134,7 +134,7 @@ jsh.App[modelid] = new (function(){
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { source: 'branch_conflicts', branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, deployment_target_params: _this.deployment_target_params  });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { source: 'branch_conflicts', branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id  });
   }
 
   this.previewMedia = function(obj){

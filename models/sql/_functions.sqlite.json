@@ -1,14 +1,20 @@
 {
   "{schema}.my_user_is_publisher":{
-    "params": [],
+    "params": ["SITE_ID"],
     "sql": [
-      "(select count(*) from jsharmony.sys_user_role where sys_user_id=jsharmony.my_sys_user_id() and sys_role_name='PUBLISHER')"
+      "(case when exists(select * from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=(%%%SITE_ID%%%) and v_sys_user_site_access.sys_user_id=jsharmony.my_sys_user_id() and (v_sys_user_site_access.sys_user_site_access='PUBLISHER' or v_sys_user_site_access.sys_user_site_access='WEBMASTER')) then 1 else 0 end)"
     ]
   },
   "{schema}.my_current_branch_id":{
     "params": [],
     "sql": [
-      "(select branch_id from {schema}.sys_user_branch where {schema}.sys_user_branch.sys_user_id=jsharmony.my_sys_user_id())"
+      "(select sys_user_site.branch_id from {schema}.sys_user_session inner join {schema}.sys_user_site on sys_user_site.sys_user_id = sys_user_session.sys_user_id and sys_user_session.site_id = sys_user_site.site_id where {schema}.sys_user_session.sys_user_id=jsharmony.my_sys_user_id())"
+    ]
+  },
+  "{schema}.my_current_site_id":{
+    "params": [],
+    "sql": [
+      "(select sys_user_session.site_id from {schema}.sys_user_session where sys_user_session.sys_user_id=jsharmony.my_sys_user_id())"
     ]
   },
   "{schema}.my_current_branch_is_editable":{

@@ -1,6 +1,6 @@
 {
   "name": "jsharmony-cms",
-  "version": "1.0.21",
+  "version": "1.0.32",
   "description": "jsHarmony CMS",
   "main": "index.js",
   "scripts": {
@@ -26,14 +26,14 @@
   },
   "dependencies": {
     "async": "^2.6.2",
-    "cheerio": "^1.0.0-rc.3",
     "diff-match-patch": "^1.0.4",
     "diff2html": "^2.12.1",
-    "ejs": "^2.7.2",
+    "ejs": "2.7.4",
     "js-beautify": "^1.11.0",
     "jsharmony": "^1.1.201",
     "jsharmony-factory": "^1.1.97",
     "lodash": "^4.17.19",
+    "parse5": "^6.0.1",
     "ssh2": "^0.8.9",
     "yauzl": "^2.10.0",
     "yazl": "^2.5.1"

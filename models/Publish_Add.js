@@ -1,6 +1,29 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
+  this.onload = function(){
+    var firstSite = _.find(xmodel.controller.getLOV('site_id'),function(item){ return !!(item&&item.code_val) });
+    if(firstSite){
+      xmodel.set('site_id', firstSite.code_val);
+    }
+    else{
+      XExt.Alert('Please checkout an active site to publish', function(){
+        XExt.navTo(jsh._BASEURL+'{namespace}Site_Listing', { force: true })
+      });
+      return false;
+    }
+    function autoSelectOneDropdownItem(fieldName, jobj){
+      if(jobj.val()) return;
+      var allOptions = [];
+      jobj.find('option').each(function(){ var val = $(this).attr('value'); if(val) allOptions.push(val); });
+      if(allOptions.length==1) xmodel.set(fieldName, allOptions[0]);
+    }
+    //Wait for LOVs to update
+    setTimeout(function(){
+      autoSelectOneDropdownItem('deployment_target_id', jsh.$root('.deployment_target_id.xelem'+xmodel.class));
+    }, 1);
+  }
+
   this.publish = function(){
     if(!xmodel.controller.form.Data.Commit()) return;
     var deployment_target_id = xmodel.get('deployment_target_id');

@@ -1,0 +1,15 @@
+{
+  "Site_Editor": {
+    "layout": "exec",
+    "title": "Update site editor",
+    "actions": "U",
+    "roles": {"*": "U"},
+    "sqlexec": [
+      "update {schema}.v_my_site set sys_user_site_editor=@sys_user_site_editor where site_id=@site_id;"
+    ],
+    "fields": [
+      {"name":"site_id", "actions":"U", "type":"bigint", "caption":"Site ID", "validate": ["Required"]},
+      {"name":"sys_user_site_editor", "actions":"U", "type":"bigint", "caption":"Site Editor"},
+    ]
+  },
+}

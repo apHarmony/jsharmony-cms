@@ -1,0 +1,21 @@
+<%
+var iconHtml = '';
+if(componentConfig && componentConfig.icon){
+  if(XExt.beginsWith(componentConfig.icon,'material:')){
+    iconHtml = '<span class="material-icons">'+componentConfig.icon.substr(('material:').length)+'</span>';
+  }
+  else if(XExt.beginsWith(componentConfig.icon,'svg:')){
+    iconHtml = componentConfig.icon.substr(('svg:').length);
+  }
+  else if(XExt.beginsWith(componentConfig.icon,'html:')){
+    iconHtml = componentConfig.icon.substr(('html:').length);
+  }
+}
+%>
+<div class="jsharmony_cms_component_preview empty">
+  <div><h3><%=componentConfig.title%></h3></div>
+  <div><%-iconHtml%></div>
+  <% if(errors){ %>
+    <pre class="jsharmony_cms_component_error"><%=errors%></pre>
+  <% } %>
+</div>

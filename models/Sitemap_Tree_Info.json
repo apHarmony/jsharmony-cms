@@ -68,7 +68,7 @@
       {"name":"sitemap_item_hide_menu_children","control":"checkbox","controlstyle":"margin-left:70px;","caption":"","caption_ext":"Menu: Hide Children","controlparams":{"value_true":1,"value_false":0},"nl":true},
       {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_hide_menu_children\").click();'>Menu: Hide Children</label>"},
 
-      {"control":"hidden", "name":"page_template_id", "lov":{ "values": "#CMS_PAGE_TEMPLATES" } }
+      {"control":"hidden", "name":"page_template_id", "lov":"#LOV_CMS_PAGE_TEMPLATES" }
 	  ]
   }
 }

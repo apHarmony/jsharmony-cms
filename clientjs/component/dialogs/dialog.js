@@ -47,7 +47,7 @@ var OverlayService = require('./overlayService');
 /**
  *  Called when the dialog is first opened
  * @callback Dialog~beforeOpenCallback
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {Function} onComplete - Should be called by handler when complete
  */
 
@@ -68,7 +68,7 @@ var OverlayService = require('./overlayService');
  *  Called when the dialog is first opened
  * @callback Dialog~openedCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {Function} acceptFunc - Call this function to trigger accept logic
  * @param {Function} cancelFunc - Call this function to trigger cancel logic
  */
@@ -76,11 +76,13 @@ var OverlayService = require('./overlayService');
  /**
   * @class
   * @param {Object} jsh
+  * @param {Object} cms
   * @param {Object} model - the model that will be loaded into the virtual model
   * @param {DialogConfig} config - the dialog configuration
   */
-function Dialog(jsh, model, config) {
+function Dialog(jsh, cms, model, config) {
   this._jsh = jsh;
+  this._cms = cms;
   this._model = model;
   this._id = config.dialogId ? config.dialogId : this.getNextId();
   /** @type {DialogConfig} */
@@ -90,7 +92,7 @@ function Dialog(jsh, model, config) {
 
   this.overlayService = new OverlayService(this);
 
-  this._jsh.$('body').append(this._$wrapper)
+  this._jsh.$(this._jsh.root).append(this._$wrapper)
 
   /**
    * @public
@@ -184,9 +186,9 @@ Dialog.prototype.getScrollTop = function($wrapper) {
  * @private
  */
 Dialog.prototype.load = function(callback) {
-  var self = this;
-  this._jsh.XPage.LoadVirtualModel(self._jsh.$(self.getFormSelector()), this._model, function(xModel) {
-    callback(xModel);
+  var _this = this;
+  this._jsh.XPage.LoadVirtualModel(_this._jsh.$(_this.getFormSelector()), this._model, function(xmodel) {
+    callback(xmodel);
   });
 }
 
@@ -225,49 +227,56 @@ Dialog.prototype.open = function() {
     throw new Error('Dialog ' + this._id + ' has already been destroyed.');
   }
 
-  var self = this;
+  var _this = this;
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
-  this.load(function(xModel) {
+  var hasToolbarOffset = !!_this._cms.editor.getOffsetTop();
+  var wasAtTop = !$(document).scrollTop();
+
+  this.load(function(xmodel) {
 
 
-    var $wrapper = self._jsh.$(formSelector);
-    self.registerLovs(xModel);
+    var $wrapper = _this._jsh.$(formSelector);
+    _this.registerLovs(xmodel);
     var lastScrollTop = 0
-    self._jsh.XExt.execif(self.onBeforeOpen,
+    _this._jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xModel, f);
+        _this.onBeforeOpen(xmodel, f);
       },
       function(){
         /** @type {DialogResizer} */
         var dialogResizer = undefined;
 
-        self._jsh.XExt.CustomPrompt(formSelector, self._jsh.$(formSelector),
-          function(acceptFunc, cancelFunc) {
-            self.overlayService.pushDialog($wrapper);
-            lastScrollTop = self.getScrollTop($wrapper);
-            dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xModel, acceptFunc, cancelFunc);
+        _this._jsh.XExt.CustomPrompt(formSelector, _this._jsh.$(formSelector),
+          function(acceptFunc, cancelFunc) { //onInit
+            _this.overlayService.pushDialog($wrapper);
+            lastScrollTop = _this.getScrollTop($wrapper);
+            dialogResizer = new DialogResizer($wrapper[0], _this._jsh);
+            if (_.isFunction(_this.onOpened)) _this.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
           },
-          function(success) {
-            lastScrollTop = self.getScrollTop($wrapper);
-
-            if (_.isFunction(self.onAccept)) self.onAccept(success);
+          function(success) { //onAccept
+            if (_.isFunction(_this.onAccept)) _this.onAccept(success);
           },
-          function(options) {
-            lastScrollTop = self.getScrollTop($wrapper);
-            if (_.isFunction(self.onCancel)) return self.onCancel(options);
+          function(options) { //onCancel
+            if (_.isFunction(_this.onCancel)) return _this.onCancel(options);
             return false;
           },
-          function() {
-            if (oldActive) oldActive.focus();
-            self.setScrollTop(lastScrollTop, $wrapper);
+          function() { //onClosed
             dialogResizer.closeDialog();
-            if(_.isFunction(self.onClose)) self.onClose();
-            self.destroy();
-            self.overlayService.popDialog();
+            if(_.isFunction(_this.onClose)) _this.onClose();
+            _this.destroy();
+            _this.overlayService.popDialog();
           },
-          { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
+          {
+            reuse: false,
+            backgroundClose: _this._config.closeOnBackdropClick,
+            restoreFocus: false,
+            onClosing: function(cb){
+              if (oldActive) oldActive.focus();
+              _this.setScrollTop(lastScrollTop, $wrapper);
+              return cb();
+            }
+          }
         );
       }
     );
@@ -277,9 +286,9 @@ Dialog.prototype.open = function() {
 /**
  * Register the LOVs defined in the model.
  * @private
- * @param {Object} xModel
+ * @param {Object} xmodel
  */
-Dialog.prototype.registerLovs = function(xModel) {
+Dialog.prototype.registerLovs = function(xmodel) {
   _.forEach(this._model.fields, function(field) {
     if (field.type == undefined || field.lov == undefined) return;
 
@@ -293,7 +302,7 @@ Dialog.prototype.registerLovs = function(xModel) {
       });
     }
     if (lovs) {
-      xModel.controller.setLOV(field.name, lovs);
+      xmodel.controller.setLOV(field.name, lovs);
     }
   });
 }

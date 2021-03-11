@@ -26,6 +26,9 @@ exports = module.exports = function(jsh, cms){
   this.init = function(cb){
   }
 
+  this.initDevMode = function(cb){
+  }
+
   this.load = function(cb){
   }
 
@@ -46,13 +49,7 @@ exports = module.exports = function(jsh, cms){
   this.save = function(){
   }
 
-  this.getComponentRenderParameters = function(component_id){
-    return {};
-  }
-
-  this.getMenuRenderParameters = function(menu_tag){
-    return {
-      menu: { menu_item_tree: [] }
-    };
+  this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
+    return cms.componentManager.getComponentRenderParameters(component, renderOptions, additionalRenderParams);
   }
 }

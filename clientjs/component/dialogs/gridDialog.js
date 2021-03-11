@@ -38,7 +38,7 @@ var Dialog = require('./dialog');
 /**
  *  Called when the dialog is first opened
  * @callback GridDialog~beforeOpenCallback
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  * @param {string} dialogSelector - the CSS selector that can be used to select the dialog component once opened.
  * @param {Function} onComplete - Should be called by handler when complete
  */
@@ -47,24 +47,26 @@ var Dialog = require('./dialog');
   * Called when the dialog is first opened
   * @callback GridDialog~dialogOpenedCallback
   * @param {JQuery} dialogWrapper - the dialog wrapper element
-  * @param {Object} xModel - the JSH model instance
+  * @param {Object} xmodel - the JSH model instance
   */
 
 /**
  * Called when the dialog closes
  * @callback GridDialog~closeCallback
  * @param {JQuery} dialogWrapper - the dialog wrapper element
- * @param {Object} xModel - the JSH model instance
+ * @param {Object} xmodel - the JSH model instance
  */
 
 /**
  * @class
  * @param {Object} jsh
+ * @param {Object} cms
  * @param {Object} model
  * @param {GridDialogConfig} config
  */
-function GridDialog(jsh, model, config) {
+function GridDialog(jsh, cms, model, config) {
   this.jsh = jsh;
+  this.cms = cms;
   this._model = model;
   this._config = config || {};
 
@@ -92,12 +94,12 @@ function GridDialog(jsh, model, config) {
  * @public
  */
 GridDialog.prototype.open = function() {
-  var self = this;
+  var _this = this;
 
   /** @type {GridDialogConfig} */
   var config = this._config;
 
-  var dialog = new Dialog(this.jsh, this._model, {
+  var dialog = new Dialog(this.jsh, this.cms, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
     dialogId: config.dialogId,
@@ -110,15 +112,15 @@ GridDialog.prototype.open = function() {
   });
 
   var controller = undefined;
-  var xModel = undefined;
+  var xmodel = undefined;
   var $dialog = undefined;
 
-  dialog.onBeforeOpen = function(_xModel, onComplete) {
-    xModel = _xModel;
-    controller = _xModel.controller;
-    self.jsh.XExt.execif(self.onBeforeOpen,
+  dialog.onBeforeOpen = function(_xmodel, onComplete) {
+    xmodel = _xmodel;
+    controller = _xmodel.controller;
+    _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xModel, dialog.getFormSelector(), f);
+        _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         if(onComplete) onComplete();
@@ -126,17 +128,17 @@ GridDialog.prototype.open = function() {
     );
   }
 
-  dialog.onOpened = function(_$dialog, _xModel, acceptFunc, cancelFunc) {
+  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.grid.Prop.Enabled = true;
     controller.Render(function() {
-      if (_.isFunction(self.onOpened)) self.onOpened(_$dialog, xModel);
+      if (_.isFunction(_this.onOpened)) _this.onOpened(_$dialog, xmodel);
     });
   }
 
   dialog.onCancel = function(options) {
     if (!options.force && controller.HasUpdates()) {
-      self.jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this.jsh.XExt.Confirm('Close without saving changes?', function() {
         controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -146,7 +148,7 @@ GridDialog.prototype.open = function() {
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xModel);
+    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
   }
 
   dialog.open();

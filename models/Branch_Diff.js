@@ -30,6 +30,7 @@ jsh.App[modelid] = new (function(){
     } else {
       jsh.$root('.branch_merge_desc').hide();
     }
+    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), xmodel.get('site_id'), xmodel.get('sys_user_site_editor'), { containerClass: 'diff_editor_selection_container' });
     //Load API Data
     this.loadData();
   }

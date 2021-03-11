@@ -5,6 +5,7 @@
     "columns": [
       { "name": "page_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" } },
+      { "name": "site_id", "type": "bigint", "null": false },
       { "name": "page_file_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "page_orig_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "page_title", "type": "varchar", "length": 1024 },
@@ -33,16 +34,18 @@
           "errorif((inserted(page_folder) is not null),'Cannot set page_folder - this is a calculated field');",
           "errorif((inserted(page_filename) is not null),'Cannot set page_filename - this is a calculated field');",
           "errorif((inserted(page_path) = ''),'Page path is required');",
-          "errorif((inserted(page_filename) is not null) and (inserted(page_is_folder) = 1),'Cannot set page_filename on folder');"
+          "errorif((($ifnull(inserted(page_is_folder),0) = 0) and ({schema}.filename(inserted(page_path)) = '')),'Invalid page_path - filename is required');",
+          "errorif((inserted(page_filename) is not null) and (inserted(page_is_folder) = 1),'Cannot set page_filename on folder');",
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
         ]
       },
       { "on": ["insert"], "exec": [
           "setif(null(page.page_key),page_key,page.page_id);",
           "setif(null(page.page_file_id) and ($ifnull(page.page_is_folder,0)=0),page_file_id,page.page_id);",
-          "setif(null(page.page_template_id) and ($ifnull(page.page_is_folder,0)=0),page_template_id,'default');",
+          "setif(null(page.page_template_id) and ($ifnull(page.page_is_folder,0)=0),page_template_id,'<Raw Text>');",
           "setif(null(page.page_author),page_author,jsharmony.my_sys_user_id());",
           "setif(null(page.page_folder),page_folder,{schema}.dirname(page.page_path));",
-          "setif(null(page.page_filename),page_filename,(case when page.page_is_folder=1 then null when {schema}.filename(page.page_path) = '' then (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE') else {schema}.filename(page.page_path) end));",
+          "setif(null(page.page_filename),page_filename,(case when page.page_is_folder=1 then null else {schema}.filename(page.page_path) end));",
           "setif(concat(page.page_folder,page.page_filename)<>page.page_path,page_path,concat(page.page_folder,page.page_filename));"
         ]
       },
@@ -53,7 +56,8 @@
           "errorif(update(page_filename) and (deleted(page_filename) is not null),'Cannot update page_filename');",
           "errorif(update(page_path) and (deleted(page_path) is not null and (({schema}.filename(deleted(page_path)) <> '') or (deleted(page_is_folder)=1))),'Cannot update page_path');",
           "errorif(update(page_is_folder) and (deleted(page_is_folder) is not null),'Cannot update page_is_folder');",
-          "errorif(update(page_template_id) and (deleted(page_template_id) is not null),'Cannot update page_template_id');"
+          "errorif(update(page_template_id) and (deleted(page_template_id) is not null),'Cannot update page_template_id');",
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -63,8 +67,8 @@
       }
     ],
     "sample_data": [
-      { "page_path": "/index.html", "page_title": "Welcome", "page_author": 1, "page_template_id": "default", "_FILES": { "page_sample.json": "page/{{page_id}}.json" } },
-      { "page_path": "/style-guide.html", "page_title": "Style Guide", "page_author": 1, "page_template_id": "default", "_FILES": { "page_style_guide.json": "page/{{page_id}}.json" } }
+      { "site_id": 1, "page_path": "/index.html", "page_title": "Welcome", "page_author": 1, "page_template_id": "default", "_FILES": { "page_sample.json": "page/{{page_id}}.json" } },
+      { "site_id": 1, "page_path": "/style-guide.html", "page_title": "Style Guide", "page_author": 1, "page_template_id": "default", "_FILES": { "page_style_guide.json": "page/{{page_id}}.json" } }
     ]
   },
 
@@ -109,6 +113,7 @@
         "columns": [
           "page_id",
           "page_key",
+          "site_id",
           "page_file_id",
           "page_orig_id",
           "page_title",
@@ -146,10 +151,10 @@
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
             "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
-            "errorif(exists(select * from {schema}.v_my_page where (page_path=(case when page_is_folder=1 then inserted(page_path) when {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),(select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE')) else inserted(page_path) end))),'Page file name already exists');",
+            "errorif(exists(select * from {schema}.v_my_page where (page_path=inserted(page_path))),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end)))),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
-            "  insert into page(page_file_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(inserted(page_file_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
+            "  insert into page(site_id, page_file_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values({schema}.my_current_site_id(), inserted(page_file_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
             "  return_insert_key(page, page_key, (page_key=@@INSERT_ID));",
             "  insert into branch_page(branch_id, page_key, page_id, branch_page_action) values ({schema}.my_current_branch_id(), @@INSERT_ID, @@INSERT_ID, 'ADD');",
             "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = @@INSERT_ID and {schema}.my_current_branch_is_versioned()=0;",
@@ -163,10 +168,10 @@
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
             "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
-            "errorif(exists(select * from {schema}.v_my_page where (page_path=(case when page_is_folder=1 then inserted(page_path) when {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),(select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='DEFAULT_PAGE')) else inserted(page_path) end)) and page_key<>deleted(page_key)),'Page file name already exists');",
+            "errorif(exists(select * from {schema}.v_my_page where (page_path=inserted(page_path)) and page_key<>deleted(page_key)),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end))) and page_key<>deleted(page_key)),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
-            "  insert into page(page_key, page_file_id, page_orig_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), deleted(page_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
+            "  insert into page(site_id, page_key, page_file_id, page_orig_id, page_title, page_path, page_tags, page_author, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_review_sts, page_lang, page_is_folder) values(deleted(site_id), deleted(page_key), (case when inserted(page_file_id) is null then null else deleted(page_file_id) end), deleted(page_id), inserted(page_title), inserted(page_path), inserted(page_tags), inserted(page_author), inserted(page_template_id), inserted(page_seo_title), inserted(page_seo_canonical_url), inserted(page_seo_metadesc), inserted(page_review_sts), inserted(page_lang), $ifnull(inserted(page_is_folder),0)),",
             "  update branch_page set page_id=@@INSERT_ID,branch_page_action=(case branch_page_action when 'ADD' then 'ADD' else 'UPDATE' end) where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key);",
             "  update branch_page set page_orig_id=page_id,branch_page_action=NULL where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and {schema}.my_current_branch_is_versioned()=0;",
             "  update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",

@@ -60,73 +60,82 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      var branch_data = {
-        _DBContext: req._DBContext,
-        branch_id: branch_id,
-        deployment_target_params: undefined,
-        deployment_target__id: undefined,
-      };
-      var branch_diff = {};
+      var baseurl = req.baseurl;
+      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
 
-      async.waterfall([
+      funcs.validateBranchAccess(req, res, branch_id, 'R%', undefined, function(){
+        var branch_data = {
+          _DBContext: req._DBContext,
+          baseurl: baseurl,
+          branch_id: branch_id,
+          deployment_target_params: undefined,
+          site_id: null,
+          page_templates: null,
+          deployment_target_id: undefined,
+        };
+        var branch_diff = {};
 
-        //Get deployment_target_params for branch
-        function(cb){
-          var sql = "select site_editor deployment_target_id,deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
-          appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; return cb(err); }
-            if(rslt && rslt[0]){
-              try{
-                branch_data.deployment_target_id = rslt[0].deployment_target_id;
-                branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
+        async.waterfall([
+
+          //Get deployment_target_params for branch
+          function(cb){
+            var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
+            appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+              if (err != null) { err.sql = sql; return cb(err); }
+              if(rslt && rslt[0]){
+                try{
+                  branch_data.deployment_target_id = rslt[0].deployment_target_id;
+                  branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
+                  branch_data.site_id = rslt[0].site_id;
+                }
+                catch(ex){}
               }
-              catch(ex){}
-            }
-            return cb();
-          });
-        },
+              return cb();
+            });
+          },
 
-        //Run onBeforeDiff functions
-        function(cb){
-          async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-            if(!branch_item.diff) return branch_item_cb();
-            Helper.execif(branch_item.diff.onBeforeDiff,
-              function(f){
-                branch_item.diff.onBeforeDiff(branch_data, f);
-              },
-              branch_item_cb
-            );
-          }, cb);
-        },
-
-        //Get all branch data
-        function(cb){
-          async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-            if(!branch_item.diff) return branch_item_cb();
-            var sql = "select branch_{item}.{item}_key, branch_{item}.branch_{item}_action, branch_{item}.{item}_id, branch_{item}.{item}_orig_id" +
-              _.map(branch_item.diff.columns || [], function(column_name){ return ', old_{item}.' + column_name + ' old_' + column_name + ', new_{item}.' + column_name + ' new_' + column_name + ' '; }).join('') +
-              "from {tbl_branch_item} branch_{item} \
-                left outer join {tbl_item} old_{item} on old_{item}.{item}_id=branch_{item}.{item}_orig_id \
-                left outer join {tbl_item} new_{item} on new_{item}.{item}_id=branch_{item}.{item}_id \
-              where branch_id=@branch_id and branch_{item}_action is not null" + (branch_item.diff.sqlwhere ? ' and (' + branch_item.diff.sqlwhere + ')' : '');
-            appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(rslt && rslt[0]) branch_diff[branch_item_type] = rslt[0];
-
-              //Run onDiff function
-              Helper.execif(branch_item.diff.onDiff,
+          //Run onBeforeDiff functions
+          function(cb){
+            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+              if(!branch_item.diff) return branch_item_cb();
+              Helper.execif(branch_item.diff.onBeforeDiff,
                 function(f){
-                  branch_item.diff.onDiff(branch_diff[branch_item_type], branch_data, f);
+                  branch_item.diff.onBeforeDiff(branch_data, f);
                 },
                 branch_item_cb
               );
-            });
-          }, cb);
-        },
-      ], function(err){
-        if(err) return Helper.GenError(req, res, -99999, err.toString());
-        var rslt = { _success: 1, branch_diff: _.pickBy(branch_diff, function(branch_items){ return !!branch_items.length; }) };
-        res.end(JSON.stringify(rslt));
+            }, cb);
+          },
+
+          //Get all branch data
+          function(cb){
+            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+              if(!branch_item.diff) return branch_item_cb();
+              var sql = "select branch_{item}.{item}_key, branch_{item}.branch_{item}_action, branch_{item}.{item}_id, branch_{item}.{item}_orig_id" +
+                _.map(branch_item.diff.columns || [], function(column_name){ return ', old_{item}.' + column_name + ' old_' + column_name + ', new_{item}.' + column_name + ' new_' + column_name + ' '; }).join('') +
+                "from {tbl_branch_item} branch_{item} \
+                  left outer join {tbl_item} old_{item} on old_{item}.{item}_id=branch_{item}.{item}_orig_id \
+                  left outer join {tbl_item} new_{item} on new_{item}.{item}_id=branch_{item}.{item}_id \
+                where branch_id=@branch_id and branch_{item}_action is not null" + (branch_item.diff.sqlwhere ? ' and (' + branch_item.diff.sqlwhere + ')' : '');
+              appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(rslt && rslt[0]) branch_diff[branch_item_type] = rslt[0];
+
+                //Run onDiff function
+                Helper.execif(branch_item.diff.onDiff,
+                  function(f){
+                    branch_item.diff.onDiff(branch_diff[branch_item_type], branch_data, f);
+                  },
+                  branch_item_cb
+                );
+              });
+            }, cb);
+          },
+        ], function(err){
+          if(err) return Helper.GenError(req, res, -99999, err.toString());
+          var rslt = { _success: 1, branch_diff: _.pickBy(branch_diff, function(branch_items){ return !!branch_items.length; }) };
+          res.end(JSON.stringify(rslt));
+        });
       });
       return;
     }
@@ -227,9 +236,10 @@ module.exports = exports = function(module, funcs){
       //Get page file content
       function(cb){
         async.eachOfSeries(updated_pages, function(page, page_id, page_cb){
-          funcs.getClientPage(page, null, function(err, clientPage){
+          funcs.getClientPage(branch_data._DBContext, page, null, branch_data.site_id, { includeExtraContent: true, pageTemplates: branch_data.page_templates }, function(err, clientPage){
             if(err) return page_cb(err);
             if(!clientPage) return page_cb(null);
+            funcs.localizePageURLs(clientPage.page, branch_data.baseurl, !!clientPage.template.raw, null);
             page.compiled = clientPage.page;
             page.template = clientPage.template;
             if(page.compiled.content){
@@ -311,7 +321,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branch_data.branch_id };
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
+        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
           from "+(module.schema?module.schema+'.':'')+"menu menu \
           where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
                 menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
@@ -329,11 +339,10 @@ module.exports = exports = function(module, funcs){
       //Get menu file content
       function(cb){
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, { }, function(err, menu_content){
+          funcs.getClientMenu(menu, function(err, menu_content){
             if(err) return menu_cb(err);
             if(!menu_content) return menu_cb(null);
             menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, branch_data.page_keys, branch_data.media_keys);
-            menu.template_title = menu_content.template.title;
             return menu_cb();
           });
         }, cb);
@@ -405,11 +414,11 @@ module.exports = exports = function(module, funcs){
     if(!old_page || !new_page) return null;
     var diff = {};
     _.each(['css','header','footer'], function(key){
-      var key_diff = funcs.diffHTML(old_page.compiled[key], new_page.compiled[key]);
+      var key_diff = funcs.diffPageHTML(old_page.compiled[key], new_page.compiled[key]);
       if(key_diff) diff[key] = key_diff;
     });
     _.each(['properties'], function(key){
-      var key_diff = funcs.diffHTML(JSON.stringify(old_page.compiled[key],null,4), JSON.stringify(new_page.compiled[key], null, 4));
+      var key_diff = funcs.diffPageHTML(JSON.stringify(old_page.compiled[key],null,4), JSON.stringify(new_page.compiled[key], null, 4));
       if(key_diff) diff[key] = key_diff;
     });
     var old_content_keys = _.keys(old_page.compiled.content);
@@ -420,10 +429,12 @@ module.exports = exports = function(module, funcs){
     diff.content_elements = {};
     for(var key in old_page.template.content_elements){ diff.content_elements[key] = old_page.template.content_elements[key].title; }
     for(var key in new_page.template.content_elements){ diff.content_elements[key] = new_page.template.content_elements[key].title; }
+    for(var key in new_page.compiled.content){ if(!(key in diff.content_elements)) diff.content_elements[key] = key; }
+    for(var key in old_page.compiled.content){ if(!(key in diff.content_elements)) diff.content_elements[key] = key; }
 
     diff.content = {};
     for(var key in old_page.compiled.content){
-      var content_diff = funcs.diffHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
+      var content_diff = funcs.diffPageHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
       diff.content[key] = content_diff;
     }
     _.each(['page_title','template_title','page_tags'], function(key){
@@ -446,9 +457,9 @@ module.exports = exports = function(module, funcs){
 
   exports.menuDiff = function(old_menu, new_menu){
     var diff = {};
-    var menu_items_diff = funcs.diffHTML(old_menu.menu_items_text, new_menu.menu_items_text);
+    var menu_items_diff = funcs.diffText(old_menu.menu_items_text, new_menu.menu_items_text);
     if(menu_items_diff) diff.menu_items = menu_items_diff;
-    _.each(['menu_name','menu_tag','template_title','menu_path'], function(key){
+    _.each(['menu_name','menu_tag'], function(key){
       if(old_menu[key] != new_menu[key]) diff[key] = new_menu[key];
     });
     return diff;
@@ -456,7 +467,7 @@ module.exports = exports = function(module, funcs){
 
   exports.sitemapDiff = function(old_sitemap, new_sitemap){
     var diff = {};
-    var sitemap_items_diff = funcs.diffHTML(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
+    var sitemap_items_diff = funcs.diffText(old_sitemap.sitemap_items_text, new_sitemap.sitemap_items_text);
     if(sitemap_items_diff) diff.sitemap_items = sitemap_items_diff;
     _.each(['sitemap_name','sitemap_type'], function(key){
       if(old_sitemap[key] != new_sitemap[key]) diff[key] = new_sitemap[key];
@@ -464,11 +475,17 @@ module.exports = exports = function(module, funcs){
     return diff;
   }
 
-  exports.diffHTML = function(a, b){
+  exports.diffPageHTML = function(a, b){
     if(a==b) return '';
 
-    a = funcs.prettyComponents(a);
-    b = funcs.prettyComponents(b);
+    a = funcs.renderComponentsPretty(a);
+    b = funcs.renderComponentsPretty(b);
+
+    return funcs.diffText(a, b);
+  }
+
+  exports.diffText = function(a, b){
+    if(a==b) return '';
 
     var diff_lines = dmp.diff_linesToChars_(a, b);
     var diff_lineText1 = diff_lines.chars1;

@@ -136,9 +136,10 @@ module.exports = exports = function(module, funcs){
       //Get page file content
       function(cb){
         async.eachOfSeries(updated_pages, function(page, page_id, page_cb){
-          funcs.getClientPage(page, null, function(err, clientPage){
+          funcs.getClientPage(branch_data._DBContext, page, null, branch_data.site_id, { includeExtraContent: true, pageTemplates: branch_data.page_templates }, function(err, clientPage){
             if(err) return page_cb(err);
             if(!clientPage) return page_cb(null); 
+            funcs.localizePageURLs(clientPage.page, branch_data.baseurl, !!clientPage.template.raw, null);
             page.compiled = clientPage.page;
             page.template = clientPage.template;
             if(page.compiled.content){
@@ -249,7 +250,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
         var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
+        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
           from "+(module.schema?module.schema+'.':'')+"menu menu \
           where\
                 menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@src_branch_id and branch_menu_action is not null) or \
@@ -272,11 +273,10 @@ module.exports = exports = function(module, funcs){
       //Get menu file content
       function(cb){
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, {}, function(err, menu_content){
+          funcs.getClientMenu(menu, function(err, menu_content){
             if(err) return menu_cb(err);
             if(!menu_content) return menu_cb(null);
             menu.menu_items_text = funcs.prettyMenu(menu_content.menu_items, branch_data.page_keys, branch_data.media_keys);
-            menu.template_title = menu_content.template.title;
             return menu_cb();
           });
         }, cb);
@@ -439,14 +439,14 @@ module.exports = exports = function(module, funcs){
       var newer = src.id;
       var older = dst.id;
       var cur_depth = 0;
-      while (newer && newer > older && cur_depth++ < 200) {
+      while (newer && (parseInt(newer) > parseInt(older)) && (cur_depth++ < 200)) {
         newer = parent[newer];
       }
       return newer != older;
     });
   }
 
-  exports.conflicts = function(context, src_branch_id, dst_branch_id, callback) {
+  exports.conflicts = function(context, baseurl, src_branch_id, dst_branch_id, callback) {
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -459,7 +459,10 @@ module.exports = exports = function(module, funcs){
       src_branch_id: src_branch_id,
       dst_branch_id: dst_branch_id,
       deployment_target_params: undefined,
-      _DBContext: context
+      page_templates: null,
+      site_id: null,
+      _DBContext: context,
+      baseurl: baseurl,
     };
 
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
@@ -473,13 +476,14 @@ module.exports = exports = function(module, funcs){
 
       //Get deployment target params
       function(cb){
-        var sql = "select site_editor deployment_target_id,deployment_target_params from "+(module.schema?module.schema+'.':'')+"branch left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = branch.site_id where branch_id=@dst_branch_id";
+        var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@dst_branch_id";
         appsrv.ExecRow(context, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
             try{
               branch_data.deployment_target_id = rslt[0].deployment_target_id;
               branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
+              branch_data.site_id = rslt[0].site_id;
             }
             catch(ex){}
           }
@@ -604,7 +608,6 @@ module.exports = exports = function(module, funcs){
         _success: 1,
         src_branch_desc: src_branch_desc,
         dst_branch_desc: dst_branch_desc,
-        deployment_target_params: branch_data.deployment_target_params,
         branch_conflicts: branch_conflicts,
       });
     });
@@ -646,7 +649,10 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      funcs.conflicts(req._DBContext, src_branch_id, dst_branch_id, function(err, result) {
+      var baseurl = req.baseurl;
+      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+
+      funcs.conflicts(req._DBContext, baseurl, src_branch_id, dst_branch_id, function(err, result) {
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify(result));
@@ -700,6 +706,7 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('U', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
+      //Validate user has access to branch
       var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
       appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }

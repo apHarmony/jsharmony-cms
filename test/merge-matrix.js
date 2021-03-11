@@ -1,3 +1,22 @@
+/*
+Copyright 2020 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 // Test files must be run from an application with a configured database
 // e.g. "mocha node_modules/jsharmony-cms/test --reporter spec"
 
@@ -541,16 +560,6 @@ describe('Merges - Matrix', function() {
           });
         },
         function(cb){
-          // create destiniation branch
-          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
-          select branch_id from cms.v_my_current_branch;"
-          db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
-            assert.ifError(err);
-            testDstBranchId = dbrslt;
-            cb();
-          });
-        },
-        function(cb){
           // create source branch
           var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Source Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
           select branch_id from cms.v_my_current_branch;"
@@ -560,15 +569,25 @@ describe('Merges - Matrix', function() {
             cb();
           });
         },
+        function(cb){
+          // create destination branch
+          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
+          select branch_id from cms.v_my_current_branch;"
+          db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
+            assert.ifError(err);
+            testDstBranchId = dbrslt;
+            cb();
+          });
+        },
       function(cb){
           // create test pages
           var sql = 
-          "insert into cms.page(page_path) values('Merge Test Data: src orig');\
-          insert into cms.page(page_key, page_path) select page_key, 'Merge Test Data: dst orig' from cms.page where page_path = 'Merge Test Data: src orig';\
-          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
-          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
-          insert into cms.page(page_key, page_path, page_orig_id) select page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
-          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%'"
+          "insert into cms.page(site_id,page_path) values((select site_id from cms.site where site_name='Merge Test Data'), 'Merge Test Data: src orig');\
+          insert into cms.page(site_id,page_key, page_path) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: dst orig' from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
+          insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
+          insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
+          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%' order by page_id;"
           db.Recordset('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testPageKey = dbrslt[0].page_key;
@@ -645,10 +664,18 @@ describe('Merges - Matrix', function() {
       setupBranchPage(testDstBranchId, testPageKey, dstPage),
       function(cb) {
         console.log('conflicts for ', label);
-        jsh.Modules.jsHarmonyCMS.funcs.conflicts('S1', testSrcBranchId, testDstBranchId, function(err, results) {
+        jsh.Modules.jsHarmonyCMS.funcs.conflicts('S1', '', testSrcBranchId, testDstBranchId, function(err, results) {
           if(err) return cb(err);
           assert(!_.isEmpty(results.branch_conflicts));
-          assert.strictEqual(results.branch_conflicts.page.length > 0 ? CONFLICT : nc, status);
+          var resultStatus = results.branch_conflicts.page.length > 0 ? CONFLICT : nc;
+          if(resultStatus != status){
+            console.log(testSrcBranchId);
+            console.log(srcPage);
+            console.log(testDstBranchId);
+            console.log(dstPage);
+            console.log('Actual Result: ' + JSON.stringify(results.branch_conflicts.page));
+          }
+          assert.strictEqual(resultStatus, status);
           cb();
         });
       },

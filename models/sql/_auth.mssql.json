@@ -1,0 +1,23 @@
+{
+  "main_sql_auth": [
+    "select sys_user.sys_user_id,sys_user_hash,sys_user_sts,sys_user_fname,sys_user_lname,sys_user_lastlogin_tstmp,sys_user_email,site_id,$ifnull((select site_name from {schema}.site where site.site_id=sys_user_session.site_id),'(No site selected)') site_name from jsharmony.sys_user left outer join {schema}.sys_user_session on sys_user_session.sys_user_id = sys_user.sys_user_id where lower(sys_user_email)=lower(@sys_user_email) order by case when sys_user_sts='ACTIVE' then 1 else 2 end;",
+
+    "select sys_role.sys_role_name",
+    "  from jsharmony.sys_role ",
+    "    inner join jsharmony.sys_user_role on sys_user_role.sys_role_name=sys_role.sys_role_name ",
+    "    inner join jsharmony.sys_user on sys_user.sys_user_id=sys_user_role.sys_user_id",
+    "  where sys_role_sts='ACTIVE' and lower(sys_user_email)=lower(@sys_user_email) and sys_user_sts='ACTIVE'",
+    "union",
+    "select sys_user_site_access",
+    "  from jsharmony.sys_user",
+    "    inner join {schema}.sys_user_session on sys_user_session.sys_user_id=sys_user.sys_user_id",
+    "    inner join {schema}.sys_user_site on sys_user_site.sys_user_id=sys_user.sys_user_id and sys_user_site.site_id=sys_user_session.site_id",
+    "  where lower(sys_user_email)=lower(@sys_user_email) and sys_user_sts='ACTIVE' and sys_user_site_access is not null",
+    "union",
+    "select 'PUBLISHER'",
+    "    from jsharmony.sys_user_role ",
+    "    inner join jsharmony.sys_user on sys_user.sys_user_id=sys_user_role.sys_user_id",
+    "  where sys_user_role.sys_role_name='WEBMASTER' and lower(sys_user_email)=lower(@sys_user_email) and sys_user_sts='ACTIVE'",
+    ";"
+  ],
+}

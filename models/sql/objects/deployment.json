@@ -4,7 +4,7 @@
     "caption": "Deployment Target Role Type",
     "init_data": [
       { "code_val": "PUBLISH", "code_txt": "Publish", "code_seq": 1 },
-      { "code_val": "EDITOR", "code_txt": "Live Preview", "code_seq": 2 }
+      { "code_val": "EDITOR", "code_txt": "Preview / Editor", "code_seq": 2 }
     ]
   },
 
@@ -25,7 +25,7 @@
     "caption": ["Deployment Target","Deployment Targets"],
     "columns": [
       { "name": "deployment_target_id", "type": "bigint", "key": true, "identity": true, "null": false },
-      { "name": "deployment_target_name", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "deployment_target_name", "type": "varchar", "length": 256, "null": false },
       { "name": "deployment_target_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "deployment_target_publish_path", "type": "varchar", "length": 2048 },
@@ -36,10 +36,17 @@
       { "name": "deployment_target_mtstmp", "type": "datetime", "length": 7 },
       { "name": "deployment_target_muser", "type": "varchar", "length": 20 }
     ],
+    "unique": [
+      ["deployment_target_name","site_id"]
+    ],
     "triggers": [
       { "on": ["update", "insert"], "exec": [
           "set(deployment_target_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(deployment_target_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      },
+      { "on": ["insert"], "exec": [
+          "insert into {schema}.deployment_target_role(deployment_target_id, sys_role_name, deployment_target_role_type) select inserted(deployment_target_id),'*',code_val from {schema}.code_deployment_target_role_type where code_val in ('EDITOR','PUBLISH');",
         ]
       },
       {
@@ -126,12 +133,33 @@
           "site_id",
           "deployment_target_publish_path",
           "deployment_target_params",
-          { "name":"deployment_target_can_editor", "type": "int", "sqlselect": "case when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='EDITOR' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1 else 0 end" },
-          { "name":"deployment_target_can_publish", "type": "int", "sqlselect": "case when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1 else 0 end" }
+          {
+            "name":"deployment_target_can_editor", "type": "int",
+            "sqlselect": [
+              "case ",
+              "  when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='EDITOR' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  when exists(select * from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id and dtr.deployment_target_role_type='EDITOR' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  else 0 end"
+            ]
+          },
+          {
+            "name":"deployment_target_can_publish", "type": "int", 
+            "sqlselect": [
+              "case ",
+              "  when {schema}.my_user_is_publisher(deployment_target.site_id) = 0 then 0",
+              "  when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  when exists(select * from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  else 0 end"
+            ]
+          }
         ]
       }
     },
-    "where": "deployment_target_id in (select deployment_target_id from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id())"
+    "where": [
+      "deployment_target_id in (select deployment_target_id from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id())",
+      "or",
+      "deployment_target_id in (select deployment_target_id from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id)"
+    ]
   },
 
   "v_my_deployment": {
@@ -175,12 +203,14 @@
           //Verify deployment_target site_id matches branch site_id
           "errorif(exists(select 1 where (select site_id from {schema}.branch where branch_id=inserted(branch_id))<>(select site_id from {schema}.deployment_target where deployment_target_id=inserted(deployment_target_id))),'Deployment Target and Branch Sites do not match')",
           //Insert branch
-          "clear_insert_identity()",
-          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_id), 'DEPLOYMENT', inserted(deployment_tag), 'ARCHIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_id)), null)",
-          //Insert deployment
-          "insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts, deployment_git_revision) values(inserted(deployment_tag), last_insert_identity(), inserted(deployment_date), inserted(deployment_target_id), 'PENDING', inserted(deployment_git_revision))",
-          //Add all menu / pages / media / redirect / sitemap from other branch
-          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_id) and {item}_id is not null\")"
+          "with_insert_identity(branch, branch_id, ",
+          "  insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_id), 'DEPLOYMENT', inserted(deployment_tag), 'ARCHIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_id)), null),",
+          ////Insert deployment
+          "  insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts, deployment_git_revision) values(inserted(deployment_tag), @@INSERT_ID, inserted(deployment_date), inserted(deployment_target_id), 'PENDING', inserted(deployment_git_revision))",
+          ////Add all menu / pages / media / redirect / sitemap from other branch
+          "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_id) and {item}_id is not null\")",
+          "  increment_changes()",
+          ")"
         ]
       },
       {"on": ["update"], "exec": [

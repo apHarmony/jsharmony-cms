@@ -1,0 +1,11 @@
+<div class="jsHarmonyCms_site_selection"><span class="material-icons">&#xE88A;</span> <%=jsh.globalparams.site_name%></div>
+<script type="text/x-jsharmony-template" class="jsHarmonyCms_template_site_selection_dropdown">
+  <div class="xcontext_menu jsHarmonyCms_site_selection_dropdown">
+    <%% _.each(sites, function(site){ %%>
+      <a onclick="<%%-js('jsh.System.setCurrentSite('+site.site_id+'); return false;')%%>" class="selected">
+        <%% if(jsh.globalparams.site_id==site.site_id){ %%><span class="material-icons">&#xE5CA;</span><%% } %%>
+        <%%=site.site_name%%>
+      </a>
+    <%% });  %%>
+  </div>
+</script>

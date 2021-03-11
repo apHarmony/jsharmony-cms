@@ -37,6 +37,9 @@ function DataModelTemplate_GridPreview(componentTemplate, dataModel) {
   /** @private @type {Object} */
   this._jsh = componentTemplate._jsh;
 
+  /** @private @type {Object} */
+  this._componentTemplate = componentTemplate;
+
   /** @private @type {string} */
   this._componentTemplateId = componentTemplate.getTemplateId();
 
@@ -81,7 +84,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   });
 
   fields.push({
-    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;',
+    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;display:block;min-height:1px;',
     value: '<div tabindex="0" data-component-template="gridRow"></div>',
     ongetvalue: 'return;'
   });
@@ -96,16 +99,18 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   model.unbound = true;
   model.newrowposition = 'last';
   model.commitlevel= 'page';
-  model.hide_system_buttons = ['export', 'search', 'save'];
+  model.hide_system_buttons = ['export', 'search', 'save', 'add'];
   model.sort = [];
   model.buttons = [
-    {link: 'js:_this.close()', icon: 'ok', actions: 'IU', text: 'Done' }
+    {link: 'js:_this.close()', icon: 'ok', actions: 'BIU', text: 'Done' },
+    {link: 'js:_this.addItem()', icon: 'add', actions: 'I', text: 'Add', class: 'jsharmony_cms_component_dataGridEditor_insert' },
   ];
   model.getapi =   'return _this.getDataApi(xmodel, apitype)';
   model.onrowbind =   '_this.onRowBind(xmodel,jobj,datarow);';
   model.oncommit =  '_this.onCommit(xmodel, rowid, callback);';
   model.ejs =  '';
   model.sort = { [this._sequenceFieldName]: 'asc' };
+  this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 
   //--------------------------------------------------
   // Get templates
@@ -182,7 +187,7 @@ DataModelTemplate_GridPreview.prototype.getIdFieldName = function() {
  */
 DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
-  model.id = DataModelTemplate_GridPreview.getNextInstanceId(this._componentTemplateId);
+  model.id = DataModelTemplate_GridPreview.getNextInstanceId(this._componentTemplate);
 
   model.js =  function() {
     var gridApi = new jsh.XAPI.Grid.Static(modelid);
@@ -212,10 +217,10 @@ DataModelTemplate_GridPreview.prototype.getModelJs = function() {
  * @private
  * @returns {string}
  */
-DataModelTemplate_GridPreview.getNextInstanceId = function(componentType ) {
+DataModelTemplate_GridPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_GridPreview._id == undefined) DataModelTemplate_GridPreview._id = 0;
   var id = DataModelTemplate_GridPreview._id++;
-  return 'DataModel_GridPreview_' + componentType + '_' + id;
+  return 'DataModel_GridPreview_' + componentTemplate.getClassName() + '_' + id;
 }
 
 /**

@@ -33,12 +33,17 @@ var FieldModel = require('./fieldModel');
  */
 function PropertiesModelTemplate_Form(componentTemplate, propertiesModel) {
 
+  /** @private @type {Object} */
+  this._jsh = componentTemplate._jsh;
+
+  /** @private @type {Object} */
+  this._componentTemplate = componentTemplate;
+
   /** @private @type {string} */
   this._componentTemplateId = componentTemplate.getTemplateId();
 
   /** @private @type {object} */
   this._modelTemplate = {};
-
 
   this.buildTemplate(componentTemplate, propertiesModel);
 }
@@ -58,6 +63,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   model.unbound = true;
   model.layout = 'form';
   model.onecolumn = true;
+  this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 }
 
 /**
@@ -65,7 +71,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
  */
 PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
-  model.id = PropertiesModelTemplate_Form.getNextInstanceId(this._componentTemplateId);
+  model.id = PropertiesModelTemplate_Form.getNextInstanceId(this._componentTemplate);
 
   return model;
 }
@@ -75,10 +81,10 @@ PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
  * @private
  * @returns {string}
  */
-PropertiesModelTemplate_Form.getNextInstanceId = function(componentType ) {
+PropertiesModelTemplate_Form.getNextInstanceId = function(componentTemplate) {
   if (PropertiesModelTemplate_Form._id == undefined) PropertiesModelTemplate_Form._id = 0;
   var id = PropertiesModelTemplate_Form._id++;
-  return 'PropertiesModel_Form_' + componentType + '_' + id;
+  return 'PropertiesModel_Form_' + componentTemplate.getClassName() + '_' + id;
 }
 
 /**

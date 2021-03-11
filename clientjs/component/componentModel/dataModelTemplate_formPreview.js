@@ -37,6 +37,9 @@ function DataModelTemplate_FormPreview(componentTemplate, dataModel) {
   /** @private @type {Object} */
   this._jsh = componentTemplate._jsh;
 
+  /** @private @type {Object} */
+  this._componentTemplate = componentTemplate;
+
   /** @private @type {string} */
   this._componentTemplateId = componentTemplate.getTemplateId();
 
@@ -72,8 +75,10 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
     }
   });
 
+  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">'});
+  fields.push({ control:'html', value:'</div>'});
   fields.push({
-    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor" data-id="previewWrapper"></div>', 'block':true
+    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true
   });
 
   var model = _.extend({}, modelConfig);
@@ -85,6 +90,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   model.onecolumn = true;
   model.ejs = '';
   model.js = this._rawOriginalJs;
+  this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 
   var templateHtml = '<div>' + modelConfig.ejs + '</div>';
 
@@ -146,7 +152,7 @@ DataModelTemplate_FormPreview.prototype.getItemTemplate = function() {
  */
 DataModelTemplate_FormPreview.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
-  model.id = DataModelTemplate_FormPreview.getNextInstanceId(this._componentTemplateId);
+  model.id = DataModelTemplate_FormPreview.getNextInstanceId(this._componentTemplate);
 
   return model;
 }
@@ -165,10 +171,10 @@ DataModelTemplate_FormPreview.prototype.getModelJs = function() {
  * @private
  * @returns {string}
  */
-DataModelTemplate_FormPreview.getNextInstanceId = function(componentType ) {
+DataModelTemplate_FormPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_FormPreview._id == undefined) DataModelTemplate_FormPreview._id = 0;
   var id = DataModelTemplate_FormPreview._id++;
-  return 'DataModel_FormPreview_' + componentType + '_' + id;
+  return 'DataModel_FormPreview_' + componentTemplate.getClassName() + '_' + id;
 }
 
 /**

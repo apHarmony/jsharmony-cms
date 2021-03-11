@@ -11,7 +11,7 @@
     "fields": [
       {"name":"site_id","actions":"BIU","foreignkey":1,"control":"hidden"},
       {"name":"deployment_target_name","caption":"Name"},
-      {"name":"deployment_target_sts","caption":"Status"},
+      {"name":"deployment_target_sts","caption":"Status","validate":["Required"],"default":"ACTIVE"},
       {"name":"deployment_target_publish_path","caption":"Path","control":"textbox","controlstyle":"width: 40em"},
       {"name":"deployment_target_params","caption":"Params","control":"textarea","controlstyle":"width: 40em; height: 10em","validate":["IsJSON"],"format":"json"}
     ]

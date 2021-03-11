@@ -3,6 +3,10 @@
   "title": "Component Name",
   "caption": ["Item", "Items"],
 
+  "target": "content", //(default) For editing items in the content area (will be added to the Component Toolbar)
+  "target": "page",    //For rendering page-level components such as menus and breadcrumbs
+  "target": "site",    //For generating site-level pages like redirects
+
   // Icons can be specified using Google Material icon font name, as SVG, or as HTML
   //  1. For Material Icon:"'material:<Google Material Icon Font Name>". Example: "material:photo_library"
   //  2. For SVG: "svg:<SVG Code>". Example: "svg:<svg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'><path d='M0 0h24v24H0z' fill='none'/><path d='M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z'/></svg>"
@@ -18,14 +22,34 @@
   //Local templates can be used to load templates from the CMS
   "templates": {
     "editor": "...Content...", // Prepended by <templateBaseFileName>.templates.editor.ejs
-    "publish": "...Content..." // Prepended by <templateBaseFileName>.templates.publish.ejs
+    "publish": "...Content...", // Prepended by <templateBaseFileName>.templates.publish.ejs
   },
 
   //Remote templates can be used to load templates from a remote site on edit or publish
-  "remote_template": {
-    "editor": "%%%editor_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%",
-    "publish": "%%%publish_template_base_url%%%/templates/component/content_element_name.html?source=1&_=%%%timestamp%%%"
+  "remote_templates": {
+    "editor": "https://server/templates/components/content_element_name.html?source=1&_=%%%timestamp%%%",
+    "publish": "https://server/templates/components/content_element_name.html?source=1&_=%%%timestamp%%%",
   },
+
+  "optimization": {
+    "bare_ejs_templates": false,  // "true" disables server-side editor template parsing (and downloads remote templates client-side)
+                                  //  May be slightly faster, but will disallow using tags like "jsh-foreach-item" in component template
+  },
+
+  "editor_placeholder": {
+    "items_empty": true,    //Display a placeholder if no items are entered, when component.multiple_items
+    "invalid_fields": true, //Display a placeholder for an item when field validation fails
+                            //  (on single item, or on component.multiple_items when the jsh-foreach-items tag is used)
+  },
+  
+  //The following property is a shortcut for "properties.fields".  Values are appended to the properties.fields array
+  "component_properties": [ ... field array ... ],
+
+  //The following property is a shortcut for "data.fields".  Values are appended to the data.fields array
+  "item_properties": [ ... field array ... ],
+
+  "multiple_items": false, //(default) For Content Components - enable only one data item (ex. Banner). Sets data.layout = "form"
+  "multiple_items": true,  //For Content Components - enable multiple data items (ex. Listing). Sets data.layout = "grid_preview"
 
   "properties": {
     "ejs": "...Content...", // Prepended by <templateBaseFileName>.properties.ejs
@@ -39,6 +63,7 @@
         "control": "textbox", "controlstyle": "width:260px", "validate": ["MaxLength:1024"]}
     ]
   },
+
   "data": {
     "layout": "grid_preview", // Can also be "form", "grid"
     "ejs": "...Content...", // Prepended by <templateBaseFileName>.data.ejs
@@ -65,16 +90,39 @@
       { "name": "content_layout", "type": "varchar", "control": "dropdown", "caption": "Content", "default": "all",
         "lov": { "values": { "all": "Title + Body", "title": "Title Only", "body": "Body Only", "none": "None" } }}
     ],
-    // Applies to form/item preview only. Can use other standard hooks as well.
-    "oninit": "_this.oninit_form()"
 
-    // Additional hooks are implicitly defined.
-    // To use the hook, simply bind "this" to a function with the same signature in the data JS.
+    // "oninit" hook for the form/item preview. Other standard jsHarmony hooks as available as well.
+    "oninit": "_this.oninit_form()",
+
+    // Additional hooks are available for the component editor dialogs, and defined in the data.js file
+    // To use a component editor dialog hook, in the data.js file, write: this.[hook name] = function
+    //    ex.   this.onBeforeRenderGridRow = function(renderConfig){ ... }
     // 1. onBeforeRenderGridRow(renderConfig): this hook is called before rendering a grid row. The renderConfig contains
     //    an object that can be manipulated before being used to render the grid row.
     // 2. onRenderGridRow(element, data, properties, cms, component): this hook is called when the grid row is rendered.
     // 3. onBeforeRenderDataItemPreview(renderConfig): this hook is called before rendering the item preview. The renderConfig contains
     //    an object that can be manipulated before being used to render the item.
     // 4. onRenderDataItemPreview(element, data, properties, cms, component): this hook is called when the item preview is rendered.
+
+    "export": [
+      //Multiple exports are supported - add an entry for each file that will be generated
+      {
+        "export_path": "path/to/file.php",
+
+        "template": "EJS that will be used in the export, ex <%=sitemap.root.text%>",
+        "remote_template": "https://server/templates/components/content_element_name.export.routes.html?source=1&_=%%%timestamp%%%",
+        //If both "template" and "remote_template" are defined, "template" value will be prepended to "remote_template" content
+        //If no "template" or "remote_template" are defined, the current file will be used as the template
+
+        "menu_tag": "main", //(Optional) Menu to be loaded into the "menu" variable for rendering
+        "data": [{"itemField1":"value","itemField2":"value"},{"itemField1":"value1","itemField2":"value"}], //(Optional) Data that will be passed to the component for rendering
+        "properties": {"propertyName":"propertyValue"}, //(Optional) Properties that will be passed to the component for rendering
+      },
+      //Multiple files can be generated from one template using the "addFile" function
+      //If no path is specified, the template itself will need to call the "addFile" function to produce output files
+      {
+        "template": "<% addFile('config/file1.php', 'File content 1'); addFile('config/file2.php', 'File content 2'); %>",
+      }
+    ]
   }
 }

@@ -1,12 +1,33 @@
 {
+  "code_site_template_type": {
+    "type": "code",
+    "caption": "Site Template Type",
+    "init_data": [
+      { "code_val": "PAGE", "code_txt": "Page", "code_seq": 1 },
+      { "code_val": "COMPONENT", "code_txt": "Component", "code_seq": 2 },
+    ]
+  },
+
+  "code_sys_user_site_access": {
+    "type": "code",
+    "caption": "User Site Access",
+    "init_data": [
+      { "code_val": "VIEWER", "code_txt": "Viewer", "code_seq": 1 },
+      { "code_val": "AUTHOR", "code_txt": "Author", "code_seq": 2 },
+      { "code_val": "PUBLISHER", "code_txt": "Publisher", "code_seq": 3 },
+    ]
+  },
+
   "site": {
     "type": "table",
     "caption": ["Site","Sites"],
     "columns": [
-      { "name": "site_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "site_id", "type": "bigint", "key": true, "identity": true, "null": false, "actions": ["prevent_update"] },
       { "name": "site_name", "type": "varchar", "length": 256, "null": false, "unique": true },
       { "name": "site_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_default_editor", "type": "bigint" },
+      { "name": "site_default_page_template_id", "type": "varchar", "length": 255 },
+      { "name": "site_default_page_filename", "type": "varchar", "length": 255, "default": "index.html", "null": false },
       
       { "name": "site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -23,10 +44,85 @@
           "set(site_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(site_muser,%%%%%%jsh.map.current_user%%%%%%);"
         ]
+      },
+      { "on": ["insert"], "exec": [
+          "insert into {schema}.branch(branch_name, branch_type, branch_sts, site_id) values ('master','PUBLIC','ACTIVE',inserted(site_id))",
+          "with_insert_identity(sitemap, sitemap_id, ",
+          "  insert into {schema}.sitemap(site_id, sitemap_name, sitemap_type) values(inserted(site_id), 'Primary Sitemap', 'PRIMARY'),",
+          "  insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, sitemap_orig_id) values((select top1(branch_id from {schema}.branch where site_id=inserted(site_id))), @@INSERT_ID, @@INSERT_ID, @@INSERT_ID);",
+          "  increment_changes()",
+          ")"
+        ]
+      },
+      {
+        "on": ["delete"], "exec": [
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"delete from {tbl_branch_item} where branch_id in (select branch_id from {schema}.branch where site_id=deleted(site_id))\");",
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"delete from {tbl_branch_item} where {item}_key in (select {item}_key from {tbl_item} where site_id=deleted(site_id))\");",
+          "delete from {schema}.branch where site_id=deleted(site_id);",
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"delete from {tbl_item} where site_id=deleted(site_id)\");",
+        ]
       }
     ],
     "sample_data": [
       { "site_name": "Default Web Site" }
+    ]
+  },
+
+  "site_template": {
+    "type": "table",
+    "caption": ["Site Template","Site Templates"],
+    "columns": [
+      { "name": "site_template_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "site_id", "type": "bigint", "null": false, "foreignkey": { "site": "site_id" }, "actions": ["prevent_update"] },
+      { "name": "site_template_type", "type": "varchar", "length": 32, "foreignkey": { "code_site_template_type": "code_val" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "site_template_name", "type": "varchar", "length": 256, "null": false },
+      { "name": "site_template_title", "type": "varchar", "length": 1024 },
+      { "name": "site_template_path", "type": "varchar", "length": -1 },
+      { "name": "site_template_config", "type": "varchar", "length": -1 },
+
+      { "name": "site_template_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "site_template_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "site_template_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "site_template_muser", "type": "varchar", "length": 20 }
+    ],
+    "unique": [
+      ["site_id","site_template_type","site_template_name"]
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(site_template_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(site_template_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
+
+  "sys_user_session": {
+    "type": "table",
+    "caption": ["User Session", "User Sessions"],
+    "columns": [
+      { "name": "sys_user_session_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "sys_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": { "column": "sys_user_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"], "unique": true },
+      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "null" } } },
+
+      { "name": "sys_user_session_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "sys_user_session_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "sys_user_session_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "sys_user_session_muser", "type": "varchar", "length": 20 }
+    ],
+    "index": [
+      { "columns": ["sys_user_id", "site_id"] }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(sys_user_session_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(sys_user_session_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ],
+    "data_keys": ["sys_user_id"],
+    "sample_data": [
+      { "sys_user_id": "1", "site_id": "1" }
     ]
   },
   
@@ -38,6 +134,8 @@
       { "name": "sys_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": { "column": "sys_user_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
       { "name": "sys_user_site_editor", "type": "bigint", "foreignkey": { "deployment_target": { "column": "deployment_target_id" } } },
+      { "name": "sys_user_site_access", "type": "varchar", "length": 32, "foreignkey": { "code_sys_user_site_access": "code_val" } },
+      { "name": "branch_id", "type": "bigint" },
 
       { "name": "sys_user_site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "sys_user_site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
@@ -47,19 +145,33 @@
     "unique": [
       ["sys_user_id", "site_id"]
     ],
+    "dependencies": ["{schema}.branch"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and site_id = inserted(site_id))),'Target Editor not available for this site')",
-          "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')"
+          "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_sts='ACTIVE')),'Target Editor is not ACTIVE')",
+          "errorif((inserted(branch_id) is not null) and not exists(select branch_id from {schema}.branch where branch_id=inserted(branch_id)),'Branch ID not found');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
           "set(sys_user_site_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
           "set(sys_user_site_muser,%%%%%%jsh.map.current_user%%%%%%);"
         ]
+      },
+      { "on": ["update"], "exec": [
+          "update {schema}.sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
+          "update {schema}.sys_user_site set branch_id=null where branch_id is not null and sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "update {schema}.sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null and ((sys_user_site_id is null) or (sys_user_site_id<>deleted(sys_user_site_id))));",
+        ]
       }
     ],
-    "data_keys": ["sys_user_id"]
+    "data_keys": ["sys_user_id"],
+    "sample_data": [
+      { "sys_user_id": "1", "site_id": "1", "branch_id": "1" }
+    ],
   },
 
   "v_my_site_editor": {
@@ -77,6 +189,7 @@
         "columns": [
           "sys_user_site_editor",
           { "name":"site_editor", "type": "bigint", "sqlselect": "$ifnull($ifnull(sys_user_site.sys_user_site_editor,site_default_editor),(select top1(deployment_target_id from {schema}.v_my_deployment_target dt where deployment_target_can_editor = 1 and dt.deployment_target_sts='ACTIVE' and dt.site_id = site.site_id order by deployment_target_name)))" },
+          "branch_id",
         ],
         "join_type": "left",
         "join_columns": {
@@ -86,6 +199,37 @@
       }
     },
     "dependencies": ["{schema}.v_my_deployment_target"]
+  },
+
+  "v_my_session": {
+    "type": "view",
+    "caption": ["Session", "Sessions"],
+    "tables": {
+      "jsharmony.sys_user": {
+        "columns": [
+          "sys_user_id"
+        ]
+      },
+      "sys_user_session": {
+        "columns": [
+          "site_id",
+        ],
+        "join_type": "left",
+        "join_columns": {
+          "jsharmony.sys_user.sys_user_id": "sys_user_session.sys_user_id"
+        }
+      },
+    },
+    "where": "jsharmony.sys_user.sys_user_id = jsharmony.my_sys_user_id()",
+    "triggers": [
+      {"on": ["update"], "exec": [
+          "errorif(not exists(select site_id from {schema}.v_sys_user_site_access where sys_user_id=jsharmony.my_sys_user_id() and site_id=inserted(site_id)),'User does not have access to target site');",
+          "insert into {schema}.sys_user_session(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_session where sys_user_id=jsharmony.my_sys_user_id())",
+          "update {schema}.sys_user_session set site_id = inserted(site_id) where sys_user_session.sys_user_id=jsharmony.my_sys_user_id()",
+          "increment_changes()"
+        ]
+      }
+    ]
   },
 
   "v_my_site": {
@@ -98,7 +242,8 @@
           "site_name",
           "site_sts",
           "sys_user_site_editor",
-          "site_editor"
+          "site_editor",
+          "branch_id"
         ]
       },
       "v_my_deployment_target": {
@@ -115,7 +260,120 @@
     "triggers": [
       {"on": ["update"], "exec": [
           "insert into {schema}.sys_user_site(sys_user_id,site_id) select jsharmony.my_sys_user_id(), inserted(site_id) where not exists(select * from {schema}.sys_user_site where sys_user_id=jsharmony.my_sys_user_id() and site_id=inserted(site_id))",
-          "update {schema}.sys_user_site set sys_user_site_editor = inserted(sys_user_site_editor) where sys_user_id=jsharmony.my_sys_user_id() and site_id = inserted(site_id)",
+          "update {schema}.sys_user_site set sys_user_site_editor = inserted(sys_user_site_editor), branch_id = inserted(branch_id) where sys_user_id=jsharmony.my_sys_user_id() and site_id = inserted(site_id)",
+          "increment_changes()"
+        ]
+      }
+    ]
+  },
+
+  "v_sys_user_site_system_access": {
+    "type": "view",
+    "caption": ["Site System Access", "Site System Access"],
+    "tables": {
+      "jsharmony.sys_user_role": {
+        "columns": [
+          "sys_user_role_id",
+          "sys_user_id",
+          "sys_role_name",
+        ],
+      },
+    },
+    "where":"sys_user_role.sys_role_name in ('WEBMASTER','VIEWER','AUTHOR','PUBLISHER')",
+  },
+
+  "v_sys_user_site_access_split": {
+    "type": "view",
+    "caption": ["Site Access", "Site Access"],
+    "tables": {
+      "site": {
+        "columns": [
+          "site_id",
+        ],
+      },
+      "roles": {
+        "columns": [
+          "role_sys_user_id",
+          "role_sys_role_name",
+          "role_sys_user_role_id",
+        ],
+        "sql": "select v_sys_user_site_system_access.sys_user_role_id role_sys_user_role_id, v_sys_user_site_system_access.sys_user_id role_sys_user_id, v_sys_user_site_system_access.sys_role_name role_sys_role_name from {schema}.v_sys_user_site_system_access union select null role_sys_user_role_id, null role_sys_user_id, null role_sys_role_name",
+        "join_type": "left",
+      },
+      "sys_user_site": {
+        "columns": [
+          "sys_user_site_id",
+          "sys_user_id",
+          "sys_user_site_access",
+        ],
+        "join_type": "left",
+        "join_columns": {
+          "sys_user_site.site_id": "site.site_id",
+          "roles.role_sys_user_id": "null",
+        }
+      },
+    },
+    "dependencies": ["{schema}.v_sys_user_site_system_access"]
+  },
+
+  "v_my_session_role": {
+    "type": "view",
+    "caption": ["Session Role", "Session Roles"],
+    "tables": {
+      "roles": {
+        "columns": [
+          "sys_role_name",
+        ],
+        "sql": [
+          "select sys_role_name from jsharmony.sys_user_role where sys_user_id=jsharmony.my_sys_user_id()",
+          "union",
+          "select sys_user_site_access",
+          "  from {schema}.sys_user_session",
+          "    inner join {schema}.sys_user_site on sys_user_site.sys_user_id=sys_user_session.sys_user_id and sys_user_site.site_id=sys_user_session.site_id",
+          "  where sys_user_session.sys_user_id=jsharmony.my_sys_user_id()"
+        ],
+      },
+    }
+  },
+
+  "v_sys_user_site_access": {
+    "type": "view",
+    "caption": ["Site Access", "Site Access"],
+    "tables": {
+      "v_sys_user_site_access_split": {
+        "columns": [
+          "sys_user_site_id",
+          { "name": "sys_user_role_id", "type": "bigint", "sqlselect": "role_sys_user_role_id"},
+          "site_id",
+          { "name":"sys_user_id", "type": "bigint", "sqlselect": "case when role_sys_user_id is not null then role_sys_user_id else sys_user_id end" },
+          { "name":"sys_user_site_access", "type": "varchar", "length": 32, "sqlselect": "$ifnull(role_sys_role_name, sys_user_site_access)" },
+          { "name":"sys_user_site_system_access", "type": "int", "sqlselect": "(case when role_sys_user_id is not null then 1 else 0 end)" },
+        ],
+      },
+    },
+    "where": "(role_sys_user_id is not null or sys_user_id is not null) and (sys_user_site_access is not null or role_sys_role_name is not null)",
+    "triggers": [
+      { "on": ["insert"], "exec": [
+          [
+            "errorif(exists(select sys_user_site_id from {schema}.sys_user_site where sys_user_id=inserted(sys_user_id) and site_id=inserted(site_id) and sys_user_site_access is not null),'User is already added to this site');",
+            "errorif(inserted(sys_user_site_access) is null,'Cannot add null permission');",
+            "insert into {schema}.sys_user_site(sys_user_id,site_id) select inserted(sys_user_id), inserted(site_id) where not exists(select * from {schema}.sys_user_site where sys_user_id=inserted(sys_user_id) and site_id=inserted(site_id));",
+            "update {schema}.sys_user_site set sys_user_site_access = inserted(sys_user_site_access) where sys_user_id=inserted(sys_user_id) and site_id = inserted(site_id);",
+            "return_insert_key(sys_user_site, sys_user_site_id, (sys_user_id=inserted(sys_user_id) and site_id=inserted(site_id)));",
+            "increment_changes()",
+          ]
+        ]
+      },
+      { "on": ["update"], "exec": [
+          [
+            "errorif(update(sys_user_id),'Cannot update sys_user_id');",
+            "update sys_user_site set sys_user_site_access=inserted(sys_user_site_access) where site_id=deleted(site_id) and sys_user_id=deleted(sys_user_id);",
+            "increment_changes()",
+          ]
+        ]
+      },
+      { "on": ["delete"], "exec": [
+          "update sys_user_site set sys_user_site_access = null where site_id=deleted(site_id) and sys_user_id=deleted(sys_user_id);",
           "increment_changes()"
         ]
       }

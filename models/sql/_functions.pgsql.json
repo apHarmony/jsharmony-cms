@@ -1,14 +1,20 @@
 {
   "{schema}.my_user_is_publisher":{
-    "params": [],
+    "params": ["SITE_ID"],
     "sql": [
-      "(select count(*) from jsharmony.sys_user_role where sys_user_id=jsharmony.my_sys_user_id() and sys_role_name='PUBLISHER')"
+      "(case when exists(select * from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=(%%%SITE_ID%%%) and v_sys_user_site_access.sys_user_id=jsharmony.my_sys_user_id() and (v_sys_user_site_access.sys_user_site_access='PUBLISHER' or v_sys_user_site_access.sys_user_site_access='WEBMASTER')) then 1 else 0 end)"
     ]
   },
   "{schema}.my_current_branch_id":{
     "params": [],
     "sql": [
-      "(select branch_id from {schema}.sys_user_branch where {schema}.sys_user_branch.sys_user_id=jsharmony.my_sys_user_id())"
+      "(select sys_user_site.branch_id from {schema}.sys_user_session inner join {schema}.sys_user_site on sys_user_site.sys_user_id = sys_user_session.sys_user_id and sys_user_session.site_id = sys_user_site.site_id where {schema}.sys_user_session.sys_user_id=jsharmony.my_sys_user_id())"
+    ]
+  },
+  "{schema}.my_current_site_id":{
+    "params": [],
+    "sql": [
+      "(select sys_user_session.site_id from {schema}.sys_user_session where sys_user_session.sys_user_id=jsharmony.my_sys_user_id())"
     ]
   },
   "{schema}.my_current_branch_is_editable":{
@@ -44,15 +50,15 @@
   "{schema}.insert_media":{
     "params": ["media_desc", "media_path", "media_tags", "media_type", "media_ext", "media_size", "media_width", "media_height"],
     "sql": [
-      "insert into {schema}.v_my_media(media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height) values(%%%media_desc%%%, %%%media_path%%%, %%%media_tags%%%, %%%media_type%%%, %%%media_ext%%%, %%%media_size%%%, %%%media_width%%%, %%%media_height%%%);"
+      "insert into {schema}.v_my_media(media_desc, media_path, media_tags, media_type, media_ext, media_size, media_width, media_height) values(%%%media_desc%%%, %%%media_path%%%, %%%media_tags%%%, %%%media_type%%%, %%%media_ext%%%, %%%media_size%%%, %%%media_width%%%, %%%media_height%%%) returning media_key;"
     ]
   },
   "{schema}.duplicate_page":{
     "params": ["page_key", "page_path", "page_title"],
     "sql": [
-      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select %%%page_path%%%, page_file_id, %%%page_title%%%, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=%%%page_key%%%;"
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select %%%page_path%%%, page_file_id, %%%page_title%%%, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=%%%page_key%%% returning page_key;"
     ]
   },
-  "jsHarmonyCMS_Upload": "insert into {schema}.v_my_{item}({columns}) values ({values});",
+  "jsHarmonyCMS_Upload": "insert into {schema}.v_my_{item}({columns}) values ({values}) returning {item}_key;",
   "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc;"
 }

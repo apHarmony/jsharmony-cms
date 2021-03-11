@@ -4,13 +4,27 @@
     "body": "Default Page Content",
     "footer": "Default Footer Content"
   },
-  "remote_template": {
-    "editor": "%%%editor_base_url%%%/templates/page/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
-    "publish": "%%%publish_template_base_url%%%/templates/page/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
+  "templates": { //Templates as string
+    "editor": "...", // Prepended by <templateBaseFileName>.templates.editor.ejs
+    "publish": "...", // Prepended by <templateBaseFileName>.templates.publish.ejs
+  },
+  "remote_templates": { //Templates downloaded as URLs
+    "editor": "https://server/templates/pages/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
+    "publish": "https://server/templates/pages/1col_sidebar.publish.html?source=1&_=%%%timestamp%%%"
   },
   "content_elements": {
-    "body": { "type": "htmleditor", "title": "Body" },
-    "footer": { "type": "htmleditor", "title": "Footer" }
+    "body": { "title": "Body" },
+
+    "content_element_id": {
+      "title": "Editable Area Name",
+      "editor_toolbar": {
+        "dock": "auto",       //Dock position for the Editor Menu and Toolbar :: "top", "top_offset", "bottom", or "auto" (default)
+        "show_menu": true,    //Whether to display the editor menu :: true (default), or false
+        "show_toolbar": true, //Whether to display the editor toolbar :: true (default), false
+        // The editor_toolbar "top_offset" dock style uses the same margin-top method as the "page_toolbar" top_offset dock style
+      },
+      "type": "htmleditor" //SYSTEM Property - "htmleditor" (default), or "texteditor" for raw text
+    }
   },
   "properties": {
     "fields": [
@@ -23,5 +37,20 @@
       { "name": "bodyStyle", "caption": "Body CSS Style", "type": "varchar", "length": 1024,
         "control": "textbox", "controlstyle": "width:400px", "validate": ["MaxLength:1024"]}
     ]
-  }
+  },
+  "options": {
+    "title_element_required": true, //(Default true)  If set to false, will not require cms-title element on the page
+    "page_toolbar": {
+      "dock": "top_offset" // Page toolbar dock position
+                           //    "top_offset"  ::  (Default) Dock to top, and add margin-top to <body> and all fixed elements
+                           //    "top"         ::  Dock to top, and do not offset existing content.
+                           //    "bottom"      ::  Dock to bottom
+                           //The "jsharmony_cms_editor" class is added to the <body> tag in the Editor for additional user styling
+    },
+  },
+
+  //System Properties
+  "content": { "content_element_name": "..." }, //SYSTEM - Hard-coded content element content.  Generally use "default_content" instead
+  "components": { "component_name": { /* Component definition */ } }, //SYSTEM - Inline page components
+  "raw": false, //SYSTEM - Used only on the <Raw Text> template
 }

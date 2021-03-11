@@ -1,0 +1,53 @@
+{
+  "/jsHarmonyFactory/Admin/SysUser": {
+    "inherits":"/jsHarmonyFactory/Admin/SysUser",
+    "fields": [
+      {"name":"sys_user_sys_user_site",
+        "control":"subform","controlstyle":"width:385px;float:left;",
+        "target":"SysUser_Site",
+        "bindings":{"sys_user_id":"sys_user_id"},
+        "caption":"Site Access",
+        "actions": "BIUD",
+        "__AFTER__": "sys_user_sys_user_role"
+      },
+      {"name":"sys_user_sys_user_func","__REMOVE__": true},
+    ],
+  },
+  "/jsHarmonyFactory/Admin/SysUser_Insert": {
+    "inherits":"/jsHarmonyFactory/Admin/SysUser_Insert",
+    "fields": [
+      {"name":"sys_user_sys_user_site",
+        "control":"subform","controlstyle":"width:385px;float:left;",
+        "target":"SysUser_Site",
+        "bindings":{"sys_user_id":"sys_user_id"},
+        "caption":"Site Access",
+        "actions": "BIUD",
+        "__AFTER__": "sys_user_sys_user_role"
+      },
+      {"name":"sys_user_sys_user_func","__REMOVE__": true},
+    ],
+  },
+  "SysUser_Site": {
+    "layout":"grid",
+    "table":"{schema}.v_sys_user_site_access",
+    "caption":["Site Access","Site Access"],
+    "popup": [960, 600],
+    "roles": { "WEBMASTER": "BIUD" },
+    "actions":"BIUD",
+    "rowstyle":"background-color:#fff;border-bottom:1px solid #ddd;",
+    "rowlimit":99999,
+    "sqlwhere":"sys_user_site_system_access=0",
+    "sqlwhere_disabled_on_insert": true,
+    "fields": [
+      {"name":"sys_user_site_id","actions":"B","key":1,"control":"hidden"},
+      {"name":"sys_user_id","actions":"BI","foreignkey":1,"control":"hidden"},
+      {"name":"site_id","actions":"BI","caption": "Site","control":"dropdown",
+        "lov":{
+          "sql": "select site_id as code_val,site_name as code_txt from {schema}.site order by site_name",
+        },
+        "sqlsort":"(select site_name from {schema}.site where site.site_id = v_sys_user_site_access.site_id)"
+      },
+      {"name":"sys_user_site_access","caption":"Access","control":"dropdown","default":"VIEWER","lov":{"blank":false,"schema":"cms","code":"sys_user_site_access"}},
+    ]
+  },
+}

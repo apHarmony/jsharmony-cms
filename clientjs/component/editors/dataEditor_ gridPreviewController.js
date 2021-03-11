@@ -49,7 +49,7 @@ var TemplateRenderer = require('../templateRenderer');
  * @class
  * @classdesc Controller for handling grid preview data editor.
  * @public
- * @param {Object} xModel
+ * @param {Object} xmodel
  * @param {Object} data - the data used to render the component.
  * @param {Object} properties - the component's configured properties (used to render the component)
  * @param {(JQuery | HTMLElement)} dialogWrapper
@@ -59,9 +59,9 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {DataModelTemplate_GridPreview} dataModelTemplate_GridPreview
  * @param {ComponentTemplate} componentTemplate
  */
-function DataEditor_GridPreviewController(xModel, data, properties, dialogWrapper, cms, jsh, component, dataModelTemplate_GridPreview, componentTemplate) {
+function DataEditor_GridPreviewController(xmodel, data, properties, dialogWrapper, cms, jsh, component, dataModelTemplate_GridPreview, componentTemplate) {
 
-  var self = this;
+  var _this = this;
 
   /** @private @type {Object} */
   this._properties = properties;
@@ -76,7 +76,7 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
   this.component = component;
 
   /** @private @type {Object} */
-  this.xModel = xModel;
+  this.xmodel = xmodel;
 
   /** @private @type {JQuery} */
   this.$dialogWrapper = this.jsh.$(dialogWrapper);
@@ -116,12 +116,12 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
   this._dataStore = new GridDataStore(this._idFieldName);
   this._apiData = [];
   _.each(data, function(item, index) {
-    item[self._idFieldName] = self.makeItemId();
+    item[_this._idFieldName] = _this.makeItemId();
     item.sequence = index;
     // Don't expose references in data store.
     // The grid is not allowed to touch them.
-    self._dataStore.addNewItem(item);
-    self._apiData.push(_.extend({}, item));
+    _this._dataStore.addNewItem(item);
+    _this._apiData.push(_.extend({}, item));
   });
 }
 
@@ -134,7 +134,7 @@ function DataEditor_GridPreviewController(xModel, data, properties, dialogWrappe
 DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
   var rowId = this.getParentRowId($row);
   var $rowComponent = this.getRowElementFromRowId(rowId);
-  var self = this;
+  var _this = this;
 
   $row.find('td.xgrid_action_cell.delete').remove();
   if (rowData._is_insert) {
@@ -143,11 +143,8 @@ DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
     rowData._insertId = id;
     $rowComponent.attr('data-item-id', id);
     setTimeout(function() {
-      self.openItemEditor(id);
-      self.scrollToItemRow(id);
+      _this.scrollToItemRow(id);
     });
-
-    this.forceCommit();
   } else {
     $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
     this.renderRow(rowData);
@@ -241,7 +238,7 @@ DataEditor_GridPreviewController.prototype.dataUpdated = function() {
  * @private
  */
 DataEditor_GridPreviewController.prototype.forceCommit = function() {
-  var controller = this.xModel.controller;
+  var controller = this.xmodel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Commit();
 }
@@ -259,9 +256,9 @@ DataEditor_GridPreviewController.prototype.showOverlay = function() {
 }
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
-  var self = this;
+  var _this = this;
   this.$dialogWrapper.find('.refreshLoadingOverlay').stop().fadeOut(function(){
-    self.jsh.$(this).remove();
+    _this.jsh.$(this).remove();
   });
 }
 
@@ -273,22 +270,22 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
 
   // Need to maintain the scroll position
   // after the grid re-renders
-  var self = this;
-  var scrollTop = self.$dialogWrapper.scrollTop();
+  var _this = this;
+  var scrollTop = _this.$dialogWrapper.scrollTop();
 
   //Show overlay
-  self.showOverlay();
-  var controller = self.xModel.controller;
+  _this.showOverlay();
+  var controller = _this.xmodel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.grid.Load(undefined, undefined, function(){
     if(cb){
       if(cb()===false){ //Do not hide overlay
-        self.$dialogWrapper.scrollTop(scrollTop);
+        _this.$dialogWrapper.scrollTop(scrollTop);
         return;
       }
     }
-    self.hideOverlay();
-    self.$dialogWrapper.scrollTop(scrollTop);
+    _this.hideOverlay();
+    _this.$dialogWrapper.scrollTop(scrollTop);
 
   });
 }
@@ -299,7 +296,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
  * @returns {GridPreviewRenderContext}
  */
 DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = function(itemId) {
-  var itemIndex = this._dataStore.getItemIndexById(itemId);
+  var itemIndex = itemId ? this._dataStore.getItemIndexById(itemId) : this._dataStore.count();
   /** @type {GridPreviewRenderContext} */
   var retVal = {
     rowIndex: itemIndex
@@ -314,7 +311,7 @@ DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = functio
  * @return {(Oobject | undefined)}
  */
 DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId) {
-  var slideId = this.jsh.$('.xrow.xrow_' + this.xModel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
+  var slideId = this.jsh.$('.xrow.xrow_' + this.xmodel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
     .attr('data-item-id');
   return this._dataStore.getDataItem(slideId) || {};
 }
@@ -340,7 +337,7 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
  * @return {number}
  */
 DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
-  return this.jsh.XExt.XModel.GetRowID(this.xModel.id, $element);
+  return this.jsh.XExt.XModel.GetRowID(this.xmodel.id, $element);
 }
 
 /**
@@ -373,43 +370,43 @@ DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId)
  */
 DataEditor_GridPreviewController.prototype.initialize = function() {
 
-  var self = this;
-  var modelInterface = this.jsh.App[this.xModel.id];
+  var _this = this;
+  var modelInterface = this.jsh.App[this.xmodel.id];
 
   if (!_.isFunction(modelInterface.getDataApi)) {
-    throw new Error('model must have function "getDataApi(xModel, apiType)"');
+    throw new Error('model must have function "getDataApi(xmodel, apiType)"');
   }
 
-  var gridApi = modelInterface.getDataApi(this.xModel, 'grid');
-  var formApi = modelInterface.getDataApi(this.xModel, 'form');
+  var gridApi = modelInterface.getDataApi(this.xmodel, 'grid');
+  var formApi = modelInterface.getDataApi(this.xmodel, 'form');
 
   gridApi.dataset = this._apiData;
   formApi.dataset = this._apiData;
 
   formApi.onInsert = function(action, actionResult, newRow) {
-    newRow[self._idFieldName] = self._insertId;
-    newRow.sequence = self.getNextSequenceNumber();
-    self._insertId = undefined;
+    newRow[_this._idFieldName] = _this._insertId;
+    newRow.sequence = _this.getNextSequenceNumber();
+    _this._insertId = undefined;
 
-    var dataStoreItem = self._modelTemplate.makePristineCopy(newRow, false);
-    dataStoreItem = self._modelTemplate.populateDataInstance(dataStoreItem);
-    self._dataStore.addNewItem(dataStoreItem);
+    var dataStoreItem = _this._modelTemplate.makePristineCopy(newRow, false);
+    dataStoreItem = _this._modelTemplate.populateDataInstance(dataStoreItem);
+    _this._dataStore.addNewItem(dataStoreItem);
 
-    actionResult[self.xModel.id] = {}
-    actionResult[self.xModel.id][self._idFieldName] = newRow[self._idFieldName];
-    self.dataUpdated();
-    self.renderRow(self._dataStore.getDataItem(newRow[self._idFieldName]));
+    actionResult[_this.xmodel.id] = {}
+    actionResult[_this.xmodel.id][_this._idFieldName] = newRow[_this._idFieldName];
+    _this.dataUpdated();
+    _this.renderRow(_this._dataStore.getDataItem(newRow[_this._idFieldName]));
   }
 
   formApi.onDelete  = function(action, actionResult, keys) {
-    self.showOverlay();
+    _this.showOverlay();
 
-    self._dataStore.deleteItem(keys[self._idFieldName]);
+    _this._dataStore.deleteItem(keys[_this._idFieldName]);
     //Commit Data
-    self._apiData.splice(0, self._apiData.length);
-    self._dataStore.getDataArray().forEach(a => self._apiData.push(a));
+    _this._apiData.splice(0, _this._apiData.length);
+    _this._dataStore.getDataArray().forEach(a => _this._apiData.push(a));
 
-    self.dataUpdated();
+    _this.dataUpdated();
     return false;
   }
 
@@ -436,33 +433,65 @@ DataEditor_GridPreviewController.prototype.makeItemId = function() {
 
 /**
  * @private
+ */
+DataEditor_GridPreviewController.prototype.addItem = function() {
+  var _this = this;
+
+  if (_this.xmodel.controller.editablegrid.CurrentCell) if(!_this.xmodel.controller.form.CommitRow()) return;
+  if (_this.jsh.XPage.GetChanges().length > 0) { _this.jsh.XExt.Alert('Please save all changes before adding a row.'); return; }
+
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(null), this.isReadOnly(), this.cms, this.jsh, _this.component)
+
+  //Create a new item
+  var currentData = this.xmodel.controller.form.NewRow({ unbound: true });
+
+  //Open the form to edit the item
+  dataEditor.open(currentData, this._properties || {},  function(updatedData) {
+    _.assign(currentData, updatedData)
+    var rowId = _this.xmodel.controller.AddRow();
+    for(var key in currentData){
+      if(key in _this.xmodel.fields){
+        var oldval = _this.xmodel.get(key, rowId);
+        if(oldval !== currentData[key]){
+          _this.xmodel.set(key, updatedData[key], rowId);
+        }
+      }
+    }
+    _this.updateModelDataFromDataStore(rowId);
+    _this.dataUpdated();
+    _this.forceCommit();
+    _this.renderRow(currentData);
+  });
+}
+
+/**
+ * @private
  * @param {string} itemId - the ID of the item to edit
  */
 DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
-  var self = this;
-  var dateEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, self.component)
+  var _this = this;
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, _this.component)
   var currentData = this._dataStore.getDataItem(itemId);
-  var rowId = this.getRowIdFromItemId(itemId);
 
-  dateEditor.open(this._dataStore.getDataItem(itemId), this._properties || {},  function(updatedData) {
+  dataEditor.open(currentData, this._properties || {},  function(updatedData) {
       _.assign(currentData, updatedData)
-      var dataId = currentData[self._idFieldName];
-      var rowId = self.getRowIdFromItemId(dataId);
+      var dataId = currentData[_this._idFieldName];
+      var rowId = _this.getRowIdFromItemId(dataId);
 
       for(var key in currentData){
-        if(key in self.xModel.fields){
-          var oldval = self.xModel.get(key, rowId);
+        if(key in _this.xmodel.fields){
+          var oldval = _this.xmodel.get(key, rowId);
           if(oldval !== currentData[key]){
-            self.xModel.set(key, updatedData[key], rowId);
+            _this.xmodel.set(key, updatedData[key], rowId);
           }
         }
       }
-      self.updateModelDataFromDataStore(rowId);
-      self.dataUpdated();
-      self.renderRow(currentData);
+      _this.updateModelDataFromDataStore(rowId);
+      _this.dataUpdated();
+      _this.renderRow(currentData);
   }, function() {
-    self.scrollToItemRow(itemId);
+    _this.scrollToItemRow(itemId);
   });
 }
 
@@ -472,13 +501,13 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
  * @param {number} rowId - the ID of the row to delete.
  */
 DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
-  var self = this;
-  self.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
+  var _this = this;
+  _this.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
     //Perform Delete
-    self.xModel.controller.DeleteRow(rowId, { force: true });
+    _this.xmodel.controller.DeleteRow(rowId, { force: true });
     setTimeout(function() {
-      self.forceCommit();
-      setTimeout(function() { self.forceRefresh() });
+      _this.forceCommit();
+      setTimeout(function() { _this.forceRefresh() });
     });
   });
 }
@@ -490,68 +519,73 @@ DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
  * @param {TileData} data
  */
 DataEditor_GridPreviewController.prototype.renderRow = function(data) {
-  var self = this;
+  var _this = this;
   var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
   var template =
-      '<div class="toolbar">' +
-        '<button data-component-part="moveItem" data-dir="prev">' +
+      '<div class="jsharmony_cms component_toolbar">' +
+        '<div class="component_toolbar_button" data-component-part="moveItem" data-dir="prev">' +
           '<span class="material-icons" style="display:inline-block; transform: rotate(-90deg)">' +
             'chevron_right' +
           '</span>' +
-        '</button>' +
-        '<button data-component-part="moveItem" data-dir="next">' +
+        '</div>' +
+        '<div class="component_toolbar_button" data-component-part="moveItem" data-dir="next">' +
           '<span class="material-icons" style="display:inline-block; transform: rotate(90deg)">' +
             'chevron_right' +
           '</span>' +
-        '</button>' +
-        '<button data-component-part="editButton" data-allowReadOnly>' +
+        '</div>' +
+        '<div class="component_toolbar_button" data-component-part="editButton" data-allowReadOnly>' +
           '<span class="material-icons">' +
             'edit' +
           '</span>' +
-        '</button>' +
-        '<button data-component-part="deleteItem">' +
+        '</div>' +
+        '<div class="component_toolbar_button" data-component-part="deleteItem">' +
           '<span class="material-icons">' +
             'delete' +
           '</span>' +
-        '</button>' +
+        '</div>' +
       '</div>' +
-      '<div data-component-part="preview"></div>'
+      '<div class="jsharmony_cms_component_preview" data-component-part="preview"></div>'
   $row.empty().append(template);
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
   renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
   if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderConfig);
 
-  var rendered = TemplateRenderer.render(renderConfig, 'gridRowDataPreview', this.jsh);
+  var rendered = TemplateRenderer.render(renderConfig, 'gridRowDataPreview', this.jsh, this.cms, componentConfig);
 
-  $row.find('[data-component-part="preview"]').empty().append(rendered);
+  var $wrapper = $row.find('[data-component-part="preview"]');
+
+  $wrapper.empty().append(rendered);
+
+  if(this.cms && this.cms.editor) this.cms.editor.disableLinks($wrapper)
 
   if (this.isReadOnly()) {
-    $row.find('button:not([data-allowReadOnly])').attr('disabled', true);
+    $row.find('.component_toolbar_button:not([data-allowReadOnly])').attr('disabled', true);
   } else {
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
-        if (self.isReadOnly()) return;
-        var moveDown = self.jsh.$(e.target).closest('button[data-dir]').attr('data-dir') === 'next';
-        self.changeItemSequence(dataId, moveDown);
+        if (_this.isReadOnly()) return;
+        var moveDown = _this.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
+        _this.changeItemSequence(dataId, moveDown);
     });
 
     $row.find('[data-component-part="deleteItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
-      if (self.isReadOnly()) return;
-      var rowId = self.getParentRowId(e.target);
-      self.promptDelete(rowId);
+      if (_this.isReadOnly()) return;
+      var rowId = _this.getParentRowId(e.target);
+      _this.promptDelete(rowId);
     });
   }
 
   $row.find('[data-component-part="editButton"]').on('click', function() {
-    self.openItemEditor(dataId);
+    _this.openItemEditor(dataId);
   });
 
   $row.find('[data-component-part="preview"]').off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
-    self.openItemEditor(dataId);
+    _this.openItemEditor(dataId);
   });
 
   $row.off('mousedown.cmsComponent').on('mousedown.cmsComponent', function(event) {
@@ -564,11 +598,11 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   this.updateSequenceButtonViews();
 
-  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, self.cms, self.component);
+  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, _this.cms, _this.component);
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
-      self.cms.componentManager.renderComponent(el);
+      _this.cms.componentManager.renderContentComponent(el);
     });
   }, 100);
 }
@@ -618,14 +652,14 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
 
   var idField = this._idFieldName;
   var data = this.getItemDataFromRowId(rowId);
-  var item = this.xModel.controller.form.DataSet.find(a => a[idField] === data[idField]);
+  var item = this.xmodel.controller.form.DataSet.find(a => a[idField] === data[idField]);
   if (!item) {
     return;
   }
 
   // Don't share references!
   _.extend(item, data);
-  this.xModel.controller.form.ResetDirty();
+  this.xmodel.controller.form.ResetDirty();
 }
 
 /**
@@ -634,11 +668,11 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
  * @private
  */
 DataEditor_GridPreviewController.prototype.updateParentController = function() {
-  var self = this;
+  var _this = this;
   this._dataStore.sortBySequence();
 
   var items = this._dataStore.getDataArray()  || [];
-  items = _.map(items, function(item) { return self._modelTemplate.makePristineCopy(item, true); });
+  items = _.map(items, function(item) { return _this._modelTemplate.makePristineCopy(item, true); });
 
   var data = { items: items };
 
@@ -651,19 +685,19 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
  */
 DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function() {
 
-  var self = this;
+  var _this = this;
   _.forEach(this._dataStore.getDataArray(), function(item, index) {
-    var dataId = item[self._idFieldName];
-    var $row = self.getRowElementFromRowId(self.getRowIdFromItemId(dataId));
+    var dataId = item[_this._idFieldName];
+    var $row = _this.getRowElementFromRowId(_this.getRowIdFromItemId(dataId));
 
     var isFirst = index < 1;
-    var isLast = index >= (self._dataStore.count() - 1);
+    var isLast = index >= (_this._dataStore.count() - 1);
 
     $row.find('[data-component-part="moveItem"][data-dir="prev"]')
-        .attr('disabled', isFirst || self.isReadOnly());
+        .attr('disabled', isFirst || _this.isReadOnly());
 
     $row.find('[data-component-part="moveItem"][data-dir="next"]')
-      .attr('disabled', isLast || self.isReadOnly());
+      .attr('disabled', isLast || _this.isReadOnly());
   });
 }
 

@@ -17,6 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 var Helper = require('jsharmony/Helper');
+var HelperFS = require('jsharmony/HelperFS');
 var _ = require('lodash');
 var path = require('path');
 var fs = require('fs');
@@ -30,51 +31,117 @@ module.exports = exports = function(module, funcs){
     return path.join(path.join(module.jsh.Config.datadir,'menu'),menu_file_id.toString()+'.json');
   }
 
-  exports.getClientMenu = function(menu, options, cb){
-    var appsrv = this;
-    options = _.extend({ target: '' }, options);
-
+  exports.getClientMenu = function(menu, cb){
     var menu_file_id = menu.menu_file_id;
-    var menu_template_id = menu.menu_template_id;
-    if(!menu_template_id) menu_template_id = module.defaultMenuTemplate;
-    var template = module.MenuTemplates[menu_template_id];
 
     //Load Menu Content from disk
     module.jsh.ParseJSON(funcs.getMenuFile(menu_file_id), module.name, 'Menu File ID#'+menu_file_id, function(err, menu_content){
-      //If an error occurs loading the file, ignore it and load the default template instead
-      
+      if(err && !HelperFS.fileNotFound(err)) return cb(err);
       menu_content = menu_content || { menu_items: [] };
-      menu_content.template = {
-        title: template.title||'',
-        content_elements: {},
-      }; 
-      for(var key in template.content_elements){
-        var content_element = template.content_elements[key];
-        menu_content.template.content_elements[key] = {
-          filename: content_element.filename
-        };
-        if(options.target){
-          if('template' in content_element) menu_content.template.content_elements[key].template = content_element.template[options.target] || '';
-          if('remote_template' in content_element) menu_content.template.content_elements[key].remote_template = content_element.remote_template[options.target] || '';
-        }
-      }
       return cb(null,menu_content);
-    });
+    }, { fatalError: false });
   }
 
-  exports.createMenuTree = function(menu_items){
+  exports.getMenuUrl = function(menu_item, branchData){
+    if((menu_item.menu_item_link_type||'').toString()=='PAGE'){
+      var page_key = parseInt(menu_item.menu_item_link_dest);
+      if(!branchData) return '#';
+      if(!(page_key in branchData.page_keys)) throw new Error('Menu  '+(menu_item.menu_tag||'')+' item '+menu_item.menu_item_path+' :: '+menu_item.menu_item_text+' links to missing Page ID # '+page_key.toString());
+      return branchData.page_keys[page_key];
+    }
+    else if((menu_item.menu_item_link_type||'').toString()=='MEDIA'){
+      var media_key = parseInt(menu_item.menu_item_link_dest);
+      if(!branchData) return '#';
+      if(!(media_key in branchData.media_keys)) throw new Error('Menu '+(menu_item.menu_tag||'')+' item '+menu_item.menu_item_path+' :: '+menu_item.menu_item_text+' links to missing Media ID # '+media_key.toString());
+      return branchData.media_keys[media_key];
+    }
+    return menu_item.menu_item_link_dest;
+  }
+
+  exports.createMenuTree = function(menu, branchData){
+
+    menu.menu_items = JSON.parse(JSON.stringify(menu.menu_items||[]));
+
     //Generate menu item tree
     var menu_item_ids = {};
-    _.each(menu_items, function(menu_item){
+    for(var i=0;i<menu.menu_items.length;i++){
+      var menu_item = menu.menu_items[i];
       menu_item.menu_item_children = [];
       menu_item_ids[menu_item.menu_item_id] = menu_item;
-    });
+
+      menu_item.menu_item_type = (menu_item.menu_item_type||'TEXT').toUpperCase();
+      menu_item.menu_item_link_type = (menu_item.menu_item_link_type||'').toUpperCase();
+      menu_item.menu_item_link_target = (menu_item.menu_item_link_target||'').toUpperCase();
+
+      menu_item.id = menu_item.menu_item_id;
+      menu_item.children = menu_item.menu_item_children;
+
+      //html
+      menu_item.html = menu_item.menu_item_text;
+      if(menu_item.menu_item_type != 'HTML') menu_item.html = Helper.escapeHTML(menu_item.html);
+      menu_item.text = Helper.StripTags(menu_item.html);
+
+      menu_item.tag = menu_item.menu_item_tag || '';
+      menu_item.menu_tag = menu.menu_tag || '';
+      menu_item.class = menu_item.menu_item_class || '';
+      menu_item.style = menu_item.menu_item_style || '';
+
+      menu_item.href = '';
+      menu_item.onclick = '';
+      if(menu_item.menu_item_link_type){
+        if(menu_item.menu_item_link_type=='JS'){
+          menu_item.href = '#';
+          menu_item.onclick = menu_item.menu_item_link_dest + '; return false;';
+        } else {
+          menu_item.href = funcs.getMenuUrl(menu_item, branchData);
+        }
+      }
+        
+      menu_item.target = ((menu_item.menu_item_link_type != 'JS') && (menu_item.menu_item_link_target == 'NEWWIN')) ? '_blank' : '';
+      menu_item.selected = false;
+    }
+
     var menu_item_tree = [];
-    _.each(menu_items, function(menu_item){
-      if(!menu_item.menu_item_parent_id) menu_item_tree.push(menu_item);
-      else menu_item_ids[menu_item.menu_item_parent_id].menu_item_children.push(menu_item);
+    _.each(menu.menu_items, function(menu_item){
+      if(!menu_item.menu_item_parent_id){
+        menu_item_tree.push(menu_item);
+        menu_item.parent = null;
+      }
+      else {
+        menu_item_ids[menu_item.menu_item_parent_id].children.push(menu_item);
+        menu_item.parent = menu_item_ids[menu_item.menu_item_parent_id];
+      }
     });
-    return menu_item_tree;
+
+    function resolveParent(menu_item){
+      if(menu_item.parents) return;
+      if(!menu_item.parent){
+        menu_item.parents = [];
+        menu_item.depth = 1;
+        return;
+      }
+      if(!menu_item.parent.parents) resolveParent(menu_item.parent);
+      menu_item.parents = menu_item.parent.parents.concat(menu_item.parent);
+      menu_item.depth = menu_item.parent.depth + 1;
+    }
+
+    _.each(menu.menu_items, function(menu_item){
+      resolveParent(menu_item);
+      menu_item.getSiblings = function(){
+        var siblings = menu_item.parent ? menu_item.parent.children : menu_item_tree;
+        return _.filter(siblings, function(sibling){ return sibling.id != menu_item.id; });
+      }
+    });
+
+    //Add properties to menu
+    menu.menu_item_tree = menu_item_tree;
+    menu.tree = menu_item_tree;
+    menu.items = menu.menu_items;
+    menu.tag = menu.menu_tag;
+    menu.currentItem = null;
+    //Aliases
+    menu.topItems = menu.tree;
+    menu.allItems = menu.items;
   }
   
   exports.menu = function (req, res, next) {
@@ -102,15 +169,15 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.menu_key', 'Menu Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select menu_key,menu_file_id,menu_template_id,menu_path';
+    sql = 'select menu_key,menu_file_id';
 
     if(Q.menu_id){
       sql_ptypes.push(dbtypes.BigInt);
       sql_params.menu_id = Q.menu_id;
       validate.AddValidator('_obj.menu_id', 'Menu ID', 'B', [XValidate._v_IsNumeric()]);
-      sql += ' from '+(module.schema?module.schema+'.':'')+'menu where menu_key=@menu_key and menu_id=@menu_id';
+      sql += ' from {schema}.menu where menu_key=@menu_key and menu_id=@menu_id and site_id={schema}.my_current_site_id()';
     }
-    else sql += ' from '+(module.schema?module.schema+'.':'')+'v_my_menu where menu_key=@menu_key';
+    else sql += ' from {schema}.v_my_menu where menu_key=@menu_key';
     
     var fields = [];
     var datalockstr = '';
@@ -119,7 +186,7 @@ module.exports = exports = function(module, funcs){
     
     verrors = _.merge(verrors, validate.Validate('B', sql_params));
     if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-    appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Menu ID'); }
       var menu = rslt[0][0];
@@ -131,7 +198,7 @@ module.exports = exports = function(module, funcs){
         if (!appsrv.ParamCheck('Q', Q, ['|menu_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //Return menu
-        funcs.getClientMenu(menu, { }, function(err, clientMenu){
+        funcs.getClientMenu(menu, function(err, clientMenu){
           if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
 
           var page_keys = {};
@@ -265,12 +332,15 @@ module.exports = exports = function(module, funcs){
 
     //Generate indexed list of menu items by ID
     var menu_items_by_id = {};
-    _.each(menu_items, function(menu_item){
+    for(var i=0;i<menu_items.length;i++){
+      var menu_item = menu_items[i];
+      menu_item.collection_index = i;
       menu_items_by_id[menu_item.menu_item_id] = menu_item;
       if(!menu_item.menu_item_parent_id){
         menu_item.menu_item_path_text = '/' + Helper.StripTags(menu_item.menu_item_text).trim() + '/';
+        menu_item.menu_item_collection_index_array = [menu_item.collection_index];
       }
-    });
+    }
 
     //Generate text path
     function getTextPath(menu_item){
@@ -278,7 +348,12 @@ module.exports = exports = function(module, funcs){
       if(!menu_item.menu_item_path_text){
         menu_item.menu_item_parents = getTextPath(menu_items_by_id[menu_item.menu_item_parent_id]);
         menu_item.menu_item_path_text = menu_item.menu_item_parents + Helper.StripTags(menu_item.menu_item_text).trim() + '/';
+        
+        if(!menu_item.menu_item_collection_index_array){
+          menu_item.menu_item_collection_index_array = menu_items_by_id[menu_item.menu_item_parent_id].menu_item_collection_index_array.concat([menu_item.collection_index]);
+        }
       }
+      menu_item.menu_item_path_array = (menu_item.menu_item_path_text||'').split('/');
       return menu_item.menu_item_path_text;
     }
 
@@ -288,6 +363,17 @@ module.exports = exports = function(module, funcs){
     //Get text paths
     _.each(menu_items, function(menu_item){
       getTextPath(menu_item);
+    });
+
+    //Sort menu items
+    menu_items.sort(function(a,b){
+      for(var i=0;i<a.menu_item_collection_index_array.length;i++){
+        if(b.menu_item_collection_index_array.length <= i) return 1;
+        if(a.menu_item_collection_index_array[i] > b.menu_item_collection_index_array[i]) return 1;
+        if(a.menu_item_collection_index_array[i] < b.menu_item_collection_index_array[i]) return -1;
+      }
+      if(a.menu_item_collection_index_array.length < b.menu_item_collection_index_array.length) return -1;
+      return 0;
     });
 
     _.each(menu_items, function(menu_item){
