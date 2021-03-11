@@ -60,9 +60,13 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
+      var baseurl = req.baseurl;
+      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+
       funcs.validateBranchAccess(req, res, branch_id, 'R%', undefined, function(){
         var branch_data = {
           _DBContext: req._DBContext,
+          baseurl: baseurl,
           branch_id: branch_id,
           deployment_target_params: undefined,
           site_id: null,
@@ -235,6 +239,7 @@ module.exports = exports = function(module, funcs){
           funcs.getClientPage(branch_data._DBContext, page, null, branch_data.site_id, { includeExtraContent: true, pageTemplates: branch_data.page_templates }, function(err, clientPage){
             if(err) return page_cb(err);
             if(!clientPage) return page_cb(null);
+            funcs.localizePageURLs(clientPage.page, branch_data.baseurl, !!clientPage.template.raw, null);
             page.compiled = clientPage.page;
             page.template = clientPage.template;
             if(page.compiled.content){

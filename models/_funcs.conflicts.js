@@ -139,6 +139,7 @@ module.exports = exports = function(module, funcs){
           funcs.getClientPage(branch_data._DBContext, page, null, branch_data.site_id, { includeExtraContent: true, pageTemplates: branch_data.page_templates }, function(err, clientPage){
             if(err) return page_cb(err);
             if(!clientPage) return page_cb(null); 
+            funcs.localizePageURLs(clientPage.page, branch_data.baseurl, !!clientPage.template.raw, null);
             page.compiled = clientPage.page;
             page.template = clientPage.template;
             if(page.compiled.content){
@@ -445,7 +446,7 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.conflicts = function(context, src_branch_id, dst_branch_id, callback) {
+  exports.conflicts = function(context, baseurl, src_branch_id, dst_branch_id, callback) {
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -461,6 +462,7 @@ module.exports = exports = function(module, funcs){
       page_templates: null,
       site_id: null,
       _DBContext: context,
+      baseurl: baseurl,
     };
 
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
@@ -647,7 +649,10 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      funcs.conflicts(req._DBContext, src_branch_id, dst_branch_id, function(err, result) {
+      var baseurl = req.baseurl;
+      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+
+      funcs.conflicts(req._DBContext, baseurl, src_branch_id, dst_branch_id, function(err, result) {
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify(result));

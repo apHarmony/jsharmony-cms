@@ -664,7 +664,7 @@ describe('Merges - Matrix', function() {
       setupBranchPage(testDstBranchId, testPageKey, dstPage),
       function(cb) {
         console.log('conflicts for ', label);
-        jsh.Modules.jsHarmonyCMS.funcs.conflicts('S1', testSrcBranchId, testDstBranchId, function(err, results) {
+        jsh.Modules.jsHarmonyCMS.funcs.conflicts('S1', '', testSrcBranchId, testDstBranchId, function(err, results) {
           if(err) return cb(err);
           assert(!_.isEmpty(results.branch_conflicts));
           var resultStatus = results.branch_conflicts.page.length > 0 ? CONFLICT : nc;

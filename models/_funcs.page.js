@@ -166,8 +166,8 @@ module.exports = exports = function(module, funcs){
 
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
-      getMediaURL: function(media_key, branchData, getLinkContent){ return ''; },
-      getPageURL: function(page_key, branchData, getLinkContent){ return ''; },
+      getMediaURL: function(media_key, branchData, getLinkContent, urlparts){ return ''; },
+      getPageURL: function(page_key, branchData, getLinkContent, urlparts){ return ''; },
       onError: function(err){ },
       removeClass: false,
       replaceComponents: false,
@@ -188,7 +188,7 @@ module.exports = exports = function(module, funcs){
         var media_key = patharr[3];
         if(parseInt(media_key).toString()==media_key){
           try{
-            var media_url = options.getMediaURL(media_key, options.branchData, getLinkContent);
+            var media_url = options.getMediaURL(media_key, options.branchData, getLinkContent, urlparts);
           }
           catch(ex){
             if(options.onError) options.onError(ex);
@@ -202,7 +202,7 @@ module.exports = exports = function(module, funcs){
         var page_key = patharr[3];
         if(parseInt(page_key).toString()==page_key){
           try{
-            var page_url = options.getPageURL(page_key, options.branchData, getLinkContent);
+            var page_url = options.getPageURL(page_key, options.branchData, getLinkContent, urlparts);
           }
           catch(ex){
             if(options.onError) options.onError(ex);
@@ -366,6 +366,34 @@ module.exports = exports = function(module, funcs){
     return url;
   }
 
+  exports.localizePageURLs = function(page, baseurl, isRaw, media_file_ids){
+
+    function replaceURLs(content, options){
+      var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
+        getMediaURL: function(media_key, branchData, getLinkContent, urlparts){
+          if(!media_file_ids){
+            return baseurl + urlparts.path.substr(1) + '#@JSHCMS';
+          }
+          return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
+        },
+        getPageURL: function(page_key, branchData, getLinkContent, urlparts){
+          return baseurl+'_funcs/page/'+page_key+'/#@JSHCMS';
+        }
+      }));
+      return rslt;
+    }
+
+    if(isRaw) {
+      if(page.content && page.content.body) page.content.body = replaceURLs(page.content.body);
+    }
+    else {
+      if(page.content) for(var key in page.content){ page.content[key] = replaceURLs(page.content[key]); }
+      _.each(['css','header','footer'], function(key){
+        if(page[key]) page[key] = replaceURLs(page[key]);
+      });
+    }
+  }
+
   exports.page = function (req, res, next) {
     var verb = req.method.toLowerCase();
 
@@ -436,9 +464,6 @@ module.exports = exports = function(module, funcs){
         return Helper.GenError(req, res, -4, 'Page not found in current branch');
       }
       var page = rslt[0][0];
-
-      //Get Page Template
-      var page_template_id = page.page_template_id;
 
       var baseurl = req.baseurl;
       if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
@@ -553,31 +578,11 @@ module.exports = exports = function(module, funcs){
           //Get page
           function(cb){
 
-            function replaceURLs(content, options){
-              var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
-                getMediaURL: function(media_key){
-                  return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
-                },
-                getPageURL: function(page_key){
-                  return baseurl+'_funcs/page/'+page_key+'/#@JSHCMS';
-                }
-              }));
-              return rslt;
-            }
-
             funcs.getClientPage(req._DBContext, page, sitemaps, site_id, { includeExtraContent: true }, function(err, _clientPage){
               if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
               clientPage = _clientPage;
               if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
-              if(!clientPage.template.raw){
-                if(clientPage.page.content) for(var key in clientPage.page.content){ clientPage.page.content[key] = replaceURLs(clientPage.page.content[key]); }
-                _.each(['css','header','footer'], function(key){
-                  if(clientPage.page[key]) clientPage.page[key] = replaceURLs(clientPage.page[key]);
-                });
-              }
-              else if(clientPage.template.raw) {
-                if(clientPage.page.content && clientPage.page.content.body) clientPage.page.content.body = replaceURLs(clientPage.page.content.body);
-              }
+              funcs.localizePageURLs(clientPage.page, baseurl, !!clientPage.template.raw, media_file_ids);
               return cb();
             });
           }
@@ -745,9 +750,6 @@ module.exports = exports = function(module, funcs){
       if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a branch'); }
 
       var devInfo = rslt[0][0];
-
-      var baseurl = req.baseurl;
-      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
 
       if (verb == 'get'){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
