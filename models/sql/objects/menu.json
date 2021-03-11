@@ -5,7 +5,7 @@
     "columns": [
       { "name": "menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
-      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
+      { "name": "site_id", "type": "bigint", "null": false },
       { "name": "menu_file_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "menu_orig_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "menu_name", "type": "varchar", "length": 256, "null": false },
@@ -26,11 +26,16 @@
           "setif(null(menu.menu_file_id),menu_file_id,menu.menu_id);"
         ]
       },
+      { "on": ["validate_insert"], "exec": [
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
+        ]
+      },
       { "on": ["validate_update"], "exec": [
           "errorif(update(menu_key) and (deleted(menu_key) is not null),'Cannot update menu_key');",
           "errorif(update(menu_file_id) and (deleted(menu_file_id) is not null),'Cannot update menu_file_id');",
           "errorif(update(menu_name) and (deleted(menu_name) is not null),'Cannot update menu_name');",
           "errorif(update(menu_tag) and (deleted(menu_tag) is not null),'Cannot update menu_tag');",
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
         ]
       },
       { "on": ["update", "insert"], "exec": [

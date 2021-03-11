@@ -6,8 +6,8 @@
     "menu":"Publish",
     "breadcrumbs":"#CMS_SITE_BREADCRUMBS",
     "oninit": "jsh.System.RequireSite(xmodel);",
-    "actions":"BIU",
-    "roles": {"PUBLISHER": "BIU"},
+    "actions":"BU",
+    "roles": {"PUBLISHER": "BU"},
     "onecolumn":true,
     "onload": "_this.onload();",
     "fields": [

@@ -293,6 +293,7 @@ jsHarmonyCMS.prototype.initBranchItems = function(cb){
     sql_branch_items.push({
       item: branchItem.name,
       tbl_branch_item: branchItem.tbl_branch_item,
+      tbl_item: branchItem.tbl_item,
     });
   }
   _this.jsh.DB['default'].SQLExt.Funcs[_this.schema+'.branch_items'] = JSON.stringify(sql_branch_items);

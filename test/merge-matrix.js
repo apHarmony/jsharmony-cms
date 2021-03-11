@@ -560,22 +560,22 @@ describe('Merges - Matrix', function() {
           });
         },
         function(cb){
-          // create destiniation branch
-          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
-          select branch_id from cms.v_my_current_branch;"
-          db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
-            assert.ifError(err);
-            testDstBranchId = dbrslt;
-            cb();
-          });
-        },
-        function(cb){
           // create source branch
           var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Source Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
           select branch_id from cms.v_my_current_branch;"
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testSrcBranchId = dbrslt;
+            cb();
+          });
+        },
+        function(cb){
+          // create destination branch
+          var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
+          select branch_id from cms.v_my_current_branch;"
+          db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
+            assert.ifError(err);
+            testDstBranchId = dbrslt;
             cb();
           });
         },
@@ -587,7 +587,7 @@ describe('Merges - Matrix', function() {
           insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
           insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
           insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
-          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%'"
+          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%' order by page_id;"
           db.Recordset('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testPageKey = dbrslt[0].page_key;
@@ -667,7 +667,15 @@ describe('Merges - Matrix', function() {
         jsh.Modules.jsHarmonyCMS.funcs.conflicts('S1', testSrcBranchId, testDstBranchId, function(err, results) {
           if(err) return cb(err);
           assert(!_.isEmpty(results.branch_conflicts));
-          assert.strictEqual(results.branch_conflicts.page.length > 0 ? CONFLICT : nc, status);
+          var resultStatus = results.branch_conflicts.page.length > 0 ? CONFLICT : nc;
+          if(resultStatus != status){
+            console.log(testSrcBranchId);
+            console.log(srcPage);
+            console.log(testDstBranchId);
+            console.log(dstPage);
+            console.log('Actual Result: ' + JSON.stringify(results.branch_conflicts.page));
+          }
+          assert.strictEqual(resultStatus, status);
           cb();
         });
       },

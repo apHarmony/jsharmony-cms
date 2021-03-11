@@ -484,8 +484,8 @@
       //Check out a branch
       {"on": ["update"], "exec": [
           "errorif((inserted(new_branch_id) is not null) and (not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id))),'User does not have access to branch')",
-          "update {schema}.v_my_session set site_id=(select site_id from {schema}.branch where branch_id=inserted(new_branch_id))",
-          "update {schema}.v_my_site set branch_id=inserted(new_branch_id) where site_id=(select site_id from {schema}.branch where branch_id=inserted(new_branch_id))",
+          "update {schema}.v_my_session set site_id=(case when inserted(new_branch_id) is null then {schema}.my_current_site_id() else (select site_id from {schema}.branch where branch_id=inserted(new_branch_id)) end)",
+          "update {schema}.v_my_site set branch_id=inserted(new_branch_id) where site_id=case when inserted(new_branch_id) is null then {schema}.my_current_site_id() else (select site_id from {schema}.branch where branch_id=inserted(new_branch_id)) end",
         ]
       },
       //Add a new branch to the site
@@ -499,16 +499,18 @@
           //Verify access to site
           "errorif((inserted(site_id) is not null) and (not exists(select * from {schema}.v_sys_user_site_access where v_sys_user_site_access.sys_user_id=jsharmony.my_sys_user_id() and v_sys_user_site_access.site_id=inserted(site_id) and sys_user_site_access in ('AUTHOR','PUBLISHER','WEBMASTER'))),'User does not have access to site')",
           //Insert branch
-          "clear_insert_identity()",
-          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', $ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
-          //Set user's current branch to cloned branch
-          "update {schema}.v_my_site set branch_id=last_insert_identity() where site_id=$ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id))",
-          "update {schema}.v_my_session set site_id=$ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id))",
-          //Add all menu / pages / media / redirect / sitemap from other branch
-          //*Copy New Branch Changes*
-          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, branch_{item}_action, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, branch_{item}_action, {item}_orig_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'\")",
-          //*Reset New Branch Changes*
-          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and {item}_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'\")"
+          "with_insert_identity(branch, branch_id, ",
+          "  insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', $ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end)),",
+          ////Set user's current branch to cloned branch
+          "  update {schema}.v_my_site set branch_id=@@INSERT_ID where site_id=$ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id))",
+          "  update {schema}.v_my_session set site_id=$ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id))",
+          ////Add all menu / pages / media / redirect / sitemap from other branch
+          ////*Copy New Branch Changes*
+          "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, branch_{item}_action, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, branch_{item}_action, {item}_orig_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'\")",
+          ////*Reset New Branch Changes*
+          "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and {item}_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'\")",
+          "  increment_changes()",
+          ")"
         ]
       }
     ]

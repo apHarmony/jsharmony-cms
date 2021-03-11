@@ -10,6 +10,7 @@
     "rowstyle":"background-color:#fff;border-bottom:1px solid #ddd;",
     "rowlimit":99999,
     "sqlwhere":"sys_user_site_system_access=0",
+    "sqlwhere_disabled_on_insert": true,
     "hide_system_buttons":["search","export"],
     "sort": ["^sys_user_id"],
     "fields": [

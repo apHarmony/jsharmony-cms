@@ -22,7 +22,7 @@
     "type": "table",
     "caption": ["Site","Sites"],
     "columns": [
-      { "name": "site_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "site_id", "type": "bigint", "key": true, "identity": true, "null": false, "actions": ["prevent_update"] },
       { "name": "site_name", "type": "varchar", "length": 256, "null": false, "unique": true },
       { "name": "site_sts", "type": "varchar", "length": 32, "foreignkey": { "jsharmony.code_ac": "code_val" }, "null": false, "default": "ACTIVE" },
       { "name": "site_default_editor", "type": "bigint" },
@@ -52,6 +52,14 @@
           "  insert into {schema}.branch_sitemap(branch_id, sitemap_key, sitemap_id, sitemap_orig_id) values((select top1(branch_id from {schema}.branch where site_id=inserted(site_id))), @@INSERT_ID, @@INSERT_ID, @@INSERT_ID);",
           "  increment_changes()",
           ")"
+        ]
+      },
+      {
+        "on": ["delete"], "exec": [
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"delete from {tbl_branch_item} where branch_id in (select branch_id from {schema}.branch where site_id=deleted(site_id))\");",
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"delete from {tbl_branch_item} where {item}_key in (select {item}_key from {tbl_item} where site_id=deleted(site_id))\");",
+          "delete from {schema}.branch where site_id=deleted(site_id);",
+          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"delete from {tbl_item} where site_id=deleted(site_id)\");",
         ]
       }
     ],
@@ -151,11 +159,12 @@
         ]
       },
       { "on": ["update"], "exec": [
-          "update sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null)",
+          "update {schema}.sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
+          "update {schema}.sys_user_site set branch_id=null where branch_id is not null and sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null);",
         ]
       },
       { "on": ["delete"], "exec": [
-          "update sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null and ((sys_user_site_id is null) or (sys_user_site_id<>deleted(sys_user_site_id))))",
+          "update {schema}.sys_user_session set site_id=null where sys_user_id=deleted(sys_user_id) and site_id not in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=deleted(sys_user_id) and sys_user_site_access is not null and ((sys_user_site_id is null) or (sys_user_site_id<>deleted(sys_user_site_id))));",
         ]
       }
     ],
@@ -338,7 +347,7 @@
           "site_id",
           { "name":"sys_user_id", "type": "bigint", "sqlselect": "case when role_sys_user_id is not null then role_sys_user_id else sys_user_id end" },
           { "name":"sys_user_site_access", "type": "varchar", "length": 32, "sqlselect": "$ifnull(role_sys_role_name, sys_user_site_access)" },
-          { "name":"sys_user_site_system_access", "type": "varchar", "length": 32, "sqlselect": "(case when role_sys_user_id is not null then 1 else 0 end)" },
+          { "name":"sys_user_site_system_access", "type": "int", "sqlselect": "(case when role_sys_user_id is not null then 1 else 0 end)" },
         ],
       },
     },

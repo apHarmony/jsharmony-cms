@@ -38,6 +38,7 @@
       { "sys_role_name": "AUTHOR", "sys_role_desc": "All Sites - Author", "sys_role_seq": 2 },
       { "sys_role_name": "PUBLISHER", "sys_role_desc": "All Sites - Publisher", "sys_role_seq": 3 },
       { "sys_role_name": "WEBMASTER", "sys_role_desc": "Webmaster", "sys_role_seq": 4 },
+      { "sql": "delete from jsharmony.sys_user_role where sys_role_name in ('DADMIN','X_B','X_X')" },
       { "sql": "delete from jsharmony.sys_role where sys_role_name in ('DADMIN','X_B','X_X')" }
     ],
   },

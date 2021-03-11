@@ -23,7 +23,7 @@
     "columns": [
       { "name": "media_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" } },
-      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
+      { "name": "site_id", "type": "bigint", "null": false },
       { "name": "media_file_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
       { "name": "media_orig_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
       { "name": "media_desc", "type": "varchar", "length": 256 },
@@ -55,7 +55,8 @@
           "errorif(((inserted(media_ext) is null) and ({schema}.filename(inserted(media_path))<>'')),'Media file extension is required');",
           "errorif(((inserted(media_size) is null) and ({schema}.filename(inserted(media_path))<>'')),'Media file size is required');",
           "errorif(((inserted(media_is_folder) = 0) and ({schema}.filename(inserted(media_path))='')),'Media folders require media_is_folder=1');",
-          "errorif((inserted(media_filename) is not null) and (inserted(media_is_folder) = 1),'Cannot set media_filename on folder');"
+          "errorif((inserted(media_filename) is not null) and (inserted(media_is_folder) = 1),'Cannot set media_filename on folder');",
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
         ]
       },
       { "on": ["insert"], "exec": [
@@ -72,7 +73,8 @@
           "errorif(update(media_filename) and (deleted(media_filename) is not null),'Cannot update media_filename');",
           "errorif(update(media_path) and (deleted(media_path) is not null),'Cannot update media_path');",
           "errorif(update(media_filename) and (inserted(media_filename) is null) and (inserted(media_file_id) is not null),'Cannot set null media_filename on media with file');",
-          "errorif(update(media_is_folder) and (deleted(media_is_folder) is not null),'Cannot update media_is_folder');"
+          "errorif(update(media_is_folder) and (deleted(media_is_folder) is not null),'Cannot update media_is_folder');",
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
         ]
       },
       { "on": ["update", "insert"], "exec": [

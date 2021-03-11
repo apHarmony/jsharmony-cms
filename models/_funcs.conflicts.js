@@ -438,7 +438,7 @@ module.exports = exports = function(module, funcs){
       var newer = src.id;
       var older = dst.id;
       var cur_depth = 0;
-      while (newer && newer > older && cur_depth++ < 200) {
+      while (newer && (parseInt(newer) > parseInt(older)) && (cur_depth++ < 200)) {
         newer = parent[newer];
       }
       return newer != older;

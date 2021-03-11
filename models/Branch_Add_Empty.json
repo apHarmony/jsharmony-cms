@@ -22,7 +22,7 @@
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
       {"name":"source_site_name","control":"label","caption":"New Branch","controlstyle":"margin-right:0px;"},
-      {"name":"new_site_id","control":"hidden","default":"js:jsh.globalparams.site_id","validate":["Required"]},
+      {"name":"new_site_id","type":"bigint","control":"hidden","default":"js:jsh.globalparams.site_id","validate":["Required"]},
       {"name":"new_site_name","control":"label","controlstyle":"margin-right:4px;","readonly":true,"caption":"","caption_ext":"Site","validate":["Required"],"nl":false,"default":"js:jsh.globalparams.site_name"},
       {"control":"html","value":"/&nbsp;","nl":false},
       {"name":"new_branch_type","actions":"BU","type":"varchar","control":"dropdown","caption":"","nl":false,

@@ -28,7 +28,7 @@
     "columns": [
       { "name": "redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
-      { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
+      { "name": "site_id", "type": "bigint", "null": false },
       { "name": "redirect_orig_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
       { "name": "redirect_url", "type": "varchar", "length": 1024, "null": false },
       { "name": "redirect_url_type", "type": "varchar", "length": 32, "foreignkey": { "code_redirect_url_type": "code_val" }, "null": false, "default": "EXACT" },
@@ -47,8 +47,13 @@
           "setif(null(redirect.redirect_key),redirect_key,redirect.redirect_id);"
         ]
       },
+      { "on": ["validate_insert"], "exec": [
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
+        ]
+      },
       { "on": ["validate_update"], "exec": [
-          "errorif(update(redirect_key) and (deleted(redirect_key) is not null),'Cannot update redirect_key');"
+          "errorif(update(redirect_key) and (deleted(redirect_key) is not null),'Cannot update redirect_key');",
+          "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
         ]
       },
       { "on": ["update", "insert"], "exec": [

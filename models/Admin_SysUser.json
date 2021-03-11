@@ -13,6 +13,20 @@
       {"name":"sys_user_sys_user_func","__REMOVE__": true},
     ],
   },
+  "/jsHarmonyFactory/Admin/SysUser_Insert": {
+    "inherits":"/jsHarmonyFactory/Admin/SysUser_Insert",
+    "fields": [
+      {"name":"sys_user_sys_user_site",
+        "control":"subform","controlstyle":"width:385px;float:left;",
+        "target":"SysUser_Site",
+        "bindings":{"sys_user_id":"sys_user_id"},
+        "caption":"Site Access",
+        "actions": "BIUD",
+        "__AFTER__": "sys_user_sys_user_role"
+      },
+      {"name":"sys_user_sys_user_func","__REMOVE__": true},
+    ],
+  },
   "SysUser_Site": {
     "layout":"grid",
     "table":"{schema}.v_sys_user_site_access",
@@ -23,6 +37,7 @@
     "rowstyle":"background-color:#fff;border-bottom:1px solid #ddd;",
     "rowlimit":99999,
     "sqlwhere":"sys_user_site_system_access=0",
+    "sqlwhere_disabled_on_insert": true,
     "fields": [
       {"name":"sys_user_site_id","actions":"B","key":1,"control":"hidden"},
       {"name":"sys_user_id","actions":"BI","foreignkey":1,"control":"hidden"},

@@ -1098,7 +1098,7 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
-    var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(32)];
+    var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { site_id: site_id };
 
     var sql = "select site_id from {schema}.v_my_site where site_id=@site_id"
