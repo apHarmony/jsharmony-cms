@@ -91,42 +91,28 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig) {
       XExt: jsh.XExt,
       errors: '',
     }, params))
+  };
+
+  var renderOptions = {
+    renderType: type,
+    data: null,
+    properties: config.properties || {},
+  };
+  if(config.data && ('items' in config.data)) renderOptions.data = config.data.items;
+  else if(config.data && ('item' in config.data)) renderOptions.data = config.data.item;
+  else{
+    if(componentConfig && (componentConfig.multiple_items)) renderOptions.data = [];
+    else renderOptions.data = {};
   }
 
-  /** @type {RenderContext} */
-  var renderContext = {
+  var renderContext = cms.componentManager.getComponentRenderParameters(null, renderOptions, {
     baseUrl: config.baseUrl,
-    data: config.data,
-    properties: config.properties,
-    renderType: type,
     gridContext: config.gridContext,
-    _: jsh._,
-    escapeHTML: jsh.XExt.escapeHTML,
-    stripTags: jsh.XExt.StripTags,
     isInEditor: true,
     isInPageEditor: true,
     isInComponentEditor: ((type=='gridRowDataPreview') || (type=='gridItemPreview')),
-    items: null,     //= renderContext.data.items
-    item: null,      //= renderContext.data.item
-    component: null, //= renderContext.properties
-    data_errors: [],
     renderPlaceholder: renderPlaceholder,
-  }
-
-  //Add "item" or "items" variable
-  if(!renderContext.data) renderContext.data = {};
-  if((componentConfig && (componentConfig.multiple_items)) || ('items' in renderContext.data)){
-    renderContext.items = (renderContext.data.items || []);
-    renderContext.item = new Proxy(new Object(), { get: function(target, prop, receiver){ throw new Error('Please add a "component-item" attribute to the container HTML element, to iterate over the items array.  For example:\r\n<div component-item><%=item.name%></div>'); } });
-  }
-  else{
-    renderContext.item = renderContext.data.item || {};
-    renderContext.items = [renderContext.item];
-  }
-  for(var i=0;i<renderContext.items.length;i++) renderContext.data_errors.push('');
-
-  //Add "component" variable
-  renderContext.component = renderContext.properties || {};
+  });
   
   if(componentConfig){
 
@@ -184,16 +170,17 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig) {
     if(componentConfig.multiple_items){
       for(var i=0;i<renderContext.items.length;i++){
         var dataErrors = validate(dataValidators, renderContext.items[i], 'Component Data');  
-        if(dataErrors) renderContext.data_errors[i] = dataErrors;
+        if(dataErrors) renderContext.items[i].jsh_validation_errors = dataErrors;
       }
     }
   }
 
   var rendered = '';
+  
   try {
     rendered = jsh.ejs.render(config.template || '', renderContext);
   } catch (error) {
-    rendered = cms.componentManager.formatError('Component Rendering Error: '+error.toString());
+    rendered = cms.componentManager.formatComponentError('Component Rendering Error: '+error.toString());
     console.log('Render Context:');
     console.log(renderContext);
     console.error(error);

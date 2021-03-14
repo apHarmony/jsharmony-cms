@@ -1,0 +1,67 @@
+//Deployment Target Publish Path
+
+  //SFTP
+  sftp://username:password@host:port/path
+  //Optional - set private key in ftp_config.private_key setting below
+  //* Note - be sure to review the "ftp_config.delete_excess_files" option
+
+  //FTPS
+  ftps://username:password@ftp.domain.com:port/path
+  //* Note - be sure to review the "ftp_config.delete_excess_files" option
+
+  //FTP
+  ftp://username:password@ftp.domain.com:port/path
+  //* Note - be sure to review the "ftp_config.delete_excess_files" option
+
+  //Local filesystem
+  file://c:/path/to/folder/
+
+  //Amazon S3
+  s3://path/to/bucket/
+  //Set access key and secret key in s3_config parameter below
+  
+
+
+//Deployment Target Publish Config
+{
+  "page_subfolder": "",   //Relative path from publish folder to pages subfolder, ex. 'pages/'
+  "media_subfolder": "",  //Relative path from publish folder to media subfolder, ex. 'media/'
+  "content_url": "/",     //Absolute path from website root to CMS publish folder, ex. '/content/'
+  "exec_pre_deployment": null,      //Execute shell command after populating publish folder, before deployment
+                                   //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
+  "exec_post_deployment": null,    //Execute shell command after deployment
+                                   //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
+  "git_branch": "site_%%%SITE_ID%%%",    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
+  "copy_folders": [/* "dir1","dir2" */], //Copy contents from the source folders into the publish folder
+
+  //FTP/FTPS/SFTP publish settings
+  "ftp_config": {
+    "overwrite_all": false,         //For FTP / FTPS / SFTP, if true, always upload all files, instead of comparing size and MD5
+    "delete_excess_files": false,   //For FTP / FTPS / SFTP, if true, delete excess files in destination that weren't in the publish build
+
+    "ignore_certificate_errors": false,    //For FTPS, ignore self-signed certificate errors
+    "compression": false,                  //For FTP / FTPS, whether to enable compression
+
+    //SFTP private key, if applicable
+    "private_key": "",
+    //private_key option 1 - string.  Line breaks should be added as \n
+    //  "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+    //private_key option 2 - array of lines.  Lines will be automatically joined by line breaks (\n)
+    //  [
+    //    "-----BEGIN CERTIFICATE-----",
+    //    "...",
+    //    "-----END CERTIFICATE-----"
+    //  ]
+  },
+
+  //Amazon S3 deployment settings
+  "s3_config": {
+    "accessKeyId": "",
+    "secretAccessKey": "",
+    "upload_params": { //Add parameters to the S3.upload request
+      //"ACL": "public-read",
+      //More parameters can be found at:
+      //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#upload-property
+    }
+  },
+}

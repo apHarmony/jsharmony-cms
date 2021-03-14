@@ -38,7 +38,7 @@ module.exports = exports = function(module, funcs){
     var XValidate = jsh.XValidate;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Diff');
+    var model = jsh.getModel(req, module.namespace + 'Branch_Validate');
     
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
@@ -55,28 +55,30 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      funcs.validate(req._DBContext, branch_id, function(err, rslt){
-        if(err){
-          if(err.sql){
-            err.model = model;
-            return appsrv.AppDBError(req, res, err);
-          }
-          else{
-            rslt = {
-              _success: 1,
-              error_count: 1,
-              branch_validate: {
-                system: {
+      funcs.validateBranchAccess(req, res, branch_id, 'R%', ['AUTHOR','PUBLISHER','WEBMASTER'], function(){
+        funcs.validate(req._DBContext, branch_id, function(err, rslt){
+          if(err){
+            if(err.sql || err.frontend_visible){
+              if(err.sql) err.model = model;
+              return appsrv.AppDBError(req, res, err);
+            }
+            else{
+              rslt = {
+                _success: 1,
+                error_count: 1,
+                branch_validate: {
                   system: {
-                    errors: [err.toString()]
+                    system: {
+                      errors: [err.toString()]
+                    }
                   }
-                }
-              } 
-            };
+                } 
+              };
+            }
           }
-        }
-        rslt._success = 1;
-        res.end(JSON.stringify(rslt));
+          rslt._success = 1;
+          res.end(JSON.stringify(rslt));
+        });
       });
     }
     else {
@@ -91,6 +93,14 @@ module.exports = exports = function(module, funcs){
     if(!(key in item_errors)) item_errors[key] = _.extend(_.pick(item, error_columns), { errors: [] });
     item_errors[key].errors.push(errtxt);
   }
+
+  exports.validate_logSystemError = function(branchData, errtxt){
+    if(!branchData.branch_validate.system) branchData.branch_validate.system = {
+      system: { errors: [] }
+    };
+    branchData.branch_validate.system.system.errors.push(errtxt);
+  }
+
   
   exports.validate = function (dbcontext, branch_id, callback) {
     var jsh = module.jsh;
@@ -112,15 +122,17 @@ module.exports = exports = function(module, funcs){
       branch_id: branch_id,
       site_id: null,
       deployment_target_params: null,
+      branch_validate: branch_validate,
     };
 
     async.waterfall([
 
       //Get deployment_target_params for branch
       function(cb){
-        var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id=@branch_id";
+        var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
         appsrv.ExecRow(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
+          if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target branch', -11));
           if(rslt && rslt[0]){
             try{
               branchData.deployment_target_id = rslt[0].deployment_target_id;
@@ -256,6 +268,13 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
 
+    //Validate templates
+    _.each(branchData.page_templates, function(page_template, page_template_id){
+      _.each(page_template.components, function(component, componentId){
+        if(componentId in branchData.component_templates){ funcs.validate_logSystemError(branchData, 'Page template "' + page_template.title + '" has an inline component "' + componentId + '" that is already defined as a site component.'); }
+      });
+    });
+
     //Get page file content
     async.eachOfSeries(branchData.page_keys, function(page, page_id, page_cb){
       funcs.getClientPage(branchData._DBContext, page, null, branchData.site_id, { pageTemplates: branchData.page_templates }, function(err, clientPage){
@@ -330,7 +349,7 @@ module.exports = exports = function(module, funcs){
     async.waterfall([
       //Get all menus
       function(cb){
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag,menu_template_id,menu_path \
+        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
           from "+(module.schema?module.schema+'.':'')+"menu menu \
           where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id)";
         var sql_ptypes = [dbtypes.BigInt];
@@ -355,30 +374,9 @@ module.exports = exports = function(module, funcs){
 
       //Get menu file content
       function(cb){
-        var menu_paths = {};
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
-          funcs.getClientMenu(menu, { }, function(err, menu_content){
+          funcs.getClientMenu(menu, function(err, menu_content){
             if(err){ funcs.validate_logError(item_errors, 'menu', menu, err.toString()); return menu_cb(); }
-            if(!menu_content || !menu_content.template){
-              funcs.validate_logError(item_errors, 'menu', menu, 'Menu template not found');
-              return menu_cb(null);
-            }
-
-            for(var content_element_name in menu_content.template.content_elements){
-              var menu_path = null;
-              try{
-                menu_path = funcs.getMenuRelativePath(menu, content_element_name);
-              }
-              catch(ex){
-                if(ex) funcs.validate_logError(item_errors, 'menu', menu, ex.toString());
-              }
-              if(!menu_path) funcs.validate_logError(item_errors, 'menu', menu, 'Menu does not have a valid path for content element '+content_element_name);
-              else{
-                menu_path_ucase = menu_path.trim().toUpperCase();
-                if(menu_paths[menu_path_ucase]) funcs.validate_logError(item_errors, 'menu', menu, 'Duplicate menu path: '+menu_path);
-                menu_paths[menu_path_ucase] = menu_path_ucase;
-              }
-            }
 
             //Validate URLs
             menu.menu_items = menu_content.menu_items||[];
@@ -455,7 +453,9 @@ module.exports = exports = function(module, funcs){
               var pretty_sitemap_item = pretty_sitemap_items[i];
               if((sitemap_item.sitemap_item_link_type||'').toString()=='PAGE'){
                 var page_key = parseInt(sitemap_item.sitemap_item_link_dest);
-                if(!(page_key in branchData.page_keys)) funcs.validate_logError(item_errors, 'sitemap', sitemap, 'Sitemap item "' + pretty_sitemap_item.sitemap_item + '" links to missing Page ID #'+page_key.toString());
+                if(!(page_key in branchData.page_keys)){
+                  funcs.validate_logError(item_errors, 'sitemap', sitemap, 'Sitemap item "' + pretty_sitemap_item.sitemap_item + '" links to missing Page ID #'+page_key.toString());
+                }
                 else sitemap_item.sitemap_item_link_dest = branchData.page_keys[page_key];
               }
               else if((sitemap_item.sitemap_item_link_type||'').toString()=='MEDIA'){

@@ -2,13 +2,20 @@ jsh.App[modelid] = new (function(){
   var _this = this;
 
   var initialized = false;
+  var isActive = true;
 
   this.onload = function(){
     //Load API Data
     this.loadData();
   };
 
+  this.ondestroy = function(){
+    isActive = false;
+  }
+
   this.loadData = function(){
+    if(!isActive) return;
+    console.log('Loading deployment log '+xmodel.get('deployment_id'));
     var emodelid = '../_funcs/deployment_log/'+xmodel.get('deployment_id');
     XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {

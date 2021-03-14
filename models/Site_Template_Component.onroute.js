@@ -63,7 +63,7 @@ if((routetype == 'd')||(routetype == 'csv')){
                   //Read Component Template Config
                   var templateConfig = null;
                   try{
-                    templateConfig = cms.funcs.readComponentTemplateConfig(templateContent, 'Local Component Template: ' + file, { continueOnConfigError: true });
+                    templateConfig = cms.funcs.readComponentTemplateConfig(templateContent, 'local component template "' + file + '"', { continueOnConfigError: true });
                   }
                   catch(ex){
                     return file_cb(ex);
@@ -88,7 +88,7 @@ if((routetype == 'd')||(routetype == 'csv')){
       });
     },
 
-    //Add local system template
+    //Add local system templates
     function(data_cb){
       for(var key in cms.SystemComponentTemplates){
         var templateConfig = cms.SystemComponentTemplates[key];

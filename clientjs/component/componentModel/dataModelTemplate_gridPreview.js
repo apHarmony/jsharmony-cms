@@ -84,7 +84,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   });
 
   fields.push({
-    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;display:block;',
+    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;display:block;min-height:1px;',
     value: '<div tabindex="0" data-component-template="gridRow"></div>',
     ongetvalue: 'return;'
   });

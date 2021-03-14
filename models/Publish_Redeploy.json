@@ -4,8 +4,8 @@
     "table":"{schema}.v_my_deployment",
     "title":"Schedule Redeployment",
     "menu":"Publish",
-    "actions":"BIU",
-    "roles": {"PUBLISHER": "BIU"},
+    "actions":"BU",
+    "roles": {"PUBLISHER": "BU"},
     "onecolumn":true,
     "fields": [
       {"name":"deployment_id","key":true,"control":"hidden"},
@@ -14,9 +14,9 @@
       {"name":"branch_desc","control":"label","caption":"Branch","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.v_my_deployment.branch_id)"},
       {"name":"deployment_git_revision","control":"label","caption":"Revision"},
       {"name":"deployment_target_id","control":"dropdown","caption":"Deployment Target","validate":["Required"],"unbound":true,
-        "lov":{"sql":"select deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_publish = 1 and deployment_target_sts='ACTIVE' and site_id in (select site_id from {schema}.deployment where deployment_id=@deployment_id) order by deployment_target_name"}},
+        "lov":{"sql":"select deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_publish = 1 and deployment_target_sts='ACTIVE' and site_id in (select site_id from {schema}.deployment inner join {schema}.branch on branch.branch_id = deployment.branch_id where deployment_id=@deployment_id) order by deployment_target_name"}},
       {"name":"deployment_date","control":"textbox","caption":"Schedule Redeployment", "validate":["Required","IsDate:'YYYY-MM-DD hh:mm A'"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;","unbound":true},
-      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"unbound":true,"default":"js:jsh.moment().format('YYYY-MM-DD')+' Redeployment'"},
+      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"unbound":true,"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')+' Redeployment'"},
       {"control":"button","value":"Schedule Redeployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.publish();"}
     ]
   },

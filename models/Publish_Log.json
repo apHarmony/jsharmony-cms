@@ -8,6 +8,7 @@
     "roles": {"PUBLISHER": "B"},
     "onecolumn":true,
     "onload":"_this.onload();",
+    "ondestroy": "_this.ondestroy()",
     "css":[
       ".xbody_<%=model.class%> { width:100%; padding-right:30px; box-sizing:border-box; padding-bottom:0px; }",
       "#<%=model.class%>_deployment_log { padding-top:3px; padding-left:3px; margin-top:0; background-color:#fff; }"

@@ -129,10 +129,12 @@ FieldModel.makePristineCopy = function(dataInstance, fields) {
 FieldModel.populateDataInstance = function(dataInstance, fields) {
 
   dataInstance = dataInstance || {};
+  var fieldIndex = {};
   _.forEach(fields || [], function(field) {
     var fieldName = field.name;
     var fieldType = field.type;
     if (fieldType == undefined) return;
+    fieldIndex[fieldName] = field;
 
     // Must follow the rules to ensure
     // required fields are set to default values while also
@@ -143,7 +145,7 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
     }
     var isRequired = _.some((field.validate || []), function(a) { return a === 'Required'; });
     var defaultValue= field.default;
-    const propertyKeyExists = fieldName in dataInstance;
+    var propertyKeyExists = fieldName in dataInstance;
 
     if (propertyKeyExists && isRequired) {
       // The property has been set by the user
@@ -158,6 +160,15 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
       dataInstance[fieldName] = defaultValue;
     }
   });
+  //Set _jsh_browserDataTitle to match field if blank
+  for(var fieldName in fieldIndex){
+    var titleFieldName = fieldName + '_jsh_browserDataTitle';
+    if(fieldIndex[titleFieldName]){
+      if(dataInstance[fieldName]){
+        if(!dataInstance[titleFieldName]) dataInstance[titleFieldName] = dataInstance[fieldName];
+      }
+    }
+  }
   FieldModel.convertTypes(dataInstance);
   // Must return in case original instance was null/undefined
   return dataInstance;

@@ -578,8 +578,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.getDefaultPage = function(){
-    if(xmodel.controller.form.LOVs.default_page && xmodel.controller.form.LOVs.default_page[0]) return xmodel.controller.form.LOVs.default_page[0].param_cur_val;
-    return '';
+    return jsh.XPage.getBreadcrumbs().site_default_page_filename;
   }
 
   this.addSitemapPage = function(sitemap_item_parent_id){
@@ -668,6 +667,7 @@ jsh.App[modelid] = new (function(){
       var sitemap_item_text = jprompt.find('.sitemap_item_text').val();
 
       if (!page_path) return XExt.Alert('Please enter a page path');
+      if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
       if (XExt.cleanFilePath(page_path) != page_path) return XExt.Alert('Page path contains invalid characters');
 
       if (!page_template_id) return XExt.Alert('Please select a template.');
@@ -821,6 +821,7 @@ jsh.App[modelid] = new (function(){
         var page_template_id = jprompt.find('.page_template_id').val();
 
         if (!page_path) return XExt.Alert('Please enter a page path');
+        if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
         if (XExt.cleanFilePath(page_path) != page_path) return XExt.Alert('Page path contains invalid characters');
 
         if (!page_template_id) return XExt.Alert('Please select a template.');
@@ -985,6 +986,7 @@ jsh.App[modelid] = new (function(){
         var sitemap_item_text = jprompt.find('.sitemap_item_text').val();
   
         if (!page_path) return XExt.Alert('Please enter a page path');
+        if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
         if (XExt.cleanFilePath(page_path) != page_path) return XExt.Alert('Page path contains invalid characters');
   
         if (page_path.indexOf('.') < 0) page_path += '.html';

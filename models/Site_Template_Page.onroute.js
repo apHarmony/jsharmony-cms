@@ -53,7 +53,7 @@ if((routetype == 'd')||(routetype == 'csv')){
                 //Read Page Template Config
                 var templateConfig = null;
                 try{
-                  templateConfig = cms.funcs.readPageTemplateConfig(templateContent, 'Local Page Template: '+file, { continueOnConfigError: true });
+                  templateConfig = cms.funcs.readPageTemplateConfig(templateContent, 'local page template  "'+file+'"', { continueOnConfigError: true });
                 }
                 catch(ex){
                   return file_cb(ex);
@@ -77,7 +77,7 @@ if((routetype == 'd')||(routetype == 'csv')){
       });
     },
 
-    //Add local system template
+    //Add local system templates
     function(data_cb){
       for(var key in cms.SystemPageTemplates){
         var pageTemplate = cms.SystemPageTemplates[key];

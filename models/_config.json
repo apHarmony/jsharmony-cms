@@ -1,8 +1,15 @@
 {
   "macros": {
+    "CMS_SITE_BREADCRUMBS": {
+      "title": "<div class='bcrumbs_site_header'><a href='<%=jsh._BASEURL%>{namespace}Site_Listing'><#-jsh.XExt.escapeHTML(jsh.globalparams.site_name||'')||'&nbsp;'#></a></div>",
+    },
     "CMS_BRANCH_BREADCRUMBS": {
-      "title": "<div class='bcrumbs_branch_header'>Branch</div><div class='bcrumbs_branch_body'><a href='<%=jsh._BASEURL%>{namespace}Branch_Summary?action=update&branch_id=<#=bcrumbs.branch_id#>'><#=bcrumbs.branch_desc||'\u00A0'#></a></div>",
-      "sql": "select branch_id, branch_desc, v_my_branch_desc.site_id, site_default_page_template_id, sys_user_site_editor, site_editor from {schema}.v_my_branch_desc inner join {schema}.site on site.site_id = v_my_branch_desc.site_id inner join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where branch_id={schema}.my_current_branch_id()"
+      "title": "<# if('site_id' in bcrumbs){ jsh.System.renderCurrentSite(bcrumbs.site_id, bcrumbs.site_name); } #><div class='bcrumbs_branch_header'>Current Branch:</div><div class='bcrumbs_branch_body'><a href='<%=jsh._BASEURL%>{namespace}Branch_Summary?action=update&branch_id=<#=bcrumbs.branch_id#>'><#-jsh.XExt.escapeHTML(bcrumbs.branch_desc||'')||'&nbsp;'#></a></div>",
+      "sql": "select v_my_branch_desc.branch_id, branch_desc, v_my_branch_desc.site_id, $ifnull(v_my_site.site_name,'(No site selected)') site_name, site_default_page_template_id, site_default_page_filename,sys_user_site_editor, site_editor from {schema}.v_my_branch_desc inner join {schema}.site on site.site_id = v_my_branch_desc.site_id inner join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id={schema}.my_current_branch_id()"
+    },
+    "CMS_BRANCH_BREADCRUMBS_OPTIONAL": {
+      "title": "<# if('site_id' in bcrumbs){ jsh.System.renderCurrentSite(bcrumbs.site_id, bcrumbs.site_name); } #><div class='bcrumbs_branch_header'>Current Branch:</div><div class='bcrumbs_branch_body bcrumbs_branch_body_highlight'><a href='#' onclick='<%=jsh._instance%>.System.ViewBranchSummary(<%=jsh._instance%>.XModels[<%=JSON.stringify(modelid)%>], <%=JSON.stringify(bcrumbs.branch_id)%>);return false;'><#-jsh.XExt.escapeHTML(bcrumbs.branch_desc||'')||'(No branch currently checked out)'#></a></div>",
+      "sql": "select v_my_current_branch.branch_id, branch_desc, site.site_id, $ifnull(site.site_name,'(No site selected)') site_name, site_default_page_template_id, site_default_page_filename,sys_user_site_editor, site_editor from {schema}.v_my_session left outer join {schema}.site on site.site_id = v_my_session.site_id left outer join {schema}.v_my_site on v_my_site.site_id = v_my_session.site_id left outer join {schema}.v_my_current_branch on v_my_session.site_id = v_my_current_branch.site_id"
     },
     "CMS_SITE_EDITOR_LOV": {
       "control":"hidden",

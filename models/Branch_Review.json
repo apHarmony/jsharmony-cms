@@ -12,7 +12,7 @@
       { "name":"rejectBranch", "link":"js:_this.rejectBranch(xmodel);","icon":"delete","text":"Reject" },
       { "name":"branchSummary", "link":"update:Branch_Summary&branch_id","icon":"browse","text":"Branch Summary" }
     ],
-    "sqlwhere":"branch_sts='REVIEW'",
+    "sqlwhere":"branch_sts='REVIEW' and (site_id={schema}.my_current_site_id())",
     "fields": [
       { "control":"subform","target":"Branch_Diff","actions":"BU","controlparams":{"panelstyle":"border:none;padding:0"}},
       { "name":"dst_branch_id","control":"hidden","unbound":true,
@@ -25,7 +25,7 @@
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
-      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@branch_id"
+      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='APPROVED' where branch_id=@branch_id and (site_id={schema}.my_current_site_id())"
     ],
     "fields": [
       {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}
@@ -37,7 +37,7 @@
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
-      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='REJECTED' where branch_id=@branch_id"
+      "update {schema}.branch set branch_sts='ARCHIVE',branch_review_sts='REJECTED' where branch_id=@branch_id and (site_id={schema}.my_current_site_id())"
     ],
     "fields": [
       {"name":"branch_id", "actions":"BU", "type":"bigint", "key": 1, "caption":"Branch ID", "validate": ["Required"]}

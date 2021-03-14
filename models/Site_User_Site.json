@@ -1,0 +1,30 @@
+{
+  "Site_User_Site": {
+    "layout":"grid",
+    "table":"{schema}.v_sys_user_site_access",
+    "title": "Site Permissions",
+    "caption":["Site Permission","Site Permissions"],
+    "roles": { "WEBMASTER": "BIUD" },
+    "commitlevel":"row",
+    "reselectafteredit":"row",
+    "rowstyle":"background-color:#fff;border-bottom:1px solid #ddd;",
+    "rowlimit":99999,
+    "sqlwhere":"sys_user_site_system_access=0",
+    "sqlwhere_disabled_on_insert": true,
+    "hide_system_buttons":["search","export"],
+    "sort": ["^sys_user_id"],
+    "fields": [
+      {"name":"sys_user_site_id","actions":"B","key":1,"control":"hidden"},
+      {"name":"site_id","actions":"BI","foreignkey":1,"control":"hidden"},
+      {"name":"sys_user_id","actions":"BI","caption": "User",
+        "lov":{
+          "sql": "select sys_user_id as code_val,(jsharmony.get_sys_user_name(sys_user_id)) as code_txt from jsharmony.sys_user order by (jsharmony.get_sys_user_name(sys_user_id))",
+        },
+        "sqlsort":"(jsharmony.get_sys_user_name(sys_user_id))",
+        "validate":["Required"],
+      },
+      {"name":"sys_user_site_access","caption":"Access","control":"dropdown","default":"VIEWER","lov":{"blank":false,"schema":"cms","code":"sys_user_site_access"}},
+    ]
+  },
+
+}

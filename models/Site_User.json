@@ -1,0 +1,15 @@
+{
+  "Site_User": {
+    "layout":"form",
+    "title": "",
+    "table":"{schema}.site",
+    "caption":["Site User","Site Users"],
+    "popup": [960, 600],
+    "roles": { "WEBMASTER": "B" },
+    "fields": [
+      {"control":"subform","target":"Site_User_Site","controlclass":"no-border","controlparams":{"grid_save_before_update": true,"panelstyle":"width:auto;"}},
+      {"control":"subform","target":"Site_User_System","bindings":{},"controlclass":"no-border"}
+    ]
+  },
+
+}

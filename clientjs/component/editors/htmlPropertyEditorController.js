@@ -42,10 +42,10 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
   /** @private @type {('full' | 'title')} */
   this._editorType = editorType;
 
-  /** @private @type {string} */
+  /** @private @type {Object} */
   this._jsh = jsh;
 
-  /** @private @type {string} */
+  /** @private @type {Object} */
   this._cms = cms;
 
   /** @private @type {JQuery} */
@@ -62,7 +62,7 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
 
   /** @private @type {Object} */
   this._editor = undefined;
-
+  
   /** @private @type {string} */
   this._uid = '_' + Math.random().toString().replace('.', '');
 
@@ -97,7 +97,7 @@ HTMLPropertyEditor.prototype.getDataElement = function() {
  */
 HTMLPropertyEditor.prototype.initialize = function(callback) {
 
-  var self = this;
+  var _this = this;
   callback = callback || function() {};
 
   // ID must match the jsHarmony convention in order to get/set
@@ -105,14 +105,14 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
   this._$editorElement.attr('id', this._contentId);
   this._editor = this._cms.createJsHarmonyCMSEditor(this._$toolbarElement[0]);
   this._editor.onEndEdit = function() {
-    var content = self.processText(self._editor.getContent(self._uid));
-    self.getDataElement().attr('value', content);
+    var content = _this.processText(_this._editor.getContent(_this._uid));
+    _this.getDataElement().attr('value', content);
   }
   this._editor.init(function() {
 
     var config = {};
     var configType = '';
-    var editorType = (self._editorType || '').toLowerCase();
+    var editorType = (_this._editorType || '').toLowerCase();
     if (editorType === 'full') {
       configType = 'full';
       config = {
@@ -127,11 +127,13 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
         menubar: false,
       };
     } else {
-      throw new Error('Unknown editor type "' + self._editorType + '"');
+      throw new Error('Unknown editor type "' + _this._editorType + '"');
     }
 
-    self._editor.attach(configType, self._contentId, config, function() {
-      self.render();
+    config.isjsHarmonyCmsComponent = true;
+
+    _this._editor.attach(configType, _this._contentId, config, function() {
+      _this.render();
       callback();
     });
   });

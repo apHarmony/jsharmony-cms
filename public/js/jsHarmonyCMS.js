@@ -171,7 +171,8 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
     var info = {
       dataFieldName: field.name,
       titleFieldName: field.name + '_jsh_browserDataTitle',
-      browserType: browserType
+      browserType: browserType,
+      validate: field.validate,
     }
 
     field.mediaBrowserControlInfo = info;
@@ -180,6 +181,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
     field.controlclass = 'xtextbox_M';
     field.type = 'varchar';
     field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeBrowserTitleControl) m.onChangeBrowserTitleControl("' + info.dataFieldName + '");  })()';
+    delete field.validate;
 
     retVal.push({
       name: field.name + '_browserButton',
@@ -201,12 +203,16 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
       onclick: '(function() { var m = jsh.App[modelid]; if (m && m.resetEditorBrowser) m.resetEditorBrowser("' + info.dataFieldName + '"); })()'
     });
 
-    retVal.push({
+    var coreField = {
       name: info.dataFieldName,
       caption: '',
       control: 'hidden',
       type: 'varchar'
-    });
+    };
+    if(info.validate) coreField.validate = info.validate;
+    if(field.caption) coreField.caption_ext = field.caption;
+
+    retVal.push(coreField);
   });
 
   return retVal;
@@ -530,7 +536,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   });
 
   fields.push({
-    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;display:block;',
+    name: 'component_preview', control: 'label', caption: '', unbound: true, controlstyle: 'vertical-align:baseline;display:block;min-height:1px;',
     value: '<div tabindex="0" data-component-template="gridRow"></div>',
     ongetvalue: 'return;'
   });
@@ -860,10 +866,12 @@ FieldModel.makePristineCopy = function(dataInstance, fields) {
 FieldModel.populateDataInstance = function(dataInstance, fields) {
 
   dataInstance = dataInstance || {};
+  var fieldIndex = {};
   _.forEach(fields || [], function(field) {
     var fieldName = field.name;
     var fieldType = field.type;
     if (fieldType == undefined) return;
+    fieldIndex[fieldName] = field;
 
     // Must follow the rules to ensure
     // required fields are set to default values while also
@@ -889,6 +897,15 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
       dataInstance[fieldName] = defaultValue;
     }
   });
+  //Set _jsh_browserDataTitle to match field if blank
+  for(var fieldName in fieldIndex){
+    var titleFieldName = fieldName + '_jsh_browserDataTitle';
+    if(fieldIndex[titleFieldName]){
+      if(dataInstance[fieldName]){
+        if(!dataInstance[titleFieldName]) dataInstance[titleFieldName] = dataInstance[fieldName];
+      }
+    }
+  }
   FieldModel.convertTypes(dataInstance);
   // Must return in case original instance was null/undefined
   return dataInstance;
@@ -1113,11 +1130,13 @@ var OverlayService = require('./overlayService');
  /**
   * @class
   * @param {Object} jsh
+  * @param {Object} cms
   * @param {Object} model - the model that will be loaded into the virtual model
   * @param {DialogConfig} config - the dialog configuration
   */
-function Dialog(jsh, model, config) {
+function Dialog(jsh, cms, model, config) {
   this._jsh = jsh;
+  this._cms = cms;
   this._model = model;
   this._id = config.dialogId ? config.dialogId : this.getNextId();
   /** @type {DialogConfig} */
@@ -1221,8 +1240,8 @@ Dialog.prototype.getScrollTop = function($wrapper) {
  * @private
  */
 Dialog.prototype.load = function(callback) {
-  var self = this;
-  this._jsh.XPage.LoadVirtualModel(self._jsh.$(self.getFormSelector()), this._model, function(xmodel) {
+  var _this = this;
+  this._jsh.XPage.LoadVirtualModel(_this._jsh.$(_this.getFormSelector()), this._model, function(xmodel) {
     callback(xmodel);
   });
 }
@@ -1262,49 +1281,56 @@ Dialog.prototype.open = function() {
     throw new Error('Dialog ' + this._id + ' has already been destroyed.');
   }
 
-  var self = this;
+  var _this = this;
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
+  var hasToolbarOffset = !!_this._cms.editor.getOffsetTop();
+  var wasAtTop = !$(document).scrollTop();
+
   this.load(function(xmodel) {
 
 
-    var $wrapper = self._jsh.$(formSelector);
-    self.registerLovs(xmodel);
+    var $wrapper = _this._jsh.$(formSelector);
+    _this.registerLovs(xmodel);
     var lastScrollTop = 0
-    self._jsh.XExt.execif(self.onBeforeOpen,
+    _this._jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xmodel, f);
+        _this.onBeforeOpen(xmodel, f);
       },
       function(){
         /** @type {DialogResizer} */
         var dialogResizer = undefined;
 
-        self._jsh.XExt.CustomPrompt(formSelector, self._jsh.$(formSelector),
-          function(acceptFunc, cancelFunc) {
-            self.overlayService.pushDialog($wrapper);
-            lastScrollTop = self.getScrollTop($wrapper);
-            dialogResizer = new DialogResizer($wrapper[0], self._jsh);
-            if (_.isFunction(self.onOpened)) self.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
+        _this._jsh.XExt.CustomPrompt(formSelector, _this._jsh.$(formSelector),
+          function(acceptFunc, cancelFunc) { //onInit
+            _this.overlayService.pushDialog($wrapper);
+            lastScrollTop = _this.getScrollTop($wrapper);
+            dialogResizer = new DialogResizer($wrapper[0], _this._jsh);
+            if (_.isFunction(_this.onOpened)) _this.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
           },
-          function(success) {
-            lastScrollTop = self.getScrollTop($wrapper);
-
-            if (_.isFunction(self.onAccept)) self.onAccept(success);
+          function(success) { //onAccept
+            if (_.isFunction(_this.onAccept)) _this.onAccept(success);
           },
-          function(options) {
-            lastScrollTop = self.getScrollTop($wrapper);
-            if (_.isFunction(self.onCancel)) return self.onCancel(options);
+          function(options) { //onCancel
+            if (_.isFunction(_this.onCancel)) return _this.onCancel(options);
             return false;
           },
-          function() {
-            if (oldActive) oldActive.focus();
-            self.setScrollTop(lastScrollTop, $wrapper);
+          function() { //onClosed
             dialogResizer.closeDialog();
-            if(_.isFunction(self.onClose)) self.onClose();
-            self.destroy();
-            self.overlayService.popDialog();
+            if(_.isFunction(_this.onClose)) _this.onClose();
+            _this.destroy();
+            _this.overlayService.popDialog();
           },
-          { reuse: false, backgroundClose: self._config.closeOnBackdropClick, restoreFocus: false }
+          {
+            reuse: false,
+            backgroundClose: _this._config.closeOnBackdropClick,
+            restoreFocus: false,
+            onClosing: function(cb){
+              if (oldActive) oldActive.focus();
+              _this.setScrollTop(lastScrollTop, $wrapper);
+              return cb();
+            }
+          }
         );
       }
     );
@@ -1464,9 +1490,9 @@ DialogResizer.prototype.resize = function(wrapper) {
  * @param {HTMLElement} wrapper
  */
 DialogResizer.prototype.startIntervalResize = function(wrapper) {
-  var self = this;
+  var _this = this;
   this._execCleanUp = DialogResizer.addIntervalCallback(function() {
-    self.resize(wrapper);
+    _this.resize(wrapper);
   });
 }
 
@@ -1478,9 +1504,9 @@ DialogResizer.prototype.startIntervalResize = function(wrapper) {
  * @param {HTMLElement} wrapper
  */
 DialogResizer.prototype.startMutationObserver = function(wrapper) {
-  var self = this;
+  var _this = this;
   var observer = new MutationObserver(function() {
-    self.resize(wrapper);
+    _this.resize(wrapper);
   });
   observer.observe(wrapper, { childList: true, subtree: true });
   this._execCleanUp = function() {
@@ -1495,9 +1521,9 @@ DialogResizer.prototype.startMutationObserver = function(wrapper) {
  * @param {HTMLElement} wrapper
  */
 DialogResizer.prototype.startResizeObserver = function(wrapper) {
-  var self = this;
+  var _this = this;
   var observer = new ResizeObserver(function() {
-      self.resize(wrapper);
+      _this.resize(wrapper);
   });
   observer.observe(wrapper);
   this._execCleanUp = function() {
@@ -1588,12 +1614,14 @@ var Dialog = require('./dialog');
 /**
  * @class
  * @param {Object} jsh
+ * @param {Object} cms
  * @param {Object} model
  * @param {FormDialogConfig} config
  */
-function FormDialog(jsh, model, config) {
+function FormDialog(jsh, cms, model, config) {
 
   this.jsh = jsh;
+  this.cms = cms;
   this._model = this.augmentModel(model, config);
   this._config = config;
 
@@ -1661,12 +1689,12 @@ FormDialog.prototype.augmentModel = function(model, config) {
  * as values are changed.
  */
 FormDialog.prototype.open = function(data) {
-  var self = this;
+  var _this = this;
 
   /** @type {FormDialogConfig} */
   var config = this._config;
 
-  var dialog = new Dialog(this.jsh, this._model, {
+  var dialog = new Dialog(this.jsh, this.cms, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
     dialogId: config.dialogId,
@@ -1685,9 +1713,9 @@ FormDialog.prototype.open = function(data) {
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    self.jsh.XExt.execif(self.onBeforeOpen,
+    _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
+        _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         controller.Render(data, undefined, onComplete);
@@ -1701,18 +1729,18 @@ FormDialog.prototype.open = function(data) {
     controller.form.Prop.Enabled = true;
     $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc);
     $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc);
-    if (_.isFunction(self.onOpened)) self.onOpened($dialog, xmodel);
+    if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
   }
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
-    var isSuccess = _.isFunction(self.onAccept) && self.onAccept($dialog, xmodel);
+    var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept($dialog, xmodel);
     if (isSuccess) success();
   }
 
   dialog.onCancel = function(options) {
     if (!options.force && xmodel.controller.HasUpdates()) {
-      self.jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this.jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -1725,7 +1753,7 @@ FormDialog.prototype.open = function(data) {
   // dialog closes.
   dialog.onClose = function() {
     controller.form.Prop.Enabled = false
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
   }
 
   dialog.open();
@@ -1796,11 +1824,13 @@ var Dialog = require('./dialog');
 /**
  * @class
  * @param {Object} jsh
+ * @param {Object} cms
  * @param {Object} model
  * @param {GridDialogConfig} config
  */
-function GridDialog(jsh, model, config) {
+function GridDialog(jsh, cms, model, config) {
   this.jsh = jsh;
+  this.cms = cms;
   this._model = model;
   this._config = config || {};
 
@@ -1828,12 +1858,12 @@ function GridDialog(jsh, model, config) {
  * @public
  */
 GridDialog.prototype.open = function() {
-  var self = this;
+  var _this = this;
 
   /** @type {GridDialogConfig} */
   var config = this._config;
 
-  var dialog = new Dialog(this.jsh, this._model, {
+  var dialog = new Dialog(this.jsh, this.cms, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
     dialogId: config.dialogId,
@@ -1852,9 +1882,9 @@ GridDialog.prototype.open = function() {
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    self.jsh.XExt.execif(self.onBeforeOpen,
+    _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
+        _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         if(onComplete) onComplete();
@@ -1866,13 +1896,13 @@ GridDialog.prototype.open = function() {
     $dialog = _$dialog;
     controller.grid.Prop.Enabled = true;
     controller.Render(function() {
-      if (_.isFunction(self.onOpened)) self.onOpened(_$dialog, xmodel);
+      if (_.isFunction(_this.onOpened)) _this.onOpened(_$dialog, xmodel);
     });
   }
 
   dialog.onCancel = function(options) {
     if (!options.force && controller.HasUpdates()) {
-      self.jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this.jsh.XExt.Confirm('Close without saving changes?', function() {
         controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -1882,7 +1912,7 @@ GridDialog.prototype.open = function() {
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
   }
 
   dialog.open();
@@ -2063,7 +2093,7 @@ var TemplateRenderer = require('../templateRenderer');
  */
 function DataEditor_GridPreviewController(xmodel, data, properties, dialogWrapper, cms, jsh, component, dataModelTemplate_GridPreview, componentTemplate) {
 
-  var self = this;
+  var _this = this;
 
   /** @private @type {Object} */
   this._properties = properties;
@@ -2118,12 +2148,12 @@ function DataEditor_GridPreviewController(xmodel, data, properties, dialogWrappe
   this._dataStore = new GridDataStore(this._idFieldName);
   this._apiData = [];
   _.each(data, function(item, index) {
-    item[self._idFieldName] = self.makeItemId();
+    item[_this._idFieldName] = _this.makeItemId();
     item.sequence = index;
     // Don't expose references in data store.
     // The grid is not allowed to touch them.
-    self._dataStore.addNewItem(item);
-    self._apiData.push(_.extend({}, item));
+    _this._dataStore.addNewItem(item);
+    _this._apiData.push(_.extend({}, item));
   });
 }
 
@@ -2136,7 +2166,7 @@ function DataEditor_GridPreviewController(xmodel, data, properties, dialogWrappe
 DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
   var rowId = this.getParentRowId($row);
   var $rowComponent = this.getRowElementFromRowId(rowId);
-  var self = this;
+  var _this = this;
 
   $row.find('td.xgrid_action_cell.delete').remove();
   if (rowData._is_insert) {
@@ -2145,7 +2175,7 @@ DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
     rowData._insertId = id;
     $rowComponent.attr('data-item-id', id);
     setTimeout(function() {
-      self.scrollToItemRow(id);
+      _this.scrollToItemRow(id);
     });
   } else {
     $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
@@ -2258,9 +2288,9 @@ DataEditor_GridPreviewController.prototype.showOverlay = function() {
 }
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
-  var self = this;
+  var _this = this;
   this.$dialogWrapper.find('.refreshLoadingOverlay').stop().fadeOut(function(){
-    self.jsh.$(this).remove();
+    _this.jsh.$(this).remove();
   });
 }
 
@@ -2272,22 +2302,22 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
 
   // Need to maintain the scroll position
   // after the grid re-renders
-  var self = this;
-  var scrollTop = self.$dialogWrapper.scrollTop();
+  var _this = this;
+  var scrollTop = _this.$dialogWrapper.scrollTop();
 
   //Show overlay
-  self.showOverlay();
-  var controller = self.xmodel.controller;
+  _this.showOverlay();
+  var controller = _this.xmodel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.grid.Load(undefined, undefined, function(){
     if(cb){
       if(cb()===false){ //Do not hide overlay
-        self.$dialogWrapper.scrollTop(scrollTop);
+        _this.$dialogWrapper.scrollTop(scrollTop);
         return;
       }
     }
-    self.hideOverlay();
-    self.$dialogWrapper.scrollTop(scrollTop);
+    _this.hideOverlay();
+    _this.$dialogWrapper.scrollTop(scrollTop);
 
   });
 }
@@ -2298,7 +2328,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
  * @returns {GridPreviewRenderContext}
  */
 DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = function(itemId) {
-  var itemIndex = this._dataStore.getItemIndexById(itemId);
+  var itemIndex = itemId ? this._dataStore.getItemIndexById(itemId) : this._dataStore.count();
   /** @type {GridPreviewRenderContext} */
   var retVal = {
     rowIndex: itemIndex
@@ -2372,7 +2402,7 @@ DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId)
  */
 DataEditor_GridPreviewController.prototype.initialize = function() {
 
-  var self = this;
+  var _this = this;
   var modelInterface = this.jsh.App[this.xmodel.id];
 
   if (!_.isFunction(modelInterface.getDataApi)) {
@@ -2386,29 +2416,29 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
   formApi.dataset = this._apiData;
 
   formApi.onInsert = function(action, actionResult, newRow) {
-    newRow[self._idFieldName] = self._insertId;
-    newRow.sequence = self.getNextSequenceNumber();
-    self._insertId = undefined;
+    newRow[_this._idFieldName] = _this._insertId;
+    newRow.sequence = _this.getNextSequenceNumber();
+    _this._insertId = undefined;
 
-    var dataStoreItem = self._modelTemplate.makePristineCopy(newRow, false);
-    dataStoreItem = self._modelTemplate.populateDataInstance(dataStoreItem);
-    self._dataStore.addNewItem(dataStoreItem);
+    var dataStoreItem = _this._modelTemplate.makePristineCopy(newRow, false);
+    dataStoreItem = _this._modelTemplate.populateDataInstance(dataStoreItem);
+    _this._dataStore.addNewItem(dataStoreItem);
 
-    actionResult[self.xmodel.id] = {}
-    actionResult[self.xmodel.id][self._idFieldName] = newRow[self._idFieldName];
-    self.dataUpdated();
-    self.renderRow(self._dataStore.getDataItem(newRow[self._idFieldName]));
+    actionResult[_this.xmodel.id] = {}
+    actionResult[_this.xmodel.id][_this._idFieldName] = newRow[_this._idFieldName];
+    _this.dataUpdated();
+    _this.renderRow(_this._dataStore.getDataItem(newRow[_this._idFieldName]));
   }
 
   formApi.onDelete  = function(action, actionResult, keys) {
-    self.showOverlay();
+    _this.showOverlay();
 
-    self._dataStore.deleteItem(keys[self._idFieldName]);
+    _this._dataStore.deleteItem(keys[_this._idFieldName]);
     //Commit Data
-    self._apiData.splice(0, self._apiData.length);
-    self._dataStore.getDataArray().forEach(a => self._apiData.push(a));
+    _this._apiData.splice(0, _this._apiData.length);
+    _this._dataStore.getDataArray().forEach(a => _this._apiData.push(a));
 
-    self.dataUpdated();
+    _this.dataUpdated();
     return false;
   }
 
@@ -2437,12 +2467,12 @@ DataEditor_GridPreviewController.prototype.makeItemId = function() {
  * @private
  */
 DataEditor_GridPreviewController.prototype.addItem = function() {
-  var self = this;
+  var _this = this;
 
-  if (self.xmodel.controller.editablegrid.CurrentCell) if(!self.xmodel.controller.form.CommitRow()) return;
-  if (self.jsh.XPage.GetChanges().length > 0) { self.jsh.XExt.Alert('Please save all changes before adding a row.'); return; }
+  if (_this.xmodel.controller.editablegrid.CurrentCell) if(!_this.xmodel.controller.form.CommitRow()) return;
+  if (_this.jsh.XPage.GetChanges().length > 0) { _this.jsh.XExt.Alert('Please save all changes before adding a row.'); return; }
 
-  var dataEditor =  new DataEditor_Form(this._componentTemplate, undefined, this.isReadOnly(), this.cms, this.jsh, self.component)
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(null), this.isReadOnly(), this.cms, this.jsh, _this.component)
 
   //Create a new item
   var currentData = this.xmodel.controller.form.NewRow({ unbound: true });
@@ -2450,19 +2480,19 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
   //Open the form to edit the item
   dataEditor.open(currentData, this._properties || {},  function(updatedData) {
     _.assign(currentData, updatedData)
-    var rowId = self.xmodel.controller.AddRow();
+    var rowId = _this.xmodel.controller.AddRow();
     for(var key in currentData){
-      if(key in self.xmodel.fields){
-        var oldval = self.xmodel.get(key, rowId);
+      if(key in _this.xmodel.fields){
+        var oldval = _this.xmodel.get(key, rowId);
         if(oldval !== currentData[key]){
-          self.xmodel.set(key, updatedData[key], rowId);
+          _this.xmodel.set(key, updatedData[key], rowId);
         }
       }
     }
-    self.updateModelDataFromDataStore(rowId);
-    self.dataUpdated();
-    self.forceCommit();
-    self.renderRow(currentData);
+    _this.updateModelDataFromDataStore(rowId);
+    _this.dataUpdated();
+    _this.forceCommit();
+    _this.renderRow(currentData);
   });
 }
 
@@ -2472,28 +2502,28 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
  */
 DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
-  var self = this;
-  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, self.component)
+  var _this = this;
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, _this.component)
   var currentData = this._dataStore.getDataItem(itemId);
 
   dataEditor.open(currentData, this._properties || {},  function(updatedData) {
       _.assign(currentData, updatedData)
-      var dataId = currentData[self._idFieldName];
-      var rowId = self.getRowIdFromItemId(dataId);
+      var dataId = currentData[_this._idFieldName];
+      var rowId = _this.getRowIdFromItemId(dataId);
 
       for(var key in currentData){
-        if(key in self.xmodel.fields){
-          var oldval = self.xmodel.get(key, rowId);
+        if(key in _this.xmodel.fields){
+          var oldval = _this.xmodel.get(key, rowId);
           if(oldval !== currentData[key]){
-            self.xmodel.set(key, updatedData[key], rowId);
+            _this.xmodel.set(key, updatedData[key], rowId);
           }
         }
       }
-      self.updateModelDataFromDataStore(rowId);
-      self.dataUpdated();
-      self.renderRow(currentData);
+      _this.updateModelDataFromDataStore(rowId);
+      _this.dataUpdated();
+      _this.renderRow(currentData);
   }, function() {
-    self.scrollToItemRow(itemId);
+    _this.scrollToItemRow(itemId);
   });
 }
 
@@ -2503,13 +2533,13 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
  * @param {number} rowId - the ID of the row to delete.
  */
 DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
-  var self = this;
-  self.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
+  var _this = this;
+  _this.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
     //Perform Delete
-    self.xmodel.controller.DeleteRow(rowId, { force: true });
+    _this.xmodel.controller.DeleteRow(rowId, { force: true });
     setTimeout(function() {
-      self.forceCommit();
-      setTimeout(function() { self.forceRefresh() });
+      _this.forceCommit();
+      setTimeout(function() { _this.forceRefresh() });
     });
   });
 }
@@ -2521,7 +2551,7 @@ DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
  * @param {TileData} data
  */
 DataEditor_GridPreviewController.prototype.renderRow = function(data) {
-  var self = this;
+  var _this = this;
   var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
@@ -2570,24 +2600,24 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   } else {
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
-        if (self.isReadOnly()) return;
-        var moveDown = self.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
-        self.changeItemSequence(dataId, moveDown);
+        if (_this.isReadOnly()) return;
+        var moveDown = _this.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
+        _this.changeItemSequence(dataId, moveDown);
     });
 
     $row.find('[data-component-part="deleteItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
-      if (self.isReadOnly()) return;
-      var rowId = self.getParentRowId(e.target);
-      self.promptDelete(rowId);
+      if (_this.isReadOnly()) return;
+      var rowId = _this.getParentRowId(e.target);
+      _this.promptDelete(rowId);
     });
   }
 
   $row.find('[data-component-part="editButton"]').on('click', function() {
-    self.openItemEditor(dataId);
+    _this.openItemEditor(dataId);
   });
 
   $row.find('[data-component-part="preview"]').off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
-    self.openItemEditor(dataId);
+    _this.openItemEditor(dataId);
   });
 
   $row.off('mousedown.cmsComponent').on('mousedown.cmsComponent', function(event) {
@@ -2600,11 +2630,11 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   this.updateSequenceButtonViews();
 
-  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, self.cms, self.component);
+  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, _this.cms, _this.component);
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
-      self.cms.componentManager.renderComponent(el);
+      _this.cms.componentManager.renderContentComponent(el);
     });
   }, 100);
 }
@@ -2670,11 +2700,11 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
  * @private
  */
 DataEditor_GridPreviewController.prototype.updateParentController = function() {
-  var self = this;
+  var _this = this;
   this._dataStore.sortBySequence();
 
   var items = this._dataStore.getDataArray()  || [];
-  items = _.map(items, function(item) { return self._modelTemplate.makePristineCopy(item, true); });
+  items = _.map(items, function(item) { return _this._modelTemplate.makePristineCopy(item, true); });
 
   var data = { items: items };
 
@@ -2687,19 +2717,19 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
  */
 DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function() {
 
-  var self = this;
+  var _this = this;
   _.forEach(this._dataStore.getDataArray(), function(item, index) {
-    var dataId = item[self._idFieldName];
-    var $row = self.getRowElementFromRowId(self.getRowIdFromItemId(dataId));
+    var dataId = item[_this._idFieldName];
+    var $row = _this.getRowElementFromRowId(_this.getRowIdFromItemId(dataId));
 
     var isFirst = index < 1;
-    var isLast = index >= (self._dataStore.count() - 1);
+    var isLast = index >= (_this._dataStore.count() - 1);
 
     $row.find('[data-component-part="moveItem"][data-dir="prev"]')
-        .attr('disabled', isFirst || self.isReadOnly());
+        .attr('disabled', isFirst || _this.isReadOnly());
 
     $row.find('[data-component-part="moveItem"][data-dir="next"]')
-      .attr('disabled', isLast || self.isReadOnly());
+      .attr('disabled', isLast || _this.isReadOnly());
   });
 }
 
@@ -2796,34 +2826,25 @@ function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh, c
  */
 DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
 
-  var self = this;
+  var _this = this;
 
   _.forEach(this._htmlEditors, function(editor) { editor.destroy(); });
 
   _.forEach($wrapper.find('[data-component-full-editor]'), function (editorEl) {
-    var $el = self._jsh.$(editorEl);
+    var $el = _this._jsh.$(editorEl);
     var propName = $el.attr('data-component-full-editor');
-    var editor = new HTMLPropertyEditorController('full', self._jsh, self._cms, $dialog, propName,  $el, $toolbar);
+    var editor = new HTMLPropertyEditorController('full', _this._jsh, _this._cms, $dialog, propName,  $el, $toolbar);
     editor.initialize(function() {});
-    self._htmlEditors.push(editor);
+    _this._htmlEditors.push(editor);
   });
 
   _.forEach($wrapper.find('[data-component-title-editor]'), function (editorEl) {
-    var $el = self._jsh.$(editorEl);
+    var $el = _this._jsh.$(editorEl);
     var propName = $el.attr('data-component-title-editor');
-    var editor = new HTMLPropertyEditorController('title', self._jsh, self._cms, $dialog, propName, $el, $toolbar);
+    var editor = new HTMLPropertyEditorController('title', _this._jsh, _this._cms, $dialog, propName, $el, $toolbar);
     editor.initialize(function() {});
-    self._htmlEditors.push(editor);
+    _this._htmlEditors.push(editor);
   });
-}
-
-/**
- * Create a new instance of the jsHarmonyCMSEditorPicker
- * @private
- * @returns {object}
- */
-DataEditor_Form.prototype.createPicker = function() {
-  return this._cms.createJsHarmonyCMSEditorPicker(undefined);
 }
 
 /**
@@ -2849,7 +2870,7 @@ DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable)
  */
 DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCloseCb) {
 
-  var self = this;
+  var _this = this;
   var modelTemplate = this._componentTemplate.getDataModelTemplate_FormPreview();
   var modelConfig = modelTemplate.getModelInstance();
   var template = modelTemplate.getItemTemplate();
@@ -2860,7 +2881,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   var itemData = modelTemplate.populateDataInstance(itemData || {});
 
-  var dialog = new FormDialog(this._jsh, modelConfig, {
+  var dialog = new FormDialog(this._jsh, this._cms, modelConfig, {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
@@ -2871,20 +2892,20 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
   var $toolbar;
 
   dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
-    var editor = self._jsh.App[xmodel.id];
-    var $dialog = self._jsh.$(dialogSelector);
+    var editor = _this._jsh.App[xmodel.id];
+    var $dialog = _this._jsh.$(dialogSelector);
     $dialog.css('opacity', '0');
-    self._formSelector = dialogSelector; // remove this
+    _this._formSelector = dialogSelector; // remove this
 
     // Note that the toolbar HAS to be in the popup DOM hierarchy for focus/blur
     // events to work correctly.
-    $toolbar = self._jsh.$('<div class="jsharmony_cms_content_editor_toolbar"></div>')
+    $toolbar = _this._jsh.$('<div class="jsharmony_cms_content_editor_toolbar"></div>')
       .css('position', 'fixed')
       .css('top', '0px')
       .css('left', '0')
       .css('width', '100%')
       .css('z-index', '1999999999');
-    self._jsh.$(dialogSelector).append($toolbar);
+    _this._jsh.$(dialogSelector).append($toolbar);
 
     _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {
       var title = itemData[info.titleFieldName] || '';
@@ -2892,11 +2913,11 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       var fieldsMatch = title === data;
       var isDataEmpty = title.length < 1 && data.length < 1;
       var fieldIsEditable = fieldsMatch || isDataEmpty;
-      self.enableBrowserControl($dialog, info, fieldIsEditable);
+      _this.enableBrowserControl($dialog, info, fieldIsEditable);
     });
 
     editor.onChangeData_noDebounce = function() {
-      if(!self._jsh.XModels[xmodel.id]){ return; }
+      if(!_this._jsh.XModels[xmodel.id]){ return; }
       var updatedData = {};
       _.forEach(modelConfig.fields, function(field) {
         if (field.type != undefined) {
@@ -2905,10 +2926,10 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       });
 
       var $wrapper =  $dialog.find('[data-id="previewWrapper"]').first();
-      self.renderPreview($wrapper, template, updatedData, properties);
+      _this.renderPreview($wrapper, template, updatedData, properties);
       // Don't attach any events until after the onRenderGridItemPreview hook is called.
       // Otherwise, the events might be attached to elements that get replaced or removed.
-      self.attachEditors($dialog, $wrapper, $toolbar);
+      _this.attachEditors($dialog, $wrapper, $toolbar);
     }
 
     // This function NEEDS to be debounced.
@@ -2930,14 +2951,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         // and then we override the link control.
         xmodel.set(info.titleFieldName, title);
         xmodel.set(browserControlName, url);
-        self.enableBrowserControl($dialog, info, false);
+        _this.enableBrowserControl($dialog, info, false);
         editor.onChangeData();
       };
 
       if (info.browserType === 'link') {
-
         if (info == undefined) return;
-        self.openLinkBrowser(function(url, data) {
+        _this._cms.editor.picker.openLink(function(url, data) {
           var title = url||'';
           if(data){
             if(data.page_path) title = data.page_path;
@@ -2945,13 +2965,15 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
             else if(data.item_path) title = data.item_path;
           }
           update(url, title);
-        });
-      } else if (info.browserType === 'media') {
-          self.openMediaBrowser(function(url, data) {
-            var title = data.media_path;
-            update(url, title);
-          });
-      } else {
+        }, xmodel.get(browserControlName));
+      }
+      else if (info.browserType === 'media') {
+        _this._cms.editor.picker.openMedia(function(url, data) {
+          var title = data.media_path;
+          update(url, title);
+        }, xmodel.get(browserControlName));
+      }
+      else {
         console.warn(new Error('Unknown browser type ' + info.browserType));
       }
     }
@@ -2968,20 +2990,20 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     editor.resetEditorBrowser = function(linkControlName) {
       var info = modelTemplate.getBrowserFieldInfo(linkControlName);
       if (info == undefined) return;
-      self.enableBrowserControl($dialog, info, true);
+      _this.enableBrowserControl($dialog, info, true);
       xmodel.set(linkControlName, '');
       xmodel.set(info.titleFieldName, '');
       editor.onChangeData();
     }
 
-    self._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
-    self._onRenderDataItemPreview = editor.onRenderDataItemPreview;
+    _this._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
+    _this._onRenderDataItemPreview = editor.onRenderDataItemPreview;
 
     if(onComplete) onComplete();
   }
 
   dialog.onOpened = function($dialog, xmodel) {
-    var editor = self._jsh.App[xmodel.id];
+    var editor = _this._jsh.App[xmodel.id];
     // Manually call change to do initial render
     setTimeout(function() {
       editor.onChangeData_noDebounce();
@@ -3000,7 +3022,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
   dialog.onCancel = function(options, $dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
-      self._jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this._jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -3013,31 +3035,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xmodel.id];
-    delete self._jsh.App[xmodel.id];
-    _.forEach(self._htmlEditors, function(editor) { editor.destroy(); });
+    delete _this._jsh.XModels[xmodel.id];
+    delete _this._jsh.App[xmodel.id];
+    _.forEach(_this._htmlEditors, function(editor) { editor.destroy(); });
     if (_.isFunction(onCloseCb)) onCloseCb();
   }
 
   dialog.open(itemData);
-}
-
-/**
- * Open a link browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataEditor_Form.prototype.openLinkBrowser = function(cb) {
-  this.createPicker().openLink(cb, '');
-}
-
-/**
- * Open a medial browser
- * @private
- * @param {Function} cb - callback for when link is selected (matches original picker signature)
- */
-DataEditor_Form.prototype.openMediaBrowser = function(cb) {
-  this.createPicker().openMedia(cb, '');
 }
 
 /**
@@ -3049,7 +3053,7 @@ DataEditor_Form.prototype.openMediaBrowser = function(cb) {
  */
 DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties) {
 
-  var self = this;
+  var _this = this;
 
 
   var renderData = { item: data };
@@ -3069,11 +3073,11 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper)
 
-  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, self._cms, self._component);
+  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
 
   setTimeout(function() {
-    _.forEach(self._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
-      self._cms.componentManager.renderComponent(el);
+    _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
+      _this._cms.componentManager.renderContentComponent(el);
     });
   }, 50);
 }
@@ -3137,7 +3141,7 @@ function DataEditor_GridPreview(componentTemplate, cms, jsh, component) {
  */
 DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb) {
 
-  var self = this;
+  var _this = this;
   var modelTemplate = this._componentTemplate.getDataModelTemplate_GridPreview();
   var modelConfig = modelTemplate.getModelInstance();
 
@@ -3149,7 +3153,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
   var componentInstance = this._jsh.App[componentInstanceId] || {};
 
 
-  var dialog = new GridDialog(this._jsh, modelConfig, {
+  var dialog = new GridDialog(this._jsh, this._cms, modelConfig, {
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,
@@ -3161,10 +3165,10 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
 
-    self.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', self._componentTemplate.getCaptions());
+    _this.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', _this._componentTemplate.getCaptions());
 
-    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, self._jsh.$(dialogSelector),
-      self._cms, self._jsh, self._component, modelTemplate, self._componentTemplate);
+    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, _this._jsh.$(dialogSelector),
+      _this._cms, _this._jsh, _this._component, modelTemplate, _this._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
       if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
@@ -3178,7 +3182,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
       if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
     }
 
-    var modelInterface = self._jsh.App[xmodel.id];
+    var modelInterface = _this._jsh.App[xmodel.id];
 
     modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
       if (!dataController) return;
@@ -3190,7 +3194,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     }
 
     modelInterface.close = function() {
-      self._jsh.XExt.CancelDialog();
+      _this._jsh.XExt.CancelDialog();
     }
 
     modelInterface.addItem = function() {
@@ -3209,9 +3213,9 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xmodel.id];
-    delete self._jsh.App[xmodel.id];
-    delete self._jsh.App[componentInstanceId];
+    delete _this._jsh.XModels[xmodel.id];
+    delete _this._jsh.App[xmodel.id];
+    delete _this._jsh.App[componentInstanceId];
   }
 
   dialog.open();
@@ -3403,10 +3407,10 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
   /** @private @type {('full' | 'title')} */
   this._editorType = editorType;
 
-  /** @private @type {string} */
+  /** @private @type {Object} */
   this._jsh = jsh;
 
-  /** @private @type {string} */
+  /** @private @type {Object} */
   this._cms = cms;
 
   /** @private @type {JQuery} */
@@ -3423,7 +3427,7 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
 
   /** @private @type {Object} */
   this._editor = undefined;
-
+  
   /** @private @type {string} */
   this._uid = '_' + Math.random().toString().replace('.', '');
 
@@ -3458,7 +3462,7 @@ HTMLPropertyEditor.prototype.getDataElement = function() {
  */
 HTMLPropertyEditor.prototype.initialize = function(callback) {
 
-  var self = this;
+  var _this = this;
   callback = callback || function() {};
 
   // ID must match the jsHarmony convention in order to get/set
@@ -3466,14 +3470,14 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
   this._$editorElement.attr('id', this._contentId);
   this._editor = this._cms.createJsHarmonyCMSEditor(this._$toolbarElement[0]);
   this._editor.onEndEdit = function() {
-    var content = self.processText(self._editor.getContent(self._uid));
-    self.getDataElement().attr('value', content);
+    var content = _this.processText(_this._editor.getContent(_this._uid));
+    _this.getDataElement().attr('value', content);
   }
   this._editor.init(function() {
 
     var config = {};
     var configType = '';
-    var editorType = (self._editorType || '').toLowerCase();
+    var editorType = (_this._editorType || '').toLowerCase();
     if (editorType === 'full') {
       configType = 'full';
       config = {
@@ -3488,11 +3492,13 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
         menubar: false,
       };
     } else {
-      throw new Error('Unknown editor type "' + self._editorType + '"');
+      throw new Error('Unknown editor type "' + _this._editorType + '"');
     }
 
-    self._editor.attach(configType, self._contentId, config, function() {
-      self.render();
+    config.isjsHarmonyCmsComponent = true;
+
+    _this._editor.attach(configType, _this._contentId, config, function() {
+      _this.render();
       callback();
     });
   });
@@ -3571,7 +3577,7 @@ function PropertyEditor_Form(componentTemplate, cms, jsh) {
  */
 PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
-  var self = this;
+  var _this = this;
   var modelTemplate = this._componentTemplate.getPropertiesModelTemplate_Form();
   var model = modelTemplate.getModelInstance();
 
@@ -3591,7 +3597,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     dialogParams.minWidth = model.popup[0];
   }
 
-  var dialog = new FormDialog(this._jsh, model, dialogParams);
+  var dialog = new FormDialog(this._jsh, this._cms, model, dialogParams);
 
   dialog.onAccept = function($dialog, xmodel) {
     if(!xmodel.controller.Commit(data, 'U')) return false;
@@ -3602,7 +3608,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   dialog.onCancel = function(options, $dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
-      self._jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this._jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -3615,8 +3621,8 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
 
-    delete self._jsh.XModels[xmodel.id];
-    delete self._jsh.App[xmodel.id];
+    delete _this._jsh.XModels[xmodel.id];
+    delete _this._jsh.App[xmodel.id];
   }
 
   dialog.open(data);
@@ -3718,42 +3724,28 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig) {
       XExt: jsh.XExt,
       errors: '',
     }, params))
+  };
+
+  var renderOptions = {
+    renderType: type,
+    data: null,
+    properties: config.properties || {},
+  };
+  if(config.data && ('items' in config.data)) renderOptions.data = config.data.items;
+  else if(config.data && ('item' in config.data)) renderOptions.data = config.data.item;
+  else{
+    if(componentConfig && (componentConfig.multiple_items)) renderOptions.data = [];
+    else renderOptions.data = {};
   }
 
-  /** @type {RenderContext} */
-  var renderContext = {
+  var renderContext = cms.componentManager.getComponentRenderParameters(null, renderOptions, {
     baseUrl: config.baseUrl,
-    data: config.data,
-    properties: config.properties,
-    renderType: type,
     gridContext: config.gridContext,
-    _: jsh._,
-    escapeHTML: jsh.XExt.escapeHTML,
-    stripTags: jsh.XExt.StripTags,
     isInEditor: true,
     isInPageEditor: true,
     isInComponentEditor: ((type=='gridRowDataPreview') || (type=='gridItemPreview')),
-    items: null,     //= renderContext.data.items
-    item: null,      //= renderContext.data.item
-    component: null, //= renderContext.properties
-    data_errors: [],
     renderPlaceholder: renderPlaceholder,
-  }
-
-  //Add "item" or "items" variable
-  if(!renderContext.data) renderContext.data = {};
-  if((componentConfig && (componentConfig.multiple_items)) || ('items' in renderContext.data)){
-    renderContext.items = (renderContext.data.items || []);
-    renderContext.item = new Proxy(new Object(), { get: function(target, prop, receiver){ throw new Error('Please add a "component-item" attribute to the container HTML element, to iterate over the items array.  For example:\r\n<div component-item><%=item.name%></div>'); } });
-  }
-  else{
-    renderContext.item = renderContext.data.item || {};
-    renderContext.items = [renderContext.item];
-  }
-  for(var i=0;i<renderContext.items.length;i++) renderContext.data_errors.push('');
-
-  //Add "component" variable
-  renderContext.component = renderContext.properties || {};
+  });
   
   if(componentConfig){
 
@@ -3811,16 +3803,17 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig) {
     if(componentConfig.multiple_items){
       for(var i=0;i<renderContext.items.length;i++){
         var dataErrors = validate(dataValidators, renderContext.items[i], 'Component Data');  
-        if(dataErrors) renderContext.data_errors[i] = dataErrors;
+        if(dataErrors) renderContext.items[i].jsh_validation_errors = dataErrors;
       }
     }
   }
 
   var rendered = '';
+  
   try {
     rendered = jsh.ejs.render(config.template || '', renderContext);
   } catch (error) {
-    rendered = cms.componentManager.formatError('Component Rendering Error: '+error.toString());
+    rendered = cms.componentManager.formatComponentError('Component Rendering Error: '+error.toString());
     console.log('Render Context:');
     console.log(renderContext);
     console.error(error);
@@ -4138,14 +4131,14 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {object} modelInstance - the model instance to render (model will be mutated).
    */
   this.openDataEditor_Form = function() {
-    var self = this;
-    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh, self);
+    var _this = this;
+    var dataEditor = new DataEditor_Form(componentTemplate, undefined, this.isReadOnly(), cms, jsh, _this);
 
     var data = this.getData() || {};
     dataEditor.open(data.item || {}, this.getProperties() || {}, function(updatedData) {
       data.item = updatedData;
-      self.saveData(data);
-      self.render();
+      _this.saveData(data);
+      _this.render();
     });
   }
 
@@ -4153,12 +4146,12 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @private
    */
   this.openDataEditor_GridPreview = function() {
-    var self = this;
-    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh, self);
+    var _this = this;
+    var dataEditor = new DataEditor_GridPreview(componentTemplate, cms, jsh, _this);
 
     dataEditor.open(this.getData(), this.getProperties() || {}, function(updatedData) {
-      self.saveData(updatedData);
-      self.render();
+      _this.saveData(updatedData);
+      _this.render();
     });
   }
 
@@ -4168,26 +4161,36 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.openPropertiesEditor = function() {
 
-    var self = this;
+    var _this = this;
     var propertyEditor = new PropertyEditor_Form(componentTemplate, cms, jsh);
 
     propertyEditor.open(this.getProperties() || {}, function(data) {
-      self.saveProperties(data);
-      self.render();
+      _this.saveProperties(data);
+      _this.render();
     });
+  }
+
+  this.openDefaultEditor = function(){
+    var _this = this;
+    var config = componentTemplate.getComponentConfig()  || {};
+    var hasData = ((config.data || {}).fields || []).length > 0;
+    var hasProperties = ((config.properties || {}).fields || []).length > 0;
+    if(hasData) _this.openDataEditor();
+    else if(hasProperties) _this.openPropertiesEditor();
   }
 
   /**
    * Render the component
    * @public
    */
-  this.render = function() {
+  this.render = function(callback) {
+    if(!callback) callback = function(){};
 
-    var self = this;
+    var _this = this;
     var config = componentTemplate.getComponentConfig()  || {};
     var template = (config.templates || {}).editor || '';
 
-    var data = _.extend({}, this.getData(), { component_id: self.id });
+    var data = _.extend({}, this.getData(), { component_id: _this.id });
     var props = this.getProperties();
 
     var renderConfig = TemplateRenderer.createRenderConfig(template, data, props, cms);
@@ -4204,18 +4207,19 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     $element.empty().append(rendered);
 
     $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function(e){
-      var hasData = ((config.data || {}).fields || []).length > 0;
-      var hasProperties = ((config.properties || {}).fields || []).length > 0;
-      if(hasData) self.openDataEditor();
-      else if(hasProperties) self.openPropertiesEditor();
+      _this.openDefaultEditor();
     });
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
     setTimeout(function() {
-      _.forEach($element.find('[data-component]'), function(el) {
-        cms.componentManager.renderComponent(el);
-      });
+      jsh.async.each(
+        $element.find('[data-component]'), 
+        function(el, el_cb) {
+          cms.componentManager.renderContentComponent(el, undefined, el_cb);
+        },
+        callback
+      );
     });
   }
 
@@ -4276,7 +4280,7 @@ exports = module.exports = function(jsh, cms){
   var async = jsh.async;
   var ejs = jsh.ejs;
 
-  this.componentTemplates = null;
+  this.componentTemplates = {};
   this.components = {};
   this.isInitialized = false;
   this.lastComponentId = 0;
@@ -4289,13 +4293,12 @@ exports = module.exports = function(jsh, cms){
     var url = '../_funcs/templates/components/'+cms.branch_id;
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.componentTemplates = rslt.components;
-        async.eachOf(_this.componentTemplates, function(component, key, cb) {
+        async.eachOf(rslt.components, function(component, componentId, cb) {
           var loadObj = {};
           cms.loader.StartLoading(loadObj, 'CMS Components');
-          _this.loadRemoteTemplate(component, function(err){
+          _this.downloadRemoteTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
-            _this.parseTemplate(component);
+            _this.addTemplate(componentId, component);
             cb(err)
           });
         }, function(error){
@@ -4311,72 +4314,121 @@ exports = module.exports = function(jsh, cms){
     });
   };
 
-  this.loadRemoteTemplate = function(componentTemplate, complete_cb) {
+  this.addTemplate = function(componentId, componentTemplate){
+    if(componentId in _this.componentTemplates) return cms.fatalError('Could not add duplicate Component Template "'+componentId+'" - it has already been added');
+    _this.componentTemplates[componentId] = componentTemplate;
+    _this.parseTemplate(componentTemplate);
+    _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
+  }
+
+  this.downloadRemoteTemplate = function(componentTemplate, complete_cb) {
     var url = (componentTemplate.remote_templates || {}).editor;
     if (!url) return complete_cb();
 
-    _this.downloadRemoteTemplate(url, function(error, data){
-      if (error) {
-        complete_cb(error);
-      } else {
-        componentTemplate.templates = componentTemplate.templates || {};
-        var template = (componentTemplate.templates.editor || '');
-        data = data && template ? '\n' + data : data || '';
-        componentTemplate.templates.editor = (template + data) || _this.formatError('COMPONENT '+(componentTemplate.id||'').toUpperCase()+' NOT FOUND');
-        _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
-        complete_cb();
-      }
-    });
-  }
-
-  this.formatError = function(errmsg){
-    return '<span style="color:red;font-weight:bold;font-size:25px;white-space: pre;">*** '+XExt.escapeHTML(errmsg)+' ***</span>';
-  }
-
-  this.downloadRemoteTemplate = function(templateUrl, complete_cb) {
     $.ajax({
       type: 'GET',
       cache: false,
-      url: templateUrl,
+      url: url,
       xhrFields: { withCredentials: true },
       success: function(data){
-        return complete_cb(undefined, data);
+        componentTemplate.templates = componentTemplate.templates || {};
+        var template = (componentTemplate.templates.editor || '');
+        data = data && template ? '\n' + data : data || '';
+        componentTemplate.templates.editor = (template + data) || _this.formatComponentError('COMPONENT '+(componentTemplate.id||'').toUpperCase()+' NOT FOUND');
+        complete_cb();
       },
       error: function(xhr, status, err){
-        return complete_cb(err, undefined);
+        complete_cb(error);
       }
     });
   }
 
-  this.render = function(container){
+  this.compileTemplates = function(componentTemplates, cb) {
+    XExt.CallAppFunc('../_funcs/templates/compile_components', 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
+      if ('_success' in rslt) {
+        var components = rslt.components;
+        return cb(null, components);
+      }
+      else{
+        return cb(new Error('Error Compiling Inline Components'));
+      }
+    }, function (err) {
+      if(err.Message) return cb(new Error('Error Compiling Inline Components - ' + err.Message));
+      return cb(new Error('Error Compiling Inline Components'));
+    });
+  }
 
-    $('.jsharmony_cms_component').not('.initialized').each(function(){
+  this.formatComponentError = function(errmsg){
+    return '<span style="color:red;font-weight:bold;font-size:25px;white-space: pre-wrap;">*** '+XExt.escapeHTML(errmsg)+' ***</span>';
+  }
 
+  this.renderPageComponents = function(){
+    $('.jsharmony_cms_component,[cms-component]').not('.initialized').each(function(){
       var jobj = $(this);
+      if(jobj.closest('[cms-content-editor]').length) return; //Do not render components in content editor
+      var component_id = jobj.attr('cms-component');
+      if(!component_id){
+        component_id = jobj.data('id');
+        jobj.attr('cms-component', component_id);
+      }
 
-      var component_id = jobj.data('id');
-      var isCmsComponent = !component_id && jobj.closest('[data-component]').length > 0;
-      if (isCmsComponent) return;
+      var isContentComponent = !component_id && jobj.closest('[data-component]').length > 0;
+      if (isContentComponent) return;
 
       jobj.addClass('initialized mceNonEditable');
       var component_content = '';
-      if(!component_id) component_content = '*** COMPONENT MISSING data-id ATTRIBUTE ***';
-      else if(!(component_id in _this.componentTemplates)) component_content = '*** MISSING CONTENT FOR COMPONENT ID ' + component_id+' ***';
+      if(!component_id) component_content = _this.formatComponentError('*** COMPONENT MISSING data-id ATTRIBUTE ***');
+      else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
       else{
         var component = _this.componentTemplates[component_id];
         var templates = component != undefined ? component.templates : undefined
         var editorTemplate = (templates || {}).editor;
-        component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component_id));
+        var renderOptions = {};
+        //Parse component properties
+        var props = {
+          'cms-menu-tag': { renderOption: 'menu_tag', type: 'string'},
+          'cms-component-properties': { renderOption: 'properties', type: 'json'},
+          'cms-component-data': { renderOption: 'data', type: 'json'},
+        }
+        var renderOptions = {};
+        var hasError = false;
+        for(var propName in props){
+          var prop = props[propName];
+          var propVal = jobj.attr(propName);
+          if(typeof propVal != 'undefined'){
+            if(prop.type=='json'){
+              if(propVal === '') propVal = '{}';
+              try{
+                propVal = JSON.parse(propVal);
+              }
+              catch(ex){
+                component_content = _this.formatComponentError('*** INVALID JSON IN COMPONENT "' + component_id+'", property "'+propName+'": '+ex.toString()+' *** ');
+                hasError = true;
+              }
+            }
+            renderOptions[prop.renderOption] = propVal;
+          }
+        }
+        //Render component
+        try{
+          if(!hasError) component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component, renderOptions));
+        }
+        catch(ex){
+          cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
+        }
       }
       jobj.html(component_content);
     });
+  }
 
-    if(container){
-      $(container).find('[data-component]').not('.initialized').addClass('initialized').each(function() {
-        $(this).attr('data-component-id', _this.getNextComponentId());
-        _this.renderComponent(this);
-      });
-    }
+  this.getDefaultValues = function(model){
+    var rslt = {};
+    if(model) _.each(model.fields, function(field){
+      if(field && field.name && ('default' in field)){
+        rslt[field.name] = field.default;
+      }
+    });
+    return rslt;
   }
 
   this.parseTemplate = function(componentTemplate) {
@@ -4428,22 +4480,31 @@ exports = module.exports = function(jsh, cms){
     return 'jsharmony_cms_component_' + this.lastComponentId++;
   }
 
-  this.renderComponent = function(element, options) {
+  this.renderContainerContentComponents = function(container, callback){
+    var items = $(container).find('[data-component]').not('.initialized').addClass('initialized');
+    async.each(items, function(item, item_cb){
+      $(item).attr('data-component-id', _this.getNextComponentId());
+      _this.renderContentComponent(item, undefined, item_cb);
+    }, callback);
+  }
+
+  this.renderContentComponent = function(element, options, callback) {
+    if(!callback) callback = function(){};
     options = _.extend({ init: false }, options);
 
     var componentType = $(element).attr('data-component');
     var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
-    if (!componentTemplate) return;
+    if (!componentTemplate) return callback();
 
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
-    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return; }
+    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return callback(); }
 
     //Default component instance
     var component = {
       create: function(componentConfig, element) {
         component = _.extend(new JsHarmonyCMSComponent(componentId, element, cms, jsh, componentConfig.id), component);
-        component.render();
+        component.render(callback);
         _this.components[componentId] = component;
       },
       onBeforeRender: undefined,
@@ -4464,7 +4525,7 @@ exports = module.exports = function(jsh, cms){
       $(element).attr('data-is-insert', null);
       if(!options.init){
         element.scrollIntoView(false);
-        _this.components[componentId].openDataEditor();
+        _this.components[componentId].openDefaultEditor();
       }
     }
   }
@@ -4486,6 +4547,59 @@ exports = module.exports = function(jsh, cms){
     var id = 'jsharmony_cms_component_' + (componentConfig.className || jsh.XExt.escapeCSSClass(componentConfig.id, { nodash: true }));
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
+  }
+
+  this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
+    additionalRenderParams = additionalRenderParams || {};
+    renderOptions = _.extend({ data: null, properties: null, renderType: 'component', templateName: null }, renderOptions);
+    var defaultProperties = {};
+    var defaultData = {};
+    if(component){
+      var defaultProperties = cms.componentManager.getDefaultValues(component.properties);
+      var defaultData = cms.componentManager.getDefaultValues(component.data);
+    }
+    var properties = _.extend({}, defaultProperties, renderOptions.properties);
+    var data = { items: [], item: _.extend({}, defaultData) };
+    var rslt = _.extend({
+      baseUrl: '',
+      data: data,
+      properties: properties,
+      renderType: renderOptions.renderType,
+      _: _,
+      escapeHTML: XExt.xejs.escapeHTML,
+      escapeRegEx: XExt.escapeRegEx,
+      stripTags: XExt.StripTags,
+      isNullUndefinedEmpty: XExt.isNullUndefinedEmpty,
+      isNullUndefined: XExt.isNullUndefined,
+      iif: XExt.xejs.iif,
+      isInEditor: true,
+      isInPageEditor: false,
+      isInComponentEditor: false,
+      items: data.items,
+      item: data.item,
+      component: properties,
+      renderPlaceholder: function(){ return ''; },
+      renderTemplate: function(locals, templateName, items){
+        if(!items || (_.isArray(items) && !items.length)) return '';
+        templateName = templateName || '';
+        if(!locals.jsh_render_templates || !(templateName in locals.jsh_render_templates)) throw new Error('renderTemplate Error: Template not found: "'+templateName+'"');
+        return locals.jsh_render_templates[templateName](items||[]);
+      },
+    }, additionalRenderParams);
+
+    if(renderOptions.data){
+      if(_.isArray(renderOptions.data)){
+        data.items = _.map(renderOptions.data, function(item){ return _.extend({}, defaultData, item); });
+        data.item = new Proxy(new Object(), { get: function(target, prop, receiver){ throw new Error('Since component data is an array, assuming this is a multiple_items component.  Please add a "jsh-foreach-item" attribute to the container HTML element, to iterate over the items array.  For example:\r\n<div jsh-foreach-item><%=item.name%></div>'); } });
+      }
+      else {
+        data.item = _.extend(data.item, renderOptions.data);
+        data.items = [data.item];
+      }
+      rslt.items = data.items;
+      rslt.item = data.item;
+    }
+    return rslt;
   }
 }
 },{"./jsHarmonyCMS.Component":21}],23:[function(require,module,exports){
@@ -4540,17 +4654,263 @@ exports = module.exports = function(jsh, cms){
   this.save = function(){
   }
 
-  this.getComponentRenderParameters = function(component_id){
-    return {};
-  }
-
-  this.getMenuRenderParameters = function(menu_tag){
-    return {
-      menu: { menu_item_tree: [] }
-    };
+  this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
+    return cms.componentManager.getComponentRenderParameters(component, renderOptions, additionalRenderParams);
   }
 }
 },{}],24:[function(require,module,exports){
+/*
+Copyright 2021 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+exports = module.exports = function(jsh, cms){
+  var _this = this;
+  var _ = jsh._;
+  var $ = jsh.$;
+  var XExt = jsh.XExt;
+  var async = jsh.async;
+  var ejs = jsh.ejs;
+
+  this.createMenuTree = function(menu, page_key){
+    var selected_item = null;
+
+    //Generate menu item tree
+    var menu_item_ids = {};
+    for(var i=0;i<menu.menu_items.length;i++){
+      var menu_item = menu.menu_items[i];
+      menu_item.menu_item_children = [];
+      menu_item_ids[menu_item.menu_item_id] = menu_item;
+
+      menu_item.menu_item_type = (menu_item.menu_item_type||'TEXT').toUpperCase();
+      menu_item.menu_item_link_type = (menu_item.menu_item_link_type||'').toUpperCase();
+      menu_item.menu_item_link_target = (menu_item.menu_item_link_target||'').toUpperCase();
+
+      menu_item.id = menu_item.menu_item_id;
+      menu_item.children = menu_item.menu_item_children;
+
+      //html
+      menu_item.html = menu_item.menu_item_text;
+      if(menu_item.menu_item_type != 'HTML') menu_item.html = XExt.escapeHTML(menu_item.html);
+      menu_item.text = XExt.StripTags(menu_item.html);
+
+      menu_item.tag = menu_item.menu_item_tag || '';
+      menu_item.menu_tag = menu.menu_tag || '';
+      menu_item.class = menu_item.menu_item_class || '';
+      menu_item.style = menu_item.menu_item_style || '';
+
+      menu_item.href = '';
+      menu_item.onclick = '';
+      if(menu_item.menu_item_link_type){
+        menu_item.href = '#';
+        menu_item.onclick = 'return false;';
+      }
+        
+      menu_item.target = ((menu_item.menu_item_link_type != 'JS') && (menu_item.menu_item_link_target == 'NEWWIN')) ? '_blank' : '';
+      menu_item.selected = ((menu_item.menu_item_link_type=='PAGE') && ((menu_item.menu_item_link_dest||'').toString() == (page_key||'').toString()));
+      if(menu_item.selected) selected_item = menu_item;
+    }
+
+    var menu_item_tree = [];
+    _.each(menu.menu_items, function(menu_item){
+      if(!menu_item.menu_item_parent_id){
+        menu_item_tree.push(menu_item);
+        menu_item.parent = null;
+      }
+      else {
+        menu_item_ids[menu_item.menu_item_parent_id].children.push(menu_item);
+        menu_item.parent = menu_item_ids[menu_item.menu_item_parent_id];
+      }
+    });
+
+    function resolveParent(menu_item){
+      if(menu_item.parents) return;
+      if(!menu_item.parent){
+        menu_item.parents = [];
+        menu_item.depth = 1;
+        return;
+      }
+      if(!menu_item.parent.parents) resolveParent(menu_item.parent);
+      menu_item.parents = menu_item.parent.parents.concat(menu_item.parent);
+      menu_item.depth = menu_item.parent.depth + 1;
+    }
+
+    _.each(menu.menu_items, function(menu_item){
+      resolveParent(menu_item);
+      menu_item.getSiblings = function(){
+        var siblings = menu_item.parent ? menu_item.parent.children : menu_item_tree;
+        return _.filter(siblings, function(sibling){ return sibling.id != menu_item.id; });
+      }
+    });
+
+    //Add properties to menu
+    menu.menu_item_tree = menu_item_tree;
+    menu.tree = menu_item_tree;
+    menu.items = menu.menu_items;
+    menu.tag = menu.menu_tag;
+    menu.currentItem = selected_item;
+    //Aliases
+    menu.topItems = menu.tree;
+    menu.allItems = menu.items;
+  }
+
+  this.createSitemapTree = function(sitemap){
+    //Input:
+    //  self + siblings
+    //  parents + siblings
+    //  children
+
+    //***Populate children, siblings, parent
+    //parent.siblings
+    //parent.children
+    //parent.parent
+    //self.siblings
+    //self.children
+    //self.parent
+
+    if(sitemap.self){
+      //self.parent
+      if(sitemap.parents && sitemap.parents.length) sitemap.self.parent = sitemap.parents[sitemap.parents.length-1];
+      else sitemap.self.parent = null;
+
+      //self.children
+      sitemap.self.children = sitemap.children || [];
+      //self.children.siblings
+      for(var i=0;i<sitemap.self.children.length;i++){
+        var child = sitemap.self.children[i];
+        child.siblings = sitemap.self.children;
+        child.parent = sitemap.self;
+      }
+
+      //self.siblings
+      sitemap.self.siblings = sitemap.self.sitemap_item_siblings || [sitemap.self];
+      for(var i=0;i<sitemap.self.siblings.length;i++){
+        var sibling = sitemap.self.siblings[i];
+        //Replace self in sitemap.self.siblings
+        if(sibling.sitemap_item_id == sitemap.self.sitemap_item_id) sitemap.self.siblings[i] = sitemap.self;
+        else{
+          sibling.parent = sitemap.self.parent;
+          sibling.children = [];
+        }
+      }
+    }
+
+    //Replace self in each sitemap.parents.siblings
+    if(sitemap.parents){
+      for(var i=0;i<sitemap.parents.length;i++){
+        var parent = sitemap.parents[i];
+
+        //parent.parent
+        if(i==0) parent.parent = null;
+        else parent.parent = sitemap.parents[i-1];
+
+        //parent.siblings
+        parent.siblings = parent.sitemap_item_siblings || [parent];
+        for(var j=0;j<parent.siblings.length;j++){
+          if(parent.siblings[j].sitemap_item_id == parent.sitemap_item_id) parent.siblings[j] = parent;
+        }
+      }
+      for(var i=0;i<sitemap.parents.length;i++){
+        var parent = sitemap.parents[i];
+        //parent.children
+        if(i==(sitemap.parents.length-1)) parent.children = sitemap.self.siblings;
+        else parent.children = sitemap.parents[i+1].siblings;
+      }
+    }
+
+    //Generate tree and root
+    if(sitemap.parents && sitemap.parents.length){
+      sitemap.tree = [sitemap.parents[0]];
+      sitemap.root = sitemap.parents[0];
+    }
+    else if(sitemap.self){
+      sitemap.root = sitemap.self;
+      sitemap.tree = sitemap.self.siblings;
+    }
+    else sitemap.tree = null;
+
+    //Populate allItems
+    sitemap.allItems = [];
+    _.each(sitemap.parents, function(parent){
+      _.each(parent.siblings, function(sibling){ sitemap.allItems.push(sibling); });
+    });
+    if(sitemap.self){
+      _.each(sitemap.self.siblings, function(sibling){ sitemap.allItems.push(sibling); });
+      _.each(sitemap.self.children, function(child){ sitemap.allItems.push(child); });
+    }
+    
+
+    //Populate id and item fields
+    _.each(sitemap.allItems, function(sitemap_item){
+      sitemap_item.id = sitemap_item.sitemap_item_id;
+
+      sitemap_item.sitemap_item_type = (sitemap_item.sitemap_item_type||'TEXT').toUpperCase();
+      sitemap_item.sitemap_item_link_type = (sitemap_item.sitemap_item_link_type||'').toUpperCase();
+      sitemap_item.sitemap_item_link_target = (sitemap_item.sitemap_item_link_target||'').toUpperCase();
+
+      //html
+      sitemap_item.html = sitemap_item.sitemap_item_text;
+      if(sitemap_item.sitemap_item_type != 'HTML') sitemap_item.html = XExt.escapeHTML(sitemap_item.html);
+      sitemap_item.text = XExt.StripTags(sitemap_item.html);
+
+      sitemap_item.tag = sitemap_item.sitemap_item_tag || '';
+      sitemap_item.sitemap_tag = sitemap.sitemap_tag || '';
+      sitemap_item.class = sitemap_item.sitemap_item_class || '';
+      sitemap_item.style = sitemap_item.sitemap_item_style || '';
+
+      sitemap_item.href = '';
+      sitemap_item.onclick = '';
+      if(sitemap_item.sitemap_item_link_type){
+        sitemap_item.href = '#';
+        sitemap_item.onclick = 'return false;';
+      }
+        
+      sitemap_item.target = ((sitemap_item.sitemap_item_link_type != 'JS') && (sitemap_item.sitemap_item_link_target == 'NEWWIN')) ? '_blank' : '';
+      sitemap_item.selected = (sitemap_item == sitemap.self);
+    });
+
+    //Populate parents, depth
+    function resolveParent(sitemap_item){
+      if(sitemap_item.parents) return;
+      if(!sitemap_item.parent){
+        sitemap_item.parents = [];
+        sitemap_item.depth = 1;
+        return;
+      }
+      if(!sitemap_item.parent.parents) resolveParent(sitemap_item.parent);
+      sitemap_item.parents = sitemap_item.parent.parents.concat(sitemap_item.parent);
+      sitemap_item.depth = sitemap_item.parent.depth + 1;
+    }
+
+    _.each(sitemap.allItems, function(sitemap_item){
+      resolveParent(sitemap_item);
+      sitemap_item.getSiblings = function(){
+        var siblings = sitemap_item.parent ? sitemap_item.parent.children : sitemap.tree;
+        return _.filter(siblings, function(sibling){ return sibling.id != sitemap_item.id; });
+      }
+    });
+
+    //Aliases
+    sitemap.topItems = sitemap.tree;
+    sitemap.currentItem = sitemap.self;
+    sitemap.item = sitemap.self;
+  }
+}
+},{}],25:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4570,9 +4930,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-exports = module.exports = function(jsh, cms, editor){
+exports = module.exports = function(jsh, cms){
   var _this = this;
   var XExt = jsh.XExt;
+  
+  this.lastMediaPath = undefined;
+  this.lastLinkPath = undefined;
 
   this.getParameters = function(filePickerType, url){
     url = (url||'').toString();
@@ -4593,6 +4956,12 @@ exports = module.exports = function(jsh, cms, editor){
         if(page_key.toString()==patharr[3]) return { init_page_key: page_key };
       }
     }
+    else if((filePickerType === 'link') && _this.lastLinkPath) {
+      if(_this.lastLinkPath.init_media_path) return { init_media_path: _this.lastLinkPath.init_media_path };
+      else if(_this.lastLinkPath.init_page_path) return { init_page_path: _this.lastLinkPath.init_page_path };
+    } 
+    else if ((filePickerType === 'media') && _this.lastMediaPath) return { init_media_path: _this.lastMediaPath.init_media_path };
+
     return {};
   }
 
@@ -4604,9 +4973,7 @@ exports = module.exports = function(jsh, cms, editor){
 
   this.openMedia = function(cb, value, meta){
     cms.filePickerCallback = cb;
-    var qs = { };
-    var linkurl = _this.getParameters('media', value);
-    if(linkurl.media_key) qs.init_media_key = linkurl.media_key;
+    var qs = _this.getParameters('media', value);
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
   }
 
@@ -4617,9 +4984,12 @@ exports = module.exports = function(jsh, cms, editor){
       var jdata = JSON.parse(data);
       if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){}
       else if(jdata.media_key){
+        _this.lastMediaPath = { init_media_path: jdata.media_folder };
+        _this.lastLinkPath = { init_media_path: jdata.media_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS', jdata);
       }
       else if(jdata.page_key){
+        _this.lastLinkPath = { init_page_path: jdata.page_folder };
         cms.filePickerCallback(cms._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS', jdata);
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
@@ -4629,7 +4999,7 @@ exports = module.exports = function(jsh, cms, editor){
     return false;
   }
 }
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -4719,7 +5089,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (tinymce.PluginManager.get('jsHarmonyCms') != undefined) return;
 
     tinymce.PluginManager.add('jsHarmonyCms', function(editor, url) {
-      new JsHarmonyComponentPlugin(editor);
+      return new JsHarmonyComponentPlugin(editor);
     });
   }
 
@@ -4731,6 +5101,8 @@ exports = module.exports = function(jsh, cms, editor){
   function JsHarmonyComponentPlugin(editor) {
 
     this._editor = editor;
+    this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions);
+
     this.initialize(cms.componentManager.componentTemplates);
   }
 
@@ -4741,13 +5113,13 @@ exports = module.exports = function(jsh, cms, editor){
    * @returns {object[]}
    */
   JsHarmonyComponentPlugin.prototype.createComponentMenuItems = function(componentInfo) {
-    var self = this;
+    var _this = this;
     return _.map(componentInfo, function(item) {
       return {
         type: 'menuitem',
         text: item.menuLabel,
         icon: item.iconId,
-        onAction: function() { self.insertComponent(item.componentType); }
+        onAction: function() { _this.insertComponent(item.componentType); }
       }
     });
   }
@@ -4760,12 +5132,12 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentMenuButton = function(componentInfo) {
     if(!componentInfo || !componentInfo.length) return;
 
-    var self = this;
+    var _this = this;
     this._editor.ui.registry.addNestedMenuItem('jsHarmonyCmsComponent', {
       text: 'Component',
       icon: ICONS.widgets.name,
       getSubmenuItems: function() {
-        return self.createComponentMenuItems(componentInfo);
+        return _this.createComponentMenuItems(componentInfo);
       }
     });
   }
@@ -4778,34 +5150,57 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentToolbarButton = function(componentInfo) {
     if(!componentInfo || !componentInfo.length) return;
 
-    var self = this;
-    self._editor.ui.registry.addMenuButton('jsHarmonyCmsComponent', {
+    var _this = this;
+    _this._editor.ui.registry.addMenuButton('jsHarmonyCmsComponent', {
       icon: ICONS.widgets.name,
       text: 'Component',
       fetch: function(cb) {
-        cb(self.createComponentMenuItems(componentInfo));
+        cb(_this.createComponentMenuItems(componentInfo));
       }
     });
+  }
+
+  JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_menu = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarVisibility = function(visible){
+    var _this = this;
+    _this.toolbarOptions.show_toolbar = !!visible;
+    cms.editor.renderContentEditorToolbar(_this._editor);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarDock = function(dockPosition){
+    var _this = this;
+    _this.toolbarOptions.dock = dockPosition || 'auto';
+    cms.editor.renderContentEditorToolbar(_this._editor);
   }
 
   /**
    * Create the "View" toolbar menu button, for hiding the menu and viewing source code.
    * @private
-   * @param {ComponentInfo[]} componentInfo
    */
-  JsHarmonyComponentPlugin.prototype.createViewToolbarButton = function(componentInfo) {
-    var self = this;
-    self._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
+  JsHarmonyComponentPlugin.prototype.createToolbarViewOptions = function() {
+    var _this = this;
+    _this._editor.ui.registry.addMenuButton('jsHarmonyCmsView', {
       text: 'View',
       icon: ICONS.search.name,
       fetch: function (cb) {
         return cb([
           {
             type: 'menuitem',
-            icon: 'new-tab',
             text: 'Toggle Menu',
             onAction: function () {
-              $(self._editor.editorContainer).find('[role=menubar]').toggle();
+              _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+            }
+          },
+          {
+            type: 'menuitem',
+            text: 'Toggle Toolbar',
+            onAction: function () {
+              _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
             }
           },
           {
@@ -4829,10 +5224,60 @@ exports = module.exports = function(jsh, cms, editor){
             icon: 'sourcecode',
             text: 'Source Code',
             onAction: function () {
-              self._editor.execCommand('mceCodeEditor');
+              _this._editor.execCommand('mceCodeEditor');
             }
           },
         ]);
+      }
+    });
+  }
+
+  JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
+    //if(!this._editor.settings.isjsHarmonyCmsComponent) 
+    var _this = this;
+
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleMenu', {
+      text: 'Toggle Menu',
+      onAction: function () {
+        _this.setMenuVisibility(!_this.toolbarOptions.show_menu);
+      }
+    });
+
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleToolbar', {
+      text: 'Toggle Toolbar',
+      onAction: function () {
+        _this.setToolbarVisibility(!_this.toolbarOptions.show_toolbar);
+      }
+    });
+
+    _this._editor.ui.registry.addNestedMenuItem('jsharmonyCmsDockToolbar', {
+      text: 'Dock Toolbar',
+      getSubmenuItems: function() {
+        return [
+          {
+            type: 'togglemenuitem',
+            text: 'Top',
+            onAction: function() {
+              if(_.includes(['top','top_offset','auto'],_this.toolbarOptions.orig_dock)) _this.setToolbarDock(_this.toolbarOptions.orig_dock);
+              else _this.setToolbarDock('auto');
+            },
+            onSetup: function(api) {
+              api.setActive((_this.toolbarOptions.dock === 'top')||(_this.toolbarOptions.dock === 'top_offset')||(_this.toolbarOptions.dock === 'auto'));
+              return function() {};
+            }
+          },
+          {
+            type: 'togglemenuitem',
+            text: 'Bottom',
+            onAction: function(a) {
+              _this.setToolbarDock('bottom');
+            },
+            onSetup: function(api) {
+              api.setActive(_this.toolbarOptions.dock === 'bottom');
+              return function() {};
+            }
+          }
+        ]
       }
     });
   }
@@ -4843,7 +5288,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {ComponentInfo[]} componentInfo
    */
   JsHarmonyComponentPlugin.prototype.createSpellCheckMessageMenuButton = function() {
-    var self = this;
+    var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsSpellCheckMessage', {
       text: 'Spell Check',
       icon: 'spell-check',
@@ -4861,22 +5306,22 @@ exports = module.exports = function(jsh, cms, editor){
    */
   JsHarmonyComponentPlugin.prototype.createContextToolbar = function(componentInfos) {
 
-    var self = this;
+    var _this = this;
     var propButtonId = 'jsharmonyComponentPropEditor';
     var dataButtonId = 'jsharmonyComponentDataEditor';
 
-    self._editor.ui.registry.addButton(dataButtonId, {
+    _this._editor.ui.registry.addButton(dataButtonId, {
       tooltip: 'Edit',
       text: 'Edit',
       icon:  ICONS.edit.name,
-      onAction: function() { self._editor.execCommand(COMMAND_NAMES.editComponentData); }
+      onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentData); }
     });
 
-    self._editor.ui.registry.addButton(propButtonId, {
+    _this._editor.ui.registry.addButton(propButtonId, {
       tooltip: 'Configure',
       text: 'Configure',
       icon: ICONS.settings.name,
-      onAction: function() { self._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
+      onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
     });
 
     var dataAndPropsToolbar = dataButtonId + ' ' + propButtonId;
@@ -4885,11 +5330,11 @@ exports = module.exports = function(jsh, cms, editor){
 
     var toolbarPredicate = function(enableData, enableProps) {
       return function(node) {
-        var isComponent = self._editor.dom.is(node, '[data-component]');
+        var isComponent = _this._editor.dom.is(node, '[data-component]');
         if (!isComponent) {
           return false;
         }
-        var componentType = self._editor.dom.getAttrib(node, 'data-component');
+        var componentType = _this._editor.dom.getAttrib(node, 'data-component');
         var componentInfo = _.find(componentInfos, function(info) { return info.componentType === componentType });
         if (!componentInfo) {
           return false;
@@ -4900,7 +5345,7 @@ exports = module.exports = function(jsh, cms, editor){
 
     var addToolbar = function(toolBarConfig, predicate) {
       var contextId = 'jsharmonyComponentContextToolbar_' + toolBarConfig;
-      self._editor.ui.registry.addContextToolbar(contextId, {
+      _this._editor.ui.registry.addContextToolbar(contextId, {
         predicate: predicate,
         items: toolBarConfig,
         scope: 'node',
@@ -4937,7 +5382,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {object} e - the undo/redo event from the TinyMCE editor
    */
   JsHarmonyComponentPlugin.prototype.onUndoRedo = function(e) {
-    var self = this;
+    var _this = this;
     var content = e.level.content;
     if (!content) return;
     var parser = new tinymce.html.DomParser({validate: false});
@@ -4947,11 +5392,19 @@ exports = module.exports = function(jsh, cms, editor){
         var id = node.attributes.map['data-component-id'];
         var type = node.attributes.map['data-component'];
         if (id && type) {
-          cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
+          cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
         }
       }
     });
     parser.parse(content);
+  }
+
+  JsHarmonyComponentPlugin.prototype.setToolbarOptions = function(toolbarOptions){
+    var _this = this;
+
+    _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
+    if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
+    if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = !!toolbarOptions.show_menu || toolbarOptions.show_toolbar;
   }
 
   /**
@@ -4962,7 +5415,7 @@ exports = module.exports = function(jsh, cms, editor){
    */
   JsHarmonyComponentPlugin.prototype.initialize = function(components) {
 
-    var self = this;
+    var _this = this;
 
     /** @type {ComponentInfo[]} */
     var componentInfo = [];
@@ -4989,7 +5442,7 @@ exports = module.exports = function(jsh, cms, editor){
           icon = component.icon;
         }
 
-        self._editor.ui.registry.addIcon(iconRegistryName, icon);
+        _this._editor.ui.registry.addIcon(iconRegistryName, icon);
 
         componentInfo.push({
           componentType: component.id,
@@ -5003,32 +5456,41 @@ exports = module.exports = function(jsh, cms, editor){
 
     // Register icons
     for (var key in ICONS) {
-      self._editor.ui.registry.addIcon(ICONS[key].name, ICONS[key].html);
+      _this._editor.ui.registry.addIcon(ICONS[key].name, ICONS[key].html);
     }
 
     //Create menu buttons, toolbar buttons, and context menu buttons
     this.createContextToolbar(componentInfo);
     this.createComponentToolbarButton(componentInfo);
-    this.createViewToolbarButton();
+    this.createToolbarViewOptions();
+    this.createMenuViewOptions();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
 
-    this._editor.on('undo', function(info) { self.onUndoRedo(info); });
-    this._editor.on('redo', function(info) { self.onUndoRedo(info); });
+    this._editor.on('undo', function(info) { _this.onUndoRedo(info); });
+    this._editor.on('redo', function(info) { _this.onUndoRedo(info); });
+    this._editor.on('setToolbarOptions', function(e){
+      if(e && e.toolbarOptions) _this.setToolbarOptions(e.toolbarOptions);
+    });
 
     this._editor.addCommand(COMMAND_NAMES.editComponentData, function() {
-      var el = self._editor.selection.getStart();
-      self.openDataEditor(el);
+      var el = _this._editor.selection.getStart();
+      _this.openDataEditor(el);
     });
 
     this._editor.addCommand(COMMAND_NAMES.editComponentProperties, function() {
-      var el = self._editor.selection.getStart();
-      self.openPropertiesEditor(el);
+      var el = _this._editor.selection.getStart();
+      _this.openPropertiesEditor(el);
     });
+    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) { 
+      _this.setToolbarOptions(toolbarOptions);
+    });
+    this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
 
     this._editor.on('init', function() {
-      self._editor.serializer.addNodeFilter('div', function(nodes) { self.serializerFilter(nodes); });
-      self._editor.parser.addAttributeFilter('data-component', function(nodes) { self.parseFilter(nodes); });
+      _this._editor.serializer.addNodeFilter('div', function(nodes) { _this.serializerFilter(nodes); });
+      _this._editor.parser.addAttributeFilter('data-component', function(nodes) { _this.renderContentComponents(nodes); });
+      _this._editor.parser.addAttributeFilter('cms-component', function(nodes) { _this.replacePageComponentsWithContentComponents(nodes); });
     });
   }
 
@@ -5097,22 +5559,84 @@ exports = module.exports = function(jsh, cms, editor){
    * @private
    * @param {Array.<object>} nodes - a list of TinyMce nodes
    */
-  JsHarmonyComponentPlugin.prototype.parseFilter = function(nodes) {
-    var self = this;
+  JsHarmonyComponentPlugin.prototype.renderContentComponents = function(nodes) {
+    var _this = this;
     _.each(nodes, function(node) {
       var id = cms.componentManager.getNextComponentId();
       // var id = node.attributes.map['data-component-id'];
       node.attr('data-component-id', id);
-      var type = node.attributes.map['data-component'];
       // Content is not actually in the DOM yet.
       // Wait for next loop
       var isInitialized = cms.isInitialized;
       setTimeout(function() {
-        cms.componentManager.renderComponent($(self._editor.targetElm).find('[data-component-id="' + id + '"]')[0], {
+        cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0], {
           init: !isInitialized
         });
       });
     });
+  }
+
+  /**
+   * Replace cms-component elements with data-component
+   * @private
+   * @param {Array.<object>} nodes - a list of TinyMce nodes
+   */
+  JsHarmonyComponentPlugin.prototype.replacePageComponentsWithContentComponents = function(nodes) {
+    var _this = this;
+    _.each(nodes, function(node) {
+      var cmsComponent = node.attr('cms-component');
+      var cmsComponentData = node.attr('cms-component-data');
+      var cmsComponentProperties = node.attr('cms-component-properties');
+      if(cmsComponent){
+        node.attr('data-component', cmsComponent);
+        node.attr('cms-component', null);
+        
+        var nodeClass = (node.attr('class')||'');
+        if(nodeClass) nodeClass += ' ';
+        nodeClass += 'mceNonEditable';
+        node.attr('class', nodeClass);
+        node.attr('contenteditable', "false");
+
+        var defaultProperties = {};
+        var defaultData = {};
+        var component = cms.componentManager.componentTemplates[cmsComponent];
+        if(component){
+          defaultProperties = cms.componentManager.getDefaultValues(component.properties);
+          defaultData = cms.componentManager.getDefaultValues(component.data);
+        }
+        
+        if(cmsComponentData){
+          try{
+            cmsComponentData = JSON.parse(cmsComponentData);
+            if(_.isArray(cmsComponentData)){
+              for(var i=0;i<cmsComponentData.length;i++){ cmsComponentData[i] = _.extend({}, defaultData, cmsComponentData[i]); }
+              cmsComponentData = {items: cmsComponentData};
+            }
+            else{
+              cmsComponentData = _.extend({}, defaultData, cmsComponentData);
+              cmsComponentData = {item: cmsComponentData};
+            }
+            cmsComponentData = JSON.stringify(cmsComponentData);
+          }
+          catch(ex){
+          }
+          node.attr('data-component-data', btoa(cmsComponentData));
+          node.attr('cms-component-data', null);
+        }
+        if(cmsComponentProperties){
+          try{
+            cmsComponentProperties = JSON.parse(cmsComponentProperties);
+            cmsComponentProperties = _.extend({}, defaultProperties, cmsComponentProperties);
+            cmsComponentProperties = JSON.stringify(cmsComponentProperties);
+          }
+          catch(ex){
+          }
+          node.attr('data-component-properties', btoa(cmsComponentProperties));
+          node.attr('cms-component-properties', null);
+        }
+      }
+    });
+    _this.renderContentComponents(nodes);
   }
 
   /**
@@ -5132,7 +5656,7 @@ exports = module.exports = function(jsh, cms, editor){
     }
   }
 }
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -5163,14 +5687,20 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   var XExt = jsh.XExt;
 
   this.isEditing = false;
-  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
+  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
+  this.defaultToolbarOptions = {
+    dock: "auto",
+    show_menu: true,
+    show_toolbar: true,
+    orig_dock: undefined,
+    orig_toolbar_or_menu: undefined,
+  };
 
-  this.onBeginEdit = null; //function(editor){};
-  this.onEndEdit = null; //function(editor){};
-
+  this.onBeginEdit = null; //function(mceEditor){};
+  this.onEndEdit = null; //function(mceEditor){};
 
   this.editorConfig = {
     base: null,
@@ -5213,7 +5743,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         image_advtab: true,
         menu: {
           edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+          view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsHarmonyCmsToggleMenu jsHarmonyCmsToggleToolbar jsharmonyCmsDockToolbar' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
@@ -5243,29 +5773,56 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       }, jsh.globalparams.defaultEditorConfig, _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
-        init_instance_callback: function(editor){
+        init_instance_callback: function(mceEditor){
           var firstFocus = true;
-          editor.on('focus', function(){
+          mceEditor.on('focus', function(){
             //Fix bug where alignment not reset when switching between editors
             if(firstFocus){
               $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
               firstFocus = false;
             }
             $('[data-component="header"]').css('pointer-events', 'none');
-            _this.isEditing = editor.id.substr(('jsharmony_cms_content_').length);
-            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
+            var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
+            if(_this.toolbarContainer.length){
+              var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
+              wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
+            }
+            _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
+              //If dock=bottom, slide up
+              _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
+              _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
+            }
+            else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              //Top-offset
+              _this.toolbarContainer.stop(true).css({ opacity:1 });
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            }
+            
             cms.refreshLayout();
-            if(_this.onBeginEdit) _this.onBeginEdit(editor);
+            if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
           });
-          editor.on('blur', function(){
+          mceEditor.on('blur', function(){
             $('[data-component="header"]').css('pointer-events', 'auto');
             _this.isEditing = false;
-            _this.toolbarContainer.stop(true).animate({ opacity:0 },300);
-            if(_this.onEndEdit) _this.onEndEdit(editor);
+            var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
+            var dockPosition = _this.getDockPosition(mceEditor);
+            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+              _this.toolbarContainer.stop(true).css({ opacity:0 });
+              clearClasses();
+              cms.toolbar.refreshOffsets();
+            }
+            else {
+              _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
+            }
+            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
           //Override background color icon
-          var allIcons = editor.ui.registry.getAll();
-          editor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
+          var allIcons = mceEditor.ui.registry.getAll();
+          mceEditor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
         }
       });
 
@@ -5280,9 +5837,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         },
         menubar: false,
         browser_spellcheck: true,
-        init_instance_callback: function(editor){
-          editor.on('blur', function(){
-            if(_this.onEndEdit) _this.onEndEdit(editor);
+        init_instance_callback: function(mceEditor){
+          mceEditor.on('blur', function(){
+            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           });
         }
       });
@@ -5292,18 +5849,34 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   }
 
   this.attach = function(config_id, elem_id, options, cb){
+    if(!cb) cb = function(){};
+    var cb_called = false;
+    var orig_cb = cb;
+    cb = function(err){ if(cb_called) return; cb_called = true; orig_cb(err); };
+    if(!$('#'+elem_id).length) return cb(new Error('Editor container element not found: #'+elem_id));
     if(!(config_id in _this.editorConfig)) throw new Error('Editor config ' + (config_id||'').toString() + ' not defined');
     var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
-    if(cb) config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, cb);
-    window.tinymce.init(config);
+    config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, function(){ return cb(); });
+    window.tinymce.init(config).catch(cb);
   }
 
   this.detach = function(id){
-    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-    if(editor){
-      if(_this.isEditing == id) editor.fire('blur');
-      editor.destroy();
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(mceEditor){
+      if(_this.isEditing == id) mceEditor.fire('blur');
+      mceEditor.destroy();
     }
+  }
+
+  /** 
+   * @param {string} id
+   * @param {'top' | 'bottom'} position
+   */
+  this.setToolbarOptions = function(id, toolbarOptions) {
+    if(!toolbarOptions) return;
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(!mceEditor) throw new Error('Editor not found: '+id);
+    mceEditor.fire('setToolbarOptions', {toolbarOptions:toolbarOptions});
   }
 
   this.disableLinks = function(container, options){
@@ -5312,7 +5885,11 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       var jobj = $(this);
       if(options.onlyJSHCMSLinks){
         var url = jobj.attr('href');
-        if(url.indexOf('#@JSHCMS') < 0) return;
+        //If it is not a jsHarmony Internal Link
+        if(url.indexOf('#@JSHCMS') < 0){
+          //If it is not inside of a component
+          if(!jobj.closest('[data-component]').length) return;
+        }
       }
 
       if(options.addFlag && jobj.data('disabled_links')) return;
@@ -5321,28 +5898,33 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     });
   }
 
-  this.setContent = function(id, val){
+  this.setContent = function(id, val, desc){
+    if(!desc) desc = id;
+    var containerId = 'jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true });
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
-        $('#jsharmony_cms_content_'+id).html(val);
-        cms.componentManager.render(document.getElementById('jsharmony_cms_content_'+id));
-        _this.disableLinks(document.getElementById('jsharmony_cms_content_'+id), { addFlag: true, onlyJSHCMSLinks: true });
+        $('#'+containerId).html(val);
+        cms.componentManager.renderContainerContentComponents(document.getElementById(containerId), function(err){
+          if(err) throw new Error(err);
+          _this.disableLinks(document.getElementById(containerId), { addFlag: true, onlyJSHCMSLinks: true });
+        });
       },1);
     }
     else {
-      var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-      if(!editor) throw new Error('Editor not found: '+id);
-      if(!_this.isInitialized) editor.undoManager.clear();
-      editor.setContent(val);
-      if(!_this.isInitialized) editor.undoManager.add();
+      var mceEditor = window.tinymce.get(containerId);
+      if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+      if(!_this.isInitialized) mceEditor.undoManager.clear();
+      mceEditor.setContent(val);
+      if(!_this.isInitialized) mceEditor.undoManager.add();
     }
   }
 
-  this.getContent = function(id){
-    var editor = window.tinymce.get('jsharmony_cms_content_'+id);
-    if(!editor) throw new Error('Editor not found: '+id);
-    return editor.getContent();
+  this.getContent = function(id, desc){
+    if(!desc) desc = id;
+    var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
+    if(!mceEditor) cms.fatalError('editor.getContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+    return mceEditor.getContent();
   }
 
   this.initToolbarContainer = function(element) {
@@ -5355,6 +5937,92 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       this.toolbarContainer.attr('id', id);
     }
   }
+
+  this.onEditorInitialized = function(){
+    if(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()){
+      window.tinymce.activeEditor.fire('focus');
+    }
+  }
+
+  this.getContentEditorTopOffset = function(mceEditor){
+    var contentOffset = $(mceEditor.contentAreaContainer).offset();
+    if(!contentOffset) return undefined;
+    var contentOffsetTop = contentOffset.top;
+    var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
+    contentOffsetTop += parseInt(contentStyles.paddingTop);
+    contentOffsetTop -= cms.toolbar.currentOffsetTop;
+    return contentOffsetTop;
+  }
+
+  this.getDockPosition = function(mceEditor){
+    if(!mceEditor) throw new Error('Editor is required');
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    var dockPosition = toolbarOptions.dock;
+    if(!dockPosition) dockPosition = 'auto';
+    //Calculate auto
+    if(dockPosition=='auto'){
+      //Check if content would overlap editor
+      var contentOffsetTop = _this.getContentEditorTopOffset(mceEditor);
+      if(typeof contentOffsetTop == 'undefined') return 'top';
+      var editorToolbarHeight = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
+      if(editorToolbarHeight > contentOffsetTop){
+        if(cms.toolbar.dockPosition == 'top_offset') return 'top_offset';
+      }
+      return 'top';
+    }
+    return dockPosition;
+  }
+
+  this.getOffsetTop = function(){
+    if(!window.tinymce) return 0;
+    var mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return 0;
+    var dockPosition = _this.getDockPosition(mceEditor);
+    if(dockPosition=='top_offset'){
+      return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
+    }
+    return 0;
+  }
+
+  this.renderContentEditorToolbar = function(mceEditor, options){
+    if(!window.tinymce) return;
+    if(!mceEditor) mceEditor = window.tinymce.activeEditor;
+    if(!mceEditor) return;
+    options = _.extend({ onFocus: false }, options);
+    var toolbarOptions = mceEditor.queryCommandValue('jsHarmonyCmsGetToolbarOptions');
+    if(options.onFocus){
+      if(!toolbarOptions.show_menu && !toolbarOptions.show_toolbar){
+        if(toolbarOptions.orig_toolbar_or_menu) toolbarOptions.show_toolbar = true;
+      }
+    }
+    toolbarOptions = _.extend({}, _this.defaultToolbarOptions, toolbarOptions);
+
+    var jContentToolbar = $('#jsharmony_cms_content_editor_toolbar');
+
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
+
+    var dockPosition = _this.getDockPosition(mceEditor);
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
+    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
+    var isPageToolbarBottom = jContentToolbar.hasClass('jsharmony_cms_page_toolbar_bottom');
+
+    var barh = cms.toolbar.getHeight();
+    if (dockPosition == 'bottom') {
+      //Bottom Dock Position
+      jContentToolbar
+        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
+        .css('bottom', isPageToolbarBottom ? barh+'px' : '0');
+    } else {
+      //Top Dock Position
+      
+      jContentToolbar
+        .css('top', isPageToolbarBottom ? '0' : barh + 'px')
+        .css('bottom', '');
+    }
+    cms.toolbar.refreshOffsets();
+  }
+
   this.getMaterialIcons = function(){
     if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
     return [
@@ -6293,7 +6961,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     ];
   }
 }
-},{"./jsHarmonyCMS.Editor.Picker.js":24,"./jsHarmonyCMS.Editor.TinyMCEPlugin.js":25}],27:[function(require,module,exports){
+},{"./jsHarmonyCMS.Editor.Picker.js":25,"./jsHarmonyCMS.Editor.TinyMCEPlugin.js":26}],28:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -6322,6 +6990,7 @@ exports = module.exports = function(cms){
   this.onSquashedClick = [];
   this.onMouseDown = [];
   this.onMouseUp = [];
+  this.onLoadingComplete = [];
   
   this.StartLoading = function(obj, desc){
     if(!obj) obj = _this.defaultLoadObj;
@@ -6378,110 +7047,19 @@ exports = module.exports = function(cms){
     if(this.loadQueue.length) return;
 
     this.isLoading = false;
-    if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut();
-    else document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+    var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); }
+    if(cms.jsh){
+      cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut('normal', function(){ triggerLoadingComplete(); });
+    }
+    else{
+      document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
+      triggerLoadingComplete();
+    }
   }
 
   this.ClearLoading = function(){
     this.loadQueue = [];
     this.StopLoading();
-  }
-}
-},{}],28:[function(require,module,exports){
-/*
-Copyright 2019 apHarmony
-
-This file is part of jsHarmony.
-
-jsHarmony is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-jsHarmony is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with this package.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-exports = module.exports = function(jsh, cms){
-  var _this = this;
-  var $ = jsh.$;
-  var XExt = jsh.XExt;
-  var async = jsh.async;
-  var ejs = jsh.ejs;
-
-  this.menuTemplates = {};
-  this.isInitialized = false;
-
-  this.load = function(onError){
-    var url = '../_funcs/templates/menus/'+cms.branch_id;
-    XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
-      if ('_success' in rslt) {
-        _this.menuTemplates = rslt.menuTemplates;
-        async.eachOf(_this.menuTemplates, function(menu, menu_template_id, menu_cb){
-          async.eachOf(menu.content_elements, function(content_element, content_element_name, content_element_cb){
-            if(!content_element.remote_templates) return content_element_cb();
-            if(!content_element.templates) content_element.templates = {};
-            if(!content_element.templates.editor) content_element.templates.editor = '';
-
-            //Load remote menu templates
-            var loadObj = {};
-            cms.loader.StartLoading(loadObj, 'CMS Menu');
-            $.ajax({
-              type: 'GET',
-              cache: false,
-              url: content_element.remote_templates,
-              xhrFields: { withCredentials: true },
-              success: function(data){
-                cms.loader.StopLoading(loadObj);
-                content_element.templates.editor = (content_element.templates.editor||'')+data;
-                return content_element_cb();
-              },
-              error: function(xhr, status, err){
-                cms.loader.StopLoading(loadObj);
-                content_element.templates.editor = '*** ERROR DOWNLOADING REMOTE MENU ***';
-                return content_element_cb();
-              }
-            });
-          }, menu_cb);
-        }, function(err){
-          _this.isInitialized = true;
-        });
-      }
-      else{
-        if(onError) onError(new Error('Error Loading Menus'));
-        XExt.Alert('Error loading menus');
-      }
-    }, function (err) {
-      if(onError) onError(err);
-    });
-  };
-
-  this.render = function(){
-    $('.jsharmony_cms_menu').addClass('mceNonEditable').each(function(){
-      var jobj = $(this);
-      var menu_tag = jobj.data('menu_tag');
-      var content_element_name = jobj.data('menu_content_element');
-      var menu_content = '';
-      if(!menu_tag) menu_content = '*** MENU MISSING data-menu_tag ATTRIBUTE ***';
-      else if(!content_element_name) menu_content = '*** MENU MISSING data-menu_content_element ATTRIBUTE ***';
-      else if(!(menu_tag in cms.controller.menus)) menu_content = '*** MISSING MENU DATA FOR MENU TAG ' + menu_tag+' ***';
-      else {
-        var menu = cms.controller.menus[menu_tag];
-        var menuTemplate = _this.menuTemplates[menu.menu_template_id];
-        if(!menuTemplate) menu_content = '*** MENU TEMPLATE NOT FOUND: ' + menu.menu_template_id+' ***';
-        else if(!(content_element_name in menuTemplate.content_elements)) menu_content = '*** MENU ' + menu.menu_template_id + ' CONTENT ELEMENT NOT DEFINED: ' + content_element_name+' ***';
-        else{
-          var content_element = menuTemplate.content_elements[content_element_name];
-          menu_content = ejs.render((content_element.templates && content_element.templates.editor) || '', cms.controller.getMenuRenderParameters(menu_tag));
-        }
-      }
-      jobj.html(menu_content);
-    });
   }
 }
 },{}],29:[function(require,module,exports){
@@ -6509,17 +7087,94 @@ exports = module.exports = function(jsh, cms){
   var $ = jsh.$;
   var _ = jsh._;
 
-  this.editorBarDocked = false;
-  this.origMarginTop = undefined;
+  this.editorBarDocked = true;
+  this.origMarginTop = [];
+  this.currentOffsetTop = 0;
+  this.dockPosition = 'top_offset';
   this.errors = [/*{ message: '...', type: 'text' (or 'html') }*/];
  
   this.render = function(){
     cms.util.addStyle('jsharmony_cms_editor_css',cms.views['jsh_cms_editor.css']);
     jsh.root.append(cms.views['jsh_cms_editor']);
-    this.origMarginTop = $('body').css('margin-top');
-    this.toggleAutoHide(false);
     jsh.InitControls();
     this.renderErrors();
+  }
+
+  this.getHeight = function(){
+    return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
+  }
+
+  this.saveOrigOffsets = function(){
+    _.filter($('*').toArray(), function(elem){
+      if(elem.id=='jsHarmonyCMSLoading') return;
+      var computedStyles = window.getComputedStyle(elem);
+      if((elem.tagName && (elem.tagName.toUpperCase()=='BODY')) || (computedStyles.position=='fixed')){
+        var jelem = $(elem);
+        if(typeof jelem.attr('cms-toolbar-offsetid') != 'undefined') return;
+        if(jelem.parent().closest('[cms-content-editor]').length) return;
+        var offsetId = _this.origMarginTop.length;
+        jelem.attr('cms-toolbar-offsetid', offsetId);
+        _this.origMarginTop[offsetId] = computedStyles.marginTop;
+      }
+    });
+  }
+
+  this.getOffsetTop = function(){
+    var offsetTop = 0;
+    if(this.editorBarDocked){
+      if(_this.dockPosition == 'top_offset') offsetTop += _this.getHeight();
+    }
+    if(cms.editor) offsetTop += cms.editor.getOffsetTop();
+    return offsetTop;
+  }
+
+  this.getComputedOffsetTop = function(elem){
+    var computedStyles = window.getComputedStyle(elem);
+    return computedStyles.marginTop;
+  }
+
+  this.refreshOffsets = function(){
+    var offsetTop = _this.getOffsetTop();
+    var origBodyOffset = null;
+    var scrollTop = $(document).scrollTop();
+
+    var startingOffsets = [];
+    for(var i=0;i<_this.origMarginTop.length;i++){
+      if(_this.origMarginTop[i] === null) continue;
+      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      if(jelem.length){
+        startingOffsets[i] = jelem.first().offset().top;
+        if(jelem[0].tagName=='BODY'){
+          origBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+        }
+      }
+    }
+
+    for(var i=0;i<_this.origMarginTop.length;i++){
+      if(_this.origMarginTop[i] === null) continue;
+      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      if(jelem.length){
+        if(offsetTop){
+          var curTop = jelem.first().offset().top;
+          if(curTop != startingOffsets[i]){ _this.origMarginTop[i] = null; continue; }
+          else {
+            var newMarginTop = _this.origMarginTop[i] ? 'calc(' + _this.origMarginTop[i] + ' + ' + offsetTop + 'px)' : offsetTop+'px';
+            $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', newMarginTop);
+          }
+        }
+        else {
+          $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', _this.origMarginTop[i]);
+        }
+        //If changing body offset
+        if(scrollTop && (jelem[0].tagName=='BODY')){
+          var newBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+          if(scrollTop && (origBodyOffset != newBodyOffset)){
+            $(document).scrollTop(scrollTop + (parseInt(newBodyOffset) - parseInt(origBodyOffset)));
+          }
+        }
+      }
+    }
+    this.currentOffsetTop = offsetTop;
   }
 
   this.renderErrors = function(){
@@ -6542,52 +7197,72 @@ exports = module.exports = function(jsh, cms){
   this.toggleAutoHide = function(val){
     if(typeof val =='undefined') val = !this.editorBarDocked;
     this.editorBarDocked = !!val;
-
-    if(this.editorBarDocked){
-      $('body').css('margin-top', this.origMarginTop);
-    }
-    else {
-      var barHeight = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-      $('body').css('margin-top', barHeight+'px');
-    }
-    $('#jsharmony_cms_editor_bar .autoHideEditorBar').toggleClass('enabled',!val);
+    this.refreshOffsets();
+    $('#jsharmony_cms_page_toolbar .autoHideEditorBar').toggleClass('enabled',!val);
   }
   
-  this.toggleSettings = function(display, noSlide){
-    var jbutton = $('#jsharmony_cms_editor_bar .jsharmony_cms_button.settings');
+  this.toggleSlideoutButton = function(button, display, noSlide){
+    var jbutton;
+    if(!button) return;
+    if(_.isString(button)) jbutton = $('#jsharmony_cms_page_toolbar .jsharmony_cms_button.'+button);
+    else jbutton = $(button);
+    $('#jsharmony_cms_page_toolbar .jsharmony_cms_button[data-slideout].selected').not(jbutton).each(function(){
+      _this.toggleSlideoutButton(this, false, true);
+      //Disable slide if another button is already selected
+      noSlide = true;
+    });
     var prevdisplay = !!jbutton.hasClass('selected');
     if(typeof display == 'undefined') display = !prevdisplay;
     
     if(prevdisplay==display) return;
     else {
-      var jsettings = $('#jsharmony_cms_editor_bar .page_settings');
+      var jslideout = $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container.'+jbutton.data('slideout'));
       if(display){
         //Open
         jbutton.addClass('selected');
-        jsettings.stop(true);
-        if(noSlide) jsettings.show();
-        else jsettings.slideDown();
+        jslideout.stop(true);
+        if(noSlide) jslideout.show();
+        else jslideout.slideDown();
       }
       else {
         //Close
         if(!cms.controller.validate()) return;
         jbutton.removeClass('selected');
-        jsettings.stop(true);
-        if(noSlide) jsettings.hide();
-        else jsettings.slideUp();
+        jslideout.stop(true);
+        if(noSlide) jslideout.hide();
+        else jslideout.slideUp();
       }
     }
   }
 
-  this.showSettings = function(noSlide){ this.toggleSettings(true, noSlide); }
+  this.showSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, true, noSlide); }
 
-  this.hideSettings = function(noSlide){ this.toggleSettings(false, noSlide); }
+  this.hideSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, false, noSlide); }
   
   this.showError = function(err) {
     if(_.isString(err)) err = { message: err, type: 'text' };
     err.type = (err.type=='html' ? 'html' : 'text');
     _this.errors.push(err);
     _this.renderErrors();
+  }
+
+  this.setDockPosition = function(dockPosition){
+    _this.dockPosition = dockPosition || 'top_offset';
+    _this.refreshOffsets();
+    $('#jsharmony_cms_page_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
+    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
+
+    if(_this.dockPosition == 'bottom'){
+      $('#jsharmony_cms_page_toolbar').css('opacity', 0);
+      var dockAnimation = function(){
+        var barHeight = _this.getHeight();
+        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' })
+        $('#jsharmony_cms_page_toolbar').animate({ bottom: '0px' }, function(){ this.style.bottom = null; });
+      };
+      if(cms.isInitialized) dockAnimation();
+      else cms.loader.onLoadingComplete.push(dockAnimation);
+    }
+    cms.editor.renderContentEditorToolbar();
   }
 
 }
@@ -6707,9 +7382,8 @@ var jsHarmonyCMSLoader = require('./jsHarmonyCMS.Loader.js');
 var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
-var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
-var jsHarmonyCMSMenuController = require('./jsHarmonyCMS.MenuController.js');
+var jsHarmonyCMSControllerExtensions = require('./jsHarmonyCMS.ControllerExtensions.js');
 
 var jsHarmonyCMS = function(options){
   var _this = this;
@@ -6721,9 +7395,9 @@ var jsHarmonyCMS = function(options){
   this.util = new jsHarmonyCMSUtil(this);
   this.toolbar = undefined; //Loaded after init
   this.controller = undefined; //Loaded after init
+  this.controllerExtensions = undefined; // Loaded after init
   this.editor = undefined; //Loaded after init
   this.componentManager = undefined; // Loaded after init
-  this.menuController = undefined; //Loaded after init
   this.views = {
     'jsh_cms_editor.css': '',
     'jsh_cms_editor': '',
@@ -6747,7 +7421,6 @@ var jsHarmonyCMS = function(options){
   this.onGetControllerUrl = null;        //function() => url
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
-  this.onApplyProperties = null;         //function(page)
   this.onRender = null;                  //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); }
 
@@ -6793,14 +7466,14 @@ var jsHarmonyCMS = function(options){
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = _this.createCoreEditor()
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
+      _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
+      _this.toolbar.saveOrigOffsets();
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
-
-      _this.menuController = new jsHarmonyCMSMenuController(jsh, _this);
 
       jsh.xLoader = loader;
       async.parallel([
@@ -6826,12 +7499,11 @@ var jsHarmonyCMS = function(options){
 
   this.load = function(){
     if(_this.onLoad) _this.onLoad(jsh);
-    $('.jsharmony_cms_content').prop('contenteditable','true');
+    $('[cms-content-editor]').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
       async.parallel([
         function(cb){ _this.componentManager.load(cb); },
-        function(cb){ _this.menuController.load(cb); },
       ], function(err){
         if(err){
           loader.StopLoading();
@@ -6845,7 +7517,7 @@ var jsHarmonyCMS = function(options){
       });
     }
     else{
-      if(jshInstance.globalparams.isWebmaster && _this.controller.initDevMode){
+      if(jsh.globalparams.isWebmaster && _this.controller.initDevMode){
         _this.devMode = true;
         _this.controller.initDevMode(function(err){
           loader.StopLoading();
@@ -6870,16 +7542,20 @@ var jsHarmonyCMS = function(options){
     var doch = $(document).height();
     var pw = ((docw > ww) ? docw : ww);
     var ph = ((doch > wh) ? doch : wh);
-    var barh = $('#jsharmony_cms_editor_bar .actions').outerHeight();
-    $('#jsharmony_cms_editor_bar .page_settings').css('max-height', (wh-barh)+'px');
-
-    var toolbarTop = 37;
-    $('#jsharmony_cms_content_editor_toolbar').css('top', toolbarTop+'px');
+    var barh = _this.toolbar.getHeight();
+    $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').css('max-height', (wh-barh)+'px');
   }
 
   this.onmessage = function(event){
     var data = (event.data || '').toString();
     if(_this.editor && _this.editor.picker && _this.editor.picker.onmessage(event, data)) return;
+  }
+
+  this.fatalError = function(err){
+    if(loader) loader.ClearLoading();
+    if(XExt) XExt.Alert(err.toString());
+    else alert(err.toString());
+    throw new Error(err);
   }
 
   this.createCoreEditor = function() {
@@ -6891,10 +7567,6 @@ var jsHarmonyCMS = function(options){
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
   }
 
-  this.createJsHarmonyCMSEditorPicker = function(editor) {
-    return new jsHarmonyCMSEditorPicker(jsh, _this, editor);
-  }
-
   //Run Init
   _this.init();
 }
@@ -6902,7 +7574,7 @@ var jsHarmonyCMS = function(options){
 global.jsHarmonyCMS = jsHarmonyCMS;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.Editor.Picker.js":24,"./jsHarmonyCMS.Editor.js":26,"./jsHarmonyCMS.Loader.js":27,"./jsHarmonyCMS.MenuController.js":28,"./jsHarmonyCMS.Toolbar.js":29,"./jsHarmonyCMS.Util.js":30}],32:[function(require,module,exports){
+},{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.ControllerExtensions.js":24,"./jsHarmonyCMS.Editor.js":27,"./jsHarmonyCMS.Loader.js":28,"./jsHarmonyCMS.Toolbar.js":29,"./jsHarmonyCMS.Util.js":30}],32:[function(require,module,exports){
 (function (global){
 /**
  * @license

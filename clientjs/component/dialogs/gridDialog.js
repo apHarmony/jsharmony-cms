@@ -60,11 +60,13 @@ var Dialog = require('./dialog');
 /**
  * @class
  * @param {Object} jsh
+ * @param {Object} cms
  * @param {Object} model
  * @param {GridDialogConfig} config
  */
-function GridDialog(jsh, model, config) {
+function GridDialog(jsh, cms, model, config) {
   this.jsh = jsh;
+  this.cms = cms;
   this._model = model;
   this._config = config || {};
 
@@ -92,12 +94,12 @@ function GridDialog(jsh, model, config) {
  * @public
  */
 GridDialog.prototype.open = function() {
-  var self = this;
+  var _this = this;
 
   /** @type {GridDialogConfig} */
   var config = this._config;
 
-  var dialog = new Dialog(this.jsh, this._model, {
+  var dialog = new Dialog(this.jsh, this.cms, this._model, {
     closeOnBackdropClick: config.closeOnBackdropClick,
     cssClass: config.cssClass,
     dialogId: config.dialogId,
@@ -116,9 +118,9 @@ GridDialog.prototype.open = function() {
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    self.jsh.XExt.execif(self.onBeforeOpen,
+    _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
-        self.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
+        _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
       },
       function(){
         if(onComplete) onComplete();
@@ -130,13 +132,13 @@ GridDialog.prototype.open = function() {
     $dialog = _$dialog;
     controller.grid.Prop.Enabled = true;
     controller.Render(function() {
-      if (_.isFunction(self.onOpened)) self.onOpened(_$dialog, xmodel);
+      if (_.isFunction(_this.onOpened)) _this.onOpened(_$dialog, xmodel);
     });
   }
 
   dialog.onCancel = function(options) {
     if (!options.force && controller.HasUpdates()) {
-      self.jsh.XExt.Confirm('Close without saving changes?', function() {
+      _this.jsh.XExt.Confirm('Close without saving changes?', function() {
         controller.form.ResetDataset();
         options.forceCancel();
       });
@@ -146,7 +148,7 @@ GridDialog.prototype.open = function() {
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
-    if (_.isFunction(self.onClose)) self.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
   }
 
   dialog.open();

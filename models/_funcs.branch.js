@@ -59,90 +59,93 @@ module.exports = exports = function(module, funcs){
       if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
       if (!appsrv.ParamCheck('Q', Q, ['|source'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-      //Check if branch exists
-      sql_ptypes = [dbtypes.BigInt];
-      sql_params = { 'branch_id': branch_id };
-      validate = new XValidate();
-      verrors = {};
-      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      sql = "select branch_id,branch_name,site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_access where branch_id=@branch_id and branch_access like 'R%'";
+      funcs.validateBranchAccess(req, res, branch_id, 'RW', ['PUBLISHER','WEBMASTER'], function(){
 
-      var fields = [];
-      var datalockstr = '';
-      appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
-      sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
+        //Check if branch exists
+        sql_ptypes = [dbtypes.BigInt];
+        sql_params = { 'branch_id': branch_id };
+        validate = new XValidate();
+        verrors = {};
+        validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+        sql = "select branch_id,branch_name,site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_access where branch_id=@branch_id and branch_access like 'R%'";
 
-      verrors = _.merge(verrors, validate.Validate('B', sql_params));
-      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+        var fields = [];
+        var datalockstr = '';
+        appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
+        sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
 
-      appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-        if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Branch ID'); }
-        var branch = rslt[0][0];
-        var branchData = {
-          data_files: [],
-          site_id: branch.site_id,
-        };
+        verrors = _.merge(verrors, validate.Validate('B', sql_params));
+        if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-        async.waterfall([
-          function(download_cb){
-            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-              if(!branch_item.download) return branch_item_cb();
-              Helper.execif(branch_item.download.columns,
-                function(f){
-                  var sql = "select branch_{item}.{item}_key,branch_{item}.{item}_id,";
-                  sql += _.map(branch_item.download.columns || [], function(colname){ return '{item}.'+colname; }).join(',');
+        appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+          if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Branch ID'); }
+          var branch = rslt[0][0];
+          var branchData = {
+            data_files: [],
+            site_id: branch.site_id,
+          };
 
-                  sql += " from {tbl_branch_item} branch_{item}"
-                  sql += ' left outer join {tbl_item} {item} on {item}.{item}_id = branch_{item}.{item}_id';
-        
-                  sql += " where branch_{item}.branch_id=@branch_id and branch_{item}.{item}_id is not null";
-                  
-                  appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
-                    if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-                    if(!rslt || !rslt.length || !rslt[0]){ return download_cb(new Error('Error downloading branch data')); }
-                    branchData[branch_item_type] = rslt[0];
-                    return f();
-                  });
-                },
-                branch_item_cb
-              );
-            }, download_cb);
-          },
-          function(download_cb){
-            //Add paths to list
-            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-              if(!branch_item.download) return branch_item_cb();
-              Helper.execif(branch_item.download.onGenerate,
-                function(f){
-                  branch_item.download.onGenerate(branchData[branch_item_type], branchData, f);
-                },
-                branch_item_cb
-              );
-            }, download_cb);
-          },
-          function(download_cb){
-            //Create zip file and stream back to user
-            //data_files => "data" folder
-            //"items.json"
+          async.waterfall([
+            function(download_cb){
+              async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+                if(!branch_item.download) return branch_item_cb();
+                Helper.execif(branch_item.download.columns,
+                  function(f){
+                    var sql = "select branch_{item}.{item}_key,branch_{item}.{item}_id,";
+                    sql += _.map(branch_item.download.columns || [], function(colname){ return '{item}.'+colname; }).join(',');
 
-            res.writeHead(200, {
-              'Content-Type': 'application/zip',
-              'Content-disposition': 'attachment; filename=cms_branch_'+HelperFS.cleanFileName(branch.branch_name,'-')+'__'+moment().format('YYYY-MM-DD-hh-mm-ss')+'.zip'
-            });
+                    sql += " from {tbl_branch_item} branch_{item}"
+                    sql += ' left outer join {tbl_item} {item} on {item}.{item}_id = branch_{item}.{item}_id';
+          
+                    sql += " where branch_{item}.branch_id=@branch_id and branch_{item}.{item}_id is not null";
+                    
+                    appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+                      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                      if(!rslt || !rslt.length || !rslt[0]){ return download_cb(new Error('Error downloading branch data')); }
+                      branchData[branch_item_type] = rslt[0];
+                      return f();
+                    });
+                  },
+                  branch_item_cb
+                );
+              }, download_cb);
+            },
+            function(download_cb){
+              //Add paths to list
+              async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+                if(!branch_item.download) return branch_item_cb();
+                Helper.execif(branch_item.download.onGenerate,
+                  function(f){
+                    branch_item.download.onGenerate(branchData[branch_item_type], branchData, f);
+                  },
+                  branch_item_cb
+                );
+              }, download_cb);
+            },
+            function(download_cb){
+              //Create zip file and stream back to user
+              //data_files => "data" folder
+              //"items.json"
 
-            var zipfile = new yazl.ZipFile();
-            zipfile.addBuffer(Buffer.from(JSON.stringify(branchData,null,4)), "items.json");
-            _.each(branchData.data_files, function(data_file){
-              zipfile.addFile(path.join(module.jsh.Config.datadir,data_file), "data/"+data_file);
-            });
-            zipfile.outputStream.pipe(res).on("close", function() {
-              //Done
-            });
-            zipfile.end();
-          },
-        ], function(err){
-          if(err) return Helper.GenError(req, res, -99999, err.toString());
+              res.writeHead(200, {
+                'Content-Type': 'application/zip',
+                'Content-disposition': 'attachment; filename=cms_branch_'+HelperFS.cleanFileName(branch.branch_name,'-')+'__'+moment().format('YYYY-MM-DD-hh-mm-ss')+'.zip'
+              });
+
+              var zipfile = new yazl.ZipFile();
+              zipfile.addBuffer(Buffer.from(JSON.stringify(branchData,null,4)), "items.json");
+              _.each(branchData.data_files, function(data_file){
+                zipfile.addFile(path.join(module.jsh.Config.datadir,data_file), "data/"+data_file);
+              });
+              zipfile.outputStream.pipe(res).on("close", function() {
+                //Done
+              });
+              zipfile.end();
+            },
+          ], function(err){
+            if(err) return Helper.GenError(req, res, -99999, err.toString());
+          });
         });
       });
     }
@@ -191,152 +194,155 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      var baseurl = req.baseurl;
-      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
+      funcs.validateSiteAccess(req, res, P.site_id, ['PUBLISHER'], function(){
 
-      var zip_file = '';
-      var branchData = {
-        _DBContext: req._DBContext,
-        _baseurl: baseurl,
-        site_id: null,
-        LOVs: {},
-        branchItems: {},
-        contentFiles: {},
-        pageTemplates: {},
-        site_id: P.site_id,
-      };
+        var baseurl = req.baseurl;
+        if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
 
-      async.waterfall([
-        function(upload_cb){
-          var fname = path.basename(P.branch_content);
-          var file_ext = path.extname(fname).toLowerCase(); //Get extension
-          if (file_ext != '.zip') { return Helper.GenError(req, res, -32, 'File extension is not supported.'); }
-          zip_file = path.join(jsh.Config.datadir, 'temp', req._DBContext, fname);
-          HelperFS.getFileStats(req, res, zip_file, function (err, stat) {
-            if (err != null) { return Helper.GenError(req, res, -33, 'Branch content file not found.'); }
-            upload_cb(null);
-          });
-        },
-        function(upload_cb){
-          //Validate file contents
-          var items_text = '';
-          funcs.unzip(zip_file, '', 
-            { onEntry: function(entry, zipFile){
-              branchData.contentFiles[entry.fileName] = { size: entry.uncompressedSize };
-              return function(entry_cb){
-                zipFile.openReadStream(entry, function(err, readStream) {
-                  if (err) return entry_cb(err);
-                  var bpart = [];
-                  var hash = crypto.createHash('sha1');
-                  readStream.on('data', function(data){
-                    if(entry.fileName == 'items.json') bpart.push(data);
-                    hash.update(data);
-                  });
-                  readStream.on('end', function(){
-                    //Save MD5 hash of file
-                    branchData.contentFiles[entry.fileName].hash = hash.digest('hex');
-                    if(entry.fileName == 'items.json'){
-                      items_text = Buffer.concat(bpart).toString();
-                    }
-                    return entry_cb();
-                  });
-                });
-              }
-            } },
-            function(err){
-              if(err) return upload_cb(err);
+        var zip_file = '';
+        var branchData = {
+          _DBContext: req._DBContext,
+          _baseurl: baseurl,
+          site_id: null,
+          LOVs: {},
+          branchItems: {},
+          contentFiles: {},
+          pageTemplates: {},
+          site_id: P.site_id,
+        };
 
-              if(!('items.json' in branchData.contentFiles)) return upload_cb(new Error('Invalid content file - missing items.json'));
-              try{
-                branchData.branchItems = JSON.parse(items_text);
-              }
-              catch(ex){
-                return upload_cb(new Error('Error parsing items.json: ' + ex.toString()));
-              }
-              return upload_cb();
-            }
-          );
-        },
-        function(upload_cb){
-          //Check for errors in content
-          var errors = [];
-          async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-            if(!branch_item.upload) return branch_item_cb();
-            if(branch_item.upload.onValidate) branch_item.upload.onValidate(errors, branchData.branchItems[branch_item_type], branchData, branch_item_cb);
-            else branch_item_cb();
-          }, function(err){
-            if(err) return upload_cb(err);
-            if(errors.length) return upload_cb('Errors importing branch: \n'+errors.join('\n'));
-            return upload_cb();
-          });
-        },
-        function(upload_cb){
-          var db = jsh.getDB('default');
-          var dbtasks = {};
-
-          //Create new branch (test error on duplicate, etc)
-          dbtasks['branch_create'] = function (dbtrans, callback, transtbl) {
-            var sql = "insert into {schema}.v_my_current_branch(branch_type, branch_name, site_id) values(@branch_type, @branch_name, @site_id);";
-            db.Command(branchData._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, dbtrans, function (err, rslt) {
-              if (err != null) { err.sql = sql; }
-              callback(err, rslt);
-            });
-          }
-
-          //Import branch items
-          async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
-            if(!branch_item.upload) return branch_item_cb();
-            if(branch_item.upload.onImportDB) branch_item.upload.onImportDB(dbtasks, branchData.branchItems[branch_item_type], branchData, branch_item_cb);
-            else branch_item_cb();
-          }, function(err){
-            if(err) return upload_cb(err);
-
-            if(DEBUG_BRANCH_UPLOAD){
-              //For testing - fail so that transaction doesn't go through
-              dbtasks['fail'] = function (dbtrans, callback, transtbl) {
-                db.Command(branchData._DBContext, "select 1 fail testerr", [], {}, dbtrans, function (err, rslt) {
-                  if (err != null) { err.sql = sql; }
-                  callback(err, rslt);
-                });
-              }
-            }
-
-            //Execute transactions
-            db.ExecTransTasks(dbtasks, function (err, rslt) {
-              if (DEBUG_BRANCH_UPLOAD) return upload_cb();
-              if (err != null) { appsrv.AppDBError(req, res, err); return; }
+        async.waterfall([
+          function(upload_cb){
+            var fname = path.basename(P.branch_content);
+            var file_ext = path.extname(fname).toLowerCase(); //Get extension
+            if (file_ext != '.zip') { return Helper.GenError(req, res, -32, 'File extension is not supported.'); }
+            zip_file = path.join(jsh.Config.datadir, 'temp', req._DBContext, fname);
+            HelperFS.getFileStats(req, res, zip_file, function (err, stat) {
+              if (err != null) { return Helper.GenError(req, res, -33, 'Branch content file not found.'); }
               upload_cb(null);
             });
-          });
-        },
-        function(upload_cb){
-          funcs.unzip(zip_file, '', 
-            { onEntry: function(entry, zipFile){
-              if(!branchData.contentFiles[entry.fileName]) return false;
-              if(!branchData.contentFiles[entry.fileName].onExtract) return false;
-              return function(entry_cb){
-                zipFile.openReadStream(entry, function(err, readStream) {
-                  if (err) return entry_cb(err);
-                  if(branchData.contentFiles[entry.fileName].onExtract(readStream, entry_cb)===false){
-                    readStream.destroy();
-                    return entry_cb();
-                  }
-                });
+          },
+          function(upload_cb){
+            //Validate file contents
+            var items_text = '';
+            funcs.unzip(zip_file, '', 
+              { onEntry: function(entry, zipFile){
+                branchData.contentFiles[entry.fileName] = { size: entry.uncompressedSize };
+                return function(entry_cb){
+                  zipFile.openReadStream(entry, function(err, readStream) {
+                    if (err) return entry_cb(err);
+                    var bpart = [];
+                    var hash = crypto.createHash('sha1');
+                    readStream.on('data', function(data){
+                      if(entry.fileName == 'items.json') bpart.push(data);
+                      hash.update(data);
+                    });
+                    readStream.on('end', function(){
+                      //Save MD5 hash of file
+                      branchData.contentFiles[entry.fileName].hash = hash.digest('hex');
+                      if(entry.fileName == 'items.json'){
+                        items_text = Buffer.concat(bpart).toString();
+                      }
+                      return entry_cb();
+                    });
+                  });
+                }
+              } },
+              function(err){
+                if(err) return upload_cb(err);
+
+                if(!('items.json' in branchData.contentFiles)) return upload_cb(new Error('Invalid content file - missing items.json'));
+                try{
+                  branchData.branchItems = JSON.parse(items_text);
+                }
+                catch(ex){
+                  return upload_cb(new Error('Error parsing items.json: ' + ex.toString()));
+                }
+                return upload_cb();
               }
-            } },
-            function(err){
-              //For testing
-              if(DEBUG_BRANCH_UPLOAD) return upload_cb(new Error('Testing Halted'));
-              //Return result
+            );
+          },
+          function(upload_cb){
+            //Check for errors in content
+            var errors = [];
+            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+              if(!branch_item.upload) return branch_item_cb();
+              if(branch_item.upload.onValidate) branch_item.upload.onValidate(errors, branchData.branchItems[branch_item_type], branchData, branch_item_cb);
+              else branch_item_cb();
+            }, function(err){
               if(err) return upload_cb(err);
+              if(errors.length) return upload_cb('Errors importing branch: \n'+errors.join('\n'));
               return upload_cb();
+            });
+          },
+          function(upload_cb){
+            var db = jsh.getDB('default');
+            var dbtasks = {};
+
+            //Create new branch (test error on duplicate, etc)
+            dbtasks['branch_create'] = function (dbtrans, callback, transtbl) {
+              var sql = "insert into {schema}.v_my_current_branch(branch_type, branch_name, site_id) values(@branch_type, @branch_name, @site_id);";
+              db.Command(branchData._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, dbtrans, function (err, rslt) {
+                if (err != null) { err.sql = sql; }
+                callback(err, rslt);
+              });
             }
-          );
-        },
-      ], function(err){
-        if(err) return Helper.GenError(req, res, -99999, err.toString());
-        //Return success
-        return res.send(JSON.stringify({ _success: 1 }));
+
+            //Import branch items
+            async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+              if(!branch_item.upload) return branch_item_cb();
+              if(branch_item.upload.onImportDB) branch_item.upload.onImportDB(dbtasks, branchData.branchItems[branch_item_type], branchData, branch_item_cb);
+              else branch_item_cb();
+            }, function(err){
+              if(err) return upload_cb(err);
+
+              if(DEBUG_BRANCH_UPLOAD){
+                //For testing - fail so that transaction doesn't go through
+                dbtasks['fail'] = function (dbtrans, callback, transtbl) {
+                  db.Command(branchData._DBContext, "select 1 fail testerr", [], {}, dbtrans, function (err, rslt) {
+                    if (err != null) { err.sql = sql; }
+                    callback(err, rslt);
+                  });
+                }
+              }
+
+              //Execute transactions
+              db.ExecTransTasks(dbtasks, function (err, rslt) {
+                if (DEBUG_BRANCH_UPLOAD) return upload_cb();
+                if (err != null) { appsrv.AppDBError(req, res, err); return; }
+                upload_cb(null);
+              });
+            });
+          },
+          function(upload_cb){
+            funcs.unzip(zip_file, '', 
+              { onEntry: function(entry, zipFile){
+                if(!branchData.contentFiles[entry.fileName]) return false;
+                if(!branchData.contentFiles[entry.fileName].onExtract) return false;
+                return function(entry_cb){
+                  zipFile.openReadStream(entry, function(err, readStream) {
+                    if (err) return entry_cb(err);
+                    if(branchData.contentFiles[entry.fileName].onExtract(readStream, entry_cb)===false){
+                      readStream.destroy();
+                      return entry_cb();
+                    }
+                  });
+                }
+              } },
+              function(err){
+                //For testing
+                if(DEBUG_BRANCH_UPLOAD) return upload_cb(new Error('Testing Halted'));
+                //Return result
+                if(err) return upload_cb(err);
+                return upload_cb();
+              }
+            );
+          },
+        ], function(err){
+          if(err) return Helper.GenError(req, res, -99999, err.toString());
+          //Return success
+          return res.send(JSON.stringify({ _success: 1 }));
+        });
       });
     }
     else return next();
@@ -450,7 +456,7 @@ module.exports = exports = function(module, funcs){
     async.waterfall([
       function(cb){
         //Load Page Templates
-        funcs.getPageTemplates(branchData._DBContext, site_id, { continueOnConfigError: true }, function(err, pageTemplates){
+        funcs.getPageTemplates(branchData._DBContext, branchData.site_id, { continueOnConfigError: true }, function(err, pageTemplates){
           if(err) return cb(err);
           branchData.pageTemplates = pageTemplates;
           return cb();
@@ -459,7 +465,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         //Check pages for errors
         _.each(branchItems, function(item){
-          if(item.page_template_id && !(item.page_template_id in branchData.pageTemplates)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Page template ID not defined in current site: '+item.page_template_id);
+          if(item.page_template_id && !(item.page_template_id in branchData.pageTemplates)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Page Template "'+item.page_template_id+'" not defined in current site');
           var contentFileName = 'data/page/'+item.page_file_id+'.json';
           if(!item.page_is_folder && item.page_file_id && !(contentFileName in branchData.contentFiles)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Missing content file: '+contentFileName);
         });
@@ -638,7 +644,7 @@ module.exports = exports = function(module, funcs){
               pageContent.content[key] = replaceURLs(pageContent.content[key]);
             }
             _.each(['css','header','footer'], function(key){
-              if(pageContent[key]) pageContent[key] = replaceURLs(pageContent[key], { HTMLParser: false });
+              if(pageContent[key]) pageContent[key] = replaceURLs(pageContent[key]);
             });
           }
 
@@ -816,7 +822,7 @@ module.exports = exports = function(module, funcs){
     _.each(branchItems, function(item){
       //Add menu to database
       dbtasks['menu_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
-        cols = ['menu_name','menu_tag','menu_template_id','menu_path','menu_lang'];
+        cols = ['menu_name','menu_tag','menu_lang'];
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
         sql = Helper.ReplaceAll(sql, '{item}', 'menu');
@@ -826,15 +832,11 @@ module.exports = exports = function(module, funcs){
         var sql_ptypes = [
           dbtypes.VarChar(256),
           dbtypes.VarChar(256),
-          dbtypes.VarChar(255),
-          dbtypes.VarChar(2048),
           dbtypes.VarChar(32),
         ];
         var sql_params = {
           'menu_name':null,
           'menu_tag':null,
-          'menu_template_id':null,
-          'menu_path':null,
           'menu_lang':null
         };
         for(var key in item){ if(key in sql_params) sql_params[key] = item[key]; }
@@ -1022,6 +1024,97 @@ module.exports = exports = function(module, funcs){
       };
     });
     return callback();
+  }
+
+  exports.site_checkout = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var appsrv = this;
+    var jsh = module.jsh;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+    var model = jsh.getModel(req, module.namespace + 'Site_Listing');
+
+    if (verb == 'get'){
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, ['&site_id','|source'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      //Update user site
+      sql = "update {schema}.v_my_session set site_id=@site_id";
+      sql_ptypes = [dbtypes.BigInt];
+      sql_params = { 'site_id': Q.site_id };
+      validate = new XValidate();
+      verrors = {};
+      validate.AddValidator('_obj.site_id', 'Site ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+      verrors = _.merge(verrors, validate.Validate('B', sql_params));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+      appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+        var url = Q.source || req.jshsite.baseurl || '/';
+        Helper.Redirect302(res, url);
+      });
+      return;
+    }
+    else return next();
+  }
+
+  exports.validateBranchAccess = function(req, res, branch_id, branch_access, site_access, callback){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(32)];
+    var sql_params = { branch_id: branch_id, branch_access: branch_access };
+
+    var sql = "select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access like @branch_access"
+    if(site_access && site_access.length){
+      if(!_.isArray(site_access)) site_access = [site_access];
+      for(var i=0;i<site_access.length;i++){
+        sql_ptypes.push(dbtypes.VarChar(32));
+        sql_params['site_access'+i.toString()] = site_access[i];
+      }
+      sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_branch_access.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
+    }
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
+      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target branch');
+      callback(null);
+    });
+  }
+
+  exports.validateSiteAccess = function(req, res, site_id, site_access, callback){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { site_id: site_id };
+
+    var sql = "select site_id from {schema}.v_my_site where site_id=@site_id"
+    if(site_access && site_access.length){
+      if(!_.isArray(site_access)) site_access = [site_access];
+      for(var i=0;i<site_access.length;i++){
+        sql_ptypes.push(dbtypes.VarChar(32));
+        sql_params['site_access'+i.toString()] = site_access[i];
+      }
+      sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_site.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
+    }
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
+      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target branch');
+      callback(null);
+    });
   }
 
   return exports;

@@ -7,16 +7,18 @@
     "caption":["Site","Sites"],
     "menu":"jsHarmonyCMS/Site_Listing",
     "buttons":[{ "name":"insertSite", "link":"insert:Site_Tabs","icon":"add","text":"Add Site" }],
-    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS_OPTIONAL",
     "oncommit": "XPage.Reload({ browserRefresh:true });",
-    "rowclass": "<%=xejs.iif(datarow['site_branch_is_checked_out']==1,'site_branch_checked_out')%>",
+    "rowclass": "<%=xejs.iif(datarow['site_checked_out']==1,'site_checked_out')%>",
+    "sqlwhere": "site_id in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access is not null)",
     "fields": [
       {"name":"site_id","caption":"Site ID","control":"hidden","key":true,"actions":"B"},
-      {"name":"site_branch_is_checked_out","control":"hidden","actions":"B","sqlselect":"(case site_id when (select site_id from {schema}.branch where branch_id = {schema}.my_current_branch_id()) then 1 else 0 end)"},
+      {"name":"site_checked_out","control":"hidden","actions":"B","sqlselect":"(case site_id when {schema}.my_current_site_id() then 1 else 0 end)"},
       {"name":"site_name","caption":"Site Name","actions":"B","control":"label"},
       {"name":"site_sts","caption":"Status","actions":"B","control":"label"},
       {"name":"sys_user_site_editor","caption":"My Preview / Editor","control":"dropdown","lov":{ "blank": "(Default)", "parent":"site_id", "sql2": "select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and deployment_target_sts='ACTIVE' order by deployment_target_name" }},
-      {"control":"html","caption":"Manage Site","link":"update:Site_Tabs","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }}
+      {"control":"html","caption":"Manage Site","link":"update:Site_Tabs","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }},
+      {"control":"label","caption":"Checkout Site","cellstyle":"text-align:center;","controlstyle":"position:relative;top:-1px;cursor:pointer;","onclick":"jsh.System.setCurrentSite(xmodel.get('site_id',this),jsh._BASEURL+xmodel.namespace+'Branch_Active_Listing')","value":"<img src='/images/icon_export.png' class='xicon' />"},
     ]
   }
 }

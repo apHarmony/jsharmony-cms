@@ -170,7 +170,8 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
     var info = {
       dataFieldName: field.name,
       titleFieldName: field.name + '_jsh_browserDataTitle',
-      browserType: browserType
+      browserType: browserType,
+      validate: field.validate,
     }
 
     field.mediaBrowserControlInfo = info;
@@ -179,6 +180,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
     field.controlclass = 'xtextbox_M';
     field.type = 'varchar';
     field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeBrowserTitleControl) m.onChangeBrowserTitleControl("' + info.dataFieldName + '");  })()';
+    delete field.validate;
 
     retVal.push({
       name: field.name + '_browserButton',
@@ -200,12 +202,16 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
       onclick: '(function() { var m = jsh.App[modelid]; if (m && m.resetEditorBrowser) m.resetEditorBrowser("' + info.dataFieldName + '"); })()'
     });
 
-    retVal.push({
+    var coreField = {
       name: info.dataFieldName,
       caption: '',
       control: 'hidden',
       type: 'varchar'
-    });
+    };
+    if(info.validate) coreField.validate = info.validate;
+    if(field.caption) coreField.caption_ext = field.caption;
+
+    retVal.push(coreField);
   });
 
   return retVal;

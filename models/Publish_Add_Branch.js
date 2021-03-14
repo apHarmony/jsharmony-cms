@@ -1,6 +1,19 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
+  this.onload = function(){
+    function autoSelectOneDropdownItem(fieldName, jobj){
+      if(jobj.val()) return;
+      var allOptions = [];
+      jobj.find('option').each(function(){ var val = $(this).attr('value'); if(val) allOptions.push(val); });
+      if(allOptions.length==1) xmodel.set(fieldName, allOptions[0]);
+    }
+    //Wait for LOVs to update
+    setTimeout(function(){
+      autoSelectOneDropdownItem('deployment_target_id', jsh.$root('.deployment_target_id.xelem'+xmodel.class));
+    }, 1);
+  }
+
   this.publish = function(){
     if(!xmodel.controller.form.Data.Commit()) return;
     var deployment_target_id = xmodel.get('deployment_target_id');

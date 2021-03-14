@@ -4,7 +4,7 @@
     "table":"{schema}.v_my_branch_desc",
     "actions":"B",
     "roles": {"*": "B"},
-    "sqlwhere":"branch_type='PUBLIC' and branch_sts='ACTIVE'",
+    "sqlwhere":"branch_type='PUBLIC' and branch_sts='ACTIVE' and (site_id={schema}.my_current_site_id())",
     "caption":["Branch","Branches"],
     "title":"Public Branches",
     "hide_system_buttons":["search","export"],

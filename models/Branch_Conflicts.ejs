@@ -391,7 +391,7 @@
       <# } #>
 
       <div class="branch_diff_item_details">
-        <# _.each(_.pick(diff,['menu_name','template_title','menu_path']), function(val, key){ #>
+        <# _.each(_.pick(diff,['menu_name']), function(val, key){ #>
           <div class="diff_item"><b>New <#=map(key,'menu')#></b>: <#=val#></div>
         <# }); #>
 

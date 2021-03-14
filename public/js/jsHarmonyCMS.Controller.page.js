@@ -43,6 +43,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.role = '';
   this.renderFunctions = {};
 
+  this.localComponents = [];
+  this.localWebSnippets = [];
+
   this.init = function(onComplete){
     if(jsh._GET['page_key']) _this.page_key = jsh._GET['page_key'];
     if(jsh._GET['page_id']) _this.page_id = jsh._GET['page_id'];
@@ -87,7 +90,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       cms.branch_id = rslt.branch_id;
       async.parallel([
         function(cb){ cms.componentManager.load(cb); },
-        function(cb){ cms.menuController.load(cb); },
       ], function(err){
         if(err){
           if(onComplete) onComplete(err);
@@ -96,12 +98,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       });
 
       XExt.waitUntil(
-        function(){ return (cms.componentManager.isInitialized && cms.menuController.isInitialized); },
+        function(){ return (cms.componentManager.isInitialized); },
         function(){
           //Populate arrays + create editor
           _this.hasChanges = false;
           var pageTitle = document.title || '';
-          if($('#jsharmony_cms_title').length) pageTitle = $($('#jsharmony_cms_title')[0]).text();
+          if($('[cms-title]').length) pageTitle = $($('[cms-title]')[0]).text();
           if(!pageTitle) pageTitle = 'Page Title';
           _this.page = {
             title: pageTitle,
@@ -118,14 +120,18 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           _this.authors = [{ code_val: ' ', code_txt: ' ' }];
           cms.views = _.extend(cms.views, rslt.views);
           cms.readonly = false;
+          _.each(_this.menus, function(menu){ cms.controllerExtensions.createMenuTree(menu); });
+          if(_this.sitemap) cms.controllerExtensions.createSitemapTree(_this.sitemap);
           XExt.execif(!cms.isInitialized, function(f){
-            _this.initTemplate();
-            _this.createWorkspace(f);
-            $('#jsharmony_cms_editor_bar a.jsharmony_cms_button.save').hide();
+            async.waterfall([
+              function(init_cb){ _this.initTemplate(init_cb); },
+              function(init_cb){ _this.createWorkspace(init_cb); },
+            ], f);
           }, function(){
             _this.render();
             if(!cms.isInitialized){
               cms.onTemplateLoaded(function(){
+                cms.editor.onEditorInitialized();
                 cms.isInitialized = true;
                 if(onComplete) onComplete();
               });
@@ -151,23 +157,27 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       XExt.waitUntil(
-        function(){ return (cms.componentManager.isInitialized && cms.menuController.isInitialized); },
+        function(){ return (cms.componentManager.isInitialized); },
         function(){
           if ('_success' in rslt) {
             //Populate arrays + create editor
             _this.hasChanges = false;
-            $('#jsharmony_cms_editor_bar a.jsharmony_cms_button.save').toggleClass('hasChanges', false);
+            $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save').toggleClass('hasChanges', false);
             _this.page = rslt.page;
-            _this.template = rslt.template;
+            if(!cms.isInitialized) _this.template = rslt.template;
             _this.sitemap = rslt.sitemap;
             _this.menus = rslt.menus||{};
             _this.authors = rslt.authors;
             _this.role = rslt.role;
             cms.views = _.extend(cms.views, rslt.views);
             cms.readonly = (_this.role=='VIEWER')||(_this.page_id);
+            _.each(_this.menus, function(menu){ cms.controllerExtensions.createMenuTree(menu, _this.page_key); });
+            if(_this.sitemap) cms.controllerExtensions.createSitemapTree(_this.sitemap);
             XExt.execif(!cms.isInitialized, function(f){
-              _this.initTemplate();
-              _this.createWorkspace(f);
+              async.waterfall([
+                function(init_cb){ _this.initTemplate(init_cb); },
+                function(init_cb){ _this.createWorkspace(init_cb); },
+              ], f);
             }, function(){
               _this.render();
               if(!cms.isInitialized){
@@ -190,11 +200,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     });
   };
 
-  this.initTemplate = function(){
+  this.initTemplate = function(cb){
     var errors = [];
 
-    var jTemplateConfig = $('script[type="text/jsharmony-cms-page-config"]');
-    jTemplateConfig.each(function(){
+    $('script[type="text/cms-page-config"]').each(function(){
       var config = $(this).html();
       try{
         config = JSON.parse(config);
@@ -208,8 +217,64 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         _.merge(_this.template, config);
       }
       catch(ex){
-        XExt.Alert('Error parsing jsharmony-cms-page-config script tag: \r\n' + ex.toString());
+        XExt.Alert('Error parsing cms-page-config script tag: \r\n' + ex.toString());
       }
+    });
+
+    //Extract Inline Component Templates
+    $('script[type="text/cms-component-template"]').each(function(){
+      var jobj = $(this);
+      var componentContent = this.innerHTML;
+      if(this.nodeName.toLowerCase() != 'script'){
+        errors.push('Component Template "'+componentId+'" should be defined using a "script" tag instead of a '+this.nodeName.toLowerCase()+' tag, ex: <script cms-component-template="componentId"></script>');
+      }
+      _this.localComponents.push(componentContent.trim());
+      jobj.remove();
+    });
+
+    //Extract Inline Websnippet Templates
+    $('script[type="text/cms-websnippet-template"]').each(function(){
+      var jobj = $(this);
+      if(jobj.find('[cms-websnippet-template]').length){
+        errors.push('Web Snippet Template (attr: cms-websnippet-template) cannot be inside of another Web Snippet Template (attr:cms-websnippet-template)');
+      }
+      if(this.nodeName.toLowerCase() != 'script'){
+        errors.push('Inline Web Snippet Template should be defined using a "script" tag instead of a '+this.nodeName.toLowerCase()+' tag, ex: <script cms-websnippet-template></script>');
+      }
+
+      var webSnippetContent = this.innerHTML;
+      try{
+        var contentElements = $('<div>'+webSnippetContent+'</div>');
+        var webSnippetConfig = {};
+        contentElements.find('cms-websnippet-config').each(function(){
+          _.extend(webSnippetConfig, JSON.parse(this.innerHTML));
+          $(this).remove();
+        });
+        webSnippetConfig.content = (webSnippetConfig.content||'') + contentElements.html().trim();
+        if(!webSnippetConfig.title){
+          webSnippetConfig.title = 'Inline Web Snippet #'+(_this.localWebSnippets.length+1);
+          errors.push({
+            message: 'Inline Web Snippet Template should have a title defined, by adding a config section to the script tag, ex: <br/>' +
+            '<pre>'+XExt.escapeHTML([
+              '<script type="text/cms-websnippet-template">',
+               '<cms-websnippet-config>',
+              '  {',
+              '    "title": "Product Features",',
+              '    "description": "List of product features"',
+              '  }',
+              '</cms-websnippet-config>',
+              'Web Snippet Content',
+              '</script>',
+            ].join('\n'))+'</pre>',
+            type: 'html'
+          });
+        }
+        _this.localWebSnippets.push(webSnippetConfig);
+      }
+      catch(ex){
+        errors.push('Error processing Inline Web Snippet Template: '+ex.toString());
+      }
+      jobj.remove();
     });
 
     if(_this.template.properties){
@@ -241,33 +306,39 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       }
     });
 
-    if(!$('#jsharmony_cms_title').length){
-      errors.push({
-        message: 'Missing Heading / Title Element.  Please add an HTML element with the "jsharmony_cms_title" id:<br/>' +
-        '<pre>&lt;h1 id="jsharmony_cms_title"&gt;&lt;/h1&gt;</pre>',
-        type: 'html'
-      });
+    if(!$('[cms-title]').length){
+      if(_this.template.options && ('title_element_required' in _this.template.options) && !_this.template.options.title_element_required){ /* Do nothing - not required */ }
+      else {
+        errors.push({
+          message: 'Missing Heading / Title Element.  Please add an HTML element with the "cms-title" attribute:<br/>' +
+          '<pre>&lt;h1 cms-title&gt;&lt;/h1&gt;</pre>',
+          type: 'html'
+        });
+      }
     }
-    if($('#jsharmony_cms_title').closest('.jsharmony_cms_content').length){
-      errors.push('Title Element (id: jsharmony_cms_title) cannot be inside of a Content Element (class:jsharmony_cms_content)');
+    if($('[cms-title]').closest('[cms-content-editor]').length){
+      errors.push('Title Element (attr: cms-title) cannot be inside of a Content Element (attr:cms-content-editor)');
     }
-    if($('#jsharmony_cms_title').length >= 2){
-      errors.push('Multiple Title Elements found (id: jsharmony_cms_title)');
+    if($('[cms-title]').length >= 2){
+      errors.push('Multiple Title Elements found (attr: cms-title).  Only one cms-title element is supported');
     }
     var foundContent = {};
-    $('.jsharmony_cms_content').each(function(){
+    $('[cms-content-editor]').each(function(){
       var jobj = $(this);
-      var contentId = jobj.data('id');
-      if(!contentId){ errors.push('HTML element with "jsharmony_cms_content" class missing data-id attribute.  This attribute is required to define the name of the content area.'); return; }
-      if(contentId in foundContent){ errors.push('Duplicate "jsharmony_cms_content" element with same data-id: "'+contentId+'"'); return }
-      foundContent[contentId] = jobj;
-      if(jobj.parent().closest('.jsharmony_cms_content').length){ errors.push('The "'+contentId+'" jsharmony_cms_content element cannot be inside of another Content Element (class:jsharmony_cms_content)'); }
-      if(!(contentId in _this.template.content_elements)){ errors.push('The "'+contentId+'" jsharmony_cms_content element is not defined in template.content_elements.  Please add it to the jsharmony-cms-page-config definition.'); }
+      var contentId = jobj.attr('cms-content-editor');
+      if(!contentId){ errors.push('HTML element with "cms-content-editor" attribute missing value.  The value is required to define the name of the content area, ex: <div cms-content-editor="page.content.body"></div>'); return; }
+      var fullContentId = _this.getFullPageContentId(contentId);
+      if(fullContentId in foundContent){ errors.push('Duplicate "cms-content-editor" element with same editable area: "'+contentId+'"'); return }
+      foundContent[fullContentId] = jobj;
+      if(jobj.parent().closest('[cms-content-editor]').length){ errors.push('The "'+contentId+'" cms-content-editor element cannot be inside of another Content Element (attr:cms-content-editor)'); }
+      var pageContentId = _this.getPageContentId(fullContentId);
+      if(!(pageContentId in _this.template.content_elements)){ errors.push('The "'+contentId+'" cms-content-editor element is not defined in template.content_elements.  Please add it to the cms-page-config definition.'); }
     });
-    for(var contentId in _this.template.content_elements){
+    for(var pageContentId in _this.template.content_elements){
+      var contentId = 'page.content.'+pageContentId;
       if(!(contentId in foundContent)) errors.push({
-        message: 'Missing Content Element "'+contentId+'".  Please add an HTML element with the "jsharmony_cms_content" class, and data-id set to the content id:<br/>' +
-        '<pre>&lt;div class="jsharmony_cms_content" data-id="'+XExt.escapeHTML(contentId)+'"&gt;&lt;/div&gt;</pre>',
+        message: 'Missing Editor for Content Element "'+contentId+'".  Please add an HTML element with the "cms-content-editor" attribute, and set to the target content id:<br/>' +
+        '<pre>&lt;div "cms-content-editor"="'+contentId+'"&gt;&lt;/div&gt;</pre>',
         type: 'html'
       });
     }
@@ -277,6 +348,19 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         for(var i=0;i<errors.length;i++) cms.toolbar.showError(errors[i]);
       }
     }
+
+    XExt.execif(_this.localComponents.length,
+      function(f){
+        cms.componentManager.compileTemplates(_this.localComponents, function(err, components){
+          if(err) return cms.fatalError(err.toString());
+          for(var componentId in components){
+            cms.componentManager.addTemplate(componentId, components[componentId]);
+          }
+          return f();
+        });
+      },
+      cb
+    );
   }
 
   this.loadProperties = function(){
@@ -289,11 +373,26 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return !_.isEmpty(_this.template.properties && _this.template.properties.fields);
   }
 
+  this.getPageContentId = function(contentId){
+    return (XExt.beginsWith(contentId, 'page.content.') ? contentId.substr(('page.content.').length) : '');
+  }
+
+  this.getFullPageContentId = function(contentId){
+    if(!contentId) return '';
+    if(contentId.indexOf('page.content.')!=0) return 'page.content.'+contentId;
+    return contentId;
+  }
+
   this.createWorkspace = function(cb){
     if(!_this.page && !cms.devMode) return;
 
     //Initialize Page Toolbar
     cms.toolbar.render();
+    cms.toolbar.setDockPosition(_this.template && _this.template.options && _this.template.options.page_toolbar && _this.template.options.page_toolbar.dock);
+    if(cms.devMode){
+      $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save').hide();
+      $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.template_tips').removeClass('jsharmony_cms_button_hidden');
+    }
 
     //Add "jsharmony_cms_editor" class to body if it does not exist
     $('body').not('.jsharmony_cms_editor').addClass('jsharmony_cms_editor');
@@ -309,13 +408,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(js) _this.appendHTML($('head'), '<script type="text/javascript">'+js+'</script>');
 
     //Initialize Settings Controls
-    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
-    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
-    $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
-    $('#jsharmony_cms_editor_bar .actions .jsharmony_cms_button.settings').on('click', function(){ cms.toolbar.toggleSettings(); });
-    $('#jsharmony_cms_editor_bar .actions .jsharmony_cms_button.save').on('click', function(){ _this.save(); });
-    $('#jsharmony_cms_editor_bar .actions .jsharmony_cms_button.autoHideEditorBar').on('click', function(){ cms.toolbar.toggleAutoHide(); });
+    _.each(['tags','author','css','header','footer'], function(key){ $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
+    _.each(['keywords','metadesc','canonical_url'], function(key){ $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_seo_'+key).on('input keyup',function(){ if(!_this.hasChanges) cms.controller.getValues(); }); });
+    $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
+    $('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title').on('input keyup', function(){ _this.onTitleUpdate(this); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.template_tips').on('click', function(){ cms.toolbar.toggleSlideoutButton('template_tips'); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.settings').on('click', function(){ cms.toolbar.toggleSlideoutButton('settings'); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.save').on('click', function(){ _this.save(); });
+    $('#jsharmony_cms_page_toolbar .actions .jsharmony_cms_button.autoHideEditorBar').on('click', function(){ cms.toolbar.toggleAutoHide(); });
 
     //Initialize Properties
     XExt.execif(_this.hasProperties(),
@@ -340,49 +440,61 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       },
       function(){
         //Initialize Tag Control
-        XExt.TagBox_Render($('#jsharmony_cms_editor_bar .page_settings_tags_editor'), $('#jsharmony_cms_editor_bar .page_settings_tags'));
+        XExt.TagBox_Render($('#jsharmony_cms_page_toolbar .page_settings_tags_editor'), $('#jsharmony_cms_page_toolbar .page_settings_tags'));
     
         $(window).on('resize', function(){ cms.refreshLayout(); });
         $(window).on('scroll', function(){ cms.refreshLayout(); });
         cms.refreshLayout();
     
-        _.each($('.jsharmony_cms_content'), function(obj){
+        _.each($('[cms-content-editor]'), function(obj){
           var jobj = $(obj);
-          if(!jobj.data('id')) XExt.Alert('jsharmony_cms_content area missing data-id attribute');
-          var contentId = jobj.data('id');
-          if(!obj.id) obj.id = 'jsharmony_cms_content_' + contentId;
-          if(!(contentId in _this.page.content)){
-            _this.page.content[contentId] = jobj.html();
-            if(_this.template && _this.template.default_content && _this.template.default_content[contentId]){
-              _this.page.content[contentId] = _this.template.default_content[contentId];
+          var contentId = jobj.attr('cms-content-editor');
+          if(!contentId) XExt.Alert('cms-content-editor missing content area id');
+          //Can use "body" or "page.content.body"
+          if(contentId in _this.page.content){
+            contentId = 'page.content.'+contentId;
+            jobj.attr('cms-content-editor', contentId);
+          }
+          if(!obj.id) obj.id = 'jsharmony_cms_content_' + XExt.escapeCSSClass(contentId, { nodash: true });
+          var pageContentId = _this.getPageContentId(contentId);
+          if(!(pageContentId in _this.page.content)){
+            _this.page.content[pageContentId] = jobj.html();
+            if(_this.template && _this.template.default_content && _this.template.default_content[pageContentId]){
+              _this.page.content[pageContentId] = _this.template.default_content[pageContentId];
             }
           }
         });
     
         if(cms.readonly){
-          $('.jsharmony_cms_content').prop('contenteditable', false);
+          $('[cms-content-editor]').prop('contenteditable', false);
           if(cb) return cb();
         }
         else {
           cms.editor.init(function(){
-            async.eachSeries($('.jsharmony_cms_content'), function(elem, editor_cb){
-              var contentId = $(elem).data('id');
+            async.eachSeries($('[cms-content-editor]'), function(elem, editor_cb){
+              var contentId = $(elem).attr('cms-content-editor');
+              var pageContentId = _this.getPageContentId(contentId);
               var config_id = 'full';
-              if(contentId && contentId in _this.template.content_elements){
-                config_id = _this.template.content_elements[contentId].type;
+              if(pageContentId && pageContentId in _this.template.content_elements){
+                config_id = _this.template.content_elements[pageContentId].type;
               }
               if(!config_id || !(config_id in cms.editor.editorConfig)) config_id = 'full';
-              cms.editor.attach(config_id, elem.id, {}, function(){ return editor_cb(); });
+              cms.editor.attach(config_id, elem.id, {}, function(err){ return editor_cb(err); });
             }, function(err){
+              if(err) return cms.fatalError(err);
               //Initialize the title editor
-              if(!$('#jsharmony_cms_title').length) return cb();
-              $('#jsharmony_cms_title').not(':visible').addClass('hidden');
-              cms.editor.attach('text', 'jsharmony_cms_title', {}, function(){ return cb(); });
+              if(!$('[cms-title]').length) return cb();
+              $('[cms-title]').not(':visible').addClass('hidden');
+              $('[cms-title]')[0].id = 'jsharmony_cms_title_editor';
+              cms.editor.attach('text', 'jsharmony_cms_title_editor', {}, function(){
+                //All editors initialized
+                return cb();
+              });
             });
           });
     
-          $('.jsharmony_cms_content').on('focus input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
-          $('#jsharmony_cms_title').on('input keyup',function(){ _this.onTitleUpdate(this); });
+          $('[cms-content-editor]').on('focus input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
+          $('[cms-title]').on('input keyup',function(){ _this.onTitleUpdate(this); });
     
           $(window).bind('beforeunload', function(){
             if(cms.devMode) return;
@@ -396,7 +508,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
   this.render = function(){
     if(!_this.page) return;
-    var jeditorbar = $('#jsharmony_cms_editor_bar');
+    var jeditorbar = $('#jsharmony_cms_page_toolbar');
 
     //Delete extra content areas
     _.each(_.keys(_this.page.content), function(contentId){
@@ -427,12 +539,15 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     //Content
     for(var key in _this.template.content_elements){
-      cms.editor.setContent(key, _this.page.content[key] || '')
-      if(!cms.readonly) _this.page.content[key] = cms.editor.getContent(key);
+      cms.editor.setContent('page.content.'+key, _this.page.content[key] || '');
+
+      if(!cms.readonly){
+        _this.page.content[key] = cms.editor.getContent('page.content.'+key);
+        cms.editor.setToolbarOptions('page.content.'+key, _this.template.content_elements[key].editor_toolbar);
+      }
     }
 
-    cms.componentManager.render();
-    cms.menuController.render();
+    cms.componentManager.renderPageComponents();
 
     //CSS
     cms.util.removeStyle('jsharmony_cms_template_style');
@@ -494,17 +609,47 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   //addStyle, setStyle
   this.renderFunctions.addStyle = function(strStyle){
     var jobj = $(this);
-    var origStyle = jobj.data('jsharmony_cms_properties_origStyle');
-    if(!origStyle){
-      origStyle = jobj.attr('style') + ';';
-      jobj.data('jsharmony_cms_properties_origStyle', origStyle);
+
+    var lastStyle = {};
+    try{
+      lastStyle = JSON.parse(jobj.data('jsharmony_cms_properties_lastStyle')||'{}');
     }
-    jobj.attr('style', origStyle + (strStyle||''))
+    catch(ex){}
+
+    for(var key in lastStyle){
+      this.style[key] = lastStyle[key];
+    }
+
+    var origStyleText = jobj.attr('style');
+    origStyleText += (XExt.endsWith(origStyleText.trim(),';')?'':';');
+    origStyleText += strStyle;
+
+    var origStyle = {};
+    for(var i=0;i<this.style.length;i++){
+      var key = this.style[i];
+      var val = this.style[key];
+      origStyle[key] = val;
+    }
+
+    jobj.attr('style', origStyleText + (strStyle||''));
+    jobj.attr('style', this.style.cssText);
+
+    var lastStyle = {};
+    for(var i=0;i<this.style.length;i++){
+      var key = this.style[i];
+      var val = this.style[key];
+      if(!(key in origStyle)) lastStyle[key] = null;
+      else if(val != origStyle[key]){
+        lastStyle[key] = origStyle[key];
+      }
+    }
+
+    jobj.data('jsharmony_cms_properties_lastStyle', JSON.stringify(lastStyle))
   };
   this.renderFunctions.setStyle = this.renderFunctions.addStyle;
 
   this.renderHooks = function(){
-    $("[data-jsharmony_cms_onApplyProperties],[data-jsharmony_cms_onRender]").each(function(){
+    $("[cms-onRender]").each(function(){
       var obj = this;
       var jobj = $(this);
       var renderParams = {
@@ -513,31 +658,29 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       for(var key in _this.renderFunctions){
         renderParams[key] = _this.renderFunctions[key].bind(obj);
       }
-      XExt.JSEval(jobj.attr('data-jsharmony_cms_onApplyProperties'), obj, renderParams);
-      XExt.JSEval(jobj.attr('data-jsharmony_cms_onRender'), obj, renderParams);
+      XExt.JSEval(jobj.attr('cms-onRender'), obj, renderParams);
     });
-    if(cms.onApplyProperties) cms.onApplyProperties(_this.page);
     if(cms.onRender) cms.onRender(_this.page);
   }
 
   this.renderTitle = function(src){
     var jsrc = $(src);
-    if(!src || (src.id != 'jsharmony_cms_title')){
-      if($('#jsharmony_cms_title').length){
-        if(cms.readonly) $('#jsharmony_cms_title').text(_this.page.title);
-        else window.tinymce.get('jsharmony_cms_title').setContent(_this.page.title);
+    if(!src || (src.id != 'jsharmony_cms_title_editor')){
+      if($('[cms-title]').length){
+        if(cms.readonly) $('[cms-title]').text(_this.page.title);
+        else window.tinymce.get('jsharmony_cms_title_editor').setContent(_this.page.title);
       }
     }
-    if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val(_this.page.title);
-    if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
-    $('#jsharmony_cms_editor_bar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title));
+    if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').val(_this.page.title);
+    if(!src || !jsrc.hasClass('page_settings_seo_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title').val(_this.page.seo.title);
+    $('#jsharmony_cms_page_toolbar').find('.title').html('<b>Title:</b> '+XExt.escapeHTML(_this.page.title)+(cms.devMode ? ' &nbsp;<b>(Dev Mode)</b>' : ''));
     document.title = (_this.page.seo.title ? _this.page.seo.title : _this.page.title);
-    if(!$('#jsharmony_cms_title').hasClass('hidden')){
-      var titleIsVisible = $('#jsharmony_cms_title').is(':visible');
-      var titleIsHiddenByProperties = ($('#jsharmony_cms_title').data('jsharmony_cms_properties_toggle_hidden') == '1');
+    if($('[cms-title]').length && !$('[cms-title]').hasClass('hidden')){
+      var titleIsVisible = $('[cms-title]').is(':visible');
+      var titleIsHiddenByProperties = ($('[cms-title]').data('jsharmony_cms_properties_toggle_hidden') == '1');
       if(!titleIsHiddenByProperties){
-        if(titleIsVisible && !_this.page.title) $('#jsharmony_cms_title').hide();
-        else if(!titleIsVisible && _this.page.title) $('#jsharmony_cms_title').show();
+        if(titleIsVisible && !_this.page.title) $('[cms-title]').hide();
+        else if(!titleIsVisible && _this.page.title) $('[cms-title]').show();
       }
     }
   }
@@ -548,11 +691,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     var new_page_title = _this.page.title;
     var new_seo_title = _this.page.seo.title;
     var jsrc = $(src);
-    if(src.id=='jsharmony_cms_title'){
-      if($('#jsharmony_cms_title').length) new_page_title = window.tinymce.get('jsharmony_cms_title').getContent();
+    if(src.id=='jsharmony_cms_title_editor'){
+      if($('[cms-title]').length) new_page_title = window.tinymce.get('jsharmony_cms_title_editor').getContent();
     }
-    else if(jsrc.hasClass('page_settings_title')) new_page_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_title').val();
-    else if(jsrc.hasClass('page_settings_seo_title')) new_seo_title = $('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title').val();
+    else if(jsrc.hasClass('page_settings_title')) new_page_title = $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').val();
+    else if(jsrc.hasClass('page_settings_seo_title')) new_seo_title = $('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title').val();
     if(new_page_title != _this.page.title){ _this.page.title = new_page_title; _this.hasChanges = true; }
     if(new_seo_title != _this.page.seo.title){ _this.page.seo.title = new_seo_title; _this.hasChanges = true; }
     _this.renderTitle(src);
@@ -563,18 +706,18 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(cms.readonly) return;
 
     for(var key in _this.template.content_elements){
-      var editorContent = cms.editor.getContent(key);
+      var editorContent = cms.editor.getContent('page.content.'+key);
       if(editorContent != _this.page.content[key]){
         _this.page.content[key] = editorContent;
         _this.hasChanges = true;
       }
     }
     _.each(['tags','author','css','header','footer'], function(key){
-      var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).val();
+      var val = $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_'+key).val();
       if(val != (_this.page[key]||'')){ _this.page[key] = val; _this.hasChanges = true; }
     });
     _.each(['keywords','metadesc','canonical_url'], function(key){
-      var val = $('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).val();
+      var val = $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_seo_'+key).val();
       if(val != (_this.page.seo[key]||'')){ _this.page.seo[key] = val; _this.hasChanges = true; }
     });
     _this.hasChanges = _this.hasChanges;
@@ -587,7 +730,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       }
     }
     if(_this.hasChanges){
-      $('#jsharmony_cms_editor_bar a.jsharmony_cms_button.save').toggleClass('hasChanges', true);
+      $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save').toggleClass('hasChanges', true);
       _this.renderHooks();
     }
   }
@@ -598,26 +741,26 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     //Validate
     var validation = new XValidate(jsh);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_title', '_obj.title', 'Page Title', 'U', [ XValidate._v_MaxLength(1024) ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_tags', '_obj.tags', 'Tags', 'U', [ ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_author', '_obj.author', 'Author', 'U', [ XValidate._v_Required() ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_title', '_obj.seo.title', 'SEO Title Tag', 'U', [ XValidate._v_MaxLength(2048) ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_keywords', '_obj.seo.keywords', 'SEO Meta Keywords', 'U', [ ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_metadesc', '_obj.seo.metadesc', 'SEO Meta Description', 'U', [ ]);
-    validation.AddControlValidator('#jsharmony_cms_editor_bar .page_settings .page_settings_seo_canonical_url', '_obj.seo.canonical_url', 'SEO Canonical URL', 'U', [ XValidate._v_MaxLength(2048) ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_title', '_obj.title', 'Page Title', 'U', [ XValidate._v_MaxLength(1024) ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_tags', '_obj.tags', 'Tags', 'U', [ ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_author', '_obj.author', 'Author', 'U', [ XValidate._v_Required() ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_title', '_obj.seo.title', 'SEO Title Tag', 'U', [ XValidate._v_MaxLength(2048) ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_keywords', '_obj.seo.keywords', 'SEO Meta Keywords', 'U', [ ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_metadesc', '_obj.seo.metadesc', 'SEO Meta Description', 'U', [ ]);
+    validation.AddControlValidator('#jsharmony_cms_page_toolbar .page_settings .page_settings_seo_canonical_url', '_obj.seo.canonical_url', 'SEO Canonical URL', 'U', [ XValidate._v_MaxLength(2048) ]);
 
     if(_this.hasPropertiesError){
-      cms.toolbar.showSettings();
-      $('#jsharmony_cms_editor_bar .xtab[for=jsharmony_cms_page_settings_properties]').click();
+      cms.toolbar.showSlideoutButton('settings');
+      $('#jsharmony_cms_page_toolbar .xtab[for=jsharmony_cms_page_settings_properties]').click();
       return false;
     }
     if(!validation.ValidateControls('U', _this.page)){
       //Open settings if settings have an error
       var settings_error = false;
-      _.each(['title','tags','author'], function(key){ if($('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_editor_bar .xtab[for=jsharmony_cms_page_settings_overview]').click(); } });
-      if(!settings_error) _.each(['title','keywords','metadesc','canonical_url'], function(key){ if($('#jsharmony_cms_editor_bar .page_settings').find('.page_settings_seo_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_editor_bar .xtab[for=jsharmony_cms_page_settings_seo]').click(); } });
+      _.each(['title','tags','author'], function(key){ if($('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_page_toolbar .xtab[for=jsharmony_cms_page_settings_overview]').click(); } });
+      if(!settings_error) _.each(['title','keywords','metadesc','canonical_url'], function(key){ if($('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_seo_'+key).hasClass('xinputerror')){ settings_error = true; $('#jsharmony_cms_page_toolbar .xtab[for=jsharmony_cms_page_settings_seo]').click(); } });
       if(settings_error){
-        cms.toolbar.showSettings();
+        cms.toolbar.showSlideoutButton('settings');
       }
       return false;
     }
@@ -639,7 +782,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
 
-    cms.toolbar.hideSettings(true);
+    cms.toolbar.hideSlideoutButton('settings', true);
     XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.hasChanges = false;
@@ -660,44 +803,26 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     });
   }
 
-  this.getComponentRenderParameters = function(component_id){
-    return {
-      baseUrl: '',
-      data: { items: [], item: {} },
-      properties: {},
-      renderType: 'static',
-      _: _,
-      escapeHTML: XExt.xejs.escapeHTML,
-      stripTags: XExt.StripTags,
-      isInEditor: true,
-      isInPageEditor: false,
-      isInComponentEditor: false,
-      items: [],
-      item: {},
-      component: {},
-      data_errors: [],
-      renderPlaceholder: function(){ return ''; },
+  this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
+    additionalRenderParams = _.extend({}, additionalRenderParams, {
       //Additional parameters for static render
       page: _this.page,
       template: _this.template,
       sitemap: _this.sitemap,
       getSitemapURL: function(sitemap_item){ return '#'; },
-    }
-  }
-
-  this.getMenuRenderParameters = function(menu_tag){
-    return {
-      _: _,
-      escapeHTML: XExt.xejs.escapeHTML,
-      stripTags: XExt.StripTags,
-      page: _this.page,
-      template: _this.template,
-      sitemap: _this.sitemap,
-      getSitemapURL: function(sitemap_item){ return '#'; },
-      menu: _this.menus[menu_tag],
+      menu: null,
       getMenuURL: function(menu_item){ return '#'; },
-      isInEditor: true,
+    }, additionalRenderParams);
+
+    if(!renderOptions) renderOptions = {};
+    if(renderOptions.menu_tag){
+      if(!(renderOptions.menu_tag in _this.menus)) throw new Error('Menu tag "'+renderOptions.menu_tag+'" is not defined');
+      additionalRenderParams.menu = _this.menus[renderOptions.menu_tag];
+      delete renderOptions.menu_tag;
     }
+    if(!('renderType' in renderOptions)) renderOptions.renderType = 'page';
+    
+    return cms.componentManager.getComponentRenderParameters(component, renderOptions, additionalRenderParams);
   }
 
   cms.controller = this;

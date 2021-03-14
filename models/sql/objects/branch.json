@@ -62,7 +62,7 @@
 
       { "name": "branch_review_sts", "type": "varchar", "length": 32, "foreignkey": { "code_branch_review_sts": "code_val" } },
       { "name": "branch_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": "sys_user_id" } },
-      { "name": "branch_parent_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
+      { "name": "branch_parent_id", "type": "bigint" }, //trigger: "foreignkey": { "branch": { "column": "branch_id" } }
       { "name": "branch_merge_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id" } } },
       { "name": "branch_merge_type", "type": "varchar", "length": 32, "foreignkey": { "code_branch_merge_type": "code_val" } },
 
@@ -85,7 +85,8 @@
           "errorif(inserted(branch_type)='PUBLIC' and inserted(branch_sts)='REVIEW','Cannot set branch_sts REVIEW on PUBLIC branch');",
           "errorif(inserted(branch_type)='DEPLOYMENT' and inserted(branch_sts)<>'ARCHIVE','DEPLOYMENT branch must have branch_sts ARCHIVE');",
           "errorif(inserted(branch_merge_id)=inserted(branch_id),'Branch cannot merge with itself');",
-          "errorif((inserted(branch_merge_id) is not null) and (inserted(branch_merge_type) is null),'branch_merge_id requires branch_merge_type');"
+          "errorif((inserted(branch_merge_id) is not null) and (inserted(branch_merge_type) is null),'branch_merge_id requires branch_merge_type');",
+          "errorif((inserted(branch_parent_id) is not null) and not exists(select branch_id from {schema}.branch where branch_id=inserted(branch_parent_id)),'Branch Parent ID not found');",
         ]
       },
       { "on": ["validate_update"], "exec": [
@@ -106,12 +107,12 @@
       },
       {
         "on": ["delete"], "exec": [
-          "update {schema}.branch set branch_parent_id = null where branch_parent_id = deleted(branch_id);"
+          "update {schema}.branch set branch_parent_id = null where branch_parent_id = deleted(branch_id);",
+          "update {schema}.sys_user_site set branch_id = null where branch_id = deleted(branch_id);",
         ]
       }
     ],
     "sample_data": [
-      { "branch_name": "master", "branch_type": "PUBLIC", "branch_sts": "ACTIVE", "site_id": 1 },
       { "branch_name": "Test Branch", "branch_type": "USER", "branch_sts": "ACTIVE", "site_id": 1, "branch_user_id": 1 }
     ]
   },
@@ -144,7 +145,8 @@
           "errorif(inserted(branch_menu_action)='UPDATE' and null(inserted(menu_orig_id)),'menu_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_menu_action)='ADD' and null(inserted(menu_id)),'menu_id is required for ADD action');",
           "errorif(inserted(branch_menu_action)='ADD' and not(null(inserted(menu_orig_id))),'menu_orig_id must be null for ADD action');",
-          "errorif((inserted(branch_menu_merge_action) is not null or inserted(menu_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+          "errorif((inserted(branch_menu_merge_action) is not null or inserted(menu_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');",
+          "errorif((inserted(menu_id) is not null) and not exists(select menu_id from {schema}.menu inner join {schema}.branch on branch.site_id=menu.site_id where branch.branch_id=inserted(branch_id) and menu.menu_id=inserted(menu_id)),'Menu site does not match the target branch site');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -208,7 +210,8 @@
           "errorif(inserted(branch_page_action)='UPDATE' and null(inserted(page_orig_id)),'page_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_page_action)='ADD' and null(inserted(page_id)),'page_id is required for ADD action');",
           "errorif(inserted(branch_page_action)='ADD' and not(null(inserted(page_orig_id))),'page_orig_id must be null for ADD action');",
-          "errorif((inserted(branch_page_merge_action) is not null or inserted(page_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+          "errorif((inserted(branch_page_merge_action) is not null or inserted(page_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');",
+          "errorif((inserted(page_id) is not null) and not exists(select page_id from {schema}.page inner join {schema}.branch on branch.site_id=page.site_id where branch.branch_id=inserted(branch_id) and page.page_id=inserted(page_id)),'Page site does not match the target branch site');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -254,7 +257,8 @@
           "errorif(inserted(branch_media_action)='UPDATE' and null(inserted(media_orig_id)),'media_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_media_action)='ADD' and null(inserted(media_id)),'media_id is required for ADD action');",
           "errorif(inserted(branch_media_action)='ADD' and not(null(inserted(media_orig_id))),'media_orig_id must be null for ADD action');",
-          "errorif((inserted(branch_media_merge_action) is not null or inserted(media_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+          "errorif((inserted(branch_media_merge_action) is not null or inserted(media_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');",
+          "errorif((inserted(media_id) is not null) and not exists(select media_id from {schema}.media inner join {schema}.branch on branch.site_id=media.site_id where branch.branch_id=inserted(branch_id) and media.media_id=inserted(media_id)),'Media site does not match the target branch site');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -300,7 +304,8 @@
           "errorif(inserted(branch_redirect_action)='UPDATE' and null(inserted(redirect_orig_id)),'redirect_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_redirect_action)='ADD' and null(inserted(redirect_id)),'redirect_id is required for ADD action');",
           "errorif(inserted(branch_redirect_action)='ADD' and not(null(inserted(redirect_orig_id))),'redirect_orig_id must be null for ADD action');",
-          "errorif((inserted(branch_redirect_merge_action) is not null or inserted(redirect_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+          "errorif((inserted(branch_redirect_merge_action) is not null or inserted(redirect_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');",
+          "errorif((inserted(redirect_id) is not null) and not exists(select redirect_id from {schema}.redirect inner join {schema}.branch on branch.site_id=redirect.site_id where branch.branch_id=inserted(branch_id) and redirect.redirect_id=inserted(redirect_id)),'Redirect site does not match the target branch site');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -346,7 +351,8 @@
           "errorif(inserted(branch_sitemap_action)='UPDATE' and null(inserted(sitemap_orig_id)),'sitemap_orig_id is required for UPDATE action');",
           "errorif(inserted(branch_sitemap_action)='ADD' and null(inserted(sitemap_id)),'sitemap_id is required for ADD action');",
           "errorif(inserted(branch_sitemap_action)='ADD' and not(null(inserted(sitemap_orig_id))),'sitemap_orig_id must be null for ADD action');",
-          "errorif((inserted(branch_sitemap_merge_action) is not null or inserted(sitemap_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');"
+          "errorif((inserted(branch_sitemap_merge_action) is not null or inserted(sitemap_merge_id) is not null) and exists(select * from {schema}.branch where branch_id=inserted(branch_id) and branch_merge_id is null),'Cannot set merge data when no merge is in progress');",
+          "errorif((inserted(sitemap_id) is not null) and not exists(select sitemap_id from {schema}.sitemap inner join {schema}.branch on branch.site_id=sitemap.site_id where branch.branch_id=inserted(branch_id) and sitemap.sitemap_id=inserted(sitemap_id)),'Sitemap site does not match the target branch site');",
         ]
       },
       { "on": ["update", "insert"], "exec": [
@@ -371,32 +377,6 @@
     ]
   },
 
-  "sys_user_branch": {
-    "type": "table",
-    "caption": ["User Branch", "User Branches"],
-    "columns": [
-      { "name": "sys_user_branch_id", "type": "bigint", "key": true, "identity": true, "null": false },
-      { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } } },
-      { "name": "sys_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": { "column": "sys_user_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"], "unique": true },
-
-      { "name": "sys_user_branch_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
-      { "name": "sys_user_branch_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
-      { "name": "sys_user_branch_mtstmp", "type": "datetime", "length": 7 },
-      { "name": "sys_user_branch_muser", "type": "varchar", "length": 20 }
-    ],
-    "triggers": [
-      { "on": ["update", "insert"], "exec": [
-          "set(sys_user_branch_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
-          "set(sys_user_branch_muser,%%%%%%jsh.map.current_user%%%%%%);"
-        ]
-      }
-    ],
-    "data_keys": ["sys_user_id"],
-    "sample_data": [
-      { "branch_id": "1", "sys_user_id": "1" }
-    ]
-  },
-
   "v_my_branch_access": {
     "type": "view",
     "caption": ["Branch", "Branches"],
@@ -415,7 +395,7 @@
           "branch_data_mtstmp",
           "branch_data_muser",
           { "name":"branch_is_checked_out", "type": "int", "sqlselect": "(case branch_id when {schema}.my_current_branch_id() then 1 else 0 end)" },
-          { "name":"branch_access", "type": "varchar", "length": "10", "sqlselect": "case when branch_type='DEPLOYMENT' then 'R' when {schema}.my_user_is_publisher() = 1 then 'RW' else decode(branch_type, 'PUBLIC', 'R', 'USER', decode(branch_sts,'ACTIVE','RW','R')) end" }
+          { "name":"branch_access", "type": "varchar", "length": "10", "sqlselect": "case when branch_type='DEPLOYMENT' then 'R' when {schema}.my_user_is_publisher(branch.site_id) = 1 then 'RW' else decode(branch_type, 'PUBLIC', 'R', 'USER', decode(branch_sts,'ACTIVE','RW','R')) end" }
         ]
       },
       "site": {
@@ -426,9 +406,23 @@
         "join_columns": {
           "branch.site_id": "site.site_id"
         }
-      }
+      },
     },
-    "where": "branch_id in (select branch_id from {schema}.branch where branch_type='PUBLIC' or branch_type='DEPLOYMENT' or ({schema}.my_user_is_publisher() = 1) or (branch_user_id = jsharmony.my_sys_user_id()))"
+    "where": [
+      "(",
+      "  exists(select * from jsharmony.sys_user_role where sys_user_id=jsharmony.my_sys_user_id() and sys_role_name in ('VIEWER','AUTHOR','PUBLISHER','WEBMASTER'))",
+      "  or",
+      "  branch.site_id in (select site_id from {schema}.sys_user_site where sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ('VIEWER','AUTHOR','PUBLISHER'))",
+      ")",
+      "and",
+      "branch_id in (",
+      "  select branch_id from {schema}.branch where ",
+      "    branch_type='PUBLIC' or ",
+      "    branch_type='DEPLOYMENT' or ",
+      "    ({schema}.my_user_is_publisher(branch.site_id) = 1) or ",
+      "    (branch_user_id = jsharmony.my_sys_user_id())",
+      ")",
+    ]
   },
 
   "v_my_branch_desc": {
@@ -466,12 +460,6 @@
           "sys_user_id"
         ]
       },
-      "sys_user_branch": {
-        "join_type": "left",
-        "join_columns": {
-          "sys_user_branch.sys_user_id": "jsharmony.sys_user.sys_user_id"
-        }
-      },
       "v_my_branch_desc": {
         "columns": [
           "branch_id",
@@ -482,42 +470,47 @@
           "site_name",
           "branch_access",
           "branch_desc",
-          { "name":"new_branch_id", "type": "bigint", "sqlselect": "sys_user_branch.branch_id" },
+          { "name":"new_branch_id", "type": "bigint", "sqlselect": "v_my_branch_desc.branch_id" },
           { "name":"new_branch_changes", "type": "varchar", "length": 8, "sqlselect": "null" }
         ],
         "join_type": "left",
         "join_columns": {
-          "sys_user_branch.branch_id": "v_my_branch_desc.branch_id"
+          "v_my_branch_desc.branch_id": "{schema}.my_current_branch_id()"
         }
       }
     },
     "where": "jsharmony.sys_user.sys_user_id = jsharmony.my_sys_user_id()",
     "triggers": [
+      //Check out a branch
       {"on": ["update"], "exec": [
           "errorif((inserted(new_branch_id) is not null) and (not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id))),'User does not have access to branch')",
-          "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
-          "update {schema}.sys_user_branch set branch_id = inserted(new_branch_id) where sys_user_id = jsharmony.my_sys_user_id()"
+          "update {schema}.v_my_session set site_id=(case when inserted(new_branch_id) is null then {schema}.my_current_site_id() else (select site_id from {schema}.branch where branch_id=inserted(new_branch_id)) end)",
+          "update {schema}.v_my_site set branch_id=inserted(new_branch_id) where site_id=case when inserted(new_branch_id) is null then {schema}.my_current_site_id() else (select site_id from {schema}.branch where branch_id=inserted(new_branch_id)) end",
         ]
       },
+      //Add a new branch to the site
       {"on": ["insert"], "exec": [
           //Verify access to source branch
           "errorif((inserted(branch_parent_id) is not null) and not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(branch_parent_id)),'User does not have access to source branch')",
           //Verify non-duplicate branch name
-          "errorif(exists(select * from {schema}.branch where {schema}.branch.branch_type=inserted(branch_type) and {schema}.branch.branch_name=inserted(branch_name) and ({schema}.branch.branch_type='PUBLIC' or ({schema}.branch.branch_user_id=jsharmony.my_sys_user_id()))),'The target branch name already exists')",
+          "errorif(exists(select * from {schema}.branch where {schema}.branch.branch_type=inserted(branch_type) and {schema}.branch.branch_name=inserted(branch_name) and {schema}.branch.site_id=$ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)) and ({schema}.branch.branch_type='PUBLIC' or ({schema}.branch.branch_user_id=jsharmony.my_sys_user_id()))),'The target branch name already exists')",
           //Verify access to target branch type
-          "errorif(exists(select 1 where (inserted(branch_type)='PUBLIC' or inserted(branch_type)='DEPLOYMENT') and ({schema}.my_user_is_publisher() = 0)),'User does not have access to add public branches')",
-          //Add user branch, if not defined
-          "insert into {schema}.sys_user_branch(sys_user_id) select jsharmony.my_sys_user_id() where not exists(select * from {schema}.sys_user_branch where sys_user_id=jsharmony.my_sys_user_id())",
+          "errorif(exists(select 1 where (inserted(branch_type)='PUBLIC' or inserted(branch_type)='DEPLOYMENT') and ({schema}.my_user_is_publisher($ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id))) = 0)),'User does not have access to add public branches')",
+          //Verify access to site
+          "errorif((inserted(site_id) is not null) and (not exists(select * from {schema}.v_sys_user_site_access where v_sys_user_site_access.sys_user_id=jsharmony.my_sys_user_id() and v_sys_user_site_access.site_id=inserted(site_id) and sys_user_site_access in ('AUTHOR','PUBLISHER','WEBMASTER'))),'User does not have access to site')",
           //Insert branch
-          "clear_insert_identity()",
-          "insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', $ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end))",
-          //Set user's current branch to cloned branch
-          "update {schema}.sys_user_branch set branch_id = last_insert_identity() where sys_user_id = jsharmony.my_sys_user_id()",
-          //Add all menu / pages / media / redirect / sitemap from other branch
-          //*Copy New Branch Changes*
-          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, branch_{item}_action, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, branch_{item}_action, {item}_orig_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'\")",
-          //*Reset New Branch Changes*
-          "foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and {item}_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'\")"
+          "with_insert_identity(branch, branch_id, ",
+          "  insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_parent_id), inserted(branch_type), inserted(branch_name), 'ACTIVE', $ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id)), (case when inserted(branch_type)='PUBLIC' then null else jsharmony.my_sys_user_id() end)),",
+          ////Set user's current branch to cloned branch
+          "  update {schema}.v_my_site set branch_id=@@INSERT_ID where site_id=$ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id))",
+          "  update {schema}.v_my_session set site_id=$ifnull((select site_id from {schema}.branch where branch_id=inserted(branch_parent_id)), inserted(site_id))",
+          ////Add all menu / pages / media / redirect / sitemap from other branch
+          ////*Copy New Branch Changes*
+          "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, branch_{item}_action, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, branch_{item}_action, {item}_orig_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and $ifnull(inserted(new_branch_changes),'RESET') = 'COPY'\")",
+          ////*Reset New Branch Changes*
+          "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select {schema}.my_current_branch_id(), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_parent_id) and {item}_id is not null and $ifnull(inserted(new_branch_changes),'RESET') = 'RESET'\")",
+          "  increment_changes()",
+          ")"
         ]
       }
     ]

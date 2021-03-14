@@ -6,16 +6,21 @@
     "roles": { "WEBMASTER": "BU" },
     "caption":["Role","Roles"],
     "title":"",
+    "sqlwhere":"(sys_role_name is null or sys_role_name not in ('VIEWER','AUTHOR','PUBLISHER'))",
     "fields":[
       {"name":"deployment_target_id","foreignkey":1},
       {"name":"deployment_target_role_type","foreignkey":1},
-      {"name":"sys_role_name","caption":"Role", "lov": { "sql": "select sys_role_name as code_val, sys_role_desc as code_txt, sys_role_seq as code_seq from jsharmony.sys_role" } }
+      {"name":"sys_role_name","caption":"Role",
+        "lov": {
+          "sql": ["select sys_role_name as code_val, case when sys_role_name='*' then 'Unrestricted' else sys_role_desc end as code_txt, sys_role_seq as code_seq from jsharmony.sys_role where sys_role_name not in ('VIEWER','AUTHOR','PUBLISHER')"]
+          }
+        }
 	  ]
+  },
+  "Site_Deployment_Target_Role_Editor": {
+    "inherits": "Site_Deployment_Target_Role_Base"
   },
   "Site_Deployment_Target_Role_Publish": {
     "inherits": "Site_Deployment_Target_Role_Base"
   },
-  "Site_Deployment_Target_Role_Editor": {
-    "inherits": "Site_Deployment_Target_Role_Base"
-  }
 }

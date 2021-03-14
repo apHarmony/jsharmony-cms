@@ -3,7 +3,9 @@
     "layout":"form",
     "table":"{schema}.media",
     "caption":["Media","Media"],
+    "actions": "B",
     "roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" },
+    "sqlwhere":"media_key in (select media_key from {schema}.branch_media where branch_id={schema}.my_current_branch_id())",
     "fields": [
       {"name":"media_id","caption":"Media"},
       {"name":"media_file","actions":"B","type":"file","caption":"File",

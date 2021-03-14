@@ -30,11 +30,6 @@ function jsHarmonyCMSConfig(){
     bin_path: ''
   };
 
-  this.aws_key = {
-    //accessKeyId: 'xxxxxxxxxxxxxxxxxxxx',
-    //secretAccessKey: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-  };
-
   this.sftp = {
     enabled: false,
     serverPort: 22,
@@ -58,26 +53,54 @@ function jsHarmonyCMSConfig(){
   };
 
   this.deployment_target_params = { //Default deployment target parameters
+  };
+
+  this.deployment_target_publish_config = { //Default deployment target publish config
     page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
     media_subfolder: '',  //Relative path from publish folder to media subfolder, ex. 'media/'
-    menu_subfolder: '',   //Relative path from publish folder to menu subfolder, ex. 'menus/'
     content_url: '/',     //Absolute path from website root to CMS publish folder, ex. '/content/'
     exec_pre_deployment: undefined,  //Execute shell command after populating publish folder, before deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     exec_post_deployment: undefined, //Execute shell command after deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
-    generate_redirect_files: undefined, //Execute when generating redirect files
-                                        //function(jsh, deployment, redirects, page_redirects, redirects_cb){
-                                        //  var redirect_files = { file_path1: file_contents1, file_path2: file_contents2 };
-                                        //  return redirects_cb(err, redirect_files);
-                                        //}
-    generate_menu_files: undefined, //Execute when generating menu files
-                                    //function(jsh, deployment, menus, menus_cb){
-                                    //  var menu_files = { file_path1: file_contents1, file_path2: file_contents2 };
-                                    //  return menus_cb(err, menu_files);
-                                    //}
     git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
     copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
+
+    //List of remote paths to ignore
+    //* Future - Not implemented
+    //ignore_remote: [],
+    //ex. ["path/to/file1","path/to/folder2",{ "regex": "/regex1/"},{ "regex": "/regex_with_flags/i"}]
+
+    //FTP/FTPS/SFTP publish settings
+    ftp_config: {
+      overwrite_all: false,         //For FTP / FTPS / SFTP, if true, always upload all files, instead of comparing size and MD5
+      delete_excess_files: false,   //For FTP / FTPS / SFTP, if true, delete excess files in destination that weren't in the publish build
+
+      ignore_certificate_errors: false,  //For FTPS, ignore self-signed certificate errors
+      compression: false,                //For FTP / FTPS, whether to enable compression
+  
+      //SFTP private key, if applicable
+      private_key: "",
+      //private_key option 1 - string.  Line breaks should be added as \n
+      //  "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+      //private_key option 2 - array of lines.  Lines will be automatically joined by line breaks (\n)
+      //  [
+      //    "-----BEGIN CERTIFICATE-----",
+      //    "...",
+      //    "-----END CERTIFICATE-----"
+      //  ]
+    },
+
+    //Amazon S3 deployment settings
+    s3_config: {
+      accessKeyId: "",
+      secretAccessKey: "",
+      upload_params: { //Add parameters to the S3.upload request
+        //"ACL": "public-read",
+        //More parameters can be found at:
+        //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#upload-property
+      }
+    },
   };
 
   this.deploymentJobDelay = (1000 * 15);
@@ -96,8 +119,11 @@ function jsHarmonyCMSConfig(){
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing
   this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, options){ return url; } //return a value (not undefined) to stop processing
-  this.onDeploy_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(); }
-  this.onValidate_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(); }
+  this.onDeploy_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err); }
+  this.onValidate_LoadData = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err); }
+  this.onDeploy_GenerateRedirects = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err, generated_redirect_files); }
+                                          //    generated_redirect_files = { 'path1': 'file content1', 'path2': 'file content2' }
+  this.onDeploy_PostBuild = null; //function(jsh, branchData, deployment_target_params, callback){ return callback(err); }
 }
 
 jsHarmonyCMSConfig.prototype = new jsHarmonyConfig.Base();

@@ -8,9 +8,10 @@
     "title":"Revision History",
     "reselectafteredit": "row",
     "sort":["vmenu_mtstmp"],
+    "sqlwhere":"menu_key in (select menu_key from {schema}.branch_menu where branch_id={schema}.my_current_branch_id())",
     "grid_expand_search": true,
     "hide_system_buttons" : ["clear"],
-    "rowclass":"<%=xejs.iif(datarow['menu_id']==jsh.App[xmodel.parent].revision_menu_id,'active_revision')%>",
+    "rowclass":"<%=xejs.iif(xmodel.parent&&(datarow['menu_id']==jsh.App[xmodel.parent].revision_menu_id),'active_revision')%>",
     "fields": [
       {"name":"menu_id","caption":"ID","control":"hidden","key":true},
       {"name":"revision_menu_key","type":"bigint","caption":"Revision Key","control":"hidden","sqlwhere":"menu_key=@revision_menu_key","sqlselect":"menu_key"},
@@ -20,9 +21,7 @@
       {"name":"menu_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
       {"name":"menu_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt(menu_muser))","control":"label","actions":"B"},
       {"name":"menu_name","caption":"Menu Name","control":"label"},
-      {"name":"menu_tag","caption":"Tag","control":"label"},
-      {"name":"menu_template_id","caption":"Template","control":"label","lov":{ "values": "#CMS_MENU_TEMPLATES" }},
-      {"name":"menu_path","caption":"Path","control":"label","format":"js:return (val||'').toString().replace(/\\//g,'/\\u200B');"}
+      {"name":"menu_tag","caption":"Tag","control":"label"}
     ]
   }
 }
