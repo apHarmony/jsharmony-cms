@@ -30,6 +30,7 @@
       { "name": "site_id", "type": "bigint", "foreignkey": { "site": { "column": "site_id", "on_delete": "cascade" } }, "null": false },
       { "name": "deployment_target_publish_path", "type": "varchar", "length": 2048 },
       { "name": "deployment_target_params", "type": "varchar", "length": -1 },
+      { "name": "deployment_target_publish_config", "type": "varchar", "length": -1 },
       
       { "name": "deployment_target_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "deployment_target_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },

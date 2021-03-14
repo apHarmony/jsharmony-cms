@@ -145,7 +145,7 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
     }
     var isRequired = _.some((field.validate || []), function(a) { return a === 'Required'; });
     var defaultValue= field.default;
-    const propertyKeyExists = fieldName in dataInstance;
+    var propertyKeyExists = fieldName in dataInstance;
 
     if (propertyKeyExists && isRequired) {
       // The property has been set by the user

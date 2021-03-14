@@ -27,12 +27,12 @@ var wclib = require('jsharmony/WebConnect');
 var wc = new wclib.WebConnect();
 
 /** Set the chars used to render new lines for the output **/
-const NEW_LINE_OUTPUT = '\r\n';
+var NEW_LINE_OUTPUT = '\r\n';
 /** Set the chars used for a single indent for the diff output **/
-const INDENT_STRING = '  ';
+var INDENT_STRING = '  ';
 
 module.exports = exports = function(module, funcs){
-  const exports = {};
+  var exports = {};
 
   exports.templates_components = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -108,21 +108,21 @@ module.exports = exports = function(module, funcs){
 
         //Generate components
         function(cb){
-          var publish_params = {
+          var dtparams = {
             timestamp: (Date.now()).toString(),
             branch_id: branch_id,
           };
           try{
-            if(deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment_target_params));
+            if(deployment_target_params) dtparams = _.extend(dtparams, JSON.parse(deployment_target_params));
           }
           catch(ex){
             return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
-          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
+          dtparams = _.extend({}, cms.Config.deployment_target_params, dtparams);
 
           _.each(components, function(component){
               if(component.remote_templates && component.remote_templates.editor){
-                component.remote_templates.editor = funcs.parseDeploymentUrl(component.remote_templates.editor, publish_params);
+                component.remote_templates.editor = funcs.parseDeploymentUrl(component.remote_templates.editor, dtparams);
               }
             });
 
@@ -359,7 +359,7 @@ module.exports = exports = function(module, funcs){
    */
   function parsePrettyComponentConfig(nodeName, obj, attribs) {
     /** @type {XmlLikeNode} */
-    const dataNode = { children: [], attribs: attribs || {}, name: nodeName, text: '' };
+    var dataNode = { children: [], attribs: attribs || {}, name: nodeName, text: '' };
     Object.entries(obj).map(kvp => {
       var itemName = kvp[0];
       if(Helper.endsWith(itemName, '_jsh_browserDataTitle')) itemName = Helper.ReplaceAll(itemName, '_jsh_browserDataTitle', '_desc');
@@ -367,7 +367,7 @@ module.exports = exports = function(module, funcs){
       if(Helper.endsWith(itemName, '_resetButton')) return;
       if(itemName=='component_preview') return;
       /** @type {XmlLikeNode} */
-      const itemNode = {
+      var itemNode = {
         attribs: {},
         children: [],
         name: itemName,
@@ -414,7 +414,7 @@ module.exports = exports = function(module, funcs){
    * @returns {string}
    */
   function indentTextBlock(text, level) {
-    const indent = getIndentString(level);
+    var indent = getIndentString(level);
     return indent + (text || '').replace(/\r?\n/g, `${NEW_LINE_OUTPUT}${indent}`);
   }
 
@@ -658,7 +658,7 @@ module.exports = exports = function(module, funcs){
   function renderComponentPretty(componentType, componentProperties, componentData) {
 
     /** @type {XmlLikeNode} */
-    const topNode = { attribs: {}, children: [], name: componentType, text: '' };
+    var topNode = { attribs: {}, children: [], name: componentType, text: '' };
 
     // Add properties
     topNode.children.push(parsePrettyComponentConfig('properties', componentProperties));
@@ -681,9 +681,9 @@ module.exports = exports = function(module, funcs){
    */
   function renderComponentNodePretty(node) {
 
-    const attributes = Object.entries(node.attribs).map(kvp => `${kvp[0]}="${kvp[1]}"`);
-    const startTag = `<${[node.name, ...attributes].join(' ')}>`;
-    const endTag = `</${node.name}>`;
+    var attributes = Object.entries(node.attribs).map(kvp => `${kvp[0]}="${kvp[1]}"`);
+    var startTag = `<${[node.name, ...attributes].join(' ')}>`;
+    var endTag = `</${node.name}>`;
 
     let text = node.text || '';
 
@@ -691,7 +691,7 @@ module.exports = exports = function(module, funcs){
       return renderComponentPretty(componentType, componentProperties, componentData);
     });
 
-    const childrenNodeText = (node.children || []).map(child => renderComponentNodePretty(child)).join(NEW_LINE_OUTPUT);
+    var childrenNodeText = (node.children || []).map(child => renderComponentNodePretty(child)).join(NEW_LINE_OUTPUT);
 
     let innerText = '';
     if (text.length > 0 && childrenNodeText.length > 0) {
@@ -702,7 +702,7 @@ module.exports = exports = function(module, funcs){
       innerText = childrenNodeText;
     }
 
-    const textIsMultiLine = /\r?\n/.test(innerText);
+    var textIsMultiLine = /\r?\n/.test(innerText);
     innerText = textIsMultiLine ? NEW_LINE_OUTPUT + indentTextBlock(innerText, 1) + NEW_LINE_OUTPUT : innerText;
     return startTag + innerText + endTag;
   }

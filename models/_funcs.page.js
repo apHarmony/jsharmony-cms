@@ -351,14 +351,14 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
-  exports.parseDeploymentUrl = function(url, publish_params, baseUrl){
-    publish_params = publish_params || {};
+  exports.parseDeploymentUrl = function(url, deployment_target_params, baseUrl){
+    deployment_target_params = deployment_target_params || {};
     var rslt = url || '';
-    for(var key in publish_params){
-      if(key == publish_params[key]) continue;
-      rslt = Helper.ReplaceAll(rslt, '%%%' + key + '%%%', publish_params[key]);
+    for(var key in deployment_target_params){
+      if(key == deployment_target_params[key]) continue;
+      rslt = Helper.ReplaceAll(rslt, '%%%' + key + '%%%', deployment_target_params[key]);
     }
-    if(rslt != url) return funcs.parseDeploymentUrl(rslt, publish_params, baseUrl);
+    if(rslt != url) return funcs.parseDeploymentUrl(rslt, deployment_target_params, baseUrl);
     try{
       if(baseUrl) url = new urlparser.URL(url, baseUrl).toString();
     }

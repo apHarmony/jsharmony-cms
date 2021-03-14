@@ -1,5 +1,25 @@
-const path = require('path');
-const fs = require('fs');
+/*
+Copyright 2021 apHarmony
+
+This file is part of jsHarmony.
+
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var path = require('path');
+var fs = require('fs');
+var _ = require('lodash');
 
 /**
  * @typedef {object} ConnectionParams
@@ -11,12 +31,12 @@ const fs = require('fs');
  */
 
 /**
- * @typedef {object} FtpClientWrapper
+ * @typedef {object} FtpDriver
  * @property {() => Promise<void>} connect
  * @property {(directory_path: string) => Promise<void>} deleteDirectoryRecursive
  * @property {(file_path: string) => Promise<void>} deleteFile
  * @property {() => void} end
- * @property {(directory_path: string) => Promise<void>} ensureDirectory
+ * @property {(directory_path: string) => Promise<void>} createDirectoryIfNotExists
  * @property {(directory_path: string) => Promise<DirectoryItem[]>} getDirectoryList
  * @property {(file_path: string) => Promise<string | undefined>} readFile
  * @property {(local_path: string, dest_path: string) => Promise<void>} writeFile
@@ -29,7 +49,7 @@ const fs = require('fs');
  * @property {(directory_paths: string[], next_cb: (path: string) => void) => Promise<void>} deleteDirectoriesRecursive
  * @property {(file_paths: string[], next_cb: (path: string) => void) => Promise<void>} deleteFiles
  * @property {() => void} end
- * @property {(directory_paths: string[], next_cb: (path: string) => void) => Promise<void>} ensureDirectories
+ * @property {(directory_paths: string[], next_cb: (path: string) => void) => Promise<void>} createDirectoriesIfNotExists
  * @property {(abs_folder_path: string, relative_to: string, next_cb: (path: string) => void) => Promise<DirectoryItem[]>} getDirectoryListRecursive
  * @property {(file_path: string) => Promise<string | undefined>} readFile
  * @property {(paths: { dest_path: string, local_path: string }[], next_cb: (path: string) => void) => Promise<void>} writeFiles
@@ -46,51 +66,50 @@ const fs = require('fs');
 
 module.exports = exports = function(module, funcs) {
 
-  const exports = {};
+  var exports = {};
 
   /**
    * @param {'sftp' | 'ftp' | 'ftps' } type
    * @param {ConnectionParams} connectionParams
    * @returns {FtpClient}
    */
-  exports.ftpClientAdapter = function(type, connectionParams) {
+  exports.ftpClient = function(type, connectionParams, ftpConfig, logger) {
+    ftpConfig = ftpConfig || {};
 
-    /** @type {FtpClientWrapper} */
-    let clientWrapper = undefined
+    /** @type {FtpDriver} */
+    var ftpDriver = undefined;
+
+    var _this = this;
 
     /**
      * @returns {Promise<void>}
      */
-    function connect() {
-
-      if (type === 'ftp' || type === 'ftps') {
-        let ftp = undefined;
-        try {
-          ftp   = require('ftp');
-        } catch (error) {
-          if (error.code === 'MODULE_NOT_FOUND') {
-            throw new Error('"ftp" module is required for FTP publish. Use `npm i ftp` to install.');
-          } else {
-            throw error;
+    this.connect = function() {
+      try{
+        if (type === 'ftp' || type === 'ftps') {
+          connectionParams.user = connectionParams.username;
+          delete connectionParams.username;
+          connectionParams.secure = (type == 'ftps');
+          connectionParams.connTimeout = 5000;
+          connectionParams.logger = logger;
+          if(ftpConfig.ignore_certificate_errors) connectionParams.secureOptions = { rejectUnauthorized: false };
+          connectionParams.compression = !!ftpConfig.compression;
+          ftpDriver = new funcs.ftpDriver(connectionParams);
+        } else if (type === 'sftp') {
+          if(ftpConfig.private_key){
+            connectionParams.private_key = ftpConfig.private_key;
+            if(_.isArray(connectionParams.private_key)) connectionParams.private_key = connectionParams.private_key.join("\n");
           }
+          ftpDriver = new funcs.sftpDriver(connectionParams);
+        } else {
+          throw new Error(`unknown protocol ${type}. Expected "ftp", "sftp".`);
         }
-
-        clientWrapper = funcs.ftpClientWrapper(ftp, {
-          host: connectionParams.host,
-          port: connectionParams.port,
-          user: connectionParams.username,
-          password: connectionParams.password,
-          secure : type === 'ftps',          
-          connTimeout: 5000
-        });
-
-      } else if (type === 'sftp') {
-        clientWrapper =  funcs.sftpClientWrapper(connectionParams);
-      } else {
-        throw new Error(`unknown protocol ${type}. Expected "ftp", "sftp".`);
+      }
+      catch(ex){
+        return Promise.reject(ex);
       }
 
-      return clientWrapper.connect();
+      return ftpDriver.connect();
     }
 
     /**
@@ -98,7 +117,7 @@ module.exports = exports = function(module, funcs) {
      * @param {(path: string) => void} next_cb
      * @returns {Promise<void>}
      */
-    function deleteDirectoriesRecursive(directory_paths, next_cb) {
+    this.deleteDirectoriesRecursive = function(directory_paths, next_cb) {
       if ((directory_paths || []).length < 1) return Promise.resolve();
 
       next_cb = next_cb || (() => {});
@@ -107,10 +126,10 @@ module.exports = exports = function(module, funcs) {
       // When executed, the function will execute
       // next_cb for logging, and return a promise
       // that resolves when the directory is deleted.
-      const delete_functions = directory_paths.map(dir_path => {
+      var delete_functions = directory_paths.map(dir_path => {
         return () => {
           next_cb(dir_path);
-          return clientWrapper.deleteDirectoryRecursive(dir_path);
+          return ftpDriver.deleteDirectoryRecursive(dir_path);
         }
       });
 
@@ -122,7 +141,7 @@ module.exports = exports = function(module, funcs) {
      * @param {(path: string) => void} next_cb
      * @returns {Promise<void>}
      */
-    function deleteFiles(file_paths, next_cb) {
+    this.deleteFiles = function(file_paths, next_cb) {
       if ((file_paths || []).length < 1) return Promise.resolve();
 
       next_cb = next_cb || (() => {});
@@ -131,10 +150,10 @@ module.exports = exports = function(module, funcs) {
       // When executed, the function will execute
       // next_cb for logging, and return a promise
       // that resolves when the item is deleted.
-      const delete_functions = file_paths.map(file_path => {
+      var delete_functions = file_paths.map(file_path => {
         return () => {
           next_cb(file_path);
-          return clientWrapper.deleteFile(file_path);
+          return ftpDriver.deleteFile(file_path);
         }
       });
 
@@ -144,8 +163,11 @@ module.exports = exports = function(module, funcs) {
     /**
      * @returns {void}
      */
-    function end() {
-      clientWrapper.end();
+    this.end = function() {
+      try{
+        ftpDriver.end();
+      }
+      catch(ex){}
     }
 
     /**
@@ -153,7 +175,7 @@ module.exports = exports = function(module, funcs) {
      * @param {(path: string) => void} next_cb
      * @returns {Promise<void>}
      */
-    function ensureDirectories(directory_paths, next_cb) {
+    this.createDirectoriesIfNotExists = function(directory_paths, next_cb) {
       if ((directory_paths || []).length < 1) return Promise.resolve();
 
       next_cb = next_cb || (() => {});
@@ -162,10 +184,10 @@ module.exports = exports = function(module, funcs) {
       // When executed, the function will execute
       // next_cb for logging, and return a promise
       // that resolves when the directory is created.
-      const mk_dir_functions = directory_paths.map(dir_path => {
+      var mk_dir_functions = directory_paths.map(dir_path => {
         return () => {
           next_cb(dir_path);
-          return clientWrapper.ensureDirectory(dir_path);
+          return ftpDriver.createDirectoryIfNotExists(dir_path);
         }
       });
 
@@ -178,7 +200,7 @@ module.exports = exports = function(module, funcs) {
      * @param {(path: string) => void} next_cb
      * @returns {Promise<DirectoryItem[]>}
      */
-    function getDirectoryListRecursive(abs_folder_path, relative_to, next_cb) {
+    this.getDirectoryListRecursive = function(abs_folder_path, relative_to, next_cb) {
 
       // This function is called any we start
       // getting directory list for a child. It allows
@@ -186,21 +208,18 @@ module.exports = exports = function(module, funcs) {
       next_cb = next_cb || (() => {});
 
       next_cb(abs_folder_path);
-      return clientWrapper.getDirectoryList(abs_folder_path)
+      return ftpDriver.getDirectoryList(abs_folder_path)
       .then(items => {
-        const list = [];
-        const dirs = [];
+        var list = [];
+        var dirs = [];
         (items || []).forEach(item => {
-
-          const isDirectory = item.isDir;
-
-          let normalized_path = path.join(abs_folder_path, item.name);
+          var normalized_path = path.join(abs_folder_path, item.name);
           if (relative_to) {
             normalized_path = path.relative(relative_to, normalized_path);
           }
           normalized_path = normalized_path.replace(/\\/g, '/');
           item.path = normalized_path
-          if (isDirectory) dirs.push(item)
+          if (item.isDir) dirs.push(item)
           list.push(item);
         });
 
@@ -213,10 +232,10 @@ module.exports = exports = function(module, funcs) {
         // each function will return a promise that resolves
         // the contents (recursively) of the child directory
         // and concats them with the input argument.
-        const list_getters = dirs.map(dir => {
+        var list_getters = dirs.map(dir => {
           return current_items => {
-            const full_path = path.join(abs_folder_path, dir.name).replace(/\\/g, '/');
-            return getDirectoryListRecursive(full_path, relative_to, next_cb).then(items => [...current_items, ...items])
+            var full_path = path.join(abs_folder_path, dir.name).replace(/\\/g, '/');
+            return _this.getDirectoryListRecursive(full_path, relative_to, next_cb).then(items => [...current_items, ...items])
           }
         });
 
@@ -229,8 +248,8 @@ module.exports = exports = function(module, funcs) {
      * @param {string} file_path
      * @returns {Promise<void>}
      */
-    function readFile(file_path) {
-      return clientWrapper.readFile(file_path);
+    this.readFile = function(file_path) {
+      return ftpDriver.readFile(file_path);
     }
 
     /**
@@ -238,7 +257,7 @@ module.exports = exports = function(module, funcs) {
      * @param {(path: string) => void} next_cb
      * @returns {Promise<void>}
      */
-    function writeFiles(paths, next_cb) {
+    this.writeFiles = function(paths, next_cb) {
       if ((paths || []).length < 1) return Promise.resolve();
 
       next_cb = next_cb || (() => {});
@@ -247,10 +266,10 @@ module.exports = exports = function(module, funcs) {
       // When executed, the function will execute
       // next_cb for logging, and return a promise
       // that resolves when the put completes.
-      const put_functions = paths.map(path_info => {
+      var put_functions = paths.map(path_info => {
         return () => {
           next_cb(path_info.dest_path);
-          return clientWrapper.writeFile(path_info.local_path, path_info.dest_path);
+          return ftpDriver.writeFile(path_info.local_path, path_info.dest_path);
         }
       });
 
@@ -262,43 +281,26 @@ module.exports = exports = function(module, funcs) {
      * @param {string} dest_path
      * @returns {Promise<void>}
      */
-    function writeString(string_data, dest_path) {
-      return clientWrapper.writeString(string_data, dest_path);
+    this.writeString = function(string_data, dest_path) {
+      return ftpDriver.writeString(string_data, dest_path);
     }
 
-    /** @type {FtpClient} */
-    const retVal = {
-      connect,
-      deleteDirectoriesRecursive,
-      deleteFiles,
-      end,
-      ensureDirectories,
-      getDirectoryListRecursive,
-      readFile,
-      writeFiles,
-      writeString
-    }
-    return retVal;
-  }
+    this.buildFileTree = function(files) {
 
-  exports.ftpFileInfoUtil = function() {
-
-    function buildFileTree(files) {
-
-      const node_map = new Map();
+      var node_map = new Map();
 
       (files || []).forEach(current_path => {
 
-        let first_iteration = true;
+        var first_iteration = true;
 
         do {
           if (node_map.has(current_path)) {
             break;
           }
 
-          let parent_path = path.dirname(current_path);
+          var parent_path = path.dirname(current_path);
 
-          let node = {
+          var node = {
             children: [],
             path: current_path,
             is_file: first_iteration,
@@ -313,7 +315,7 @@ module.exports = exports = function(module, funcs) {
         } while (current_path !== '.');
       });
 
-      const root_nodes = [];
+      var root_nodes = [];
       node_map.forEach(node => {
 
         if (node.parent_path === '.') {
@@ -321,7 +323,7 @@ module.exports = exports = function(module, funcs) {
           return;
         }
 
-        const parent_node = node_map.get(node.parent_path);
+        var parent_node = node_map.get(node.parent_path);
         if (parent_node == undefined) {
           throw new Error(`Cannot find ${node.parent_path}`);
         }
@@ -337,16 +339,16 @@ module.exports = exports = function(module, funcs) {
      * that can be created in the given order
      * (i.e., preserving hierarchy)
      */
-    function buildOrderedDirectoryList(files) {
+    this.buildOrderedDirectoryList = function(files, dir_index) {
 
-      const file_tree_root_nodes = buildFileTree(files);
-      const dir_list = [];
+      var file_tree_root_nodes = _this.buildFileTree(files);
+      var dir_list = [];
 
-      const get_paths = node => {
+      var get_paths = node => {
 
         if (node.is_file) return [];
 
-        const paths = [node.path];
+        var paths = [node.path];
         node.children.forEach(child_node => {
           if (child_node.is_file) return;
           paths.push(...get_paths(child_node))
@@ -359,32 +361,30 @@ module.exports = exports = function(module, funcs) {
       return dir_list;
     }
 
-    function createLocalManifest(publish_path, site_files) {
+    this.createLocalManifest = function(publish_path, site_files) {
 
-      const manifest = {
+      var manifest = {
         base_path: publish_path,
         file_index: new Map(),
         dir_index: new Set()
       };
 
-      const stat_promises = [];
-      const file_list = [];
-      for (file in site_files) {
-        file_list.push(file);
-        const current_file = file;
-        const stat_promise = getFileSize(path.join(publish_path, current_file)).then(size => {
-          manifest.file_index.set(current_file, { size, md5: site_files[current_file].md5 });
-        });
-        stat_promises.push(stat_promise);
-      }
+      var stat_promises = [];
+      var file_list = [];
+      _.each(site_files, function(file_info, fpath){
+        file_list.push(fpath);
+        stat_promises.push(_this.getFileSize(path.join(publish_path, fpath)).then(function(size){
+          manifest.file_index.set(fpath, { size, md5: file_info.md5 });
+        }));
+      });
 
-      manifest.dir_index = new Set(buildOrderedDirectoryList(file_list));
-      return Promise.all(stat_promises).then(() => manifest);
+      manifest.dir_index = new Set(_this.buildOrderedDirectoryList(file_list));
+      return Promise.all(stat_promises).then(function(){ return manifest; });
     }
 
-    function createUploadInfo(local_manifest, remote_file_info_cache, remote_files, ignore_files, overwrite_all, delete_excess) {
+    this.getOperations = function(deployment, local_manifest, remote_file_info_cache, remote_files, ignore_files) {
 
-      const upload_info = {
+      var operations = {
         files_to_delete: [],
         files_to_upload: [],
         folders_to_create: [],
@@ -397,8 +397,8 @@ module.exports = exports = function(module, funcs) {
       }
 
       // Don't mutate the remote cache
-      const remote_file_cache_index = remote_file_info_cache ? Object.assign({}, remote_file_info_cache.files || {}) : {};
-      const remote_file_index =  (remote_files || []).reduce((prev, current) => {
+      var remote_file_cache_index = remote_file_info_cache ? Object.assign({}, remote_file_info_cache.files || {}) : {};
+      var remote_file_index =  (remote_files || []).reduce((prev, current) => {
         prev[current.path] = current;
         return prev;
       }, {});
@@ -407,16 +407,16 @@ module.exports = exports = function(module, funcs) {
 
         if (local_file_path in ignore_files) return;
 
-        const remote_file = remote_file_index[local_file_path];
-        const remote_file_cache = remote_file_cache_index[local_file_path]
+        var remote_file = remote_file_index[local_file_path];
+        var remote_file_cache = remote_file_cache_index[local_file_path]
 
         // Whatever is remaining will be files
         // that exist on remote but not local.
         delete remote_file_index[local_file_path];
         delete remote_file_cache_index[local_file_path];
 
-        const remote_file_exists = remote_file != undefined;
-        const files_match =
+        var remote_file_exists = remote_file != undefined;
+        var files_match =
           remote_file_exists &&
           local_file_info.size === remote_file.size &&
           remote_file_cache != undefined &&
@@ -424,49 +424,54 @@ module.exports = exports = function(module, funcs) {
           local_file_info.size === remote_file_cache.size;
 
           if (!remote_file_exists) {
-            upload_info.missing_file_in_remote_count++;
-            upload_info.files_to_upload.push(local_file_path);
+            operations.missing_file_in_remote_count++;
+            operations.files_to_upload.push(local_file_path);
           } else if (!files_match) {
-            upload_info.modified_file_count++;
-            upload_info.files_to_upload.push(local_file_path)
+            operations.modified_file_count++;
+            operations.files_to_upload.push(local_file_path)
           } else {
-            upload_info.matching_file_count++;
-            if (overwrite_all) upload_info.files_to_upload.push(local_file_path);
+            operations.matching_file_count++;
+            if (deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.overwrite_all) operations.files_to_upload.push(local_file_path);
           }
       });
 
+      var remote_dirs = {};
       for (file_path in remote_file_index) {
 
         if (file_path in ignore_files) continue;
 
-        const remote_file = remote_file_index[file_path];
+        var remote_file = remote_file_index[file_path];
         if (remote_file.isDir) {
-          const local_folder_exists = local_manifest.dir_index.has(file_path);
+          var local_folder_exists = local_manifest.dir_index.has(file_path);
           if (!local_folder_exists) {
-            upload_info.missing_folder_in_local_count++;
-            if (delete_excess) upload_info.folders_to_delete.push(file_path);
+            if(!funcs.deploy_ignore_remote(deployment.publish_params, file_path)){
+              operations.missing_folder_in_local_count++;
+              if (deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files) operations.folders_to_delete.push(file_path);
+            }
+          }
+          else {
+            remote_dirs[file_path] = file_path;;
           }
         } else {
-          upload_info.missing_file_in_local_count++;
-          if (delete_excess) upload_info.files_to_delete.push(file_path)
+          if(!funcs.deploy_ignore_remote(deployment.publish_params, file_path)){
+            operations.missing_file_in_local_count++;
+            if (deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files) operations.files_to_delete.push(file_path)
+          }
         }
       }
 
-      upload_info.folders_to_create = buildOrderedDirectoryList(upload_info.files_to_upload);
+      var required_folders = _this.buildOrderedDirectoryList(operations.files_to_upload);
+      _.each(required_folders, function(folder_name){
+        if(!(folder_name in remote_dirs)) operations.folders_to_create.push(folder_name);
+      });
 
-      return upload_info;
+      return operations;
     }
 
-    function getFileSize(file_path) {
+    this.getFileSize = function(file_path) {
       return new Promise((resolve, reject) => {
         fs.stat(file_path, (err, stats) => err ? reject(err) : resolve(stats.size));
       });
-    }
-
-    return {
-      buildOrderedDirectoryList,
-      createLocalManifest,
-      createUploadInfo
     }
   }
 

@@ -1,33 +1,51 @@
-const ssh2 = require('ssh2');
-const path = require('path');
-const fs = require('fs');
+/*
+Copyright 2021 apHarmony
 
-/** @typedef {import('./_funcs.ftp').FtpClientWrapper} FtpClientWrapper */
-/** @typedef {import('./_funcs.ftp').DirectoryItem} DirectoryItem */
-/** @typedef {import('./_funcs.ftp').ConnectionParams} ConnectionParams */
+This file is part of jsHarmony.
 
+jsHarmony is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-const ERR_CODE_DOES_NOT_EXIST = 2;
-const ERR_CODE_ALREADY_EXISTS = 4;
+jsHarmony is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this package.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var ssh2 = require('ssh2');
+var path = require('path');
+var fs = require('fs');
+
+/** @typedef {import('./_funcs.deploy.ftp').FtpDriver} FtpDriver */
+/** @typedef {import('./_funcs.deploy.ftp').DirectoryItem} DirectoryItem */
+/** @typedef {import('./_funcs.deploy.ftp').ConnectionParams} ConnectionParams */
 
 module.exports = exports = function(module, funcs) {
 
-  const exports = {};
+  var exports = {};
+
+  var ERR_CODE_DOES_NOT_EXIST = 2;
+  var ERR_CODE_ALREADY_EXISTS = 4;
 
   /**
    * @param {ConnectionParams} connectionParams
-   * @returns {FtpClientWrapper}
+   * @returns {FtpDriver}
    */
-  exports.sftpClientWrapper = function(connectionParams) {
-
-    const connection = new ssh2.Client();
-    let client = undefined;
+  exports.sftpDriver = function(connectionParams) {
+    var _this = this;
+    var connection = new ssh2.Client();
+    var client = undefined;
 
     /**
      * @public
      * @returns {Promise<void>}
      */
-    function connect() {
+    this.connect = function() {
       return new Promise((resolve, reject) => {
 
         connection.on('ready', () => {
@@ -36,16 +54,15 @@ module.exports = exports = function(module, funcs) {
             err ? reject(err) : resolve();
           });
         });
-        connection.on('error', err => reject(err))
 
-        getPrivateKey(connectionParams.private_key_path).then(key => {
-          connection.connect({
-            host: connectionParams.host,
-            password: connectionParams.password,
-            port: connectionParams.port,
-            username: connectionParams.username,
-            privateKey: key
-          })
+        connection.on('error', err => reject(err));
+
+        connection.connect({
+          host: connectionParams.host,
+          password: connectionParams.password,
+          port: connectionParams.port,
+          username: connectionParams.username,
+          privateKey: connectionParams.private_key,
         });
       });
     }
@@ -57,7 +74,7 @@ module.exports = exports = function(module, funcs) {
      * @param {string} directory_path
      * @returns {Promise<void>}
      */
-    function deleteDirectory(directory_path) {
+    this.deleteDirectory = function(directory_path) {
       return new Promise((resolve, reject) => {
         client.rmdir(directory_path, err => {
           if (!err || err.code === ERR_CODE_DOES_NOT_EXIST) {
@@ -74,8 +91,8 @@ module.exports = exports = function(module, funcs) {
      * @param {string} directory_path
      * @returns {Promise<void>}
      */
-    function deleteDirectoryRecursive(directory_path) {
-      return getDirectoryList(directory_path)
+    this.deleteDirectoryRecursive = function(directory_path) {
+      return _this.getDirectoryList(directory_path)
       .catch(err => {
         if (err.code === ERR_CODE_DOES_NOT_EXIST) {
           return [];
@@ -85,8 +102,8 @@ module.exports = exports = function(module, funcs) {
       })
       .then(items => {
 
-        const files = [];
-        const dirs = [];
+        var files = [];
+        var dirs = [];
         (items || []).forEach(item => {
           if (item.isDir) dirs.push(item.path)
           else files.push(item.path);
@@ -94,24 +111,24 @@ module.exports = exports = function(module, funcs) {
 
         if (files.length < 1) return dirs;
 
-        const delete_functions = files.map(file_path => () => deleteFile(file_path));
+        var delete_functions = files.map(file_path => () => _this.deleteFile(file_path));
         return delete_functions.reduce((prev, func) => prev.then(() => func()), Promise.resolve()).then(() => dirs);
       })
       .then(dirs => {
 
         if (dirs.length < 1) return;
 
-        const delete_functions = dirs.map(dir_path => () => deleteDirectoryRecursive(dir_path));
+        var delete_functions = dirs.map(dir_path => () => _this.deleteDirectoryRecursive(dir_path));
         return delete_functions.reduce((prev, func) => prev.then(() => func()), Promise.resolve());
       })
-      .then(() => deleteDirectory(directory_path));
+      .then(() => _this.deleteDirectory(directory_path));
     }
 
     /**
      * @param {string} file_path
      * @returns {Promise<void>}
      */
-    function deleteFile(file_path) {
+    this.deleteFile = function(file_path) {
       return new Promise((resolve, reject) => {
         client.unlink(file_path,  err => {
           if (!err || err.code === ERR_CODE_DOES_NOT_EXIST) {
@@ -127,7 +144,7 @@ module.exports = exports = function(module, funcs) {
      * @public
      * @returns {void}
      */
-    function end() {
+    this.end = function() {
       connection.end();
     }
 
@@ -136,7 +153,7 @@ module.exports = exports = function(module, funcs) {
      * @param {string} directory_path
      * @returns {Promise<void>}
      */
-    function ensureDirectory(directory_path) {
+    this.createDirectoryIfNotExists = function(directory_path) {
       return new Promise((resolve, reject) => {
         client.mkdir(directory_path, err => {
           if (!err || err.code === ERR_CODE_ALREADY_EXISTS) {
@@ -153,7 +170,7 @@ module.exports = exports = function(module, funcs) {
      * @param {string} directory_path
      * @returns{Promise<DirectoryItem[]>}
      */
-    function getDirectoryList(directory_path) {
+    this.getDirectoryList = function(directory_path) {
       return new Promise((resolve, reject) => {
         client.readdir(directory_path, (err, items) => {
           if (err) {
@@ -161,7 +178,7 @@ module.exports = exports = function(module, funcs) {
           } else {
             items = (items || []).map(item => {
               /** @type {DirectoryItem} */
-              const retVal = {
+              var retVal = {
                 isDir: item.attrs.isDirectory(),
                 name: item.filename,
                 path:  path.join(directory_path, item.filename).replace(/\\/g, '/'),
@@ -177,25 +194,13 @@ module.exports = exports = function(module, funcs) {
 
     /**
      * @public
-     * @param {string} key_file_path
-     * @returns {Promise<string>}
-     */
-    function getPrivateKey(key_file_path) {
-      if (!key_file_path) return Promise.resolve();
-      return new Promise((resolve, reject) => {
-        fs.readFile(key_file_path, (err, data) => err ? reject(err) : resolve(data.toString()));
-      });
-    }
-
-    /**
-     * @public
      * @param {string} file_path
      * @returns{Promise<string | undefined>}
      */
-    function readFile(file_path) {
+    this.readFile = function(file_path) {
       return new Promise((resolve, reject) => {
-        const stream = client.createReadStream(file_path);
-        const chunks = [];
+        var stream = client.createReadStream(file_path);
+        var chunks = [];
         stream.on('data', chunk => chunks.push(chunk));
         stream.on('end', () => resolve(Buffer.concat(chunks).toString()));
         stream.on('error', stream_error =>  {
@@ -214,7 +219,7 @@ module.exports = exports = function(module, funcs) {
      * @param {string} dest_path
      * @returns{Promise<void>}
      */
-    function writeFile(local_path, dest_path) {
+    this.writeFile = function(local_path, dest_path) {
       return new Promise((resolve, reject) => {
         client.fastPut(local_path, dest_path, err => err ? reject(err) : resolve());
       });
@@ -226,25 +231,11 @@ module.exports = exports = function(module, funcs) {
      * @param {string} dest_path
      * @returns{Promise<void>}
      */
-    function writeString(string_data, dest_path) {
+    this.writeString = function(string_data, dest_path) {
       return new Promise((resolve, reject) => {
         client.writeFile(dest_path, string_data, { flag: 'w+'}, write_error => write_error ? reject(write_error) : resolve());
       });
     }
-
-    /** @type {FtpClientWrapper} */
-    const retVal = {
-      connect,
-      deleteDirectoryRecursive,
-      deleteFile,
-      end,
-      ensureDirectory,
-      getDirectoryList,
-      readFile,
-      writeFile,
-      writeString
-    };
-    return retVal;
   }
 
   return exports;

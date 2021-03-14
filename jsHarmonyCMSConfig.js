@@ -30,11 +30,6 @@ function jsHarmonyCMSConfig(){
     bin_path: ''
   };
 
-  this.aws_key = {
-    //accessKeyId: 'xxxxxxxxxxxxxxxxxxxx',
-    //secretAccessKey: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-  };
-
   this.sftp = {
     enabled: false,
     serverPort: 22,
@@ -58,6 +53,9 @@ function jsHarmonyCMSConfig(){
   };
 
   this.deployment_target_params = { //Default deployment target parameters
+  };
+
+  this.deployment_target_publish_config = { //Default deployment target publish config
     page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
     media_subfolder: '',  //Relative path from publish folder to media subfolder, ex. 'media/'
     content_url: '/',     //Absolute path from website root to CMS publish folder, ex. '/content/'
@@ -67,6 +65,42 @@ function jsHarmonyCMSConfig(){
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
     copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
+
+    //List of remote paths to ignore
+    //* Future - Not implemented
+    //ignore_remote: [],
+    //ex. ["path/to/file1","path/to/folder2",{ "regex": "/regex1/"},{ "regex": "/regex_with_flags/i"}]
+
+    //FTP/FTPS/SFTP publish settings
+    ftp_config: {
+      overwrite_all: false,         //For FTP / FTPS / SFTP, if true, always upload all files, instead of comparing size and MD5
+      delete_excess_files: false,   //For FTP / FTPS / SFTP, if true, delete excess files in destination that weren't in the publish build
+
+      ignore_certificate_errors: false,  //For FTPS, ignore self-signed certificate errors
+      compression: false,                //For FTP / FTPS, whether to enable compression
+  
+      //SFTP private key, if applicable
+      private_key: "",
+      //private_key option 1 - string.  Line breaks should be added as \n
+      //  "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+      //private_key option 2 - array of lines.  Lines will be automatically joined by line breaks (\n)
+      //  [
+      //    "-----BEGIN CERTIFICATE-----",
+      //    "...",
+      //    "-----END CERTIFICATE-----"
+      //  ]
+    },
+
+    //Amazon S3 deployment settings
+    s3_config: {
+      accessKeyId: "",
+      secretAccessKey: "",
+      upload_params: { //Add parameters to the S3.upload request
+        //"ACL": "public-read",
+        //More parameters can be found at:
+        //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#upload-property
+      }
+    },
   };
 
   this.deploymentJobDelay = (1000 * 15);

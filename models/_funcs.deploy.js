@@ -16,6 +16,7 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 var Helper = require('jsharmony/Helper');
 var HelperFS = require('jsharmony/HelperFS');
 var _ = require('lodash');
@@ -27,6 +28,7 @@ var async = require('async');
 var crypto = require('crypto');
 var wclib = require('jsharmony/WebConnect');
 var wc = new wclib.WebConnect();
+var baseModule = module;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -136,7 +138,7 @@ module.exports = exports = function(module, funcs){
                   //Check publish template
                   function(template_process_cb){
                     if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
-                      templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.publish_params);
+                      templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.deployment_target_params);
                       //If path is remote
                       if(templateConfig.remote_templates.publish.indexOf('//') >= 0) return template_process_cb();
                       //If path is local
@@ -184,7 +186,7 @@ module.exports = exports = function(module, funcs){
                   Helper.execif(exportItem.remote_template,
                     //Initialize remote template
                     function(done){
-                      exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.publish_params);
+                      exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.deployment_target_params);
                       //If path is remote
                       if(exportItem.remote_template.indexOf('//') >= 0) return done();
                       //If path is local
@@ -232,11 +234,11 @@ module.exports = exports = function(module, funcs){
           var url = '';
           var isPublishTemplate = false;
           if(template.remote_templates.publish){
-            url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.publish_params);
+            url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.deployment_target_params);
             isPublishTemplate = true;
           }
           else if(template.remote_templates.editor){
-            url = funcs.parseDeploymentUrl(template.remote_templates.editor, branchData.publish_params);
+            url = funcs.parseDeploymentUrl(template.remote_templates.editor, branchData.deployment_target_params);
           }
           else return template_action_cb();
 
@@ -274,7 +276,7 @@ module.exports = exports = function(module, funcs){
               return template_action_cb(ex);
             }
             if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
-              templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.publish_params, url);
+              templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.deployment_target_params, url);
             }
             _.merge(template, templateConfig);
             
@@ -295,7 +297,7 @@ module.exports = exports = function(module, funcs){
             _.each((options.templateType == 'COMPONENT') && template.export, function(exportItem, exportIndex){
               if(!(template_name in options.exportTemplates)) options.exportTemplates[template_name] = {};
               if(exportItem.remote_template){
-                exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.publish_params, url);
+                exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.deployment_target_params, url);
               }
               if(!exportItem.remote_template){
                 options.exportTemplates[template_name][exportIndex] = templateContent;
@@ -324,7 +326,7 @@ module.exports = exports = function(module, funcs){
               if(template_name in template_html) return template_action_cb(); //Already downloaded
               if(!template.remote_templates || !template.remote_templates.publish) return template_action_cb();
 
-              var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.publish_params);
+              var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.deployment_target_params);
               funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
               wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
                 if(err) return template_action_cb(err);
@@ -361,7 +363,7 @@ module.exports = exports = function(module, funcs){
                 if(exportIndex in options.exportTemplates[template_name]) return template_action_cb(); //Already downloaded
                 if(!exportItem.remote_template) return template_action_cb();
 
-                var url = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.publish_params);
+                var url = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.deployment_target_params);
                 funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
                 wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
                   if(err) return template_action_cb(err);
@@ -414,7 +416,7 @@ module.exports = exports = function(module, funcs){
 
     //Update deployment to running status
     var sql = "select \
-        deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_sts, deployment_git_revision, \
+        deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_publish_config, deployment_target_sts, deployment_git_revision, \
         d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
         site.site_default_page_filename site_default_page_filename \
@@ -452,24 +454,40 @@ module.exports = exports = function(module, funcs){
           var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
           publish_path = path.normalize(publish_path);
 
-          var publish_params = {
+          //Deployment Target Params
+          var deployment_target_params = {
             timestamp: (Date.now()).toString(),
           };
           try{
-            if(deployment.deployment_target_params) publish_params = _.extend(publish_params, JSON.parse(deployment.deployment_target_params));
+            if(deployment.deployment_target_params) deployment_target_params = _.extend(deployment_target_params, JSON.parse(deployment.deployment_target_params));
           }
           catch(ex){
             return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
-          publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
+          deployment_target_params = _.extend({}, cms.Config.deployment_target_params, deployment_target_params);
+
+          //Deployment Target Publish Path
+          var publish_params = JSON.parse(JSON.stringify(deployment_target_params));
+          try{
+            if(deployment.deployment_target_publish_config) publish_params = _.extend(publish_params, JSON.parse(deployment.deployment_target_publish_config));
+          }
+          catch(ex){
+            return deploy_cb('Publish Target has invalid deployment_target_publish_config: '+deployment.deployment_target_publish_config);
+          }
+          for(var key in cms.Config.deployment_target_publish_config){
+            if((key == 's3_config')||(key == 'ftp_config')) publish_params[key] = _.extend({}, cms.Config.deployment_target_publish_config[key], publish_params[key]);
+            else if(!(key in publish_params)) publish_params[key] = cms.Config.deployment_target_publish_config[key];
+          }
           publish_params.site_default_page_filename = deployment.site_default_page_filename;
           publish_params.publish_path = publish_path;
           publish_params.deployment_id = deployment_id;
           publish_params.deployment_target_id = deployment.deployment_target_id;
           deployment.publish_params = publish_params;
 
+          //Branch Data
           var branchData = {
             publish_params: publish_params,
+            deployment_target_params: deployment_target_params,
             deployment: deployment,
             site_id: deployment.site_id,
             site_files: {},
@@ -523,8 +541,6 @@ module.exports = exports = function(module, funcs){
               return cb(err, rslt);
             }, exec_options);
           }
-
-          var farr = [];
 
           if(deployment_git_revision){
             //--------------------------
@@ -624,7 +640,7 @@ module.exports = exports = function(module, funcs){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
-                else if(/^((ftps)|(ftp)|(sftp)):\/\//.test(deploy_path)) {
+                else if((deploy_path.indexOf('ftps://')==0)||(deploy_path.indexOf('ftp://')==0)||(deploy_path.indexOf('sftp://')==0)) {
                   return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
                 }
                 else return cb(new Error('Deployment Target path not supported'));
@@ -684,11 +700,16 @@ module.exports = exports = function(module, funcs){
                         funcs.deploy_log_info(deployment_id, 'Setting git email');
                         gitExec('git', ['config','user.email','cms@localhost'], function(err, rslt){
                           if(err) return git_cb(err);
-                          //Set git user
-                          funcs.deploy_log_info(deployment_id, 'Setting git user');
-                          gitExec('git', ['config','user.name','CMS'], function(err, rslt){
+                          //Disable CRLF Warnings
+                          funcs.deploy_log_info(deployment_id, 'Disable git CRLF warnings');
+                          gitExec('git', ['config','core.safecrlf','false'], function(err, rslt){
                             if(err) return git_cb(err);
-                            return git_cb();
+                            //Set git user
+                            funcs.deploy_log_info(deployment_id, 'Setting git user');
+                            gitExec('git', ['config','user.name','CMS'], function(err, rslt){
+                              if(err) return git_cb(err);
+                              return git_cb();
+                            });
                           });
                         });
                       });
@@ -749,12 +770,20 @@ module.exports = exports = function(module, funcs){
                   fs.lstat(fpath, function(err, stats){
                     if(err) return file_cb(err);
                     if(!stats.isDirectory()) return file_cb(new Error('"copy_folder" parameter is not a folder: ' + fpath));
+                    //Add copied files to "site_files" array
                     HelperFS.copyRecursive(fpath, publish_path,
                       {
-                        forEachDir: function(dirpath, targetpath, relativepath, cb){
+                        forEachDir: function(dirpath, targetpath, relativepath, copy_cb){
                           if(relativepath=='.git') return cb(false);
-                          return cb(true);
-                        }
+                          return copy_cb(true);
+                        },
+                        forEachFile: function(filepath, targetpath, relativepath, copy_cb){
+                          var fhash = crypto.createHash('md5');
+                          HelperFS.copyFile(filepath, targetpath, copy_cb, {
+                            onData: function(data) { fhash.update(data); },
+                            onClose: function(){ branchData.site_files[HelperFS.convertWindowsToPosix(relativepath)] = { md5: fhash.digest('hex') }; },
+                          });
+                        },
                       },
                       file_cb
                     );
@@ -775,7 +804,14 @@ module.exports = exports = function(module, funcs){
                       forEachDir: function(dirpath, targetpath, relativepath, dir_cb){
                         if(relativepath=='.git') return dir_cb(false);
                         return dir_cb(true);
-                      }
+                      },
+                      forEachFile: function(filepath, targetpath, relativepath, copy_cb){
+                        var fhash = crypto.createHash('md5');
+                        HelperFS.copyFile(filepath, targetpath, copy_cb, {
+                          onData: function(data) { fhash.update(data); },
+                          onClose: function(){ branchData.site_files[HelperFS.convertWindowsToPosix(relativepath)] = { md5: fhash.digest('hex') }; },
+                        });
+                      },
                     },
                     cb
                   );
@@ -805,6 +841,7 @@ module.exports = exports = function(module, funcs){
               function(cb){
                 var branchItemTypes = funcs.getDeploymentSortedBranchItemTypes();
                 async.eachSeries(branchItemTypes, function(branch_item_type, branch_item_cb){
+                  funcs.deploy_log_info(deployment_id, 'Generating: '+branch_item_type.toUpperCase()+' items');
                   var branch_item = cms.BranchItems[branch_item_type];
                   if(!branch_item.deploy) return branch_item_cb();
                   Helper.execif(branch_item.deploy.onDeploy,
@@ -818,6 +855,7 @@ module.exports = exports = function(module, funcs){
 
               //Run onDeploy_PostBuild functions
               function(cb){
+                funcs.deploy_log_info(deployment_id, 'Running post-build operations');
 
                 //File system operations for PostBuild functions
                 branchData.fsOps = funcs.deploy_getFS(branchData.site_files);
@@ -854,16 +892,16 @@ module.exports = exports = function(module, funcs){
                 
                         //Perform file add operations
                         function(file_cb){
-                          async.eachOf(branchData.fsOps.addedFiles, function(fcontent, fpath, redirect_cb){
+                          async.eachOf(branchData.fsOps.addedFiles, function(fcontent, fpath, add_cb){
                             branchData.site_files[fpath] = {
                               md5: crypto.createHash('md5').update(fcontent).digest("hex")
                             };
                             fpath = path.join(publish_params.publish_path, fpath);
                           
                             HelperFS.createFolderRecursive(path.dirname(fpath), function(err){
-                              if(err) return redirect_cb(err);
+                              if(err) return add_cb(err);
                               //Save redirect to publish folder
-                              fs.writeFile(fpath, fcontent, 'utf8', redirect_cb);
+                              fs.writeFile(fpath, fcontent, 'utf8', add_cb);
                             });
                           }, file_cb);
                         },
@@ -933,7 +971,7 @@ module.exports = exports = function(module, funcs){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
-                else if(/^((ftps)|(ftp)|(sftp)):\/\//.test(deploy_path)) {
+                else if((deploy_path.indexOf('ftps://')==0)||(deploy_path.indexOf('ftp://')==0)||(deploy_path.indexOf('sftp://')==0)) {
                   return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
                 }
                 else return cb(new Error('Deployment Target path not supported'));
@@ -1514,6 +1552,30 @@ module.exports = exports = function(module, funcs){
     });
   }
 
+  exports.deploy_ignore_remote = function(publish_params, fpath){
+    return false;
+    /*
+    if(!publish_params || !publish_params.ignore_remote) return false;
+    var origpath = fpath;
+    fpath = HelperFS.convertWindowsToPosix(fpath);
+    while(fpath){
+      for(var i=0;i<publish_params.ignore_remote.length;i++){
+        var ignore_expr = publish_params.ignore_remote[i];
+        if(!ignore_expr) continue;
+        if(ignore_expr.regex){
+        }
+        else {
+          if(ignore_expr == fpath) return true;
+        }
+      }
+      fpath = path.dirname(fpath);
+      if(fpath=='.') fpath = '';
+      if(fpath=='..') fpath = '';
+    }
+    return true;
+    */
+  }
+
   exports.deploy_fs = function(deployment, publish_path, deploy_path, site_files, cb){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -1543,6 +1605,7 @@ module.exports = exports = function(module, funcs){
       function(fs_cb){
         HelperFS.funcRecursive(deploy_path, function (filepath, relativepath, file_cb) { //filefunc
           var delfunc = function(){
+            if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)) return file_cb();
             funcs.deploy_log_info(deployment_id, 'Deleting '+filepath);
             fs.unlink(filepath, file_cb);
           };
@@ -1562,6 +1625,9 @@ module.exports = exports = function(module, funcs){
           if(!relativepath) return dir_cb();
           if(relativepath in folders){
             found_folders[relativepath] = true;
+            return dir_cb();
+          }
+          else if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)){
             return dir_cb();
           }
           funcs.deploy_log_info(deployment_id, 'Deleting '+dirpath);
@@ -1597,121 +1663,74 @@ module.exports = exports = function(module, funcs){
 
   exports.deploy_ftp = function(deployment, publish_path, deploy_path, site_files, cb) {
 
-    let local_manifest = undefined;
-    const deployment_id = deployment.deployment_id;
-    const overwrite_all = deployment.publish_params.publish_overwrite_all;
-    const delete_excess_files = deployment.publish_params.publish_delete_missing_files;
-    const ftp_file_util = funcs.ftpFileInfoUtil();
-    const file_cache_info_path = 'config/.cms_files';
-    let remote_file_info_cache = undefined;
-    let remote_files = undefined;
-    let remote_path = '';
-    let remote_host = '';
-    let upload_info = undefined;
 
-    /** @type {import('./_funcs.ftp').FtpClient} */
-    let client = undefined;
+    var local_manifest = undefined;
+    var deployment_id = deployment.deployment_id;
+    var file_cache_info_path = 'config/.cms_files';
+    var remote_file_info_cache = undefined;
+    var remote_files = undefined;
+    var remote_path = '';
+    var remote_host = '';
+    var operations = undefined;
 
-    // Start deployment!
-    deploy();
+    /** @type {import('./_funcs.deploy.ftp').FtpClient} */
+    var ftpClient = undefined;
 
-    function deleteExcessFiles() {
+    // Start deployment
 
-      if (upload_info.files_to_delete.length < 1) return Promise.resolve();
+    //Initialize FTP Client
+    try {
+      var parsed_url = urlparser.parse(deploy_path);
+      var protocol = parsed_url.protocol.replace(/:$/, '') // Trim the trailing ":", if exists
+      remote_path = parsed_url.path;
 
-      let current_index = 1;
-      const total = upload_info.files_to_delete.length;
-      const files_to_delete = upload_info.files_to_delete.map(p => path.join(remote_path, p).replace(/\\/g,  '/'));
+      // remote_host is used for reporting. remote_hostname is used for connecting.
+      // remote_host includes port, remote_hostname does not.
+      remote_host = parsed_url.host; 
+      var remote_hostname = parsed_url.hostname;
+      var port =  (parsed_url.port != undefined) ? parseInt(parsed_url.port) : undefined;
 
-      funcs.deploy_log_info(deployment_id, `Deleting ${total} remote files from ${remote_host}${remote_path}`);
-      return client.deleteFiles(files_to_delete, p => {
-        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host + p}`);
-      });
-    }
-
-    function deleteExcessFolders() {
-
-      if (upload_info.folders_to_delete.length < 1) return Promise.resolve();
-
-      let current_index = 1;
-      const total = upload_info.folders_to_delete.length
-      const folders_to_delete = upload_info.folders_to_delete.map(p => path.join(remote_path, p).replace(/\\/g,  '/'));
-
-        funcs.deploy_log_info(deployment_id, `Deleting ${total} remote directories from ${remote_host}`);
-        return client.deleteDirectoriesRecursive(folders_to_delete, p => {
-          funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host + p}`);
-        });
-    }
-
-    function deploy() {
-
-      try {
-        client = getClient();
-      } catch (error) {
-        cb(error);
-        return;
+      // split at _FIRST_ ":" (username cannot contain ":", but password may)
+      var username = undefined;
+      var password = undefined;
+      var split_index = parsed_url.auth.indexOf(':');
+      if(split_index >= 0){
+        username = parsed_url.auth.slice(0, split_index);
+        password = parsed_url.auth.slice(split_index + 1);
+      }
+      else {
+        username = parsed_url.auth;
+      }
+      
+      /** @type {import('./_funcs.deploy.ftp').ConnectionParams} */
+      var connectionParams = {
+        host: remote_hostname,
+        username,
+        password,
+        port,
       }
 
-      funcs.deploy_log_info(deployment_id, `Connecting to ${remote_host}`);
-      client.connect()
-      .then(() => ensureRemoteRootDirectory())
-      .then(() => populateLocalManifest())
-      .then(() => populateRemoteFileInfoCache())
-      .then(() => populateRemoteFiles())
-      .then(() => {
+      ftpClient = new funcs.ftpClient(protocol, connectionParams, deployment.publish_params.ftp_config, function(msg){ funcs.deploy_log_info(deployment_id, msg); });
 
-        const ignore_files = {
-          [file_cache_info_path]: {},
-          [path.dirname(file_cache_info_path)]: {}
-        };
-
-        upload_info = ftp_file_util.createUploadInfo(
-          local_manifest,
-          remote_file_info_cache,
-          remote_files,
-          ignore_files,
-          overwrite_all,
-          delete_excess_files
-        );
-
-        funcs.deploy_log_info(deployment_id, `Found ${upload_info.modified_file_count} modified files.`);
-        funcs.deploy_log_info(deployment_id, `Found ${upload_info.matching_file_count} matching files.`);
-        funcs.deploy_log_info(deployment_id, `Found ${upload_info.missing_file_in_remote_count} missing files.`);
-        funcs.deploy_log_info(deployment_id, `Found ${upload_info.missing_file_in_local_count} extra files.`);
-        funcs.deploy_log_info(deployment_id, `Found ${upload_info.missing_folder_in_local_count} extra directories.`);
-      })
-      .then(() => deleteExcessFiles())
-      .then(() => deleteExcessFolders())
-      .then(() => ensureRemoteDirectories())
-      .then(() => uploadFiles())
-      .then(() => uploadFileInfoCache())
-      .catch(err => err)
-      .then(err => {
-        client.end();
-        cb(err);
-      });
+    } catch (error) {
+      cb(error);
+      return;
     }
 
-    function ensureRemoteDirectories() {
+    var remote_host_desc = protocol+'://'+remote_host+(port?':'+port:'');
 
-      if (upload_info.folders_to_create.length < 1) return Promise.resolve();
+    funcs.deploy_log_info(deployment_id, 'Connecting to '+remote_host_desc);
 
-      let current_index = 1;
-      const total = upload_info.folders_to_create.length;
+    //Open connection
+    ftpClient.connect()
 
-      funcs.deploy_log_info(deployment_id, `Verifying ${total} remote directories exist in ${remote_host}${remote_path}`);
-      const dirs = upload_info.folders_to_create.map(p => path.join(remote_path, p).replace(/\\/g,  '/'));
-      return client.ensureDirectories(dirs, p => {
-        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Verifying directory exists ${remote_host + p}`);
-      });
-    }
-
-    function ensureRemoteRootDirectory() {
+    //Create Remote Root Directory If Not Exists
+    .then(function() {
 
       // Need to build the tree so we
       // can handle nested paths.
-      let child_path = remote_path;
-      const paths = [];
+      var child_path = remote_path;
+      var paths = [];
       while (child_path !== '/') {
         paths.unshift(child_path);
         child_path = path.dirname(child_path);
@@ -1719,100 +1738,159 @@ module.exports = exports = function(module, funcs){
 
       if (paths.length < 1) return Promise.resolve();
 
-      funcs.deploy_log_info(deployment_id, `Verifying remote publish directory exist in ${remote_host}${remote_path}`);
-      return client.ensureDirectories(paths);
-    }
+      funcs.deploy_log_info(deployment_id, `Verifying remote publish directory exists: ${remote_host_desc}${remote_path}`);
+      return ftpClient.createDirectoriesIfNotExists(paths);
+    })
 
-    function getClient() {
-
-      const parsed_url = url.parse(deploy_path);
-      const protocol = parsed_url.protocol.replace(/:$/, '') // Trim the trailing ":", if exists
-      remote_path = parsed_url.path;
-
-      // remote_host is used for reporting. remote_hostname is used for connecting.
-      // remote_host includes port, remote_hostname does not.
-      remote_host = parsed_url.host; 
-      const remote_hostname = parsed_url.hostname;
-      const port =  (parsed_url.port != undefined) ? parseInt(parsed_url.port) : undefined;
-
-      // split at _FIRST_ ":" (username cannot contain ":", but password may)
-      const split_index = parsed_url.auth.indexOf(':');
-      const username = parsed_url.auth.slice(0, split_index);
-      const password = parsed_url.auth.slice(split_index + 1);
-
-      /** @type {import('./_funcs.ftp').ConnectionParams} */
-      const connectionParams = {
-        host: remote_hostname,
-        password,
-        port,
-        private_key_path: undefined, // TODO: where to get this?
-        username
-      }
-
-      return funcs.ftpClientAdapter(protocol, connectionParams);
-    }
-
-    function populateRemoteFiles() {
-      funcs.deploy_log_info(deployment_id, `Retrieving all file info from ${remote_host}${remote_path}`);
-      return client.getDirectoryListRecursive(remote_path, remote_path, p => {
-        funcs.deploy_log_info(deployment_id, `Retrieving directory list for ${remote_host}${p}`);
-      })
-      .then(files => remote_files = files || []);
-    }
-
-    function populateLocalManifest() {
+    //Build Local Manifests
+    .then(function() {
       funcs.deploy_log_info(deployment_id, `Building local manifest`);
-      return ftp_file_util.createLocalManifest(publish_path, site_files).then(manifest => local_manifest = manifest);
-    }
+      return ftpClient.createLocalManifest(publish_path, site_files).then(function(manifest){ return local_manifest = manifest; });
+    })
 
-    function populateRemoteFileInfoCache() {
-      funcs.deploy_log_info(deployment_id, `Retrieving file info cache from ${remote_host}${remote_path}`);
-      return client.readFile(remote_path + '/' + file_cache_info_path).then(file_info_cache => {
-        remote_file_info_cache = file_info_cache ?  JSON.parse(file_info_cache) : undefined;
+    //Load Remote File Listing
+    .then(function() {
+      funcs.deploy_log_info(deployment_id, 'Retrieving file listing: '+remote_host_desc+remote_path);
+      var numPaths = 0;
+      return ftpClient.getDirectoryListRecursive(remote_path, remote_path, function(p){
+        numPaths++;
+        if((numPaths % 50)==0) funcs.deploy_log_info(deployment_id, 'Retrieving file listing #'+numPaths+': '+remote_host_desc+p);
+      })
+      .then(function(files){
+        return remote_files = files || [];
       });
-    }
+    })
 
-    function uploadFiles() {
-      const files_to_upload = [];
-      const path_mapper = rel_path => {
+    //Load Remote File Index Cache
+    .then(function() {
+      var cacheFound = false;
+      var cachePath = remote_path + '/' + file_cache_info_path;
+      _.each(remote_files, function(remote_file){
+        if(remote_file.path == file_cache_info_path) cacheFound = true;
+      });
+      if(!cacheFound) return;
+      funcs.deploy_log_info(deployment_id, 'Retrieving CMS file index: '+remote_host_desc+cachePath);
+      return ftpClient.readFile(cachePath)
+        .then(function(file_info_cache){
+          remote_file_info_cache = file_info_cache ?  JSON.parse(file_info_cache) : undefined;
+        });
+    })
+
+    //Display statistics
+    .then(function(){
+      var ignore_files = {
+        [file_cache_info_path]: {},
+        [path.dirname(file_cache_info_path)]: {}
+      };
+
+      operations = ftpClient.getOperations(
+        deployment,
+        local_manifest,
+        remote_file_info_cache,
+        remote_files,
+        ignore_files
+      );
+
+      if(operations.matching_file_count) funcs.deploy_log_info(deployment_id, 'Unchanged files: '+operations.matching_file_count);
+      if(operations.missing_file_in_remote_count) funcs.deploy_log_info(deployment_id, 'New files: '+operations.missing_file_in_remote_count);
+      if(operations.modified_file_count) funcs.deploy_log_info(deployment_id, 'Modified files: '+operations.modified_file_count);
+      if(operations.missing_file_in_local_count) funcs.deploy_log_info(deployment_id, ((deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files)?'Deleting: ':'Ignoring: ')+operations.missing_file_in_local_count+' excess files.');
+      if(operations.missing_folder_in_local_count) funcs.deploy_log_info(deployment_id, ((deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files)?'Deleting: ':'Ignoring: ')+operations.missing_folder_in_local_count+' excess directories.');
+    })
+
+    //Delete excess remote files
+    .then(function() {
+
+      if (operations.files_to_delete.length < 1) return Promise.resolve();
+
+      var current_index = 1;
+      var total = operations.files_to_delete.length;
+      var files_to_delete = operations.files_to_delete.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
+
+      funcs.deploy_log_info(deployment_id, `Deleting ${total} remote files from ${remote_host_desc}${remote_path}`);
+      return ftpClient.deleteFiles(files_to_delete, function(p){
+        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host_desc + p}`);
+      });
+    })
+
+    //Delete excess remote folders
+    .then(function() {
+
+      if (operations.folders_to_delete.length < 1) return Promise.resolve();
+
+      var current_index = 1;
+      var total = operations.folders_to_delete.length
+      var folders_to_delete = operations.folders_to_delete.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/') });
+
+        funcs.deploy_log_info(deployment_id, `Deleting ${total} remote directories from ${remote_host_desc}`);
+        return ftpClient.deleteDirectoriesRecursive(folders_to_delete, function(p){
+          funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host_desc + p}`);
+        });
+    })
+
+    //Create new remote folders
+    .then(function() {
+
+      if (operations.folders_to_create.length < 1) return Promise.resolve();
+
+      var current_index = 1;
+      var total = operations.folders_to_create.length;
+
+      var dirs = operations.folders_to_create.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
+      return ftpClient.createDirectoriesIfNotExists(dirs, function(p){
+        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Creating directory: ${remote_host_desc + p}`);
+      });
+    })
+
+    //Upload files to remote
+    .then(function() {
+      var files_to_upload = [];
+      var path_mapper = function(rel_path){
         return {
           local_path: path.join(publish_path, rel_path),
           dest_path: path.join(remote_path, rel_path).replace(/\\/g, '/')
         }
       };
 
-      upload_info.files_to_upload.forEach(p => files_to_upload.push(path_mapper(p)));
+      operations.files_to_upload.forEach(function(p){ files_to_upload.push(path_mapper(p)) });
 
-      let current_index = 1;
-      const total = files_to_upload.length;
+      var current_index = 1;
+      var total = files_to_upload.length;
 
       if (total < 1) return Promise.resolve();
 
-      funcs.deploy_log_info(deployment_id, `Uploading ${total} files to ${remote_host}${remote_path}`);
-      return client.writeFiles(files_to_upload, p => {
-        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Uploading file to ${remote_host + p}`);
+      return ftpClient.writeFiles(files_to_upload, function(p){
+        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Uploading file: ${remote_host_desc + p}`);
       });
-    }
+    })
 
-    function uploadFileInfoCache() {
+    //Upload File Index Cache to remote
+    .then(function() {
 
-      const file_info = {
+      var file_info = {
         files: {}
       };
 
-      local_manifest.file_index.forEach((info, file) => {
+      local_manifest.file_index.forEach(function(info, file){
         file_info.files[file] = info;
       });
 
-      const file_info_string = JSON.stringify(file_info, null, 2);
-      const upload_path = path.join(remote_path, file_cache_info_path).replace(/\\/g, '/');
+      var file_info_string = JSON.stringify(file_info, null, 2);
+      var upload_path = path.join(remote_path, file_cache_info_path).replace(/\\/g, '/');
 
-      funcs.deploy_log_info(deployment_id, `Uploading file info cache to ${remote_host}${upload_path}`);
+      funcs.deploy_log_info(deployment_id, `Updating CMS file index: ${remote_host_desc}${upload_path}`);
 
-      return client.ensureDirectories([path.dirname(upload_path)]).then(() => {
-        return client.writeString(file_info_string, upload_path);
+      return ftpClient.createDirectoriesIfNotExists([path.dirname(upload_path)]).then(function(){
+        return ftpClient.writeString(file_info_string, upload_path);
       });
-    }
+    })
+
+    //Handle Errors
+    .catch(function(err){ return err; })
+    .then(function(err){
+      ftpClient.end();
+      cb(err);
+    });
   }
 
   exports.deploy_s3 = function(deployment, publish_path, deploy_path, site_files, cb){
@@ -1822,11 +1900,19 @@ module.exports = exports = function(module, funcs){
     var deployment_id = deployment.deployment_id;
 
     var s3url = urlparser.parse(deploy_path);
-    var AWS = require('aws-sdk');
-    var s3 = new AWS.S3(cms.Config.aws_key);
+    var AWS = Helper.requireAnywhere(baseModule, 'aws-sdk');
+    if(!AWS){
+      return cb(new Error('"aws-sdk" module is required for AWS S3 publish. Use `npm i aws-sdk` to install.'));
+    }
+    var s3 = new AWS.S3({
+      accessKeyId: deployment.publish_params.s3_config.accessKeyId,
+      secretAccessKey: deployment.publish_params.s3_config.secretAccessKey,
+    });
     var bucket = s3url.hostname;
-    var bucket_prefix = s3url.path.substr(1);
-    if(!bucket_prefix || (bucket_prefix[bucket_prefix.length-1]!='/')) bucket_prefix += '/';
+    var bucket_prefix = (s3url.path||'/').substr(1);
+    if(bucket_prefix){
+      if(!bucket_prefix || (bucket_prefix[bucket_prefix.length-1]!='/')) bucket_prefix += '/';
+    }
 
     var s3_files = {};
     var s3_upload = [];
@@ -1879,7 +1965,15 @@ module.exports = exports = function(module, funcs){
           var page_fpath = path.join(publish_path, page_path);
           var fstream = fs.createReadStream(page_fpath);
           funcs.deploy_log_info(deployment_id, 'Uploading: '+page_path);
-          s3.upload({ Bucket: bucket, Key: page_bpath, Body: fstream }, function(err, data){
+          var uploadParams = {
+            Bucket: bucket,
+            Key: page_bpath,
+            Body: fstream,
+            ACL: 'public-read'
+          };
+          var contentType = HelperFS.getMimeType(page_bpath);
+          if(contentType) uploadParams.ContentType = contentType;
+          s3.upload(uploadParams, function(err, data){
             if(err) return page_cb(err);
             return page_cb();
           });

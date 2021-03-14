@@ -17,7 +17,7 @@
       {"name":"deployment_id","key":true,"control":"hidden"},
       {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
       {"name":"deployment_target_name","caption":"Deployment Target","sqlselect":"(select deployment_target_name from {schema}.deployment_target where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
-      {"name":"deployment_tag","caption":"Tag","control":"label"},
+      {"name":"deployment_tag","caption":"Tag","control":"label","link":"update:Publish_Log"},
       {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","type":"datetime"},
       {"name":"deployment_sts","caption":"Status"},
       {"name":"branch_id","control":"hidden"},
