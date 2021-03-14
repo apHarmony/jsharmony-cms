@@ -26,22 +26,39 @@ var ejs = require('ejs');
 var fs = require('fs');
 var async = require('async');
 var crypto = require('crypto');
+var moment = require('moment');
 var wclib = require('jsharmony/WebConnect');
+var yazl = require("yazl");
 var wc = new wclib.WebConnect();
 var baseModule = module;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
 
-  funcs.deploymentQueue = async.queue(function (deployment_id, done){
-    funcs.deploy_exec(deployment_id, done);
+  funcs.deploymentQueue = async.queue(function (op, done){
+    var jsh = module.jsh;
+    
+    if(!op) return done();
+    if(op.exec == 'deployment'){
+      //{ exec: 'deployment', deployment_id: deployment_id }
+      funcs.deploy_exec(op.deployment_id, done);
+    }
+    else if(op.exec == 'deployment_download'){
+      //{ exec: 'deployment_download', deployment_id: deployment_id, dstStream: res, onStart: function(){} }
+      funcs.deployment_download(op.deployment_id, op.dstStream, op.onStart, done);
+    }
+    else{
+      var err = new Error('Invalid deployment exec operation: '+op.exec);
+      jsh.Log.error(err);
+      return done(err);
+    }
   }, 1);
 
   exports.deployment_getLogFileName = function (deployment_id) {
     return path.join(module.jsh.Config.datadir, 'publish_log', deployment_id + '.log');
   }
 
-  exports.deployment_getChangeFileName = function (deployment_id) {
+  exports.deployment_getChangeLogFileName = function (deployment_id) {
     return path.join(module.jsh.Config.datadir, 'publish_log', deployment_id + '.changes.log');
   }
 
@@ -63,12 +80,12 @@ module.exports = exports = function(module, funcs){
   exports.deploy_log_change = function (deployment_id, txt){
     var jsh = module.jsh;
     if(!jsh.Config.logdir) return;
-    var logfile = funcs.deployment_getChangeFileName(deployment_id);
-    fs.appendFile(logfile, txt+'\r\n', function(){});
+    var logfile = funcs.deployment_getChangeLogFileName(deployment_id);
+    jsh.Log.info(txt, { logfile: logfile });
   }
 
   exports.deploy = function (deployment_id, onComplete) {
-    funcs.deploymentQueue.push(deployment_id, function(err){
+    funcs.deploymentQueue.push({ exec: 'deployment', deployment_id: deployment_id }, function(err){
       if(onComplete) return onComplete();
     });
   }
@@ -418,6 +435,38 @@ module.exports = exports = function(module, funcs){
     return branchItemTypes;
   }
 
+  //Shell Commands
+  exports.shellExec = function(cmd, default_cwd, params, cb, exec_options){
+    var rslt = '';
+    var returned = false;
+    var orig_cb = cb;
+    cb = function(err, rslt){
+      if(returned) return;
+      returned = true;
+      return orig_cb(err, rslt);
+    }
+    exec_options = _.extend({ cwd: default_cwd }, exec_options);
+    wclib.xlib.exec(cmd, params, function(err){ //cb
+      if(err) return cb(err, rslt.trim());
+      return cb(null,rslt.trim());
+    }, function(data){ //stdout
+      rslt += data;
+    }, null //stderr
+    , function(err){ //onError
+      return cb(err, rslt.trim());
+    }, exec_options);
+  }
+
+  //Git Commands
+  exports.gitExec = function(repo_path, params, cb, exec_options){
+    var cms = module;
+    var git_path = cms.Config.git.bin_path || 'git';
+    return funcs.shellExec(git_path, repo_path, params, function(err, rslt){
+      if(err) return cb(new Error('Git Error: ' + err.toString()), rslt);
+      return cb(err, rslt);
+    }, exec_options);
+  }
+
   exports.deploy_exec = function (deployment_id, onComplete) {
     if(!onComplete) onComplete = function(){};
     var jsh = module.jsh;
@@ -521,37 +570,8 @@ module.exports = exports = function(module, funcs){
             sitemaps: {},
           }
 
-          //Shell Commands
-          function shellExec(cmd, params, cb, exec_options){
-            var rslt = '';
-            var returned = false;
-            var orig_cb = cb;
-            cb = function(err, rslt){
-              if(returned) return;
-              returned = true;
-              return orig_cb(err, rslt);
-            }
-            exec_options = _.extend({ cwd: publish_path }, exec_options);
-            wclib.xlib.exec(cmd, params, function(err){ //cb
-              if(err) return cb(err, rslt.trim());
-              return cb(null,rslt.trim());
-            }, function(data){ //stdout
-              rslt += data;
-            }, null //stderr
-            , function(err){ //onError
-              return cb(err, rslt.trim());
-            }, exec_options);
-          }
-          //Git Commands
-          var git_path = cms.Config.git.bin_path || '';
           var git_branch = Helper.ReplaceAll(publish_params.git_branch, '%%%SITE_ID%%%', deployment.site_id);
           var deployment_git_revision = (deployment.deployment_git_revision||'');
-          function gitExec(git_cmd, params, cb, exec_options){
-            return shellExec(path.join(git_path, git_cmd), params, function(err, rslt){
-              if(err) return cb(new Error('Git Error: ' + err.toString()), rslt);
-              return cb(err, rslt);
-            }, exec_options);
-          }
 
           if(deployment_git_revision){
             //--------------------------
@@ -572,7 +592,7 @@ module.exports = exports = function(module, funcs){
                 async.waterfall([
                   //Initialize Git, if not initialized in publish folder
                   function(git_cb){
-                    gitExec('git', ['rev-parse','--show-toplevel'], function(err, rslt){
+                    funcs.gitExec(publish_path, ['rev-parse','--show-toplevel'], function(err, rslt){
                       if(!err && rslt && (path.normalize(rslt)==publish_path)) return git_cb();
                       return git_cb(new Error('GIT not initialized in publish path.  Cannot find revision for deployment.'));
                     });
@@ -580,7 +600,7 @@ module.exports = exports = function(module, funcs){
 
                   //Check if branch exists
                   function(git_cb){
-                    gitExec('git', ['show-ref','--verify','--quiet','refs/heads/'+git_branch], function(err, rslt){
+                    funcs.gitExec(publish_path, ['show-ref','--verify','--quiet','refs/heads/'+git_branch], function(err, rslt){
                       if(!err && !rslt) return git_cb();
                       return git_cb(new Error('Target branch not found in publish folder.  Cannot find revision for deployment'));
                     });
@@ -588,7 +608,7 @@ module.exports = exports = function(module, funcs){
 
                   //Check if deployment commit
                   function(git_cb){
-                    gitExec('git', ['cat-file','-e',deployment_git_revision], function(err, rslt){
+                    funcs.gitExec(publish_path, ['cat-file','-e',deployment_git_revision], function(err, rslt){
                       if(!err && !rslt) return git_cb();
                       return git_cb(new Error('Target deployment commit not found in publish folder.  Cannot find revision for deployment'));
                     });
@@ -596,8 +616,8 @@ module.exports = exports = function(module, funcs){
 
                   //Checking out target revision
                   function(git_cb){
-                    funcs.deploy_log_info(deployment_id, 'Checking out git branch: '+git_branch);
-                    gitExec('git', ['checkout','-f',deployment_git_revision], function(err, rslt){
+                    funcs.deploy_log_info(deployment_id, 'Checking out git revision: '+deployment_git_revision);
+                    funcs.gitExec(publish_path, ['checkout','-f',deployment_git_revision], function(err, rslt){
                       return git_cb(err);
                     });
                   }
@@ -660,8 +680,9 @@ module.exports = exports = function(module, funcs){
               //Exec Post-Deployment Shell Command
               function (cb) {
                 if(!publish_params.exec_post_deployment) return cb();
-                shellExec(
+                funcs.shellExec(
                   publish_params.exec_post_deployment.cmd,
+                  publish_path,
                   publish_params.exec_post_deployment.params, function(err, rslt){
                   if(err) return cb(err);
                   if(rslt) rslt = rslt.trim();
@@ -701,23 +722,23 @@ module.exports = exports = function(module, funcs){
                 async.waterfall([
                   //Initialize Git, if not initialized in publish folder
                   function(git_cb){
-                    gitExec('git', ['rev-parse','--show-toplevel'], function(err, rslt){
+                    funcs.gitExec(publish_path, ['rev-parse','--show-toplevel'], function(err, rslt){
                       if(!err && rslt && (path.normalize(rslt)==publish_path)) return git_cb();
                       //Initialize git for the first time
                       funcs.deploy_log_info(deployment_id, 'Initializing git in publish path: '+publish_path);
-                      gitExec('git', ['init','-q'], function(err, rslt){
+                      funcs.gitExec(publish_path, ['init','-q'], function(err, rslt){
                         if(err) return git_cb(err);
                         //Set git email
                         funcs.deploy_log_info(deployment_id, 'Setting git email');
-                        gitExec('git', ['config','user.email','cms@localhost'], function(err, rslt){
+                        funcs.gitExec(publish_path, ['config','user.email','cms@localhost'], function(err, rslt){
                           if(err) return git_cb(err);
                           //Disable CRLF Warnings
                           funcs.deploy_log_info(deployment_id, 'Disable git CRLF warnings');
-                          gitExec('git', ['config','core.safecrlf','false'], function(err, rslt){
+                          funcs.gitExec(publish_path, ['config','core.safecrlf','false'], function(err, rslt){
                             if(err) return git_cb(err);
                             //Set git user
                             funcs.deploy_log_info(deployment_id, 'Setting git user');
-                            gitExec('git', ['config','user.name','CMS'], function(err, rslt){
+                            funcs.gitExec(publish_path, ['config','user.name','CMS'], function(err, rslt){
                               if(err) return git_cb(err);
                               return git_cb();
                             });
@@ -729,14 +750,14 @@ module.exports = exports = function(module, funcs){
 
                   //Check if branch exists, create if it does not
                   function(git_cb){
-                    gitExec('git', ['show-ref','--verify','--quiet','refs/heads/'+git_branch], function(err, rslt){
+                    funcs.gitExec(publish_path, ['show-ref','--verify','--quiet','refs/heads/'+git_branch], function(err, rslt){
                       if(!err && !rslt) return git_cb();
                       //Initialize git for the first time
                       funcs.deploy_log_info(deployment_id, 'Initializing git branch: '+git_branch);
-                      gitExec('git', ['checkout','-f','--orphan',git_branch], function(err, rslt){
+                      funcs.gitExec(publish_path, ['checkout','-f','--orphan',git_branch], function(err, rslt){
                         if(err) return git_cb(err);
                         funcs.deploy_log_info(deployment_id, 'Saving initial commit');
-                        gitExec('git', ['commit','--allow-empty','-m','Initial commit'], function(err, rslt){
+                        funcs.gitExec(publish_path, ['commit','--allow-empty','-m','Initial commit'], function(err, rslt){
                           if(err) return git_cb(err);
                           return git_cb();
                         });
@@ -747,7 +768,7 @@ module.exports = exports = function(module, funcs){
                   //Checking out target branch
                   function(git_cb){
                     funcs.deploy_log_info(deployment_id, 'Checking out git branch: '+git_branch);
-                    gitExec('git', ['checkout','-f',git_branch], function(err, rslt){
+                    funcs.gitExec(publish_path, ['checkout','-f',git_branch], function(err, rslt){
                       return git_cb(err);
                     });
                   }
@@ -927,8 +948,9 @@ module.exports = exports = function(module, funcs){
                 if(!publish_params.exec_pre_deployment) return cb();
                 funcs.deploy_log_info(deployment_id, 'Running pre-deployment task');
                 funcs.deploy_log_info(deployment_id, publish_params.exec_pre_deployment.cmd + ' ' + (publish_params.exec_pre_deployment.params||[]).join(' '));
-                shellExec(
+                funcs.shellExec(
                   publish_params.exec_pre_deployment.cmd,
+                  publish_path,
                   publish_params.exec_pre_deployment.params, function(err, rslt){
                   if(err) return cb(err);
                   if(rslt) rslt = rslt.trim();
@@ -944,12 +966,12 @@ module.exports = exports = function(module, funcs){
                 async.waterfall([
                   //Adding / committing all files to git
                   function(git_cb){
-                    gitExec('git', ['add','-A'], function(err, rslt){
+                    funcs.gitExec(publish_path, ['add','-A'], function(err, rslt){
                       if(err) return git_cb(err);
                       funcs.deploy_log_info(deployment_id, 'Saving deployment commit');
-                        gitExec('git', ['commit','--allow-empty','-m','Deployment '+deployment.deployment_tag], function(err, rslt){
+                        funcs.gitExec(publish_path, ['commit','--allow-empty','-m','Deployment '+deployment.deployment_tag], function(err, rslt){
                           if(err) return git_cb(err);
-                          gitExec('git', ['rev-parse','HEAD'], function(err, rslt){
+                          funcs.gitExec(publish_path, ['rev-parse','HEAD'], function(err, rslt){
                             if(err) return git_cb(err);
                             deployment_git_revision = (rslt||'').toString();
                             funcs.deploy_log_info(deployment_id, 'Revision: '+deployment_git_revision);
@@ -993,8 +1015,9 @@ module.exports = exports = function(module, funcs){
                 if(!publish_params.exec_post_deployment) return cb();
                 funcs.deploy_log_info(deployment_id, 'Running post-deployment task');
                 funcs.deploy_log_info(deployment_id, publish_params.exec_post_deployment.cmd + ' ' + (publish_params.exec_post_deployment.params||[]).join(' '));
-                shellExec(
+                funcs.shellExec(
                   publish_params.exec_post_deployment.cmd,
+                  publish_path,
                   publish_params.exec_post_deployment.params, function(err, rslt){
                   if(rslt) rslt = rslt.trim();
                   funcs.deploy_log_info(deployment_id, rslt);
@@ -1618,6 +1641,7 @@ module.exports = exports = function(module, funcs){
           var delfunc = function(){
             if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)) return file_cb();
             funcs.deploy_log_info(deployment_id, 'Deleting '+filepath);
+            funcs.deploy_log_change(deployment_id, 'Deleting file: '+relativepath);
             fs.unlink(filepath, file_cb);
           };
           //Always delete destination files
@@ -1642,6 +1666,7 @@ module.exports = exports = function(module, funcs){
             return dir_cb();
           }
           funcs.deploy_log_info(deployment_id, 'Deleting '+dirpath);
+          funcs.deploy_log_change(deployment_id, 'Deleting folder: '+relativepath);
           HelperFS.rmdirRecursive(dirpath, dir_cb);
         }, {
           file_before_dir: true,
@@ -1655,6 +1680,7 @@ module.exports = exports = function(module, funcs){
         async.eachSeries(foldernames, function(foldername, folder_cb){
           if(foldername in found_folders) return folder_cb();
           funcs.deploy_log_info(deployment_id, 'Creating folder '+foldername);
+          funcs.deploy_log_change(deployment_id, 'Creating folder: '+foldername);
           HelperFS.createFolderRecursive(path.join(deploy_path, foldername), folder_cb);
         }, fs_cb);
       },
@@ -1666,7 +1692,7 @@ module.exports = exports = function(module, funcs){
           var srcpath = path.join(publish_path, fname);
           var dstpath = path.join(deploy_path, fname);
           funcs.deploy_log_info(deployment_id, 'Copying file '+dstpath);
-          funcs.deploy_log_change(deployment_id, fname);
+          funcs.deploy_log_change(deployment_id, 'Copying file: '+fname);
           HelperFS.copyFile(srcpath, dstpath, file_cb);
         }, fs_cb);
       }
@@ -1822,6 +1848,7 @@ module.exports = exports = function(module, funcs){
       funcs.deploy_log_info(deployment_id, `Deleting ${total} remote files from ${remote_host_desc}${remote_path}`);
       return ftpClient.deleteFiles(files_to_delete, function(p){
         funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host_desc + p}`);
+        funcs.deploy_log_change(deployment_id, 'Deleting file: '+p);
       });
     })
 
@@ -1837,6 +1864,7 @@ module.exports = exports = function(module, funcs){
         funcs.deploy_log_info(deployment_id, `Deleting ${total} remote directories from ${remote_host_desc}`);
         return ftpClient.deleteDirectoriesRecursive(folders_to_delete, function(p){
           funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host_desc + p}`);
+          funcs.deploy_log_change(deployment_id, 'Deleting folder: '+p);
         });
     })
 
@@ -1851,6 +1879,7 @@ module.exports = exports = function(module, funcs){
       var dirs = operations.folders_to_create.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
       return ftpClient.createDirectoriesIfNotExists(dirs, function(p){
         funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Creating directory: ${remote_host_desc + p}`);
+        funcs.deploy_log_change(deployment_id, 'Creating folder: '+p);
       });
     })
 
@@ -1873,6 +1902,7 @@ module.exports = exports = function(module, funcs){
 
       return ftpClient.writeFiles(files_to_upload, function(p){
         funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Uploading file: ${remote_host_desc + p}`);
+        funcs.deploy_log_change(deployment_id, 'Copying file: '+p);
       });
     })
 
@@ -1977,7 +2007,7 @@ module.exports = exports = function(module, funcs){
           var page_fpath = path.join(publish_path, page_path);
           var fstream = fs.createReadStream(page_fpath);
           funcs.deploy_log_info(deployment_id, 'Uploading: '+page_path);
-          funcs.deploy_log_change(deployment_id, page_path);
+          funcs.deploy_log_change(deployment_id, 'Copying file: '+page_path);
           var uploadParams = {
             Bucket: bucket,
             Key: page_bpath,
@@ -1998,6 +2028,7 @@ module.exports = exports = function(module, funcs){
         async.eachSeries(s3_delete, function(page_path, page_cb){
           var page_bpath = bucket_prefix + page_path;
           funcs.deploy_log_info(deployment_id, 'Deleting: '+page_path);
+          funcs.deploy_log_change(deployment_id, 'Deleting file: '+page_path);
           s3.deleteObject({ Bucket: bucket, Key: page_bpath }, function(err, data){
             if(err) return page_cb(err);
             return page_cb();
@@ -2076,7 +2107,7 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Publish_Changed_Files');
+    var model = jsh.getModel(req, module.namespace + 'Publish_Change_Log');
 
     var deployment_id = req.params.deployment_id;
     if(!deployment_id) return next();
@@ -2084,35 +2115,271 @@ module.exports = exports = function(module, funcs){
 
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-    var sql = "select deployment_id, deployment_sts, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
+    var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
     appsrv.ExecRow(req._DBContext, sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment ID');
       var deployment = rslt[0];
 
-      if (verb == 'get') {
-        var logfile = funcs.deployment_getChangeFileName(deployment_id);
-        var log = '';
+      funcs.validateBranchAccess(req, res, deployment.branch_id, 'R%', ['PUBLISHER','WEBMASTER'], function(){
+        if (verb == 'get') {
+          var logfile = funcs.deployment_getChangeLogFileName(deployment_id);
+          var log = '';
 
-        fs.exists(logfile, function(exists){
-          Helper.execif(exists,
-            function(f){
-              fs.readFile(logfile, 'utf8', function(err, data){
-                if(err) return f();
-                log = data;
-                return f();
-              });
-            },
-            function(){
-              res.end(JSON.stringify({ '_success': 1, deployment: deployment, log: log }));
-            }
-          );
-        });
-        return;
-      }
-      return next();
+          fs.exists(logfile, function(exists){
+            Helper.execif(exists,
+              function(f){
+                fs.readFile(logfile, 'utf8', function(err, data){
+                  if(err) return f();
+                  log = data;
+                  return f();
+                });
+              },
+              function(){
+                res.end(JSON.stringify({ '_success': 1, deployment: deployment, log: log }));
+              }
+            );
+          });
+          return;
+        }
+        return next();
+      });
     });
   }
+
+  exports.req_deployment_download = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+    var model = jsh.getModel(req, module.namespace + 'Publish_Download');
+
+    var request_id = '';
+    var deployment_id = '';
+
+    if (req.params && (req.params.deployment_id)) deployment_id = parseInt(req.params.deployment_id);
+    if (req.query && (req.query.request_id)) request_id = Helper.escapeCSSClass(req.query.request_id);
+    if (req.query && (req.query.source=='js')) req.jsproxyid = 'cms_deployment_download_'+deployment_id+'_'+request_id;
+
+    if (verb == 'get'){
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+      if(!req.params || !req.params.deployment_id) return next();
+
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, ['|source','|request_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      funcs.validateDeploymentAccess(req, res, deployment_id, ['PUBLISHER','WEBMASTER'], function(){
+
+        //Check if deployment exists
+        sql_ptypes = [dbtypes.BigInt];
+        sql_params = { 'deployment_id': deployment_id };
+        validate = new XValidate();
+        verrors = {};
+        validate.AddValidator('_obj.deployment_id', 'Deployment ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+        sql = "select deployment_id,deployment_tag,deployment_sts,site_id from {schema}.v_my_deployment where deployment_id=@deployment_id";
+
+        var fields = [];
+        var datalockstr = '';
+        appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
+        sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
+
+        verrors = _.merge(verrors, validate.Validate('B', sql_params));
+        if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+        appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+          if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Deployment ID'); }
+          var deployment = rslt[0][0];
+
+          //Check if deployment status is complete
+          if(deployment.deployment_sts == 'FAILED'){ return Helper.GenError(req, res, -9, 'Cannot download failed deployment'); }
+          if(deployment.deployment_sts != 'COMPLETE'){ return Helper.GenError(req, res, -9, 'Cannot download incomplete deployment'); }
+
+          var downloadParams = { 
+            exec: 'deployment_download', 
+            deployment_id: deployment_id, 
+            dstStream: res, 
+            onStart: function(){
+              if(req.jsproxyid) Helper.SetCookie(req, res, jsh, req.jsproxyid, 'ready', { 'path': req.baseurl });
+            }
+          };
+          funcs.deploymentQueue.push(downloadParams, function(err){
+            if(err) return Helper.GenError(req, res, -99999, err.toString());
+          });
+        });
+      });
+    }
+    else return next();
+  }
+
+  exports.deployment_download = function (deployment_id, dstStream, onStart, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    var publish_path = '';
+    var deployment_git_revision = '';
+    var zip_filename = 'cms_deployment';
+    var site_files = {};
+
+    if(onStart) onStart();
+
+    async.waterfall([
+
+      //Get publish path
+      function (cb){
+        var sql = "select \
+          deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_git_revision, \
+          d.deployment_target_id, \
+          (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt \
+          from "+(module.schema?module.schema+'.':'')+"deployment d \
+          inner join "+(module.schema?module.schema+'.':'')+"deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
+          where deployment_sts='COMPLETE' and deployment_id=@deployment_id\
+        ";
+        appsrv.ExecRow('deployment', sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
+          if (err != null) { err.sql = sql; return cb(err); }
+          var deployment = (rslt ? rslt[0] : null);
+          if(!deployment) return cb(new Error('Invalid Deployment ID'));
+
+          publish_path = deployment.publish_tgt;
+          if(!publish_path){ return cb('Publish Target parameter is not defined'); }
+          publish_path = path.isAbsolute(publish_path) ? publish_path : path.join(jsh.Config.datadir,publish_path);
+          publish_path = path.normalize(publish_path);
+
+          deployment_git_revision = (deployment.deployment_git_revision||'');
+
+          zip_filename += '_'+HelperFS.cleanFileName(deployment.deployment_tag,'-')+'.zip';
+
+          return cb();
+        });
+      },
+
+      //Create output folder if it does not exist
+      function (cb){
+        return HelperFS.createFolderRecursive(publish_path, cb);
+      },
+
+      //Git - Initialize and Select Branch
+      function (cb) {
+        if(!cms.Config.git || !cms.Config.git.enabled){
+          return cb(new Error('GIT setup required for deployment download.  Please configure in app.config.js - jsHarmonyCMS.Config.git'));
+        }
+
+        async.waterfall([
+          //Initialize Git, if not initialized in publish folder
+          function(git_cb){
+            funcs.gitExec(publish_path, ['rev-parse','--show-toplevel'], function(err, rslt){
+              if(!err && rslt && (path.normalize(rslt)==publish_path)) return git_cb();
+              return git_cb(new Error('GIT not initialized in publish path.  Cannot find revision for download.'));
+            });
+          },
+
+          //Check if deployment commit
+          function(git_cb){
+            funcs.gitExec(publish_path, ['cat-file','-e',deployment_git_revision], function(err, rslt){
+              if(!err && !rslt) return git_cb();
+              return git_cb(new Error('Target deployment commit not found in publish folder.  Cannot find revision for download'));
+            });
+          },
+
+          //Checking out target revision
+          function(git_cb){
+            funcs.gitExec(publish_path, ['checkout','-f',deployment_git_revision], function(err, rslt){
+              return git_cb(err);
+            });
+          }
+
+        ], cb);
+      },
+
+      //Get list of all site files
+      function (cb){
+        var folders = {};
+
+        HelperFS.funcRecursive(publish_path, function (filepath, relativepath, file_cb) { //filefunc
+          var parentpath = path.dirname(relativepath);
+          var webpath = '';
+          if(parentpath=='.') webpath = relativepath;
+          else webpath = folders[parentpath] + '/' + path.basename(relativepath);
+          fs.readFile(filepath, null, function(err, filecontent){
+            if(err) return cb(err);
+            site_files[webpath] = webpath;
+            return file_cb();
+          });
+        }, function (dirpath, relativepath, dir_cb) {
+          if(relativepath=='.git') return dir_cb(false);
+          var parentpath = path.dirname(relativepath);
+          if(parentpath=='.') folders[relativepath] = relativepath;
+          else {
+            folders[relativepath] = folders[parentpath] + '/' + path.basename(relativepath);
+          }
+          return dir_cb();
+        }, {
+          file_before_dir: false,
+          preview_dir: function(dirpath, relativepath, dir_cb){
+            if(relativepath=='.git') return dir_cb(false);
+            return dir_cb();
+          }
+        }, cb);
+      },
+
+      function(cb){
+        //Create zip file and stream back to user
+
+        dstStream.writeHead(200, {
+          'Content-Type': 'application/zip',
+          'Content-disposition': 'attachment; filename='+zip_filename
+        });
+
+        var zipfile = new yazl.ZipFile();
+        _.each(site_files, function(data_file){
+          zipfile.addFile(path.join(publish_path,data_file), data_file);
+        });
+        zipfile.outputStream.on('end', function() {
+          return cb();
+        });
+        zipfile.outputStream.pipe(dstStream);
+        zipfile.end();
+      },
+    ], callback);
+  }
+
+  exports.validateDeploymentAccess = function(req, res, deployment_id, site_access, callback){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_id: deployment_id };
+
+    var sql = "select deployment_id from {schema}.v_my_deployment where deployment_id=@deployment_id"
+    if(site_access && site_access.length){
+      if(!_.isArray(site_access)) site_access = [site_access];
+      for(var i=0;i<site_access.length;i++){
+        sql_ptypes.push(dbtypes.VarChar(32));
+        sql_params['site_access'+i.toString()] = site_access[i];
+      }
+      sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_deployment.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
+    }
+    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
+      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target deployment');
+      callback(null);
+    });
+  }
+
 
   return exports;
 };

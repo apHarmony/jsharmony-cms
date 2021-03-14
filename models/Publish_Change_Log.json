@@ -1,21 +1,16 @@
 {
-  "Publish_Log": {
+  "Publish_Change_Log": {
     "layout":"form",
     "table":"{schema}.v_my_deployment",
-    "title":"Publish Log",
+    "title":"Publish Changed Files",
     "menu":"Publish",
     "actions":"B",
     "roles": {"PUBLISHER": "B"},
     "onecolumn":true,
     "onload":"_this.onload();",
-    "ondestroy": "_this.ondestroy()",
-    "buttons": [
-      { "name":"downloadZip", "link":"js:jsh.System.DownloadDeployment(xmodel.get('deployment_id', this))","icon":"download","text":"Download Published Files","style":"display:none;" },
-      { "name":"viewChangeLog", "link":"update:Publish_Change_Log","icon":"search","text":"Publish Change Log","style":"display:none;" },
-    ],
     "css":[
       ".xbody_<%=model.class%> { width:100%; padding-right:30px; box-sizing:border-box; padding-bottom:0px; }",
-      "#<%=model.class%>_deployment_log { padding-top:3px; padding-left:3px; margin-top:0; background-color:#fff; }"
+      "#<%=model.class%>_deployment_change_log { padding-top:3px; padding-left:3px; margin-top:0; background-color:#fff; }"
     ],
     "fields": [
       {"name":"deployment_id","caption":"Deployment ID","control":"label","captionstyle":"font-weight:bold;","key":true},
@@ -24,7 +19,7 @@
       {"name":"deployment_git_revision","caption":"Revision","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","control":"label"},
       {"name":"deployment_sts","caption":"Status","control":"label"},
-      {"control":"html","value":"<h3 style='margin-bottom:8px;'>Publish Log</h3><pre id='<%=model.class%>_deployment_log'></pre>"}
+      {"control":"html","value":"<h3 style='margin-bottom:8px;'>Changed Files</h3><pre id='<%=model.class%>_deployment_change_log'></pre>"}
     ]
   }
 }

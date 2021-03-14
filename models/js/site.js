@@ -214,4 +214,38 @@
     window.location.href = url;
   }
 
+  jsh.System.DownloadDeployment = function(deployment_id) {
+    //Save Changes Before Executing
+    if (jsh.XPage.GetChanges().length > 0) return XExt.Alert('Please save pending changes before continuing.');
+
+    var request_id = (new Date().getTime());
+    var url = jsh._BASEURL+'_funcs/deployment/download/'+deployment_id+'?source=js&request_id='+request_id;
+
+    //Add events to monitor status
+    var jsproxyid = 'cms_deployment_download_'+deployment_id.toString()+'_'+request_id.toString();
+    var loadObj = {};
+    jsh.xLoader.StartLoading(loadObj);
+    function waitForLoad(){
+      if(!loadObj) return;
+      var cookieVals = XExt.GetCookie(jsproxyid);
+      if(cookieVals.length){
+        jsh.xLoader.StopLoading(loadObj);
+        loadObj = null;
+        return;
+      }
+      else{
+        return setTimeout(waitForLoad, 100);
+      }
+    }
+    waitForLoad();
+
+    jsh.jsproxy_hooks[jsproxyid] = function(err, data){
+      jsh.xLoader.StopLoading(loadObj);
+      loadObj = null;
+      if(err) return XExt.Alert('Error #' + err.Number + ': ' + err.Message);
+    };
+
+    jsh.getFileProxy().prop('src', url);
+  }
+
 })(window.jshInstance);

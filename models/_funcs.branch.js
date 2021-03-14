@@ -59,7 +59,7 @@ module.exports = exports = function(module, funcs){
       if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
       if (!appsrv.ParamCheck('Q', Q, ['|source'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-      funcs.validateBranchAccess(req, res, branch_id, 'RW', ['PUBLISHER','WEBMASTER'], function(){
+      funcs.validateBranchAccess(req, res, branch_id, 'R%', ['PUBLISHER','WEBMASTER'], function(){
 
         //Check if branch exists
         sql_ptypes = [dbtypes.BigInt];

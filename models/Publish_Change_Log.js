@@ -11,7 +11,12 @@ jsh.App[modelid] = new (function(){
     XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         //Render Log
-        $('#'+xmodel.class+'_deployment_change_log').html(XExt.escapeHTMLBR(rslt.log));
+        if(!(rslt.log||'').trim()){
+          $('#'+xmodel.class+'_deployment_change_log').html('No changes detected');
+        }
+        else {
+          $('#'+xmodel.class+'_deployment_change_log').html(XExt.escapeHTMLBR(rslt.log));
+        }
       }
       else XExt.Alert('Error while loading data');
     });

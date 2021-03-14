@@ -12,7 +12,6 @@
       "(select branch_type from {schema}.v_my_branch_desc where branch_id=@branch_id) source_branch_type",
     ],
     "hide_system_buttons":["print"],
-    "onload": "_this.onload();",
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
       {"name":"source_branch_name","control":"label","caption":"Branch","captionstyle":"text-align:right;font-weight:bold;"},

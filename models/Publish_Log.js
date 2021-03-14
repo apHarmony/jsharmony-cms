@@ -5,12 +5,18 @@ jsh.App[modelid] = new (function(){
   var isActive = true;
 
   this.onload = function(){
+    this.updateButtons(xmodel.get('deployment_sts'));
     //Load API Data
     this.loadData();
   };
 
   this.ondestroy = function(){
     isActive = false;
+  }
+
+  this.updateButtons = function(deployment_sts){
+    if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.$root('.xform_button_viewChangeLog.xelem'+xmodel.class).show();
+    if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.$root('.xform_button_downloadZip.xelem'+xmodel.class).show();
   }
 
   this.loadData = function(){
@@ -20,6 +26,8 @@ jsh.App[modelid] = new (function(){
     XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var deployment_sts = (rslt.deployment.deployment_sts||'').toUpperCase();
+        _this.updateButtons(deployment_sts);
+        jsh.$root('.xform_label.deployment_sts.xelem'+xmodel.class).html(deployment_sts);
         //Auto Scroll if within 40px of bottom of screen
         var curDocumentHeight = jsh.XGrid.prototype._getDocumentHeight();
         var auto_scroll = (($(window).height() + $(window).scrollTop()) >= (curDocumentHeight - 50));
