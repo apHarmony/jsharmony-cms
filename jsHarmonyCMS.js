@@ -272,6 +272,17 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   this.jsh.Sites['main'].globalparams.isWebmaster = function (req) { return Helper.HasRole(req, "WEBMASTER"); }
   this.jsh.Sites['main'].globalparams.site_id = function (req) { return req.gdata.site_id; }
   this.jsh.Sites['main'].globalparams.site_name = function (req) { return req.gdata.site_name; }
+  this.jsh.Sites['main'].globalparams.branch_items = function(req){
+    var branch_items = {};
+    _.each(_this.BranchItems, function(branch_item, branch_item_name){
+      branch_items[branch_item_name] = {
+        name: branch_item.name,
+        caption: branch_item.caption,
+        editor_url: (branch_item.getEditorUrl ? branch_item.getEditorUrl(req) : undefined),
+      };
+    });
+    return branch_items;
+  }
 
   //Chain to onAuthComplete
   if(!this.jsh.Sites['main'].auth) this.jsh.Sites['main'].auth = {};
@@ -294,6 +305,8 @@ jsHarmonyCMS.prototype.initBranchItems = function(cb){
       item: branchItem.name,
       tbl_branch_item: branchItem.tbl_branch_item,
       tbl_item: branchItem.tbl_item,
+      item_caption_1: branchItem.caption[1],
+      item_caption_2: branchItem.caption[2],
     });
   }
   _this.jsh.DB['default'].SQLExt.Funcs[_this.schema+'.branch_items'] = JSON.stringify(sql_branch_items);
@@ -302,9 +315,12 @@ jsHarmonyCMS.prototype.initBranchItems = function(cb){
 
 jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
   var _this = this;
+  var jsh = _this.jsh;
   return {
     'page': {
       name: 'page',
+      caption: ['','Page','Pages'],
+      getEditorUrl: function(req){ return req.baseurl+_this.namespace+'Sitemap_Listing_Redirect' },
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_page',
       tbl_item: (_this.schema?_this.schema+'.':'')+'page',
       diff: {
@@ -468,6 +484,8 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
     },
     'media': {
       name: 'media',
+      caption: ['','Media','Media'],
+      getEditorUrl: function(req){ return req.baseurl+_this.namespace+'Media_Tree' },
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_media',
       tbl_item: (_this.schema?_this.schema+'.':'')+'media',
       diff: {
@@ -512,6 +530,8 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
     },
     'menu': {
       name: 'menu',
+      caption: ['','Menu','Menus'],
+      getEditorUrl: function(req){ return req.baseurl+_this.namespace+'Menu_Listing' },
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_menu',
       tbl_item: (_this.schema?_this.schema+'.':'')+'menu',
       diff: {
@@ -550,6 +570,8 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
     },
     'redirect': {
       name: 'redirect',
+      caption: ['','Redirect','Redirects'],
+      getEditorUrl: function(req){ return req.baseurl+_this.namespace+'Redirect_Listing' },
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_redirect',
       tbl_item: (_this.schema?_this.schema+'.':'')+'redirect',
       diff: {
@@ -571,6 +593,8 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
     },
     'sitemap': {
       name: 'sitemap',
+      caption: ['','Sitemap','Sitemaps'],
+      getEditorUrl: function(req){ return req.baseurl+_this.namespace+'Sitemap_Listing' },
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_sitemap',
       tbl_item: (_this.schema?_this.schema+'.':'')+'sitemap',
       diff: {

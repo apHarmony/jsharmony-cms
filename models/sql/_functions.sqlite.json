@@ -60,5 +60,24 @@
     ]
   },
   "jsHarmonyCMS_Upload": "insert into {schema}.v_my_{item}({columns}) values ({values}); select last_insert_rowid_override {item}_key from jsharmony_meta;",
-  "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and strftime('%Y-%m-%dT%H:%M:%f',deployment_date) <= strftime('%Y-%m-%dT%H:%M:%f',%%%%%%jsh.map.timestamp%%%%%%) order by deployment_date asc;"
+  "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and strftime('%Y-%m-%dT%H:%M:%f',deployment_date) <= strftime('%Y-%m-%dT%H:%M:%f',%%%%%%jsh.map.timestamp%%%%%%) order by deployment_date asc;",
+  "jsHarmonyCMS_Dashboard_BranchOverview": [
+    "select 'branch' code_val, branch_name code_txt, 1 cnt from {schema}.branch where branch_id={schema}.my_current_branch_id() union all ",
+    "foreach(%%%cms.branch_items%%%, union all , \"",
+    "select '{item}' code_val, '{item_caption_2}' code_txt, count(*) cnt from {tbl_branch_item} where branch_id={schema}.my_current_branch_id() and {item}_id is not null",
+    "\")"
+  ],
+  "jsHarmonyCMS_Dashboard_NewContentPieChart": [
+    "foreach(%%%cms.branch_items%%%, union all , \"",
+    "select '{item_caption_2}' code_txt, count(*) cnt from {tbl_item} where site_id={schema}.my_current_site_id() and {item}_orig_id is null and {item}_etstmp > datetime(jsharmony.my_now(),'-30 days')",
+    "\")"
+  ],
+  "jsHarmonyCMS_Dashboard_UserPieChart": [
+    "select (jsharmony.my_db_user_fmt(euser)) code_txt,cnt from",
+    "  (select euser, sum(cnt) cnt from ",
+    "    (foreach(%%%cms.branch_items%%%, union all , \"",
+    "      select {item}_euser euser, count(*) cnt from {tbl_item} where site_id={schema}.my_current_site_id() and {item}_etstmp > datetime(jsharmony.my_now(),'-30 days') group by {item}_euser",
+    "    \")) items",
+    "   group by euser) user_activity where euser <> 'USystem'"
+  ],
 }

@@ -1,0 +1,24 @@
+{
+  "Dashboard_NewContentPieChart": {
+    "layout":"form",
+    "title":"",
+    "caption":["","New Content","New Content"],
+    "roles": {"*":"B"},
+    "actions":"B",
+    "menu":"Dashboard",
+    "unbound":true,
+    "oninit":"_this.oninit(xmodel);",
+    "fields":[
+      {"control":"html","value":"<div class='clear chart_<%=model.class%>'><div class='key'></div></div>"}
+    ]
+  },
+  "Dashboard_NewContentPieChart_Data": {
+    "layout": "exec",
+    "title": "New Content Pie Chart Data",
+    "actions": "U",
+    "roles": {"*":"U"},
+    "sqlexec": "jsHarmonyCMS_Dashboard_NewContentPieChart",
+    "fields": [
+    ]
+  },
+}

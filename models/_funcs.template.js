@@ -1561,7 +1561,7 @@ module.exports = exports = function(module, funcs){
     if(!prevSeoCanonicalUrl) htdoc.insertHtml(headerInsertPosition, '<% if(page.seo.canonical_url){ %><link rel="canonical" href="<%=page.seo.canonical_url%>" /><% } %>');
     
     htdoc.insertHtml(headerInsertPosition, '<% if(page.css){ %><style type="text/css"><%-page.css%></style><% } %>');
-    htdoc.insertHtml(headerInsertPosition, '<% if(page.js){ %><script type="test/javascript"><%-page.js%></script><% } %>');
+    htdoc.insertHtml(headerInsertPosition, '<% if(page.js){ %><script type="text/javascript"><%-page.js%></script><% } %>');
     htdoc.insertHtml(headerInsertPosition, '<%-page.header%>');
     
     //1. If there is a body tag, add to end of body

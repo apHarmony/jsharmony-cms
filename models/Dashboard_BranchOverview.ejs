@@ -1,0 +1,44 @@
+<script type="text/x-jsharmony-template" class="<%=model.class%>_template_QuickLinks">
+<table cellspacing="0" cellpadding="0" border="0">
+  <%% var cur_branch = _.find(branch_data, function(branch_item){ return branch_item.code_val=='branch'; });  %%>
+  <%% if(cur_branch){ %%>
+    <tr class="short_break">
+      <th valign="bottom">Current Branch</th>
+      <td valign="bottom" colspan="2">
+        <%%=cur_branch.code_txt%%>
+      </td>
+    </tr>
+    <tr>
+      <th></th>
+      <td class="item_desc" colspan="2">
+        <a href="<%=jsh._BASEURL%><%=model.namespace%>Branch_Active_Listing">Check out a different branch</a>
+      </td>
+    </tr>
+  <%% } else { %%>
+    <tr>
+      <th valign="bottom">Current Branch</th>
+      <td valign="bottom" colspan="2">
+        (No branch)
+      </td>
+    </tr>
+    <tr>
+      <th></th>
+      <td colspan="2">
+        You do not have a branch checked out.<br/>
+        Please go the Branches tab to check out a branch.
+      </td>
+    </tr>
+  <%% } %%>
+  <%% _.each(branch_data, function(branch_item){ if(branch_item.code_val=='branch') return; %%>
+    <tr>
+      <th valign="bottom">&nbsp;<%%=branch_item.code_txt%%></th>
+      <td valign="bottom">
+        <%%=branch_item.cnt%%>
+      </td>
+      <td valign="bottom" width="100%" class="item_edit_container">
+        <a href="<%%=jsh.globalparams.branch_items[branch_item.code_val].editor_url%%>">Edit</a>
+      </td>
+    </tr>
+  <%% }); %%>
+</table>
+</script>

@@ -1,0 +1,42 @@
+.xform<%=model.class%> th, .xform<%=model.class%> td {
+  padding-bottom:10px;
+  line-height:1;
+}
+.xform<%=model.class%> tr.short_break th, .xform<%=model.class%> tr.short_break td {
+  padding-bottom:7px;
+}
+.xform<%=model.class%> th {
+  font-family: 'PT Sans', arial, helvetica, sans-serif;
+  text-align:left;
+  font-weight:normal;
+  font-size:1.5em;
+  color:#555;
+  padding-right:19px;
+  white-space:nowrap;
+}
+.xform<%=model.class%> td {
+  font-family: 'PT Sans', arial, helvetica, sans-serif;
+  font-size:1.2em;
+}
+.xform<%=model.class%> td.item_desc {
+  font-size:1em;
+  padding-left:4px;
+  padding-bottom:12px;
+}
+.xform<%=model.class%> td.item_edit_container {
+  padding-left:16px;
+}
+.xform<%=model.class%> td.item_edit_container a {
+  display:inline-block;
+  padding:3px 15px;
+  background-color:#306EBF;
+  color:#fff;
+  border:1px solid #2D68B5;
+  font-size:0.9em;
+  position:relative;
+  top:3px;
+}
+.xform<%=model.class%> td.item_edit_container a:hover {
+  background-color:#3477CF;
+  text-decoration:none;
+}

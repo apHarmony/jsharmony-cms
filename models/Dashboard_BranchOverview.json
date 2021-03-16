@@ -1,0 +1,24 @@
+{
+  "Dashboard_BranchOverview": {
+    "layout":"form",
+    "title":"",
+    "caption":["","Content","Content"],
+    "roles": {"*":"B"},
+    "actions":"B",
+    "menu":"Dashboard",
+    "unbound":true,
+    "oninit":"_this.oninit(xmodel);",
+    "fields":[
+      {"control":"html","value":"<div class='clear <%=model.class%>_content'></div>"}
+    ]
+  },
+  "Dashboard_BranchOverview_Data": {
+    "layout": "exec",
+    "title": "Branch Overview Data",
+    "actions": "U",
+    "roles": {"*":"U"},
+    "sqlexec": "jsHarmonyCMS_Dashboard_BranchOverview",
+    "fields": [
+    ]
+  }
+}

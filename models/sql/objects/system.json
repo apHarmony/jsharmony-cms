@@ -73,9 +73,16 @@
     ],
   },
 
+  "jsharmony.txt": {
+    "init_data": [
+      { "sql": "update jsharmony.txt set txt_body = 'Welcome to the jsHarmony CMS' where txt_process='CMS' and txt_attrib='Dashboard';" }
+    ],
+  },
+
   "jsharmony.menu": {
     "init_data": [
       { "sql": "update jsharmony.menu set menu_cmd='jsHarmonyCMS/Dashboard' where menu_name='Dashboard' and menu_id=3;" },
+      { "sql": "delete from jsharmony.sys_menu_role where menu_id in (700);" },
 
       { "sql": "delete from jsharmony.sys_menu_role where menu_id in (300,30001,30002,30003,30004,350,35001,35002,35003,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },
       { "sql": "delete from jsharmony.menu where menu_id in (300,30001,30002,30003,30004,350,35001,35002,35003,400,40001,450,45001,500,50001,50002,50003,600,60001,60002);" },

@@ -1,0 +1,40 @@
+.chart_<%=model.class%> {
+  margin-top:10px;
+  margin-bottom:20px;
+  position:relative;
+}
+.chart_<%=model.class%> .key {
+  position:absolute;
+  top:340px;
+  text-align:center;
+  padding-left:10px;
+  padding-right:10px;
+  max-height:69px;
+  overflow-y:auto;
+  width:100%;
+  box-sizing:border-box;
+}
+.chart_<%=model.class%> .key .item {
+  display: inline-block;
+  margin-right:15px;
+  margin-bottom:3px;
+}
+.chart_<%=model.class%> .key .box {
+  display:inline-block;
+  width:13px;
+  height:13px;
+  border:1px solid #ccc;
+  position:relative;
+  top:2px;
+  margin-right:4px;
+}
+.chart_<%=model.class%> .arc text {
+  font-family: 'Roboto', arial, helvetica, sans-serif;
+  font-size:12px;
+  font-weight:bold;
+  text-anchor: middle;
+}
+.chart_<%=model.class%> .arc path {
+  stroke: #fff;
+  stroke-width: 2;
+}
