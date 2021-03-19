@@ -60,5 +60,5 @@
     ]
   },
   "jsHarmonyCMS_Upload": "insert into {schema}.v_my_{item}({columns}) values ({values}) returning {item}_key;",
-  "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc;"
+  "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and deployment_date <= %%%%%%jsh.map.timestamp%%%%%% order by deployment_date asc;",
 }

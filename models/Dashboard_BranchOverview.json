@@ -17,7 +17,12 @@
     "title": "Revision Overview Data",
     "actions": "U",
     "roles": {"*":"U"},
-    "sqlexec": "jsHarmonyCMS_Dashboard_BranchOverview",
+    "sqlexec": [
+      "select 'branch' code_val, branch_desc code_txt, 1 cnt from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id() union all ",
+      "foreach(%%%cms.branch_items%%%, union all , \"",
+      "select '{item}' code_val, '{item_caption_2}' code_txt, count(*) cnt from {tbl_branch_item} where branch_id={schema}.my_current_branch_id() and {item}_id is not null",
+      "\")"
+    ],
     "fields": [
     ]
   }
