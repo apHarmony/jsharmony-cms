@@ -1,7 +1,7 @@
 {
   "Branch_Submit_Review": {
     "layout": "exec",
-    "title": "Submit Branch for Review",
+    "title": "Submit Revision for Review",
     "actions": "U",
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
     "sqlexec": [

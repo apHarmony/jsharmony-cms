@@ -110,7 +110,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
       if (!rslt || !rslt.length || !rslt[0] || !rslt[0].site_id){
         //If no branch checked out - show error message
         var url = req.baseurl+'/'+cms.namespace+'Branch_Active_Listing';
-        return res.end('<html><body>Please check out a CMS branch: <a href="'+Helper.escapeHTML(url)+'">'+Helper.escapeHTML(url)+'</a></body></html>');
+        return res.end('<html><body>Please check out a CMS revision: <a href="'+Helper.escapeHTML(url)+'">'+Helper.escapeHTML(url)+'</a></body></html>');
       }
 
       req.site_id = rslt[0].site_id;

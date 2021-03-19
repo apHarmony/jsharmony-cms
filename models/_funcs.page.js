@@ -461,7 +461,7 @@ module.exports = exports = function(module, funcs){
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){
         if(Q.page_id) return Helper.GenError(req, res, -4, 'Page not found in current site');
-        return Helper.GenError(req, res, -4, 'Page not found in current branch');
+        return Helper.GenError(req, res, -4, 'Page not found in current site revision');
       }
       var page = rslt[0][0];
 
@@ -470,7 +470,7 @@ module.exports = exports = function(module, funcs){
 
       if(!Q.page_id){
         if(Q.branch_id){
-          if(Q.branch_id.toString()!=(page.branch_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The branch has changed.'); }
+          if(Q.branch_id.toString()!=(page.branch_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The revision has changed.'); }
         }
         if(Q.page_template_id){
           if(Q.page_template_id.toString()!=(page.page_template_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The template has changed.'); }
@@ -501,7 +501,7 @@ module.exports = exports = function(module, funcs){
             sql = "select v_my_branch_access.branch_id,branch_name,site_id from {schema}.v_my_branch_access inner join {schema}.branch_page on branch_page.branch_id=v_my_branch_access.branch_id where v_my_branch_access.branch_id=@branch_id and branch_access like 'R%' and (branch_page.page_key=(select page_key from {schema}.page where page_id=@page_id))";
             appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { page_id: page.page_id, branch_id: branch_id }, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Branch or Page'); }
+              if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Site Revision or Page'); }
               site_id = rslt[0][0].site_id;
               return cb();
             });
@@ -747,7 +747,7 @@ module.exports = exports = function(module, funcs){
 
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a branch'); }
+      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a revision'); }
 
       var devInfo = rslt[0][0];
 
@@ -863,7 +863,7 @@ module.exports = exports = function(module, funcs){
         if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
         if (!rslt || !rslt.length || !rslt[0]) {
           if(Q.devMode) Helper.GenError(req, res, -1, 'Site not found');
-          else Helper.GenError(req, res, -1, 'Branch not checked out');
+          else Helper.GenError(req, res, -1, 'Revision not checked out');
         }
 
         var deployment_target_params = rslt[0].deployment_target_params || '';
@@ -885,8 +885,8 @@ module.exports = exports = function(module, funcs){
           if(page_template.location == 'LOCAL'){
             if(!cms.PreviewServer) return Helper.GenError(req, res, -9, 'LOCAL Templates require a Preview Server to be running');
             url = path.join(cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]), page_template.path);
-            //Generate an error if the preview server branch is not checked out
-            if(current_branch_site_id != site_id) return Helper.GenError(req, res, -9, 'Please check out a branch in this site to preview the template');
+            //Generate an error if the preview server revision is not checked out
+            if(current_branch_site_id != site_id) return Helper.GenError(req, res, -9, 'Please check out a revision in this site to preview the template');
           }
           if(page_template.remote_templates && page_template.remote_templates.editor) {
             url = page_template.remote_templates.editor;

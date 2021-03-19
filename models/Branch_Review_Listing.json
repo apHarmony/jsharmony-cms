@@ -4,19 +4,19 @@
     "table":"{schema}.branch",
     "actions":"B",
     "roles": {"PUBLISHER": "B"},
-    "caption":["Branch","Branches"],
-    "title":"Branch Review",
-    "menu":"jsHarmonyCMS/Branch_Review_Listing",
-    "breadcrumbs":"#CMS_SITE_BREADCRUMBS",
+    "caption":["Revision","Revisions"],
+    "title":"Revisions Submitted for Publish Review",
+    "hide_system_buttons":["search","export"],
+    "rowlimit":1000,
     "oninit": "jsh.System.RequireSite(xmodel);",
-    "noresultsmessage":"No branches waiting for review.",
+    "noresultsmessage":"No revisions waiting for review.",
     "sqlwhere":"branch_sts='REVIEW' and (site_id={schema}.my_current_site_id())",
     "tablestyle":"min-width:400px;",
     "fields": [
-      {"name":"site_name","caption":"Site Name","sqlselect":"(select site_name from {schema}.site where {schema}.site.site_id={schema}.branch.site_id)"},
-      {"name":"branch_desc","caption":"Branch","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)","link":"update:Branch_Review"},
+      {"name":"branch_desc","caption":"Name","cellstyle":"min-width:200px;","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.branch.branch_id)","link":"update:Branch_Review"},
       {"name":"branch_user_id_fmt","caption":"Author","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))","control":"label","actions":"B"},
-      {"name":"branch_data_mtstmp_fmt","type":"datetime","caption":"Last Modified","sqlselect":"$ifnull(branch_data_mtstmp,branch_mtstmp)","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]}
+      {"name":"branch_data_mtstmp_fmt","type":"datetime","caption":"Last Modified","sqlselect":"$ifnull(branch_data_mtstmp,branch_mtstmp)","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]},
+      {"caption":"Review","control":"html","link":"update:Branch_Review","captionstyle":"text-align:center;","cellclass":"jsHarmonyCms_action_button","value":"Review"},
     ]
   }
 }

@@ -22,7 +22,7 @@ jsh.App[modelid] = new (function(){
       var jprompt = jsh.$root('.xdialogblock ' + sel);
 
       //Validate File Selected
-      if (!jprompt.find('.dst_branch_id').val()) return XExt.Alert('Please select a target branch for the merge.');
+      if (!jprompt.find('.dst_branch_id').val()) return XExt.Alert('Please select a target revision for the merge.');
 
       var mergeType = 'apply';
       var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");

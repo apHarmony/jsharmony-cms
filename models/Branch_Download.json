@@ -1,8 +1,8 @@
 {
   "Branch_Download": {
     "layout":"form",
-    "title":"Download Branch",
-    "menu":"Branches",
+    "title":"Download Revision",
+    "menu":"Revisions",
     "onecolumn":true,
     "roles": {"PUBLISHER": "BU"},
     "sqlselect":[
@@ -14,7 +14,7 @@
     "hide_system_buttons":["print"],
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
-      {"name":"source_branch_name","control":"label","caption":"Branch","captionstyle":"text-align:right;font-weight:bold;"},
+      {"name":"source_branch_name","control":"label","caption":"Revision","captionstyle":"text-align:right;font-weight:bold;"},
       {"name":"source_branch_type","control":"hidden","actions":"B"},
       {"control":"button","value":"Download","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "jsh.System.DownloadBranch(xmodel.get('branch_id', this))"}
     ]

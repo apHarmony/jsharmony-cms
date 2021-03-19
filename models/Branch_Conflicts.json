@@ -6,8 +6,8 @@
     "roles": {"PUBLISHER": "BU","AUTHOR": "BU"},
     "sqlwhere":"(site_id={schema}.my_current_site_id())",
     "actions":"BU",
-    "caption":["Branch","Branches"],
-    "title":"Branch Conflicts",
+    "caption":["Revision","Revisions"],
+    "title":"Revision Conflicts",
     "onload":"_this.onload(xmodel, callback);",
     "buttons":[
       { "name":"abortMerge", "link":"js:_this.abortMerge(this)","icon":"delete","text":"Abort","class":"Branch_Conflicts_buttonAbort", "roles": {"AUTHOR": "U","PUBLISHER": "U"} }

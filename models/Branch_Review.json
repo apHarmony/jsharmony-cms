@@ -5,12 +5,12 @@
     "onecolumn":true,
     "roles": {"PUBLISHER": "B"},
     "actions":"B",
-    "caption":["Branch","Branches"],
-    "title":"Branch Review",
+    "caption":["Revision","Revisions"],
+    "title":"Revision Review",
     "buttons":[
       { "name":"approveBranch", "link":"js:_this.approveBranch(xmodel);","icon":"ok","text":"Approve" },
       { "name":"rejectBranch", "link":"js:_this.rejectBranch(xmodel);","icon":"delete","text":"Reject" },
-      { "name":"branchSummary", "link":"update:Branch_Summary&branch_id","icon":"browse","text":"Branch Summary" }
+      { "name":"branchSummary", "link":"update:Branch_Summary&branch_id","icon":"browse","text":"Revision Details" }
     ],
     "sqlwhere":"branch_sts='REVIEW' and (site_id={schema}.my_current_site_id())",
     "fields": [
@@ -21,7 +21,7 @@
   },
   "Branch_Review_Approve": {
     "layout": "exec",
-    "title": "Approve Branch",
+    "title": "Approve Revision",
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
@@ -33,7 +33,7 @@
   },
   "Branch_Review_Reject": {
     "layout": "exec",
-    "title": "Reject Branch",
+    "title": "Reject Revision",
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [

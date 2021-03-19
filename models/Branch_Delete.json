@@ -1,8 +1,8 @@
 {
   "Branch_Delete": {
     "layout":"form",
-    "title":"Delete Branch",
-    "menu":"Branches",
+    "title":"Delete Revision",
+    "menu":"Revisions",
     "onecolumn":true,
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
     "sqlselect":[
@@ -18,9 +18,9 @@
     "hide_system_buttons":["print"],
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
-      {"name":"branch_name","control":"label","caption":"Deleting Branch","captionstyle":"text-align:right;font-weight:bold;"},
+      {"name":"branch_name","control":"label","caption":"Deleting Revision","captionstyle":"text-align:right;font-weight:bold;"},
       {"control":"html","value":"<br/>"},
-      {"control":"html","caption":"&#x26A0; Warning","value":"This action cannot be undone.  Are you sure you want to delete this branch?<br/>","nl":true,"captionstyle":"color:red;font-weight:bold;text-align:right;"},
+      {"control":"html","caption":"&#x26A0; Warning","value":"This action cannot be undone.  Are you sure you want to delete this revision?<br/>","nl":true,"captionstyle":"color:red;font-weight:bold;text-align:right;"},
       {"control":"button","value":"Yes","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "XForm.prototype.XExecutePost(xmodel.id+'/?branch_id='+xmodel.get('branch_id'), { }, function(rslt){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing'); });"},
       {"control":"button","value":"No","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');","nl":false}
     ]

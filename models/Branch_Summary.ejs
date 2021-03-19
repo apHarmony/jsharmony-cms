@@ -1,6 +1,6 @@
 <div style="display:none;">
-  <div class="<%=model.class%>_Merge xdialogbox xpromptbox" style="min-width:450px;">
-    <h3>Merge into the Current Branch</h3>
+  <div class="<%=model.class%>_Merge xdialogbox xpromptbox" style="min-width:550px;">
+    <h3>Merge into the Current Revision</h3>
     <div align="left" style="padding-top:15px;">
       <div class="head">Merge From:</div>
       <div class="src_branch_desc plain"></div>
@@ -11,21 +11,21 @@
       <h4>Merge Type:</h4>
       <table border="0">
         <tr>
-          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="changes" checked="checked" class="default_focus"> Branch Changes</label></td>
+          <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="changes" checked="checked" class="default_focus"> Revision Changes</label></td>
           <td class="plain">
-            Add this branch's changes to the destination branch's changes. Changes from both branches will be merged to production to publish.
+            Add this revision's changes to the destination revision's changes. Changes from both revisions will be merged to production to publish.
           </td>
         </tr>
         <tr>
           <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="rebase"> Rebase</label></td>
           <td class="plain">
-            Make this branch the parent of the destination branch, and re-apply any of the destination branch's changes. Only the destination branch's changes will be merged to production on publish.
+            Make this revision the parent of the destination, and then re-apply any of the destination revision's changes. Only the destination revision's changes will be merged to production on publish.
           </td>
         </tr>
         <tr>
           <td class="head"><label><input type="radio" name="<%=model.class%>_Merge_Type_option" value="overwrite"> Overwrite</label></td>
           <td class="plain">
-            Completely overwrite the destination branch with this branch, including unchanged files. Any changes in the destination branch will be lost, and any changes in this branch will be merged to production on publish.
+            Completely overwrite the destination with this revision, including unchanged files. Any changes in the destination revision will be lost, and any changes in this revision will be merged to production on publish.
           </td>
         </tr>
       </table>

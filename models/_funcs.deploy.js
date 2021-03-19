@@ -602,7 +602,7 @@ module.exports = exports = function(module, funcs){
                   function(git_cb){
                     funcs.gitExec(publish_path, ['show-ref','--verify','--quiet','refs/heads/'+git_branch], function(err, rslt){
                       if(!err && !rslt) return git_cb();
-                      return git_cb(new Error('Target branch not found in publish folder.  Cannot find revision for deployment'));
+                      return git_cb(new Error('Target revision not found in publish folder.  Cannot find revision for deployment'));
                     });
                   },
 

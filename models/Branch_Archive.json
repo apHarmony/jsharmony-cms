@@ -1,7 +1,7 @@
 {
   "Branch_Archive": {
     "layout": "exec",
-    "title": "Archive Branch",
+    "title": "Archive Revision",
     "actions": "U",
     "roles": {"AUTHOR": "BU","PUBLISHER": "BU"},
     "sqlexec": "update {schema}.branch set branch_sts='ARCHIVE' where branch_id=@branch_id and (({schema}.my_user_is_publisher(branch.site_id) = 1) or (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_type='USER' and branch_sts='ACTIVE' and branch_access='RW')))",

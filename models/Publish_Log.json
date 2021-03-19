@@ -11,7 +11,8 @@
     "ondestroy": "_this.ondestroy()",
     "buttons": [
       { "name":"downloadZip", "link":"js:jsh.System.DownloadDeployment(xmodel.get('deployment_id', this))","icon":"download","text":"Download Published Files","style":"display:none;" },
-      { "name":"viewChangeLog", "link":"update:Publish_Change_Log","icon":"search","text":"Publish Change Log","style":"display:none;" },
+      { "name":"viewChangeLog", "link":"update:Publish_Change_Log","icon":"search","text":"View Change Log","style":"display:none;" },
+      { "name":"redeploy","link":"update:Publish_Redeploy&deployment_id","icon":"upload","text":"Redeploy","style":"display:none;" },
     ],
     "css":[
       ".xbody_<%=model.class%> { width:100%; padding-right:30px; box-sizing:border-box; padding-bottom:0px; }",
@@ -21,8 +22,8 @@
       {"name":"deployment_id","caption":"Deployment ID","control":"label","captionstyle":"font-weight:bold;","key":true},
       {"name":"site_name","caption":"Site","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_tag","caption":"Tag","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
-      {"name":"deployment_git_revision","caption":"Revision","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
-      {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","control":"label"},
+      {"name":"deployment_target_name","caption":"Deployment Target","control":"label","sqlselect":"(select deployment_target_name from {schema}.deployment_target where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
+      {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_sts","caption":"Status","control":"label"},
       {"control":"html","value":"<h3 style='margin-bottom:8px;'>Publish Log</h3><pre id='<%=model.class%>_deployment_log'></pre>"}
     ]

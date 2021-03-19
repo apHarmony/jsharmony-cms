@@ -102,7 +102,7 @@ module.exports = exports = function(module, funcs){
                     
                     appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
                       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-                      if(!rslt || !rslt.length || !rslt[0]){ return download_cb(new Error('Error downloading branch data')); }
+                      if(!rslt || !rslt.length || !rslt[0]){ return download_cb(new Error('Error downloading revision data')); }
                       branchData[branch_item_type] = rslt[0];
                       return f();
                     });
@@ -218,7 +218,7 @@ module.exports = exports = function(module, funcs){
             if (file_ext != '.zip') { return Helper.GenError(req, res, -32, 'File extension is not supported.'); }
             zip_file = path.join(jsh.Config.datadir, 'temp', req._DBContext, fname);
             HelperFS.getFileStats(req, res, zip_file, function (err, stat) {
-              if (err != null) { return Helper.GenError(req, res, -33, 'Branch content file not found.'); }
+              if (err != null) { return Helper.GenError(req, res, -33, 'Revision content file not found.'); }
               upload_cb(null);
             });
           },
@@ -271,7 +271,7 @@ module.exports = exports = function(module, funcs){
               else branch_item_cb();
             }, function(err){
               if(err) return upload_cb(err);
-              if(errors.length) return upload_cb('Errors importing branch: \n'+errors.join('\n'));
+              if(errors.length) return upload_cb('Errors importing revision: \n'+errors.join('\n'));
               return upload_cb();
             });
           },
@@ -1089,7 +1089,7 @@ module.exports = exports = function(module, funcs){
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
-      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target branch');
+      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target revision');
       callback(null);
     });
   }
@@ -1112,7 +1112,7 @@ module.exports = exports = function(module, funcs){
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
-      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target branch');
+      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target revision');
       callback(null);
     });
   }

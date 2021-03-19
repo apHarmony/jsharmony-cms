@@ -749,7 +749,7 @@ jsh.App[modelid] = new (function(){
     page_key = parseInt(page_key);
     if(!page_key) return XExt.Alert('Page key is required');
 
-    //Get page properties from server
+    //Get page settings from server
     var execModel = xmodel.module_namespace+'Page_Tree_Listing';
     XForm.Get(execModel, { rowstart: 0, rowcount: 1, d: JSON.stringify({ page_key: page_key }) }, { }, function(rslt){
       if(!rslt || !rslt[execModel] || !rslt[execModel].length){
@@ -786,20 +786,20 @@ jsh.App[modelid] = new (function(){
     page_key = parseInt(page_key);
     if(!page_key) return XExt.Alert('Page key is required');
 
-    //Get page properties from server
+    //Get page settings from server
     _this.getPageInfo(page_key, function(page){
       _this.openPageEditor(page);
     });
   }
 
-  this.editPageProperties = function(page_key){
+  this.editPageSettings = function(page_key, focus_target){
     if(!_this.commitInfo()) return;
 
     page_key = parseInt(page_key);
     if(!page_key) return XExt.Alert('Page key is required');
 
     var xform = xmodel.controller.form;
-    var sel = '.'+xmodel.class+'_PageProprties';
+    var sel = '.'+xmodel.class+'_PageSettings';
 
     _this.getPageInfo(page_key, function(page){
       //Render Dialog for Page
@@ -812,6 +812,9 @@ jsh.App[modelid] = new (function(){
         jprompt.find('.page_path').val(page.page_path);
         jprompt.find('.page_title').val(page.page_title);
         jprompt.find('.page_template_id').val(page.page_template_id);
+
+        jprompt.find('input,select').removeClass('default_focus');
+        if(focus_target) jprompt.find('.'+focus_target).addClass('default_focus');
       }, function (success) { //onAccept
         var jprompt = jsh.$root('.xdialogblock ' + sel);
 

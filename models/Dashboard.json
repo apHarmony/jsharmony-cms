@@ -11,13 +11,13 @@
     "sqlselect": [
       "select ",
       "(select txt_body from jsharmony.txt where txt_process='CMS' and txt_attrib='Dashboard') as motd,",
-      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No branch currently checked out)') branch_desc,",
+      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No revision currently checked out)') branch_desc,",
       "(select count(note_id) from jsharmony.note where note_scope='S' and note_type='S') note_sys_count,",
       "(select {schema}.my_current_branch_id()) branch_id",
       "from jsharmony.single"
     ],
     "formstyle": "min-width:900px;",
-    "nokey": 1,
+    "nokey": true,
     "onload":"jsh.$root('.Dashboard_MOTD').html(xmodel.controller.form.Data.motd); if(parseInt(xmodel.get('note_sys_count'))) jsh.$root('.xform'+xmodel.class+' .qnssl').show();",
     "css":[
       ".xform<%=model.class%> .xsubform.Dashboard_BranchOverview .xpanel { border:0; padding:2px; }"

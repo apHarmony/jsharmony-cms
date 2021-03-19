@@ -235,7 +235,6 @@ Dialog.prototype.open = function() {
 
   this.load(function(xmodel) {
 
-
     var $wrapper = _this._jsh.$(formSelector);
     _this.registerLovs(xmodel);
     var lastScrollTop = 0

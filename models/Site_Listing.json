@@ -11,14 +11,22 @@
     "oncommit": "XPage.Reload({ browserRefresh:true });",
     "rowclass": "<%=xejs.iif(datarow['site_checked_out']==1,'site_checked_out')%>",
     "sqlwhere": "site_id in (select site_id from {schema}.v_sys_user_site_access where sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access is not null)",
+    "css": [
+      ".xform<%=model.class%> .site_checkout_button .text_checked_out { display:none; }",
+      ".xform<%=model.class%> .site_checked_out .site_checkout_button .text_not_checked_out { display:none; }",
+      ".xform<%=model.class%> .site_checked_out .site_checkout_button .text_checked_out { display:inline; }",
+      ".xform<%=model.class%> .site_checked_out .site_checkout_button .jsHarmonyCms_action_button { background-color:transparent; color:#333; border-color:transparent; padding-right:0; padding-left:0; cursor:default; }",
+    ],
     "fields": [
       {"name":"site_id","caption":"Site ID","control":"hidden","key":true,"actions":"B"},
       {"name":"site_checked_out","control":"hidden","actions":"B","sqlselect":"(case site_id when {schema}.my_current_site_id() then 1 else 0 end)"},
       {"name":"site_name","caption":"Site Name","actions":"B","control":"label"},
       {"name":"site_sts","caption":"Status","actions":"B","control":"label"},
       {"name":"sys_user_site_editor","caption":"My Preview / Editor","control":"dropdown","lov":{ "blank": "(Default)", "parent":"site_id", "sql2": "select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and deployment_target_sts='ACTIVE' order by deployment_target_name" }},
-      {"control":"html","caption":"Manage Site","link":"update:Site_Tabs","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }},
-      {"control":"label","caption":"Checkout Site","cellstyle":"text-align:center;","controlstyle":"position:relative;top:-1px;cursor:pointer;","onclick":"jsh.System.setCurrentSite(xmodel.get('site_id',this),jsh._BASEURL+xmodel.namespace+'Branch_Active_Listing')","value":"<img src='/images/icon_export.png' class='xicon' />"},
+      {"control":"html","caption":"Configure Site","link":"update:Site_Tabs","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }},
+      {"control":"label","caption":"Checkout Site","cellstyle":"vertical-align:middle;text-align:center;","controlstyle":"position:relative;top:-1px;cursor:pointer;","controlclass":"site_checkout_button","captionstyle":"text-align:center;",
+        "onclick":"if(xmodel.get('site_id', this) == jsh.globalparams.site_id) return XExt.Alert('Site is currently checked out.'); jsh.System.setCurrentSite(xmodel.get('site_id',this),jsh._BASEURL+xmodel.namespace+'Branch_Active_Listing')",
+        "value":"<a class='jsHarmonyCms_action_button'><span class='text_not_checked_out'>Checkout</span><span class='text_checked_out'>(Checked Out)</span></a>"},
     ]
   }
 }

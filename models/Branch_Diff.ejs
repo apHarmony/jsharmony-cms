@@ -1,6 +1,6 @@
 <hr/>
 <link rel="stylesheet" type="text/css" href="/css/diff2html.min.css">
-<h3>Branch Changes <div class="diff_editor_selection_container"></div></h3>
+<h3>Revision Changes <div class="diff_editor_selection_container"></div></h3>
 <div class='clear diff_display' style='margin-top:10px;margin-bottom:20px;'></div>
 <div class='spacer_diff'></div>
 
@@ -15,8 +15,10 @@
     <h4 class="branch_diff_item_header">
       <# if(branch_type=='USER'){ #>
         No changes in this branch
+      <# } else if(branch_type=='PUBLIC'){ #>        
+        Releases do not store a change history.  Checkout the release to view its contents.
       <# } else { #>
-        <#=branch_type#> branches do not store a change history.  Checkout branch to view its contents.
+        <#=branch_type#> revisions do not store a change history.  Checkout revision to view its contents.
       <# } #>
     </h4>
   <# } #>

@@ -5,20 +5,24 @@
     "onecolumn":true,
     "roles": {"PUBLISHER": "B","AUTHOR": "B", "VIEWER": "B"},
     "actions":"B",
-    "caption":["Branch","Branches"],
+    "caption":["Revision","Revisions"],
     "title":"",
     "onload":"_this.onload(xmodel, callback);",
     "fields": [
       {"name":"branch_id","control":"hidden","key":true},
-      {"name":"branch_desc","caption":"Branch","control":"label","captionstyle":"font-weight:bold;text-align:right;"},
+      {"name":"site_name","caption":"Site","control":"label","captionstyle":"font-weight:bold;text-align:right;"},
+      {"name":"branch_desc","caption":"Revision","control":"label"},
       {"name":"branch_user_id_fmt","caption":"Author","control":"label","sqlselect":"(jsharmony.get_sys_user_name(branch_user_id))"},
       {"name":"branch_sts","caption":"Status","control":"label"},
       {"name":"branch_data_mtstmp_fmt","type":"datetime","caption":"Last Modified","sqlselect":"$ifnull(branch_data_mtstmp,branch_mtstmp)","control":"label","format":["date","MM/DD/YYYY h:mm a"]},
+      {"caption":"Actions","control":"html","captionstyle":"display:none;vertical-align:top;padding-top:5px;font-weight:bold;text-align:right;",
+        "value":"<div class='<%=model.class%>_actions_bar jsHarmonyCms_Branch_Summary_Actions_Bar'></div>"},
       {"name":"branch_merge_desc","caption":"Merge In Progress","control":"label","captionstyle":"font-weight:bold;text-align:right;","block":true,"blockclass":"branch_merge_desc","sqlselect":"(select branch_desc from {schema}.branch merge_branch inner join {schema}.v_my_branch_desc merge_branch_desc on (merge_branch.branch_id=v_my_branch_desc.branch_id and merge_branch.branch_merge_id=merge_branch_desc.branch_id))"},
       {"name":"branch_type","control":"hidden"},
       {"name":"site_id","control":"hidden"},
       {"name":"sys_user_site_editor","sqlselect":"(select sys_user_site_editor from {schema}.v_my_site where v_my_site.site_id=v_my_branch_desc.site_id)","control":"hidden"},
-      "#CMS_SITE_EDITOR_LOV"
+      "#CMS_SITE_EDITOR_LOV",
+      
     ]
   }
 }

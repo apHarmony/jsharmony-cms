@@ -294,7 +294,9 @@ jsh.App[modelid] = new (function(){
     //Render Files
     var tmpl = jsh.$root('.'+xmodel.class+'_template_file_listing_'+_this.state.file_view).html();
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
-    jcontainer.html(XExt.renderClientEJS(tmpl, { media_files: _this.sorted_media_files, _: _, jsh: jsh }));
+    var media_folder_desc = _this._current_media_folder;
+    if(_this.folderIsRoot(media_folder_desc)) media_folder_desc = '(Root)';
+    jcontainer.html(XExt.renderClientEJS(tmpl, { media_folder_desc: media_folder_desc, media_files: _this.sorted_media_files, _: _, jsh: jsh }));
     _this.bindEventsListing();
     if(options.refresh_sidebar) _this.selectFile(_this.selected_media_key);
 
@@ -365,6 +367,11 @@ jsh.App[modelid] = new (function(){
       });
       XExt.bindDragSource(jfiles.find('.media_filename a'));
     }
+    jcontainer.find('.'+xmodel.class+'_add_file').on('click', function(e){
+      _this.addFile();
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    });
     jcontainer.on('click', function(e){
       _this.selectFile(null);
     });
@@ -491,6 +498,11 @@ jsh.App[modelid] = new (function(){
 
     jsh.$root('.'+xmodel.class+'_file_info_rename').on('click', function(e){
       _this.renameFile(_this.selected_media_key);
+      e.preventDefault();
+    });
+
+    jsh.$root('.'+xmodel.class+'_file_info_move').on('click', function(e){
+      _this.moveFile(_this.selected_media_key);
       e.preventDefault();
     });
 
@@ -718,6 +730,22 @@ jsh.App[modelid] = new (function(){
     });
   }
 
+  this.folderIsRoot = function(media_folder){
+    if(!XExt.endsWith(media_folder,'/')) media_folder += '/';
+    var folderLOV = xmodel.controller.getLOV('media_folder');
+    if(!folderLOV) return false;
+    for(var i=0;i<folderLOV.length;i++){
+      var folder = folderLOV[i];
+      var folderPath = folder.code_val;
+      if(!XExt.endsWith(folderPath,'/')) folderPath += '/';
+      if(folderPath == media_folder){
+        if(!folder.code_parent_id && (folder.code_txt=='(Root)')) return true;
+        return false;
+      }
+    }
+    return false;
+  }
+
   this.addFile = function(media_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding media');
 
@@ -733,6 +761,10 @@ jsh.App[modelid] = new (function(){
       jprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
       jprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
       jprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(jprompt[0], null));
+      var folderDesc = media_folder;
+      if(_this.folderIsRoot(media_folder)) folderDesc = '(Root)';
+      folderDesc = XExt.ReplaceAll(folderDesc,'/','/\u200b');
+      jprompt.find('.'+xmodel.class+'_drop_overlay_path').text(folderDesc);
       jprompt.find('.media_upload').off('change');
       XExt.clearFileInput(jprompt.find('.media_upload')[0]);
       jprompt.find('.media_upload').on('change', function(e){

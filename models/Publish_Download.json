@@ -9,11 +9,7 @@
     "hide_system_buttons":["print"],
     "fields": [
       {"name":"deployment_id","caption":"Deployment ID","control":"label","captionstyle":"font-weight:bold;","key":true},
-      {"name":"site_name","caption":"Site","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_tag","caption":"Tag","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
-      {"name":"deployment_git_revision","caption":"Revision","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
-      {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","control":"label"},
-      {"name":"deployment_sts","caption":"Status","control":"label"},
       {"control":"button","value":"Download","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "jsh.System.DownloadDeployment(xmodel.get('deployment_id', this))"}
     ]
   }

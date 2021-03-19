@@ -1,41 +1,40 @@
 {
   "Publish_Add": {
     "layout":"form",
-    "unbound":true,
     "title":"Schedule Deployment",
+    "caption":["Deployment","Deployments"],
+    "roles": {"PUBLISHER": "B"},
+    "actions":"B",
     "menu":"Publish",
     "breadcrumbs":"#CMS_SITE_BREADCRUMBS",
     "oninit": "jsh.System.RequireSite(xmodel);",
-    "actions":"BU",
-    "roles": {"PUBLISHER": "BU"},
-    "onecolumn":true,
-    "onload": "_this.onload();",
-    "fields": [
-      {"name":"site_id","control":"dropdown","caption":"Site","validate":["Required"],"readonly":true,
-        "lov":{"sql":"select site_id code_val, site_name code_txt from {schema}.site where site_sts='ACTIVE' and site_id={schema}.my_current_site_id()"}},
-      {"name":"deployment_target_id","control":"dropdown","caption":"Deployment Target","validate":["Required"],
-        "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_publish = 1 and deployment_target_sts='ACTIVE' and site_id={schema}.my_current_site_id() order by site_id,deployment_target_name"}},
-      {"name":"branch_id","control":"dropdown","caption":"Branch","validate":["Required"],
-        "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, branch_id code_val, branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' and site_id={schema}.my_current_site_id() order by site_id,branch_desc"}},
-      {"name":"deployment_date","control":"textbox","caption":"Publish Date", "validate":["Required","IsDate:'YYYY-MM-DD hh:mm A'"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;"},
-      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')+' Release'"},
-      {"control":"button","value":"Schedule Deployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.publish();"}
-    ]
-  },
-  "Publish_Add_Exec": {
-    "layout": "exec",
-    "title": "Add Deployment",
-    "actions": "U",
-    "roles": {"PUBLISHER": "BU"},
-    "sqlexec": [
-      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag) values(@site_id, @deployment_target_id, @branch_id, @deployment_date, @deployment_tag) "
+    "sqlselect": [
+      "select ",
+      "(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()) branch_desc,",
+      "(select {schema}.my_current_branch_id()) branch_id",
+      "from jsharmony.single"
+    ],
+    "formstyle": "min-width:500px;",
+    "nokey": true,
+    "onload": "if(xmodel.get('branch_desc')){ jsh.$root('.'+xmodel.class+'_current_revision').text(xmodel.get('branch_desc')); jsh.$root('.'+xmodel.class+'_deploy_current_revision').show(); }",
+    "hide_system_buttons":["print","save"],
+    "css": [
+      ".<%=model.class%>_deploy_release { margin-bottom:30px; }",
+      ".xform<%=model.class%> h3 { color:#555; margin-bottom:9px; }",
     ],
     "fields": [
-      {"name":"site_id", "actions":"BU", "type":"bigint", "caption":"Site ID", "validate": ["Required"]},
-      {"name":"deployment_target_id", "actions":"BU", "type":"bigint", "caption":"Deployment Target ID", "validate": ["Required"]},
-      {"name":"branch_id", "actions":"BU", "type":"bigint", "caption":"Branch ID", "validate": ["Required"]},
-      {"name":"deployment_date", "actions":"BU", "type": "datetime", "length": 7, "caption":"Deployment Date", "validate": ["Required"]},
-      {"name":"deployment_tag", "actions":"BU", "type":"varchar", "length": 256, "caption":"Deployment Tag", "validate": ["Required"]}
+      {"name":"branch_desc","type":"varchar","actions":"B","control":"hidden","caption":""},
+
+      {"control":"html","value":"<div class='<%=model.class%>_deploy_release'>"},
+      {"control":"html","value":"<h3 style='margin-bottom:5px;'>Option 1: Publish a standard release:</h3>"},
+      {"control":"linkbutton","link":"Publish_Add_Release","controlclass":"jsHarmonyCms_action_button","value":"Publish a Release","controlstyle": "padding:3px 8px;margin-top:6px;"},
+      {"control":"html","value":"</div>"},
+
+      {"control":"html","value":"<div class='<%=model.class%>_deploy_current_revision' style='display:none;'>"},
+      {"control":"html","value":"<h3>Option 2: Publish the current checked-out revision:</h3>"},
+      {"control":"html","value":"<div style='padding-bottom:2px;'><b>Revision</b>: <span class='<%=model.class%>_current_revision'></span></div>"},
+      {"control":"linkbutton","link":"update:Publish_Add_Branch&branch_id","controlclass":"jsHarmonyCms_action_button","value":"Publish the Checked-out Revision","controlstyle": "padding:3px 8px;margin-top:6px;"},
+      {"control":"html","value":"</div>"},
     ]
   }
 }

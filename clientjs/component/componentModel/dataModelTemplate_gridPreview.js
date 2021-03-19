@@ -110,6 +110,8 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   model.oncommit =  '_this.onCommit(xmodel, rowid, callback);';
   model.ejs =  '';
   model.sort = { [this._sequenceFieldName]: 'asc' };
+  model.oninit = "jsh.$root('.xform'+xmodel.class).before('<div class=\"dataGridEditor_instructions\"><span style=\"font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;\">&#x1f6c8;</span> Add, edit, and re-order items using the icons :: Double-click to edit</div>');";
+  model.rowclass = "<%=xejs.iif(rowid==0,'first')%>";
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 
   //--------------------------------------------------

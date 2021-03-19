@@ -17,16 +17,21 @@ jsh.App[modelid] = new (function(){
     if (!xmodel.get('branch_merge_id')) {
       jsh.$root('.Branch_Summary_buttonConflicts').hide();
     }
+    var diffModel = jsh.XModels[jsh.$root('.xform'+xmodel.class+' .xsubform_diff .xpanel .xform').first().data('id')];
+    var actionsBar = jsh.$root('.'+diffModel.class+'_actions_bar');
+    actionsBar.prev('.xform_caption').show();
+    var buttonGroup = jsh.$root('.xactions_group.xelem'+xmodel.class+'[data-group="Actions"]');
+    actionsBar.html(buttonGroup.html());
   }
 
   this.renameBranch = function(branch_id){
     var old_branch_name = xmodel.get('branch_name');
     var retry = function(){ _this.renameBranch(branch_id); };
-    XExt.Prompt('Please enter a new branch name', old_branch_name, function (rslt) {
+    XExt.Prompt('Please enter a new revision name', old_branch_name, function (rslt) {
       if(rslt === null) return;
       rslt = rslt.trim();
       if(rslt == old_branch_name) return;
-      if(!rslt) return XExt.Alert('Please enter a branch name', retry);
+      if(!rslt) return XExt.Alert('Please enter a revision name', retry);
       XForm.prototype.XExecutePost('{namespace}Branch_Rename', { branch_id: branch_id, branch_name: rslt }, function(rslt){
         XPage.Refresh();
       });

@@ -562,6 +562,8 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   model.oncommit =  '_this.onCommit(xmodel, rowid, callback);';
   model.ejs =  '';
   model.sort = { [this._sequenceFieldName]: 'asc' };
+  model.oninit = "jsh.$root('.xform'+xmodel.class).before('<div class=\"dataGridEditor_instructions\"><span style=\"font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;\">&#x1f6c8;</span> Add, edit, and re-order items using the icons :: Double-click to edit</div>');";
+  model.rowclass = "<%=xejs.iif(rowid==0,'first')%>";
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 
   //--------------------------------------------------
@@ -882,7 +884,7 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
     }
     var isRequired = _.some((field.validate || []), function(a) { return a === 'Required'; });
     var defaultValue= field.default;
-    const propertyKeyExists = fieldName in dataInstance;
+    var propertyKeyExists = fieldName in dataInstance;
 
     if (propertyKeyExists && isRequired) {
       // The property has been set by the user
@@ -1288,7 +1290,6 @@ Dialog.prototype.open = function() {
   var wasAtTop = !$(document).scrollTop();
 
   this.load(function(xmodel) {
-
 
     var $wrapper = _this._jsh.$(formSelector);
     _this.registerLovs(xmodel);

@@ -1,36 +1,42 @@
 {
   "Branch_Upload": {
     "layout":"form",
-    "title":"Upload New Branch",
+    "title":"Upload Revision Backup",
     "table":"",
-    "menu":"Branches",
+    "menu":"Revisions",
     "breadcrumbs":"#CMS_SITE_BREADCRUMBS",
     "oninit": "jsh.System.RequireSite(xmodel);",
     "onecolumn":true,
     "actions":"BU",
     "roles": {"PUBLISHER": "BU"},
-    "hide_system_buttons":["print"],
+    "hide_system_buttons":["print","save"],
     "sqlselect":[
       "select ",
       "'USER' new_branch_type,",
       "'' new_branch_name"
     ],
-    "nokey": 1,
+    "nokey": true,
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
-      {"name":"source_site_name","control":"label","caption":"New Branch Name","controlstyle":"margin-right:0px;"},
+      {"control":"html","value":[
+        "<div class='jsHarmonyCms_info_tip'>",
+        "Create a new revision from an existing Revision Backup file.<br/>",
+        "You can download a Revision Backup for an existing Revision from its Details page.",
+        "</div>",
+      ]},
+      {"name":"source_site_name","control":"label","caption":"New Revision Name","controlstyle":"margin-right:0px;"},
       {"name":"new_site_id","type":"bigint","control":"hidden","default":"js:jsh.globalparams.site_id"},
       {"name":"new_site_name","control":"label","controlstyle":"margin-right:4px;","readonly":true,"caption":"","caption_ext":"Site","validate":["Required"],"nl":false,"default":"js:jsh.globalparams.site_name"},
       {"control":"html","value":"/&nbsp;","nl":false},
       {"name":"new_branch_type","actions":"BU","type":"varchar","control":"dropdown","caption":"","nl":false,
-        "controlstyle":"margin-right:0px;","validate":["Required"],"caption_ext":"Branch Location",
-        "lov":{ "sql": "select 'PUBLIC' code_val, 'public' code_txt where ({schema}.my_user_is_publisher({schema}.my_current_site_id()) = 1) union all select 'USER' code_val, (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=jsharmony.my_sys_user_id()) code_txt" } },
+        "controlstyle":"margin-right:0px;","validate":["Required"],"caption_ext":"Revision Location",
+        "lov":{ "sql": "select 'PUBLIC' code_val, 'Release' code_txt where ({schema}.my_user_is_publisher({schema}.my_current_site_id()) = 1) union all select 'USER' code_val, (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=jsharmony.my_sys_user_id()) code_txt" } },
       {"control":"html","value":"&nbsp;/&nbsp;","nl":false},
-      {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"Branch Name"},
+      {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"Revision Name"},
       {"name":"branch_content","type":"file","actions":"BU","nl":1,
-        "control":"file_upload","caption":"Upload Content","controlparams": {
-          "download_button": "Download Zip",
-          "upload_button": "Upload Zip",
+        "control":"file_upload","caption":"Upload Backup File","controlparams": {
+          "download_button": "",
+          "upload_button": "Select Zip",
           "delete_button": "Delete",
           "data_folder":"branch_upload"
         },

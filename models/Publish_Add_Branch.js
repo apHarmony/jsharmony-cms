@@ -19,7 +19,7 @@ jsh.App[modelid] = new (function(){
     var deployment_target_id = xmodel.get('deployment_target_id');
     var deployment_target_name = XExt.getLOVTxt(xmodel.controller.form.LOVs.deployment_target_id, deployment_target_id);
     var branch_name = xmodel.controller.form.Data.branch_desc;
-    XExt.Confirm('Branch: ' + branch_name + '\nDestination: ' + deployment_target_name + '\nContinue?', function(){
+    XExt.Confirm('Revision: ' + branch_name + '\nDestination: ' + deployment_target_name + '\nContinue?', function(){
       var params = _.pick(xmodel.controller.form.Data,[
         'site_id',
         'branch_id',

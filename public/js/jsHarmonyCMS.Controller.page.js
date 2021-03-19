@@ -82,8 +82,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       }
 
       if (!rslt.branch_id) {
-        onComplete(new Error('Please check out a branch in the CMS to use Dev Mode'));
-        XExt.Alert('Please check out a branch in the CMS to use Dev Mode');
+        onComplete(new Error('Please check out a revision in the CMS to use Dev Mode'));
+        XExt.Alert('Please check out a revision in the CMS to use Dev Mode');
         return;
       }
 

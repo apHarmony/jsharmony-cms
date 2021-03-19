@@ -132,7 +132,7 @@ module.exports = exports = function(module, funcs){
         var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
         appsrv.ExecRow(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
-          if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target branch', -11));
+          if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target revision', -11));
           if(rslt && rslt[0]){
             try{
               branchData.deployment_target_id = rslt[0].deployment_target_id;

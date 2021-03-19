@@ -80,9 +80,9 @@ module.exports = exports = function(module, funcs){
           var sql = "select branch_desc,site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
           appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this branch'); }
+            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this revision'); }
             site_id = rslt[0].site_id;
-            if(!site_id){ return Helper.GenError(req, res, -4, 'No site branch is currently checked out'); }
+            if(!site_id){ return Helper.GenError(req, res, -4, 'No site revision is currently checked out'); }
             return cb();
           });
         },

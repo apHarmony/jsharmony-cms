@@ -149,8 +149,8 @@
     "triggers": [
       { "on": ["insert"], "exec": [
           [
-            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
-            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only revision');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update revision when a merge is in progress');",
             "errorif(exists(select * from {schema}.v_my_page where (page_path=inserted(page_path))),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end)))),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
@@ -166,8 +166,8 @@
       },
       { "on": ["update"], "exec": [
           [
-            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
-            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+            "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only revision');",
+            "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update revision when a merge is in progress');",
             "errorif(exists(select * from {schema}.v_my_page where (page_path=inserted(page_path)) and page_key<>deleted(page_key)),'Page file name already exists');",
             "errorif(exists(select * from {schema}.v_my_page where ((page_folder like (case when inserted(page_is_folder)=1 and {schema}.filename(inserted(page_path)) = '' then concat(inserted(page_path),'%') else concat(inserted(page_path),'/%') end))) and page_key<>deleted(page_key)),'Existing folder with the same name already exists');",
             "with_insert_identity(page, page_id, ",
@@ -181,8 +181,8 @@
         ]
       },
       { "on": ["delete"], "exec": [
-          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only branch');",
-          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update branch when a merge is in progress');",
+          "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only revision');",
+          "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update revision when a merge is in progress');",
           "update branch_page set page_id=null,branch_page_action='DELETE' where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and ((branch_page_action is null) or (branch_page_action in ('UPDATE','DELETE')))",
           "delete from branch_page where branch_id={schema}.my_current_branch_id() and page_key = deleted(page_key) and (branch_page_action='ADD' or {schema}.my_current_branch_is_versioned()=0)",
           "update branch set branch_data_mtstmp = %%%%%%jsh.map.timestamp%%%%%%, branch_data_muser = %%%%%%jsh.map.current_user%%%%%% where branch_id = {schema}.my_current_branch_id();",

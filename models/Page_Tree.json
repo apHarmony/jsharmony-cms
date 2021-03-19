@@ -19,6 +19,9 @@
     "ongetstate": "return _this.ongetstate(xmodel);",
     "onloadstate": "_this.onloadstate(xmodel, state);",
     "fields":[
+      {"name":"form_instructions","control":"html","roles": {"AUTHOR": "B","PUBLISHER": "B"},"value":[
+        "<div style='position:relative;top:-4px;'><span style='font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;'>&#x1f6c8;</span> Right-click folders and pages for options :: Drag to reorder</div>",
+      ]},
 	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
       {"name": "page_folder", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
@@ -36,6 +39,7 @@
             { "icon": "export", "text": "Move Folder", "command": "_this.moveFolder(context_item);","actions":"U" },
             { "icon": "delete", "text": "Delete Folder", "command": "_this.deleteFolder(context_item);","actions":"D" }
           ],
+          "item_dropdown": { "caption": "Actions" },
           "onmove": "return _this.page_folder_onmove(dragval, dropval, anchor, e);",
           "drag_anchor_settings": { "anchors": ["full"] }
         },
@@ -68,6 +72,7 @@
     "js": "jsh.App[modelid].isInEditor = true;",
     "popup": [1000, 600],
     "fields":[
+      {"name":"form_instructions","__REMOVE__":true},
       {"name":"page_folder","controlparams":{ "item_context_menu":[] } },
       {"name":"Page_Tree_Listing","target":"Page_Browser_Listing"}
     ]

@@ -4,28 +4,38 @@
     "table":"{schema}.v_my_branch_desc",
     "actions":"B",
     "roles": {"*": "B"},
-    "caption":["Branch","Branches"],
-    "title":"Active Branches",
+    "caption":["Revision","Revisions"],
+    "title":"Active Revisions",
     "menu":"jsHarmonyCMS/Branch_Active_Listing",
     "breadcrumbs":"#CMS_SITE_BREADCRUMBS",
     "oninit": "jsh.System.RequireSite(xmodel);",
     "sqlselect": [
       "select ",
-      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No branch currently checked out)') branch_desc,",
+      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No revision currently checked out)') branch_desc,",
       "(select {schema}.my_current_branch_id()) branch_id",
       "from jsharmony.single"
     ],
     "formstyle": "min-width:900px;",
     "nokey":true,
     "buttons":[
-      { "name":"addBranch", "link":"update:Branch_Add_Empty","icon":"add","text":"New Empty Branch", "bindings": {} },
-      { "name":"uploadBranch", "link":"update:Branch_Upload","icon":"upload","text":"Upload New Branch", "bindings": {} }
+      { "name":"addBranch", "link":"update:Branch_Add_Empty","icon":"add","text":"New Empty Revision", "bindings": {} },
+      { "name":"uploadBranch", "link":"update:Branch_Upload","icon":"upload","text":"Upload Revision Backup", "bindings": {} }
+    ],
+    "css": [
+      ".xform<%=model.class%> .xsubform h1 { font-size:21px; color:#444; }",
     ],
     "fields": [
-      {"name":"branch_desc","type":"varchar","control":"label","caption":"Current Branch","link":"js:jsh.System.ViewBranchSummary(xmodel, xmodel.get('branch_id'))","nl":true,
+      {"name":"branch_desc","type":"varchar","control":"label","controlstyle":"margin-bottom:10px;","caption":"Currently Editing","link":"js:jsh.System.ViewBranchSummary(xmodel, xmodel.get('branch_id'))",
         "captionclass":"headerInfo_caption",
         "controlclass":"headerInfo_content"},
       {"name":"branch_id","control":"hidden"},
+      {"control":"html","value":[
+        "<div class='jsHarmonyCms_info_tip'>",
+        "Clone a Release to create your own Revision and start making changes.<br/>",
+        "When done making updates, &quot;Submit for Publish Review&quot; to ask a publisher to merge into a Release.",
+        "</div>",
+      ]},
+      {"control":"subform","target":"Branch_Review_Listing","bindings":{},"controlclass":"no-border","roles":{"PUBLISHER":"*"}},
       {"control":"subform","target":"Branch_Active_User_Listing","bindings":{},"controlclass":"no-border","roles":{"PUBLISHER":"*","AUTHOR":"*"}},
       {"control":"subform","target":"Branch_Active_Public_Listing","bindings":{},"controlclass":"no-border"}
     ]

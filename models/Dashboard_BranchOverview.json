@@ -14,7 +14,7 @@
   },
   "Dashboard_BranchOverview_Data": {
     "layout": "exec",
-    "title": "Branch Overview Data",
+    "title": "Revision Overview Data",
     "actions": "U",
     "roles": {"*":"U"},
     "sqlexec": "jsHarmonyCMS_Dashboard_BranchOverview",

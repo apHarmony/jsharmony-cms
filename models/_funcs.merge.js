@@ -210,7 +210,7 @@ module.exports = exports = function(module, funcs){
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
-      if (rslt[0]) { callback( Helper.NewError('Branch already has an in-progress merge',-9)); return; }
+      if (rslt[0]) { callback( Helper.NewError('Revision already has an in-progress merge',-9)); return; }
       sql = merge_sql_begin_merge;
       sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
       appsrv.ExecCommand(context, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -230,7 +230,7 @@ module.exports = exports = function(module, funcs){
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecRecordset(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
-      if (rslt[0].length!=2) { callback( Helper.NewError('You dont have access to those branches (or they dont exist)',-11)); return; }
+      if (rslt[0].length!=2) { callback( Helper.NewError('You dont have access to those revisions (or they dont exist)',-11)); return; }
       callback(null);
     });
   }
