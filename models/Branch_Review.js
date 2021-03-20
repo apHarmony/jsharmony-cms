@@ -3,7 +3,7 @@ jsh.App[modelid] = new (function(){
 
   _this.rejectBranch = function(xmodel){
     XForm.Post(xmodel.module_namespace+'Branch_Review_Reject', { }, { branch_id: xmodel.get('branch_id') }, function(rslt){
-      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+      XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
     });
   }
 
@@ -37,7 +37,7 @@ jsh.App[modelid] = new (function(){
         XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
           XForm.Post(xmodel.module_namespace+'Branch_Review_Approve', { }, { branch_id: xmodel.get('branch_id') }, function(rslt){
             success();
-            XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Review_Listing');
+            XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
           });
         });
       } else {
