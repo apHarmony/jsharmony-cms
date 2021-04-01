@@ -469,7 +469,12 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
           ], callback);
         },
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_page(jsh, branchData, publish_params, callback); },
-        onDeploy_PostBuild: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_exportComponents(jsh, branchData, publish_params, callback); },
+        onDeploy_PostBuild: function(jsh, branchData, publish_params, callback){
+          async.waterfall([
+            function(build_cb){ _this.funcs.deploy_exportComponents(jsh, branchData, publish_params, build_cb); },
+            function(build_cb){ _this.funcs.deploy_pageIncludes(jsh, branchData, publish_params, build_cb); },
+          ], callback);
+        },
       },
       download: {
         columns: ['page_path','page_is_folder','page_title','page_tags','page_file_id','page_template_id','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'],

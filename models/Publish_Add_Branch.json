@@ -16,6 +16,11 @@
       {"name":"site_name","control":"label","caption":"Site","sqlselect":"(select site_name from {schema}.site where {schema}.site.site_id = {schema}.branch.site_id)"},
       {"name":"deployment_target_id","control":"dropdown","caption":"Deployment Target","validate":["Required"],"unbound":true,
         "lov":{"sql":"select deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_publish = 1 and deployment_target_sts='ACTIVE' and site_id=(select site_id from {schema}.branch where branch_id=@branch_id) order by deployment_target_name"}},
+      {"control":"html","value":[
+        "<% if(jsh.globalparams.isWebmaster){ %>",
+        "<a href='#' onclick='<%=jsh._instance%>.XExt.popupForm(\"{namespace}Site_Tabs\",\"update\",{site_id:<%=jsh._instance%>.globalparams.site_id}); return false;'>Configure Deployment Targets</a>",
+        "<% } %>",
+      ]},
       {"name":"branch_desc","control":"label","caption":"Revision","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where {schema}.v_my_branch_desc.branch_id = {schema}.branch.branch_id)"},
       {"name":"deployment_date","control":"textbox","caption":"Publish Date", "validate":["Required","IsDate:'YYYY-MM-DD hh:mm A'"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;","unbound":true},
       {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')+' '+xmodel.controller.form.Data.branch_desc","unbound":true},

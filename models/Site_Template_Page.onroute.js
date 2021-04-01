@@ -5,6 +5,7 @@ var path = require('path');
 var async = require('async');
 var fs = require('fs');
 var Helper = require('../Helper.js');
+var HelperFS = require('../HelperFS.js');
 var ejsext = require('../lib/ejsext.js');
 var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
@@ -30,11 +31,14 @@ if((routetype == 'd')||(routetype == 'csv')){
   var localTemplates = [
     //site_template_type, site_template_name, site_template_title, site_template_path,site_template_config
   ];
+
+  var publishTemplatePaths = {};
   
   return async.waterfall([
     function(data_cb){
       if(!site_id) return data_cb();
       var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString(),'templates','pages');
+      var normalizedSitePath = path.normalize(sitePath);
 
       //Get all local site templates from site\#\templates\pages
       fs.exists(sitePath, function (exists) {
@@ -60,14 +64,32 @@ if((routetype == 'd')||(routetype == 'csv')){
                 }
 
                 var templateTitle = templateConfig.title || templateName;
-                localTemplates.push({
+                var localTemplate = {
                   site_template_type: 'PAGE',
                   site_template_name: templateName,
                   site_template_title: templateTitle,
                   site_template_path: '/templates/pages/' + file,
                   site_template_config: null,
                   site_template_location: 'LOCAL',
-                });
+                };
+                localTemplates.push(localTemplate);
+
+                if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
+                  var filepath = path.normalize(fpath);
+                  var publishTemplatePath = templateConfig.remote_templates.publish;
+                  if(publishTemplatePath.indexOf('//') < 0){
+                    publishTemplatePath = path.normalize(path.join(path.dirname(filepath), publishTemplatePath));
+                    if(publishTemplatePath.indexOf(normalizedSitePath+path.sep) == 0){
+                      //Do not allow an editor template to reference itself as a publish template
+                      if(publishTemplatePath != filepath){
+                        publishTemplatePaths['/templates/pages' + HelperFS.convertWindowsToPosix(publishTemplatePath.substr(normalizedSitePath.length))] = {
+                          source: localTemplate.site_template_path,
+                        };
+                      }
+                    }
+                  }
+                }
+
                 return file_cb();
               });
             }
@@ -75,6 +97,25 @@ if((routetype == 'd')||(routetype == 'csv')){
           }, data_cb);
         });
       });
+    },
+
+    //Remove local publish templates
+    function(data_cb){
+      _.each(_.keys(publishTemplatePaths), function(key){
+        if(!publishTemplatePaths[key]) return;
+        var source = publishTemplatePaths[key].source;
+        if(source in publishTemplatePaths) delete publishTemplatePaths[source];
+      });
+
+      //Remove publish templates
+      for(var i=0;i<localTemplates.length;i++){
+        if(localTemplates[i].site_template_path in publishTemplatePaths){
+          localTemplates.splice(i, 1);
+          i--;
+        }
+      }
+
+      return data_cb();
     },
 
     //Add local system templates

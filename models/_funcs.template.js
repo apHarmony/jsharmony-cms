@@ -45,19 +45,29 @@ module.exports = exports = function(module, funcs){
 
     //Apply config.component_properties
     if(config.component_properties){
-      if(!_.isArray(config.component_properties)) throw new Error('Component config.component_properties must be an array');
-      config.properties.fields = (config.properties.fields||[]);
-      if(!_.isArray(config.properties.fields)) throw new Error('Component config.properties.fields must be an array');
-      config.properties.fields = config.properties.fields.concat(config.component_properties);
+      if(_.isObject(config.component_properties)){
+        config.properties = _.extend(config.properties, config.component_properties);
+      }
+      else if(_.isArray(config.component_properties)) {
+        config.properties.fields = (config.properties.fields||[]);
+        if(!_.isArray(config.properties.fields)) throw new Error('Component config.properties.fields must be an array');
+        config.properties.fields = config.properties.fields.concat(config.component_properties);
+      }
+      else throw new Error('Component config.component_properties must be an array or object');
       delete config.component_properties;
     }
 
     //Apply config.item_properties
     if(config.item_properties){
-      if(!_.isArray(config.item_properties)) throw new Error('Component config.item_properties must be an array');
-      config.data.fields = (config.data.fields||[]);
-      if(!_.isArray(config.data.fields)) throw new Error('Component config.data.fields must be an array');
-      config.data.fields = config.data.fields.concat(config.item_properties);
+      if(_.isObject(config.item_properties)){
+        config.data = _.extend(config.data, config.item_properties);
+      }
+      else if(_.isArray(config.item_properties)) {
+        config.data.fields = (config.data.fields||[]);
+        if(!_.isArray(config.data.fields)) throw new Error('Component config.data.fields must be an array');
+        config.data.fields = config.data.fields.concat(config.item_properties);
+      }
+      else throw new Error('Component config.item_properties must be an array or object');
       delete config.item_properties;
     }
 
@@ -169,6 +179,24 @@ module.exports = exports = function(module, funcs){
       template_folder: 'pages',
       system_templates: cms.SystemPageTemplates,
       script_config_type: 'cms-page-config',
+      get_auxiliary_attributes: function(templateName, template){
+        var rslt = {
+          header: templateName + '.header.ejs',
+          footer: templateName + '.footer.ejs',
+          css: templateName + '.css',
+          js: templateName + '.js',
+          templates: {
+            editor: templateName + '.templates.editor.ejs',
+            publish: templateName + '.templates.publish.ejs',
+          },
+          content: {
+          }
+        };
+        for(var key in (template.content_elements||{body:true})){
+          rslt.content[key] = templateName+'.'+key+'.ejs';
+        }
+        return rslt;
+      },
     }, options);
 
     funcs.getSiteTemplates(dbcontext, site_id, options, function(err, rsltTemplates){
@@ -221,6 +249,27 @@ module.exports = exports = function(module, funcs){
       template_folder: 'components',
       system_templates: cms.SystemComponentTemplates,
       script_config_type: 'cms-component-config',
+      get_auxiliary_attributes: function(templateName, template){
+        var rslt = {
+          css: templateName + '.css',
+          js: templateName + '.js',
+          templates: {
+            editor: templateName + '.templates.editor.ejs',
+            publish: templateName + '.templates.publish.ejs',
+          },
+          properties: {
+            ejs: templateName + '.properties.ejs',
+            css: templateName + '.properties.css',
+            js: templateName + '.properties.js',
+          },
+          data: {
+            ejs: templateName + '.data.ejs',
+            css: templateName + '.data.css',
+            js: templateName + '.data.js',
+          },
+        };
+        return rslt;
+      },
       withContent: false,
       includeLocalPath: false,
       recursive: true,
@@ -293,6 +342,7 @@ module.exports = exports = function(module, funcs){
       template_folder: null, //Required
       system_templates: null, //Required
       script_config_type: null, //Required
+      get_auxiliary_attributes: function(templateName, template){ return {}; },
       continueOnConfigError: false,
       withContent: false,
       recursive: false,
@@ -328,17 +378,28 @@ module.exports = exports = function(module, funcs){
           if (!exists) return data_cb(null);
           
           var files = [];
+          var allfiles = [];
           HelperFS.funcRecursive(templatePath,
-            function(filepath, filerelativepath, file_cb){
-              files.push({ filepath: filepath, filerelativepath: HelperFS.convertWindowsToPosix(filerelativepath) });
+            function(filepath, filerelativepath, file_cb){ //per file
+              var file = { filepath: filepath, filerelativepath: HelperFS.convertWindowsToPosix(filerelativepath) };
+              files.push(file);
+              allfiles[file.filerelativepath] = file;
               return file_cb();
             },
-            function(dirpath, dirrelativepath, cb){
+            function(dirpath, dirrelativepath, cb){ //per directory
               if(!dirrelativepath) return cb();
               if(options.recursive) return cb();
               return cb(false); //Non-recursive
             },
-            null,
+            {
+              sort: function(a,b){
+                a = a||'';
+                b = b||'';
+                if(a > b) return 1;
+                if(a < b) return -1;
+                return 0;
+              }
+            },
             function(err){
               if(err) return data_cb(err);
 
@@ -355,7 +416,7 @@ module.exports = exports = function(module, funcs){
                   var filepath = path.normalize(fileinfo.filepath);
                   fs.readFile(filepath, 'utf8', function(err, templateContent){
                     if(err) return file_cb(err);
-    
+
                     //Read Template Config
                     var templateParts = null;
                     try{
@@ -406,7 +467,51 @@ module.exports = exports = function(module, funcs){
                         if(exportTemplatePath == filepath) return file_cb(new Error('Error processing local template ' + localTemplate.site_template_path + ': An Editor template cannot target itself as the Export template.  Remove the export[].remote_template property to auto-generate an export template based on the current editor template.'));
                       }
                     }
-                    return file_cb();
+                    
+                    //Get list of Auxiliary Files
+                    function trimMissingAttributes(node){
+                      _.each(_.keys(node), function(key){
+                        var val = node[key];
+                        if(_.isString(val)){
+                          if(!(val in allfiles)) delete node[key];
+                        }
+                        else{
+                          trimMissingAttributes(val);
+                          if(_.isEmpty(val)) delete node[key];
+                        }
+                      });
+                    }
+                    var auxAttributes = options.get_auxiliary_attributes(templateName, templateConfig);
+                    trimMissingAttributes(auxAttributes);
+
+                    //Load Auxiliary Files
+                    function prependAuxiliaryFiles(obj, attributes, aux_cb){
+                      async.eachOf(attributes, function(val, key, attr_cb){
+                        if(_.isString(val)){
+                          var attrfileinfo = allfiles[val];
+                          var attrfilepath = path.normalize(attrfileinfo.filepath);
+                          fs.readFile(attrfilepath, 'utf8', function(err, attrContent){
+                            if(err) return attr_cb(err);
+
+                            if(!obj[key] || _.isString(obj[key])){
+                              if (key in obj) attrContent += '\r\n' + obj[key];
+                              obj[key] = attrContent;
+                            }
+                            else if(_.isArray(obj[key])){
+                              obj[key].unshift(attrContent);
+                            }
+                            return attr_cb();
+                          });
+                          return;
+                        }
+                        else if(val && !_.isEmpty(val)){
+                          if(!obj[key]) obj[key] = {};
+                          return prependAuxiliaryFiles(obj[key], val, attr_cb);
+                        }
+                        return attr_cb();
+                      }, aux_cb);
+                    }
+                    prependAuxiliaryFiles(templateConfig, auxAttributes, file_cb);
                   });
                 }
                 else file_cb();
@@ -699,7 +804,7 @@ module.exports = exports = function(module, funcs){
             if(!(parentMatch.attrName in nodeInfo.attrs)) throw new Error('EJS container slurp <%~ tag should have been removed when node attribute was removed');
             var attrVal = _this.getAttr(node, parentMatch.attrName);
             //For nodeAttr, make sure attribute length matches
-            if(attrVal != Helper.pad('', ' ', script.content.length)) throw new Error('One EJS container slurp <%~ tag must be the only text within the attribute value, ex: <div style="<%~item.value%>"></div>');
+            if(attrVal != Helper.pad('', ' ', script.content.length)) throw new Error('One EJS container slurp <%~ tag must be the only text within the attribute value.  Valid: <div class="<%~item.value%>"></div>.  Invalid: <div class="static_class <%~item.value%>"></div>');
 
             container = {
               start: nodeInfo.attrs[parentMatch.attrName].startOffset,
@@ -713,7 +818,7 @@ module.exports = exports = function(module, funcs){
           if(parentMatch.type=='nodeBody'){
             var nodeContent = _this.getNodeContent(node);
             //For nodeBody, make sure attribute length matches
-            if(nodeContent != Helper.pad('', ' ', script.content.length)) throw new Error('One EJS container slurp <%~ tag must be the only text within the node content, ex: <div><%~item.value%></div>');
+            if(nodeContent != Helper.pad('', ' ', script.content.length)) throw new Error('One EJS container slurp <%~ tag must be the only text within the node content, Valid: <div><%~item.value%></div>.  Invalid:  <div>Additional Content <%~item.value%></div>');
 
             container = {
               start: nodeInfo.startTag.startOffset,

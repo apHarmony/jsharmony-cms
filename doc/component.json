@@ -44,9 +44,13 @@
   
   //The following property is a shortcut for "properties.fields".  Values are appended to the properties.fields array
   "component_properties": [ ... field array ... ],
+  // or, if defined as an object, component_properties is a shortcut for "properties"
+  "component_properties": { ... },
 
   //The following property is a shortcut for "data.fields".  Values are appended to the data.fields array
   "item_properties": [ ... field array ... ],
+  // or, if defined as an object, item_properties is a shortcut for "data"
+  "item_properties": { ... },
 
   "multiple_items": false, //(default) For Content Components - enable only one data item (ex. Banner). Sets data.layout = "form"
   "multiple_items": true,  //For Content Components - enable multiple data items (ex. Listing). Sets data.layout = "grid_preview"

@@ -568,6 +568,8 @@ module.exports = exports = function(module, funcs){
             menu_template_html: {},
 
             sitemaps: {},
+
+            pageIncludes: {},
           }
 
           var git_branch = Helper.ReplaceAll(publish_params.git_branch, '%%%SITE_ID%%%', deployment.site_id);
@@ -1254,6 +1256,22 @@ module.exports = exports = function(module, funcs){
           if(err) return cb(err);
           funcs.createSitemapTree(clientPage.sitemap, branchData);
 
+          var page_fpath = '';
+          try{
+            page_fpath = funcs.getPageRelativePath(page, publish_params);
+          }
+          catch(ex){
+            return cb(ex);
+          }
+          if(!page_fpath) return cb(new Error('Page has no path: '+page.page_key));
+
+          var pageIncludes = {};
+          var includePage = function(path){
+            if(!(path in pageIncludes)) pageIncludes[path] = [];
+            pageIncludes[path].push(page_fpath);
+            return '<!--#jsharmony_cms_include('+JSON.stringify(path)+')-->';
+          };
+
           //Merge content with template
           var ejsparams = {
             page: {
@@ -1297,6 +1315,7 @@ module.exports = exports = function(module, funcs){
                 getSitemapURL: function(sitemap_item){ return funcs.getSitemapUrl(sitemap_item, branchData); },
                 menu: null,
                 getMenuURL: function(menu_item){ return funcs.getMenuUrl(menu_item, branchData); },
+                include: includePage,
               }
               if(renderOptions.menu_tag){
                 if(!branchData.menus[renderOptions.menu_tag]) return '<!-- Menu '+Helper.escapeHTML(renderOptions.menu_tag)+' not found -->';
@@ -1308,7 +1327,8 @@ module.exports = exports = function(module, funcs){
                 });
               }
               return funcs.renderComponent(template || '', branchData, renderOptions, renderParams);
-            }
+            },
+            include: includePage,
           };
           var page_content = '';
           if(page.page_template_id in branchData.page_template_html){
@@ -1326,9 +1346,11 @@ module.exports = exports = function(module, funcs){
               return cb(new Error(errmsg));
             }
             try{
-              page_content = funcs.renderComponents(page_content, branchData, clientPage.template.components);
+              page_content = funcs.renderComponents(page_content, branchData, clientPage.template.components, {
+                include: includePage,
+              });
               page_content = funcs.applyRenderTags(page_content, { page: ejsparams.page });
-              page_content = funcs.replaceBranchURLs(page_content, {
+              var replaceBranchURLsParams = {
                 getMediaURL: function(media_key){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
                   return branchData.media_keys[media_key];
@@ -1339,7 +1361,9 @@ module.exports = exports = function(module, funcs){
                 },
                 branchData: branchData,
                 removeClass: true
-              });
+              };
+              page_content = funcs.replaceBranchURLs(page_content, replaceBranchURLsParams);
+              pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), replaceBranchURLsParams));
             }
             catch(ex){
               return cb(ex);
@@ -1350,14 +1374,18 @@ module.exports = exports = function(module, funcs){
             page_content = ejsparams.page.content.body||'';
           }
 
-          var page_fpath = '';
-          try{
-            page_fpath = funcs.getPageRelativePath(page, publish_params);
+          for(var key in pageIncludes){
+            //Resolve relative URLs
+            if(!key || !_.isString(key) || (key.indexOf('//')>=0)) return cb(new Error('Invalid page include "'+key+'" in "'+page_fpath+'"'));
+            var abskey = key;
+            if(key[0] != '/'){
+              var parentDir = path.dirname(page_fpath);
+              if(!parentDir || (parentDir=='.')) abskey = '/' + key;
+              else abskey = '/' + parentDir + '/' + key;
+            }
+            if(!(abskey in branchData.pageIncludes)) branchData.pageIncludes[abskey] = [];
+            branchData.pageIncludes[abskey] = branchData.pageIncludes[abskey].concat(pageIncludes[key]);
           }
-          catch(ex){
-            return cb(ex);
-          }
-          if(!page_fpath) return cb(new Error('Page has no path: '+page.page_key));
 
           branchData.site_files[page_fpath] = {
             md5: crypto.createHash('md5').update(page_content).digest("hex")
@@ -1407,6 +1435,8 @@ module.exports = exports = function(module, funcs){
       addFile: branchData.fsOps.addFile,
       deleteFile: branchData.fsOps.deleteFile,
       hasFile: branchData.fsOps.hasFile,
+
+      include: function(path){ throw new Error('"include" function not supported in component.export'); },
     };
     
     if(renderOptions.menu_tag){
@@ -1437,6 +1467,103 @@ module.exports = exports = function(module, funcs){
         return export_cb();
       }, generate_cb);
     }, cb);
+  }
+
+  exports.deploy_pageIncludes = function(jsh, branchData, publish_params, cb){
+    //Create ordered list of pages that need to be updated
+    var pagesWithIncludes = {};
+    for(var key in branchData.pageIncludes){
+      for(var i=0;i<branchData.pageIncludes[key].length;i++){
+        var pagefname = branchData.pageIncludes[key][i];
+        if(!pagesWithIncludes[pagefname]) pagesWithIncludes[pagefname] = [];
+        pagesWithIncludes[pagefname].push(key.substr(1));
+      }
+      //If file is not defined, throw an error
+      if(!(key.substr(1) in branchData.site_files)){
+        return cb(new Error('Include file "'+key.substr(1)+'" is missing.  The file was referenced from "'+branchData.pageIncludes[key].join('","')+'"'));
+      }
+    }
+
+    //While pages have not been resolved
+    var lastPageCount = null;
+    var includeFileContent = {};
+    async.whilst(
+      function(){
+        var pageCount = _.keys(pagesWithIncludes).length;
+        if(lastPageCount === pageCount) return false;
+        lastPageCount = pageCount;
+        return !_.isEmpty(pagesWithIncludes);
+      },
+      function(include_cb){
+        //Get pages that are ready to resolve
+        var pagesReadyToRewrite = [];
+        for(var key in pagesWithIncludes){
+          var hasDependencies = false;
+          _.each(pagesWithIncludes[key], function(includedPage){
+            if(includedPage in pagesWithIncludes) hasDependencies = true;
+          });
+          if(!hasDependencies) pagesReadyToRewrite.push(key);
+        }
+
+        async.waterfall([
+
+          //Cache include files
+          function(rewrite_cb){
+            var pagesToCache = {};
+            _.each(pagesReadyToRewrite, function(key){
+              _.each(pagesWithIncludes[key], function(includepage_path){
+                if(includepage_path in includeFileContent) return;
+                if(includepage_path in pagesToCache) return;
+                pagesToCache[includepage_path] = includepage_path;
+              });
+            });
+
+            async.each(pagesToCache, function(includepage_path, cache_page_cb){
+              var includepage_fpath = path.join(publish_params.publish_path, includepage_path);
+              fs.readFile(includepage_fpath, null, function(err, includepage_content){
+                if(err) return cache_page_cb(err);
+                includeFileContent[includepage_path] = includepage_content;
+                return cache_page_cb();
+              });
+            }, rewrite_cb);
+          },
+
+          //Rewrite, inject, and recompute MD5
+          function(rewrite_cb){
+            async.each(pagesReadyToRewrite, function(page_path, rewrite_page_cb){
+              var pagesToInclude = pagesWithIncludes[page_path];
+              delete pagesWithIncludes[page_path];
+
+              //Read file from disk
+              var page_fpath = path.join(publish_params.publish_path, page_path);
+              fs.readFile(page_fpath, 'utf8', function(err, page_content){
+                if(err) return rewrite_page_cb(err);
+    
+                if(page_content.indexOf('<!--#jsharmony_cms_include(') >= 0){
+                  _.each(pagesToInclude, function(key){
+                    var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify('/'+key)+')-->';
+                    page_content = Helper.ReplaceAll(page_content, includeCode, includeFileContent[key]);
+                  });
+                  //Recompute MD5
+                  branchData.site_files[page_path] = {
+                    md5: crypto.createHash('md5').update(page_content).digest("hex")
+                  };
+                  //Write file
+                  fs.writeFile(page_fpath, page_content, 'utf8', rewrite_page_cb);
+                }
+                else return rewrite_page_cb();
+              });
+            }, rewrite_cb);
+          },
+        ], include_cb);
+        
+        
+      },
+      function(err){
+        if(!err && lastPageCount) err = new Error('Infinite loop resolving page includes: '+JSON.stringify(pagesWithIncludes,null,4));
+        return cb(err);
+      },
+    );
   }
 
   exports.deploy_media = function(jsh, branchData, publish_params, cb){

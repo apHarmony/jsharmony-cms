@@ -32,8 +32,8 @@
 
       {"control":"html","value":"<div class='<%=model.class%>_deploy_current_revision' style='display:none;'>"},
       {"control":"html","value":"<h3>Option 2: Publish the current checked-out revision:</h3>"},
-      {"control":"html","value":"<div style='padding-bottom:2px;'><b>Revision</b>: <span class='<%=model.class%>_current_revision'></span></div>"},
-      {"control":"linkbutton","link":"update:Publish_Add_Branch&branch_id","controlclass":"jsHarmonyCms_action_button","value":"Publish the Checked-out Revision","controlstyle": "padding:3px 8px;margin-top:6px;"},
+      {"control":"html","value":"<div style='padding-bottom:2px;'><b>Current Revision</b>: <span class='<%=model.class%>_current_revision'></span></div>"},
+      {"control":"linkbutton","link":"update:Publish_Add_Branch&branch_id","controlclass":"jsHarmonyCms_action_button","value":"Publish the Current Checked-out Revision","controlstyle": "padding:3px 8px;margin-top:6px;"},
       {"control":"html","value":"</div>"},
     ]
   }

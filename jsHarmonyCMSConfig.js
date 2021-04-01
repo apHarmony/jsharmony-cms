@@ -112,9 +112,11 @@ function jsHarmonyCMSConfig(){
     sftp_log: false,                    //Log SFTP session
   };
 
-  this.defaultEditorConfig = {};        //Default GUI editor config
-                                        //Web snippets listing path: { webSnippetsPath: '/templates/websnippets/' }
-                                        //Enable Material Icons { materialIcons: true }
+  this.defaultEditorConfig = {          //Default GUI editor config
+    webSnippetsPath: '/templates/websnippets/',  //Web snippets listing path
+    materialIcons: false,                        //Whether to enable Material Icons in the Editor
+                                                 //  If enabled, Material Icons Font must be added to the Page Template
+  };
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing

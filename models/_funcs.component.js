@@ -560,7 +560,7 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.renderComponents = function(pageContent, branchData, pageComponents) {
+  exports.renderComponents = function(pageContent, branchData, pageComponents, additionalRenderParams) {
     return replaceComponents(pageContent, branchData, pageComponents, function(componentType, componentProperties, componentData, template, component){
       return funcs.renderComponent(template, branchData, {
         data: componentData, 
@@ -568,7 +568,7 @@ module.exports = exports = function(module, funcs){
         templateName: componentType, 
         pageComponents: pageComponents, 
         component: component
-      });
+      }, additionalRenderParams);
     });
   }
 
@@ -650,7 +650,7 @@ module.exports = exports = function(module, funcs){
       throw new Error(errmsg);
     }
 
-    if(branchData) rslt = funcs.renderComponents(rslt, branchData, renderOptions.pageComponents);
+    if(branchData) rslt = funcs.renderComponents(rslt, branchData, renderOptions.pageComponents, additionalRenderParams);
 
     return rslt;
   }

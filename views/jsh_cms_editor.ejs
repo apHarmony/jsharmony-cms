@@ -74,6 +74,21 @@
   }
 &lt;/script&gt;
 
+=================================
+JavaScript CMS onRender Functions
+=================================
+addClass(classNames) / setClass(classNames)
+  * Adds the class to the element.  Class name can reference a page property.
+  ex: addClass(page.properties.bodyClass)
+
+addStyle(styles) / setStyle(styles)
+  * Adds the styles to the element.  Styles can reference a page property.
+  ex: addStyle(page.properties.bodyStyle)
+
+showIf(condition) / toggle(condition)
+  * Hide the element if it the condition is not met
+  ex: showIf(page.properties.showTitle!='N')
+
 ===========================
 JavaScript CMS Editor Hooks
 ===========================
@@ -116,6 +131,17 @@ cms.onFilePickerCallback: function(jdata){ }
       return true;
     }
   }
+
+=================
+Publish Functions
+=================
+* The following functions are only supported in publish templates, not editor templates
+
+Page Includes
+  On publish, pages can include other pages via:
+    <%-include('/path/to/page')%>
+  Path should be absolute relative to the publish root folder
+
             </pre>
           </div>
         </div>
@@ -227,9 +253,7 @@ menu
   *allItems
   *topItems
   *currentItem
-  zz*items
-  zz*children
-  zz*parents = [top parent, next level, next level, current item]
+  *tag
 
 menuItem
   *id
@@ -313,6 +337,17 @@ sitemapItem
   sitemap_item_link_target: undefined, //NEWWIN
   -------
   sitemap_item_siblings
+
+=================
+Publish Functions
+=================
+* The following functions are only supported in publish templates, not editor templates
+
+Page Includes
+  On publish, components can include other pages via:
+    <%-include('/path/to/page')%>
+  Path should be absolute relative to the publish root folder
+
 
 ========
 Examples
