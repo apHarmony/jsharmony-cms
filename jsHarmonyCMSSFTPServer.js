@@ -139,9 +139,11 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
 
   
   var hostKeys = [];
-  if(jsh.Config.server.https_key){
-    var key = fs.readFileSync(jsh.Config.server.https_key);
-    hostKeys.push(key);
+  if(_this.cms.Config.sftp.serverKey){
+    hostKeys.push(fs.readFileSync(_this.cms.Config.sftp.serverKey));
+  }
+  else if(jsh.Config.server.https_key){
+    hostKeys.push(fs.readFileSync(jsh.Config.server.https_key));
   }
 
   if(!_this.cms.Config.sftp.serverIp){
@@ -246,7 +248,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
             var password = Buffer.from(ctx.password).toString();
             _this.Auth(req, username, password, clientIp, function(success){
               if(success){
-                if(!_.union(['SYSADMIN','WEBMASTER'], req._roles).length) return onAuthReject(ctx, username);
+                if(!_.intersection(['SYSADMIN','WEBMASTER'], _.keys(req._roles)).length) return onAuthReject(ctx, username);
                 return onAuthSuccess(ctx, username);
               }
               else {

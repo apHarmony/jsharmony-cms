@@ -35,14 +35,23 @@ function jsHarmonyCMSConfig(){
     serverPort: 22,
     serverIp: '0.0.0.0',
     clientIp: ['0.0.0.0/0'],  /* '127.0.0.1', '192.168.1.0/24', ... */
+
+    serverKey: undefined,     // path/to/key.pem
+                              //   If undefined, HTTPS Key from main CMS site will be used
   };
 
   this.preview_server = {
     enabled: false,
     serverPort: 8088,
     serverIp: '0.0.0.0',
-    serverUrl: undefined,   //Preview Server client-facing URL, ex. https://example.com:8088
-                            //  If not set, hostname will be auto-detected from CMS site hostname
+    serverUrl: undefined,       //Preview Server client-facing URL, ex. https://example.com:8088
+                                //  If not set, hostname will be auto-detected from CMS site hostname
+
+    serverHttpsKey: undefined,  // path/to/https-key.pem
+                                //  If undefined, HTTPS Key / Cert / CA from main CMS site will be used
+                                //  If set to false, HTTP will be used instead of HTTPS
+    serverHttpsCert: undefined, // path/to/https-cert.pem
+    serverHttpsCa: undefined,   // path/to/https-ca.pem
   };
 
   this.media_thumbnails = {

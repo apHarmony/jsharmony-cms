@@ -50,12 +50,24 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
   var siteConfig = jsh.Sites['main'];
   
   var isHTTPS = !!config.server.https_key;
+  if(cms.Config.preview_server.serverHttpsKey === false) isHTTPS = false;
+
   if(isHTTPS){
-    var https_options = {
-      key: fs.readFileSync(config.server.https_key),
-      cert: fs.readFileSync(config.server.https_cert),
-    };
-    if(config.server.https_ca) https_options.ca = fs.readFileSync(config.server.https_ca);
+    var https_options;
+    if(cms.Config.preview_server.serverHttpsKey){
+      https_options = {
+        key: fs.readFileSync(cms.Config.preview_server.serverHttpsKey),
+        cert: fs.readFileSync(cms.Config.preview_server.serverHttpsCert),
+      };
+      if(cms.Config.preview_server.serverHttpsCa) https_options.ca = fs.readFileSync(cms.Config.preview_server.serverHttpsCa);
+    }
+    else {
+      https_options = {
+        key: fs.readFileSync(config.server.https_key),
+        cert: fs.readFileSync(config.server.https_cert),
+      };
+      if(config.server.https_ca) https_options.ca = fs.readFileSync(config.server.https_ca);
+    }
   }
 
   if(!_this.cms.Config.preview_server.serverIp){
@@ -286,6 +298,7 @@ jsHarmonyCMSPreviewServer.prototype.getURL = function(hostname){
   if(_this.cms.Config.preview_server.serverUrl) return _this.cms.Config.preview_server.serverUrl;
 
   var isHTTPS = !!_this.jsh.Config.server.https_key;
+  if(cms.Config.preview_server.serverHttpsKey === false) isHTTPS = false;
 
   var server_txt = _this.cms.Config.preview_server.serverIp;
   var server_port = _this.cms.Config.preview_server.serverPort;
