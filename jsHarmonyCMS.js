@@ -297,6 +297,18 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   this.jsh.Sites['main'].globalparams.defaultEditorConfig = _this.Config.defaultEditorConfig;
 }
 
+jsHarmonyCMS.prototype.getCmsBaseUrlFromReq = function(req){
+  var _this = this;
+  var jsh = _this.jsh;
+
+  var mainBaseUrl = jsh.Sites['main'].baseurl;
+  if(mainBaseUrl){
+    if(mainBaseUrl.indexOf('://') >= 0) return mainBaseUrl;
+    if(mainBaseUrl.indexOf('//')==0) return mainBaseUrl;
+  }
+  return jsh.Servers['default'].getURLFromReq(hostname)+mainBaseUrl;
+}
+
 jsHarmonyCMS.prototype.initBranchItems = function(cb){
   var _this = this;
   var sql_branch_items = [];

@@ -1463,7 +1463,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.generateEditorTemplate = function(content, options){
-    options = _.extend({ cmsBaseUrl: '' }, options);
+    options = _.extend({ cmsBaseUrl: '/' }, options);
 
     if(!content) return '';
 
@@ -1497,7 +1497,7 @@ module.exports = exports = function(module, funcs){
       var bodyNodeInfo = htparts.body.sourceCodeLocation;
       if(!bodyNodeInfo.startTag && !bodyNodeInfo.endTag) throw new Error('Error generating Editor Template - body tag does not have both a start tag and an end tag');
       //Add CMS Script
-      htdoc.spliceContent(bodyNodeInfo.startTag.endOffset, bodyNodeInfo.startTag.endOffset, '<script type="text/javascript" class="removeOnPublish" src="'+Helper.escapeHTMLAttr(options.cmsBaseUrl+'/js/jsHarmonyCMS.js')+'"></script>');
+      htdoc.spliceContent(bodyNodeInfo.startTag.endOffset, bodyNodeInfo.startTag.endOffset, '<script type="text/javascript" class="removeOnPublish" src="'+Helper.escapeHTMLAttr(options.cmsBaseUrl+'js/jsHarmonyCMS.js')+'"></script>');
     }
 
     content = htdoc.content;

@@ -895,7 +895,7 @@ module.exports = exports = function(module, funcs){
             if(page_template.templates.editor){
               //Return full page
               if(Q.render){
-                var cmsBaseUrl = jsh.Servers['default'].getURLFromReq(req);
+                var cmsBaseUrl = cms.getCmsBaseUrlFromReq(req);
                 var content = '';
                 try{
                   content = funcs.generateEditorTemplate(page_template.templates.editor, { cmsBaseUrl: cmsBaseUrl });

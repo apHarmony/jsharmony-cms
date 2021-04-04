@@ -82,7 +82,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
 
   app.all('*', function (req, res, next) {
     req.jshsite = siteConfig;
-    req.baseurl = jsh.Servers['default'].getURL((req.headers.host||'').split(':')[0]);
+    req.baseurl = cms.getCmsBaseUrlFromReq(req);
     //Delete jQuery Anti-Cache timestamp
     if('_' in req.query) delete req.query['_'];
     setNoCache(req,res);
@@ -109,7 +109,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
 
       if (!rslt || !rslt.length || !rslt[0] || !rslt[0].site_id){
         //If no branch checked out - show error message
-        var url = req.baseurl+'/'+cms.namespace+'Branch_Active_Listing';
+        var url = req.baseurl+cms.namespace+'Branch_Active_Listing';
         return res.end('<html><body>Please check out a CMS revision: <a href="'+Helper.escapeHTML(url)+'">'+Helper.escapeHTML(url)+'</a></body></html>');
       }
 
@@ -282,6 +282,8 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
 
 jsHarmonyCMSPreviewServer.prototype.getURL = function(hostname){
   var _this = this;
+
+  if(_this.cms.Config.preview_server.serverUrl) return _this.cms.Config.preview_server.serverUrl;
 
   var isHTTPS = !!_this.jsh.Config.server.https_key;
 

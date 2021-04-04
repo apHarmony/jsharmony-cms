@@ -41,6 +41,8 @@ function jsHarmonyCMSConfig(){
     enabled: false,
     serverPort: 8088,
     serverIp: '0.0.0.0',
+    serverUrl: undefined,   //Preview Server client-facing URL, ex. https://example.com:8088
+                            //  If not set, hostname will be auto-detected from CMS site hostname
   };
 
   this.media_thumbnails = {
