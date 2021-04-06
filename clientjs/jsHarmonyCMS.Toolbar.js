@@ -73,25 +73,35 @@ exports = module.exports = function(jsh, cms){
     var origBodyOffset = null;
     var scrollTop = $(document).scrollTop();
 
+    //Save starting offsets
     var startingOffsets = [];
     for(var i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
       var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
       if(jelem.length){
-        startingOffsets[i] = jelem.first().offset().top;
-        if(jelem[0].tagName=='BODY'){
+        var elemIsBody = (jelem[0].tagName=='BODY');
+        //Fixed elements need to subtract scrollTop from offset().top
+        startingOffsets[i] = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
+        if(elemIsBody){
           origBodyOffset = _this.getComputedOffsetTop(jelem[0]);
         }
       }
     }
 
+    //Apply offsets
     for(var i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
       var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
       if(jelem.length){
+        var elemIsBody = (jelem[0].tagName=='BODY');
         if(offsetTop){
-          var curTop = jelem.first().offset().top;
-          if(curTop != startingOffsets[i]){ _this.origMarginTop[i] = null; continue; }
+          //Fixed elements need to subtract scrollTop from offset().top
+          var curTop = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
+          if(curTop != startingOffsets[i]){
+            //If offset changed automatically because of a parent / body offset, do not add the offset to this element
+            _this.origMarginTop[i] = null;
+            continue;
+          }
           else {
             var newMarginTop = _this.origMarginTop[i] ? 'calc(' + _this.origMarginTop[i] + ' + ' + offsetTop + 'px)' : offsetTop+'px';
             $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', newMarginTop);
@@ -101,10 +111,12 @@ exports = module.exports = function(jsh, cms){
           $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', _this.origMarginTop[i]);
         }
         //If changing body offset
-        if(scrollTop && (jelem[0].tagName=='BODY')){
+        if(scrollTop && elemIsBody){
           var newBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+          //Keep scroll position
           if(scrollTop && (origBodyOffset != newBodyOffset)){
             $(document).scrollTop(scrollTop + (parseInt(newBodyOffset) - parseInt(origBodyOffset)));
+            scrollTop = $(document).scrollTop();
           }
         }
       }

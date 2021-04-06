@@ -61,7 +61,7 @@
     "upload_params": { //Add parameters to the S3.upload request
       //"ACL": "public-read",
       //More parameters can be found at:
-      //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#upload-property
+      //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property
     }
   },
 }

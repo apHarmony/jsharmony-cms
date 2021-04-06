@@ -254,7 +254,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
     else {
       var mceEditor = window.tinymce.get(containerId);
-      if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+      if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div cms-content-editor="'+desc+'"></div>');
       if(!_this.isInitialized) mceEditor.undoManager.clear();
       mceEditor.setContent(val);
       if(!_this.isInitialized) mceEditor.undoManager.add();
@@ -264,7 +264,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.getContent = function(id, desc){
     if(!desc) desc = id;
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
-    if(!mceEditor) cms.fatalError('editor.getContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div "cms-content-editor"="'+desc+'"></div>');
+    if(!mceEditor) cms.fatalError('editor.getContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div cms-content-editor="'+desc+'"></div>');
     return mceEditor.getContent();
   }
 

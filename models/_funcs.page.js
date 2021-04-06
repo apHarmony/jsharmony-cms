@@ -229,7 +229,7 @@ module.exports = exports = function(module, funcs){
     while(rtagidx >= 0){
       var startofstr = rtagidx;
       var endofstr = rtagidx;
-      var urlchar = /[a-zA-Z0-9\/_#\-:=?@%&.~[\]!$()*+,;]/;
+      var urlchar = /[a-zA-Z0-9\/_#\-:=?@%&.~[\]!$*+,;]/;
       do{ if(!urlchar.test(content[startofstr])) break; } while(--startofstr >= 0);
       do{ if(!urlchar.test(content[endofstr])) break; } while(++endofstr < content.length);
       startofstr++;

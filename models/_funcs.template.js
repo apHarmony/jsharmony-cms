@@ -45,13 +45,13 @@ module.exports = exports = function(module, funcs){
 
     //Apply config.component_properties
     if(config.component_properties){
-      if(_.isObject(config.component_properties)){
-        config.properties = _.extend(config.properties, config.component_properties);
-      }
-      else if(_.isArray(config.component_properties)) {
+      if(_.isArray(config.component_properties)) {
         config.properties.fields = (config.properties.fields||[]);
         if(!_.isArray(config.properties.fields)) throw new Error('Component config.properties.fields must be an array');
         config.properties.fields = config.properties.fields.concat(config.component_properties);
+      }
+      else if(_.isObject(config.component_properties)){
+        config.properties = _.extend(config.properties, config.component_properties);
       }
       else throw new Error('Component config.component_properties must be an array or object');
       delete config.component_properties;
@@ -59,13 +59,13 @@ module.exports = exports = function(module, funcs){
 
     //Apply config.item_properties
     if(config.item_properties){
-      if(_.isObject(config.item_properties)){
-        config.data = _.extend(config.data, config.item_properties);
-      }
-      else if(_.isArray(config.item_properties)) {
+      if(_.isArray(config.item_properties)) {
         config.data.fields = (config.data.fields||[]);
         if(!_.isArray(config.data.fields)) throw new Error('Component config.data.fields must be an array');
         config.data.fields = config.data.fields.concat(config.item_properties);
+      }
+      else if(_.isObject(config.item_properties)){
+        config.data = _.extend(config.data, config.item_properties);
       }
       else throw new Error('Component config.item_properties must be an array or object');
       delete config.item_properties;

@@ -10,7 +10,7 @@
       {"name":"site_name","caption":"Site Name","control":"textbox_M"},
       {"name":"site_sts","caption":"Status","validate":["Required"],"default":"ACTIVE"},
       {"name":"site_default_editor","caption":"Default Preview / Editor","control":"dropdown","lov":{ "blank": "(None)", "sql": "select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and deployment_target_sts='ACTIVE' and site_id=@site_id order by deployment_target_name" },"captionstyle":"margin-left:5px;"},
-      {"name":"site_default_page_template_id","caption":"Default Page Template","control":"dropdown","lov":"#LOV_CMS_PAGE_TEMPLATES_BLANK","nl":true},
+      {"name":"site_default_page_template_id","caption":"Default Page Template","control":"dropdown","lov":{ "#LOV_CMS_PAGE_TEMPLATES_BLANK": { "sql": "select @site_id code_val,'site_id' code_txt" } },"nl":true},
       {"name":"site_default_page_filename","caption":"Default Page Filename","control":"textbox_S","default":"index.html","captionstyle":"margin-left:5px;"},
       {"name":"Site_Deployment_Target_Listing","control":"subform","controlstyle":"width:860px;margin-top:20px;","target":"Site_Deployment_Target_Listing","caption":"Deployment Targets"}
     ]

@@ -264,7 +264,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   
   //List of Values for Page Templates
   this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES = {
-    "sql":"select site_id code_val,'site_id' code_txt from "+(this.schema?this.schema+'.':'')+"branch where branch.branch_id="+(this.schema?this.schema+'.':'')+"my_current_branch_id()",
+    "sql":"select "+(this.schema?this.schema+'.':'')+"my_current_site_id() code_val,'site_id' code_txt",
     "post_process":"return jsh.Modules['"+this.name+"'].funcs.getCurrentPageTemplatesLOV(req._DBContext, values, {}, callback);",
   };
   this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK = _.extend({ "blank": "(None)" }, this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES);

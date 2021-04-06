@@ -338,7 +338,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var contentId = 'page.content.'+pageContentId;
       if(!(contentId in foundContent)) errors.push({
         message: 'Missing Editor for Content Element "'+contentId+'".  Please add an HTML element with the "cms-content-editor" attribute, and set to the target content id:<br/>' +
-        '<pre>&lt;div "cms-content-editor"="'+contentId+'"&gt;&lt;/div&gt;</pre>',
+        '<pre>&lt;div cms-content-editor="'+contentId+'"&gt;&lt;/div&gt;</pre>',
         type: 'html'
       });
     }
@@ -458,7 +458,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           if(!obj.id) obj.id = 'jsharmony_cms_content_' + XExt.escapeCSSClass(contentId, { nodash: true });
           var pageContentId = _this.getPageContentId(contentId);
           if(!(pageContentId in _this.page.content)){
-            _this.page.content[pageContentId] = jobj.html();
+            _this.page.content[pageContentId] = jobj.html().trim();
             if(_this.template && _this.template.default_content && _this.template.default_content[pageContentId]){
               _this.page.content[pageContentId] = _this.template.default_content[pageContentId];
             }

@@ -298,7 +298,7 @@ jsHarmonyCMSPreviewServer.prototype.getURL = function(hostname){
   if(_this.cms.Config.preview_server.serverUrl) return _this.cms.Config.preview_server.serverUrl;
 
   var isHTTPS = !!_this.jsh.Config.server.https_key;
-  if(cms.Config.preview_server.serverHttpsKey === false) isHTTPS = false;
+  if(_this.cms.Config.preview_server.serverHttpsKey === false) isHTTPS = false;
 
   var server_txt = _this.cms.Config.preview_server.serverIp;
   var server_port = _this.cms.Config.preview_server.serverPort;

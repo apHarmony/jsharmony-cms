@@ -1061,10 +1061,28 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
+      var site_id = parseInt(Q.site_id);
+      if(site_id.toString() !== Q.site_id.toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters'); 
+
       appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
         if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
         var url = Q.source || req.jshsite.baseurl || '/';
-        Helper.Redirect302(res, url);
+
+        var sitePath = path.join(jsh.Config.datadir,'site');
+
+        async.waterfall([
+          //Create site folders if they do not exist
+          function(site_cb){ HelperFS.createFolderIfNotExists(path.join(sitePath,site_id.toString()), site_cb); },
+          function(site_cb){ HelperFS.createFolderIfNotExists(path.join(sitePath,site_id.toString(),'templates'), site_cb); },
+          function(site_cb){ HelperFS.createFolderIfNotExists(path.join(sitePath,site_id.toString(),'templates','pages'), site_cb); },
+          function(site_cb){ HelperFS.createFolderIfNotExists(path.join(sitePath,site_id.toString(),'templates','components'), site_cb); },
+          function(site_cb){ HelperFS.createFolderIfNotExists(path.join(sitePath,site_id.toString(),'templates','websnippets'), site_cb); },
+        ], function(err){
+          if(err) return Helper.GenError(req, res, -99999, err.toString());
+
+          //Redirect to final URL
+          Helper.Redirect302(res, url);
+        });
       });
       return;
     }

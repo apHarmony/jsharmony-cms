@@ -74,6 +74,50 @@
   }
 &lt;/script&gt;
 
+=======================================
+Inline Component / Websnippet Templates
+=======================================
+-- Inline Component Template
+&lt;script type="text/cms-component-template"&gt;
+  &lt;cms-component-config&gt;
+  {
+    "id": "banner",
+    "title": "Banner",
+    "target": "content",
+    "icon": "material:view_module",
+    "component_properties": [
+      { "name": "cssStyle", "caption": "CSS Style" },
+      { "name": "cssClass", "caption": "CSS Class" },
+    ],
+    "item_properties": [
+      { "name": "image", "caption": "Image", "control": "media_browser", "validate": ["Required"]},
+      { "name": "link", "caption": "Link", "control": "link_browser"},
+      { "name": "title", "control": "htmleditor" },
+      { "name": "body", "control": "htmleditor" },
+    ]
+  }
+  &lt;/cms-component-config&gt;
+  &lt;div ...&gt;
+    ... Component HTML ...
+  &lt;/div&gt;
+&lt;/script&gt;
+
+-- Component Instance
+(See above : cms-component )
+
+-- Inline Websnippet Template
+&lt;script type="text/cms-websnippet-template"&gt;
+  &lt;cms-websnippet-config&gt;
+    {
+      "title": "Product Features",
+      "description": "List of product features"
+    }
+  &lt;/cms-websnippet-config&gt;
+  &lt;div ...&gt;
+    ... Websnippet HTML ...
+  &lt;/div&gt;
+&lt;/script&gt;
+
 =================================
 JavaScript CMS onRender Functions
 =================================
@@ -108,7 +152,7 @@ cms.onRender: function(page){ }
   * Fired each time the Page Editor renders the page content (on load and after each save)
   if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onRender = function(page){ /* Code Here */ }
 
-cms.onGetControllerUrl: function() => url
+cms.onGetControllerUrl: function() =&gt; url
   * Fired on initialization.  Can be used to return the URL of a custom CMS Page Controller.
   * See jsharmony-cms/clientjs/jsHarmonyCMS.Controller.js for a template
   if(window.jsHarmonyCMSInstance) jsHarmonyCMSInstance.onGetControllerUrl = function(){ return 'https://domain/path/to/controller.js'; }
@@ -139,7 +183,7 @@ Publish Functions
 
 Page Includes
   On publish, pages can include other pages via:
-    <%-include('/path/to/page')%>
+    &lt;%-include('/path/to/page')%&gt;
   Path should be absolute relative to the publish root folder
 
             </pre>
