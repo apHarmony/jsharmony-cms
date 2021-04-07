@@ -389,7 +389,7 @@ Publish Functions
 
 Page Includes
   On publish, components can include other pages via:
-    <%-include('/path/to/page')%>
+    &lt;%-include('/path/to/page')%&gt;
   Path should be absolute relative to the publish root folder
 
 
@@ -545,3 +545,10 @@ Breadcrumbs
   </div>
 </div>
 <div id="jsharmony_cms_editor_errors" class="jsharmony_cms"></div>
+<script class="jsharmony_cms_fileselector_template" type="text/x-ejs-template">
+  <div class="jsharmony_cms_fileselector_container" data-fileselectortype="<%=fileSelectorType%>">
+    <input type="text" class="jsharmony_cms_fileselector xform_ctrl_subfocus uneditable" readonly="readonly" value="<%=val%>">
+    <input type="button" class="jsharmony_cms_fileselector_browse" value="Browse" onclick="<%-js('_this._sys_fileSelector_browse(this);return false;')%>" />
+    <input type="button" class="jsharmony_cms_fileselector_reset" value="Reset" onclick="<%-js('_this._sys_fileSelector_reset(this);return false;')%>" />
+  </div>
+</script>

@@ -306,7 +306,7 @@ jsHarmonyCMS.prototype.getCmsBaseUrlFromReq = function(req){
     if(mainBaseUrl.indexOf('://') >= 0) return mainBaseUrl;
     if(mainBaseUrl.indexOf('//')==0) return mainBaseUrl;
   }
-  return jsh.Servers['default'].getURLFromReq(hostname)+mainBaseUrl;
+  return jsh.Servers['default'].getURLFromReq(req)+mainBaseUrl;
 }
 
 jsHarmonyCMS.prototype.initBranchItems = function(cb){

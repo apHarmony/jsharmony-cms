@@ -4969,7 +4969,7 @@ exports = module.exports = function(jsh, cms){
   this.openLink = function(cb, value, meta){
     cms.filePickerCallback = cb;
     var qs = _this.getParameters('link', value);
-    XExt.popupForm('jsHarmonyCMS/Link_Browser', 'browse', qs, { width: 1100, height: 600 });
+    XExt.popupForm('jsHarmonyCMS/Link_Browser', 'update', qs, { width: 1100, height: 600 });
   }
 
   this.openMedia = function(cb, value, meta){
@@ -4998,6 +4998,57 @@ exports = module.exports = function(jsh, cms){
       return true;
     }
     return false;
+  }
+
+  this.fileSelector_onGetValue = function(val, field, xmodel, jctrl, parentobj){
+    return jctrl.find('input.jsharmony_cms_fileselector').val();
+  }
+
+  this.fileSelector_render = function(fileSelectorType, xmodel, field, val){  //fileSelectorType = link_browser or media_browser
+    return XExt.renderEJS(jsh.$('.jsharmony_cms_fileselector_template').html(), xmodel.id, {
+      fileSelectorType: fileSelectorType,
+      field: field,
+      val: val,
+    });
+  }
+
+  this.fileSelector_onChange = function(obj){
+    var jobj = $(obj);
+    var jctrl = $(obj).closest('.xform_ctrl');
+    var xform = XExt.getFormFromObject(obj);
+    if(jctrl.length && xform){
+      if(!jctrl.hasClass('editable')) return;
+      xform.Data.OnControlUpdate(jctrl[0]);
+    }
+  }
+
+  this.fileSelector_reset = function(obj){
+    var jobj = $(obj);
+    var jparent = $(obj).closest('.jsharmony_cms_fileselector_container');
+    var jtext = jparent.find('input.jsharmony_cms_fileselector');
+    jtext.val('');
+    _this.fileSelector_onChange(obj);
+  }
+
+  this.fileSelector_browse = function(obj){
+    var jobj = $(obj);
+    var jparent = $(obj).closest('.jsharmony_cms_fileselector_container');
+    var jtext = jparent.find('input.jsharmony_cms_fileselector');
+    var fileSelectorType = jparent.data('fileselectortype');
+    var val = jtext.val();
+    if(fileSelectorType == 'link_browser'){
+      _this.openLink(function(url, data) {
+        jtext.val(url);
+        _this.fileSelector_onChange(obj);
+      }, val);
+    }
+    else if(fileSelectorType == 'media_browser'){
+      _this.openMedia(function(url, data) {
+        jtext.val(url);
+        _this.fileSelector_onChange(obj);
+      }, val);
+    }
+    else XExt.Alert('Invalid File Selector Type: '+fileSelectorType);
   }
 }
 },{}],26:[function(require,module,exports){
@@ -7456,7 +7507,6 @@ var jsHarmonyCMS = function(options){
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
       jsh = _this.jsh = window.jshInstance = new jsHarmony({
-        _debug: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},

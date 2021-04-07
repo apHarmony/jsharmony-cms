@@ -278,13 +278,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     });
 
     if(_this.template.properties){
-      _.each(_this.template.properties.fields, function(field){
-        if(field && field.name){
-          if(!(field.name in _this.page.properties)){
-            _this.page.properties[field.name] = ('default' in field) ? field.default : '';
-          }
-        }
-      });
+      _this.processModelFields(_this.template.properties, _this.page.properties);
     }
 
     if(!('content_elements' in _this.template)){
@@ -435,6 +429,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         if(cms.readonly) _this.template.properties.actions = 'B';
         _this.template.properties.onchange = 'var cms = '+cms._instance+'; if(cms.isInitialized){ cms.controller.getValues(); cms.controller.renderHooks(); }'+(_this.template.properties.onchange||'');
         XPage.LoadVirtualModel($('.jsharmony_cms_page_settings_properties')[0], _this.template.properties, function(){
+          jsh.App[_this.template.properties.id]._sys_fileSelector_onGetValue = cms.editor.picker.fileSelector_onGetValue;
+          jsh.App[_this.template.properties.id]._sys_fileSelector_render = cms.editor.picker.fileSelector_render;
+          jsh.App[_this.template.properties.id]._sys_fileSelector_browse = cms.editor.picker.fileSelector_browse;
+          jsh.App[_this.template.properties.id]._sys_fileSelector_reset = cms.editor.picker.fileSelector_reset;
           f();
         });
       },
@@ -504,6 +502,27 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         }
       }
     );
+  }
+
+  this.processModelFields = function(model, data){
+    for(var i=0;i<model.fields.length;i++){
+      var field = model.fields[i];
+
+      //Set default value in data based on field default value
+      if(field && field.name){
+        if(!(field.name in data)){
+          data[field.name] = ('default' in field) ? field.default : '';
+        }
+      }
+
+      //Handle media_browser / link_browser controls
+      if(field && ((field.control=='media_browser') || (field.control=='link_browser'))){
+        var fileSelectorType = field.control;
+        field.control = 'label';
+        field.ongetvalue = 'return _this._sys_fileSelector_onGetValue(val, field, xmodel, jctrl, parentobj);';
+        field.value = '<#-_this._sys_fileSelector_render('+JSON.stringify(fileSelectorType)+', xmodel, xmodel.fields['+JSON.stringify(field.name)+'], val)#>';
+      }
+    }
   }
 
   this.render = function(){
@@ -620,7 +639,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       this.style[key] = lastStyle[key];
     }
 
-    var origStyleText = jobj.attr('style');
+    var origStyleText = jobj.attr('style')||'';
     origStyleText += (XExt.endsWith(origStyleText.trim(),';')?'':';');
     origStyleText += strStyle;
 
