@@ -235,7 +235,30 @@ module.exports = exports = function(module, funcs){
       startofstr++;
       endofstr--;
       var url = content.substr(startofstr, endofstr - startofstr + 1);
-      var newURL = replaceURL(url, function(){
+      var lowerurl = url.toLowerCase();
+
+      //Remove &quot; + shift startofstr / endofstr
+      var quotstr = '&quot;';
+      if(lowerurl.indexOf(quotstr) >= 0){
+        var relrtagidx = rtagidx - startofstr;
+        var endquotidx = lowerurl.indexOf(quotstr, relrtagidx);
+        var startquotidx = lowerurl.lastIndexOf(quotstr, relrtagidx);
+        if(endquotidx >= 0) endofstr -= (url.length - endquotidx);
+        if(startquotidx >= 0) startofstr += startquotidx + quotstr.length;
+
+        url = content.substr(startofstr, endofstr - startofstr + 1);
+        lowerurl = url.toLowerCase();
+      }
+
+      var newURL = url;
+      
+      //Decode HTML entities
+      var escapeHtmlEntities = ((lowerurl.indexOf('&#x2f;') >= 0) || (lowerurl.indexOf('&#47;') >= 0));
+      if(escapeHtmlEntities){
+        newURL = Helper.unescapeHTMLEntity(newURL);
+      }
+
+      newURL = replaceURL(newURL, function(){
         //Get start of link
         var startOfLine = startofstr - 1;
         var startchar = /[\n<]/;
@@ -248,6 +271,12 @@ module.exports = exports = function(module, funcs){
 
         return content.substr(startOfLine, endOfLine - startOfLine + 1);
       });
+
+      //Re-encode HTML entities
+      if(escapeHtmlEntities){
+        newURL = Helper.escapeHTML(newURL);
+      }
+
       if(true || newURL && (newURL!=url)){
         content = content.substr(0, startofstr) + newURL + content.substr(endofstr + 1);
         rtagidx = endofstr;

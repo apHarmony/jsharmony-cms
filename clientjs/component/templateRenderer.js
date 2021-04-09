@@ -81,7 +81,7 @@ TemplateRenderer.createRenderConfig = function(template, data, properties, cms) 
  * @param {Object} cms
  * @returns {string}
  */
-TemplateRenderer.render = function(config, type, jsh, cms, componentConfig) {
+TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, additionalRenderParams) {
   var _ = jsh._;
   var XValidate = jsh.XValidate;
 
@@ -105,14 +105,14 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig) {
     else renderOptions.data = {};
   }
 
-  var renderContext = cms.componentManager.getComponentRenderParameters(null, renderOptions, {
+  var renderContext = cms.componentManager.getComponentRenderParameters(null, renderOptions, _.extend({
     baseUrl: config.baseUrl,
     gridContext: config.gridContext,
     isInEditor: true,
     isInPageEditor: true,
     isInComponentEditor: ((type=='gridRowDataPreview') || (type=='gridItemPreview')),
     renderPlaceholder: renderPlaceholder,
-  });
+  }, additionalRenderParams));
   
   if(componentConfig){
 

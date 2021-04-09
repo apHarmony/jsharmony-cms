@@ -195,14 +195,14 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     var config = componentTemplate.getComponentConfig()  || {};
     var template = (config.templates || {}).editor || '';
 
-    var data = _.extend({}, this.getData(), { component_id: _this.id });
+    var data = _.extend({}, this.getData());
     var props = this.getProperties();
 
     var renderConfig = TemplateRenderer.createRenderConfig(template, data, props, cms);
 
     if (_.isFunction(this.onBeforeRender)) this.onBeforeRender(renderConfig);
 
-    var rendered = TemplateRenderer.render(renderConfig, 'component', jsh, cms, config);
+    var rendered = TemplateRenderer.render(renderConfig, 'component', jsh, cms, config, { component_id: _this.id });
 
     if(!rendered){
       if(!template) rendered = '*** Component Rendering Error: Template Missing ***';
