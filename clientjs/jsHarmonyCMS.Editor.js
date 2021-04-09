@@ -79,6 +79,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms',
           'insertdatetime media table paste code noneditable'
         ],
+        contextmenu: 'jsharmonycmscomponentcontextmenu link linkchecker image imagetools table spellchecker configurepermanentpen',
         toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView',
         removed_menuitems: 'newdocument',
         image_advtab: true,
@@ -89,8 +90,10 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
           tools: { title: 'Tools', items: 'jsHarmonyCmsSpellCheckMessage spellchecker spellcheckerlanguage | code wordcount' },
           table: { title: 'Table', items: 'inserttable tableprops deletetable row column cell' },
-          help: { title: 'Help', items: 'help' }
+          help: { title: 'Help', items: 'help' },
+          endedit: { title: 'End Edit', items: 'jsHarmonyCmsEndEdit' },
         },
+        menubar: 'file edit view insert format tools table help endedit',
         file_picker_types: 'file image',
         file_picker_callback: function(cb, value, meta) {
           // Provide file and text for the link dialog

@@ -158,6 +158,54 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.createComponentContextMenu = function(componentInfo) {
+    if(!componentInfo || !componentInfo.length) return;
+
+    var _this = this;
+
+    function getComponentType(element){
+      while(element){
+        if(element.hasAttribute && element.hasAttribute('data-component')) return element.getAttribute('data-component');
+        element = element.parentNode;
+      }
+      return false;
+    }
+
+    //Disable other context items on components
+    _.each(_this._editor.ui.registry.getAll().contextMenus, function(menu){
+      if(menu.update) menu.update = jsh.XExt.chain(menu.update, function(element){
+        if(getComponentType(element)) return '';
+      });
+    });
+    //Add context menu for components
+    _this._editor.ui.registry.addContextMenu('jsharmonycmscomponentcontextmenu', {
+      update: function (element) {
+        var componentType = getComponentType(element);
+        if(componentType){
+          var info = _.find(componentInfo, function(info) { return info.componentType === componentType });
+          if (!info) return '';
+          var menuItems = [];
+          if(info.hasData) menuItems.push('jsHarmonyCmsComponent_Edit');
+          if(info.hasProperties) menuItems.push('jsHarmonyCmsComponent_Configure');
+          return menuItems.join(' | ');
+        }
+        return '';
+      }
+    });
+    _this._editor.ui.registry.addMenuItem('jsHarmonyCmsComponent_Edit', {
+      tooltip: 'Edit Content',
+      text: 'Edit Content',
+      icon:  ICONS.edit.name,
+      onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentData); }
+    });
+    _this._editor.ui.registry.addMenuItem('jsHarmonyCmsComponent_Configure', {
+      tooltip: 'Configure',
+      text: 'Configure',
+      icon: ICONS.settings.name,
+      onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
+    });
+  }
+
   JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
     var _this = this;
     _this.toolbarOptions.show_menu = !!visible;
@@ -297,6 +345,29 @@ exports = module.exports = function(jsh, cms, editor){
   }
 
   /**
+   * Create menu button for End Edit
+   * @private
+   * @param {ComponentInfo[]} componentInfo
+   */
+  JsHarmonyComponentPlugin.prototype.createEndEditMenuButton = function() {
+    var _this = this;
+    this._editor.ui.registry.addMenuItem('jsHarmonyCmsEndEdit', {
+      text: 'End Edit',
+      icon: 'checkmark',
+      onAction: function () {
+        jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
+        $('#jsharmony_cms_virtual_focus_element a').focus();
+        setTimeout(function(){
+          jsh.XExt.waitUntil(
+            function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()) },
+            function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); },
+          );
+        }, 100);
+      }
+    });
+  }
+
+  /**
    * Create and register the context toolbar for editing
    * the component properties and data.
    * @private
@@ -309,8 +380,8 @@ exports = module.exports = function(jsh, cms, editor){
     var dataButtonId = 'jsharmonyComponentDataEditor';
 
     _this._editor.ui.registry.addButton(dataButtonId, {
-      tooltip: 'Edit',
-      text: 'Edit',
+      tooltip: 'Edit Content',
+      text: 'Edit Content',
       icon:  ICONS.edit.name,
       onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentData); }
     });
@@ -464,6 +535,9 @@ exports = module.exports = function(jsh, cms, editor){
     this.createMenuViewOptions();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
+    this.createEndEditMenuButton();
+    this.createComponentContextMenu(componentInfo);
+
 
     this._editor.on('undo', function(info) { _this.onUndoRedo(info); });
     this._editor.on('redo', function(info) { _this.onUndoRedo(info); });

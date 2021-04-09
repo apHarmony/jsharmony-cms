@@ -646,7 +646,6 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
               //EOF
               if (offset >= stats.size){
                 sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
-                closeHandle(handle);
                 return;
               }
 
