@@ -48,6 +48,7 @@
   flex-grow:1;
   margin-top:0px;
   position:relative;
+  height:1px;
 }
 .xsubform.Page_Tree_Listing .xpanel {
   border:0;

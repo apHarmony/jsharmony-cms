@@ -355,8 +355,13 @@ jsh.App[modelid] = new (function(){
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      if(_this.isInEditor) jfiles.on('dblclick', function(e){
-        _this.sendToEditor($(this).data('key'));
+      jfiles.on('dblclick', function(e){
+        if(_this.isInEditor){
+          _this.sendToEditor($(this).data('key'));
+        }
+        else {
+          _this.downloadFile($(this).data('key'));
+        }
         e.preventDefault();
         e.stopImmediatePropagation();
       });
