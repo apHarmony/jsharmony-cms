@@ -59,6 +59,15 @@ jsh.App[modelid] = new (function(){
     jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), page_template_id, { source: 'page_tree', rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' });
   }
 
+  this.page_filename_onclick = function(obj){
+    if(xmodel.parent && jsh.App[xmodel.parent].isInEditor){
+      return _this.sendToEditor(obj);
+    }
+    else {
+      return _this.editFile(obj);
+    }
+  }
+
   this.previewFile = function(page_file){
     var page_key = page_file.page_key;
     var page_id = page_file.page_id;

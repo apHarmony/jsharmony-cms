@@ -83,6 +83,7 @@ var jsHarmonyCMS = function(options){
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
       jsh = _this.jsh = window.jshInstance = new jsHarmony({
+        _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},

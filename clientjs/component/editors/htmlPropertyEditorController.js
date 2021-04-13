@@ -121,9 +121,9 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons',
+        toolbar: 'backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons | jsHarmonyCmsEndEdit',
         valid_elements : 'a,strong/b,p,span[style|class],p[*],img[*],br[*]',
-        plugins: ['link image charmapmaterialicons'],
+        plugins: ['link image charmapmaterialicons jsHarmonyCms'],
         menubar: false,
       };
     } else {
@@ -146,9 +146,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
  * @returns {string}
  */
 HTMLPropertyEditor.prototype.processText = function(text) {
-  // Sometimes TinyMce adds non-breaking spaces (may be browser dependant).
-  // These need to be removed
-  return (text || '').replace(/(&nbsp;)|(&#160;)/g, ' ');
+  return text;
 }
 
 /**

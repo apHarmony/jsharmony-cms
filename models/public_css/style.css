@@ -243,7 +243,7 @@
 }
 <%-(rootcss)%> .jsHarmonyCms_info_tip::before {
   content: "i";
-  border: 3px solid #24528f;
+  border: 3px solid #c52525;
   font-size:18px;
   font-family:"Times New Roman", Times, serif;
   width:20px;
@@ -255,7 +255,7 @@
   left:4px;
   top:4px;
   text-align:center;
-  color: #24528f;
+  color: #c52525;
   font-weight: bold;
   opacity:0.75;
 }

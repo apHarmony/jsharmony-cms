@@ -24,7 +24,7 @@
       {"name":"deployment_tag","caption":"Tag","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
       {"name":"deployment_target_name","caption":"Deployment Target","control":"label","sqlselect":"(select deployment_target_name from {schema}.deployment_target where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
       {"name":"deployment_date","caption":"Scheduled For","format":"date:'YYYY-MM-DD hh:mm A'","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},
-      {"name":"deployment_sts","caption":"Status","control":"label"},
+      {"name":"deployment_sts","caption":"Deployment Status","control":"label"},
       {"control":"html","value":"<h3 style='margin-bottom:8px;'>Publish Log</h3><pre id='<%=model.class%>_deployment_log'></pre>"}
     ]
   }

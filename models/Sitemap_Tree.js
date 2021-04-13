@@ -81,6 +81,11 @@ jsh.App[modelid] = new (function(){
     return _this.has_changes;
   }
 
+  this.setDirty = function(isDirty){
+    _this.has_changes = isDirty;
+    jsh.$root('.xelem'+xmodel.class+'.xform_button_saveSitemap').toggleClass('hasChanges', isDirty);
+  }
+
   this.onmessage = function(data){
     data = (data || '').toString();
     if(data.indexOf('jsharmony-cms:refresh_page_key:')==0){
@@ -162,7 +167,7 @@ jsh.App[modelid] = new (function(){
       /* No Changes */
     }
     else{
-      _this.has_changes = true;
+      _this.setDirty(true);
       _this.parseSitemap();
       _this.renderSitemap();
       _this.selectSitemapItem(_this.selected_sitemap_item_id, { softSave: true });
@@ -432,7 +437,7 @@ jsh.App[modelid] = new (function(){
       newval = newval.toString();
 
       if(oldval != newval){
-        _this.has_changes = true;
+        _this.setDirty(true);
       }
     });
     
@@ -550,7 +555,7 @@ jsh.App[modelid] = new (function(){
         i--;
       }
     }
-    _this.has_changes = true;
+    _this.setDirty(true);
     return deletedPages;
   }
 
@@ -719,7 +724,7 @@ jsh.App[modelid] = new (function(){
     }
 
     _this.sitemap_items.push(new_sitemap_item);
-    _this.has_changes = true;
+    _this.setDirty(true);
     _this.parseSitemap();
     _this.renderSitemap();
     _this.selectSitemapItem(new_sitemap_item_id);
@@ -1063,7 +1068,7 @@ jsh.App[modelid] = new (function(){
     var url = jsh._BASEURL+'_funcs/sitemap/'+_this.sitemap_key;
     XForm.Post(url, {}, { sitemap_items: JSON.stringify(save_sitemap_items) }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.has_changes = false;
+        _this.setDirty(false);
       }
       else{
         XExt.Alert('Error saving sitemap');

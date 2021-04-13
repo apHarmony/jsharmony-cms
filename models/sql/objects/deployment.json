@@ -208,6 +208,7 @@
           "  insert into {schema}.branch(branch_parent_id, branch_type, branch_name, branch_sts, site_id, branch_user_id) values(inserted(branch_id), 'DEPLOYMENT', inserted(deployment_tag), 'ARCHIVE', (select site_id from {schema}.branch where branch_id=inserted(branch_id)), null),",
           ////Insert deployment
           "  insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts, deployment_git_revision) values(inserted(deployment_tag), @@INSERT_ID, inserted(deployment_date), inserted(deployment_target_id), 'PENDING', inserted(deployment_git_revision))",
+          "  return_insert_key(deployment, deployment_id, (deployment_target_id=inserted(deployment_target_id) and deployment_tag=inserted(deployment_tag)));",
           ////Add all menu / pages / media / redirect / sitemap from other branch
           "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag)), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_id) and {item}_id is not null\")",
           "  increment_changes()",

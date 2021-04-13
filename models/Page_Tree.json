@@ -4,7 +4,7 @@
     "table":"",
     "actions":"BIUD",
     "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
-    "title":"Pages",
+    "title":"Pages (Folder View)",
     "caption":["Page","Pages"],
     "unbound":true,
     "menu":"jsHarmonyCMS/Page_Listing",
@@ -20,7 +20,7 @@
     "onloadstate": "_this.onloadstate(xmodel, state);",
     "fields":[
       {"name":"form_instructions","control":"html","roles": {"AUTHOR": "B","PUBLISHER": "B"},"value":[
-        "<div style='position:relative;top:-4px;'><span style='font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;'>&#x1f6c8;</span> Right-click folders and pages for options :: Drag to reorder</div>",
+        "<div style='position:relative;top:-4px;'><span style='font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;'>&#x1f6c8;</span> Manage pages in the Folder View :: Right-click folders and pages for options :: Drag to reorder</div>",
       ]},
 	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
       {"name": "page_folder", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
@@ -45,6 +45,8 @@
         },
         "onchange": "_this.page_folder_onchange(obj,newval);"
       },
+      {"control":"html", "value": "<div class='<%=model.class%>_page_listing_container'>" },
+      {"control":"html", "value": "<div class='<%=model.class%>_page_listing_header'>Current Folder: <span class='<%=model.class%>_page_listing_header_path'></span></div>" },
       {
         "name": "Page_Tree_Listing",
         "control": "subform",
@@ -54,6 +56,7 @@
         "actions": "BIUD",
         "controlparams":{ "grid_save_before_update": true }
       },
+      {"control":"html", "value": "</div>" },
       {"control":"html", "value": "</div>"},
       "#CMS_SITE_EDITOR_LOV",
       {"name":"revision_page","unbound":true,"control":"hidden","bindings":{"revision_page_key":"js:if(xmodel) return jsh.App[xmodel.id].revision_page_key;"},

@@ -18,11 +18,12 @@
     "formstyle": "min-width:900px;",
     "nokey":true,
     "buttons":[
-      { "name":"addBranch", "link":"update:Branch_Add_Empty","icon":"add","text":"New Empty Revision", "bindings": {} },
       { "name":"uploadBranch", "link":"update:Branch_Upload","icon":"upload","text":"Upload Revision Backup", "bindings": {} }
     ],
     "css": [
       ".xform<%=model.class%> .xsubform h1 { font-size:21px; color:#444; }",
+      ".<%=model.class%>_Revision_Process ol { padding-left:25px; }",
+      ".<%=model.class%>_Revision_Process ol li { padding-bottom:5px; padding-left:5px; }",
     ],
     "fields": [
       {"name":"branch_desc","type":"varchar","control":"label","controlstyle":"margin-bottom:10px;","caption":"Currently Editing","link":"js:jsh.System.ViewBranchSummary(xmodel, xmodel.get('branch_id'))",
@@ -32,7 +33,7 @@
       {"control":"html","value":[
         "<div class='jsHarmonyCms_info_tip'>",
         "Clone a Release to create your own Revision and start making changes.<br/>",
-        "When done making updates, &quot;Submit for Publish Review&quot; to ask a publisher to merge into a Release.",
+        "<a href='#' onclick='<#-js(\"XExt.CustomPrompt('.'+xmodel.class+'_Revision_Process',jsh.$root('.'+xmodel.class+'_Revision_Process')[0].outerHTML)\")#>'>Learn about the Revision process</a>",
         "</div>",
       ]},
       {"control":"subform","target":"Branch_Review_Listing","bindings":{},"controlclass":"no-border","roles":{"PUBLISHER":"*"}},

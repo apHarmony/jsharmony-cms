@@ -1107,4 +1107,20 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
   });
 }
 
+jsHarmonyCMSSFTPServer.prototype.getURL = function(hostname){
+  var _this = this;
+
+  if(_this.cms.Config.sftp.serverUrl) return _this.cms.Config.sftp.serverUrl;
+
+  var server_txt = _this.cms.Config.sftp.serverIp;
+  var server_port = _this.cms.Config.sftp.serverPort;
+  var server_scheme = 'sftp://';
+
+  if(hostname && server_port) return server_scheme+hostname+':'+server_port;
+
+  if(server_txt == '0.0.0.0') server_txt = os.hostname().toLowerCase();
+  if(server_txt && server_port) return server_scheme+server_txt+':'+server_port;
+  return '';
+}
+
 module.exports = exports = jsHarmonyCMSSFTPServer;

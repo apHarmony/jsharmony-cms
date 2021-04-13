@@ -278,6 +278,15 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.createEndEditToolbarButton = function() {
+    var _this = this;
+    this._editor.ui.registry.addButton('jsHarmonyCmsEndEdit', {
+      text: 'End Edit',
+      icon: 'checkmark',
+      onAction: function () { cms.editor.endEdit(); }
+    });
+  }
+
   JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
     //if(!this._editor.settings.isjsHarmonyCmsComponent) 
     var _this = this;
@@ -344,35 +353,15 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
-  /**
-   * Create menu button for End Edit
-   * @private
-   * @param {ComponentInfo[]} componentInfo
-   */
   JsHarmonyComponentPlugin.prototype.createEndEditMenuButton = function() {
     var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsEndEdit', {
       text: 'End Edit',
       icon: 'checkmark',
-      onAction: function () {
-        jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
-        $('#jsharmony_cms_virtual_focus_element a').focus();
-        setTimeout(function(){
-          jsh.XExt.waitUntil(
-            function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()) },
-            function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); },
-          );
-        }, 100);
-      }
+      onAction: function () { cms.editor.endEdit(); }
     });
   }
-
-  /**
-   * Create and register the context toolbar for editing
-   * the component properties and data.
-   * @private
-   * @param {ComponentInfo[]} componentInfos
-   */
+  
   JsHarmonyComponentPlugin.prototype.createContextToolbar = function(componentInfos) {
 
     var _this = this;
@@ -536,6 +525,7 @@ exports = module.exports = function(jsh, cms, editor){
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
     this.createEndEditMenuButton();
+    this.createEndEditToolbarButton();
     this.createComponentContextMenu(componentInfo);
 
 

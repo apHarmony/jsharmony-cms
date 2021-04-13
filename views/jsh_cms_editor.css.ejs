@@ -379,11 +379,11 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   color: #555;
 }
 
-.xdialogblock .jsharmony_cms_component_dataGridEditor {
+.xdialogblock .jsharmony_cms_component_dialog {
   padding-top:0px;
 }
 
-.jsharmony_cms_component_dataGridEditor > .xbodyhead {
+.jsharmony_cms_component_dialog > .xbodyhead {
   position:sticky;
   top:0px;
   z-index:999999999;
@@ -395,6 +395,10 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   padding-bottom:10px;
   margin-left:-20px;
   margin-right:-20px;
+}
+
+.jsharmony_cms_component_dialog > .xformcontainer {
+  padding-top:14px;
 }
 
 .jsharmony_cms_component_dataGridEditor .dataGridEditor_instructions {
@@ -477,7 +481,7 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   margin-top:0px;
 }
 
-.xdialogblock .xdialogbox.jsharmony_cms_component_dialog.jsharmony_cms_component_dataGridEditor .xbodyhead .xtitle {
+.xdialogblock .xdialogbox.jsharmony_cms_component_dialog .xbodyhead .xtitle {
   padding-bottom:0px;
 }
 
@@ -505,6 +509,7 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   padding: 2px 5px;
 }
 
+.xdialogbox.jsharmony_cms_component_dialog_form .xactions .xform_button,
 .xdialogbox input[type="button"] {
   background-color: #207ab7;
   background-image: none;
@@ -524,7 +529,6 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   font-weight: 700;
   letter-spacing: 1;
   line-height: 24px;
-  margin: 3px 0;
   outline: 0;
   padding: 4px 16px;
   text-align: center;
@@ -535,12 +539,17 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   height:auto;
 }
 
+.xdialogbox input[type="button"] {
+  margin: 3px 0;
+}
+
 .xdialogbox input.button_ok,
 .xdialogbox input.button_no,
 .xdialogbox input.button_cancel {
   margin-top:15px;
 }
 
+.xdialogbox.jsharmony_cms_component_dialog_form .xactions .xform_button:hover:not(:disabled),
 .xdialogbox input[type="button"]:hover:not(:disabled) {
   background-color: #1c6ca1;
   background-image: none;
@@ -549,6 +558,7 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   color: #fff;
 }
 
+.xdialogbox.jsharmony_cms_component_dialog_form .xactions .xform_button.secondary,
 .xdialogbox input[type="button"].secondary {
   background-color: #f0f0f0;
   background-image: none;
@@ -562,6 +572,7 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   color: #222f3e;
 }
 
+.xdialogbox.jsharmony_cms_component_dialog_form .xactions .xform_button.secondary:hover:not(:disabled),
 .xdialogbox input[type="button"].secondary:hover:not(:disabled) {
   background-color: #e3e3e3;
   background-image: none;

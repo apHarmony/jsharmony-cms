@@ -7,7 +7,8 @@ jsh.App[modelid] = new (function(){
     var deployment_target_id = xmodel.get('deployment_target_id');
     var deployment_target_name = XExt.getLOVTxt(xmodel.controller.form.LOVs.deployment_target_id, deployment_target_id);
     var deployment_git_revision = xmodel.controller.form.Data.deployment_git_revision;
-    XExt.Confirm('Revision: ' + deployment_git_revision + '\nDestination: ' + deployment_target_name + '\nContinue?', function(){
+    var branch_desc = xmodel.controller.form.Data.branch_desc;
+    XExt.Confirm('<b>Revision:</b> ' + XExt.escapeHTML(branch_desc) + '<br/><b>Destination:</b> ' + XExt.escapeHTML(deployment_target_name) + '<br/>Continue?', function(){
       var params = _.extend(
         _.pick(xmodel.controller.form.Data,[
           'deployment_target_id',
@@ -16,10 +17,26 @@ jsh.App[modelid] = new (function(){
         ]),
         { src_deployment_id: xmodel.get('deployment_id') }
       );
-      XForm.Post(xmodel.module_namespace+'Publish_Redeploy_Exec', {}, params, function(rslt){
-        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Listing'); 
+
+
+      var emodelid = xmodel.module_namespace+'Publish_Redeploy_Exec';
+      XForm.Post(emodelid, {}, params, function(rslt){
+        if ('_success' in rslt) {
+          var deployment_id = rslt[emodelid][0].deployment_id;
+
+          //Trigger deployment
+          emodelid = '../_funcs/deployment/trigger';
+          XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
+            if ('_success' in rslt) {
+              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id); 
+            }
+            else XExt.Alert('Error while trigering deployment');
+          });
+        }
+        else XExt.Alert('Error while adding deployment');
       });
-    });
+
+    }, undefined, { message_type: 'html' });
   }
 
 })();

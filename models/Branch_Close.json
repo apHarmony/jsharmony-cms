@@ -1,0 +1,26 @@
+{
+  "Branch_Close": {
+    "layout":"form",
+    "title":"Close Revision",
+    "menu":"Revisions",
+    "onecolumn":true,
+    "nokey":true,
+    "actions":"BU",
+    "roles": {"AUTHOR": "BU","PUBLISHER": "BU","VIEWER":"BU"},
+    "breadcrumbs":{ "#CMS_BRANCH_BREADCRUMBS" : { "title": "" } },
+    "oninit": "jsh.System.RequireBranch(xmodel);",
+    "sqlselect":[
+      "select ",
+      "(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()) branch_name"
+    ],
+    "sqlupdate":[
+      "update {schema}.v_my_site set branch_id=null where site_id={schema}.my_current_site_id();",
+    ],
+    "hide_system_buttons":["print","save"],
+    "fields": [
+      {"name":"branch_name","control":"label","caption":"Current Revision","captionstyle":"text-align:right;font-weight:bold;"},
+      {"control":"html","value":"<br/>"},
+      {"control":"button","value":"Closed Revision","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "XForm.prototype.XExecutePost(xmodel.id, { }, function(rslt){ XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing'); });"},
+    ]
+  }
+}

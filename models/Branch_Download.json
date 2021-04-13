@@ -11,7 +11,7 @@
       "(select site_name from {schema}.v_my_branch_desc where branch_id=@branch_id) source_site_name,",
       "(select branch_type from {schema}.v_my_branch_desc where branch_id=@branch_id) source_branch_type",
     ],
-    "hide_system_buttons":["print"],
+    "hide_system_buttons":["print","save"],
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
       {"name":"source_branch_name","control":"label","caption":"Revision","captionstyle":"text-align:right;font-weight:bold;"},

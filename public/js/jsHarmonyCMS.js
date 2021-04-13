@@ -1668,18 +1668,21 @@ function FormDialog(jsh, cms, model, config) {
 FormDialog.prototype.augmentModel = function(model, config) {
   // Do not mutate the model!
   model = _.extend({}, model);
+
   var newFields = [];
-  // Add cancel button first to maintain consistent
-  // styles with TinyMce
-  if (config.acceptButtonLabel) {
+  var newButtons = [];
+  if (config.acceptButtonLabel && !this.cms.readonly) {
     newFields.push({ name: 'save_button', control: 'button', value: config.acceptButtonLabel, controlstyle: 'margin-right:10px; margin-top:15px;' });
+    newButtons.push({ class: 'save_button', text: config.acceptButtonLabel, actions: 'BIU' });
   }
   if (config.cancelButtonLabel) {
     newFields.push({ name: 'cancel_button', control: 'button', value: config.cancelButtonLabel, controlclass: 'secondary', nl:false });
+    newButtons.push({ class: 'cancel_button secondary', text: config.cancelButtonLabel, actions: 'BIU'  });
   }
 
   // Don't mutate the model!
   model.fields = newFields.length > 0 ? (model.fields || []).concat(newFields) : model.fields;
+  model.buttons = newButtons.length > 0 ? (model.buttons || []).concat(newButtons) : model.buttons;
   return model;
 }
 
@@ -1728,8 +1731,8 @@ FormDialog.prototype.open = function(data) {
   dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.form.Prop.Enabled = true;
-    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc);
-    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc);
+    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc).on('click', function(e){ e.preventDefault(); });
+    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc).on('click', function(e){ e.preventDefault(); });
     if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
   }
 
@@ -1741,10 +1744,16 @@ FormDialog.prototype.open = function(data) {
 
   dialog.onCancel = function(options) {
     if (!options.force && xmodel.controller.HasUpdates()) {
-      _this.jsh.XExt.Confirm('Close without saving changes?', function() {
+      if(_this.cms.readonly){
         xmodel.controller.form.ResetDataset();
         options.forceCancel();
-      });
+      }
+      else {
+        _this.jsh.XExt.Confirm('Close without saving changes?', function() {
+          xmodel.controller.form.ResetDataset();
+          options.forceCancel();
+        });
+      }
       return false;
     }
   }
@@ -2886,7 +2895,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: modelConfig.id
   });
 
@@ -3487,9 +3496,9 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
     } else if (editorType === 'title') {
       configType = 'full';
       config = {
-        toolbar: 'backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons',
+        toolbar: 'backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | link  image charmapmaterialicons | jsHarmonyCmsEndEdit',
         valid_elements : 'a,strong/b,p,span[style|class],p[*],img[*],br[*]',
-        plugins: ['link image charmapmaterialicons'],
+        plugins: ['link image charmapmaterialicons jsHarmonyCms'],
         menubar: false,
       };
     } else {
@@ -3512,9 +3521,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
  * @returns {string}
  */
 HTMLPropertyEditor.prototype.processText = function(text) {
-  // Sometimes TinyMce adds non-breaking spaces (may be browser dependant).
-  // These need to be removed
-  return (text || '').replace(/(&nbsp;)|(&#160;)/g, ' ');
+  return text;
 }
 
 /**
@@ -3589,7 +3596,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     acceptButtonLabel: 'Save',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'jsharmony_cms_component_dialog jsharmony_cms_component_propertyFormEditor jsharmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: 'jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_propertyFormEditor jsharmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: model.id
   };
 
@@ -4987,10 +4994,12 @@ exports = module.exports = function(jsh, cms){
       else if(jdata.media_key){
         _this.lastMediaPath = { init_media_path: jdata.media_folder };
         _this.lastLinkPath = { init_media_path: jdata.media_folder };
+        if(jdata.media_path) jdata.text = XExt.basename(jdata.media_path);
         cms.filePickerCallback(cms._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS', jdata);
       }
       else if(jdata.page_key){
         _this.lastLinkPath = { init_page_path: jdata.page_folder };
+        if(jdata.page_title) jdata.text = jdata.page_title;
         cms.filePickerCallback(cms._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS', jdata);
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
@@ -5332,6 +5341,15 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.createEndEditToolbarButton = function() {
+    var _this = this;
+    this._editor.ui.registry.addButton('jsHarmonyCmsEndEdit', {
+      text: 'End Edit',
+      icon: 'checkmark',
+      onAction: function () { cms.editor.endEdit(); }
+    });
+  }
+
   JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
     //if(!this._editor.settings.isjsHarmonyCmsComponent) 
     var _this = this;
@@ -5398,35 +5416,15 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
-  /**
-   * Create menu button for End Edit
-   * @private
-   * @param {ComponentInfo[]} componentInfo
-   */
   JsHarmonyComponentPlugin.prototype.createEndEditMenuButton = function() {
     var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsEndEdit', {
       text: 'End Edit',
       icon: 'checkmark',
-      onAction: function () {
-        jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
-        $('#jsharmony_cms_virtual_focus_element a').focus();
-        setTimeout(function(){
-          jsh.XExt.waitUntil(
-            function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()) },
-            function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); },
-          );
-        }, 100);
-      }
+      onAction: function () { cms.editor.endEdit(); }
     });
   }
-
-  /**
-   * Create and register the context toolbar for editing
-   * the component properties and data.
-   * @private
-   * @param {ComponentInfo[]} componentInfos
-   */
+  
   JsHarmonyComponentPlugin.prototype.createContextToolbar = function(componentInfos) {
 
     var _this = this;
@@ -5590,6 +5588,7 @@ exports = module.exports = function(jsh, cms, editor){
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
     this.createEndEditMenuButton();
+    this.createEndEditToolbarButton();
     this.createComponentContextMenu(componentInfo);
 
 
@@ -5865,7 +5864,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           'insertdatetime media table paste code noneditable'
         ],
         contextmenu: 'jsharmonycmscomponentcontextmenu link linkchecker image imagetools table spellchecker configurepermanentpen',
-        toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView',
+        toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView | jsHarmonyCmsEndEdit',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
@@ -6150,6 +6149,17 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         .css('bottom', '');
     }
     cms.toolbar.refreshOffsets();
+  }
+
+  this.endEdit = function(){
+    jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
+    $('#jsharmony_cms_virtual_focus_element a').focus();
+    setTimeout(function(){
+      jsh.XExt.waitUntil(
+        function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()) },
+        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); },
+      );
+    }, 100);
   }
 
   this.getMaterialIcons = function(){
@@ -7584,6 +7594,7 @@ var jsHarmonyCMS = function(options){
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
       jsh = _this.jsh = window.jshInstance = new jsHarmony({
+        _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},

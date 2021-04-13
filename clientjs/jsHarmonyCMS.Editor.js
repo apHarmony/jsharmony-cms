@@ -80,7 +80,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           'insertdatetime media table paste code noneditable'
         ],
         contextmenu: 'jsharmonycmscomponentcontextmenu link linkchecker image imagetools table spellchecker configurepermanentpen',
-        toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView',
+        toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView | jsHarmonyCmsEndEdit',
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
@@ -365,6 +365,17 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         .css('bottom', '');
     }
     cms.toolbar.refreshOffsets();
+  }
+
+  this.endEdit = function(){
+    jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
+    $('#jsharmony_cms_virtual_focus_element a').focus();
+    setTimeout(function(){
+      jsh.XExt.waitUntil(
+        function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()) },
+        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); },
+      );
+    }, 100);
   }
 
   this.getMaterialIcons = function(){

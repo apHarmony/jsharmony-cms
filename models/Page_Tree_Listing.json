@@ -20,6 +20,9 @@
       ".xform<%=model.class%> .xgrid_action_thead.delete { border-right:0px; }",
       ".xform<%=model.class%> td.page_filename { white-space:nowrap;width:100%;border-left:0; }",
       ".xform<%=model.class%> td.page_filename img { position:relative; top:2px; margin-right:4px; }",
+      ".xform<%=model.class%> td.page_filename .page_details { margin-top:2px; }",
+      ".xform<%=model.class%> td.page_filename .page_details label { font-weight:bold; margin:2px 6px 0 30px; display:inline-block; }",
+      ".xform<%=model.class%> td.page_filename .page_details span { display:inline-block; }",
       ".xbodyhead.xelem<%=model.class%> { display:none !important; }"
     ],
     "oninit": "_this.oninit(xmodel);",
@@ -30,7 +33,16 @@
       {"name":"page_id","control":"hidden","actions":"B"},
       {"name":"page_path","caption":"URL","control":"hidden","actions":"BIU"},
       {"name":"page_title","caption":"Title","control":"hidden","actions":"BIU"},
-      {"name":"page_filename","caption":"File","actions":"B","control":"html","value":"<a href='#' onclick='<%=jsh._instance%>.App[<%-JSON.stringify(xmodel.id)%>].editFile(this);return false;' class='xform_link' data-value='page_key:<%=data.page_key%>'><img src='/images/icon_file.png' class='' /><%=data.page_filename%></a>","cellclass":"page_filename","captionstyle":"width:50%;"},
+      {"name":"page_filename","caption":"File","actions":"B","control":"html","cellclass":"page_filename","captionstyle":"width:50%;",
+        "sqlsort": "(case when page_filename=(select site_default_page_filename from {schema}.site where site_id = {schema}.my_current_site_id()) then '' else page_filename end)",
+        "value":[
+          "<% var site_default_page_filename = jsh.XPage.getBreadcrumbs().site_default_page_filename; %>",
+          "<a href='#' onclick='<%=jsh._instance%>.App[<%-JSON.stringify(xmodel.id)%>].page_filename_onclick(this);return false;' class='xform_link' data-value='page_key:<%=data.page_key%>'><img src='/images/icon_file.png' class='' /><%-(data.page_filename==site_default_page_filename)?'(Default&nbsp;Document) ':''%><%=data.page_filename%></a>",
+          "<div class='page_details'>",
+          "<div><label>Page Title:</label><span class='page_details_title'><%=data.page_title%></span></div>",
+          "<div><label>Path:</label><span class='page_details_path'><%=(XExt.endsWith(data.page_path,site_default_page_filename)?(data.page_path.substr(0, data.page_path.length - site_default_page_filename.length)):data.page_path)%></span></div>",
+          "</div>",
+        ]},
       {"name":"page_template_id","caption":"Template","control":"dropdown","lov":"#LOV_CMS_PAGE_TEMPLATES","actions":"BIU","validate":["Required"]},
       {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"},
       {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
@@ -41,8 +53,7 @@
     "inherits": "Page_Tree_Listing",
     "actions":"B",
     "fields":[
-      {"name":"page_filename","value":"<a href='#' onclick='<%=jsh._instance%>.App[<%-JSON.stringify(xmodel.id)%>].sendToEditor(this);return false;' class='xform_link' data-value='page_key:<%=data.page_key%>'><img src='/images/icon_file.png' class='' /><%=data.page_filename%></a>"},
-      {"name":"page_template_id","control":"label","cellstyle":"white-space:nowrap;"},
+      {"name":"page_template_id","control":"label","cellstyle":"white-space:nowrap;","actions":""},
       {"name":"page_edit","actions":""},
       {"name":"page_select","caption":"Select","link":"js:_this.sendToEditor(this)","control":"html","value":"Select","cellstyle": "text-align:center;", "__AFTER__":"page_edit" }
     ]

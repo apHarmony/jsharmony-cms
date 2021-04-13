@@ -6,7 +6,7 @@
     "onecolumn":true,
     "roles": {"PUBLISHER": "B"},
     "table":"{schema}.v_my_deployment",
-    "hide_system_buttons":["print"],
+    "hide_system_buttons":["print","save"],
     "fields": [
       {"name":"deployment_id","caption":"Deployment ID","control":"label","captionstyle":"font-weight:bold;","key":true},
       {"name":"deployment_tag","caption":"Tag","control":"label","captionstyle":"font-weight:bold;padding-left:20px;","nl":false},

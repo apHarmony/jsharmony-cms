@@ -11,6 +11,9 @@
     "roles": { "*": "B", "PUBLISHER": "*" },
     "sqlwhere":"branch_type='PUBLIC' and (site_id={schema}.my_current_site_id())",
     "sort":["vbranch_data_mtstmp_fmt"],
+    "buttons":[
+      { "name":"addBranch", "link":"update:Branch_Add_Empty","icon":"add","text":"New Empty Release", "bindings": {} },
+    ],
     "hide_system_buttons":["export"],
     "rowlimit":1000,
     "tablestyle":"min-width:600px;",
@@ -28,7 +31,7 @@
       {"name":"branch_data_muser_fmt","caption":"Modified By","sqlselect":"(jsharmony.my_db_user_fmt($ifnull(branch_data_muser,branch_muser)))","control":"label","actions":"B"},
       {"caption":"Details","control":"html","link":"update:Branch_Summary","captionstyle":"text-align:center;","cellstyle":"text-align:center;",
         "value":"<img src='/images/icon_browse.png' class='xicon' />"},
-      {"caption":"Checkout","control":"html","link":"update:Branch_Checkout&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;",
+      {"caption":"Checkout","control":"html","link":"js:jsh.System.CheckoutBranch(xmodel, xmodel.get('branch_id', this), 'PUBLIC')","captionstyle":"text-align:center;","cellstyle":"text-align:center;",
         "value":"<%=xejs.iif(datarow['branch_is_checked_out']==1,'(Checked Out)','Checkout')%>",
         "cellclass":"branch_checkout_button"},
       {"caption":"Clone","control":"linkbutton","link":"update:Branch_Clone&branch_id","captionstyle":"text-align:center;","cellstyle":"text-align:center;","roles":{"PUBLISHER":"*","AUTHOR":"*"}}

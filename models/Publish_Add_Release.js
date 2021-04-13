@@ -38,8 +38,21 @@ jsh.App[modelid] = new (function(){
         'deployment_date',
         'deployment_tag'
       ]);
-      XForm.Post(xmodel.module_namespace+'Publish_Add_Release_Exec', {}, params, function(rslt){
-        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Listing'); 
+      var emodelid = xmodel.module_namespace+'Publish_Add_Release_Exec';
+      XForm.Post(emodelid, {}, params, function(rslt){
+        if ('_success' in rslt) {
+          var deployment_id = rslt[emodelid][0].deployment_id;
+
+          //Trigger deployment
+          emodelid = '../_funcs/deployment/trigger';
+          XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
+            if ('_success' in rslt) {
+              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id); 
+            }
+            else XExt.Alert('Error while trigering deployment');
+          });
+        }
+        else XExt.Alert('Error while adding deployment');
       });
     });
   }

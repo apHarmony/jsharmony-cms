@@ -12,7 +12,7 @@
     "buttons":[
       { "group": "Actions", "name":"completeMerge", "link":"update:Branch_Conflicts","icon":"sidebar","text":"Complete Merge In Progress","class":"Branch_Summary_buttonConflicts", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
 
-      { "group": "Actions", "name":"checkoutBranch", "link":"update:Branch_Checkout","icon":"list","text":"Checkout","class":"Branch_Summary_buttonCheckout" },
+      { "group": "Actions", "name":"checkoutBranch", "link":"js:jsh.System.CheckoutBranch(xmodel, xmodel.get('branch_id'), xmodel.get('branch_type'))","icon":"list","text":"Checkout","class":"Branch_Summary_buttonCheckout" },
       { "group": "Actions", "name":"cloneBranch", "link":"update:Branch_Clone","icon":"copy","text":"Clone", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
 
       { "group": "Actions", "name":"mergeFromBranch", "link":"js:_this.mergeFromBranch(xmodel);","icon":"sidebar","text":"Merge Into Current Revision","class":"Branch_Summary_buttonMerge", "roles": {"AUTHOR": "B","PUBLISHER": "B"} },
@@ -29,6 +29,7 @@
       { "name":"branch_id","control":"hidden","key":true},
       { "name":"branch_sts","control":"hidden"},
       { "name":"branch_name","control":"hidden"},
+      { "name":"branch_type","control":"hidden"},
       { "name":"branch_is_checked_out","control":"hidden"},
       { "name":"branch_access","control":"hidden"},
       { "name":"branch_merge_id","control":"hidden","sqlselect":"(select branch_merge_id from {schema}.branch where branch.branch_id=v_my_branch_desc.branch_id)"},

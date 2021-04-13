@@ -23,12 +23,30 @@
   box-sizing:border-box;
   flex-shrink:0;
 }
-.xsubform.Page_Tree_Listing {
+.xelem<%=model.class%>.tree.page_folder .tree_item {
+  user-select: none;
+}
+.<%=model.class%>_page_listing_container {
   flex-grow:1;
-  margin-top:0px;
+  display:flex;
+  flex-direction:column;
+  box-sizing:border-box;
   border-right:1px solid #aaa; 
   border-bottom:1px solid #aaa; 
   border-top:1px solid #aaa;
+}
+.<%=model.class%>_page_listing_header {
+  border-bottom: 1px solid #ccc;
+  padding:5px 10px 4px 10px;
+  color:#777;
+  font-weight:bold;
+}
+.<%=model.class%>_page_listing_header_path {
+  font-weight:normal;
+}
+.xsubform.Page_Tree_Listing {
+  flex-grow:1;
+  margin-top:0px;
   position:relative;
 }
 .xsubform.Page_Tree_Listing .xpanel {

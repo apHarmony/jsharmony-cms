@@ -11,7 +11,7 @@
       "(select branch_desc from {schema}.v_my_branch_desc where branch_id=@branch_id) new_branch_name"
     ],
     "sqlupdate":"update {schema}.v_my_current_branch set new_branch_id=@branch_id",
-    "hide_system_buttons":["print"],
+    "hide_system_buttons":["print","save"],
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
       {"name":"prev_branch_name","control":"label","caption":"Previous Revision","captionstyle":"text-align:right;font-weight:bold;"},

@@ -4,7 +4,7 @@
     "table":"",
     "actions":"BIUD",
     "roles": {"AUTHOR": "BIUD","PUBLISHER": "BIUD","VIEWER":"B"},
-    "title": { "sql": "select concat('Sitemap :: ',sitemap_name) from {schema}.v_my_sitemap where sitemap_key=@sitemap_key" },
+    "title": { "sql": "select concat('Pages (Sitemap View) :: ',sitemap_name) from {schema}.v_my_sitemap where sitemap_key=@sitemap_key" },
     "caption":["Sitemap","Sitemaps"],
     "unbound":true,
     "menu":"jsHarmonyCMS/Sitemap_Listing",
@@ -14,12 +14,12 @@
     "onload": "_this.onload();",
     "buttons":[
       { "name":"configureSitemaps", "link":"Sitemap_Listing&","icon":"edit","text":"Sitemap Config", "actions": "U", "roles": { "AUTHOR": "U", "PUBLISHER": "U" } },
-      { "name":"saveSitemap", "link":"js:_this.save();","icon":"save","text":"Save", "actions": "IUD" }
+      { "name":"saveSitemap", "link":"js:_this.save();","icon":"save","text":"Save (Autosave Enabled)", "actions": "IUD" }
     ],
     "fields":[
       {"name":"sitemap_key","control":"hidden","type":"bigint","key":true},
       {"name":"form_instructions","control":"html","value":[
-        "<div style='position:relative;top:-4px;'><span style='font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;'>&#x1f6c8;</span> Double-click to edit content :: Select or right-click for options :: Drag pages to reorder</div>",
+        "<div style='position:relative;top:-4px;'><span style='font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;'>&#x1f6c8;</span> Manage pages in the Sitemap View :: Select or right-click for options :: Double-click to edit a page :: Drag to reorder</div>",
       ]},
 	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
       {"name": "sitemap_item_id", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",

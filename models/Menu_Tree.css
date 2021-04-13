@@ -11,6 +11,9 @@
   padding-bottom:15px;
   box-sizing:border-box;
 }
+.xelem<%=model.class%>.xform_button_saveMenu.hasChanges {
+  font-weight:bold;
+}
 .<%=model.class%>_browser {
   display:flex;
   width:100%;

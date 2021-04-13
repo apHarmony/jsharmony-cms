@@ -56,8 +56,8 @@ module.exports = exports = function(module, funcs){
       var sql_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id };
       var validate = new XValidate();
       var verrors = {};
-      validate.AddValidator('_obj.src_branch_id', 'Source Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      validate.AddValidator('_obj.dst_branch_id', 'Destination Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.src_branch_id', 'Source Revision', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.dst_branch_id', 'Destination Revision', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
 
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
@@ -175,8 +175,8 @@ module.exports = exports = function(module, funcs){
       var sql_begin_params = {'src_branch_id': src_branch_id, 'dst_branch_id': dst_branch_id, 'merge_type': merge_type.toUpperCase() };
       var validate = new XValidate();
       var verrors = {};
-      validate.AddValidator('_obj.src_branch_id', 'Source Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      validate.AddValidator('_obj.dst_branch_id', 'Destination Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.src_branch_id', 'Source Revision', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      validate.AddValidator('_obj.dst_branch_id', 'Destination Revision', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
       validate.AddValidator('_obj.merge_type', 'Merge Type', 'B', [XValidate._v_InArray(MERGE_TYPES.map(function(s) {return s.toUpperCase()})), XValidate._v_Required()]);
 
       verrors = _.merge(verrors, validate.Validate('B', sql_begin_params));

@@ -316,9 +316,14 @@ jsh.App[modelid] = new (function(){
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      if(_this.isInEditor) jfiles.on('dblclick', function(e){
+      jfiles.on('dblclick', function(e){
         XExt.HideContextMenu();
-        _this.sendToEditor($(this).data('key'));
+        if(_this.isInEditor){
+          _this.sendToEditor($(this).data('key'));
+        }
+        else {
+          _this.downloadFile($(this).data('key'));
+        }
         e.preventDefault();
         e.stopImmediatePropagation();
       });

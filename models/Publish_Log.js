@@ -22,21 +22,37 @@ jsh.App[modelid] = new (function(){
 
   this.loadData = function(){
     if(!isActive) return;
-    console.log('Loading deployment log '+xmodel.get('deployment_id'));
+    if(jsh._debug) console.log('Loading deployment log '+xmodel.get('deployment_id'));
     var emodelid = '../_funcs/deployment_log/'+xmodel.get('deployment_id');
     XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var deployment_sts = (rslt.deployment.deployment_sts||'').toUpperCase();
+        var deployment_sts_txt = rslt.deployment.deployment_sts_txt;
         _this.updateButtons(deployment_sts);
-        jsh.$root('.xform_label.deployment_sts.xelem'+xmodel.class).html(deployment_sts);
+        jsh.$root('.xform_label.deployment_sts.xelem'+xmodel.class).html(deployment_sts_txt);
         //Auto Scroll if within 40px of bottom of screen
         var curDocumentHeight = jsh.XGrid.prototype._getDocumentHeight();
         var auto_scroll = (($(window).height() + $(window).scrollTop()) >= (curDocumentHeight - 50));
 
+        var isRunning = false;
+        if(deployment_sts=='RUNNING') isRunning = true;
+        else if(deployment_sts=='PENDING'){
+          var deployment_date = jsh.moment(rslt.deployment.deployment_date);
+          if(deployment_date.isValid()){
+            if(deployment_date.toDate() <= (new Date())) isRunning = true;
+          }
+        }
+
         //Render Log
         $('#'+xmodel.class+'_deployment_log').html(XExt.escapeHTMLBR(rslt.log));
         //Add loading animation if RUNNING
-        if(deployment_sts=='RUNNING') $('#'+xmodel.class+'_deployment_log').append('<div style="padding-top:4px;"><img src = "/images/loading.gif" /></div>');
+        if(isRunning) $('#'+xmodel.class+'_deployment_log').append('<div style="padding-top:4px;"><img src = "/images/loading.gif" /></div>');
+        else if(deployment_sts=='COMPLETE'){
+          if(rslt.deployment.published_url){
+            var jComplete = $('<div style="margin-bottom:15px;"><a class="jsHarmonyCms_action_button" target="_blank" href="'+XExt.escapeHTML(rslt.deployment.published_url)+'">View Deployed Site</a></div>');
+            $('#'+xmodel.class+'_deployment_log').after(jComplete);
+          }
+        }
         //Auto-scroll
         if(auto_scroll && initialized){
           var curDocumentHeight = jsh.XGrid.prototype._getDocumentHeight();

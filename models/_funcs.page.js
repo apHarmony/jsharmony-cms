@@ -776,7 +776,7 @@ module.exports = exports = function(module, funcs){
 
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a revision'); }
+      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please clone or checkout a revision'); }
 
       var devInfo = rslt[0][0];
 
@@ -913,7 +913,7 @@ module.exports = exports = function(module, funcs){
           var url = '';
           if(page_template.location == 'LOCAL'){
             if(!cms.PreviewServer) return Helper.GenError(req, res, -9, 'LOCAL Templates require a Preview Server to be running.  Set configCMS.preview_server.enabled = true in app.config.js');
-            url = path.join(cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]), page_template.path);
+            url = cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]) + page_template.path;
             //Generate an error if the preview server revision is not checked out
             if(current_branch_site_id != site_id) return Helper.GenError(req, res, -9, 'Please check out a revision in this site to preview the template');
           }

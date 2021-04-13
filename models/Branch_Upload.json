@@ -32,7 +32,7 @@
         "controlstyle":"margin-right:0px;","validate":["Required"],"caption_ext":"Revision Location",
         "lov":{ "sql": "select 'PUBLIC' code_val, 'Release' code_txt where ({schema}.my_user_is_publisher({schema}.my_current_site_id()) = 1) union all select 'USER' code_val, (select concat(sys_user_fname,' ',sys_user_lname) from jsharmony.sys_user where jsharmony.sys_user.sys_user_id=jsharmony.my_sys_user_id()) code_txt" } },
       {"control":"html","value":"&nbsp;/&nbsp;","nl":false},
-      {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"Revision Name","focus":true},
+      {"name":"new_branch_name","actions":"BU","type":"varchar","control":"textbox","caption":"","nl":false,"validate":["Required"],"caption_ext":"New Revision Name","focus":true,"controlparams":{"placeholder":"New Revision Name"}},
       {"name":"branch_content","type":"file","actions":"BU","nl":1,
         "control":"file_upload","caption":"Upload Backup File","controlparams": {
           "download_button": "",

@@ -66,6 +66,11 @@ jsh.App[modelid] = new (function(){
     return _this.has_changes;
   }
 
+  this.setDirty = function(isDirty){
+    _this.has_changes = isDirty;
+    jsh.$root('.xelem'+xmodel.class+'.xform_button_saveMenu').toggleClass('hasChanges', isDirty);
+  }
+
   this.menu_item_id_onchange = function(obj, newval, undoChange, e) {
     if(_this.selected_menu_item_id && !_this.commitInfo()){
       return undoChange();
@@ -109,7 +114,7 @@ jsh.App[modelid] = new (function(){
       /* No Changes */
     }
     else{
-      _this.has_changes = true;
+      _this.setDirty(true);
       _this.parseMenu();
       _this.renderMenu();
       _this.selectMenuItem(_this.selected_menu_item_id);
@@ -309,7 +314,7 @@ jsh.App[modelid] = new (function(){
       newval = newval.toString();
 
       if(oldval != newval){
-        _this.has_changes = true;
+        _this.setDirty(true);
       }
     });
     
@@ -379,7 +384,7 @@ jsh.App[modelid] = new (function(){
         i--;
       }
     }
-    _this.has_changes = true;
+    _this.setDirty(true);
   }
 
   this.addMenuItem = function(menu_item_parent_id){
@@ -404,7 +409,7 @@ jsh.App[modelid] = new (function(){
     }
 
     _this.menu_items.push(new_menu_item);
-    _this.has_changes = true;
+    _this.setDirty(true);
     _this.parseMenu();
     _this.renderMenu();
     _this.selectMenuItem(new_menu_item_id);
@@ -445,7 +450,7 @@ jsh.App[modelid] = new (function(){
     var url = jsh._BASEURL+'_funcs/menu/'+_this.menu_key;
     XForm.Post(url, {}, { menu_items: JSON.stringify(save_menu_items) }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        _this.has_changes = false;
+        _this.setDirty(false);
       }
       else{
         XExt.Alert('Error loading menu');

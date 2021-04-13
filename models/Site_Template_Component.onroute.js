@@ -2,6 +2,7 @@
 
 var _ = require('lodash');
 var path = require('path');
+var ftppath = require('path').posix;
 var async = require('async');
 var fs = require('fs');
 var Helper = require('../Helper.js');
@@ -9,6 +10,11 @@ var HelperFS = require('../HelperFS.js');
 var ejsext = require('../lib/ejsext.js');
 var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
+
+function escapeQuote(txt){
+  if(txt===null || (typeof txt == 'undefined')) return 'null';
+  return "'"+jsh.DB['default'].sql.escape(txt)+"'";
+}
 
 if((routetype == 'd')||(routetype == 'csv')){
 
@@ -158,11 +164,6 @@ if((routetype == 'd')||(routetype == 'csv')){
       _.each(localTemplates, function(localTemplate){
         if(localTemplate.site_template_name in addedTemplates) return;
         addedTemplates[localTemplate.site_template_name] = 1;
-
-        function escapeQuote(txt){
-          if(txt===null || (typeof txt == 'undefined')) return 'null';
-          return "'"+jsh.DB['default'].sql.escape(txt)+"'";
-        }
         
         tablesql += " union all select null site_template_id,"+
           jsh.DB['default'].sql.escape(site_id)+" site_id,"+
@@ -175,6 +176,18 @@ if((routetype == 'd')||(routetype == 'csv')){
       });
 
       model.sqlselect = Helper.ReplaceAll(model.sqlselect, '%%%SITE_TEMPLATE%%%', '(' + tablesql + ') site_template');
+
+      var fsComponentTemplatePath = '';
+      if(cms.Config.showLocalTemplatePaths){
+        fsComponentTemplatePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString(),'templates','components');
+      }
+      model.breadcrumbs.sql = Helper.ReplaceAll(model.breadcrumbs.sql, '%%%FS_COMPONENT_TEMPLATE_PATH%%%', escapeQuote(fsComponentTemplatePath));
+
+      var sftpUrl = '';
+      if(cms.Config.sftp.enabled){
+        sftpUrl = cms.SFTPServer.getURL((req.headers.host||'').split(':')[0]);
+      }
+      model.breadcrumbs.sql = Helper.ReplaceAll(model.breadcrumbs.sql, '%%%SFTP_URL%%%', escapeQuote(sftpUrl));
 
       //Save model to local request cache
       req.jshlocal.Models[modelid] = model;

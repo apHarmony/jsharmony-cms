@@ -38,18 +38,21 @@ function jsHarmonyCMSConfig(){
 
     serverKey: undefined,     // path/to/key.pem
                               //   If undefined, HTTPS Key from main CMS site will be used
+
+    serverUrl: undefined,     // SFTP Server client-facing URL, ex. sftp://example.com:22
+                              //   If not set, hostname will be auto-detected from CMS site hostname
   };
 
   this.preview_server = {
     enabled: false,
     serverPort: 8088,
     serverIp: '0.0.0.0',
-    serverUrl: undefined,       //Preview Server client-facing URL, ex. https://example.com:8088
-                                //  If not set, hostname will be auto-detected from CMS site hostname
+    serverUrl: undefined,       // Preview Server client-facing URL, ex. https://example.com:8088
+                                //   If not set, hostname will be auto-detected from CMS site hostname
 
     serverHttpsKey: undefined,  // path/to/https-key.pem
-                                //  If undefined, HTTPS Key / Cert / CA from main CMS site will be used
-                                //  If set to false, HTTP will be used instead of HTTPS
+                                //   If undefined, HTTPS Key / Cert / CA from main CMS site will be used
+                                //   If set to false, HTTP will be used instead of HTTPS
     serverHttpsCert: undefined, // path/to/https-cert.pem
     serverHttpsCa: undefined,   // path/to/https-ca.pem
   };
@@ -70,6 +73,7 @@ function jsHarmonyCMSConfig(){
     page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
     media_subfolder: '',  //Relative path from publish folder to media subfolder, ex. 'media/'
     content_url: '/',     //Absolute path from website root to CMS publish folder, ex. '/content/'
+    published_url: null,  //(Optional) URL of published site, ex. https://example.com
     exec_pre_deployment: undefined,  //Execute shell command after populating publish folder, before deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     exec_post_deployment: undefined, //Execute shell command after deployment
@@ -128,6 +132,8 @@ function jsHarmonyCMSConfig(){
     materialIcons: false,                        //Whether to enable Material Icons in the Editor
                                                  //  If enabled, Material Icons Font must be added to the Page Template
   };
+
+  this.showLocalTemplatePaths = true;   //Display local template file system paths in Site Templates Administration
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing

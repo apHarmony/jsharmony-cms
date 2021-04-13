@@ -132,18 +132,21 @@ function FormDialog(jsh, cms, model, config) {
 FormDialog.prototype.augmentModel = function(model, config) {
   // Do not mutate the model!
   model = _.extend({}, model);
+
   var newFields = [];
-  // Add cancel button first to maintain consistent
-  // styles with TinyMce
-  if (config.acceptButtonLabel) {
+  var newButtons = [];
+  if (config.acceptButtonLabel && !this.cms.readonly) {
     newFields.push({ name: 'save_button', control: 'button', value: config.acceptButtonLabel, controlstyle: 'margin-right:10px; margin-top:15px;' });
+    newButtons.push({ class: 'save_button', text: config.acceptButtonLabel, actions: 'BIU' });
   }
   if (config.cancelButtonLabel) {
     newFields.push({ name: 'cancel_button', control: 'button', value: config.cancelButtonLabel, controlclass: 'secondary', nl:false });
+    newButtons.push({ class: 'cancel_button secondary', text: config.cancelButtonLabel, actions: 'BIU'  });
   }
 
   // Don't mutate the model!
   model.fields = newFields.length > 0 ? (model.fields || []).concat(newFields) : model.fields;
+  model.buttons = newButtons.length > 0 ? (model.buttons || []).concat(newButtons) : model.buttons;
   return model;
 }
 
@@ -192,8 +195,8 @@ FormDialog.prototype.open = function(data) {
   dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.form.Prop.Enabled = true;
-    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc);
-    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc);
+    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc).on('click', function(e){ e.preventDefault(); });
+    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc).on('click', function(e){ e.preventDefault(); });
     if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
   }
 
@@ -205,10 +208,16 @@ FormDialog.prototype.open = function(data) {
 
   dialog.onCancel = function(options) {
     if (!options.force && xmodel.controller.HasUpdates()) {
-      _this.jsh.XExt.Confirm('Close without saving changes?', function() {
+      if(_this.cms.readonly){
         xmodel.controller.form.ResetDataset();
         options.forceCancel();
-      });
+      }
+      else {
+        _this.jsh.XExt.Confirm('Close without saving changes?', function() {
+          xmodel.controller.form.ResetDataset();
+          options.forceCancel();
+        });
+      }
       return false;
     }
   }

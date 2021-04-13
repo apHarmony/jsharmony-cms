@@ -2179,6 +2179,7 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
+    var cms = module;
 
     var model = jsh.getModel(req, module.namespace + 'Publish_Log');
 
@@ -2188,11 +2189,23 @@ module.exports = exports = function(module, funcs){
 
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-    var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
-    appsrv.ExecRow(req._DBContext, sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
+    var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from {schema}.code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date,(select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = deployment.deployment_target_id) deployment_target_publish_config from {schema}.deployment where deployment_id=@deployment_id";
+    appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment ID');
       var deployment = rslt[0];
+      var deployment_target_publish_config = deployment.deployment_target_publish_config;
+      try{
+        if(deployment_target_publish_config) deployment_target_publish_config = JSON.parse(deployment_target_publish_config);
+        else deployment_target_publish_config = {};
+      }
+      catch(ex){
+        jsh.Log.error('Publish Target has invalid deployment_target_publish_config: '+JSON.stringify(deployment_target_publish_config));
+        return;
+      }
+      deployment_target_publish_config = _.extend({}, cms.Config.deployment_target_publish_config, deployment_target_publish_config);
+      delete deployment.deployment_target_publish_config;
+      deployment.published_url = deployment_target_publish_config.published_url;
 
       funcs.validateBranchAccess(req, res, deployment.branch_id, 'R%', ['PUBLISHER','WEBMASTER'], function(){
         if (verb == 'get') {
@@ -2482,6 +2495,34 @@ module.exports = exports = function(module, funcs){
         zipfile.end();
       },
     ], callback);
+  }
+
+  exports.req_deployment_trigger = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+    var model = jsh.getModel(req, module.namespace + 'Publish_Add');
+
+    if (verb == 'get'){
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+      cms.DeploymentJobPending = true;
+      jsh.AppSrv.JobProc.Run();
+      res.end(JSON.stringify({ '_success': 1 }));
+      return;
+    }
+    else return next();
   }
 
   exports.validateDeploymentAccess = function(req, res, deployment_id, site_access, callback){

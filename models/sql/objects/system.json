@@ -94,8 +94,8 @@
       { "menu_group": "S", "menu_id": 30004, "menu_id_parent": 300, "menu_name": "jsHarmonyCMS/Branch_History_Public_Listing", "menu_seq": 30004, "menu_desc": "Release Maintenance", "menu_cmd": "jsHarmonyCMS/Branch_History_Public_Listing" },
 
       { "menu_group": "S", "menu_id": 350, "menu_id_parent": 1, "menu_name": "Pages", "menu_seq": 35000, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Sitemap_Listing_Redirect" },
-      { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Sitemap_Listing", "menu_seq": 35001, "menu_desc": "Sitemap", "menu_cmd": "jsHarmonyCMS/Sitemap_Listing_Redirect" },
-      { "menu_group": "S", "menu_id": 35002, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35002, "menu_desc": "Pages", "menu_cmd": "jsHarmonyCMS/Page_Tree" },
+      { "menu_group": "S", "menu_id": 35001, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Sitemap_Listing", "menu_seq": 35001, "menu_desc": "Sitemap View", "menu_cmd": "jsHarmonyCMS/Sitemap_Listing_Redirect" },
+      { "menu_group": "S", "menu_id": 35002, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Page_Listing", "menu_seq": 35002, "menu_desc": "Folder View", "menu_cmd": "jsHarmonyCMS/Page_Tree" },
       { "menu_group": "S", "menu_id": 35003, "menu_id_parent": 350, "menu_name": "jsHarmonyCMS/Redirect_Listing", "menu_seq": 35003, "menu_desc": "Redirects", "menu_cmd": "jsHarmonyCMS/Redirect_Listing" },
 
       { "menu_group": "S", "menu_id": 400, "menu_id_parent": 1, "menu_name": "Media", "menu_seq": 40000, "menu_desc": "Media", "menu_cmd": "jsHarmonyCMS/Media_Tree" },

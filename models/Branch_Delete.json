@@ -15,7 +15,7 @@
       "delete from {schema}.branch where branch_id = (select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access='RW');",
       "commit transaction;",
     ],
-    "hide_system_buttons":["print"],
+    "hide_system_buttons":["print","save"],
     "fields": [
       {"name":"branch_id","type":"bigint","control":"hidden","key":true},
       {"name":"branch_name","control":"label","caption":"Deleting Revision","captionstyle":"text-align:right;font-weight:bold;"},

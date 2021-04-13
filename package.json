@@ -1,6 +1,6 @@
 {
   "name": "jsharmony-cms",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "description": "jsHarmony CMS",
   "main": "index.js",
   "scripts": {

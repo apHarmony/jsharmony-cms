@@ -39,6 +39,7 @@ jsh.App[modelid] = new (function(){
     var bcrumbs = jsh.XPage.getBreadcrumbs();
     _this.refreshLayout();
     _this.state.page_folder = xmodel.get('page_folder');
+    $('.' + xmodel.class + '_page_listing_header_path').text(_this.state.page_folder);
     jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.$root('.bcrumbs_branch_body'), containerClass: 'bcrumbs_editor_selection_container' });
   }
 
@@ -72,6 +73,7 @@ jsh.App[modelid] = new (function(){
     var historyParams = {};
     if(_this.state.page_folder===null) historyParams = { replaceHistory: true };
     _this.state.page_folder = newval;
+    $('.' + xmodel.class + '_page_listing_header_path').text(_this.state.page_folder);
     jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
     XPage.AddHistory(undefined, undefined, historyParams);
   }

@@ -7,8 +7,10 @@
     "actions":"BU",
     "roles": {"PUBLISHER": "BU"},
     "onecolumn":true,
+    "hide_system_buttons":["print","save"],
     "fields": [
       {"name":"deployment_id","key":true,"control":"hidden"},
+      {"name":"deployment_git_revision","control":"hidden"},
       {"control":"html","value":"<div style='font-weight:bold;padding:5px 0;'>Redeployment will publish an exact copy of what was previously published.  Any changes to templates, URLs, or dynamically generated content will not be applied.</div>"},
       {"name":"site_name","control":"label","caption":"Site","sqlselect":"(select site_name from {schema}.site inner join {schema}.deployment_target on {schema}.deployment_target.site_id={schema}.site.site_id where {schema}.deployment_target.deployment_target_id={schema}.v_my_deployment.deployment_target_id)"},
       {"name":"branch_desc","control":"label","caption":"Revision","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.v_my_deployment.branch_id)"},
@@ -25,7 +27,7 @@
     "actions": "U",
     "roles": {"PUBLISHER": "BU"},
     "sqlexec": [
-      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_git_revision) select site_id, @deployment_target_id, branch_id, @deployment_date, @deployment_tag, deployment_git_revision from {schema}.v_my_deployment where deployment_id=@src_deployment_id"
+      "{schema}.insert_redeployment(@src_deployment_id, @deployment_target_id, @deployment_date, @deployment_tag)"
     ],
     "fields": [
       {"name":"src_deployment_id", "actions":"BU", "type":"bigint", "caption":"Source Deployment ID", "validate": ["Required"]},

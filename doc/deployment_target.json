@@ -27,6 +27,7 @@
   "page_subfolder": "",   //Relative path from publish folder to pages subfolder, ex. 'pages/'
   "media_subfolder": "",  //Relative path from publish folder to media subfolder, ex. 'media/'
   "content_url": "/",     //Absolute path from website root to CMS publish folder, ex. '/content/'
+  "published_url": null,  //(Optional) URL of published site, ex. https://example.com
   "exec_pre_deployment": null,      //Execute shell command after populating publish folder, before deployment
                                    //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
   "exec_post_deployment": null,    //Execute shell command after deployment

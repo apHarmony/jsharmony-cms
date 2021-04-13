@@ -73,10 +73,12 @@ exports = module.exports = function(jsh, cms){
       else if(jdata.media_key){
         _this.lastMediaPath = { init_media_path: jdata.media_folder };
         _this.lastLinkPath = { init_media_path: jdata.media_folder };
+        if(jdata.media_path) jdata.text = XExt.basename(jdata.media_path);
         cms.filePickerCallback(cms._baseurl+'_funcs/media/'+jdata.media_key+'/?media_file_id='+jdata.media_file_id+'#@JSHCMS', jdata);
       }
       else if(jdata.page_key){
         _this.lastLinkPath = { init_page_path: jdata.page_folder };
+        if(jdata.page_title) jdata.text = jdata.page_title;
         cms.filePickerCallback(cms._baseurl+'_funcs/page/'+jdata.page_key+'/#@JSHCMS', jdata);
       }
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));

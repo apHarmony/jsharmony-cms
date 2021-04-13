@@ -12,12 +12,19 @@
     "sqlwhere":"site_template_type='COMPONENT'",
     "sqlwhere_disabled_on_insert": true,
     "rowlimit":99999,
+    "breadcrumbs": {
+      "title": "",
+      "sql": "select %%%FS_COMPONENT_TEMPLATE_PATH%%% fs_component_template_path, %%%SFTP_URL%%% sftp_url,@site_id site_id,(select site_name from {schema}.site where site_id=@site_id) site_name"
+    },
     "sort":["^site_template_title"],
+    "onload": "jsh.App[modelid].onload(xmodel);",
     "tablestyle":"min-width:900px;",
     "rowclass":"<%=xejs.iif((datarow['site_template_location']!='REMOTE'),'readonly')%>",
     "css":[
       ".xrow_<%=model.class%>.readonly .site_template_config_cell .xform_ctrl_textzoom_container { display:none; }",
       ".xrow_<%=model.class%> .site_template_config_cell .xform_ctrl_textzoom_container { padding-bottom:3px;margin-top:1px; }",
+      ".<%=model.class%>_Templates_Location label { font-weight:bold; display:block; }",
+      ".<%=model.class%>_Templates_Location label div { font-weight:normal; display:inline-block; margin-left:5px; }",
     ],
     "fields": [
       {"name":"site_id","actions":"BI","foreignkey":1,"control":"hidden"},

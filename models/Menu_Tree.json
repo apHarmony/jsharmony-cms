@@ -27,6 +27,7 @@
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
+            { "icon": "add", "text": "Add Top-level Item", "command": "_this.addMenuItem(null);", "actions": "I" },
             { "icon": "add", "text": "Add Submenu Item", "command": "_this.addMenuItem(context_item);", "actions": "I" },
             { "icon": "delete", "text": "Delete", "command": "_this.deleteMenuItem(context_item);", "actions": "D" }
           ],

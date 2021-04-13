@@ -42,6 +42,8 @@ jsh.App[modelid] = new (function(){
     var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_Merge';
 
+    if(!xmodel.get('dst_branch_id')) return XExt.Alert('Please clone or check out the destination revision');
+
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
       var jprompt = jsh.$root('.xdialogblock ' + sel);
 

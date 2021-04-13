@@ -5,7 +5,7 @@
 
   jsh.System.RequireBranch = function(xmodel){
     function showNoBranchMessage(){
-      XExt.Alert('Please checkout a revision', function(){
+      XExt.Alert('Please clone or checkout a revision', function(){
         XExt.navTo(jsh._BASEURL+'{namespace}Branch_Active_Listing', { force: true })
       });
     }
@@ -91,6 +91,20 @@
 
     var url = jsh._BASEURL+'_funcs/branch/download/'+branch_id+'?source=js';
     jsh.getFileProxy().prop('src', url);
+  }
+
+  jsh.System.CheckoutBranch = function(xmodel, branch_id, branch_type) {
+    //Save Changes Before Executing
+    if (jsh.XPage.GetChanges().length > 0) return XExt.Alert('Please save pending changes before continuing.');
+
+    XExt.execif(branch_type=='PUBLIC',
+      function(f){
+        XExt.Confirm('<div style="text-align:left;">Instead of checking out a release, it is recommended to:<br/><br/>1. Clone a Release to a local Revision<br/>2. Make changes in your local Revision<br/>3. Submit for publish review when changes are complete.<br/><br/>Are you sure you want to checkout this release?</div>', f, undefined, { message_type: 'html' });
+      },
+      function(){
+        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Checkout?action=update&branch_id='+encodeURIComponent(branch_id), { force: true })
+      }
+    );
   }
 
   jsh.System.UploadBranch = function(site_id, branch_type, branch_name, branch_content) {

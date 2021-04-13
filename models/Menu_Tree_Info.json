@@ -34,10 +34,10 @@
       {"name":"menu_item_link_media_browse","control":"button","value":"Browse","onclick":"js:_this.browseMedia();","actions":"IU"},
 
       {"control":"html","value":"<div class='<%=model.class%>_divider'>:: Advanced Options</div>","nl":true},
-      {"name":"menu_item_type","control":"dropdown","caption":"Render As","default":"TEXT","lov":{ "blank": false, "values": { "TEXT": "Text", "HTML": "HTML" } }, "captionstyle":"width:68px;"},
-      {"name":"menu_item_class","control":"textbox_M","caption":"CSS Class","nl":true},
-      {"name":"menu_item_style","control":"textbox_L","caption":"CSS Style","controlstyle":"width:300px;","nl":true},
-      {"name":"menu_item_tag","control":"textbox_L","caption":"Tag","controlstyle":"width:300px;","nl":true}
+      {"name":"menu_item_type","control":"dropdown","caption":"Render As","default":"TEXT","lov":{ "blank": false, "values": { "TEXT": "Text", "HTML": "HTML" } }, "captionstyle":"width:130px;"},
+      {"name":"menu_item_class","control":"textbox_M","caption":"Menu Link CSS Class","nl":true, "captionstyle":"width:130px;"},
+      {"name":"menu_item_style","control":"textbox_M","caption":"Menu Link CSS Style","nl":true, "captionstyle":"width:130px;"},
+      {"name":"menu_item_tag","control":"textbox_M","caption":"Tag","nl":true, "captionstyle":"width:130px;"}
 	  ]
   }
 }

@@ -23,6 +23,9 @@
   box-sizing:border-box;
   flex-shrink:0;
 }
+.xelem<%=model.class%>.tree.media_folder .tree_item {
+  user-select: none;
+}
 .<%=model.class%>_file_listing {
   flex-grow:1;
   margin-top:0px;

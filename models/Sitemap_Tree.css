@@ -11,6 +11,9 @@
   padding-bottom:15px;
   box-sizing:border-box;
 }
+.xelem<%=model.class%>.xform_button_saveSitemap.hasChanges {
+  font-weight:bold;
+}
 .<%=model.class%>_browser {
   display:flex;
   width:100%;
@@ -24,6 +27,9 @@
   box-sizing:border-box;
   flex-shrink:0;
   flex-grow:1;
+}
+.xelem<%=model.class%>.tree.sitemap_item_id .tree_item {
+  user-select: none;
 }
 .xsubform.Sitemap_Tree_Info {
   display:none;
