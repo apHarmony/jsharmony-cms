@@ -364,7 +364,18 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                 if (!rslt || !rslt.length || !rslt[0] || !rslt[0].site_id) return handleError(ssh2.SFTP_STATUS_CODE.PERMISSION_DENIED);
 
                 //If it is a site folder and it does not exist, create it
-                HelperFS.createFolderIfNotExists(fspath.join(sitePath,site_id.toString()), cb);
+                fs.exists(fspath.join(sitePath,site_id.toString()), function(exists){
+                  if(!exists){
+                    async.waterfall([
+                      function(create_cb){ HelperFS.createFolderIfNotExists(fspath.join(sitePath,site_id.toString()), create_cb); },
+                      function(create_cb){ HelperFS.createFolderIfNotExists(fspath.join(sitePath,site_id.toString(),'templates'), create_cb); },
+                      function(create_cb){ HelperFS.createFolderIfNotExists(fspath.join(sitePath,site_id.toString(),'templates','pages'), create_cb); },
+                      function(create_cb){ HelperFS.createFolderIfNotExists(fspath.join(sitePath,site_id.toString(),'templates','components'), create_cb); },
+                      function(create_cb){ HelperFS.createFolderIfNotExists(fspath.join(sitePath,site_id.toString(),'templates','websnippets'), create_cb); },
+                    ], cb);
+                  }
+                  else return cb();
+                });
               });
             }
             else if(vpath == '/') return cb();
@@ -829,11 +840,25 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                         if (err) { jsh.Log.error(err); return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving site listing'); }
 
                         if(rslt && rslt[0]) _.each(rslt[0], function(site){
-                          var filename = HelperFS.cleanFileName(site.site_id+'_'+site.site_name);
+                          var filename_short = HelperFS.cleanFileName(site.site_id);
+                          var filename_long = HelperFS.cleanFileName(site.site_id+'_'+site.site_name);
                           files.push({
-                            filename: filename,
-                            longname: filename,
-                            longname: 'lrwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename,
+                            filename: filename_short,
+                            longname: filename_short,
+                            longname: 'drwxrwxrwx 0 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_short,
+                            attrs: {
+                              mode: 0777,
+                              uid: 0,
+                              gid: 0,
+                              size: 4096,
+                              atime: moment().unix(),
+                              mtime: moment().unix(),
+                            }
+                          });
+                          files.push({
+                            filename: filename_long,
+                            longname: filename_long,
+                            longname: 'lrwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_long,
                             attrs: {
                               mode: 0777 + fs.constants.S_IFDIR,
                               uid: 0,
