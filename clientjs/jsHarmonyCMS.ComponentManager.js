@@ -37,7 +37,7 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.loadSystemComponentTemplates = function(onError){
-    var url = '../_funcs/templates/components/'+cms.branch_id;
+    var url = '../_funcs/templates/components/'+(cms.branch_id||'');
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         async.eachOf(rslt.components, function(component, componentId, cb) {

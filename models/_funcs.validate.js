@@ -121,11 +121,21 @@ module.exports = exports = function(module, funcs){
       media_keys: {},
       branch_id: branch_id,
       site_id: null,
+      site_config: {},
       deployment_target_params: null,
       branch_validate: branch_validate,
     };
 
     async.waterfall([
+
+      //Get site config
+      function(cb){
+        funcs.getSiteConfig('deployment', branchData.site_id, { }, function(err, siteConfig){
+          if(err) return cb(err);
+          branchData.site_config = siteConfig;
+          return cb();
+        });
+      },
 
       //Get deployment_target_params for branch
       function(cb){
@@ -345,6 +355,7 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     var menus = {};
+    var menu_configs = {};
 
     async.waterfall([
       //Get all menus
@@ -372,18 +383,42 @@ module.exports = exports = function(module, funcs){
         });
       },
 
+      //Check for missing menus
+      function(cb){
+        if(branchData.site_config && branchData.site_config.menus){
+          _.each(branchData.site_config.menus, function(site_menu_config){
+            if(site_menu_config && site_menu_config.tag) menu_configs[site_menu_config.tag] = site_menu_config;
+          });
+        }
+        var menu_tags = {};
+        for(var key in menus){
+          var menu = menus[key];
+          menu_tags[menu.menu_tag] = menu;
+        }
+        _.each(menu_configs, function(menu_config, menu_tag){
+          if(!(menu_tag in menu_tags)) funcs.validate_logSystemError(branchData, 'A menu with menu tag "' + menu_tag + '" is required by the Site Config.  Please add this missing menu to the site.');
+        });
+        return cb();
+      },
+
       //Get menu file content
       function(cb){
         async.eachOfSeries(menus, function(menu, menu_id, menu_cb){
           funcs.getClientMenu(menu, function(err, menu_content){
             if(err){ funcs.validate_logError(item_errors, 'menu', menu, err.toString()); return menu_cb(); }
 
-            //Validate URLs
+            
             menu.menu_items = menu_content.menu_items||[];
+
+            
+            
+            //For each menu item
+            var menu_config = menu_configs[menu.menu_tag];
             var pretty_menu_items = funcs.prettyMenu(menu_content.menu_items, branchData.page_keys, branchData.media_keys, { text: false });
             for(var i=0;i<menu.menu_items.length;i++){
               var menu_item = menu.menu_items[i];
               var pretty_menu_item = pretty_menu_items[i];
+              //Validate URLs
               if((menu_item.menu_item_link_type||'').toString()=='PAGE'){
                 var page_key = parseInt(menu_item.menu_item_link_dest);
                 if(!(page_key in branchData.page_keys)) funcs.validate_logError(item_errors, 'menu', menu, 'Menu item "' + pretty_menu_item.menu_item + '" links to missing Page ID #'+page_key.toString());
@@ -393,6 +428,13 @@ module.exports = exports = function(module, funcs){
                 var media_key = parseInt(menu_item.menu_item_link_dest);
                 if(!(media_key in branchData.media_keys)) funcs.validate_logError(item_errors, 'menu', menu, 'Menu item "' + pretty_menu_item.menu_item + '" links to missing Media ID #'+media_key.toString());
                 else menu_item.menu_item_link_dest = branchData.media_keys[media_key];
+              }
+              //Validate Max Depth
+              if(menu_config && menu_config.max_depth){
+                var menu_path = menu_item.menu_item_path.split('/');
+                var menu_item_depth = 0;
+                _.each(menu_path, function(val){ if(val) menu_item_depth++; });
+                if(menu_item_depth > menu_config.max_depth) funcs.validate_logError(item_errors, 'menu', menu, 'Menu item "' + pretty_menu_item.menu_item + '" exceeds maximum menu depth of '+menu_config.max_depth.toString());
               }
             }
             

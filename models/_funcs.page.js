@@ -33,7 +33,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.getClientPage = function(dbcontext, page, sitemaps, site_id, options, cb){
-    options = _.extend({ includeExtraContent: false, pageTemplates: null }, options);
+    options = _.extend({ includeExtraContent: false, pageTemplates: null, ignoreInvalidPageTemplate: false }, options);
     var page_file_id = page.page_file_id;
     var page_template_id = page.page_template_id;
     if(!page_template_id) return cb(new Error('Page template: '+page_template_id));
@@ -51,7 +51,8 @@ module.exports = exports = function(module, funcs){
         });
       },
       function(){
-        if(!template) return cb(new Error('Invalid page template: '+page_template_id));
+        if(!template && options.ignoreInvalidPageTemplate) template = {};
+        if(!template) return cb(new Error('Invalid page template "'+page_template_id+'" in page '+page.page_path));
 
         //Load Page Content from disk
         module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
@@ -395,17 +396,18 @@ module.exports = exports = function(module, funcs){
     return url;
   }
 
-  exports.localizePageURLs = function(page, baseurl, isRaw, media_file_ids){
+  exports.localizePageURLs = function(page, baseurl, isRaw, branch_id, media_files){
 
     function replaceURLs(content, options){
       var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
         getMediaURL: function(media_key, branchData, getLinkContent, urlparts){
-          if(!media_file_ids){
+          if(!media_files){
             return baseurl + urlparts.path.substr(1) + '#@JSHCMS';
           }
-          return baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_ids[media_key]+'#@JSHCMS';
+          return baseurl+'_funcs/media/'+media_key+'/?media_id='+media_files[media_key].media_id+'#@JSHCMS';
         },
         getPageURL: function(page_key, branchData, getLinkContent, urlparts){
+          if(branch_id) return baseurl+'_funcs/page/'+page_key+'/?branch_id='+branch_id+'&view=1#@JSHCMS';
           return baseurl+'_funcs/page/'+page_key+'/#@JSHCMS';
         }
       }));
@@ -462,12 +464,22 @@ module.exports = exports = function(module, funcs){
     validate.AddValidator('_obj.page_key', 'Page Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
     sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang';
 
-    if(Q.page_id){
+    if(Q.page_id && Q.branch_id){
       sql_ptypes.push(dbtypes.BigInt);
       sql_params.page_id = Q.page_id;
       validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
-      sql += ' from {schema}.page where page_key=@page_key and page_id=@page_id and site_id={schema}.my_current_site_id()';
+      sql_ptypes.push(dbtypes.BigInt);
+      sql_params.branch_id = Q.branch_id;
+      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
+      sql += ',@branch_id branch_id from {schema}.page where page_key=@page_key and page_id=@page_id and site_id={schema}.my_current_site_id()';
     }
+    else if(Q.branch_id && Q.view){
+      sql_ptypes.push(dbtypes.BigInt);
+      sql_params.branch_id = Q.branch_id;
+      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
+      sql += ',branch_id from (select page.*,branch_page.branch_id from {schema}.page inner join {schema}.branch_page on branch_page.branch_id=@branch_id and branch_page.page_id=page.page_id where page.page_key=@page_key and site_id={schema}.my_current_site_id()) page';
+    }
+    else if(Q.page_id) return Helper.GenError(req, res, -4, 'Invalid parameters - missing branch_id');
     else{
       sql += ',(select {schema}.my_current_branch_id()) branch_id';
       sql += ' from {schema}.v_my_page where page_key=@page_key';
@@ -489,7 +501,7 @@ module.exports = exports = function(module, funcs){
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){
-        if(Q.page_id) return Helper.GenError(req, res, -4, 'Page not found in current site');
+        if(Q.page_id || Q.view) return Helper.GenError(req, res, -4, 'Page not found in revision');
         return Helper.GenError(req, res, -4, 'Page not found in current site revision');
       }
       var page = rslt[0][0];
@@ -511,15 +523,15 @@ module.exports = exports = function(module, funcs){
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id','|view'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var authors = null;
         var clientPage = null;
-        var media_file_ids = {};
+        var media_files = {};
         var sitemaps = {};
         var menus = {};
         var site_id = null;
-        var branch_id = Q.branch_id || page.branch_id;
+        var branch_id = page.branch_id;
 
         if(!branch_id){ return Helper.GenError(req, res, -4, 'Invalid Parameters'); }
 
@@ -555,11 +567,12 @@ module.exports = exports = function(module, funcs){
 
           //Get media
           function(cb){
-            appsrv.ExecRecordset(req._DBContext, "select media_key, media_file_id from "+(module.schema?module.schema+'.':'')+"v_my_media where (media_file_id is not null) and (media_is_folder = 0)", [], {}, function (err, rslt) {
+            var sql = "select media.media_key, media.media_id, media_file_id from {schema}.media inner join {schema}.branch_media on branch_media.branch_id=@branch_id and branch_media.media_id=media.media_id where (media_file_id is not null) and (media_is_folder = 0)";
+            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
               if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
               _.each(rslt[0], function(media){
-                media_file_ids[media.media_key] = media.media_file_id;
+                media_files[media.media_key] = media;
               });
               return cb();
             });
@@ -567,7 +580,8 @@ module.exports = exports = function(module, funcs){
 
           //Get sitemaps
           function(cb){
-            appsrv.ExecRecordset(req._DBContext, "select sitemap_key, sitemap_file_id, sitemap_type from "+(module.schema?module.schema+'.':'')+"v_my_sitemap where (sitemap_file_id is not null)", [], {}, function (err, rslt) {
+            var sql = "select sitemap.sitemap_key, sitemap_file_id, sitemap_type from {schema}.sitemap inner join {schema}.branch_sitemap on branch_sitemap.branch_id=@branch_id and branch_sitemap.sitemap_id=sitemap.sitemap_id where (sitemap_file_id is not null)";
+            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; return cb(err); }
               if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
               _.each(rslt[0], function(sitemap){
@@ -586,7 +600,8 @@ module.exports = exports = function(module, funcs){
 
           //Get menus
           function(cb){
-            appsrv.ExecRecordset(req._DBContext, "select menu_key, menu_file_id, menu_name, menu_tag from "+(module.schema?module.schema+'.':'')+"v_my_menu where (menu_file_id is not null)", [], {}, function (err, rslt) {
+            var sql = "select menu.menu_key, menu_file_id, menu_name, menu_tag from {schema}.menu inner join {schema}.branch_menu on branch_menu.branch_id=@branch_id and branch_menu.menu_id=menu.menu_id where (menu_file_id is not null)";
+            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; return cb(err); }
               if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
               _.each(rslt[0], function(menu){
@@ -611,7 +626,7 @@ module.exports = exports = function(module, funcs){
               if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
               clientPage = _clientPage;
               if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
-              funcs.localizePageURLs(clientPage.page, baseurl, !!clientPage.template.raw, media_file_ids);
+              funcs.localizePageURLs(clientPage.page, baseurl, !!clientPage.template.raw, ((Q.page_id || Q.view) ? branch_id : undefined), media_files);
               return cb();
             });
           }
@@ -759,7 +774,7 @@ module.exports = exports = function(module, funcs){
     sql_params = { };
     validate = new XValidate();
     verrors = {};
-    sql = 'select branch_id,site_id from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()';
+    sql = 'select {schema}.my_current_branch_id() branch_id, {schema}.my_current_site_id() site_id';
 
     var page_role = '';
     if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
@@ -776,7 +791,7 @@ module.exports = exports = function(module, funcs){
 
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please clone or checkout a revision'); }
+      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a site to use Dev Mode'); }
 
       var devInfo = rslt[0][0];
 
@@ -829,6 +844,7 @@ module.exports = exports = function(module, funcs){
           res.end(JSON.stringify({
             '_success': 1,
             'branch_id': devInfo.branch_id,
+            'site_id': devInfo.site_id,
             'sitemap': funcs.getSampleSitemap(),
             'menus': menus,
             'role': page_role,
@@ -878,13 +894,13 @@ module.exports = exports = function(module, funcs){
     //Only dev mode uses devMode and site_id parameters
 
     if (verb == 'get') {
-      var sql = "select v_my_branch_desc.branch_id current_branch_id,v_my_branch_desc.site_id current_branch_site_id,v_my_branch_desc.site_id,deployment_target_params from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id={schema}.my_current_branch_id()";
+      var sql = "select site_id current_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
       var sql_ptypes = [];
       var sql_params = {};
 
       if(Q.devMode){
         if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select {schema}.my_current_branch_id() current_branch_id,(select site_id from {schema}.v_my_branch_desc where v_my_branch_desc.branch_id={schema}.my_current_branch_id()) current_branch_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
+        sql = "select {schema}.my_current_site_id() current_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { site_id: Q.site_id };
       }
@@ -892,13 +908,13 @@ module.exports = exports = function(module, funcs){
         if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
         if (!rslt || !rslt.length || !rslt[0]) {
           if(Q.devMode) Helper.GenError(req, res, -1, 'Site not found');
-          else Helper.GenError(req, res, -1, 'Revision not checked out');
+          else Helper.GenError(req, res, -1, 'Site not checked out');
+          return;
         }
 
         var deployment_target_params = rslt[0].deployment_target_params || '';
         var site_id = rslt[0].site_id || null;
-        var current_branch_id = rslt[0].current_branch_id || null;
-        var current_branch_site_id = rslt[0].current_branch_site_id || null;
+        var current_site_id = rslt[0].current_site_id || null;
 
         if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
 
@@ -915,7 +931,7 @@ module.exports = exports = function(module, funcs){
             if(!cms.PreviewServer) return Helper.GenError(req, res, -9, 'LOCAL Templates require a Preview Server to be running.  Set configCMS.preview_server.enabled = true in app.config.js');
             url = cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]) + page_template.path;
             //Generate an error if the preview server revision is not checked out
-            if(current_branch_site_id != site_id) return Helper.GenError(req, res, -9, 'Please check out a revision in this site to preview the template');
+            if(current_site_id != site_id) return Helper.GenError(req, res, -9, 'Please checkout this site to preview the template');
           }
           if(page_template.remote_templates && page_template.remote_templates.editor) {
             url = page_template.remote_templates.editor;
@@ -997,6 +1013,82 @@ module.exports = exports = function(module, funcs){
           }
 
           res.end(JSON.stringify({ '_success': 1, editor: url }));
+        });
+      });
+      return;
+    }
+    return next();
+  }
+
+  exports.getPageSiteConfig = function(req, res, next){
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+
+    var Q = req.query;
+    var P = {};
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var cms = module;
+    var dbtypes = appsrv.DB.types;
+    var XValidate = jsh.XValidate;
+
+    var model = jsh.getModel(req, module.namespace + 'Page_Tree');
+
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    var referer = req.get('Referer');
+    if(referer){
+      var urlparts = urlparser.parse(referer, true);
+      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+      res.setHeader('Access-Control-Allow-Origin', remote_domain);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+      res.setHeader('Access-Control-Allow-Credentials', true);
+    }
+
+    //Validate parameters
+    if (!appsrv.ParamCheck('Q', Q, ['|site_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+    validate = new XValidate();
+    verrors = {};
+    validate.AddValidator('_obj.site_id', 'Site ID', 'B', [ XValidate._v_IsNumeric() ]);
+    verrors = _.merge(verrors, validate.Validate('B', Q));
+    if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+    //Only dev mode uses devMode and site_id parameters
+
+    if (verb == 'get') {
+      var sql = "select site_id,deployment_target_params from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
+      var sql_ptypes = [];
+      var sql_params = {};
+
+      if(Q.devMode){
+        if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        sql = "select site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
+        sql_ptypes = [dbtypes.BigInt];
+        sql_params = { site_id: Q.site_id };
+      }
+      appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+        if (!rslt || !rslt.length || !rslt[0]) {
+          if(Q.devMode) Helper.GenError(req, res, -1, 'Site not found');
+          else Helper.GenError(req, res, -1, 'Site not checked out');
+          return;
+        }
+
+        var site_id = rslt[0].site_id || null;
+
+        if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
+
+        funcs.getSiteConfig(req._DBContext, site_id, { continueOnConfigError: true }, function(err, siteConfig){
+          if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+          if(!siteConfig) siteConfig = {};
+          var pageSiteConfig = {
+            defaultEditorConfig: siteConfig.defaultEditorConfig||{},
+          };
+          res.end(JSON.stringify({ '_success': 1, siteConfig: pageSiteConfig }));
         });
       });
       return;

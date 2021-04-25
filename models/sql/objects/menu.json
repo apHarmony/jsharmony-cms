@@ -86,7 +86,6 @@
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only revision');",
             "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update revision when a merge is in progress');",
-            "errorif(exists(select * from {schema}.v_my_menu where menu_name=inserted(menu_name)),'Menu name already exists');",
             "errorif(exists(select * from {schema}.v_my_menu where menu_tag=inserted(menu_tag)),'Menu tag already exists');",
             "with_insert_identity(menu, menu_id, ",
             "  insert into menu(site_id, menu_name, menu_tag, menu_review_sts, menu_lang) values({schema}.my_current_site_id(), inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",
@@ -103,7 +102,6 @@
           [
             "errorif({schema}.my_current_branch_is_editable()=0,'Cannot update a read-only revision');",
             "errorif({schema}.my_current_branch_is_merging()=1,'Cannot update revision when a merge is in progress');",
-            "errorif(exists(select * from {schema}.v_my_menu where menu_name=inserted(menu_name) and menu_key<>deleted(menu_key)),'Menu name already exists');",
             "errorif(exists(select * from {schema}.v_my_menu where menu_tag=inserted(menu_tag) and menu_key<>deleted(menu_key)),'Menu tag already exists');",
             "with_insert_identity(menu, menu_id, ",
             "  insert into menu(site_id, menu_key, menu_file_id, menu_orig_id, menu_name, menu_tag, menu_review_sts, menu_lang) values(deleted(site_id), deleted(menu_key), (case when inserted(menu_file_id) is null then null else deleted(menu_file_id) end), deleted(menu_id), inserted(menu_name), inserted(menu_tag), inserted(menu_review_sts), inserted(menu_lang)),",

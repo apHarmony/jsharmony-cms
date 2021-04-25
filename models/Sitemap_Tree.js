@@ -204,6 +204,9 @@ jsh.App[modelid] = new (function(){
       }
       return false;
     }
+    else if(action=='add_home'){
+      if(sitemap_item_id !== 'ROOT') return false;
+    }
   }
 
   this.sitemap_item_id_ondoubleclick = function(sitemap_item_id){
@@ -221,7 +224,10 @@ jsh.App[modelid] = new (function(){
     if(!_this.sitemap_key){ XExt.Alert('Missing sitemap key'); return; }
 
     var url = '../_funcs/sitemap/'+_this.sitemap_key;
-    if(_this.sitemap_id) url += '?sitemap_id=' + _this.sitemap_id;
+    if(_this.sitemap_id){
+      url += '?sitemap_id=' + _this.sitemap_id;
+      if(jsh._GET.branch_id) url += '&branch_id='+jsh._GET.branch_id;
+    }
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var sitemap = rslt.sitemap;
@@ -492,14 +498,14 @@ jsh.App[modelid] = new (function(){
       }
     }
     if(!force){
-      XExt.Confirm('Are you sure you want to delete "'+sitemap_item.sitemap_item_text+'"'+(sitemap_item_children.length?' and all of its children':'')+'?', function (rslt) {
+      XExt.Confirm('Are you sure you want to delete sitemap item "'+sitemap_item.sitemap_item_text+'"'+(sitemap_item_children.length?' and all of its children':'')+'?', function (rslt) {
         var next_sitemap_item_id = _this.selected_sitemap_item_id;
         if(next_sitemap_item_id == sitemap_item_id) next_sitemap_item_id = _this.getPrevSitemapItemID(sitemap_item_id);
         var deletedPages = _this.deleteSitemapItem(sitemap_item_id, true)||[];
         XExt.execif(deletedPages.length, function(f){
           //Confirm whether to delete the pages from the system
           var msg = "<div style='text-align:left;'>";
-          msg += "Permanently delete the following pages?";
+          msg += "Permanently delete the following pages from the site?";
           for(var i = 0; i < deletedPages.length; i++){ msg += "<br/>" + deletedPages[i].page_path; }
           msg += "</div>";
           XExt.Confirm(msg, function(){
@@ -586,7 +592,14 @@ jsh.App[modelid] = new (function(){
     return jsh.XPage.getBreadcrumbs().site_default_page_filename;
   }
 
-  this.addSitemapPage = function(sitemap_item_parent_id){
+  this.getDefaultPageFilename = function(page_type, page_folder, title){
+    title = title || '';
+    if(page_type=='home') return '/' + _this.getDefaultPage();
+    if(!title.trim()) return '';
+    return page_folder + XExt.prettyURL(title.trim()) + '/' + _this.getDefaultPage();
+  }
+
+  this.addSitemapPage = function(sitemap_item_parent_id, page_type){
     if(!_this.commitInfo()) return;
 
     sitemap_item_parent_id = parseInt(sitemap_item_parent_id);
@@ -633,16 +646,16 @@ jsh.App[modelid] = new (function(){
       jsitemaptext.addClass('uneditable');
 
       var jtitle = jprompt.find('.page_title');
-      function getDefaultPageFilename(){ if(!jtitle.val().trim()) return ''; return page_folder + XExt.prettyURL(jtitle.val().trim()) + '/' + _this.getDefaultPage(); }
       jtitle.off('input keyup').on('input keyup', function(){
-        if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(getDefaultPageFilename());
+        if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val()));
         if(jprompt.find('.sitemap_item_text_default').prop('checked')) jsitemaptext.val(jtitle.val());
       });
+      jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val()));
 
       jprompt.find('.page_path_default').off('click').on('click', function(){
         if($(this).is(':checked')){
           jfilename.prop('readonly', true);
-          jfilename.val(getDefaultPageFilename());
+          jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val()));
           jfilename.addClass('uneditable');
         }
         else{
@@ -686,7 +699,7 @@ jsh.App[modelid] = new (function(){
       };
 
       var execModel = xmodel.module_namespace+'Page_Tree_Listing';
-      XForm.Put(execModel, { }, params, function(rslt){
+      XForm.Put(execModel, { }, params, function(rslt){ //On success
         success();
         
         //Add item to list
@@ -698,6 +711,13 @@ jsh.App[modelid] = new (function(){
           sitemap_item_link_dest: page_key.toString(),
           sitemap_item_link_page: params.page_path
         });
+      }, function(err){ //On error
+        if(page_type=='home'){
+          var defaultHomePath = _this.getDefaultPageFilename(page_type);
+          if((page_path == defaultHomePath) && err && (err.Message == 'Application Error - Page file name already exists')){
+            XExt.Alert('Application Error - Home page aready added to this site: '+defaultHomePath);
+          }
+        }
       });
     });
   }
@@ -755,8 +775,12 @@ jsh.App[modelid] = new (function(){
     if(!page_key) return XExt.Alert('Page key is required');
 
     //Get page settings from server
-    var execModel = xmodel.module_namespace+'Page_Tree_Listing';
-    XForm.Get(execModel, { rowstart: 0, rowcount: 1, d: JSON.stringify({ page_key: page_key }) }, { }, function(rslt){
+    var execModel = xmodel.module_namespace+'Page_Info';
+    var pageQuery = { page_key: page_key, branch_id: null };
+    if(_this.sitemap_id){
+      pageQuery.branch_id = jsh._GET.branch_id;
+    }
+    XForm.Post(execModel, {}, pageQuery, function(rslt){
       if(!rslt || !rslt[execModel] || !rslt[execModel].length){
         if(options.quiet) return cb(null);
         return XExt.Alert('Error loading page');
@@ -781,6 +805,11 @@ jsh.App[modelid] = new (function(){
     if(options.getURL) editorParams.getURL = true;
     if(options.onComplete) editorParams.onComplete = options.onComplete;
     editorParams.async = options.async;
+
+    if(_this.sitemap_id && jsh._GET.branch_id){
+      editorParams.page_id = page_id;
+      editorParams.branch_id = jsh._GET.branch_id;
+    }
 
     jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, editorParams);
   }
@@ -953,19 +982,18 @@ jsh.App[modelid] = new (function(){
         jsitemaptext.addClass('uneditable');
   
         var jtitle = jprompt.find('.page_title');
-        function getDefaultPageFilename(){ if(!jtitle.val().trim()) return ''; return page_folder + XExt.prettyURL(jtitle.val().trim()) + '/' + _this.getDefaultPage(); }
         jtitle.off('input keyup').on('input keyup', function(){
-          if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(getDefaultPageFilename());
+          if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(_this.getDefaultPageFilename('', page_folder, jtitle.val()));
           if(jprompt.find('.sitemap_item_text_default').prop('checked')) jsitemaptext.val(jtitle.val());
         });
 
         jsitemaptext.val(source_page.page_title);
-        jfilename.val(getDefaultPageFilename());
+        jfilename.val(_this.getDefaultPageFilename('', page_folder, jtitle.val()));
   
         jprompt.find('.page_path_default').off('click').on('click', function(){
           if($(this).is(':checked')){
             jfilename.prop('readonly', true);
-            jfilename.val(getDefaultPageFilename());
+            jfilename.val(_this.getDefaultPageFilename('', page_folder, jtitle.val()));
             jfilename.addClass('uneditable');
           }
           else{

@@ -1,0 +1,25 @@
+<div class="xaccordiontab"><img src="/images/icon_search.png" style="margin-right:7px;top:2px;height:14px;position:relative;" /> Site Config Tips  </div>
+<div class="xaccordionbody">
+  <h3>Local vs Remote Templates</h3>
+  There are three locations for the Site Config - SYSTEM, LOCAL, and DATABASE:
+  <ul>
+    <li>SYSTEM site config is defined in the CMS "views\templates\site_config.json" file for all sites</li>
+    <li>LOCAL site config is located in the site's SFTP "templates\site_config.json" file, and is automatically detected.</li>
+    <li>DATABASE site config is defined in the "Additional Site Config" textbox below.</li>
+  </ul>
+
+  Config file format is as follows:
+  <pre>
+{
+  "menus": [ //Array of required menus
+    { "name": "Main Menu", "tag": "main", "max_depth": 2 }
+  ]
+}</pre>
+</div>
+<div style="clear:both;height:5px;"></div>
+<div class="<%=model.class%>_Config_Location">
+  <label class="label_fs_config_path">Local Site Config - File System Location: <div class="fs_config_path"></div></label>
+  <label class="label_sftp_config_path">Local Site Config - SFTP Location: <div class="sftp_config_path"></div></label>
+</div>
+<div style="clear:both;height:5px;"></div>
+<b>Additional Site Config:</b><br/>

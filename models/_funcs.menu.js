@@ -169,7 +169,8 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.menu_key', 'Menu Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select menu_key,menu_file_id';
+    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
+    sql = 'select menu_key,menu_file_id,menu_tag';
 
     if(Q.menu_id){
       sql_ptypes.push(dbtypes.BigInt);
@@ -195,7 +196,7 @@ module.exports = exports = function(module, funcs){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|menu_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|menu_id','|branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //Return menu
         funcs.getClientMenu(menu, function(err, clientMenu){
@@ -203,13 +204,41 @@ module.exports = exports = function(module, funcs){
 
           var page_keys = {};
           var media_keys = {};
+          var branch_id = null;
+          var menu_config = {};
 
           async.waterfall([
+            
+            //Validate branch access
+            function(cb){
+              if(!Q.branch_id) return cb();
+              sql = "select v_my_branch_access.branch_id,branch_name,site_id from {schema}.v_my_branch_access inner join {schema}.branch_menu on branch_menu.branch_id=v_my_branch_access.branch_id where v_my_branch_access.branch_id=@branch_id and branch_access like 'R%' and (branch_menu.menu_key=@menu_key)";
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { menu_key: menu.menu_key, branch_id: Q.branch_id }, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Site Revision or Menu'); }
+                branch_id = rslt[0][0].branch_id;
+                return cb();
+              });
+            },
+
+            //Get site config
+            function(cb){
+              funcs.getSiteConfig(req._DBContext, req.gdata.site_id, { continueOnConfigError: true }, function(err, siteConfig){
+                if(err) return cb(err);
+                var site_config = siteConfig;
+                if(site_config && site_config.menus){
+                  _.each(site_config.menus, function(site_menu_config){
+                    if(site_menu_config && site_menu_config.tag == menu.menu_tag) menu_config = _.pick(site_menu_config, ['max_depth']);
+                  });
+                }
+                return cb();
+              });
+            },
 
             //Get list of all page_keys
             function (menu_cb){
-              var sql = 'select page_key,page_path from '+(module.schema?module.schema+'.':'')+'v_my_page where page_file_id is not null and page_path is not null';
-              appsrv.ExecRecordset(req._DBContext, sql, [], {}, function (err, rslt) {
+              var sql = 'select page.page_key,page.page_path from {schema}.page inner join {schema}.branch_page on branch_page.page_id = page.page_id where branch_id = $ifnull(@branch_id, {schema}.my_current_branch_id()) and page_file_id is not null and page_path is not null';
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { branch_id: branch_id }, function (err, rslt) {
                 if (err != null) { err.sql = sql; return menu_cb(err); }
                 if(!rslt || !rslt.length || !rslt[0]){ return menu_cb(new Error('Error loading pages')); }
                 _.each(rslt[0], function(page){
@@ -221,8 +250,8 @@ module.exports = exports = function(module, funcs){
 
             //Get list of all media_keys
             function (menu_cb){
-              var sql = 'select media_key,media_path from '+(module.schema?module.schema+'.':'')+'v_my_media where media_file_id is not null and media_path is not null';
-              appsrv.ExecRecordset(req._DBContext, sql, [], {}, function (err, rslt) {
+              var sql = 'select media.media_key,media.media_path from {schema}.media  inner join {schema}.branch_media on branch_media.media_id = media.media_id where branch_id = $ifnull(@branch_id, {schema}.my_current_branch_id()) and media_file_id is not null and media_path is not null';
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { branch_id: branch_id }, function (err, rslt) {
                 if (err != null) { err.sql = sql; return menu_cb(err); }
                 if(!rslt || !rslt.length || !rslt[0]){ return menu_cb(new Error('Error loading media')); }
                 _.each(rslt[0], function(media){
@@ -240,11 +269,21 @@ module.exports = exports = function(module, funcs){
                 var menu_item_link_type = (menu_item.menu_item_link_type||'').toUpperCase();
                 if(menu_item_link_type=='PAGE'){
                   var page_key = parseInt(menu_item.menu_item_link_dest);
-                  if(page_key in page_keys) menu_item.menu_item_link_page = page_keys[page_key];
+                  if(page_key in page_keys){
+                    menu_item.menu_item_link_page = page_keys[page_key];
+                  }
+                  else {
+                    menu_item.menu_item_link_page = 'PAGE :: '+page_key+' :: Not found';
+                  }
                 }
                 else if(menu_item_link_type=='MEDIA'){
                   var media_key = parseInt(menu_item.menu_item_link_dest);
-                  if(media_key in media_keys) menu_item.menu_item_link_media = media_keys[media_key];
+                  if(media_key in media_keys){
+                    menu_item.menu_item_link_media = media_keys[media_key];
+                  }
+                  else {
+                    menu_item.menu_item_link_media = 'MEDIA :: '+media_key+' :: Not found';
+                  }
                 }
               }
               return menu_cb(null);
@@ -252,8 +291,9 @@ module.exports = exports = function(module, funcs){
           ], function(err){
             if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
             res.end(JSON.stringify({ 
-              '_success': 1,
-              'menu': clientMenu
+              _success: 1,
+              menu: clientMenu,
+              menu_config: menu_config || {},
             }));
           });
         });

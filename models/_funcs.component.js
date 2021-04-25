@@ -43,8 +43,8 @@ module.exports = exports = function(module, funcs){
     var XValidate = jsh.XValidate;
     var cms = module;
 
-    if(!req.params || !req.params.branch_id) return next();
-    var branch_id = req.params.branch_id;
+    var branch_id = null;
+    if(req.params && req.params.branch_id) branch_id = req.params.branch_id;
 
     var referer = req.get('Referer');
     if(referer){
@@ -77,14 +77,26 @@ module.exports = exports = function(module, funcs){
 
         //Check if branch exists
         function(cb){
-          var sql = "select branch_desc,site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@branch_id";
-          appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this revision'); }
-            site_id = rslt[0].site_id;
-            if(!site_id){ return Helper.GenError(req, res, -4, 'No site revision is currently checked out'); }
-            return cb();
-          });
+          if(branch_id){
+            var sql = "select branch_desc,site_id from {schema}.v_my_branch_desc where branch_id=@branch_id";
+            appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+              if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this revision'); }
+              site_id = rslt[0].site_id;
+              if(!site_id){ return Helper.GenError(req, res, -4, 'No site revision is currently checked out'); }
+              return cb();
+            });
+          }
+          else {
+            var sql = "select {schema}.my_current_site_id() site_id";
+            appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+              if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'Error loading site data'); }
+              site_id = rslt[0].site_id;
+              if(!site_id){ return Helper.GenError(req, res, -4, 'No site is currently checked out'); }
+              return cb();
+            });
+          }
         },
 
         //Get components
@@ -96,10 +108,10 @@ module.exports = exports = function(module, funcs){
           });
         },
 
-        //Get deployment_target_params for branch
+        //Get deployment_target_params
         function(cb){
-          var sql = "select deployment_target_params from "+(module.schema?module.schema+'.':'')+"v_my_site where site_id=@site_id";
-          appsrv.ExecScalar(req._DBContext, sql, [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
+          var sql = "select deployment_target_params from {schema}.v_my_site where site_id=@site_id";
+          appsrv.ExecScalar(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]) deployment_target_params = rslt[0];
             return cb();

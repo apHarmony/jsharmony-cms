@@ -12,7 +12,8 @@
       {"name":"Overview / Deployment Targets","target":"Site"},
       {"name":"User Access","target":"Site_User"},
       {"name":"Page Templates","target":"Site_Template_Page"},
-      {"name":"Components","target":"Site_Template_Component"}
+      {"name":"Components","target":"Site_Template_Component"},
+      {"name":"Site Config","target":"Site_Config"},
     ],
     "caption":["Site","Sites"],
     "title": {

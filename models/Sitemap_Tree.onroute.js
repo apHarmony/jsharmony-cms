@@ -9,6 +9,7 @@ var model = jsh.getModelClone(req, modelid);
 if (!Helper.hasModelAction(req, model, 'B')) return callback();
 
 if(routetype != 'model') return callback();
+if(req.query.sitemap_id) return callback();
 
 jsh.AppSrv.ExecRecordset(req._DBContext, "select sitemap_key from {schema}.v_my_sitemap", [], {  }, function (err, rslt) {
   if(err) callback();

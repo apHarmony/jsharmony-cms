@@ -10,7 +10,7 @@
     "sort":["^menu_name"],
     "menu":"jsHarmonyCMS/Menu_Listing",
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
-    "oninit": "jsh.System.RequireBranch(xmodel);",
+    "oninit": "jsh.System.RequireBranch(xmodel);_this.oninit();",
     "fields": [
       {"name":"menu_key","caption":"Key","control":"hidden","key":true},
       {"name":"menu_id","caption":"ID","control":"hidden"},
@@ -21,7 +21,8 @@
       {"control":"html","caption":"Revisions","link":"js:_this.viewRevisions(this)","value":"<img src='/images/icon_browse.png' class='xicon' />","roles":{"AUTHOR":"*","PUBLISHER":"*"}},
       {"name":"revision_menu","unbound":true,"control":"hidden","bindings":{"revision_menu_key":"js:if(xmodel) return jsh.App[xmodel.id].revision_menu_key;"},
         "popuplov": {"target": "Menu_Revision_Listing", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
-      }
+      },
+      {"name": "media_type", "control":"hidden", "lov": { "code": "media_type", "schema": "{schema}", "blank": true, "always_get_full_lov": true }, "actions":"B", "sqlselect":"(null)" },
     ]
   },
   "Menu_Revision_Update": {

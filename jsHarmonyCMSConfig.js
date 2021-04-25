@@ -127,10 +127,10 @@ function jsHarmonyCMSConfig(){
     sftp_log: false,                    //Log SFTP session
   };
 
-  this.defaultEditorConfig = {          //Default GUI editor config
+  this.defaultEditorConfig = {          //Default GUI page editor config
     webSnippetsPath: '/templates/websnippets/',  //Web snippets listing path
     materialIcons: false,                        //Whether to enable Material Icons in the Editor
-                                                 //  If enabled, Material Icons Font must be added to the Page Template
+                                                 //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
   };
 
   this.showLocalTemplatePaths = true;   //Display local template file system paths in Site Templates Administration

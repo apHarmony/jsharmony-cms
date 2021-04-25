@@ -81,9 +81,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         return;
       }
 
-      if (!rslt.branch_id) {
-        onComplete(new Error('Please check out a revision in the CMS to use Dev Mode'));
-        XExt.Alert('Please check out a revision in the CMS to use Dev Mode');
+      if (!rslt.site_id) {
+        onComplete(new Error('Please checkout a site in the CMS to use Dev Mode'));
+        XExt.Alert('Please checkout a site in the CMS to use Dev Mode');
         return;
       }
 
@@ -505,9 +505,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   }
 
   this.processModelFields = function(model, data){
-    for(var i=0;i<model.fields.length;i++){
-      var field = model.fields[i];
-
+    _.each(model.fields, function(field){
       //Set default value in data based on field default value
       if(field && field.name){
         if(!(field.name in data)){
@@ -522,7 +520,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         field.ongetvalue = 'return _this._sys_fileSelector_onGetValue(val, field, xmodel, jctrl, parentobj);';
         field.value = '<#-_this._sys_fileSelector_render('+JSON.stringify(fileSelectorType)+', xmodel, xmodel.fields['+JSON.stringify(field.name)+'], val)#>';
       }
-    }
+    });
   }
 
   this.render = function(){
@@ -835,8 +833,25 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     if(!renderOptions) renderOptions = {};
     if(renderOptions.menu_tag){
-      if(!(renderOptions.menu_tag in _this.menus)) throw new Error('Menu tag "'+renderOptions.menu_tag+'" is not defined');
-      additionalRenderParams.menu = _this.menus[renderOptions.menu_tag];
+      if(renderOptions.menu_tag in _this.menus){
+        additionalRenderParams.menu = _this.menus[renderOptions.menu_tag];
+      }
+      else {
+        additionalRenderParams.menu = {
+          allItems: [],
+          currentItem: null,
+          items: [],
+          menu_file_id: null,
+          menu_item_tree: [],
+          menu_items: [],
+          menu_key: null,
+          menu_name: renderOptions.menu_tag,
+          menu_tag: renderOptions.menu_tag,
+          tag: renderOptions.menu_tag,
+          topItems: [],
+          tree: [],
+        };
+      }
       delete renderOptions.menu_tag;
     }
     if(!('renderType' in renderOptions)) renderOptions.renderType = 'page';

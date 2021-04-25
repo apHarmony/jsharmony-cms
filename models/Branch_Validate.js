@@ -93,14 +93,14 @@ jsh.App[modelid] = new (function(){
     var jobj = $(obj);
     var menu_key = jobj.data('menu_key');
     var menu_id = jobj.data('menu_id');
-    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id })
+    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id, branch_id: xmodel.get('branch_id') })
   }
 
   this.previewSitemap = function(obj){
     var jobj = $(obj);
     var sitemap_key = jobj.data('sitemap_key');
     var sitemap_id = jobj.data('sitemap_id');
-    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id })
+    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id, branch_id: xmodel.get('branch_id') })
   }
 
 })();

@@ -67,6 +67,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       });
 
       //Initialize each content editor
+      var materialIcons = _this.getMaterialIcons();
       _this.editorConfig.base = _.extend({}, {
         inline: true,
         branding: false,
@@ -113,8 +114,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           return url;
         },
         fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
-        charmap_append: _this.getMaterialIcons(),
-      }, jsh.globalparams.defaultEditorConfig, _this.defaultConfig);
+        charmap_append: materialIcons,
+        charmap_append_title: (materialIcons.length ? 'Material Icons' : 'Other'),
+      }, _this.getDefaultEditorConfig(), _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(mceEditor){
@@ -190,6 +192,10 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
       return cb();
     });
+  }
+
+  this.getDefaultEditorConfig = function(){
+    return _.extend({}, jsh.globalparams.defaultEditorConfig, cms.site_config.defaultEditorConfig);
   }
 
   this.attach = function(config_id, elem_id, options, cb){
@@ -379,7 +385,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   }
 
   this.getMaterialIcons = function(){
-    if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
+    var defaultEditorConfig = _this.getDefaultEditorConfig();
+    if(!defaultEditorConfig.materialIcons) return [];
     return [
       [0xe84d,'materialicon_3d_rotation'],
       [0xeb3b,'materialicon_ac_unit'],

@@ -49,16 +49,16 @@ module.exports = exports = function(module, funcs){
     var rslt = {
       "sitemap_items":[
         {sitemap_item_id:"1",sitemap_item_parent_id:"",sitemap_item_path:"/1/",sitemap_item_text:"Sample Sitemap",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"1"},
-        {sitemap_item_id:"2",sitemap_item_parent_id:"1",sitemap_item_path:"/1/2/",sitemap_item_text:"Page #1",sitemap_item_hide_menu_parents:"1",sitemap_item_hide_menu_siblings:"1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"2"},
-        {sitemap_item_id:"11",sitemap_item_parent_id:"2",sitemap_item_path:"/1/2/11/",sitemap_item_text:"Page #1-1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"10"},
-        {sitemap_item_id:"3",sitemap_item_parent_id:"1",sitemap_item_path:"/1/3/",sitemap_item_text:"Page #2",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"3"},
-        {sitemap_item_id:"4",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/4/",sitemap_item_text:"Page #2-1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"4"},
-        {sitemap_item_id:"5",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/5/",sitemap_item_text:"Page #2-2",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"5"},
-        {sitemap_item_id:"12",sitemap_item_parent_id:"5",sitemap_item_path:"/1/3/5/12",sitemap_item_text:"Page #2-1-1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"21"},
-        {sitemap_item_id:"13",sitemap_item_parent_id:"5",sitemap_item_path:"/1/3/5/13",sitemap_item_text:"PAge #2-1-2",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"22"},
-        {sitemap_item_id:"6",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/6/",sitemap_item_text:"Page #2-3",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"6"},
-        {sitemap_item_id:"7",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/7/",sitemap_item_text:"Page #2-4",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"7"},
-        {sitemap_item_id:"8",sitemap_item_parent_id:"1",sitemap_item_path:"/1/8/",sitemap_item_text:"Page #3",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"8"},
+        {sitemap_item_id:"2",sitemap_item_parent_id:"1",sitemap_item_path:"/1/2/",sitemap_item_text:"Page A",sitemap_item_hide_menu_parents:"1",sitemap_item_hide_menu_siblings:"1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"2"},
+        {sitemap_item_id:"11",sitemap_item_parent_id:"2",sitemap_item_path:"/1/2/11/",sitemap_item_text:"Subpage A-1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"10"},
+        {sitemap_item_id:"3",sitemap_item_parent_id:"1",sitemap_item_path:"/1/3/",sitemap_item_text:"Page B",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"3"},
+        {sitemap_item_id:"4",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/4/",sitemap_item_text:"Subpage B-1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"4"},
+        {sitemap_item_id:"5",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/5/",sitemap_item_text:"Subpage B-2",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"5"},
+        {sitemap_item_id:"12",sitemap_item_parent_id:"5",sitemap_item_path:"/1/3/5/12",sitemap_item_text:"Leaf Page B-2.a",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"21"},
+        {sitemap_item_id:"13",sitemap_item_parent_id:"5",sitemap_item_path:"/1/3/5/13",sitemap_item_text:"Leaf Page B-2.b",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"22"},
+        {sitemap_item_id:"6",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/6/",sitemap_item_text:"Subpage B-3",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"6"},
+        {sitemap_item_id:"7",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/7/",sitemap_item_text:"Subpage B-4",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"7"},
+        {sitemap_item_id:"8",sitemap_item_parent_id:"1",sitemap_item_path:"/1/8/",sitemap_item_text:"Page C",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"8"},
         {sitemap_item_id:"9",sitemap_item_parent_id:"",sitemap_item_path:"/9/",sitemap_item_text:"Hidden Area",sitemap_item_exclude_from_breadcrumbs:"1",sitemap_item_exclude_from_parent_menu:"1",sitemap_item_link_type:"",sitemap_item_link_dest:""},
         {sitemap_item_id:"10",sitemap_item_parent_id:"9",sitemap_item_path:"/9/10/",sitemap_item_text:"Hidden Page",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"9"}
       ]
@@ -106,6 +106,7 @@ module.exports = exports = function(module, funcs){
     validate = new XValidate();
     verrors = {};
     validate.AddValidator('_obj.sitemap_key', 'Sitemap Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
     sql = 'select sitemap_key,sitemap_file_id';
 
     if(Q.sitemap_id){
@@ -132,7 +133,7 @@ module.exports = exports = function(module, funcs){
         if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|sitemap_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, ['|sitemap_id','|branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         //Return sitemap
         funcs.getClientSitemap(sitemap, function(err, clientSitemap){
@@ -140,13 +141,26 @@ module.exports = exports = function(module, funcs){
 
           var page_keys = {};
           var media_keys = {};
+          var branch_id = null;
 
           async.waterfall([
 
+            //Validate branch access
+            function(cb){
+              if(!Q.branch_id) return cb();
+              sql = "select v_my_branch_access.branch_id,branch_name,site_id from {schema}.v_my_branch_access inner join {schema}.branch_sitemap on branch_sitemap.branch_id=v_my_branch_access.branch_id where v_my_branch_access.branch_id=@branch_id and branch_access like 'R%' and (branch_sitemap.sitemap_key=@sitemap_key)";
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { sitemap_key: sitemap.sitemap_key, branch_id: Q.branch_id }, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Site Revision or Sitemap'); }
+                branch_id = rslt[0][0].branch_id;
+                return cb();
+              });
+            },
+
             //Get list of all page_keys
             function (sitemap_cb){
-              var sql = 'select page_key,page_path from '+(module.schema?module.schema+'.':'')+'v_my_page where page_file_id is not null and page_path is not null';
-              appsrv.ExecRecordset(req._DBContext, sql, [], {}, function (err, rslt) {
+              var sql = 'select page.page_key,page.page_path from {schema}.page inner join {schema}.branch_page on branch_page.page_id = page.page_id where branch_id = $ifnull(@branch_id, {schema}.my_current_branch_id()) and page_file_id is not null and page_path is not null';
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { branch_id: branch_id }, function (err, rslt) {
                 if (err != null) { err.sql = sql; return sitemap_cb(err); }
                 if(!rslt || !rslt.length || !rslt[0]){ return sitemap_cb(new Error('Error loading pages')); }
                 _.each(rslt[0], function(page){
@@ -158,8 +172,8 @@ module.exports = exports = function(module, funcs){
 
             //Get list of all media_keys
             function (sitemap_cb){
-              var sql = 'select media_key,media_path from '+(module.schema?module.schema+'.':'')+'v_my_media where media_file_id is not null and media_path is not null';
-              appsrv.ExecRecordset(req._DBContext, sql, [], {}, function (err, rslt) {
+              var sql = 'select media.media_key,media.media_path from {schema}.media  inner join {schema}.branch_media on branch_media.media_id = media.media_id where branch_id = $ifnull(@branch_id, {schema}.my_current_branch_id()) and media_file_id is not null and media_path is not null';
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { branch_id: branch_id }, function (err, rslt) {
                 if (err != null) { err.sql = sql; return sitemap_cb(err); }
                 if(!rslt || !rslt.length || !rslt[0]){ return sitemap_cb(new Error('Error loading media')); }
                 _.each(rslt[0], function(media){
@@ -180,10 +194,18 @@ module.exports = exports = function(module, funcs){
                   if(page_key in page_keys){
                     sitemap_item.sitemap_item_link_page = page_keys[page_key];
                   }
+                  else{
+                    sitemap_item.sitemap_item_link_page = 'PAGE :: '+page_key+' :: Not found';
+                  }
                 }
                 else if(sitemap_item_link_type=='MEDIA'){
                   var media_key = parseInt(sitemap_item.sitemap_item_link_dest);
-                  if(media_key in media_keys) sitemap_item.sitemap_item_link_media = media_keys[media_key];
+                  if(media_key in media_keys){
+                    sitemap_item.sitemap_item_link_media = media_keys[media_key];
+                  }
+                  else {
+                    sitemap_item.sitemap_item_link_media = 'MEDIA :: '+media_key+' :: Not found';
+                  }
                 }
               }
               return sitemap_cb(null);

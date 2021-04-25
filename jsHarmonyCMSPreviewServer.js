@@ -114,19 +114,19 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
     });
   });
 
-  //Get current branch / site ID
+  //Get the current site ID
   app.all('*', function (req, res, next) {
-    jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema("select site_id, branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()"), [], {}, function (err, rslt) {
+    jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema("select site_id, site_name from {schema}.v_my_site where site_id={schema}.my_current_site_id()"), [], {}, function (err, rslt) {
       if(err) return Helper.GenError(req, res, -99999, err.toString());
 
       if (!rslt || !rslt.length || !rslt[0] || !rslt[0].site_id){
-        //If no branch checked out - show error message
-        var url = req.baseurl+cms.namespace+'Branch_Active_Listing';
-        return res.end('<html><body>Please check out a CMS revision: <a href="'+Helper.escapeHTML(url)+'">'+Helper.escapeHTML(url)+'</a></body></html>');
+        //If no site checked out - show error message
+        var url = req.baseurl+cms.namespace+'Site_Listing';
+        return res.end('<html><body>Please checkout a CMS site: <a href="'+Helper.escapeHTML(url)+'">'+Helper.escapeHTML(url)+'</a></body></html>');
       }
 
       req.site_id = rslt[0].site_id;
-      req.branch_desc = rslt[0].branch_desc;
+      req.site_name = rslt[0].site_name;
       return next();
     });
   });
@@ -182,7 +182,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
     });
   });
 
-  //Return file from local branch
+  //Return file from local site
   app.all('*', function (req, res, next) {
     var rpath = req.path;
     var sitepath = fspath.join(jsh.Config.datadir,'site',req.site_id.toString());
@@ -267,7 +267,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
   });
 
   app.all('*', function (req, res, next) {
-    jsh.Gen404(req, res, { view: 'jsHarmonyCMS.PreviewServer.404', renderParams: { branch_desc: req.branch_desc } });
+    jsh.Gen404(req, res, { view: 'jsHarmonyCMS.PreviewServer.404', renderParams: { site_name: req.site_name } });
   });
 
   //Error Handler

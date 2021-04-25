@@ -49,6 +49,7 @@ function jsHarmonyCMS(name, options){
 
   _this.SystemPageTemplates = {};
   _this.SystemComponentTemplates = {};
+  _this.SystemSiteConfig = {};
   _this.Layouts = {};
   _this.Elements = {};
   _this.BranchItems = this.getDefaultBranchItems();
@@ -254,6 +255,17 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   for (var i = 0; i < modeldirs.length; i++ ) {
     LoadTemplatesFolder('page', path.normalize(modeldirs[i].path + '../views/templates/pages/'));
     LoadTemplatesFolder('component', path.normalize(modeldirs[i].path + '../views/templates/components/'));
+
+    var systemSiteConfigPath = path.normalize(modeldirs[i].path + '../views/templates/site_config.json');
+    if(fs.existsSync(systemSiteConfigPath)){
+      try{
+        var systemSiteConfig = _this.jsh.ParseJSON(systemSiteConfigPath, _this.name, 'System site_config.json', undefined, { fatalError: false });
+        _this.SystemSiteConfig = _this.funcs.mergeSiteConfig(_this.SystemSiteConfig, systemSiteConfig);
+      }
+      catch(ex){
+        _this.jsh.LogInit_ERROR(ex.toString());
+      }
+    }
   }
   _this.SystemPageTemplates['<Raw Text>'] = {
     title: '<Raw Text>',
@@ -738,9 +750,11 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
       {
         '/_funcs/page/:page_key': _this.funcs.page,
         '/_funcs/pageDev': _this.funcs.pageDev,
+        '/_funcs/templates/components': _this.funcs.templates_components,
         '/_funcs/templates/components/:branch_id': _this.funcs.templates_components,
         '/_funcs/templates/compile_components': _this.funcs.templates_compile_components,
         '/_funcs/editor_url': _this.funcs.getPageEditorUrl,
+        '/_funcs/site_config': _this.funcs.getPageSiteConfig,
         '/_funcs/media/:media_key/:thumbnail': _this.funcs.media,
         '/_funcs/media/:media_key/': _this.funcs.media,
         '/_funcs/media/': _this.funcs.media,

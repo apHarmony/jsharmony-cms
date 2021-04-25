@@ -236,10 +236,10 @@ module.exports = exports = function(module, funcs){
       //Get page file content
       function(cb){
         async.eachOfSeries(updated_pages, function(page, page_id, page_cb){
-          funcs.getClientPage(branch_data._DBContext, page, null, branch_data.site_id, { includeExtraContent: true, pageTemplates: branch_data.page_templates }, function(err, clientPage){
+          funcs.getClientPage(branch_data._DBContext, page, null, branch_data.site_id, { includeExtraContent: true, pageTemplates: branch_data.page_templates, ignoreInvalidPageTemplate: true }, function(err, clientPage){
             if(err) return page_cb(err);
             if(!clientPage) return page_cb(null);
-            funcs.localizePageURLs(clientPage.page, branch_data.baseurl, !!clientPage.template.raw, null);
+            funcs.localizePageURLs(clientPage.page, branch_data.baseurl, !!clientPage.template.raw);
             page.compiled = clientPage.page;
             page.template = clientPage.template;
             if(page.compiled.content){

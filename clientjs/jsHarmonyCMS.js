@@ -53,6 +53,7 @@ var jsHarmonyCMS = function(options){
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
 
   this.branch_id = undefined;
+  this.site_config = {};
   this.filePickerCallback = null;        //function(url)
 
   this.onInit = null;                    //function(jsh)
@@ -125,6 +126,12 @@ var jsHarmonyCMS = function(options){
         }); },
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
+        function(cb){
+          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', {}, {}, function(rslt){
+            if(rslt) _this.site_config = rslt.siteConfig || {};
+            return cb();
+          });
+        },
       ], function(err){
         setTimeout(function(){ _this.load(); }, 1);
       });

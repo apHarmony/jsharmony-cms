@@ -649,6 +649,100 @@ module.exports = exports = function(module, funcs){
     return false;
   }
 
+  exports.getSiteConfig = function(dbcontext, site_id, options, callback){
+    options = _.extend({
+      continueOnConfigError: false,
+    }, options);
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var cms = module;
+
+    var rsltConfig = {
+      //  title: '...',
+      //  path: '...',
+      //  menus: {},
+    };
+    var systemConfig = JSON.parse(JSON.stringify(cms.SystemSiteConfig));
+    var localConfig = {};
+    var dbConfig = {};
+    
+    return async.parallel([
+
+      //Get config from file system
+      function(data_cb){
+        if(!site_id) return data_cb();
+        var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString());
+        var normalizedSitePath = path.normalize(sitePath);
+        var configPath = path.join(sitePath, 'templates', 'site_config.json');
+  
+        //Get local site config from site\#\templates\site_config.json
+        fs.exists(configPath, function (exists) {
+          if (!exists) return data_cb();
+
+          fs.readFile(configPath, 'utf8', function(err, configText){
+            if(err) return file_cb(err);
+
+            //Read Site Config
+            try{
+              localConfig = jshParser.ParseJSON(configText, 'Local site config', { trimErrors: true });
+            }
+            catch(ex){
+              if(options.continueOnConfigError) module.jsh.Log.info(new Error('Could not parse local site config: ' + ex.toString()));
+              else return data_cb(err);
+            }
+
+            return data_cb();
+          });
+        });
+      },
+
+      //Get config from database
+      function(data_cb){
+        if(!site_id) return data_cb();
+        var sql = "select site_config from {schema}.site where site_id=@site_id";
+        appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
+          if(err) return data_cb(err);
+          if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return data_cb(new Error('Error loading database site config')); }
+          var configText = rslt[0][0].site_config || '';
+          if(configText){
+
+            //Read Site Config
+            try{
+              dbConfig = jshParser.ParseJSON(configText, 'Database site config', { trimErrors: true });
+            }
+            catch(ex){
+              if(options.continueOnConfigError) module.jsh.Log.info(new Error('Could not parse database site config: ' + ex.toString()));
+              else return data_cb(err);
+            }
+          }
+          return data_cb();
+        });
+      },
+    ], function(err){
+      if(err) return callback(err);
+
+      rsltConfig = funcs.mergeSiteConfig(systemConfig, localConfig, dbConfig);
+      return callback(null, rsltConfig);
+    });
+  }
+
+  exports.mergeSiteConfig = function(){
+    if(!arguments.length) return {};
+    var rslt = JSON.parse(JSON.stringify(arguments[0])) || {};
+    for(var i=1;i<arguments.length;i++){
+      var b = arguments[i];
+      for(var key in b){
+        if(!(key in rslt)) rslt[key] = b[key];
+        else {
+          if(key=='menus') rslt[key] = rslt[key].concat(b[key]);
+          else rslt[key] = b[key];
+        }
+      }
+    }
+    return rslt;
+  }
+
   exports.HTMLDoc = function(_content, options){
     options = _.extend({
       extractEJS: false,

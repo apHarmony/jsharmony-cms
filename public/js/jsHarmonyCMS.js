@@ -4298,7 +4298,7 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.loadSystemComponentTemplates = function(onError){
-    var url = '../_funcs/templates/components/'+cms.branch_id;
+    var url = '../_funcs/templates/components/'+(cms.branch_id||'');
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         async.eachOf(rslt.components, function(component, componentId, cb) {
@@ -5851,6 +5851,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       });
 
       //Initialize each content editor
+      var materialIcons = _this.getMaterialIcons();
       _this.editorConfig.base = _.extend({}, {
         inline: true,
         branding: false,
@@ -5897,8 +5898,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           return url;
         },
         fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
-        charmap_append: _this.getMaterialIcons(),
-      }, jsh.globalparams.defaultEditorConfig, _this.defaultConfig);
+        charmap_append: materialIcons,
+        charmap_append_title: (materialIcons.length ? 'Material Icons' : 'Other'),
+      }, _this.getDefaultEditorConfig(), _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
         init_instance_callback: function(mceEditor){
@@ -5974,6 +5976,10 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
       return cb();
     });
+  }
+
+  this.getDefaultEditorConfig = function(){
+    return _.extend({}, jsh.globalparams.defaultEditorConfig, cms.site_config.defaultEditorConfig);
   }
 
   this.attach = function(config_id, elem_id, options, cb){
@@ -6163,7 +6169,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   }
 
   this.getMaterialIcons = function(){
-    if(!jsh.globalparams.defaultEditorConfig.materialIcons) return [];
+    var defaultEditorConfig = _this.getDefaultEditorConfig();
+    if(!defaultEditorConfig.materialIcons) return [];
     return [
       [0xe84d,'materialicon_3d_rotation'],
       [0xeb3b,'materialicon_ac_unit'],
@@ -7564,6 +7571,7 @@ var jsHarmonyCMS = function(options){
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
 
   this.branch_id = undefined;
+  this.site_config = {};
   this.filePickerCallback = null;        //function(url)
 
   this.onInit = null;                    //function(jsh)
@@ -7636,6 +7644,12 @@ var jsHarmonyCMS = function(options){
         }); },
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
+        function(cb){
+          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', {}, {}, function(rslt){
+            if(rslt) _this.site_config = rslt.siteConfig || {};
+            return cb();
+          });
+        },
       ], function(err){
         setTimeout(function(){ _this.load(); }, 1);
       });

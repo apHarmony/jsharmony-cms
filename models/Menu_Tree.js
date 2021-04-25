@@ -4,6 +4,7 @@ jsh.App[modelid] = new (function(){
   this.menu_key = null;
   this.menu_id = null;
   this.menu_items = [];
+  this.menu_config = {};
   this.selected_menu_item_id = null;
   this.loadobj = {};
   this.has_changes = false;
@@ -125,10 +126,14 @@ jsh.App[modelid] = new (function(){
     if(!_this.menu_key){ XExt.Alert('Missing menu key'); return; }
 
     var url = '../_funcs/menu/'+_this.menu_key;
-    if(_this.menu_id) url += '?menu_id=' + _this.menu_id;
+    if(_this.menu_id){
+      url += '?menu_id=' + _this.menu_id;
+      if(jsh._GET.branch_id) url += '&branch_id='+jsh._GET.branch_id;
+    }
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var menu = rslt.menu;
+        _this.menu_config = rslt.menu_config || {};
         _this.parseMenu(rslt.menu);
         _this.renderMenu();
         _this.selectMenuItem(_this.getFirstMenuItemID());
@@ -240,6 +245,16 @@ jsh.App[modelid] = new (function(){
     if(_this.selected_menu_item_id){
       xmodel.set('menu_item_id', _this.selected_menu_item_id);
     }
+    jsh.$root('.'+xmodel.class+'_empty').toggle(!_this.menu_items.length);
+    jsh.$root('.xelem'+xmodel.class+'.menu_item_id').toggle(!!_this.menu_items.length);
+    var max_depth_desc = '';
+    if(_this.menu_config.max_depth==1){
+      max_depth_desc = ' :: This menu supports only top-level items';
+    }
+    else if(_this.menu_config.max_depth>1){
+      max_depth_desc = ' :: This menu supports items nested up to '+(_this.menu_config.max_depth).toString()+' levels';
+    }
+    jsh.$root('.'+xmodel.class+'_max_depth_desc').text(max_depth_desc);
   }
 
   this.getMenuItem = function(menu_item_id){
@@ -249,6 +264,16 @@ jsh.App[modelid] = new (function(){
       if(_this.menu_items[i].menu_item_id===menu_item_id) return _this.menu_items[i];
     }
     return null;
+  }
+
+  this.menu_item_id_context_menu_onrender = function(menu_item_id, action, obj){
+    if(action=='addSubmenuItem'){
+      if(_this.menu_config && _this.menu_config.max_depth){
+        var menu_item = _this.getMenuItem(menu_item_id);
+        
+        if(menu_item && (menu_item.menu_item_depth >= _this.menu_config.max_depth)) return false;
+      }
+    }
   }
 
   this.selectMenuItem = function(menu_item_id){

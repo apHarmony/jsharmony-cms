@@ -1,8 +1,18 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
+  this.missing_menus = []; //Populated onroute
+
   _this.revision_menu_key = undefined;
   _this.revision_menu_id = undefined;
+
+  this.oninit = function(){
+    if(_this.missing_menus.length){
+      XExt.Confirm('The following Site Template menus are missing:\n\n'+(_.map(_this.missing_menus, function(val){ return (val.name||val.tag)+' (Tag: '+val.tag+')'; }).join('\n'))+'\n\nAdd these menus to the site?', function(){
+        XPage.Reload({ params: { add_missing_menus: 1 } });        
+      });
+    }
+  }
 
   this.openMenuEditor = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing menu');

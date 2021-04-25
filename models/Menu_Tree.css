@@ -21,6 +21,16 @@
   min-height:400px;
   box-sizing:border-box;
 }
+.<%=model.class%>_empty {
+  display:none;
+  height: auto;
+  min-height: 400px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  flex-grow: 1;
+  border: 1px solid #ddd;
+  padding:10px 12px;
+}
 .xelem<%=model.class%>.tree.menu_item_id {
   height:auto;
   min-height:400px;

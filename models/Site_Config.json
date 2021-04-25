@@ -1,0 +1,22 @@
+{
+  "Site_Config": {
+    "layout":"form",
+    "table":"{schema}.site",
+    "title": "Site Config",
+    "caption":["Config","Config"],
+    "popup": [960, 600],
+    "roles": { "WEBMASTER": "BIUD" },
+    "onload": "jsh.App[modelid].onload(xmodel);",
+    "breadcrumbs": {
+      "title": "",
+      "sql": "select %%%FS_CONFIG_PATH%%% fs_config_path, %%%SFTP_URL%%% sftp_url,@site_id site_id,(select site_name from {schema}.site where site_id=@site_id) site_name"
+    },
+    "css":[
+      ".<%=model.class%>_Config_Location label { font-weight:bold; display:block; }",
+      ".<%=model.class%>_Config_Location label div { font-weight:normal; display:inline-block; margin-left:5px; }",
+    ],
+    "fields": [
+      {"name":"site_config","caption":"","caption_ext":"Config","control":"textarea","controlstyle":"width: 100%; height: 375px; box-sizing:border-box;","validate":["IsJSON"],"format":"json"},
+    ]
+  }
+}

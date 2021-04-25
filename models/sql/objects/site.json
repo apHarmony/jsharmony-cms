@@ -28,6 +28,7 @@
       { "name": "site_default_editor", "type": "bigint" },
       { "name": "site_default_page_template_id", "type": "varchar", "length": 255 },
       { "name": "site_default_page_filename", "type": "varchar", "length": 255, "default": "index.html", "null": false },
+      { "name": "site_config", "type": "varchar", "length": -1 },
       
       { "name": "site_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
       { "name": "site_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },

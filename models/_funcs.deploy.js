@@ -550,6 +550,7 @@ module.exports = exports = function(module, funcs){
             deployment_target_params: deployment_target_params,
             deployment: deployment,
             site_id: deployment.site_id,
+            site_config: {},
             site_files: {},
             site_redirects: [],
 
@@ -712,6 +713,15 @@ module.exports = exports = function(module, funcs){
               //Create output folder if it does not exist
               function (cb){
                 return HelperFS.createFolderRecursive(publish_path, cb);
+              },
+
+              //Get site config
+              function(cb){
+                funcs.getSiteConfig('deployment', branchData.site_id, { }, function(err, siteConfig){
+                  if(err) return cb(err);
+                  branchData.site_config = siteConfig;
+                  return cb();
+                });
               },
 
               //Git - Initialize and Select Branch
@@ -1318,7 +1328,7 @@ module.exports = exports = function(module, funcs){
                 include: includePage,
               }
               if(renderOptions.menu_tag){
-                if(!branchData.menus[renderOptions.menu_tag]) return '<!-- Menu '+Helper.escapeHTML(renderOptions.menu_tag)+' not found -->';
+                if(!branchData.menus[renderOptions.menu_tag]) throw new Error('Menu with menu tag "'+Helper.escapeHTML(renderOptions.menu_tag)+'" is not defined in this site');
                 renderParams.menu = branchData.menus[renderOptions.menu_tag];
                 renderParams.menu.currentItem = null;
                 _.each(renderParams.menu.items, function(menu_item){
@@ -1440,7 +1450,7 @@ module.exports = exports = function(module, funcs){
     };
     
     if(renderOptions.menu_tag){
-      if(!branchData.menus[renderOptions.menu_tag]) return '<!-- Menu '+Helper.escapeHTML(renderOptions.menu_tag)+' not found -->';
+      if(!branchData.menus[renderOptions.menu_tag]) throw new Error('Menu with menu tag "'+Helper.escapeHTML(renderOptions.menu_tag)+'" is not defined in this site');
       renderParams.menu = branchData.menus[renderOptions.menu_tag];
       renderParams.menu.currentItem = null;
       _.each(renderParams.menu.items, function(menu_item){ menu_item.selected = false; });
@@ -1685,6 +1695,27 @@ module.exports = exports = function(module, funcs){
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment menus')); }
 
       var menus = rslt[0];
+      
+      //Get list of all defined menu tags
+      var menu_tags = {};
+      for(var i=0;i<menus.length;i++){
+        var menu = menus[i];
+        if(menu.menu_tag) menu_tags[menu.menu_tag] = menu.menu_tag;
+      }
+
+      //Get menu configs
+      var menu_configs = {};
+      if(branchData.site_config && branchData.site_config.menus && branchData.site_config.menus.length){
+        for(var i=0;i<branchData.site_config.menus.length;i++){
+          var site_menu_config = branchData.site_config.menus[i];
+          if(site_menu_config && site_menu_config.tag){
+            var menu_tag = site_menu_config.tag;
+            menu_configs[menu_tag] = site_menu_config;
+            //Check for missing menus
+            if(!(menu_tag in menu_tags)) return cb(new Error('A menu with menu tag "' + menu_tag + '" is required by the Site Config.  Please add this missing menu to the site.'));
+          }
+        }
+      }
 
       async.waterfall([
         //Get menus from disk and replace URLs
@@ -1697,6 +1728,19 @@ module.exports = exports = function(module, funcs){
 
               //Generate tree
               funcs.createMenuTree(menu, branchData);
+
+              //Validate max depth
+              if(menu_configs[menu.menu_tag]){
+                var max_depth = menu_configs[menu.menu_tag].max_depth;
+                if(max_depth && menu.items){
+                  for(var i=0;i<menu.items.length;i++){
+                    var menu_item = menu.items[i];
+                    if(menu_item.depth > max_depth){
+                      return menu_file_cb(new Error('Menu with menu tag "'+menu.menu_tag+'" has a menu item ("'+(menu_item.text||'').toString()+'") that exceeds the maximum menu depth of '+max_depth.toString()));
+                    }
+                  }
+                }
+              }
 
               return menu_file_cb();
             });

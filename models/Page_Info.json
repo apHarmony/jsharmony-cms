@@ -1,0 +1,17 @@
+{
+  "Page_Info": {
+    "layout": "exec",
+    "title": "Page Information",
+    "actions": "U",
+    "roles": {"AUTHOR": "U","PUBLISHER": "U","VIEWER":"U"},
+    "sqlexec": [
+      [
+        "select page_key, page_id, page_filename, page_title, page_path, page_template_id from {schema}.page where page_id = (select page_id from {schema}.branch_page inner join {schema}.v_my_branch_access on branch_page.branch_id=v_my_branch_access.branch_id and branch_access like 'R%' where page_key=@page_key and v_my_branch_access.branch_id=$ifnull(@branch_id,{schema}.my_current_branch_id()));"
+      ]
+    ],
+    "fields": [
+      {"name":"page_key", "actions":"U", "type":"bigint", "caption":"Page Key", "validate": ["Required"]},
+      {"name":"branch_id", "actions":"U", "type":"bigint", "caption":"Branch ID"},
+    ]
+  }
+}

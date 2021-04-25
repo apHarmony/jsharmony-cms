@@ -481,7 +481,7 @@
     },
     "where": "jsharmony.sys_user.sys_user_id = jsharmony.my_sys_user_id()",
     "triggers": [
-      //Check out a branch
+      //Checkout a branch
       {"on": ["update"], "exec": [
           "errorif((inserted(new_branch_id) is not null) and (not exists(select * from {schema}.v_my_branch_access where {schema}.v_my_branch_access.branch_id=inserted(new_branch_id))),'User does not have access to revision')",
           "update {schema}.v_my_session set site_id=(case when inserted(new_branch_id) is null then {schema}.my_current_site_id() else (select site_id from {schema}.branch where branch_id=inserted(new_branch_id)) end)",

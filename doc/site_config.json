@@ -1,0 +1,10 @@
+{
+  "menus": [ //Array of required menus
+    { "name": "Main Menu", "tag": "main", "max_depth": 2 }
+  ],
+  "defaultEditorConfig": {          //Default GUI page editor config
+    "webSnippetsPath": "/templates/websnippets/",  //Web snippets listing path
+    "materialIcons": false                         //Whether to enable Material Icons in the Editor
+                                                   //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
+  }
+}

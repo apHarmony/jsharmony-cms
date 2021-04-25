@@ -18,17 +18,18 @@
     ],
     "fields":[
       {"name":"form_instructions","control":"html","roles": {"PUBLISHER": "B"},"value":[
-        "<div style='position:relative;top:-4px;'><span style='font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;'>&#x1f6c8;</span> Right-click menu item for options :: Drag to reorder</div>",
+        "<div style='position:relative;top:-4px;'><span style='font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;'>&#x1f6c8;</span> Right-click menu item for options :: Drag to reorder<span class='<%=model.class%>_max_depth_desc'></span></div>",
       ]},
       {"name":"menu_key","control":"hidden","type":"bigint","key":true},
-	    {"control": "html", "value": "<div class=\"clear\"></div><div class='<%=model.class%>_browser'>" },
+      {"control": "html", "value": "<div class='clear'></div><div class='<%=model.class%>_browser'>" },
+      {"control": "html", "value": "<div class='<%=model.class%>_empty'>No items currently in this menu. &nbsp; <a href='#' onclick='<#-js(\"_this.addMenuItem(null);return false;\")#>'>&lt;Add a menu item&gt;</a></div>" },
       {"name": "menu_item_id", "actions": "BIUD","foreignkey":1,"caption": "","control": "tree",
        "unbound": 1, "always_editable":1,
        "controlparams": {
           "expand_all": true,
           "item_context_menu": [
             { "icon": "add", "text": "Add Top-level Item", "command": "_this.addMenuItem(null);", "actions": "I" },
-            { "icon": "add", "text": "Add Submenu Item", "command": "_this.addMenuItem(context_item);", "actions": "I" },
+            { "icon": "add", "text": "Add Submenu Item", "command": "_this.addMenuItem(context_item);", "actions": "I", "onrender": "return _this.menu_item_id_context_menu_onrender(context_item, 'addSubmenuItem');" },
             { "icon": "delete", "text": "Delete", "command": "_this.deleteMenuItem(context_item);", "actions": "D" }
           ],
           "item_dropdown": { "caption": "Actions" },

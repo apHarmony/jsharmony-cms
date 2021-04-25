@@ -87,8 +87,12 @@ jsh.App[modelid] = new (function(){
     _this.last_page_info_request_id = page_info_request_id;
 
     //Get page settings from server
-    var execModel = xmodel.module_namespace+'Page_Tree_Listing';
-    XForm.Get(execModel, { rowstart: 0, rowcount: 1, d: JSON.stringify({ page_key: page_key }) }, { }, function(rslt){
+    var execModel = xmodel.module_namespace+'Page_Info';
+    var pageQuery = { page_key: page_key, branch_id: null };
+    if(jsh.App[xmodel.parent].sitemap_id){
+      pageQuery.branch_id = jsh._GET.branch_id;
+    }
+    XForm.Post(execModel, {}, pageQuery, function(rslt){
       if(_this.last_page_info_request_id != page_info_request_id) return;
       if(!rslt || !rslt[execModel] || !rslt[execModel].length || !rslt[execModel][0]){
         jtitle.text("");
