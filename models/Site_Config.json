@@ -5,7 +5,7 @@
     "title": "Site Config",
     "caption":["Config","Config"],
     "popup": [960, 600],
-    "roles": { "WEBMASTER": "BIUD" },
+    "roles": { "WEBMASTER": "BU" },
     "onload": "jsh.App[modelid].onload(xmodel);",
     "breadcrumbs": {
       "title": "",

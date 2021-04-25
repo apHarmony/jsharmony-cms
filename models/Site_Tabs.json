@@ -4,8 +4,8 @@
     "onecolumn":true,
     "popup":[1150,600],
     "table":"{schema}.site",
-    "actions":"BIUD",
-    "roles": { "WEBMASTER": "BIUD" },
+    "actions":"BIU",
+    "roles": { "WEBMASTER": "BIU" },
     "tabpos":"top",
     "tabpanelstyle": "min-width:700px;",
 	  "tabs":[
