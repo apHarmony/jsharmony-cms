@@ -69,12 +69,6 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var fields = modelConfig.fields || [];
-  _.forEach(fields, function(field) {
-    if (field.type != undefined && field.mediaBrowserControlInfo == undefined) {
-      field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeData) m.onChangeData();  })()';
-    }
-  });
-
   fields.unshift({ control:'html', value:'<div class="jsharmony_cms">'});
   fields.push({ control:'html', value:'</div>'});
   fields.push({
@@ -91,6 +85,11 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   model.ejs = '';
   model.js = this._rawOriginalJs;
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
+  _.forEach(fields, function(field) {
+    if (field.type != undefined && field.mediaBrowserControlInfo == undefined) {
+      field.onchange = '(function() { var m = jsh.App[modelid]; if (m && m.onChangeData) m.onChangeData();  })()';
+    }
+  });
 
   var templateHtml = '<div>' + modelConfig.ejs + '</div>';
 

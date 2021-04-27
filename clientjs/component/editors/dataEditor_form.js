@@ -199,6 +199,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     // keystroke, but it HAS to be just in case two fields change
     // at the same time (in which case the first change causes a re-render
     // and the second change breaks things since parts of the re-render are async)
+    // ** Follow up - All "debounce" should be removed and replaced with custom render queues
     editor.onChangeData = _.debounce(editor.onChangeData_noDebounce, 300);
 
     editor.openEditorBrowser = function(browserControlName) {
