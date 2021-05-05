@@ -611,7 +611,7 @@ jsh.App[modelid] = new (function(){
   }
 
   this.viewRevisions = function(media_key){
-    if(!_this.checkChangesInfo(media_key, function(){ _this.replaceFile(media_key) })) return;
+    if(!_this.checkChangesInfo(media_key, function(){ _this.viewRevisions(media_key) })) return;
     var media_file = _this.getMediaFile(media_key);
 
     xmodel.set('revision_media_key', media_key);

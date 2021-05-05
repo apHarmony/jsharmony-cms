@@ -467,7 +467,7 @@ module.exports = exports = function(module, funcs){
               };
 
               sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_media set media_file_id=null,media_ext=@media_ext, media_path=@media_path, media_size=@media_size, media_width=@media_width, media_height=@media_height where media_key = @media_key; ';
-              sql += 'select media_filename, media_file_id, media_uptstmp, jsharmony.my_db_user_fmt(media_upuser) media_upuser_fmt, media_mtstmp, jsharmony.my_db_user_fmt(media_muser) media_muser_fmt from '+(module.schema?module.schema+'.':'')+'v_my_media where media_key=@media_key;';
+              sql += 'select media_id, media_filename, media_file_id, media_uptstmp, jsharmony.my_db_user_fmt(media_upuser) media_upuser_fmt, media_mtstmp, jsharmony.my_db_user_fmt(media_muser) media_muser_fmt from '+(module.schema?module.schema+'.':'')+'v_my_media where media_key=@media_key;';
               
               var fields = [];
               var datalockstr = '';
