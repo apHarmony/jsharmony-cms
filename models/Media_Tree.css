@@ -209,9 +209,15 @@
   margin-right:3px;
   white-space:nowrap;
   min-width: 36px;
+  flex-shrink:0;
 }
 .<%=model.class%>_file_info_item > span {
   display:block;
+}
+.<%=model.class%>_file_info_item > a {
+  flex:0 0 auto;
+  display:block;
+  min-width:30px;
 }
 .<%=model.class%>_file_info .<%=model.class%>_file_info_item > input {
   margin:0;

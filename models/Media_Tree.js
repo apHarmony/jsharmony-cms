@@ -412,8 +412,9 @@ jsh.App[modelid] = new (function(){
         });
       }
     }
-    _this.selected_media_key = media_key||null;
-    _this.selected_media_file = (media_key ? _.extend({}, _this.getMediaFile(media_key)) : null);
+    var media_file = _this.getMediaFile(media_key||null);
+    _this.selected_media_key = media_file ? media_key : null;
+    _this.selected_media_file = (media_file ? _.extend({}, media_file) : null);
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
     jcontainer.find('.selected').removeClass('selected');
     if(_this.state.file_view=='tiles'){
@@ -674,7 +675,7 @@ jsh.App[modelid] = new (function(){
   this.renameFile = function(media_key){
     var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
     var media_path = media_file.media_path;
-    var media_ext = media_file.media_ext;
+    var media_ext = media_file.media_ext || '.';
     var base_filename = media_file.media_filename;
     base_filename = base_filename.substr(0, base_filename.length - media_ext.length).trim();
     var retry = function(){ _this.renameFile(media_key); };
@@ -698,7 +699,7 @@ jsh.App[modelid] = new (function(){
     new_media_path = new_media_path||'';
     var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
     var media_path = media_file.media_path;
-    var media_ext = media_file.media_ext;
+    var media_ext = media_file.media_ext || '.';
     //base_path = base_path.substr(0, base_path.length - media_file.media_ext.length);
 
     XExt.execif(!new_media_path,
