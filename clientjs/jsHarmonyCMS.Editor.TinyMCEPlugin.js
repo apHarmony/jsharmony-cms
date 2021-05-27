@@ -112,7 +112,7 @@ exports = module.exports = function(jsh, cms, editor){
    */
   JsHarmonyComponentPlugin.prototype.createComponentMenuItems = function(componentInfo) {
     var _this = this;
-    return _.map(componentInfo, function(item) {
+    var items = _.map(componentInfo, function(item) {
       return {
         type: 'menuitem',
         text: item.menuLabel,
@@ -120,6 +120,14 @@ exports = module.exports = function(jsh, cms, editor){
         onAction: function() { _this.insertComponent(item.componentType); }
       }
     });
+    items.sort(function(a,b){
+      var atext = ((a && a.text)||'').toLowerCase();
+      var btext = ((b && b.text)||'').toLowerCase();
+      if(atext > btext) return 1;
+      if(atext < btext) return -1;
+      return 0;
+    });
+    return items;
   }
 
   /**

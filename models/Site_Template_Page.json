@@ -19,12 +19,13 @@
     "sort":["^site_template_title"],
     "onload": "jsh.App[modelid].onload(xmodel);",
     "tablestyle":"min-width:900px;",
-    "rowclass":"<%=xejs.iif((datarow['site_template_location']!='REMOTE'),'readonly')%>",
+    "rowclass":"<%=xejs.iif((datarow['site_template_location']!='REMOTE'),'readonly')%> <%=xejs.iif((datarow['site_template_name']=='<Raw Text>'),'raw')%>",
     "css":[
       ".xrow_<%=model.class%>.readonly .site_template_config_cell .xform_ctrl_textzoom_container { display:none; }",
       ".xrow_<%=model.class%> .site_template_config_cell .xform_ctrl_textzoom_container { padding-bottom:3px;margin-top:1px; }",
       ".<%=model.class%>_Templates_Location label { font-weight:bold; display:block; }",
       ".<%=model.class%>_Templates_Location label div { font-weight:normal; display:inline-block; margin-left:5px; }",
+      ".xrow_<%=model.class%>.raw .site_template_preview_cell .xicon { display:none; }",
     ],
     "fields": [
       {"name":"site_id","actions":"BI","foreignkey":1,"control":"hidden"},
@@ -36,7 +37,7 @@
         { "function":"js:if(!_obj.site_template_path && !(_obj.site_template_config||'').toString().trim()) return 'Either URL or Config is required';", "selector": ".site_template_path,.site_template_config" }
       ]},
       {"name":"site_template_config","caption":"Config","control":"textzoom","controlstyle":"display:none;","cellstyle":"text-align:center;","cellclass":"site_template_config_cell","validate":[{ "function": "IsJSON", "selector": ".site_template_config_cell .xform_ctrl_textzoom_container" }],"controlparams":{"icon":"edit"}},
-      {"control":"html","caption":"Preview","link":"js:_this.previewTemplate(this)","value":"<img src='/images/icon_browse.png' class='xicon' />"}
+      {"control":"html","caption":"Preview","link":"js:_this.previewTemplate(this)","value":"<img src='/images/icon_browse.png' class='xicon' />","cellclass":"site_template_preview_cell"}
     ]
   }
 }

@@ -203,7 +203,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.initTemplate = function(cb){
     var errors = [];
 
-    $('script[type="text/cms-page-config"]').each(function(){
+    $('script[type="text/cms-page-config"],cms-page-config').each(function(){
       var config = $(this).html();
       try{
         config = JSON.parse(config);
@@ -217,8 +217,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         _.merge(_this.template, config);
       }
       catch(ex){
-        XExt.Alert('Error parsing cms-page-config script tag: \r\n' + ex.toString());
+        XExt.Alert('Error parsing cms-page-config: \r\n' + ex.toString());
       }
+      $(this).remove();
     });
 
     //Extract Inline Component Templates
@@ -449,7 +450,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           var contentId = jobj.attr('cms-content-editor');
           if(!contentId) XExt.Alert('cms-content-editor missing content area id');
           //Can use "body" or "page.content.body"
-          if(contentId in _this.page.content){
+          if((contentId in _this.page.content) || (_this.template && _this.template.content_elements && (contentId in _this.template.content_elements))){
             contentId = 'page.content.'+contentId;
             jobj.attr('cms-content-editor', contentId);
           }

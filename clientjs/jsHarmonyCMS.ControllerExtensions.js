@@ -194,7 +194,11 @@ exports = module.exports = function(jsh, cms){
     
 
     //Populate id and item fields
-    _.each(sitemap.allItems, function(sitemap_item){
+    var itemsToProcess = sitemap.allItems;
+    _.each(sitemap.breadcrumbs, function(sitemap_item){
+      if(!_.includes(itemsToProcess, sitemap_item)) itemsToProcess.push(sitemap_item);
+    });
+    _.each(itemsToProcess, function(sitemap_item){
       sitemap_item.id = sitemap_item.sitemap_item_id;
 
       sitemap_item.sitemap_item_type = (sitemap_item.sitemap_item_type||'TEXT').toUpperCase();
@@ -219,7 +223,7 @@ exports = module.exports = function(jsh, cms){
       }
         
       sitemap_item.target = ((sitemap_item.sitemap_item_link_type != 'JS') && (sitemap_item.sitemap_item_link_target == 'NEWWIN')) ? '_blank' : '';
-      sitemap_item.selected = (sitemap_item == sitemap.self);
+      sitemap_item.selected = (sitemap_item.sitemap_item_id == (sitemap.self && sitemap.self.sitemap_item_id));
     });
 
     //Populate parents, depth

@@ -20,6 +20,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var XExt = jsh.XExt;
+  var $ = jsh.$;
   
   this.lastMediaPath = undefined;
   this.lastLinkPath = undefined;
