@@ -118,58 +118,57 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         charmap_append_title: (materialIcons.length ? 'Material Icons' : 'Other'),
       }, _this.getDefaultEditorConfig(), _this.defaultConfig);
 
-      _this.editorConfig.full = _.extend({}, _this.editorConfig.base, {
-        init_instance_callback: function(mceEditor){
-          var firstFocus = true;
-          mceEditor.on('focus', function(){
-            //Fix bug where alignment not reset when switching between editors
-            if(firstFocus){
-              $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
-              firstFocus = false;
-            }
-            $('[data-component="header"]').css('pointer-events', 'none');
-            _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
-            var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
-            if(_this.toolbarContainer.length){
-              var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
-              wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
-            }
-            _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
-            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
-              //If dock=bottom, slide up
-              _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
-              _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
-            }
-            else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
-              //Top-offset
-              _this.toolbarContainer.stop(true).css({ opacity:1 });
-            }
-            else {
-              _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
-            }
-            
-            cms.refreshLayout();
-            if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
-          });
-          mceEditor.on('blur', function(){
-            $('[data-component="header"]').css('pointer-events', 'auto');
-            _this.isEditing = false;
-            var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
-            var dockPosition = _this.getDockPosition(mceEditor);
-            if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
-              _this.toolbarContainer.stop(true).css({ opacity:0 });
-              clearClasses();
-              cms.toolbar.refreshOffsets();
-            }
-            else {
-              _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
-            }
-            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
-          });
-          //Override background color icon
-          var allIcons = mceEditor.ui.registry.getAll();
-          mceEditor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
-        }
+      _this.editorConfig.full = _.extend({}, _this.editorConfig.base);
+      _this.editorConfig.full.init_instance_callback = XExt.chainToEnd(_this.editorConfig.full.init_instance_callback, function(mceEditor){
+        var firstFocus = true;
+        mceEditor.on('focus', function(){
+          //Fix bug where alignment not reset when switching between editors
+          if(firstFocus){
+            $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
+            firstFocus = false;
+          }
+          $('[data-component="header"]').css('pointer-events', 'none');
+          _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
+          var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
+          if(_this.toolbarContainer.length){
+            var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
+            wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
+          }
+          _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
+          if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
+            //If dock=bottom, slide up
+            _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
+            _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
+          }
+          else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+            //Top-offset
+            _this.toolbarContainer.stop(true).css({ opacity:1 });
+          }
+          else {
+            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+          }
+          
+          cms.refreshLayout();
+          if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
+        });
+        mceEditor.on('blur', function(){
+          $('[data-component="header"]').css('pointer-events', 'auto');
+          _this.isEditing = false;
+          var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
+          var dockPosition = _this.getDockPosition(mceEditor);
+          if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+            _this.toolbarContainer.stop(true).css({ opacity:0 });
+            clearClasses();
+            cms.toolbar.refreshOffsets();
+          }
+          else {
+            _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
+          }
+          if(_this.onEndEdit) _this.onEndEdit(mceEditor);
+        });
+        //Override background color icon
+        var allIcons = mceEditor.ui.registry.getAll();
+        mceEditor.ui.registry.addIcon('highlight-bg-color', allIcons.icons['fill']);
       });
 
       _this.editorConfig.text = _.extend({}, _this.editorConfig.base, {
@@ -183,11 +182,11 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         },
         menubar: false,
         browser_spellcheck: true,
-        init_instance_callback: function(mceEditor){
-          mceEditor.on('blur', function(){
-            if(_this.onEndEdit) _this.onEndEdit(mceEditor);
-          });
-        }
+      });
+      _this.editorConfig.text.init_instance_callback = XExt.chainToEnd(_this.editorConfig.text.init_instance_callback, function(mceEditor){
+        mceEditor.on('blur', function(){
+          if(_this.onEndEdit) _this.onEndEdit(mceEditor);
+        });
       });
 
       return cb();
