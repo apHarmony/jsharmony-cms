@@ -1234,7 +1234,7 @@ describe('Template tags', function() {
 
   it('jsh-foreach-item with data_errors via jsh-template', function(done) {
     var template = funcs.generateComponentTemplate(null, [
-      '<div jsh-template="menuTemplate" jsh-template-subgroup="menuitems" jsh-foreach-item="menuitems" class="<%~item.class%>" style="<%~item.style%>"><%-item.html%></div>',
+      '<div jsh-template="menuTemplate" jsh-template-items="menuitems" jsh-foreach-item="menuitems" class="<%~item.class%>" style="<%~item.style%>"><%-item.html%></div>',
       '<%-renderTemplate("menuTemplate", menu.tree)%>',
     ].join(''));
     var rslt = funcs.renderComponent(template, null, null, { menu: errorMenu, renderPlaceholder: function(params){ return '***ERROR***'+(params||{}).errors; } });

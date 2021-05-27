@@ -290,6 +290,8 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var modelConfig = Cloner.deepClone(dataModel || {});
   if (modelConfig.layout !== 'grid_preview' && modelConfig.layout !== 'form') return undefined;
 
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
+
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var fields = modelConfig.fields || [];
@@ -306,6 +308,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   model.layout = 'form';
   model.unbound = true;
   model.onecolumn = true;
+  model.formclass = ((model.formclass||'')+' '+(componentConfig&&componentConfig.options&&componentConfig.options.component_preview_size=='collapse'?'jsharmony_cms_component_preview_collapse':'jsharmony_cms_component_preview_expand')).trim();
   model.ejs = '';
   model.js = this._rawOriginalJs;
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
@@ -540,6 +543,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
     ongetvalue: 'return;'
   });
 
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
   var model = {};
   this._modelTemplate = model;
@@ -563,6 +567,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   model.sort = { [this._sequenceFieldName]: 'asc' };
   model.oninit = "jsh.$root('.xform'+xmodel.class).before('<div class=\"dataGridEditor_instructions\"><span style=\"font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;\">&#x1f6c8;</span> Add, edit, and re-order items using the icons :: Double-click to edit</div>');";
   model.rowclass = "<%=xejs.iif(rowid==0,'first')%>";
+  model.tableclass = ((model.tableclass||'')+' '+(componentConfig&&componentConfig.options&&componentConfig.options.component_preview_size=='collapse'?'jsharmony_cms_component_preview_collapse':'jsharmony_cms_component_preview_expand')).trim();
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 
   //--------------------------------------------------
@@ -1286,7 +1291,7 @@ Dialog.prototype.open = function() {
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
   var hasToolbarOffset = !!_this._cms.editor.getOffsetTop();
-  var wasAtTop = !$(document).scrollTop();
+  var wasAtTop = !_this._jsh.$(document).scrollTop();
 
   this.load(function(xmodel) {
 
@@ -2564,6 +2569,8 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
+
   var template =
       '<div class="jsharmony_cms component_toolbar">' +
         '<div class="component_toolbar_button" data-component-part="moveItem" data-dir="prev">' +
@@ -2592,7 +2599,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
   renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
-  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
   if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderConfig);
 
@@ -4863,7 +4869,11 @@ exports = module.exports = function(jsh, cms){
     
 
     //Populate id and item fields
-    _.each(sitemap.allItems, function(sitemap_item){
+    var itemsToProcess = sitemap.allItems;
+    _.each(sitemap.breadcrumbs, function(sitemap_item){
+      if(!_.includes(itemsToProcess, sitemap_item)) itemsToProcess.push(sitemap_item);
+    });
+    _.each(itemsToProcess, function(sitemap_item){
       sitemap_item.id = sitemap_item.sitemap_item_id;
 
       sitemap_item.sitemap_item_type = (sitemap_item.sitemap_item_type||'TEXT').toUpperCase();
@@ -4888,7 +4898,7 @@ exports = module.exports = function(jsh, cms){
       }
         
       sitemap_item.target = ((sitemap_item.sitemap_item_link_type != 'JS') && (sitemap_item.sitemap_item_link_target == 'NEWWIN')) ? '_blank' : '';
-      sitemap_item.selected = (sitemap_item == sitemap.self);
+      sitemap_item.selected = (sitemap_item.sitemap_item_id == (sitemap.self && sitemap.self.sitemap_item_id));
     });
 
     //Populate parents, depth
@@ -4941,6 +4951,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var XExt = jsh.XExt;
+  var $ = jsh.$;
   
   this.lastMediaPath = undefined;
   this.lastLinkPath = undefined;
@@ -5175,7 +5186,7 @@ exports = module.exports = function(jsh, cms, editor){
    */
   JsHarmonyComponentPlugin.prototype.createComponentMenuItems = function(componentInfo) {
     var _this = this;
-    return _.map(componentInfo, function(item) {
+    var items = _.map(componentInfo, function(item) {
       return {
         type: 'menuitem',
         text: item.menuLabel,
@@ -5183,6 +5194,14 @@ exports = module.exports = function(jsh, cms, editor){
         onAction: function() { _this.insertComponent(item.componentType); }
       }
     });
+    items.sort(function(a,b){
+      var atext = ((a && a.text)||'').toLowerCase();
+      var btext = ((b && b.text)||'').toLowerCase();
+      if(atext > btext) return 1;
+      if(atext < btext) return -1;
+      return 0;
+    });
+    return items;
   }
 
   /**

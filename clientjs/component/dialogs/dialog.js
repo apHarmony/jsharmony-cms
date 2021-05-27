@@ -231,7 +231,7 @@ Dialog.prototype.open = function() {
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
   var hasToolbarOffset = !!_this._cms.editor.getOffsetTop();
-  var wasAtTop = !$(document).scrollTop();
+  var wasAtTop = !_this._jsh.$(document).scrollTop();
 
   this.load(function(xmodel) {
 

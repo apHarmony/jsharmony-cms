@@ -1,6 +1,6 @@
 <div id="jsharmony_cms_page_toolbar" class="jsharmony_cms">
   <div class="actions"><!--
-    --><a class="jsharmony_cms_button template_tips jsharmony_cms_button_hidden" onclick="return false;" title="Template Tips" data-slideout="template_tips">Template Tips</a><!--
+    --><a class="jsharmony_cms_button template_tips jsharmony_cms_button_hidden" onclick="return false;" title="Quick Reference" data-slideout="template_tips">Quick Reference</a><!--
     --><a class="jsharmony_cms_button settings" onclick="return false;" title="Page Settings" data-slideout="page_settings">Page Settings</a><!--
     --><a class="jsharmony_cms_button save" onclick="return false;" title="Save">Save</a><!--
     --><a class="jsharmony_cms_button static readonly" style="display:none;" onclick="return false;" title="Read Only">(Read Only)</a><!--
@@ -14,19 +14,22 @@
         <a href="#" class="xtab" for="jsharmony_cms_template_tips_page_templates">Page Templates</a>
         <a href="#" class="xtab" for="jsharmony_cms_template_tips_component_templates">Component Templates</a>
         <a href="#" class="xtab" for="jsharmony_cms_template_tips_websnippet_templates">Web Snippet Templates</a>
+        <a href="#" class="xtab" for="jsharmony_cms_template_tips_site_config">Site Config</a>
       </div>
       <div class="xpanel">
         <div class="xtabbody jsharmony_cms_template_tips_overview">
           <div class="jsharmony_cms_template_tips_body">
-            <div class="jsharmony_cms_template_tips_body">
-              <h2>Template Tips</h2>
-              Please click on one of the tabs above for examples of common tags used in Page Templates, Component Templates, or Web Snippet Templates.
-            </div>
+            <h2>Template Quick Reference</h2>
+            The Quick Reference provides commonly-used tags and examples of Page Templates, Component Templates, Web Snippet Templates, and the Site Config.<br/>
+            <br/>
+            Visit the <a href="https://www.jsharmonycms.com/resources/" target="_blank">jsHarmony CMS Resources</a> site for extended documentation, video tutorials, and additional examples.<br/>
+            &nbsp;
           </div>
         </div>
         <div class="xtabbody jsharmony_cms_template_tips_page_templates">
           <div class="jsharmony_cms_template_tips_body">
             <h2>Page Templates</h2>
+            Full documentation and examples available in the <a href="https://www.jsharmonycms.com/resources/documentation/page-templates/" target="_blank">jsHarmony CMS Page Template Reference</a>
             <pre>
 -- cms-title
 &lt;h1 cms-title&gt;Page Title&lt;/h1&gt;
@@ -192,6 +195,7 @@ Page Includes
         <div class="xtabbody jsharmony_cms_template_tips_component_templates">
           <div class="jsharmony_cms_template_tips_body">
             <h2>Component Templates</h2>
+            Full documentation and examples available in the <a href="https://www.jsharmonycms.com/resources/documentation/component-templates/" target="_blank">jsHarmony CMS Component Template Reference</a>
             <pre>
 ================
 Component Config
@@ -256,7 +260,7 @@ jsh-group-items-index="cnt"
 jsh-group-items-separator=" "
 
 jsh-template="templateName"
-jsh-template-subgroup="items"
+jsh-template-items="items"
 
 cms-content-editor
 cms-content-editor-type
@@ -271,116 +275,158 @@ EJS Container Slurp
 =========
 Functions
 =========
+_ (Lodash)
 escapeHTML
-*escapeRegEx
-*renderTemplate(templateName, items)
-*iif(condition, valueTrue, valueFalse)
-*getEJSOutput(f)
+escapeRegEx
+stripTags(str, ignore, options)
+iif(condition, valueTrue, valueFalse)
+isNullUndefinedEmpty(val)
+isNullUndefined(val)
+renderTemplate(templateName, items)
+getEJSOutput(f)
   var str = getEJSOutput(function(){ -%&gt;HTML&lt;% })
-*addFile(filePath, fileContent)
-*hasFile(filePath)
-*deletefile(filePath)
+getSitemapURL(sitemap_item)
+getMenuURL(menu_item)
+renderPlaceholder({ errors: '' })
+
+* Only available for Export Components
+addFile(filePath, fileContent)
+hasFile(filePath)
+deletefile(filePath)
+
+================
+Render Variables
+================
+renderType
+templateName
+baseUrl
+isInEditor
+isInPageEditor
+isInComponentEditor
+sitemap
+menu  (from cms-menu-tag)
+data  { item: &lt;object&gt;, items: Array&lt;object&gt; }
+properties
+
+--- Aliases ---
+items =&gt; data.items
+item =&gt; data.item
+component =&gt; properties
+
+--- Content / Page Component Variables ---
+page
+template
+
+---- Export Variables ---
+sitemaps
+menus
+site_redirects
+page_paths
+branchData
+publish_params
 
 ===============
 Menu Properties
 ===============
 menu
-  --menu_tag
-  --menu_template_id
-  --menu_key
-  --template
-  menu_item_tree
-  --menu_items
-  -------
-  *tree
-  *items
-  *allItems
-  *topItems
-  *currentItem
-  *tag
+  tag
+  tree
+  allItems
+  currentItem
+  --- Aliases ---
+  topItems =&gt; tree
+  items =&gt; tree
+  topItems =&gt; tree
+  topItems =&gt; tree
+  --- System ---
+  menu_tag =&gt; tag
+  menu_key
+  menu_item_tree =&gt; tree
+  menu_items =&gt; allItems
 
-menuItem
-  *id
-  *children
-  *getSiblings()
-  *parents
-  *parent
-  *depth
-  -------
-  *html
-  *text
-  *tag
-  *class
-  *style
-  *href
-  *onclick
-  *target
-  *selected (only with PAGE)
-  ----
-  menu_item_id: undefined,
-  menu_item_parent_id: null,
-  menu_item_path: undefined,
-  menu_item_text: '',
-  menu_item_type: 'TEXT', //TEXT(default),HTML
-  menu_item_tag: undefined,
-  menu_item_style: undefined,
-  menu_item_class: undefined,
-  menu_item_link_type: undefined, //PAGE,MEDIA,URL,JS
-  menu_item_link_dest: undefined,
-  menu_item_link_target: undefined, //NEWWIN
-  ----
-  menu_item_children
+menu_item
+  id
+  children
+  getSiblings()
+  parents
+  parent
+  depth
+  html
+  text
+  tag
+  class
+  style
+  href
+  onclick
+  target
+  selected
+  --- System ---
+  menu_item_id
+  menu_item_parent_id
+  menu_item_path
+  menu_item_text
+  menu_item_type: 'TEXT','HTML'
+  menu_item_tag =&gt; tag
+  menu_item_style =&gt; style
+  menu_item_class =&gt; class
+  menu_item_link_type: 'PAGE','MEDIA','URL','JS'
+  menu_item_link_dest
+  menu_item_link_target 'NEWWIN',''
+  menu_item_children =&gt; children
 
 ==================
 Sitemap Properties
 ==================
-
 sitemap
-  item
+  tree
+  allItems
+  --- Content / Page Component Variables ---
+  currentItem
+  root
   parents
   children
+  breadcrumbs
+  --- Aliases ---
+  topItems =&gt; tree
+  self =&gt; currentItem
+  item =&gt; currentItem
+  --- Export Variables ---
   sitemap_items
-  *tree
-  *root
-  *allItems
-  *topItems
-  *currentItem
 
-sitemapItem
-  *id
-  *children
-  *siblings
-  *parents
-  *parent
-  *depth
-  --------
-  *html
-  *text
-  *class
-  *style
-  *href
-  *target
-  *onclick
-  *selected
-  --------------
-  sitemap_item_id: undefined,
-  sitemap_item_parent_id: null,
-  sitemap_item_path: undefined,
-  sitemap_item_text: '',
-  sitemap_item_type: 'TEXT', //TEXT(default),HTML
-  sitemap_item_tag: undefined,
-  sitemap_item_style: undefined,
-  sitemap_item_class: undefined,
-  sitemap_item_exclude_from_breadcrumbs: 0,
-  sitemap_item_exclude_from_parent_menu: 0,
-  sitemap_item_hide_menu_parents: 0,
-  sitemap_item_hide_menu_siblings: 0,
-  sitemap_item_hide_menu_children: 0,
-  sitemap_item_link_type: undefined, //PAGE,MEDIA,URL,JS
-  sitemap_item_link_dest: undefined,
-  sitemap_item_link_target: undefined, //NEWWIN
-  -------
-  sitemap_item_siblings
+sitemap_item
+  id
+  children
+  getSiblings()
+  siblings
+  parents
+  parent
+  depth
+  html
+  text
+  tag
+  class
+  style
+  href
+  onclick
+  target
+  selected
+  --- System ---
+  sitemap_item_id
+  sitemap_item_parent_id
+  sitemap_item_path
+  sitemap_item_text
+  sitemap_item_type: 'TEXT','HTML'
+  sitemap_item_tag =&gt; tag
+  sitemap_item_style =&gt; style
+  sitemap_item_class =&gt; class
+  sitemap_item_exclude_from_breadcrumbs
+  sitemap_item_exclude_from_parent_menu
+  sitemap_item_hide_menu_parents
+  sitemap_item_hide_menu_siblings
+  sitemap_item_hide_menu_children
+  sitemap_item_link_type: 'PAGE','MEDIA','URL','JS'
+  sitemap_item_link_dest
+  sitemap_item_link_target: 'NEWWIN',''
 
 =================
 Publish Functions
@@ -467,6 +513,7 @@ Breadcrumbs
         <div class="xtabbody jsharmony_cms_template_tips_websnippet_templates">
           <div class="jsharmony_cms_template_tips_body">
             <h2>Web Snippet Templates</h2>
+            Full documentation and examples available in the <a href="https://www.jsharmonycms.com/resources/documentation/web-snippets/" target="_blank">jsHarmony CMS Web Snippet Reference</a>
             <pre>
 -- Web Snippet Config
 &lt;cms-websnippet-config&gt;...&lt;/cms-websnippet-config&gt;
@@ -476,6 +523,25 @@ Breadcrumbs
   "description": "Link button used as a Call to Action",
 }
 &lt;/script&gt;
+            </pre>
+          </div>
+        </div>
+        <div class="xtabbody jsharmony_cms_template_tips_site_config">
+          <div class="jsharmony_cms_template_tips_body">
+            <h2>Site Config</h2>
+            Full documentation available in the <a href="https://www.jsharmonycms.com/resources/documentation/site-config/" target="_blank">jsHarmony CMS Site Config Reference</a>
+            <pre>
+-- Site config
+{
+  &quot;menus&quot;: [ &#x2F;&#x2F; Array of required menus
+    { &quot;name&quot;: &quot;Main Menu&quot;, &quot;tag&quot;: &quot;main&quot;, &quot;max_depth&quot;: 2 }
+  ],
+  &quot;defaultEditorConfig&quot;: {   &#x2F;&#x2F; Default GUI page editor config
+    &quot;webSnippetsPath&quot;: &quot;&#x2F;templates&#x2F;websnippets&#x2F;listing.html&quot;,  &#x2F;&#x2F; Web snippets listing path
+    &quot;materialIcons&quot;: false   &#x2F;&#x2F; Whether to enable Material Icons in the Editor
+                             &#x2F;&#x2F;   If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
+  }
+}
             </pre>
           </div>
         </div>

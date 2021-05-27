@@ -211,7 +211,7 @@ Loading Animation: 2147483642
 #jsharmony_cms_page_toolbar .jsharmony_cms_template_tips_body {
   overflow:auto;
   max-height:400px;
-  max-width: calc(100vw - 100px);
+  width: calc(100vw - 40px);
   padding-top:15px;
 }
 
@@ -305,6 +305,7 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   position:fixed;
   z-index:99999999;
   top:40px;
+  left:0px;
   width:100%;
   opacity:0;
 }
@@ -326,7 +327,10 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
 
 .jsharmony_cms_component_preview {
   border: 1px solid #eee;
-  display:inline-block;
+}
+
+.jsharmony_cms_component_preview_collapse .jsharmony_cms_component_preview {
+  display: inline-block;
 }
 
 .jsharmony_cms_component_preview [data-component-full-editor],
@@ -409,7 +413,9 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   border-bottom: 2px solid #eee;
   line-height: 27px;
   text-align: left;
+  font-size: 13px;
   font-weight: normal;
+  font-family: 'Roboto', arial, helvetica, sans-serif;
 }
 
 .jsharmony_cms_component_dataGridEditor .xform_label.updated[data-id="component_preview"] {
@@ -480,14 +486,15 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
 
 .xdialogblock .xdialogbox.jsharmony_cms_component_dialog .xbodyhead .xtitle {
   margin-top:0px;
-}
-
-.xdialogblock .xdialogbox.jsharmony_cms_component_dialog .xbodyhead .xtitle {
   padding-bottom:0px;
 }
 
 .xdialogbox .xform_caption {
   font-size: 1.1em;
+}
+
+ .jsharmony_cms_component_dataGridEditor > .jsharmony_cms_component_preview_expand.xtbl {
+  width:100%;
 }
 
 .jsharmony_cms_component_dataGridEditor > .xtbl tbody,
@@ -582,7 +589,12 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   color: #222f3e;
 }
 
+.xdialogbox .xbodyhead {
+  font-family: 'Roboto', arial, helvetica, sans-serif;
+}
+
 .xdialogbox .xbodyhead .xtitle {
+  font-family: 'Raleway', sans-serif;
   font-size: 20px;
   font-style: normal;
   font-weight: 400;

@@ -14,10 +14,10 @@
     "fields": [
       {"name":"redirect_key","key":true,"control":"hidden"},
       {"name":"redirect_seq","caption":"Seq #","control":"textbox_VS"},
-      {"name":"redirect_url_type","caption":"Match"},
-      {"name":"redirect_url","caption":"URL","control":"textbox","controlstyle":"width:350px;"},
-      {"name":"redirect_dest","caption":"Destination","control":"textbox","controlstyle":"width:350px;"},
-      {"name":"redirect_http_code","caption":"HTTP Code"},
+      {"name":"redirect_url_type","caption":"Match", "validate": ["Required"]},
+      {"name":"redirect_url","caption":"URL","control":"textbox","controlstyle":"width:350px;", "validate": ["Required"]},
+      {"name":"redirect_dest","caption":"Destination","control":"textbox","controlstyle":"width:350px;", "validate": ["Required"]},
+      {"name":"redirect_http_code","caption":"HTTP Code", "validate": ["Required"]},
       {"name":"redirect_mtstmp","caption":"Last Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
       {"name":"redirect_muser","caption":"Modified By","actions":"B","control":"label","sqlselect":"jsharmony.my_db_user_fmt(redirect_muser)","cellstyle":"white-space:nowrap;"}
     ]

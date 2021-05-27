@@ -523,6 +523,8 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
   var $row = this.getRowElementFromRowId(rowId);
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
+
   var template =
       '<div class="jsharmony_cms component_toolbar">' +
         '<div class="component_toolbar_button" data-component-part="moveItem" data-dir="prev">' +
@@ -551,7 +553,6 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
   renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
-  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
   if (_.isFunction(this.onBeforeRenderGridRow)) this.onBeforeRenderGridRow(renderConfig);
 

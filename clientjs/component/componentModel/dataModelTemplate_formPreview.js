@@ -66,6 +66,8 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var modelConfig = Cloner.deepClone(dataModel || {});
   if (modelConfig.layout !== 'grid_preview' && modelConfig.layout !== 'form') return undefined;
 
+  var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
+
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var fields = modelConfig.fields || [];
@@ -82,6 +84,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   model.layout = 'form';
   model.unbound = true;
   model.onecolumn = true;
+  model.formclass = ((model.formclass||'')+' '+(componentConfig&&componentConfig.options&&componentConfig.options.component_preview_size=='collapse'?'jsharmony_cms_component_preview_collapse':'jsharmony_cms_component_preview_expand')).trim();
   model.ejs = '';
   model.js = this._rawOriginalJs;
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });

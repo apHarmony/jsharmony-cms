@@ -86,6 +86,10 @@ module.exports = exports = function(module, funcs){
     config.editor_placeholder = config.editor_placeholder || {};
     if(!('items_empty' in config.editor_placeholder)) config.editor_placeholder.items_empty = true;
     if(!('invalid_fields' in config.editor_placeholder)) config.editor_placeholder.invalid_fields = true;
+
+    //Add config.options
+    config.options = config.options || {};
+    if(!('component_preview_size' in config.options)) config.options.component_preview_size = 'expand';
     
     //Apply config.caption
     if(!('caption' in config)){
@@ -97,7 +101,7 @@ module.exports = exports = function(module, funcs){
       config.className = Helper.escapeCSSClass(config.id, { nodash: true });
     }
 
-    //Set default target to "content"
+    //Set default target to "page"
     if(!('target' in config)) config.target = 'content';
 
     //Set default icon
@@ -1891,9 +1895,9 @@ module.exports = exports = function(module, funcs){
           var templateName = (htdoc.getAttr(node, 'jsh-template')||'').toString();
           htdoc.removeAttr(node, 'jsh-template');
 
-          var subgroupVariable = htdoc.getAndRemoveAttr(node, 'jsh-template-subgroup').trim()||'items';
+          var itemsVariable = htdoc.getAndRemoveAttr(node, 'jsh-template-items').trim()||'items';
           
-          htdoc.wrapNode(node, '<% (locals.jsh_render_templates=locals.jsh_render_templates||{})['+JSON.stringify(templateName)+'] = function('+subgroupVariable+'){ %>', '<% } %>', 'jsh-template');
+          htdoc.wrapNode(node, '<% (locals.jsh_render_templates=locals.jsh_render_templates||{})['+JSON.stringify(templateName)+'] = function('+itemsVariable+'){ %>', '<% } %>', 'jsh-template');
         }
       },
       { //jsh-foreach-item
@@ -1915,10 +1919,12 @@ module.exports = exports = function(module, funcs){
       { //jsh-for-item
         pred: function(node){ return htdoc.hasAttr(node, 'jsh-for-item'); },
         exec: function(node){
-          var itemsVariable = htdoc.getAndRemoveAttr(node, 'jsh-for-item').trim()||'items';
+          var sourceVariable = htdoc.getAndRemoveAttr(node, 'jsh-for-item').trim()||'item';
           var itemVariable = htdoc.getAndRemoveAttr(node, 'jsh-for-item-variable').trim()||'item';
+          var letStatement = 'let '+itemVariable+'='+sourceVariable+';';
+          if(itemVariable==sourceVariable) letStatement = '';
 
-          htdoc.wrapNode(node, '<% (function(){ let '+itemVariable+'='+itemsVariable+'; if(!isNullUndefined('+itemVariable+')){ %>','<% } })(); %>','jsh-for-item');
+          htdoc.wrapNode(node, '<% (function(){ '+letStatement+' if(!isNullUndefined('+itemVariable+')){ %>','<% } })(); %>','jsh-for-item');
         }
       },
     ]);

@@ -1427,10 +1427,13 @@ module.exports = exports = function(module, funcs){
       if(key in exportItem) renderOptions[key] = exportItem[key];
     });
 
+    var sitemap = funcs.getPageSitemapRelatives((branchData.sitemaps||{}).PRIMARY||{})
+    funcs.createSitemapTree(sitemap, branchData);
+
     var renderParams = {
       //Additional parameters for static render
       sitemaps: branchData.sitemaps,
-      sitemap: (branchData.sitemaps||{}).PRIMARY||{},
+      sitemap: sitemap,
       getSitemapURL: function(sitemap_item){ return funcs.getSitemapUrl(sitemap_item, branchData); },
       menus: branchData.menus,
       menu: null,
