@@ -980,6 +980,12 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   var modelConfig = Cloner.deepClone(propertiesModel || {});
 
   var model = _.extend({}, modelConfig);
+
+  if(modelConfig.fields && modelConfig.fields.length){
+    modelConfig.fields.unshift({ control:'html', value:'<div class="jsharmony_cms">'});
+    modelConfig.fields.push({ control:'html', value:'</div>'});
+  }
+
   this._modelTemplate = model;
   model.title = modelConfig.title ? modelConfig.title : 'Configure ' + componentTemplate.getCaptions()[0];
   model.unbound = true;
