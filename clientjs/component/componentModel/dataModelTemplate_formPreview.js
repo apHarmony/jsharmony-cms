@@ -70,6 +70,8 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
 
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
+  var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
+
   var fields = modelConfig.fields || [];
   fields.unshift({ control:'html', value:'<div class="jsharmony_cms">'});
   fields.push({ control:'html', value:'</div>'});
@@ -80,6 +82,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var model = _.extend({}, modelConfig);
   this._modelTemplate = model;
   model.title = modelConfig.title ? modelConfig.title : 'Edit ' + componentTemplate.getCaptions()[1];
+  model.popup = [ _.isNumber(popup[0]) ? popup[0] : 400, _.isNumber(popup[1]) ? popup[1] : 200 ];
   model.fields = fields;
   model.layout = 'form';
   model.unbound = true;

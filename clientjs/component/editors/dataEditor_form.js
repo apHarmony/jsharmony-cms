@@ -148,7 +148,9 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
-    dialogId: modelConfig.id
+    dialogId: modelConfig.id,
+    minHeight: modelConfig.popup[1],
+    minWidth: modelConfig.popup[0]
   });
 
   var $toolbar;
