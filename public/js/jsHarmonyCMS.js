@@ -7747,7 +7747,8 @@ var jsHarmonyCMS = function(options){
 
   this.fatalError = function(err){
     if(loader) loader.ClearLoading();
-    if(XExt) XExt.Alert(err.toString());
+    if(_this.devMode && _this.toolbar && _this.toolbar.errors.length) _this.toolbar.showError(err.toString());
+    else if(XExt) XExt.Alert(err.toString());
     else alert(err.toString());
     throw new Error(err);
   }
