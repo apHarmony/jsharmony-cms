@@ -85,7 +85,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {
-          edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
+          edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | jsHarmonyCmsElementPath | searchreplace' },
           view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen | jsHarmonyCmsToggleMenu jsHarmonyCmsToggleToolbar jsharmonyCmsDockToolbar' },
           insert: { title: 'Insert', items: 'image link media jsHarmonyCmsWebSnippet jsHarmonyCmsComponent codesample inserttable | charmapmaterialicons emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
           format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats | backcolor forecolor | removeformat' },
@@ -114,6 +114,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           return url;
         },
         fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
+        statusbar: true,
         charmap_append: materialIcons,
         charmap_append_title: (materialIcons.length ? 'Material Icons' : 'Other'),
       }, _this.getDefaultEditorConfig(), _this.defaultConfig);

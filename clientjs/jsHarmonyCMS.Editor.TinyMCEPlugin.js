@@ -214,6 +214,70 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
 
+  JsHarmonyComponentPlugin.prototype.createElementPathMenuButton = function() {
+    var _this = this;
+    this._editor.ui.registry.addNestedMenuItem('jsHarmonyCmsElementPath', {
+      text: 'Element Path',
+      icon: 'visualchars',
+      getSubmenuItems: function() {
+        var selection = _this._editor.selection;
+        if(!selection) return [];
+        var endNode = selection.getEnd();
+        if(!endNode) return [];
+        //Get path from node to editor root
+        var container = _this._editor.getContentAreaContainer();
+        var nodes = [];
+        var currentNode = endNode;
+        while(currentNode){
+          if(currentNode == container) break;
+          nodes.push(currentNode);
+          currentNode = currentNode.parentNode;
+        }
+        return _.map(nodes, function(node) {
+          return {
+            type: 'nestedmenuitem',
+            text: node.tagName,
+            getSubmenuItems: function () {
+              return [
+                {
+                  type: 'menuitem',
+                  text: 'Select Element',
+                  onAction: function () {
+                    var selection = _this._editor.selection;
+                    selection.select(node);
+                  }
+                },
+                {
+                  type: 'menuitem',
+                  text: 'Add Line Break Before',
+                  onAction: function () {
+                    var lineBreak = _this._editor.dom.create('br');
+                    $(lineBreak).insertBefore(node);
+                  }
+                },
+                {
+                  type: 'menuitem',
+                  text: 'Add Line Break After',
+                  onAction: function () {
+                    var lineBreak = _this._editor.dom.create('br');
+                    $(lineBreak).insertAfter(node);
+                  }
+                },
+                {
+                  type: 'menuitem',
+                  text: 'Delete Element',
+                  onAction: function () {
+                    node.remove();
+                  }
+                }
+              ];
+            }
+          }
+        });
+      }
+    });
+  }
+
   JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
     var _this = this;
     _this.toolbarOptions.show_menu = !!visible;
@@ -530,6 +594,7 @@ exports = module.exports = function(jsh, cms, editor){
     this.createComponentToolbarButton(componentInfo);
     this.createToolbarViewOptions();
     this.createMenuViewOptions();
+    this.createElementPathMenuButton();
     this.createComponentMenuButton(componentInfo);
     this.createSpellCheckMessageMenuButton();
     this.createEndEditMenuButton();

@@ -306,7 +306,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       else {
         errors.push({
           message: 'Missing Heading / Title Element.  Please add an HTML element with the "cms-title" attribute:<br/>' +
-          '<pre>&lt;h1 cms-title&gt;&lt;/h1&gt;</pre>',
+          '<pre>&lt;h1 cms-title&gt;&lt;/h1&gt;</pre>' +
+          'If the page does not have a title tag, add:<br/>'+
+          '<pre>&lt;cms-page-config&gt;{ "options": { "title_element_required": false } }&lt;/cms-page-config&gt;</pre>',
           type: 'html'
         });
       }
