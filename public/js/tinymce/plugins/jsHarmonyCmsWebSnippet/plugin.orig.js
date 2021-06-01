@@ -337,6 +337,7 @@
       '\'': '&#039;'
     };
     var htmlEscape = function (html) {
+      if(!html) return '';
       return html.replace(/["'<>&]/g, function (match) {
         return get(entitiesAttr, match).getOr(match);
       });
