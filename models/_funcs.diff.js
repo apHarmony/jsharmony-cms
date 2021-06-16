@@ -68,7 +68,6 @@ module.exports = exports = function(module, funcs){
           _DBContext: req._DBContext,
           baseurl: baseurl,
           branch_id: branch_id,
-          deployment_target_params: undefined,
           site_id: null,
           page_templates: null,
           deployment_target_id: undefined,
@@ -77,15 +76,14 @@ module.exports = exports = function(module, funcs){
 
         async.waterfall([
 
-          //Get deployment_target_params for branch
+          //Get branch data
           function(cb){
-            var sql = "select site_editor deployment_target_id,deployment_target_params,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
+            var sql = "select site_editor deployment_target_id,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
             appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
               if (err != null) { err.sql = sql; return cb(err); }
               if(rslt && rslt[0]){
                 try{
                   branch_data.deployment_target_id = rslt[0].deployment_target_id;
-                  branch_data.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
                   branch_data.site_id = rslt[0].site_id;
                 }
                 catch(ex){}

@@ -132,7 +132,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         funcs.getSiteConfig('deployment', branchData.site_id, { }, function(err, siteConfig){
           if(err) return cb(err);
-          branchData.site_config = siteConfig;
+          branchData.site_config = siteConfig || {};
           return cb();
         });
       },
@@ -143,27 +143,32 @@ module.exports = exports = function(module, funcs){
         appsrv.ExecRow(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target revision', -11));
-          if(rslt && rslt[0]){
-            try{
-              branchData.deployment_target_id = rslt[0].deployment_target_id;
-              try{
-                branchData.deployment_target_params = JSON.parse(rslt[0].deployment_target_params);
-              }
-              catch(ex){
-                return deploy_cb('Publish Target has invalid deployment_target_params: '+rslt[0].deployment_target_params);
-              }
-              branchData.site_id = rslt[0].site_id;
-            }
-            catch(ex){}
 
-            var publish_params = {
-              timestamp: (Date.now()).toString()
-            };
-            publish_params = _.extend(publish_params, branchData.deployment_target_params);
-            publish_params = _.extend({}, cms.Config.deployment_target_params, publish_params);
-            branchData.publish_params = publish_params;
+          branchData.deployment_target_id = rslt[0].deployment_target_id;
+          branchData.site_id = rslt[0].site_id;
+
+          //Deployment Target Params
+          var deployment_target_params = {
+            timestamp: (Date.now()).toString(),
+          };
+          try{
+            if(rslt[0].deployment_target_params) deployment_target_params = _.extend(deployment_target_params, JSON.parse(rslt[0].deployment_target_params));
           }
-          return cb();
+          catch(ex){
+            return deploy_cb('Publish Target has invalid deployment_target_params: '+rslt[0].deployment_target_params);
+          }
+
+          funcs.parseDeploymentTargetParams('publish', 'deployment', branchData.site_id, branchData.site_config, deployment_target_params, function(err, parsed_deployment_target_params){
+            if(err) return cb(err);
+            deployment_target_params = parsed_deployment_target_params;
+            branchData.deployment_target_params = deployment_target_params;
+
+            //Deployment Target Publish Params
+            var publish_params = JSON.parse(JSON.stringify(deployment_target_params));
+            branchData.publish_params = publish_params;
+
+            return cb();
+          });
         });
       },
 

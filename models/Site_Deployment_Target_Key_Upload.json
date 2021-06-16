@@ -1,0 +1,29 @@
+{
+  "Site_Deployment_Target_Key_Upload": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[600,250],
+    "table":"{schema}.deployment_target",
+    "actions":"BU",
+    "roles": {"WEBMASTER": "BU"},
+    "title": {
+      "sql": "select concat('Deployment Target :: ',deployment_target_name) from {schema}.deployment_target inner join {schema}.site on deployment_target.site_id=site.site_id where deployment_target_id=@deployment_target_id"
+    },
+    "hide_system_buttons":["print","save"],
+    "fields": [
+      {"name":"deployment_target_id","actions":"B","key":1,"control":"hidden"},
+
+      {"control":"html","value":"<h2>Upload Private Key</h2><div style='margin:5px 0 10px 0;'>Please select a file below.  The file extension must be *.pem<br/>If your certificate is in PEM format, you can rename the extension and upload</div>"},
+
+      {"name":"private_key","type":"file","actions":"BU","nl":false,
+        "control":"file_upload","caption":"Private Key","controlparams": {
+          "download_button": "",
+          "upload_button": "Select File",
+          "delete_button": "Delete",
+          "data_folder":"key_upload"
+        },
+        "validate": ["Required","MaxSize:100000","Extension:['.PEM']"]},
+      {"control":"button","value":"Upload","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.uploadPrivateKey();"}
+    ]
+  }
+}

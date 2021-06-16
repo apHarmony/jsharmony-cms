@@ -243,15 +243,19 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
           if(_.includes(['.html','.htm'], ext)){
             fs.readFile(syspath, 'utf8', function(err, data){
               if(err) return next();
-              var fcontent = '';
-              try{
-                fcontent = cms.funcs.generateEditorTemplate(data, { cmsBaseUrl: req.baseurl });
-              }
-              catch(ex){
-                res.end('Error loading template: '+ex.toString());
-                return;
-              }
-              res.end(fcontent);
+              cms.funcs.getCurrentDeploymentTargetParams(req._DBContext, 'editor', {}, {}, function(err, deployment_target_params){
+                if(err) return res.end('Error loading site deployment target parameters');
+
+                var fcontent = '';
+                try{
+                  fcontent = cms.funcs.generateEditorTemplate(data, { cmsBaseUrl: req.baseurl, deployment_target_params: deployment_target_params });
+                }
+                catch(ex){
+                  res.end('Error loading template: '+ex.toString());
+                  return;
+                }
+                res.end(fcontent);
+              });
             });
             return;
           }

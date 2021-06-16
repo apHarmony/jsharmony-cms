@@ -261,6 +261,23 @@ describe('Page Editor Template Generation', function() {
     ].join(''));
     done();
   });
+
+  it('Deployment Target Params', function(done) {
+    var rslt = funcs.generateEditorTemplate([
+      'Test %%%URL%%% Test',
+    ].join(''), { deployment_target_params: { "URL": "http://test" } });
+    assert.equal(rslt, [
+      '<!DOCTYPE HTML><html>',
+      '<head>',
+      '</head>',
+      '<body>',
+      '<script type="text/javascript" class="removeOnPublish" src="/js/jsHarmonyCMS.js"></script>',
+      'Test http://test Test',
+      '</body>',
+      '</html>',
+    ].join(''));
+    done();
+  });
 });
 
 describe('Page Deployment Template Generation', function() {
@@ -505,6 +522,35 @@ describe('Page Deployment Template Generation', function() {
       '<%-page.footer%>',
     ].join(''));
     assert(template.components['menus/top'].title == 'menus/top');
+    done();
+  });
+  it('Deployment Target Params', function(done) {
+    var rslt = funcs.generateDeploymentTemplate(null, [
+      '<html>',
+      '<head>',
+      '</head>',
+      '<body>',
+      'Test %%%URL%%% Test',
+      '</body>',
+      '</html>',
+    ].join(''), { deployment_target_params: { "URL": "http://test" } });
+    assert.equal(rslt, [
+      '<html>',
+      '<head>',
+      '<% if(page.seo.title){ %><title><%=page.seo.title%></title><% } %>',
+      '<% if(page.seo.keywords){ %><meta name="keywords" content="<%=page.seo.keywords%>" /><% } %>',
+      '<% if(page.seo.metadesc){ %><meta name="description" content="<%=page.seo.metadesc%>" /><% } %>',
+      '<% if(page.seo.canonical_url){ %><link rel="canonical" href="<%=page.seo.canonical_url%>" /><% } %>',
+      '<% if(page.css){ %><style type="text/css"><%-page.css%></style><% } %>',
+      '<% if(page.js){ %><script type="text/javascript"><%-page.js%></script><% } %>',
+      '<%-page.header%>',
+      '</head>',
+      '<body>',
+      'Test http://test Test',
+      '<%-page.footer%>',
+      '</body>',
+      '</html>',
+    ].join(''));
     done();
   });
 });
@@ -867,6 +913,22 @@ describe('Component Template Generation', function() {
       '  </li><% } } %>',
       '</ul>',
       '<% } %><%-renderTemplate("menu", menu.tree)%>',
+    ].join(''));
+    done();
+  });
+
+  it('Deployment Target Params', function(done) {
+    var componentConfig = { data: { fields: [ { name: 'title' } ] } };
+    var rslt = funcs.generateComponentTemplate(componentConfig, [
+      '<section class="tiles wrapper <%=component.cssClass%>" style="<%=component.cssStyle%>" cms-component-editor-add-class="preview">',
+      'Test %%%url%%% Test',
+      '</section>',
+    ].join(''), { deployment_target_params: { url: 'http://test' } });
+    assert.equal(rslt, [
+      componentPrefix,
+      '<section class="tiles wrapper <%=component.cssClass%> <%=(isInComponentEditor?"preview":"")%>" style="<%=component.cssStyle%>">',
+      'Test http://test Test',
+      '</section>',
     ].join(''));
     done();
   });

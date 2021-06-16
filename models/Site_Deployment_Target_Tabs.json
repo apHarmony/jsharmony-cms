@@ -10,7 +10,8 @@
     "tabpanelstyle": "min-width:700px;",
 	  "tabs":[
 	    {"name":"Overview","target":"Site_Deployment_Target"},
-  	  {"name":"Permissions","target":"Site_Deployment_Target_Role"}
+      {"name":"Permissions","target":"Site_Deployment_Target_Role"},
+      {"name":"Public / Private Key","target":"Site_Deployment_Target_Key"}
     ],
     "caption":["Deployment Target","Deployment Targets"],
     "title": {

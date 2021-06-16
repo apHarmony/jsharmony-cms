@@ -26,7 +26,7 @@ function ModuleFunctions(module){
   _.extend(this, require('./_funcs.page.js')(module, this));
   _.extend(this, require('./_funcs.media.js')(module, this));
   _.extend(this, require('./_funcs.menu.js')(module, this));
-  _.extend(this, require('./_funcs.sitemap.js')(module, this));
+  _.extend(this, require('./_funcs.sitemap.js')(module, this));  
   _.extend(this, require('./_funcs.deploy.js')(module, this));
   _.extend(this, require('./_funcs.component.js')(module, this));
   _.extend(this, require('./_funcs.template.js')(module, this));
@@ -35,6 +35,7 @@ function ModuleFunctions(module){
   _.extend(this, require('./_funcs.conflicts.js')(module, this));
   _.extend(this, require('./_funcs.merge.js')(module, this));
   _.extend(this, require('./_funcs.branch.js')(module, this));
+  _.extend(this, require('./_funcs.deployment_target.js')(module, this));
   _.extend(this, require('./_funcs.deploy.ftp.js')(module, this));
   _.extend(this, require('./_funcs.deploy.ftp.driver.ftp.js')(module, this));
   _.extend(this, require('./_funcs.deploy.ftp.driver.sftp.js')(module, this));

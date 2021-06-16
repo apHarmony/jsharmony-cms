@@ -72,6 +72,7 @@ module.exports = exports = function(module, funcs){
 
       var components = null;
       var site_id = null;
+      var dtparams = {};
 
       async.waterfall([
 
@@ -120,7 +121,7 @@ module.exports = exports = function(module, funcs){
 
         //Generate components
         function(cb){
-          var dtparams = {
+          dtparams = {
             timestamp: (Date.now()).toString(),
             branch_id: branch_id,
           };
@@ -128,17 +129,21 @@ module.exports = exports = function(module, funcs){
             if(deployment_target_params) dtparams = _.extend(dtparams, JSON.parse(deployment_target_params));
           }
           catch(ex){
-            return cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
+            return cb('Publish Target has invalid deployment_target_params: '+JSON.stringify(deployment.deployment_target_params));
           }
-          dtparams = _.extend({}, cms.Config.deployment_target_params, dtparams);
 
-          _.each(components, function(component){
+          funcs.parseDeploymentTargetParams('editor', req._DBContext, site_id, undefined, dtparams, function(err, deployment_target_params){
+            if(err) return cb(err);
+            dtparams = deployment_target_params;
+
+            _.each(components, function(component){
               if(component.remote_templates && component.remote_templates.editor){
                 component.remote_templates.editor = funcs.parseDeploymentUrl(component.remote_templates.editor, dtparams);
               }
             });
 
-          return cb();
+            return cb();
+          });          
         },
         
         //Download remote templates
@@ -197,7 +202,7 @@ module.exports = exports = function(module, funcs){
             if(!(component.templates && component.templates.editor)) continue;
             if(component.optimization && component.optimization.bare_ejs_templates) continue;
             try{
-              component.templates.editor = funcs.generateComponentTemplate(component, component.templates.editor);
+              component.templates.editor = funcs.generateComponentTemplate(component, component.templates.editor, { deployment_target_params: dtparams });
             }
             catch(ex){
               return cb(new Error('Could not parse "'+component_name+'" component editor template: '+ex.toString()));
@@ -250,24 +255,28 @@ module.exports = exports = function(module, funcs){
         Helper.GenError(req, res, -4, 'Invalid Parameters'); return;
       }
 
-      try{
-        components = funcs.compileInlineComponents(componentContent);
-      }
-      catch(err){
-        return Helper.GenError(req, res, -9, err.toString());
-      }
+      funcs.getCurrentDeploymentTargetParams(req._DBContext, 'editor', {}, {}, function(err, deployment_target_params){
+        if(err) return Helper.GenError(req, res, -99999, err.toString());
 
-      res.end(JSON.stringify({
-        '_success': 1,
-        'components': components
-      }));
+        try{
+          components = funcs.compileInlineComponents(componentContent, deployment_target_params);
+        }
+        catch(err){
+          return Helper.GenError(req, res, -9, err.toString());
+        }
+  
+        res.end(JSON.stringify({
+          '_success': 1,
+          'components': components
+        }));
+      });
 
       return;
     }
     else return next();
   }
 
-  exports.compileInlineComponents = function(componentContent){
+  exports.compileInlineComponents = function(componentContent, deployment_target_params){
     if(!_.isArray(componentContent)) componentContent = [];
     var components = {};
 
@@ -321,7 +330,7 @@ module.exports = exports = function(module, funcs){
       if(!(component.templates && component.templates.editor)) continue;
       if(component.optimization && component.optimization.bare_ejs_templates) continue;
       try{
-        component.templates.editor = funcs.generateComponentTemplate(component, component.templates.editor);
+        component.templates.editor = funcs.generateComponentTemplate(component, component.templates.editor, { deployment_target_params: deployment_target_params });
       }
       catch(ex){
         throw new Error('Could not parse "'+componentId+'" component editor template: '+ex.toString());
@@ -338,7 +347,7 @@ module.exports = exports = function(module, funcs){
         funcs.parseComponentTemplateConfigExtensions(template);
         if(template.optimization && template.optimization.bare_ejs_templates) { /* Do nothing */ }
         else if(template_name in branchData.component_template_html){
-          branchData.component_template_html[template_name] = funcs.generateComponentTemplate(template, branchData.component_template_html[template_name]);
+          branchData.component_template_html[template_name] = funcs.generateComponentTemplate(template, branchData.component_template_html[template_name], { deployment_target_params: branchData.deployment_target_params });
         }
       }
       catch(ex){
@@ -353,7 +362,7 @@ module.exports = exports = function(module, funcs){
         if(template.optimization && template.optimization.bare_ejs_templates) { /* Do nothing */ }
         else if(exportIndex in component_export_templates){
           //Pass null for "component" parameter, so that default field values will not be updated from export templates
-          component_export_templates[exportIndex] = funcs.generateComponentTemplate(null, component_export_templates[exportIndex]);
+          component_export_templates[exportIndex] = funcs.generateComponentTemplate(null, component_export_templates[exportIndex], { deployment_target_params: branchData.deployment_target_params });
         }
         else component_export_templates[exportIndex] = '';
       });

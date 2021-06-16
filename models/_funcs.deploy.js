@@ -191,7 +191,7 @@ module.exports = exports = function(module, funcs){
 
                     if(!(template.remote_templates && template.remote_templates.publish)){
                       try{
-                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent);
+                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { deployment_target_params: branchData.deployment_target_params });
                       }
                       catch(ex){
                         return template_publish_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
@@ -313,7 +313,7 @@ module.exports = exports = function(module, funcs){
             }
             else if(!template.remote_templates.publish){
               try{
-                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent);
+                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { deployment_target_params: branchData.deployment_target_params });
               }
               catch(ex){
                 return template_action_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
@@ -438,22 +438,24 @@ module.exports = exports = function(module, funcs){
   //Shell Commands
   exports.shellExec = function(cmd, default_cwd, params, cb, exec_options){
     var rslt = '';
+    var stderr = '';
     var returned = false;
     var orig_cb = cb;
-    cb = function(err, rslt){
+    cb = function(err, rslt, stderr){
       if(returned) return;
       returned = true;
-      return orig_cb(err, rslt);
+      return orig_cb(err, rslt, stderr);
     }
     exec_options = _.extend({ cwd: default_cwd }, exec_options);
     wclib.xlib.exec(cmd, params, function(err){ //cb
-      if(err) return cb(err, rslt.trim());
-      return cb(null,rslt.trim());
+      if(err) return cb(err, rslt.trim(), stderr.trim());
+      return cb(null,rslt.trim(), stderr.trim());
     }, function(data){ //stdout
-      rslt += data;
-    }, null //stderr
-    , function(err){ //onError
-      return cb(err, rslt.trim());
+      rslt += data.toString();
+    }, function(data){ //stderr
+      stderr += data.toString();
+    }, function(err){ //onError
+      return cb(err, rslt.trim(), stderr.trim());
     }, exec_options);
   }
 
@@ -461,10 +463,15 @@ module.exports = exports = function(module, funcs){
   exports.gitExec = function(repo_path, params, cb, exec_options){
     var cms = module;
     var git_path = cms.Config.git.bin_path || 'git';
-    return funcs.shellExec(git_path, repo_path, params, function(err, rslt){
-      if(err) return cb(new Error('Git Error: ' + err.toString()), rslt);
+    return funcs.shellExec(git_path, repo_path, params, function(err, rslt, stderr){
+      if(err) return cb(new Error('Git Error: ' + err.toString() + ' ' + (stderr||'')), rslt);
       return cb(err, rslt);
     }, exec_options);
+  }
+
+  exports.gitExecVerbose = function(deployment_id, repo_path, params, cb, exec_options){
+    funcs.deploy_log_info(deployment_id, 'git '+(params||[]).join(' '));
+    return exports.gitExec(repo_path, params, cb, exec_options);
   }
 
   exports.deploy_exec = function (deployment_id, onComplete) {
@@ -489,6 +496,7 @@ module.exports = exports = function(module, funcs){
       if (err != null) { err.sql = sql; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
       var publish_tgt = '';
       var deployment = (rslt ? rslt[0] : null);
+      var deployment_target_params = {};
       if(!deployment) { var err = 'Invalid Deployment ID'; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
 
       async.waterfall([
@@ -504,29 +512,42 @@ module.exports = exports = function(module, funcs){
           });
         },
 
-        //Execute deployment
+        //Initialize deployment
         function(deploy_cb){
           publish_tgt = deployment.publish_tgt;
           deployment_id = rslt[0].deployment_id;
           funcs.deploy_log_info(deployment_id, 'Deploying: '+(deployment.deployment_tag||''));
           if(!publish_tgt){ return deploy_cb('Publish Target parameter is not defined'); }
           if(deployment.deployment_target_sts.toUpperCase() != 'ACTIVE'){ return deploy_cb('Deployment Target is not ACTIVE'); }
-          var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
-          publish_path = path.normalize(publish_path);
+          return deploy_cb();
+        },
 
-          //Deployment Target Params
-          var deployment_target_params = {
+        //Get deployment target params
+        function(deploy_cb){
+          deployment_target_params = {
             timestamp: (Date.now()).toString(),
           };
+
           try{
             if(deployment.deployment_target_params) deployment_target_params = _.extend(deployment_target_params, JSON.parse(deployment.deployment_target_params));
           }
           catch(ex){
             return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
-          deployment_target_params = _.extend({}, cms.Config.deployment_target_params, deployment_target_params);
 
-          //Deployment Target Publish Path
+          funcs.parseDeploymentTargetParams('publish', 'deployment', deployment.site_id, undefined, deployment_target_params, function(err, parsed_deployment_target_params){
+            if(err) return deploy_cb(err);
+            deployment_target_params = parsed_deployment_target_params;
+            return deploy_cb();
+          });
+        },
+
+        //Execute deployment
+        function(deploy_cb){
+          var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
+          publish_path = path.normalize(publish_path);
+
+          //Deployment Target Publish Params
           var publish_params = JSON.parse(JSON.stringify(deployment_target_params));
           try{
             if(deployment.deployment_target_publish_config) publish_params = _.extend(publish_params, JSON.parse(deployment.deployment_target_publish_config));
@@ -558,6 +579,7 @@ module.exports = exports = function(module, funcs){
             page_templates: null,
             page_template_html: {},
             page_redirects: {},
+            page_base_paths: {},
 
             component_templates: null,
             component_template_html: {},
@@ -676,6 +698,9 @@ module.exports = exports = function(module, funcs){
                 }
                 else if((deploy_path.indexOf('ftps://')==0)||(deploy_path.indexOf('ftp://')==0)||(deploy_path.indexOf('sftp://')==0)) {
                   return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
+                }
+                else if((deploy_path.indexOf('git_ssh://')==0)||(deploy_path.indexOf('git_https://')==0)) {
+                  return funcs.deploy_git(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
                 else return cb(new Error('Deployment Target path not supported'));
               },
@@ -1017,7 +1042,10 @@ module.exports = exports = function(module, funcs){
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
                 else if((deploy_path.indexOf('ftps://')==0)||(deploy_path.indexOf('ftp://')==0)||(deploy_path.indexOf('sftp://')==0)) {
-                  return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
+                  return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb);
+                }
+                else if((deploy_path.indexOf('git_ssh://')==0)||(deploy_path.indexOf('git_https://')==0)) {
+                  return funcs.deploy_git(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
                 else return cb(new Error('Deployment Target path not supported'));
               },
@@ -1175,16 +1203,19 @@ module.exports = exports = function(module, funcs){
         try{
           var relativePath = funcs.getPageRelativePath(page, publish_params);
           if(!relativePath) return cb(new Error('Page has no path: '+page.page_key));
-          page_cmspath = '/' + relativePath;
+          page_cmspath = publish_params.page_url + relativePath;
           page_urlpath = publish_params.content_url + relativePath;
+          page_basepath = '/' + relativePath;
         }
         catch(ex){ }
 
         if(page_urlpath){
           branchData.page_keys[page.page_key] = page_cmspath;
           branchData.page_redirects[page_cmspath] = page_urlpath;
+          branchData.page_base_paths[page.page_key] = page_basepath;
           if(path.basename(page_cmspath)==publish_params.site_default_page_filename){
-            var page_dir = ((page_cmspath=='/'+publish_params.site_default_page_filename) ? '/' : path.dirname(page_cmspath)+'/');
+            var page_dir = ((page_cmspath==publish_params.page_url+publish_params.site_default_page_filename) ? publish_params.page_url : path.dirname(page_cmspath)+'/');
+            if(!page_dir) page_dir = './';
             branchData.page_redirects[page_dir] = page_urlpath;
             branchData.page_keys[page.page_key] = page_dir;
           }
@@ -1373,7 +1404,12 @@ module.exports = exports = function(module, funcs){
                 removeClass: true
               };
               page_content = funcs.replaceBranchURLs(page_content, replaceBranchURLsParams);
-              pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), replaceBranchURLsParams));
+              pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), _.extend(replaceBranchURLsParams, {
+                getPageURL: function(page_key){
+                  if(!(page_key in branchData.page_base_paths)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
+                  return branchData.page_base_paths[page_key];
+                },
+              })));
             }
             catch(ex){
               return cb(ex);
@@ -1761,6 +1797,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.deploy_ignore_remote = function(publish_params, fpath){
+    if(fpath=='.git') return true;
     return false;
     /*
     if(!publish_params || !publish_params.ignore_remote) return false;
@@ -1844,6 +1881,11 @@ module.exports = exports = function(module, funcs){
           HelperFS.rmdirRecursive(dirpath, dir_cb);
         }, {
           file_before_dir: true,
+          preview_dir: function(fpath, relativepath, dir_cb){
+            if(!relativepath) return dir_cb();
+            if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)) return dir_cb(false);
+            return dir_cb();
+          }
         }, fs_cb);
       },
 
@@ -1870,6 +1912,174 @@ module.exports = exports = function(module, funcs){
           HelperFS.copyFile(srcpath, dstpath, file_cb);
         }, fs_cb);
       }
+    ], cb);
+  }
+
+  exports.deploy_git = function(deployment, publish_path, deploy_path, site_files, cb) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var cms = module;
+    var deployment_id = deployment.deployment_id;
+
+    if(!cms.Config.git || !cms.Config.git.enabled){
+      return cb(new Error('GIT setup required for git deployment.  Please configure in app.config.js - jsHarmonyCMS.Config.git'));
+    }
+
+    var deploymentTargetPath = path.join(jsh.Config.datadir, 'deployment_target', deployment.deployment_target_id.toString());
+    var privateKeyPath = path.join(deploymentTargetPath, 'key.private.pem');
+    var gitRepoPath = path.join(deploymentTargetPath, 'git');
+
+    if(deploy_path.indexOf('git_')==0) deploy_path = deploy_path.substr(4);
+    else return cb(new Error('Invalid git publish path'));
+
+    var parsed_url = null;
+    try{
+      parsed_url = urlparser.parse(deploy_path);
+    }
+    catch(ex){
+      return cb(ex);
+    }
+
+    if(!parsed_url || !parsed_url.protocol) return cb(new Error('Invalid git publish path'));
+
+    var git_type = null;
+    if(parsed_url.protocol.toString().toLowerCase()=='ssh:'){
+      git_type = 'ssh';
+    }
+    else if(parsed_url.protocol.toString().toLowerCase()=='https:'){
+      git_type = 'https';
+    }
+    else return cb(new Error('Unsupported git publish protocol'));
+
+    var git_base_config = {
+      'core.safecrlf': 'false',
+      'user.email': 'cms@localhost',
+      'user.name': 'CMS',
+    }
+    
+    if(git_type=='ssh'){
+      var ssh_command = cms.Config.git.ssh_command;
+      //Replace '%%%IDENTITYFILE%%%' variable
+      ssh_command = Helper.ReplaceAll(ssh_command, '%%%IDENTITYFILE%%%', privateKeyPath);
+      git_base_config['core.sshCommand'] = ssh_command;
+      if(parsed_url.path && (parsed_url.path.indexOf('/:')==0)){
+        parsed_url.path = '/'+parsed_url.path.substr(2);
+        parsed_url.pathname = '/'+parsed_url.pathname.substr(2);
+      }
+    }
+
+    var git_config = JSON.parse(JSON.stringify(deployment.publish_params.git_config || {}));
+    git_config = _.extend(git_base_config, git_config);
+
+    var git_branch = git_config.branch || 'master';
+    delete git_config.branch;
+
+    var branchIsNew = false;
+
+    var stagingBranch = 'JSHARMONY_CMS_STAGING_BRANCH_'+(new Date()).getTime();
+
+    async.waterfall([
+      //Create deployment_target and git paths if they does not exist
+      function(git_cb){ HelperFS.createFolderIfNotExists(deploymentTargetPath, git_cb); },
+      function(git_cb){ HelperFS.createFolderIfNotExists(gitRepoPath, git_cb); },
+      function(git_cb){ HelperFS.tryUnlink(path.join(gitRepoPath, '.git', 'config'), git_cb); },
+
+      //Initialize private key
+      function(git_cb){
+        fs.exists(privateKeyPath, function(exists){
+          if(exists) return git_cb();
+          funcs.generate_deployment_target_key(deployment.deployment_target_id, function(err){
+            return git_cb(err);
+          });
+        });
+      },
+
+      //Initialize git repo
+      function(git_cb){
+        funcs.gitExecVerbose(deployment_id, gitRepoPath, ['init','-q'], function(err, rslt){
+          return git_cb(err);
+        });
+      },
+
+      //Set git config
+      function(git_cb){
+        async.eachOfSeries(git_config, function(value, key, git_config_cb){
+          if(!key) return git_config_cb();
+          funcs.gitExecVerbose(deployment_id, gitRepoPath, ['config',key.toString(),(value||'').toString()], function(err, rslt){
+            return git_config_cb(err);
+          });
+        }, git_cb);
+      },
+
+      //Add remote
+      function(git_cb){ funcs.gitExec(gitRepoPath, ['remote','add','origin',urlparser.format(parsed_url)], function(err, rslt){ return git_cb(err); }); },
+
+      //Fetch
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['fetch'], function(err, rslt){ return git_cb(err); }); },
+
+      //Checkout staging branch
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['checkout','-b',stagingBranch], function(err, rslt){ return git_cb(err); }); },
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['commit','--allow-empty','-m','Staging commit'], function(err, rslt){ return git_cb(err); }); },
+
+      //Delete all local branches
+      function(git_cb){
+        funcs.gitExecVerbose(deployment_id, gitRepoPath, ['for-each-ref','--format','%(refname:short)','HEAD','refs/heads/'], function(err, rslt){
+          if(err) return git_cb(err);
+          localBranches = (rslt||'').split('\n');
+          async.eachSeries(localBranches, function(localBranch, branch_cb){
+            localBranch = localBranch.trim();
+            if(!localBranch) return branch_cb();
+            if(localBranch == stagingBranch) return branch_cb();
+            funcs.gitExecVerbose(deployment_id, gitRepoPath, ['branch','-D',localBranch], function(err, rslt){ return branch_cb(err); });
+          }, git_cb);
+        });
+      },
+
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['remote','prune','origin'], function(err, rslt){ return git_cb(err); }); },
+
+      //Check if the branch exists
+      function(git_cb){
+        funcs.gitExecVerbose(deployment_id, gitRepoPath, ['rev-parse','--quiet','--verify','origin/'+git_branch], function(err, rslt){
+          var remoteBranchFound = !!(rslt && !err);
+
+          //If branch exists
+          if(remoteBranchFound){
+            //Checkout target branch
+            funcs.gitExecVerbose(deployment_id, gitRepoPath, ['checkout','-f','-t','origin/'+git_branch], function(err, rslt){
+              if(err) return git_cb(err);
+              funcs.gitExecVerbose(deployment_id, gitRepoPath, ['pull'], function(err, rslt){ return git_cb(err); });
+            });
+          }
+          else {
+            //Create new empty branch if it does not exist
+            branchIsNew = true;
+            funcs.gitExecVerbose(deployment_id, gitRepoPath, ['checkout','-f','--orphan',git_branch], function(err, rslt){
+              if(err) return git_cb(err);
+              funcs.gitExecVerbose(deployment_id, gitRepoPath, ['commit','--allow-empty','-m','Initial commit'], function(err, rslt){
+                if(err) return git_cb(err);
+                return git_cb();
+              });
+            });
+          }
+        });
+      },
+
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['branch','-D',stagingBranch], function(err, rslt){ return git_cb(err); }); },
+
+      //Copy files to the new branch
+      function(git_cb){
+        exports.deploy_fs(deployment, publish_path, gitRepoPath, site_files, git_cb);
+      },
+
+      //Stage Changes
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['add','-A'], function(err, rslt){ return git_cb(err); }); },
+
+      //Commit
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['commit','--allow-empty','-m','Deployment '+deployment.deployment_tag], function(err, rslt){ return git_cb(err); }); },
+
+      //Push to remote
+      function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['push','--set-upstream','origin',git_branch], function(err, rslt){ return git_cb(err); }); },
+
     ], cb);
   }
 

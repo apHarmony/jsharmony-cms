@@ -382,18 +382,12 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.parseDeploymentUrl = function(url, deployment_target_params, baseUrl){
-    deployment_target_params = deployment_target_params || {};
-    var rslt = url || '';
-    for(var key in deployment_target_params){
-      if(key == deployment_target_params[key]) continue;
-      rslt = Helper.ReplaceAll(rslt, '%%%' + key + '%%%', deployment_target_params[key]);
-    }
-    if(rslt != url) return funcs.parseDeploymentUrl(rslt, deployment_target_params, baseUrl);
+    var rslt = funcs.replaceDeploymentTargetParams(deployment_target_params, url || '');
     try{
-      if(baseUrl) url = new urlparser.URL(url, baseUrl).toString();
+      if(baseUrl) rslt = new urlparser.URL(rslt, baseUrl).toString();
     }
     catch(ex){}
-    return url;
+    return rslt;
   }
 
   exports.localizePageURLs = function(page, baseurl, isRaw, branch_id, media_files){
@@ -936,27 +930,6 @@ module.exports = exports = function(module, funcs){
           if(page_template.remote_templates && page_template.remote_templates.editor) {
             url = page_template.remote_templates.editor;
           }
-          if(!url){
-            if(page_template.templates.editor){
-              //Return full page
-              if(Q.render){
-                var cmsBaseUrl = cms.getCmsBaseUrlFromReq(req);
-                var content = '';
-                try{
-                  content = funcs.generateEditorTemplate(page_template.templates.editor, { cmsBaseUrl: cmsBaseUrl });
-                }
-                catch(ex){
-                  res.end('Error loading template: '+ex.toString());
-                  return;
-                }
-                return res.end(content);
-              }
-              //Append render=1 to current URL
-              url = req.protocol + '://' + req.get('host') + req.originalUrl + '&render=1';
-              return res.end(JSON.stringify({ '_success': 1, editor: url }));
-            }
-            else return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
-          }
 
           var dtparams = {
             timestamp: (Date.now()).toString(),
@@ -979,40 +952,65 @@ module.exports = exports = function(module, funcs){
             page_id: (Q.page_id||'')
           });
 
-          dtparams = _.extend({}, cms.Config.deployment_target_params, dtparams);
+          funcs.parseDeploymentTargetParams('editor', req._DBContext, site_id, undefined, dtparams, function(err, deployment_target_params){
+            if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
+            dtparams = deployment_target_params;
 
-          url = funcs.parseDeploymentUrl(url, dtparams);
-
-          //Read URL and querystring
-          try{
-            var parsedUrl = new urlparser.URL(url);
-            dtparams._ = dtparams.timestamp;
-            if(Q.devMode) dtparams.page_template_location = page_template.location;
-            var changedUrl = false;
-            //Add any missing items to the querystring
-            _.each(['branch_id','page_id','page_key','page_template_id','_','page_template_location'], function(key){
-              if(parsedUrl.searchParams.has(key)) return;
-              if(dtparams[key]){
-                parsedUrl.searchParams.set(key, dtparams[key]);
-                changedUrl = true;
+            if(!url){
+              if(page_template.templates.editor){
+                //Return full page
+                if(Q.render){
+                  var cmsBaseUrl = cms.getCmsBaseUrlFromReq(req);
+                  var content = '';
+                  try{
+                    content = funcs.generateEditorTemplate(page_template.templates.editor, { cmsBaseUrl: cmsBaseUrl, deployment_target_params: dtparams });
+                  }
+                  catch(ex){
+                    res.end('Error loading template: '+ex.toString());
+                    return;
+                  }
+                  return res.end(content);
+                }
+                //Append render=1 to current URL
+                url = req.protocol + '://' + req.get('host') + req.originalUrl + '&render=1';
+                return res.end(JSON.stringify({ '_success': 1, editor: url }));
               }
-            });
-            if(Q.devMode){
-              _.each(['branch_id','page_id','page_key'], function(key){
-                if(parsedUrl.searchParams.has(key)){
-                  parsedUrl.searchParams.delete(key);
+              else return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
+            }
+
+            url = funcs.parseDeploymentUrl(url, dtparams);
+
+            //Read URL and querystring
+            try{
+              var parsedUrl = new urlparser.URL(url);
+              dtparams._ = dtparams.timestamp;
+              if(Q.devMode) dtparams.page_template_location = page_template.location;
+              var changedUrl = false;
+              //Add any missing items to the querystring
+              _.each(['branch_id','page_id','page_key','page_template_id','_','page_template_location'], function(key){
+                if(parsedUrl.searchParams.has(key)) return;
+                if(dtparams[key]){
+                  parsedUrl.searchParams.set(key, dtparams[key]);
                   changedUrl = true;
                 }
               });
+              if(Q.devMode){
+                _.each(['branch_id','page_id','page_key'], function(key){
+                  if(parsedUrl.searchParams.has(key)){
+                    parsedUrl.searchParams.delete(key);
+                    changedUrl = true;
+                  }
+                });
+              }
+              if(changedUrl) url = parsedUrl.toString();
             }
-            if(changedUrl) url = parsedUrl.toString();
-          }
-          catch(ex){
-            jsh.Log.error(ex);
-            Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
-          }
+            catch(ex){
+              jsh.Log.error(ex);
+              Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
+            }
 
-          res.end(JSON.stringify({ '_success': 1, editor: url }));
+            res.end(JSON.stringify({ '_success': 1, editor: url }));
+          });          
         });
       });
       return;

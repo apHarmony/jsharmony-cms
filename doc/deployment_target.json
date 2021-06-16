@@ -20,15 +20,25 @@
   s3://path/to/bucket/
   //Set access key and secret key in s3_config parameter below
   
+  //GIT HTTPS
+  git_https://username:password@host/path
+  //* Note - set the git branch in the git_config.branch parameter
+
+  //GIT SSH
+  git_ssh://username@host/path
+  //* Note - git_ssh will use the Public / Private Key defined in the Deployment Target as its identity
+  //* Note - set the git branch in the git_config.branch parameter
 
 
 //Deployment Target Publish Config
 {
   "page_subfolder": "",   //Relative path from publish folder to pages subfolder, ex. 'pages/'
   "media_subfolder": "",  //Relative path from publish folder to media subfolder, ex. 'media/'
-  "content_url": "/",     //Absolute path from website root to CMS publish folder, ex. '/content/'
+  "content_url": "/",     //Path from website root to CMS content publish folder, ex. '/content/'
+  "page_url": "/",        //Path from website root to CMS pages, ex. '/'
+                          //* page_url will differ from content_url when pages are routed / redirected to appear to be in a different folder
   "published_url": null,  //(Optional) URL of published site, ex. https://example.com
-  "exec_pre_deployment": null,      //Execute shell command after populating publish folder, before deployment
+  "exec_pre_deployment": null,     //Execute shell command after populating publish folder, before deployment
                                    //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
   "exec_post_deployment": null,    //Execute shell command after deployment
                                    //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
@@ -64,5 +74,29 @@
       //More parameters can be found at:
       //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property
     }
+  },
+
+  //Git deployment settings
+  "git_config": {
+    "branch": "master",  //Branch where the files will be uploaded
+    //Any additional git config options can be used
+    "user.email": "cms@localhost",
+    "user.name": "CMS",
+  },
+}
+
+//Deployment Target Custom Params
+//  Params can be used in Remote Template URLs as: %%%key%%%
+//  Params can be used in Page Template HTML and Component Template HTML as: %%%key%%%
+{
+  "key": "value",   //Basic Param
+
+  "key": {          //Separate values for editor and publish templates
+    "editor": "value_1",
+    "publish": "value_2"
+  },
+
+  "key": {          //Value for publish, and blank (no value) for editor
+    "publish": "value_2"
   },
 }

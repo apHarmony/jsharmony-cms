@@ -1,0 +1,23 @@
+{
+  "Site_Deployment_Target_Key": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[800,400],
+    "table":"{schema}.deployment_target",
+    "actions":"BIUD",
+    "roles": { "WEBMASTER": "BIUD" },
+    "caption":["Deployment Target Key","Deployment Target Keys"],
+    "title":"Public / Private Key",
+    "fields": [
+      {"name":"deployment_target_id","actions":"B","key":1,"control":"hidden"},
+      {"name":"site_id","actions":"B","foreignkey":1,"control":"hidden"},
+      {"control":"html","value":"<div style='margin:28px 0 10px 0;'><h3>Public Key</h3>Download the public key to share with remote servers to verify your identity</div>"},
+      {"name":"download_public_key_pem","value":"Download Public Key (PEM)","control":"button","onclick":"js:_this.downloadPublicKey('pem');","unbound":true,"controlstyle":"width:220px;"},
+      {"name":"download_public_key_openssh","value":"Download Public Key (OpenSSH)","control":"button","onclick":"js:_this.downloadPublicKey('openssh');","unbound":true,"controlstyle":"width:220px;","nl":false},
+      {"control":"html","value":"<div style='margin:35px 0 10px 0;'><h3>Private Key</h3>The private key is auto-generated, and defines your identity.  Do not share the private key with others, only share the public key.  Only download the private key if you need a backup.</div>"},
+      {"name":"download_private_key","value":"Download Private Key (PEM)","control":"button","onclick":"js:_this.downloadPrivateKey();","unbound":true,"controlstyle":"width:220px;","nl":false},
+      {"control":"html","value":"<div style='margin:15px 0 10px 0;'>You can override the private key by uploading a new private key in PEM format.  The public key will be auto-generated based on the private key.</div>"},
+      {"name":"upload_private_key","value":"Upload New Private Key (PEM)","control":"button","onclick":"js:_this.uploadPrivateKey();","unbound":true,"controlstyle":"width:220px;","nl":false}
+    ]
+  }
+}

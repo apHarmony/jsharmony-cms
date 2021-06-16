@@ -73,6 +73,7 @@ jsHarmonyCMS.prototype.Application = function(){
   jsh.AddModule(this);
   jsh.Sites[factory.mainSiteID] = _.extend(this.getFactoryConfig(),jsh.Sites[factory.mainSiteID]);
   jsh.Config.valid_extensions.push('.js');
+  jsh.Config.valid_extensions.push('.pem');
   jsh.Config.debug_params.ignore_globals.push('d3');
   jsh.Config.onConfigLoaded.push(function(cb){
     _this.LoadTemplates();
@@ -97,6 +98,7 @@ jsHarmonyCMS.prototype.Init = function(cb){
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'sitemap'));
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'publish_log'));
   HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'site'));
+  HelperFS.createFolderIfNotExistsSync(path.join(jsh.Config.datadir,'deployment_target'));
 
   if(!_.isEmpty(_this.Config.media_thumbnails)){
     jsh.Extensions.logDependency('image', 'jsHarmonyCMS > Media Thumbnails');
@@ -764,6 +766,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deployment_change_log/:deployment_id': _this.funcs.deployment_change_log,
         '/_funcs/deployment/download/:deployment_id': _this.funcs.req_deployment_download,
         '/_funcs/deployment/trigger': _this.funcs.req_deployment_trigger,
+        '/_funcs/deployment_target/:deployment_target_id/public_key': _this.funcs.req_deployment_target_public_key,
+        '/_funcs/deployment_target/:deployment_target_id/private_key': _this.funcs.req_deployment_target_private_key,
         '/_funcs/diff': _this.funcs.diff,
         '/_funcs/validate': _this.funcs.validate_req,
         '/_funcs/conflicts': _this.funcs.req_conflicts,

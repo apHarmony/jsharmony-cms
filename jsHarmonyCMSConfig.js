@@ -27,7 +27,8 @@ function jsHarmonyCMSConfig(){
 
   this.git = {
     enabled: false,
-    bin_path: ''
+    bin_path: '',
+    ssh_command: 'ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o IdentityFile="%%%IDENTITYFILE%%%"',
   };
 
   this.sftp = {
@@ -72,7 +73,9 @@ function jsHarmonyCMSConfig(){
   this.deployment_target_publish_config = { //Default deployment target publish config
     page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
     media_subfolder: '',  //Relative path from publish folder to media subfolder, ex. 'media/'
-    content_url: '/',     //Absolute path from website root to CMS publish folder, ex. '/content/'
+    content_url: '/',     //Path from website root to CMS content publish folder, ex. '/content/'
+    page_url: '/',        //Path from website root to CMS pages folder, ex. '/'
+                          //* page_url will differ from content_url when pages are routed / redirected to appear to be in a different folder
     published_url: null,  //(Optional) URL of published site, ex. https://example.com
     exec_pre_deployment: undefined,  //Execute shell command after populating publish folder, before deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
