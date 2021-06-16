@@ -20,6 +20,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var ssh2 = require('ssh2');
 var path = require('path');
 var fs = require('fs');
+var Helper = require('jsharmony/Helper');
 
 /** @typedef {import('./_funcs.deploy.ftp').FtpDriver} FtpDriver */
 /** @typedef {import('./_funcs.deploy.ftp').DirectoryItem} DirectoryItem */
@@ -57,13 +58,26 @@ module.exports = exports = function(module, funcs) {
 
         connection.on('error', err => reject(err));
 
-        connection.connect({
-          host: connectionParams.host,
-          password: connectionParams.password,
-          port: connectionParams.port,
-          username: connectionParams.username,
-          privateKey: connectionParams.private_key,
-        });
+        var private_key_content = undefined;
+
+        Helper.execif(connectionParams.private_key,
+          function(f){
+            fs.readFile(connectionParams.private_key, 'utf8', function(err, data){
+              if(err) return reject(err);
+              private_key_content = data.toString();
+              return f();
+            });
+          },
+          function(){
+            connection.connect({
+              host: connectionParams.host,
+              password: connectionParams.password,
+              port: connectionParams.port,
+              username: connectionParams.username,
+              privateKey: private_key_content,
+            });
+          }
+        );
       });
     }
 

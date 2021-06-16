@@ -96,17 +96,6 @@ function jsHarmonyCMSConfig(){
 
       ignore_certificate_errors: false,  //For FTPS, ignore self-signed certificate errors
       compression: false,                //For FTP / FTPS, whether to enable compression
-  
-      //SFTP private key, if applicable
-      private_key: "",
-      //private_key option 1 - string.  Line breaks should be added as \n
-      //  "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
-      //private_key option 2 - array of lines.  Lines will be automatically joined by line breaks (\n)
-      //  [
-      //    "-----BEGIN CERTIFICATE-----",
-      //    "...",
-      //    "-----END CERTIFICATE-----"
-      //  ]
     },
 
     //Amazon S3 deployment settings

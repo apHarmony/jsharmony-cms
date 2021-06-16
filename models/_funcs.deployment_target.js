@@ -47,6 +47,24 @@ module.exports = exports = function(module, funcs){
     );
   }
 
+  exports.mergeDeploymentTargetParams = function(deploymentType, orig){
+    if(!orig) orig = {};
+    for(var i=2;i<arguments.length;i++){
+      var item = arguments[i];
+      if(!item) continue;
+      for(var key in item){
+        var val = item[key];
+        if(val && (val.editor || val.publish)){
+          if((deploymentType=='editor') && ('editor' in val)) orig[key] = val.editor;
+          else if((deploymentType=='publish') && ('publish' in val)) orig[key] = val.publish;
+          else if(!(key in orig)) orig[key] = '';
+        }
+        else orig[key] = val;
+      }
+    }
+    return orig;
+  }
+
   exports.getCurrentDeploymentTargetParams = function(dbcontext, deploymentType, default_params, override_params, callback){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -96,23 +114,6 @@ module.exports = exports = function(module, funcs){
     }
     if(orig_content != content) return funcs.replaceDeploymentTargetParams(deployment_target_params, content);
     return content;
-  }
-
-  exports.mergeDeploymentTargetParams = function(deploymentType, orig){
-    if(!orig) orig = {};
-    for(var i=2;i<arguments.length;i++){
-      var item = arguments[i];
-      if(!item) continue;
-      for(var key in item){
-        var val = item[key];
-        if(val && (val.editor || val.publish)){
-          if((deploymentType=='editor') && ('editor' in val)) orig[key] = val.editor;
-          else if((deploymentType=='publish') && ('publish' in val)) orig[key] = val.publish;
-        }
-        else orig[key] = val;
-      }
-    }
-    return orig;
   }
  
   exports.req_deployment_target_public_key = function (req, res, next) {

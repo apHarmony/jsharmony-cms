@@ -25,8 +25,8 @@ var _ = require('lodash');
  * @typedef {object} ConnectionParams
  * @property {string} host
  * @property {string} password
+ * @property {string | undefined} [private_key]
  * @property {number | undefined} [port]
- * @property {string | undefined} [private_key_path]
  * @property {string} username
  */
 
@@ -96,10 +96,6 @@ module.exports = exports = function(module, funcs) {
           connectionParams.compression = !!ftpConfig.compression;
           ftpDriver = new funcs.ftpDriver(connectionParams);
         } else if (type === 'sftp') {
-          if(ftpConfig.private_key){
-            connectionParams.private_key = ftpConfig.private_key;
-            if(_.isArray(connectionParams.private_key)) connectionParams.private_key = connectionParams.private_key.join("\n");
-          }
           ftpDriver = new funcs.sftpDriver(connectionParams);
         } else {
           throw new Error(`unknown protocol ${type}. Expected "ftp", "sftp".`);

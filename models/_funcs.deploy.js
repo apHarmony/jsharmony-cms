@@ -542,6 +542,13 @@ module.exports = exports = function(module, funcs){
           });
         },
 
+        //Initialize private key if not configured
+        function (deploy_cb){
+          funcs.generate_deployment_target_key(deployment.deployment_target_id, function(err){
+            return deploy_cb(err);
+          });
+        },
+
         //Execute deployment
         function(deploy_cb){
           var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
@@ -2085,7 +2092,7 @@ module.exports = exports = function(module, funcs){
 
   exports.deploy_ftp = function(deployment, publish_path, deploy_path, site_files, cb) {
 
-
+    var jsh = module.jsh;
     var local_manifest = undefined;
     var deployment_id = deployment.deployment_id;
     var file_cache_info_path = 'config/.cms_files';
@@ -2103,7 +2110,7 @@ module.exports = exports = function(module, funcs){
     //Initialize FTP Client
     try {
       var parsed_url = urlparser.parse(deploy_path);
-      var protocol = parsed_url.protocol.replace(/:$/, '') // Trim the trailing ":", if exists
+      var protocol = parsed_url.protocol.replace(/:$/, '').toLowerCase(); // Trim the trailing ":", if exists
       remote_path = parsed_url.path;
 
       // remote_host is used for reporting. remote_hostname is used for connecting.
@@ -2115,6 +2122,7 @@ module.exports = exports = function(module, funcs){
       // split at _FIRST_ ":" (username cannot contain ":", but password may)
       var username = undefined;
       var password = undefined;
+      var private_key = undefined;
       var split_index = parsed_url.auth.indexOf(':');
       if(split_index >= 0){
         username = parsed_url.auth.slice(0, split_index);
@@ -2122,6 +2130,9 @@ module.exports = exports = function(module, funcs){
       }
       else {
         username = parsed_url.auth;
+        if(protocol=='sftp'){
+          private_key = path.join(jsh.Config.datadir, 'deployment_target', deployment.deployment_target_id.toString(), 'key.private.pem');
+        }
       }
       
       /** @type {import('./_funcs.deploy.ftp').ConnectionParams} */
@@ -2129,6 +2140,7 @@ module.exports = exports = function(module, funcs){
         host: remote_hostname,
         username,
         password,
+        private_key,
         port,
       }
 
