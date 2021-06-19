@@ -67,6 +67,7 @@ module.exports = exports = function(module, funcs){
     validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
 
     var deployment_target_params = '';
+    var deployment_target_publish_config = {};
 
     if (verb == 'get'){
 
@@ -111,10 +112,18 @@ module.exports = exports = function(module, funcs){
 
         //Get deployment_target_params
         function(cb){
-          var sql = "select deployment_target_params from {schema}.v_my_site where site_id=@site_id";
-          appsrv.ExecScalar(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
+          var sql = "select v_my_site.deployment_target_params, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
+          appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]) deployment_target_params = rslt[0];
+            if(rslt && rslt[0]){
+              deployment_target_params = rslt[0].deployment_target_params || '';
+              try{
+                deployment_target_publish_config = funcs.parseDeploymentTargetPublishConfig(site_id, rslt[0].deployment_target_publish_config, 'editor');
+              }
+              catch(ex){
+                return cb(ex);
+              }
+            }
             return cb();
           });
         },
@@ -122,7 +131,6 @@ module.exports = exports = function(module, funcs){
         //Generate components
         function(cb){
           dtparams = {
-            timestamp: (Date.now()).toString(),
             branch_id: branch_id,
           };
           try{
@@ -132,7 +140,7 @@ module.exports = exports = function(module, funcs){
             return cb('Publish Target has invalid deployment_target_params: '+JSON.stringify(deployment.deployment_target_params));
           }
 
-          funcs.parseDeploymentTargetParams('editor', req._DBContext, site_id, undefined, dtparams, function(err, deployment_target_params){
+          funcs.parseDeploymentTargetParams('editor', req._DBContext, site_id, undefined, dtparams, deployment_target_publish_config, function(err, deployment_target_params){
             if(err) return cb(err);
             dtparams = deployment_target_params;
 
@@ -255,7 +263,7 @@ module.exports = exports = function(module, funcs){
         Helper.GenError(req, res, -4, 'Invalid Parameters'); return;
       }
 
-      funcs.getCurrentDeploymentTargetParams(req._DBContext, 'editor', {}, {}, function(err, deployment_target_params){
+      funcs.getDeploymentTargetParams('current', req._DBContext, 'editor', {}, {}, {}, function(err, deployment_target_params){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
 
         try{

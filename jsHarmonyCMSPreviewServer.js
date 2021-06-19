@@ -243,7 +243,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
           if(_.includes(['.html','.htm'], ext)){
             fs.readFile(syspath, 'utf8', function(err, data){
               if(err) return next();
-              cms.funcs.getCurrentDeploymentTargetParams(req._DBContext, 'editor', {}, {}, function(err, deployment_target_params){
+              cms.funcs.getDeploymentTargetParams('current', req._DBContext, 'editor', {}, {}, {}, function(err, deployment_target_params){
                 if(err) return res.end('Error loading site deployment target parameters');
 
                 var fcontent = '';

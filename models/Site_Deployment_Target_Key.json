@@ -4,8 +4,8 @@
     "onecolumn":true,
     "popup":[800,400],
     "table":"{schema}.deployment_target",
-    "actions":"BIUD",
-    "roles": { "WEBMASTER": "BIUD" },
+    "actions":"BU",
+    "roles": { "WEBMASTER": "BU" },
     "caption":["Deployment Target Key","Deployment Target Keys"],
     "title":"Public / Private Key",
     "fields": [

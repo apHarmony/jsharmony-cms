@@ -8,13 +8,19 @@
     "roles": { "WEBMASTER": "BIUD" },
     "caption":["Deployment Target","Deployment Targets"],
     "title":"",
+    "oninit": "_this.oninit();",
+    "onload": "_this.onload();",
     "fields": [
       {"name":"site_id","actions":"BIU","foreignkey":1,"control":"hidden"},
       {"name":"deployment_target_name","caption":"Name"},
       {"name":"deployment_target_sts","caption":"Status","validate":["Required"],"default":"ACTIVE"},
-      {"name":"deployment_target_publish_path","caption":"Path","control":"textbox","controlstyle":"width: 40em"},
-      {"name":"deployment_target_publish_config","caption":"Publish Config","control":"textarea","controlstyle":"width: 40em; height: 10em","validate":["IsJSON"],"format":"json"},
-      {"name":"deployment_target_params","caption":"Custom Params","control":"textarea","controlstyle":"width: 40em; height: 10em","validate":["IsJSON"],"format":"json"},
+      {"control":"html","value":"<div class='deployment_target_publish_configurator'></div>"},
+      {"name":"deployment_target_publish_path","caption":"Path","control":"hidden","actions":"BIU","ongetvalue":"return _this.deployment_target_publish_path_getvalue(val,field,xmodel);"},
+      {"name":"deployment_target_publish_config","caption":"Publish Config","control":"hidden","actions":"BIU","ongetvalue":"return _this.deployment_target_publish_config_getvalue(val,field,xmodel);",
+        "validate":[
+          "IsJSON",
+          { "function":"js: return jsh.App[modelid].configurator_validate().join('\\n');", "selector": ".deployment_target_publish_configurator","runat":["client"] }
+        ]},
     ]
   }
 }

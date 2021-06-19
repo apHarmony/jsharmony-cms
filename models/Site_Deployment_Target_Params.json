@@ -1,0 +1,16 @@
+{
+  "Site_Deployment_Target_Params": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[800,400],
+    "table":"{schema}.deployment_target",
+    "actions":"BU",
+    "roles": { "WEBMASTER": "BU" },
+    "caption":["Deployment Target Custom Param","Deployment Target Custom Params"],
+    "title": "Custom Params",
+    "fields": [
+      {"name":"deployment_target_id","actions":"B","key":1,"control":"hidden"},
+      {"name":"deployment_target_params","caption":"","caption_ext":"Config","control":"textarea","controlstyle":"width: 100%; height: 375px; box-sizing:border-box;","validate":["IsJSON"],"format":"json"},
+    ]
+  }
+}

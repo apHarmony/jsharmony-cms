@@ -112,7 +112,6 @@ module.exports = exports = function(module, funcs){
     if(is_folder) page_fpath += publish_params.site_default_page_filename;
     if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
     if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
-    if(publish_params) page_fpath = publish_params.page_subfolder + page_fpath;
     return page_fpath;
   }
 
@@ -497,6 +496,8 @@ module.exports = exports = function(module, funcs){
       var publish_tgt = '';
       var deployment = (rslt ? rslt[0] : null);
       var deployment_target_params = {};
+      var publish_path = '';
+      var publish_params = {};
       if(!deployment) { var err = 'Invalid Deployment ID'; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
 
       async.waterfall([
@@ -522,11 +523,28 @@ module.exports = exports = function(module, funcs){
           return deploy_cb();
         },
 
+        //Get deployment target publish params
+        function(deploy_cb){
+          publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
+          publish_path = path.normalize(publish_path);
+
+          //Deployment Target Publish Params
+          try{
+            publish_params = funcs.parseDeploymentTargetPublishConfig(deployment.site_id, deployment.deployment_target_publish_config, 'publish');
+          }
+          catch(ex){
+            return deploy_cb(ex);
+          }
+          publish_params.site_default_page_filename = deployment.site_default_page_filename;
+          publish_params.publish_path = publish_path;
+          publish_params.deployment_id = deployment_id;
+          publish_params.deployment_target_id = deployment.deployment_target_id;
+          return deploy_cb();
+        },
+
         //Get deployment target params
         function(deploy_cb){
-          deployment_target_params = {
-            timestamp: (Date.now()).toString(),
-          };
+          deployment_target_params = {};
 
           try{
             if(deployment.deployment_target_params) deployment_target_params = _.extend(deployment_target_params, JSON.parse(deployment.deployment_target_params));
@@ -535,7 +553,7 @@ module.exports = exports = function(module, funcs){
             return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
           }
 
-          funcs.parseDeploymentTargetParams('publish', 'deployment', deployment.site_id, undefined, deployment_target_params, function(err, parsed_deployment_target_params){
+          funcs.parseDeploymentTargetParams('publish', 'deployment', deployment.site_id, undefined, deployment_target_params, publish_params, function(err, parsed_deployment_target_params){
             if(err) return deploy_cb(err);
             deployment_target_params = parsed_deployment_target_params;
             return deploy_cb();
@@ -551,25 +569,7 @@ module.exports = exports = function(module, funcs){
 
         //Execute deployment
         function(deploy_cb){
-          var publish_path = path.isAbsolute(publish_tgt) ? publish_tgt : path.join(jsh.Config.datadir,publish_tgt);
-          publish_path = path.normalize(publish_path);
-
-          //Deployment Target Publish Params
-          var publish_params = JSON.parse(JSON.stringify(deployment_target_params));
-          try{
-            if(deployment.deployment_target_publish_config) publish_params = _.extend(publish_params, JSON.parse(deployment.deployment_target_publish_config));
-          }
-          catch(ex){
-            return deploy_cb('Publish Target has invalid deployment_target_publish_config: '+deployment.deployment_target_publish_config);
-          }
-          for(var key in cms.Config.deployment_target_publish_config){
-            if((key == 's3_config')||(key == 'ftp_config')) publish_params[key] = _.extend({}, cms.Config.deployment_target_publish_config[key], publish_params[key]);
-            else if(!(key in publish_params)) publish_params[key] = cms.Config.deployment_target_publish_config[key];
-          }
-          publish_params.site_default_page_filename = deployment.site_default_page_filename;
-          publish_params.publish_path = publish_path;
-          publish_params.deployment_id = deployment_id;
-          publish_params.deployment_target_id = deployment.deployment_target_id;
+          publish_params = _.extend(JSON.parse(JSON.stringify(deployment_target_params)), publish_params);
           deployment.publish_params = publish_params;
 
           //Branch Data
@@ -587,6 +587,7 @@ module.exports = exports = function(module, funcs){
             page_template_html: {},
             page_redirects: {},
             page_base_paths: {},
+            page_files: {},
 
             component_templates: null,
             component_template_html: {},
@@ -1210,9 +1211,10 @@ module.exports = exports = function(module, funcs){
         try{
           var relativePath = funcs.getPageRelativePath(page, publish_params);
           if(!relativePath) return cb(new Error('Page has no path: '+page.page_key));
-          page_cmspath = publish_params.page_url + relativePath;
-          page_urlpath = publish_params.content_url + relativePath;
-          page_basepath = '/' + relativePath;
+          page_urlpath = publish_params.url_prefix + publish_params.page_subfolder + relativePath;
+          page_cmspath = page_urlpath;
+          if(!Helper.isNullUndefined(publish_params.url_prefix_page_override)){ page_cmspath = publish_params.url_prefix_page_override + relativePath; }
+          page_basepath = '/' + publish_params.page_subfolder + relativePath;
         }
         catch(ex){ }
 
@@ -1221,7 +1223,9 @@ module.exports = exports = function(module, funcs){
           branchData.page_redirects[page_cmspath] = page_urlpath;
           branchData.page_base_paths[page.page_key] = page_basepath;
           if(path.basename(page_cmspath)==publish_params.site_default_page_filename){
-            var page_dir = ((page_cmspath==publish_params.page_url+publish_params.site_default_page_filename) ? publish_params.page_url : path.dirname(page_cmspath)+'/');
+            var base_page_dir = publish_params.url_prefix + publish_params.page_subfolder;
+            if(!Helper.isNullUndefined(publish_params.url_prefix_page_override)){ base_page_dir = publish_params.url_prefix_page_override; }
+            var page_dir = ((page_cmspath==base_page_dir+publish_params.site_default_page_filename) ? base_page_dir : path.dirname(page_cmspath)+'/');
             if(!page_dir) page_dir = './';
             branchData.page_redirects[page_dir] = page_urlpath;
             branchData.page_keys[page.page_key] = page_dir;
@@ -1260,7 +1264,8 @@ module.exports = exports = function(module, funcs){
         try{
           var relativePath = funcs.getMediaRelativePath(media, publish_params);
           if(!relativePath) return cb(new Error('Media has no path: '+media.media_key));
-          media_urlpath = publish_params.content_url + relativePath;
+          media_urlpath = publish_params.url_prefix + relativePath;
+          if(!Helper.isNullUndefined(publish_params.url_prefix_media_override)){ media_urlpath = publish_params.url_prefix_media_override + relativePath; }
         }
         catch(ex){ }
 
@@ -1306,7 +1311,7 @@ module.exports = exports = function(module, funcs){
 
           var page_fpath = '';
           try{
-            page_fpath = funcs.getPageRelativePath(page, publish_params);
+            page_fpath = publish_params.page_subfolder + funcs.getPageRelativePath(page, publish_params);
           }
           catch(ex){
             return cb(ex);
@@ -1317,7 +1322,9 @@ module.exports = exports = function(module, funcs){
           var includePage = function(path){
             if(!(path in pageIncludes)) pageIncludes[path] = [];
             pageIncludes[path].push(page_fpath);
-            return '<!--#jsharmony_cms_include('+JSON.stringify(path)+')-->';
+            //Returns _funcs/page/PAGE_ID/#@JSHCMS URL
+            var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify(path)+')-->';
+            return includeCode;
           };
 
           //Merge content with template
@@ -1413,8 +1420,8 @@ module.exports = exports = function(module, funcs){
               page_content = funcs.replaceBranchURLs(page_content, replaceBranchURLsParams);
               pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), _.extend(replaceBranchURLsParams, {
                 getPageURL: function(page_key){
-                  if(!(page_key in branchData.page_base_paths)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
-                  return branchData.page_base_paths[page_key];
+                  if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
+                  return branchData.page_keys[page_key];
                 },
               })));
             }
@@ -1443,6 +1450,7 @@ module.exports = exports = function(module, funcs){
           branchData.site_files[page_fpath] = {
             md5: crypto.createHash('md5').update(page_content).digest("hex")
           };
+          branchData.page_files[page.page_key] = page_fpath;
           page_fpath = path.join(publish_params.publish_path, page_fpath);
 
           //Create folders for path
@@ -1528,15 +1536,25 @@ module.exports = exports = function(module, funcs){
   exports.deploy_pageIncludes = function(jsh, branchData, publish_params, cb){
     //Create ordered list of pages that need to be updated
     var pagesWithIncludes = {};
+    var includeFileMapping = {};
     for(var key in branchData.pageIncludes){
+      var includePageKey = null;
+      for(var page_key in branchData.page_keys){
+        if(branchData.page_keys[page_key]==key){ includePageKey = page_key; break; }
+      }
+      var includeFilePath = includePageKey ? branchData.page_files[includePageKey] : null;
+
+      //If file is not found, throw an error
+      if(!includeFilePath){
+        return cb(new Error('Include file "'+key+'" is missing.  The file was referenced from "'+branchData.pageIncludes[key].join('","')+'"'));
+      }
+
+      includeFileMapping[includeFilePath] = key;
+
       for(var i=0;i<branchData.pageIncludes[key].length;i++){
         var pagefname = branchData.pageIncludes[key][i];
         if(!pagesWithIncludes[pagefname]) pagesWithIncludes[pagefname] = [];
-        pagesWithIncludes[pagefname].push(key.substr(1));
-      }
-      //If file is not defined, throw an error
-      if(!(key.substr(1) in branchData.site_files)){
-        return cb(new Error('Include file "'+key.substr(1)+'" is missing.  The file was referenced from "'+branchData.pageIncludes[key].join('","')+'"'));
+        pagesWithIncludes[pagefname].push(includeFilePath);
       }
     }
 
@@ -1578,7 +1596,7 @@ module.exports = exports = function(module, funcs){
               var includepage_fpath = path.join(publish_params.publish_path, includepage_path);
               fs.readFile(includepage_fpath, null, function(err, includepage_content){
                 if(err) return cache_page_cb(err);
-                includeFileContent[includepage_path] = includepage_content;
+                includeFileContent[includepage_path] = includepage_content.toString();
                 return cache_page_cb();
               });
             }, rewrite_cb);
@@ -1596,10 +1614,14 @@ module.exports = exports = function(module, funcs){
                 if(err) return rewrite_page_cb(err);
     
                 if(page_content.indexOf('<!--#jsharmony_cms_include(') >= 0){
-                  _.each(pagesToInclude, function(key){
-                    var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify('/'+key)+')-->';
+                  for(var i=0; i<pagesToInclude.length;i++){
+                    var key = pagesToInclude[i];
+                    var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify(includeFileMapping[key])+')-->';
+                    if(page_content.indexOf(includeCode) < 0){
+                      return rewrite_page_cb(new Error('Include script for "'+key+'" not found on page "'+page_fpath+'"'));
+                    }
                     page_content = Helper.ReplaceAll(page_content, includeCode, includeFileContent[key]);
-                  });
+                  }
                   //Recompute MD5
                   branchData.site_files[page_path] = {
                     md5: crypto.createHash('md5').update(page_content).digest("hex")
@@ -1976,10 +1998,9 @@ module.exports = exports = function(module, funcs){
     }
 
     var git_config = JSON.parse(JSON.stringify(deployment.publish_params.git_config || {}));
-    git_config = _.extend(git_base_config, git_config);
+    git_config_options = _.extend(git_base_config, git_config.options||{});
 
     var git_branch = git_config.branch || 'master';
-    delete git_config.branch;
 
     var branchIsNew = false;
 
@@ -2010,7 +2031,7 @@ module.exports = exports = function(module, funcs){
 
       //Set git config
       function(git_cb){
-        async.eachOfSeries(git_config, function(value, key, git_config_cb){
+        async.eachOfSeries(git_config_options, function(value, key, git_config_cb){
           if(!key) return git_config_cb();
           funcs.gitExecVerbose(deployment_id, gitRepoPath, ['config',key.toString(),(value||'').toString()], function(err, rslt){
             return git_config_cb(err);
@@ -2458,21 +2479,19 @@ module.exports = exports = function(module, funcs){
 
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-    var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from {schema}.code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date,(select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = deployment.deployment_target_id) deployment_target_publish_config from {schema}.deployment where deployment_id=@deployment_id";
+    var sql = "select deployment_target.site_id, deployment_id, deployment_sts, branch_id, (select code_txt from {schema}.code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date, deployment_target_publish_config from {schema}.deployment left outer join {schema}.deployment_target on deployment_target.deployment_target_id = deployment.deployment_target_id where deployment_id=@deployment_id";
     appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment ID');
       var deployment = rslt[0];
-      var deployment_target_publish_config = deployment.deployment_target_publish_config;
+      var deployment_target_publish_config = {};
       try{
-        if(deployment_target_publish_config) deployment_target_publish_config = JSON.parse(deployment_target_publish_config);
-        else deployment_target_publish_config = {};
+        deployment_target_publish_config = cms.funcs.parseDeploymentTargetPublishConfig(deployment.site_id, deployment.deployment_target_publish_config, 'publish');
       }
       catch(ex){
-        jsh.Log.error('Publish Target has invalid deployment_target_publish_config: '+JSON.stringify(deployment_target_publish_config));
+        jsh.Log.error(ex);
         return;
       }
-      deployment_target_publish_config = _.extend({}, cms.Config.deployment_target_publish_config, deployment_target_publish_config);
       delete deployment.deployment_target_publish_config;
       deployment.published_url = deployment_target_publish_config.published_url;
 

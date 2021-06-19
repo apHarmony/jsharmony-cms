@@ -768,6 +768,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deployment/trigger': _this.funcs.req_deployment_trigger,
         '/_funcs/deployment_target/:deployment_target_id/public_key': _this.funcs.req_deployment_target_public_key,
         '/_funcs/deployment_target/:deployment_target_id/private_key': _this.funcs.req_deployment_target_private_key,
+        '/_funcs/deployment_target/parse_url': _this.funcs.req_parse_deployment_target_url,
+        '/_funcs/deployment_target/defaults': _this.funcs.req_deployment_target_defaults,
         '/_funcs/diff': _this.funcs.diff,
         '/_funcs/validate': _this.funcs.validate_req,
         '/_funcs/conflicts': _this.funcs.req_conflicts,

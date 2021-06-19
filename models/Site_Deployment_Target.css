@@ -1,0 +1,57 @@
+.xctrl_deployment_target_publish_configurator {
+  padding-top:10px;
+}
+.xctrl_deployment_target_publish_configurator label {
+  display:block;
+  white-space:nowrap;
+  padding-top:3px;
+  padding-right:10px;
+}
+.xctrl_deployment_target_publish_configurator td.align_top {
+  vertical-align:top;
+}
+.xctrl_deployment_target_publish_configurator td.align_top label {
+  padding-top:7px;
+}
+.xctrl_deployment_target_publish_configurator textarea,
+.xctrl_deployment_target_publish_configurator input {
+  width:100%;
+  box-sizing:border-box;
+}
+.xctrl_deployment_target_publish_configurator input.checkbox {
+  width:auto;
+  margin-top:0;
+  margin-right:4px;
+  position:relative;
+  top:2px;
+}
+.xctrl_deployment_target_publish_configurator textarea {
+  height:10em;
+}
+.deployment_type_container {
+  display:none;
+}
+.deployment_config_header {
+  font-weight:bold;
+  padding:3px 10px;
+  font-size:1.1em;
+  margin:15px -3px 7px -3px;
+  background-color:#f6f6f6;
+  border:1px solid #ccc;
+}
+.deployment_config_caption {
+  font-size:0.9em;
+  padding-bottom:5px;
+}
+.xctrl_deployment_target_publish_configurator_wizard .edit_button {
+  display:block;
+  margin-left:6px;
+  width:14px;
+  height:14px;
+  background-image:url('/images/icon_edit.png');
+  background-size:14px;
+  background-repeat:no-repeat;
+}
+.xctrl_deployment_target_publish_configurator_wizard .edit_button.editing {
+  background-image:url('/images/icon_delete.png');
+}

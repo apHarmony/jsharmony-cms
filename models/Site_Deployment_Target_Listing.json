@@ -10,9 +10,8 @@
     "rowclass": "<%=xejs.iif(datarow['site_editor']==datarow['deployment_target_id'],'site_editor_current')%>",
     "fields": [
       {"name":"site_id","actions":"BI","foreignkey":1,"control":"hidden"},
-      {"name":"deployment_target_name","caption":"Name","control":"label","link":"update:Site_Deployment_Target_Tabs"},
+      {"name":"deployment_target_name","caption":"Name","control":"label","link":"update:Site_Deployment_Target_Tabs","controlstyle":"min-width:300px;"},
       {"name":"deployment_target_sts","caption":"Status","control":"label"},
-      {"name":"deployment_target_publish_path","caption":"Path","control":"label"},
       {"name":"site_editor","control":"hidden","actions":"B","sqlselect": "select site_editor from {schema}.v_my_site where v_my_site.site_id = deployment_target.site_id"},
       {"control":"html","caption":"Edit","link":"update:Site_Deployment_Target_Tabs","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }}
     ]

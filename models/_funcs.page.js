@@ -894,7 +894,7 @@ module.exports = exports = function(module, funcs){
 
       if(Q.devMode){
         if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select {schema}.my_current_site_id() current_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
+        sql = "select {schema}.my_current_site_id() current_site_id,v_my_site.site_id,v_my_site.deployment_target_params,deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { site_id: Q.site_id };
       }
@@ -906,9 +906,16 @@ module.exports = exports = function(module, funcs){
           return;
         }
 
-        var deployment_target_params = rslt[0].deployment_target_params || '';
         var site_id = rslt[0].site_id || null;
         var current_site_id = rslt[0].current_site_id || null;
+        var deployment_target_params = rslt[0].deployment_target_params || '';
+        var deployment_target_publish_config = {};
+        try{
+          deployment_target_publish_config = funcs.parseDeploymentTargetPublishConfig(site_id, rslt[0].deployment_target_publish_config, 'publish');
+        }
+        catch(ex){
+          return Helper.GenError(req, res, -99999, ex.toString());
+        }
 
         if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
 
@@ -932,7 +939,6 @@ module.exports = exports = function(module, funcs){
           }
 
           var dtparams = {
-            timestamp: (Date.now()).toString(),
             branch_id: (Q.branch_id||'')
           };
 
@@ -952,7 +958,7 @@ module.exports = exports = function(module, funcs){
             page_id: (Q.page_id||'')
           });
 
-          funcs.parseDeploymentTargetParams('editor', req._DBContext, site_id, undefined, dtparams, function(err, deployment_target_params){
+          funcs.parseDeploymentTargetParams('editor', req._DBContext, site_id, undefined, dtparams, deployment_target_publish_config, function(err, deployment_target_params){
             if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
             dtparams = deployment_target_params;
 

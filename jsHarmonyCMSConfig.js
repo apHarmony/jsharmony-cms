@@ -71,11 +71,11 @@ function jsHarmonyCMSConfig(){
   };
 
   this.deployment_target_publish_config = { //Default deployment target publish config
-    page_subfolder: '',   //Relative path from publish folder to pages subfolder, ex. 'pages/'
-    media_subfolder: '',  //Relative path from publish folder to media subfolder, ex. 'media/'
-    content_url: '/',     //Path from website root to CMS content publish folder, ex. '/content/'
-    page_url: '/',        //Path from website root to CMS pages folder, ex. '/'
-                          //* page_url will differ from content_url when pages are routed / redirected to appear to be in a different folder
+    page_subfolder: '',   //Stores CMS page files in a subfolder of the publish directory, ex. 'pages/'
+    media_subfolder: '',  //Stores CMS media files in a subfolder of the publish directory, ex. 'media/'
+    url_prefix: null,                 //Prefix for URLs on publish, ex. '/content/'.  Can be used in page templates as %%%url_prefix%%%.  Defaults to "/" if null
+    url_prefix_page_override: null,  //Override URL prefix for CMS page URLs, ex. '/pages/'
+    url_prefix_media_override: null, //Override URL prefix for CMS media URLs, ex. '/media/'
     published_url: null,  //(Optional) URL of published site, ex. https://example.com
     exec_pre_deployment: undefined,  //Execute shell command after populating publish folder, before deployment
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }

@@ -1,0 +1,109 @@
+<script class="xctrl_deployment_target_publish_configurator_template" type="text/x-ejs-template">
+  <div class="xtabcontrol xctrl_deployment_target_publish_configurator">
+    <div class="xtabs">
+      <a href="#" class="xtab" for="xctrl_deployment_target_publish_configurator_wizard">Publish Settings</a>
+      <a href="#" class="xtab" for="xctrl_deployment_target_publish_configurator_json">JSON</a>
+    </div>
+    <div class="xpanel">
+      <div class="xtabbody xctrl_deployment_target_publish_configurator_wizard">
+        <table cellspacing=0 cellpadding=0 border=0 width="100%">
+          <tbody class="deployment_type_selection">
+            <tr><td><label>Deployment Type:</label></td><td width="100%"><select class="deployment_type"></select></td><td></td></tr>
+          </tbody>
+          <tbody class="deployment_type_container deployment_type_container_s3">
+            <tr><td><label>S3 Bucket:</label></td><td width="100%"><input type="text" data-path-elem="bucket" /></td></tr>
+            <tr><td><label>Access Key:</label></td><td width="100%"><input type="text" data-elem="s3_config.accessKeyId" /></td></tr>
+            <tr><td><label>Secret Key:</label></td><td width="100%"><input type="text" data-elem="s3_config.secretAccessKey" /></td></tr>
+            <tr><td class="align_top"><label>File Upload Settings:</label></td><td width="100%"><textarea data-elem="s3_config.upload_params" /></td></tr>
+          </tbody>
+          <tbody class="deployment_type_container deployment_type_container_ftp">
+            <tr><td><label>Hostname:</label></td><td width="100%"><input type="text" data-path-elem="hostname" class="parse_url" /></td></tr>
+            <tr><td><label>Port:</label></td><td width="100%"><input type="text" data-path-elem="port" placeholder="21" /></td></tr>
+            <tr><td><label>Username:</label></td><td width="100%"><input type="text" data-path-elem="username" /></td></tr>
+            <tr><td><label>Password:</label></td><td width="100%"><input type="text" data-path-elem="password" /></td></tr>
+            <tr><td><label>Path:</label></td><td width="100%"><input type="text" data-path-elem="path" /></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.overwrite_all" /> Overwrite all files on each upload</label></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.delete_excess_files" /> Delete excess files</label></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.compression" /> Enable compression</label></td></tr>
+          </tbody>
+          <tbody class="deployment_type_container deployment_type_container_ftps">
+            <tr><td><label>Hostname:</label></td><td width="100%"><input type="text" data-path-elem="hostname" class="parse_url" /></td></tr>
+            <tr><td><label>Port:</label></td><td width="100%"><input type="text" data-path-elem="port" placeholder="21" /></td></tr>
+            <tr><td><label>Username:</label></td><td width="100%"><input type="text" data-path-elem="username" /></td></tr>
+            <tr><td><label>Password:</label></td><td width="100%"><input type="text" data-path-elem="password" /></td></tr>
+            <tr><td><label>Path:</label></td><td width="100%"><input type="text" data-path-elem="path" /></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.overwrite_all" /> Overwrite all files on each upload</label></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.delete_excess_files" /> Delete excess files</label></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.compression" /> Enable compression</label></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.ignore_certificate_errors" /> Ignore certificate errors</label></td></tr>
+          </tbody>
+          <tbody class="deployment_type_container deployment_type_container_git_https">
+              <tr><td><label>Git URL:</label></td><td width="100%"><input type="text" data-path-elem="url" class="parse_url" /></td></tr>
+              <tr><td><label>Username:</label></td><td width="100%"><input type="text" data-path-elem="username" /></td></tr>
+              <tr><td><label>Password:</label></td><td width="100%"><input type="text" data-path-elem="password" /></td></tr>
+              <tr><td><label>Branch:</label></td><td width="100%"><input type="text" data-elem="git_config.branch" placeholder="master" /></td></tr>
+              <tr><td class="align_top"><label>Git Config:</label></td><td width="100%"><textarea data-elem="git_config.options" /></td></tr>
+            </tbody>
+          <tbody class="deployment_type_container deployment_type_container_git_ssh">
+            <tr><td><label>Git URL:</label></td><td width="100%"><input type="text" data-path-elem="url" class="parse_url" /></td></tr>
+            <tr><td><label>Username:</label></td><td width="100%"><input type="text" data-path-elem="username" /></td></tr>
+            <tr><td><label>Public Key:</label></td><td width="100%"><% if(jsh.is_insert){ %>Save to download Public Key<% } else { %><a href="#" class="downloadPublicKey">Download</a><% } %></td></tr>
+            <tr><td><label>Branch:</label></td><td width="100%"><input type="text" data-elem="git_config.branch" placeholder="master" /></td></tr>
+            <tr><td class="align_top"><label>Git Config:</label></td><td width="100%"><textarea data-elem="git_config.options" /></td></tr>
+          </tbody>
+          <tbody class="deployment_type_container deployment_type_container_file">
+              <tr><td><label>Path:</label></td><td width="100%"><input type="text" data-path-elem="path" class="parse_url" /></td></tr>
+          </tbody>  
+          <tbody class="deployment_type_container deployment_type_container_sftp">
+            <tr><td><label>Hostname:</label></td><td width="100%"><input type="text" data-path-elem="hostname" class="parse_url" /></td></tr>
+            <tr><td><label>Port:</label></td><td width="100%"><input type="text" data-path-elem="port" placeholder="22" /></td></tr>
+            <tr><td><label>Username:</label></td><td width="100%"><input type="text" data-path-elem="username" /></td></tr>
+            <tr><td><label>Password:</label></td><td width="100%"><input type="text" data-path-elem="password" /></td></tr>
+            <tr><td></td><td><div class="deployment_config_caption">* Leave password blank for public key authentication</div></td></tr>
+            <tr><td><label>Path:</label></td><td width="100%"><input type="text" data-path-elem="path" /></td></tr>
+            <tr><td><label>Public Key:</label></td><td width="100%"><% if(jsh.is_insert){ %>Save to download Public Key<% } else { %><a href="#" class="downloadPublicKey">Download</a><% } %></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.overwrite_all" /> Overwrite all files on each upload</label></td></tr>
+            <tr><td></td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ftp_config.delete_excess_files" /> Delete excess files</label></td></tr>
+          </tbody>
+          <tbody class="deployment_url_options">
+              <tr><td colspan="3"><div class="deployment_config_header">URLs</div></td></tr>
+
+              <tr><td><label>URL Prefix:</label></td><td width="100%"><input type="text" data-elem="url_prefix" /></td><td><a href="#" class="edit_button" data-target="url_prefix"></a></td></tr>
+              <tr><td></td><td><div class="deployment_config_caption">
+                * Path to CMS publish folder - used in prefix for links and as %%%url_prefix%%% template variable<br/>
+                * Ex "/" or "/subfolder/" or "https://example.com/"
+              </div></td></tr>
+
+              <tr><td><label>Published Site URL:</label></td><td width="100%"><input type="text" data-elem="published_url" /></td></tr>
+              <tr><td></td><td><div class="deployment_config_caption">* Full URL to published site for preview</div></td></tr>
+          </tbody>
+          <tbody class="deployment_advanced_options">
+              <tr><td colspan="3"><div class="deployment_config_header">Advanced Options</div></td></tr>
+
+              <tr><td><label>Override Page URL Prefix:</label></td><td width="100%"><input type="text" data-elem="url_prefix_page_override" /></td><td><a href="#" class="edit_button" data-target="url_prefix_page_override"></a></td></tr>
+              <tr><td></td><td><div class="deployment_config_caption">
+                * Override URL Prefix for Pages (for custom routing)
+              </div></td></tr>
+
+              <tr><td><label>Override Media URL Prefix:</label></td><td width="100%"><input type="text" data-elem="url_prefix_media_override" /></td><td><a href="#" class="edit_button" data-target="url_prefix_media_override"></a></td></tr>
+              <tr><td></td><td><div class="deployment_config_caption">
+                * Override URL Prefix for Media (for custom routing)
+              </div></td></tr>
+
+              <tr><td><label>Page Files Subfolder:</label></td><td width="100%"><input type="text" data-elem="page_subfolder" /></td></tr>
+              <tr><td></td><td><div class="deployment_config_caption">* Store CMS page files in a subfolder of the publish directory, ex "pages/"</div></td></tr>
+              <tr><td><label>Media Files Subfolder:</label></td><td width="100%"><input type="text" data-elem="media_subfolder" /></td></tr>
+              <tr><td></td><td><div class="deployment_config_caption">* Store CMS media files in a subfolder of the publish directory, ex "media/"</div></td></tr>
+              <tr><td class="align_top"><label>Extended Config:</label></td><td width="100%"><textarea data-elem="ext_config" /></td></tr>
+            </tbody>
+        </table>
+      </div>
+      <div class="xtabbody xctrl_deployment_target_publish_configurator_json">
+        <table cellspacing=0 cellpadding=0 border=0 width="100%">
+          <tr><td><label>Publish Path:</label></td><td width="100%"><input type="text" class="raw_deployment_target_publish_path" /></td></tr>
+          <tr><td class="align_top"><label>Publish Config:</label></td><td><textarea class="raw_deployment_target_publish_config"></textarea></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</script>

@@ -7,21 +7,19 @@ var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
 
 if(routetype == 'd'){
-  jsh.AppSrv.ExecRow(req._DBContext, "select (select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = v_my_site.deployment_target_id) deployment_target_publish_config from {schema}.v_my_site where site_id={schema}.my_current_site_id()", [], { }, function (err, rslt) {
+  jsh.AppSrv.ExecRow(req._DBContext, "select v_my_site.site_id, (select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = v_my_site.deployment_target_id) deployment_target_publish_config from {schema}.v_my_site where site_id={schema}.my_current_site_id()", [], { }, function (err, rslt) {
     if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, "An unexpected error has occurred"); return; }
 
     var root_txt = '(Root)';
     if (rslt && rslt.length && rslt[0]) {
-      var deployment_target_publish_config = rslt[0].deployment_target_publish_config;
+      var deployment_target_publish_config = {};
       try{
-        if(deployment_target_publish_config) deployment_target_publish_config = JSON.parse(deployment_target_publish_config);
-        else deployment_target_publish_config = {};
+        deployment_target_publish_config = cms.funcs.parseDeploymentTargetPublishConfig(rslt[0].site_id, rslt[0].deployment_target_publish_config, 'editor');
       }
       catch(ex){
-        jsh.Log.error('Publish Target has invalid deployment_target_publish_config: '+JSON.stringify(deployment_target_publish_config));
+        jsh.Log.error(ex);
         return;
       }
-      deployment_target_publish_config = _.extend({}, cms.Config.deployment_target_publish_config, deployment_target_publish_config);
       if(deployment_target_publish_config.page_subfolder){
         root_txt += '/' + deployment_target_publish_config.page_subfolder;
         if(root_txt[root_txt.length-1] == '/') root_txt = root_txt.substr(0, root_txt.length - 1);
