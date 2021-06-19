@@ -1,0 +1,20 @@
+{
+  "Site_Deployment_Target_TemplateVariables": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[800,400],
+    "table":"{schema}.deployment_target",
+    "actions":"BU",
+    "roles": { "WEBMASTER": "BU" },
+    "caption":["Deployment Target Template Variable","Deployment Target Template Variables"],
+    "title": "Template Variables",
+    "css":[
+      ".<%=model.class%>_overview ul { margin-top:0; margin-bottom:0; }",
+      ".<%=model.class%>_overview li { padding-top:5px; }",
+    ],
+    "fields": [
+      {"name":"deployment_target_id","actions":"B","key":1,"control":"hidden"},
+      {"name":"deployment_target_template_variables","caption":"","caption_ext":"Config","control":"textarea","controlstyle":"width: 100%; height: 175px; box-sizing:border-box;","validate":["IsJSON"],"format":"json"},
+    ]
+  }
+}

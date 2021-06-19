@@ -473,7 +473,7 @@ module.exports = exports = function(module, funcs){
         funcs.merge_check_permissions(context, sql_params, cb);
       },
 
-      //Get deployment target params
+      //Get template variables
       function(cb){
         var sql = "select site_editor deployment_target_id,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@dst_branch_id";
         appsrv.ExecRow(context, sql, sql_ptypes, sql_params, function (err, rslt) {

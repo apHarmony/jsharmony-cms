@@ -250,7 +250,7 @@
       "v_my_deployment_target": {
         "columns": [
           "deployment_target_id",
-          "deployment_target_params"
+          "deployment_target_template_variables"
         ],
         "join_type": "left",
         "join_columns": {

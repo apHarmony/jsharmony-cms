@@ -7,7 +7,7 @@
     "materialIcons": false                         //Whether to enable Material Icons in the Editor
                                                    //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
   },
-  "deployment_target_params": {  //Default values for Deployment Target Custom Params
+  "template_variables": {  //Default values for Template Variables
     "key": "value"
   }
 }

@@ -1561,11 +1561,11 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.generateEditorTemplate = function(content, options){
-    options = _.extend({ cmsBaseUrl: '/', deployment_target_params: {} }, options);
+    options = _.extend({ cmsBaseUrl: '/', template_variables: {} }, options);
 
     if(!content) return '';
 
-    content = funcs.replaceDeploymentTargetParams(options.deployment_target_params, content);
+    content = funcs.replaceTemplateVariables(options.template_variables, content);
 
     var htdoc = new funcs.HTMLDoc(content);
     var htparts = htdoc.getParts();
@@ -1611,13 +1611,13 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.generateDeploymentTemplate = function(template, content, options){
-    options = _.extend({ deployment_target_params: {} }, options);
+    options = _.extend({ template_variables: {} }, options);
     if(!content) return '';
     if(!template) template = {};
     if(!template.components) template.components = {};
     if(!template.default_content) template.default_content = {};
 
-    content = funcs.replaceDeploymentTargetParams(options.deployment_target_params, content);
+    content = funcs.replaceTemplateVariables(options.template_variables, content);
 
     var htdoc = new funcs.HTMLDoc(content, { extractEJS: 'parseOnly' });
     
@@ -1636,7 +1636,7 @@ module.exports = exports = function(module, funcs){
         exec: function(node){
           var componentTemplate = htdoc.getNodeContent(node, 'inline component template');
           htdoc.removeNode(node, 'Inline Component Template');
-          var components = funcs.compileInlineComponents([componentTemplate], options.deployment_target_params);
+          var components = funcs.compileInlineComponents([componentTemplate], options.template_variables);
           for(var componentId in components){
             if(componentId in template.components) throw new Error('Page template contains duplicate inline component "' + componentId + '"');
             template.components[componentId] = components[componentId];
@@ -1786,10 +1786,10 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.generateComponentTemplate = function(component, content, options){
-    options = _.extend({ deployment_target_params: {} }, options);
+    options = _.extend({ template_variables: {} }, options);
     var default_editor_content = {};
     if(!content) return '';
-    content = funcs.replaceDeploymentTargetParams(options.deployment_target_params, content);
+    content = funcs.replaceTemplateVariables(options.template_variables, content);
     content = '<% locals.renderTemplate = locals.renderTemplate.bind(null, locals); function getEJSOutput(f){ var pos = __output.length; f(); return __output.substr(pos); } %>' + content;
 
     var htdoc = new funcs.HTMLDoc(content, { extractEJS: true, noDuplicateAttributes: true });

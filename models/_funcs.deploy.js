@@ -165,7 +165,7 @@ module.exports = exports = function(module, funcs){
                   //Check publish template
                   function(template_process_cb){
                     if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
-                      templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.deployment_target_params);
+                      templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.template_variables);
                       //If path is remote
                       if(templateConfig.remote_templates.publish.indexOf('//') >= 0) return template_process_cb();
                       //If path is local
@@ -190,7 +190,7 @@ module.exports = exports = function(module, funcs){
 
                     if(!(template.remote_templates && template.remote_templates.publish)){
                       try{
-                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { deployment_target_params: branchData.deployment_target_params });
+                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables });
                       }
                       catch(ex){
                         return template_publish_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
@@ -213,7 +213,7 @@ module.exports = exports = function(module, funcs){
                   Helper.execif(exportItem.remote_template,
                     //Initialize remote template
                     function(done){
-                      exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.deployment_target_params);
+                      exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.template_variables);
                       //If path is remote
                       if(exportItem.remote_template.indexOf('//') >= 0) return done();
                       //If path is local
@@ -261,11 +261,11 @@ module.exports = exports = function(module, funcs){
           var url = '';
           var isPublishTemplate = false;
           if(template.remote_templates.publish){
-            url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.deployment_target_params);
+            url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.template_variables);
             isPublishTemplate = true;
           }
           else if(template.remote_templates.editor){
-            url = funcs.parseDeploymentUrl(template.remote_templates.editor, branchData.deployment_target_params);
+            url = funcs.parseDeploymentUrl(template.remote_templates.editor, branchData.template_variables);
           }
           else return template_action_cb();
 
@@ -303,7 +303,7 @@ module.exports = exports = function(module, funcs){
               return template_action_cb(ex);
             }
             if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
-              templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.deployment_target_params, url);
+              templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.template_variables, url);
             }
             _.merge(template, templateConfig);
             
@@ -312,7 +312,7 @@ module.exports = exports = function(module, funcs){
             }
             else if(!template.remote_templates.publish){
               try{
-                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { deployment_target_params: branchData.deployment_target_params });
+                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables });
               }
               catch(ex){
                 return template_action_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
@@ -324,7 +324,7 @@ module.exports = exports = function(module, funcs){
             _.each((options.templateType == 'COMPONENT') && template.export, function(exportItem, exportIndex){
               if(!(template_name in options.exportTemplates)) options.exportTemplates[template_name] = {};
               if(exportItem.remote_template){
-                exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.deployment_target_params, url);
+                exportItem.remote_template = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.template_variables, url);
               }
               if(!exportItem.remote_template){
                 options.exportTemplates[template_name][exportIndex] = templateContent;
@@ -353,7 +353,7 @@ module.exports = exports = function(module, funcs){
               if(template_name in template_html) return template_action_cb(); //Already downloaded
               if(!template.remote_templates || !template.remote_templates.publish) return template_action_cb();
 
-              var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.deployment_target_params);
+              var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.template_variables);
               funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
               wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
                 if(err) return template_action_cb(err);
@@ -390,7 +390,7 @@ module.exports = exports = function(module, funcs){
                 if(exportIndex in options.exportTemplates[template_name]) return template_action_cb(); //Already downloaded
                 if(!exportItem.remote_template) return template_action_cb();
 
-                var url = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.deployment_target_params);
+                var url = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.template_variables);
                 funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
                 wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
                   if(err) return template_action_cb(err);
@@ -482,7 +482,7 @@ module.exports = exports = function(module, funcs){
 
     //Update deployment to running status
     var sql = "select \
-        deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_params, deployment_target_publish_config, deployment_target_sts, deployment_git_revision, \
+        deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_template_variables, deployment_target_publish_config, deployment_target_sts, deployment_git_revision, \
         d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
         site.site_default_page_filename site_default_page_filename \
@@ -495,7 +495,7 @@ module.exports = exports = function(module, funcs){
       if (err != null) { err.sql = sql; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
       var publish_tgt = '';
       var deployment = (rslt ? rslt[0] : null);
-      var deployment_target_params = {};
+      var template_variables = {};
       var publish_path = '';
       var publish_params = {};
       if(!deployment) { var err = 'Invalid Deployment ID'; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
@@ -518,7 +518,7 @@ module.exports = exports = function(module, funcs){
           publish_tgt = deployment.publish_tgt;
           deployment_id = rslt[0].deployment_id;
           funcs.deploy_log_info(deployment_id, 'Deploying: '+(deployment.deployment_tag||''));
-          if(!publish_tgt){ return deploy_cb('Publish Target parameter is not defined'); }
+          if(!publish_tgt){ return deploy_cb('Publish Target system parameter is not defined'); }
           if(deployment.deployment_target_sts.toUpperCase() != 'ACTIVE'){ return deploy_cb('Deployment Target is not ACTIVE'); }
           return deploy_cb();
         },
@@ -542,20 +542,20 @@ module.exports = exports = function(module, funcs){
           return deploy_cb();
         },
 
-        //Get deployment target params
+        //Get template variables
         function(deploy_cb){
-          deployment_target_params = {};
+          template_variables = {};
 
           try{
-            if(deployment.deployment_target_params) deployment_target_params = _.extend(deployment_target_params, JSON.parse(deployment.deployment_target_params));
+            if(deployment.deployment_target_template_variables) template_variables = _.extend(template_variables, JSON.parse(deployment.deployment_target_template_variables));
           }
           catch(ex){
-            return deploy_cb('Publish Target has invalid deployment_target_params: '+deployment.deployment_target_params);
+            return deploy_cb('Publish Target has invalid deployment_target_template_variables: '+deployment.deployment_target_template_variables);
           }
 
-          funcs.parseDeploymentTargetParams('publish', 'deployment', deployment.site_id, undefined, deployment_target_params, publish_params, function(err, parsed_deployment_target_params){
+          funcs.parseTemplateVariables('publish', 'deployment', deployment.site_id, undefined, template_variables, publish_params, function(err, parsed_template_variables){
             if(err) return deploy_cb(err);
-            deployment_target_params = parsed_deployment_target_params;
+            template_variables = parsed_template_variables;
             return deploy_cb();
           });
         },
@@ -569,13 +569,13 @@ module.exports = exports = function(module, funcs){
 
         //Execute deployment
         function(deploy_cb){
-          publish_params = _.extend(JSON.parse(JSON.stringify(deployment_target_params)), publish_params);
+          publish_params = _.extend(JSON.parse(JSON.stringify(template_variables)), publish_params);
           deployment.publish_params = publish_params;
 
           //Branch Data
           var branchData = {
             publish_params: publish_params,
-            deployment_target_params: deployment_target_params,
+            template_variables: template_variables,
             deployment: deployment,
             site_id: deployment.site_id,
             site_config: {},
@@ -2683,7 +2683,7 @@ module.exports = exports = function(module, funcs){
           if(!deployment) return cb(new Error('Invalid Deployment ID'));
 
           publish_path = deployment.publish_tgt;
-          if(!publish_path){ return cb('Publish Target parameter is not defined'); }
+          if(!publish_path){ return cb('Publish Target system parameter is not defined'); }
           publish_path = path.isAbsolute(publish_path) ? publish_path : path.join(jsh.Config.datadir,publish_path);
           publish_path = path.normalize(publish_path);
 

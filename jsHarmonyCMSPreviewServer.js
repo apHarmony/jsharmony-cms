@@ -243,12 +243,12 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
           if(_.includes(['.html','.htm'], ext)){
             fs.readFile(syspath, 'utf8', function(err, data){
               if(err) return next();
-              cms.funcs.getDeploymentTargetParams('current', req._DBContext, 'editor', {}, {}, {}, function(err, deployment_target_params){
-                if(err) return res.end('Error loading site deployment target parameters');
+              cms.funcs.getTemplateVariables('current', req._DBContext, 'editor', {}, {}, {}, function(err, template_variables){
+                if(err) return res.end('Error loading template variables');
 
                 var fcontent = '';
                 try{
-                  fcontent = cms.funcs.generateEditorTemplate(data, { cmsBaseUrl: req.baseurl, deployment_target_params: deployment_target_params });
+                  fcontent = cms.funcs.generateEditorTemplate(data, { cmsBaseUrl: req.baseurl, template_variables: template_variables });
                 }
                 catch(ex){
                   res.end('Error loading template: '+ex.toString());

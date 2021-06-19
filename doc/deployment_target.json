@@ -75,9 +75,9 @@
   },
 }
 
-//Deployment Target Custom Params
-//  Params can be used in Remote Template URLs as: %%%key%%%
-//  Params can be used in Page Template HTML and Component Template HTML as: %%%key%%%
+//Template Variables
+//  Template Variables can be used in Page Template HTML and Component Template HTML as: %%%key%%%
+//  Template Variables can also be used in Remote Template URLs as: %%%key%%%
 {
   "key": "value",   //Basic Param
 

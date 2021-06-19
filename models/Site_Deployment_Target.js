@@ -67,6 +67,7 @@ jsh.App[modelid] = new (function(){
 
     jcontainer.find('.parse_url').on('blur', function(e){
       var jthis = $(this);
+      if(!jthis.is(':visible')) return;
       _this.updateUrl(jthis.val().trim());
     });
 
@@ -132,6 +133,8 @@ jsh.App[modelid] = new (function(){
         jDeploymentType.find('[data-elem="s3_config.accessKeyId"]').val(s3_config.accessKeyId||'');
         jDeploymentType.find('[data-elem="s3_config.secretAccessKey"]').val(s3_config.secretAccessKey||'');
         jDeploymentType.find('[data-elem="s3_config.upload_params"]').val(_.isEmpty(s3_config.upload_params)?'{\n}':JSON.stringify(s3_config.upload_params,null,2));
+        _.each(['accessKeyId','secretAccessKey','upload_params'], function(key){ delete s3_config[key]; });
+        if(_.isEmpty(s3_config)) delete parsed_config.s3_config;
       })(); }
       else if(protocol=='file'){ (function(){
       })(); }
@@ -139,11 +142,15 @@ jsh.App[modelid] = new (function(){
         var git_config = parsed_config.git_config||{};
         jDeploymentType.find('[data-elem="git_config.branch"]').val(git_config.branch||'');
         jDeploymentType.find('[data-elem="git_config.options"]').val(_.isEmpty(git_config.options)?'{\n}':JSON.stringify(git_config.options,null,2));
+        _.each(['branch','options'], function(key){ delete git_config[key]; });
+        if(_.isEmpty(git_config)) delete parsed_config.git_config;
       })(); }
       else if(protocol=='git_ssh'){ (function(){
         var git_config = parsed_config.git_config||{};
         jDeploymentType.find('[data-elem="git_config.branch"]').val(git_config.branch||'');
         jDeploymentType.find('[data-elem="git_config.options"]').val(_.isEmpty(git_config.options)?'{\n}':JSON.stringify(git_config.options,null,2));
+        _.each(['branch','options'], function(key){ delete git_config[key]; });
+        if(_.isEmpty(git_config)) delete parsed_config.git_config;
       })(); }
       else if((protocol=='ftp')||(protocol=='ftps')||(protocol=='sftp')){ (function(){
         var ftp_config = parsed_config.ftp_config||{};
@@ -151,6 +158,8 @@ jsh.App[modelid] = new (function(){
         jDeploymentType.find('[data-elem="ftp_config.delete_excess_files"]').prop('checked',!!ftp_config.delete_excess_files);
         if((protocol=='ftp')||(protocol=='ftps')) jDeploymentType.find('[data-elem="ftp_config.compression"]').prop('checked',!!ftp_config.compression);
         if(protocol=='ftps') jDeploymentType.find('[data-elem="ftp_config.ignore_certificate_errors"]').prop('checked',!!ftp_config.ignore_certificate_errors);
+        _.each(['overwrite_all','delete_excess_files','compression','ignore_certificate_errors'], function(key){ delete ftp_config[key]; });
+        if(_.isEmpty(ftp_config)) delete parsed_config.ftp_config;
       })(); }
     }
     jcontainer.find('[data-elem="url_prefix"]').val(parsed_config.url_prefix);
@@ -172,9 +181,7 @@ jsh.App[modelid] = new (function(){
     });
     
     var ext_config = JSON.parse(JSON.stringify(parsed_config));
-    _.each([
-      'git_config','ftp_config','s3_config',
-      'url_prefix','published_url','url_prefix_page_override','url_prefix_media_override','page_subfolder','media_subfolder'], function(key){ delete ext_config[key]; });
+    _.each(['url_prefix','published_url','url_prefix_page_override','url_prefix_media_override','page_subfolder','media_subfolder'], function(key){ delete ext_config[key]; });
     jcontainer.find('[data-elem="ext_config"]').val(_.isEmpty(ext_config)?'{\n}':JSON.stringify(ext_config,null,2));
   }
 
@@ -413,6 +420,11 @@ jsh.App[modelid] = new (function(){
       }
       for(var key in ext_config){
         if(!(key in generated_config)) generated_config[key] = ext_config[key];
+        else if(_.includes(['s3_config','git_config','ftp_config'], key) && _.isObject(ext_config[key]) && _.isObject(generated_config[key])){
+          for(var subkey in ext_config[key]){
+            if(!(subkey in generated_config[key])) generated_config[key][subkey] = ext_config[key][subkey];
+          }
+        }
       }
     }
     if(_this.configurator_validate().length){

@@ -28,7 +28,7 @@ var urlparser = require('url');
 module.exports = exports = function(module, funcs){
   var exports = {};
 
-  exports.parseDeploymentTargetParams = function(deploymentType, dbcontext, site_id, site_config, deployment_target_params, deployment_target_publish_config, callback){
+  exports.parseTemplateVariables = function(deploymentType, dbcontext, site_id, site_config, template_variables, deployment_target_publish_config, callback){
     var cms = module;
 
     if(!deploymentType || !_.includes(['editor','publish'], deploymentType)) return callback(new Error('Invalid deployment type'));
@@ -45,14 +45,14 @@ module.exports = exports = function(module, funcs){
           timestamp: (Date.now()).toString(),
           url_prefix: deployment_target_publish_config.url_prefix
         };
-        deployment_target_params = funcs.mergeDeploymentTargetParams(deploymentType, defaultParams, cms.Config.deployment_target_params, site_config.deployment_target_params, deployment_target_params);
+        template_variables = funcs.mergeTemplateVariables(deploymentType, defaultParams, cms.Config.template_variables, site_config.template_variables, template_variables);
 
-        return callback(null, deployment_target_params);
+        return callback(null, template_variables);
       }
     );
   }
 
-  exports.mergeDeploymentTargetParams = function(deploymentType, orig){
+  exports.mergeTemplateVariables = function(deploymentType, orig){
     if(!orig) orig = {};
     for(var i=2;i<arguments.length;i++){
       var item = arguments[i];
@@ -70,7 +70,7 @@ module.exports = exports = function(module, funcs){
     return orig;
   }
 
-  exports.getDeploymentTargetParams = function(target_site_id, dbcontext, deploymentType, default_params, override_params, options, callback){
+  exports.getTemplateVariables = function(target_site_id, dbcontext, deploymentType, default_variables, override_variables, options, callback){
     options = _.extend({ }, options);
 
     var jsh = module.jsh;
@@ -82,7 +82,7 @@ module.exports = exports = function(module, funcs){
     var sql_params = {};
 
     if(target_site_id=='current')
-      sql = "select v_my_site.site_id, v_my_site.deployment_target_params, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id={schema}.my_current_site_id()";
+      sql = "select v_my_site.site_id, v_my_site.deployment_target_template_variables, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id={schema}.my_current_site_id()";
     else {
       sql = "select site_id from {schema}.deployment_target where site_id=@site_id";
       sql_ptypes = [dbtypes.BigInt];
@@ -93,18 +93,18 @@ module.exports = exports = function(module, funcs){
       if (err) return callback(err);
       if (!rslt || !rslt.length || !rslt[0]) return callback(new Error('Site not checked out'));
 
-      var deployment_target_params_str = rslt[0].deployment_target_params || '';
+      var deployment_target_template_variables_str = rslt[0].deployment_target_template_variables || '';
       var deployment_target_publish_config_str = rslt[0].deployment_target_publish_config || '';
       var site_id = rslt[0].site_id || null;
 
-      var deployment_target_params = _.extend({}, default_params);
+      var template_variables = _.extend({}, default_variables);
 
-      if(deployment_target_params_str){
+      if(deployment_target_template_variables_str){
         try{
-          deployment_target_params = _.extend(deployment_target_params, JSON.parse(deployment_target_params_str));
+          template_variables = _.extend(template_variables, JSON.parse(deployment_target_template_variables_str));
         }
         catch(ex){
-          return callback(new Error('Error reading deployment_target_params.  Please make sure the JSON syntax is correct'));
+          return callback(new Error('Error reading deployment_target_template_variables.  Please make sure the JSON syntax is correct'));
         }
       }
 
@@ -116,12 +116,11 @@ module.exports = exports = function(module, funcs){
         return callback(new Error('Error reading deployment_target_publish_config: '+ex.toString()));
       }
 
-      deployment_target_params = _.extend(deployment_target_params, override_params);
+      template_variables = _.extend(template_variables, override_variables);
 
-      funcs.parseDeploymentTargetParams(deploymentType, dbcontext, site_id, undefined, deployment_target_params, deployment_target_publish_config, function(err, parsed_deployment_target_params){
+      funcs.parseTemplateVariables(deploymentType, dbcontext, site_id, undefined, template_variables, deployment_target_publish_config, function(err, parsed_template_variables){
         if(err) return callback(err);
-        deployment_target_params = parsed_deployment_target_params;
-        return callback(null, parsed_deployment_target_params, deployment_target_publish_config);
+        return callback(null, parsed_template_variables, deployment_target_publish_config);
       });
     });
   }
@@ -145,18 +144,18 @@ module.exports = exports = function(module, funcs){
     return rslt;
   }
 
-  exports.replaceDeploymentTargetParams = function(deployment_target_params, content){
+  exports.replaceTemplateVariables = function(template_variables, content){
     if(!content) return content;
-    if(!deployment_target_params) return content;
+    if(!template_variables) return content;
     content = content.toString();
     var orig_content = content;
-    for(var key in deployment_target_params){
-      if(key == deployment_target_params[key]) continue;
-      var val = deployment_target_params[key];
+    for(var key in template_variables){
+      if(key == template_variables[key]) continue;
+      var val = template_variables[key];
       if(Helper.isNullUndefined(val)) val = '';
       content = Helper.ReplaceAll(content, '%%%' + key + '%%%', val);
     }
-    if(orig_content != content) return funcs.replaceDeploymentTargetParams(deployment_target_params, content);
+    if(orig_content != content) return funcs.replaceTemplateVariables(template_variables, content);
     return content;
   }
  
@@ -590,12 +589,12 @@ module.exports = exports = function(module, funcs){
       if(site_id.toString() != parseInt(site_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
       site_id = parseInt(Q.site_id);
 
-      funcs.getDeploymentTargetParams(site_id , req._DBContext, 'publish', {}, {}, { }, function(err, deployment_target_params, deployment_target_publish_config){
+      funcs.getTemplateVariables(site_id , req._DBContext, 'publish', {}, {}, { }, function(err, template_variables, deployment_target_publish_config){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
       
         res.end(JSON.stringify({
           _success: 1,
-          deployment_target_params: deployment_target_params,
+          template_variables: template_variables,
           deployment_target_publish_config: deployment_target_publish_config,
         }));
       });

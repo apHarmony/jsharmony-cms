@@ -381,8 +381,8 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
-  exports.parseDeploymentUrl = function(url, deployment_target_params, baseUrl){
-    var rslt = funcs.replaceDeploymentTargetParams(deployment_target_params, url || '');
+  exports.parseDeploymentUrl = function(url, template_variables, baseUrl){
+    var rslt = funcs.replaceTemplateVariables(template_variables, url || '');
     try{
       if(baseUrl) rslt = new urlparser.URL(rslt, baseUrl).toString();
     }
@@ -888,13 +888,13 @@ module.exports = exports = function(module, funcs){
     //Only dev mode uses devMode and site_id parameters
 
     if (verb == 'get') {
-      var sql = "select site_id current_site_id,site_id,deployment_target_params from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
+      var sql = "select site_id current_site_id,site_id,deployment_target_template_variables from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
       var sql_ptypes = [];
       var sql_params = {};
 
       if(Q.devMode){
         if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select {schema}.my_current_site_id() current_site_id,v_my_site.site_id,v_my_site.deployment_target_params,deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
+        sql = "select {schema}.my_current_site_id() current_site_id,v_my_site.site_id,v_my_site.deployment_target_template_variables,deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { site_id: Q.site_id };
       }
@@ -908,7 +908,7 @@ module.exports = exports = function(module, funcs){
 
         var site_id = rslt[0].site_id || null;
         var current_site_id = rslt[0].current_site_id || null;
-        var deployment_target_params = rslt[0].deployment_target_params || '';
+        var deployment_target_template_variables_str = rslt[0].deployment_target_template_variables || '';
         var deployment_target_publish_config = {};
         try{
           deployment_target_publish_config = funcs.parseDeploymentTargetPublishConfig(site_id, rslt[0].deployment_target_publish_config, 'publish');
@@ -938,29 +938,28 @@ module.exports = exports = function(module, funcs){
             url = page_template.remote_templates.editor;
           }
 
-          var dtparams = {
+          var deployment_target_template_variables = {
             branch_id: (Q.branch_id||'')
           };
 
-          if(deployment_target_params){
+          if(deployment_target_template_variables_str){
             try{
-              dtparams = _.extend(dtparams, JSON.parse(deployment_target_params));
+              deployment_target_template_variables = _.extend(deployment_target_template_variables, JSON.parse(deployment_target_template_variables_str));
             }
             catch(ex){
-              Helper.GenError(req, res, -9, 'Error reading deployment_target_params.  Please make sure the JSON syntax is correct');
+              Helper.GenError(req, res, -9, 'Error reading deployment_target_template_variables.  Please make sure the JSON syntax is correct');
               return;
             }
           }
 
-          dtparams = _.extend(dtparams, {
+          deployment_target_template_variables = _.extend(deployment_target_template_variables, {
             page_template_id: Q.page_template_id,
             page_key: (Q.page_key||''),
             page_id: (Q.page_id||'')
           });
 
-          funcs.parseDeploymentTargetParams('editor', req._DBContext, site_id, undefined, dtparams, deployment_target_publish_config, function(err, deployment_target_params){
+          funcs.parseTemplateVariables('editor', req._DBContext, site_id, undefined, deployment_target_template_variables, deployment_target_publish_config, function(err, template_variables){
             if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
-            dtparams = deployment_target_params;
 
             if(!url){
               if(page_template.templates.editor){
@@ -969,7 +968,7 @@ module.exports = exports = function(module, funcs){
                   var cmsBaseUrl = cms.getCmsBaseUrlFromReq(req);
                   var content = '';
                   try{
-                    content = funcs.generateEditorTemplate(page_template.templates.editor, { cmsBaseUrl: cmsBaseUrl, deployment_target_params: dtparams });
+                    content = funcs.generateEditorTemplate(page_template.templates.editor, { cmsBaseUrl: cmsBaseUrl, template_variables: template_variables });
                   }
                   catch(ex){
                     res.end('Error loading template: '+ex.toString());
@@ -984,19 +983,19 @@ module.exports = exports = function(module, funcs){
               else return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
             }
 
-            url = funcs.parseDeploymentUrl(url, dtparams);
+            url = funcs.parseDeploymentUrl(url, template_variables);
 
             //Read URL and querystring
             try{
               var parsedUrl = new urlparser.URL(url);
-              dtparams._ = dtparams.timestamp;
-              if(Q.devMode) dtparams.page_template_location = page_template.location;
+              template_variables._ = template_variables.timestamp;
+              if(Q.devMode) template_variables.page_template_location = page_template.location;
               var changedUrl = false;
               //Add any missing items to the querystring
               _.each(['branch_id','page_id','page_key','page_template_id','_','page_template_location'], function(key){
                 if(parsedUrl.searchParams.has(key)) return;
-                if(dtparams[key]){
-                  parsedUrl.searchParams.set(key, dtparams[key]);
+                if(template_variables[key]){
+                  parsedUrl.searchParams.set(key, template_variables[key]);
                   changedUrl = true;
                 }
               });
@@ -1064,13 +1063,13 @@ module.exports = exports = function(module, funcs){
     //Only dev mode uses devMode and site_id parameters
 
     if (verb == 'get') {
-      var sql = "select site_id,deployment_target_params from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
+      var sql = "select site_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
       var sql_ptypes = [];
       var sql_params = {};
 
       if(Q.devMode){
         if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select site_id,deployment_target_params from {schema}.v_my_site where site_id=@site_id";
+        sql = "select site_id from {schema}.v_my_site where site_id=@site_id";
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { site_id: Q.site_id };
       }

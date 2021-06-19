@@ -122,7 +122,7 @@ module.exports = exports = function(module, funcs){
       branch_id: branch_id,
       site_id: null,
       site_config: {},
-      deployment_target_params: null,
+      template_variables: null,
       branch_validate: branch_validate,
     };
 
@@ -137,9 +137,9 @@ module.exports = exports = function(module, funcs){
         });
       },
 
-      //Get deployment_target_params for branch
+      //Get template_variables for branch
       function(cb){
-        var sql = "select site_editor deployment_target_id, v_my_site.deployment_target_params, v_my_branch_desc.site_id, deployment_target_publish_config from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_branch_desc.branch_id=@branch_id";
+        var sql = "select site_editor deployment_target_id, v_my_site.deployment_target_template_variables, v_my_branch_desc.site_id, deployment_target_publish_config from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_branch_desc.branch_id=@branch_id";
         appsrv.ExecRow(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target revision', -11));
@@ -147,13 +147,13 @@ module.exports = exports = function(module, funcs){
           branchData.deployment_target_id = rslt[0].deployment_target_id;
           branchData.site_id = rslt[0].site_id;
 
-          //Deployment Target Params
-          var deployment_target_params = {};
+          //Template Variables
+          var template_variables = {};
           try{
-            if(rslt[0].deployment_target_params) deployment_target_params = _.extend(deployment_target_params, JSON.parse(rslt[0].deployment_target_params));
+            if(rslt[0].deployment_target_template_variables) template_variables = _.extend(template_variables, JSON.parse(rslt[0].deployment_target_template_variables));
           }
           catch(ex){
-            return deploy_cb('Publish Target has invalid deployment_target_params: '+rslt[0].deployment_target_params);
+            return deploy_cb('Publish Target has invalid deployment_target_template_variables: '+rslt[0].deployment_target_template_variables);
           }
 
           var deployment_target_publish_config = {};
@@ -164,13 +164,13 @@ module.exports = exports = function(module, funcs){
             return deploy_cb('Error parsing deployment_target_publish_config: '+ex.toString());
           }
 
-          funcs.parseDeploymentTargetParams('publish', 'deployment', branchData.site_id, branchData.site_config, deployment_target_params, deployment_target_publish_config, function(err, parsed_deployment_target_params){
+          funcs.parseTemplateVariables('publish', 'deployment', branchData.site_id, branchData.site_config, template_variables, deployment_target_publish_config, function(err, parsed_template_variables){
             if(err) return cb(err);
-            deployment_target_params = parsed_deployment_target_params;
-            branchData.deployment_target_params = deployment_target_params;
+            template_variables = parsed_template_variables;
+            branchData.template_variables = template_variables;
 
             //Deployment Target Publish Params
-            var publish_params = JSON.parse(JSON.stringify(deployment_target_params));
+            var publish_params = JSON.parse(JSON.stringify(template_variables));
             branchData.publish_params = publish_params;
 
             return cb();
@@ -198,7 +198,7 @@ module.exports = exports = function(module, funcs){
       //Load Custom Branch Data
       function (cb){
         if(!module.Config.onValidate_LoadData) return cb();
-        return module.Config.onValidate_LoadData(jsh, branchData, branchData.deployment_target_params, cb);
+        return module.Config.onValidate_LoadData(jsh, branchData, branchData.template_variables, cb);
       },
 
       //Get all branch data

@@ -262,10 +262,10 @@ describe('Page Editor Template Generation', function() {
     done();
   });
 
-  it('Deployment Target Params', function(done) {
+  it('Template Variables', function(done) {
     var rslt = funcs.generateEditorTemplate([
       'Test %%%URL%%% Test',
-    ].join(''), { deployment_target_params: { "URL": "http://test" } });
+    ].join(''), { template_variables: { "URL": "http://test" } });
     assert.equal(rslt, [
       '<!DOCTYPE HTML><html>',
       '<head>',
@@ -524,7 +524,7 @@ describe('Page Deployment Template Generation', function() {
     assert(template.components['menus/top'].title == 'menus/top');
     done();
   });
-  it('Deployment Target Params', function(done) {
+  it('Template Variables', function(done) {
     var rslt = funcs.generateDeploymentTemplate(null, [
       '<html>',
       '<head>',
@@ -533,7 +533,7 @@ describe('Page Deployment Template Generation', function() {
       'Test %%%URL%%% Test',
       '</body>',
       '</html>',
-    ].join(''), { deployment_target_params: { "URL": "http://test" } });
+    ].join(''), { template_variables: { "URL": "http://test" } });
     assert.equal(rslt, [
       '<html>',
       '<head>',
@@ -917,13 +917,13 @@ describe('Component Template Generation', function() {
     done();
   });
 
-  it('Deployment Target Params', function(done) {
+  it('Template Variables', function(done) {
     var componentConfig = { data: { fields: [ { name: 'title' } ] } };
     var rslt = funcs.generateComponentTemplate(componentConfig, [
       '<section class="tiles wrapper <%=component.cssClass%>" style="<%=component.cssStyle%>" cms-component-editor-add-class="preview">',
       'Test %%%url%%% Test',
       '</section>',
-    ].join(''), { deployment_target_params: { url: 'http://test' } });
+    ].join(''), { template_variables: { url: 'http://test' } });
     assert.equal(rslt, [
       componentPrefix,
       '<section class="tiles wrapper <%=component.cssClass%> <%=(isInComponentEditor?"preview":"")%>" style="<%=component.cssStyle%>">',
