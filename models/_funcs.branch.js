@@ -1112,6 +1112,31 @@ module.exports = exports = function(module, funcs){
     });
   }
 
+  exports.validateBranchAccessStep = function(dbcontext, branch_id, branch_access, site_access){
+    return function(callback){
+      var jsh = module.jsh;
+      var appsrv = jsh.AppSrv;
+      var dbtypes = appsrv.DB.types;
+      var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(32)];
+      var sql_params = { branch_id: branch_id, branch_access: branch_access };
+
+      var sql = "select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access like @branch_access"
+      if(site_access && site_access.length){
+        if(!_.isArray(site_access)) site_access = [site_access];
+        for(var i=0;i<site_access.length;i++){
+          sql_ptypes.push(dbtypes.VarChar(32));
+          sql_params['site_access'+i.toString()] = site_access[i];
+        }
+        sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_branch_access.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
+      }
+      appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; callback(err); return; }
+        if (rslt[0].length!=1) { callback( Helper.NewError('No access to target revision',-11)); return; }
+        callback(null);
+      });
+    };
+  }
+
   exports.validateSiteAccess = function(req, res, site_id, site_access, callback){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -1167,15 +1192,7 @@ module.exports = exports = function(module, funcs){
     var sql_params = {branch_id: branch_id};
 
     async.waterfall([
-      function(parameters_cb){
-        var sql = "select branch_id from {schema}.v_my_branch_access where (branch_id=@branch_id and branch_access like 'R%');"
-        sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
-        appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
-          if (err != null) { err.sql = sql; parameters_cb(err); return; }
-          if (rslt[0].length!=1) { parameters_cb( Helper.NewError('You dont have access to those branches (or they dont exist)',-11)); return; }
-          parameters_cb(null);
-        });
-      },
+      exports.validateBranchAccessStep(dbcontext, branch_id, 'R%', ['PUBLISHER','WEBMASTER']),
       function(dir_cb){
         fs.mkdir(path.join(module.jsh.Config.datadir, 'branch'), {recursive:true}, dir_cb);
       },
@@ -1231,15 +1248,7 @@ module.exports = exports = function(module, funcs){
     var sql_params = {branch_id: branch_id};
 
     async.waterfall([
-      function(parameters_cb){
-        var sql = "select branch_id from {schema}.v_my_branch_access where (branch_id=@branch_id and branch_access='RW');"
-        sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
-        appsrv.ExecRecordset(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
-          if (err != null) { err.sql = sql; parameters_cb(err); return; }
-          if (rslt[0].length!=1) { parameters_cb( Helper.NewError('You dont have access to those branches (or they dont exist)',-11)); return; }
-          parameters_cb(null);
-        });
-      },
+      exports.validateBranchAccessStep(dbcontext, branch_id, 'RW', ['PUBLISHER','WEBMASTER']),
       function(read_cb){
         fs.readFile(branchArchivePath(branch_id), read_cb);
       },
