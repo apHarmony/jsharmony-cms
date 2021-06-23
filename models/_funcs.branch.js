@@ -1290,5 +1290,93 @@ module.exports = exports = function(module, funcs){
     ], callback);
   }
 
+  exports.set_my_current_branch_id = function(dbcontext, branch_id, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { 'branch_id': branch_id };
+    var sql = "update "+(module.schema?module.schema+'.':'')+"v_my_current_branch set new_branch_id=@branch_id";
+    appsrv.ExecCommand(dbcontext, sql, sql_ptypes, sql_params, function(err) {
+      if (err) {err.sql = sql};
+      callback(err);
+    });
+  }
+
+  exports.my_current_branch_id = function(dbcontext, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var sql = "select "+(module.schema?module.schema+'.':'')+"my_current_branch_id()";
+    appsrv.ExecScalar(dbcontext, sql, [], {}, function(err, rslt) {
+      if (err) {err.sql = sql};
+      callback(err, rslt[0]);
+    });
+  }
+
+  exports.branch_checkout = function(dbcontext, branch_id, callback) {
+    async.waterfall([
+      function(cb) {exports.my_current_branch_id(dbcontext, cb)},
+      function(previous_branch_id, cb) {
+        if (branch_id == previous_branch_id) {
+          cb({shortCircuit: true});
+        } else {
+          cb(null, previous_branch_id);
+        }
+      },
+      function(previous_branch_id, cb) {
+        exports.set_my_current_branch_id(dbcontext, branch_id, function(err) {
+          cb(err, previous_branch_id);
+        });
+      },
+    ], function(err) {
+      if (err != null && !err.shortCircuit) { callback(err); return; }
+      return callback();
+    });
+  }
+
+  exports.req_branch_checkout = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var appsrv = this;
+    var jsh = module.jsh;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+    var model = jsh.getModel(req, module.namespace + 'Branch_Checkout');
+
+    if (verb == 'post'){
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+      if(!req.params || !req.params.branch_id) return next();
+      var branch_id = parseInt(req.params.branch_id);
+
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      sql_ptypes = [dbtypes.BigInt];
+      sql_params = { 'branch_id': branch_id };
+      validate = new XValidate();
+      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+      verrors = validate.Validate('B', sql_params);
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+      exports.branch_checkout(req._DBContext, branch_id, function(err) {
+        if (err != null) { err.model = model; appsrv.AppDBError(req, res, err); return; }
+        //Return success
+        return res.send(JSON.stringify({ _success: 1 }));
+      });
+    }
+    else return next();
+  }
+
   return exports;
 };

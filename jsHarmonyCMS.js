@@ -783,6 +783,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/begin_merge': _this.funcs.req_begin_merge,
         '/_funcs/branch/download/:branch_id': _this.funcs.branch_download,
         '/_funcs/branch/upload': _this.funcs.branch_upload,
+        '/_funcs/branch/checkout/:branch_id': _this.funcs.req_branch_checkout,
         '/_funcs/site/checkout': _this.funcs.site_checkout,
       }
     ]
