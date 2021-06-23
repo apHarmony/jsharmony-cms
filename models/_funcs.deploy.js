@@ -45,7 +45,7 @@ module.exports = exports = function(module, funcs){
     }
     else if(op.exec == 'deployment_download'){
       //{ exec: 'deployment_download', deployment_id: deployment_id, dstStream: res, onStart: function(){} }
-      funcs.deployment_download(op.deployment_id, op.dstStream, op.onStart, done);
+      funcs.deployment_download(op.deployment_id, op.dstStream, op.onStart, op.options, done);
     }
     else{
       var err = new Error('Invalid deployment exec operation: '+op.exec);
@@ -704,6 +704,9 @@ module.exports = exports = function(module, funcs){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
+                else if(deploy_path.indexOf('cmshost://')==0) {
+                  return funcs.deploy_cmshost(deployment, publish_path, deploy_path.substr(10), branchData.site_files, cb);
+                }
                 else if((deploy_path.indexOf('ftps://')==0)||(deploy_path.indexOf('ftp://')==0)||(deploy_path.indexOf('sftp://')==0)) {
                   return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
                 }
@@ -729,7 +732,11 @@ module.exports = exports = function(module, funcs){
 
               //Log success
               function (cb) {
-                funcs.deploy_log_info(deployment_id, 'Deployment successful');
+                var deploy_path = (deployment.deployment_target_publish_path||'').toString();
+
+                var msg = 'Deployment successful';
+                if(deploy_path.indexOf('cmshost://')==0) msg = 'CMS Deployment Host notified';
+                funcs.deploy_log_info(deployment_id, msg);
                 return cb();
               },
 
@@ -1049,6 +1056,9 @@ module.exports = exports = function(module, funcs){
                   //Amazon S3 Deployment
                   return funcs.deploy_s3(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
+                else if(deploy_path.indexOf('cmshost://')==0) {
+                  return funcs.deploy_cmshost(deployment, publish_path, deploy_path.substr(10), branchData.site_files, cb);
+                }
                 else if((deploy_path.indexOf('ftps://')==0)||(deploy_path.indexOf('ftp://')==0)||(deploy_path.indexOf('sftp://')==0)) {
                   return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
@@ -1076,7 +1086,11 @@ module.exports = exports = function(module, funcs){
 
               //Log success
               function (cb) {
-                funcs.deploy_log_info(deployment_id, 'Deployment successful');
+                var deploy_path = (deployment.deployment_target_publish_path||'').toString();
+
+                var msg = 'Deployment successful';
+                if(deploy_path.indexOf('cmshost://')==0) msg = 'CMS Deployment Host notified';
+                funcs.deploy_log_info(deployment_id, msg);
                 return cb();
               }
 
@@ -1307,7 +1321,6 @@ module.exports = exports = function(module, funcs){
       async.eachSeries(rslt[0], function(page, cb){
         funcs.getClientPage('deployment', page, branchData.sitemaps, branchData.site_id, { pageTemplates: branchData.page_templates }, function(err, clientPage){
           if(err) return cb(err);
-          funcs.createSitemapTree(clientPage.sitemap, branchData);
 
           var page_fpath = '';
           try{
@@ -1317,6 +1330,14 @@ module.exports = exports = function(module, funcs){
             return cb(ex);
           }
           if(!page_fpath) return cb(new Error('Page has no path: '+page.page_key));
+
+          //Generate page relative sitemap
+          try{
+            funcs.createSitemapTree(clientPage.sitemap, branchData);
+          }
+          catch(ex){
+            return cb(new Error('Error generating sitemap for page "'+page_fpath+'": '+ex.toString()));
+          }
 
           var pageIncludes = {};
           var includePage = function(path){
@@ -1795,7 +1816,12 @@ module.exports = exports = function(module, funcs){
               menu.menu_items = menu_content.menu_items||[];
 
               //Generate tree
-              funcs.createMenuTree(menu, branchData);
+              try{
+                funcs.createMenuTree(menu, branchData);
+              }
+              catch(ex){
+                return menu_cb(new Error('Error generating menu "'+menu.menu_tag+'": '+ex.toString()));
+              }
 
               //Validate max depth
               if(menu_configs[menu.menu_tag]){
@@ -1942,6 +1968,21 @@ module.exports = exports = function(module, funcs){
         }, fs_cb);
       }
     ], cb);
+  }
+
+  exports.deploy_cmshost = function(deployment, publish_path, host_id, site_files, cb){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var deployment_id = deployment.deployment_id;
+
+    //Notify deployment host
+    var queueid = 'deployment_host_'+host_id;
+    var deployment_message = {
+      deployment_id: deployment_id
+    };
+    var notifications = appsrv.SendQueue(queueid, JSON.stringify(deployment_message));
+    if(!notifications) return cb(new Error('CMS Deployment Host "'+host_id+'" not connected.  Please verify jsharmony-cms-host is running on the target machine'));
+    return cb();
   }
 
   exports.deploy_git = function(deployment, publish_path, deploy_path, site_files, cb) {
@@ -2652,7 +2693,87 @@ module.exports = exports = function(module, funcs){
     else return next();
   }
 
-  exports.deployment_download = function (deployment_id, dstStream, onStart, callback) {
+  exports.req_deployment_host_download = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+
+    if(!req.params || !req.params.deployment_id) return next();
+    var deployment_id = req.params.deployment_id;
+    if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
+
+    if (!Helper.HasRole(req, 'CMSHOST')) { Helper.GenError(req, res, -11, 'Invalid Access'); return; }
+
+    if (verb == 'post'){
+      
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, ['|existingFiles'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      //Check if deployment ID is valid
+      var sql = "select deployment_id,deployment_tag,deployment_sts,site_id from {schema}.v_my_deployment where deployment_id=@deployment_id";
+      var sql_ptypes = [dbtypes.BigInt];
+      var sql_params = { deployment_id: deployment_id };
+
+      validate = new XValidate();
+      verrors = {};
+      validate.AddValidator('_obj.deployment_id', 'Deployment ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+      verrors = _.merge(verrors, validate.Validate('B', sql_params));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+      //Parse local files
+      var existingFiles = {};
+      try{
+        if(P.existingFiles) existingFiles = JSON.parse(P.existingFiles);
+      }
+      catch(ex){
+        jsh.Log.error('Invalid deployment host existingFiles JSON: '+ex.toString());
+        return Helper.GenError(req, res, -4, 'Invalid Parameters');
+      }
+
+      appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
+        if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'Deployment not found');
+        
+        var deployment = rslt[0][0];
+
+        //Check if deployment status is complete
+        if(deployment.deployment_sts == 'FAILED'){ return Helper.GenError(req, res, -9, 'Cannot download failed deployment'); }
+
+        var downloadParams = { 
+          exec: 'deployment_download',
+          deployment_id: deployment_id,
+          dstStream: res,
+          onStart: function(){
+            if(req.jsproxyid) Helper.SetCookie(req, res, jsh, req.jsproxyid, 'ready', { 'path': req.baseurl });
+          },
+          options: { existingFiles: existingFiles },
+        };
+        funcs.deploymentQueue.push(downloadParams, function(err){
+          if(err) return Helper.GenError(req, res, -99999, err.toString());
+        });
+
+      });
+      return;
+    }
+    else return next();
+
+  }
+
+  exports.deployment_download = function (deployment_id, dstStream, onStart, options, callback) {
+    options = _.extend({ existingFiles: null }, options);
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -2743,8 +2864,10 @@ module.exports = exports = function(module, funcs){
           if(parentpath=='.') webpath = relativepath;
           else webpath = folders[parentpath] + '/' + path.basename(relativepath);
           fs.readFile(filepath, null, function(err, filecontent){
-            if(err) return cb(err);
-            site_files[webpath] = webpath;
+            if(err) return file_cb(err);
+            site_files[webpath] = {
+              md5: crypto.createHash('md5').update(filecontent).digest("hex")
+            };
             return file_cb();
           });
         }, function (dirpath, relativepath, dir_cb) {
@@ -2773,9 +2896,37 @@ module.exports = exports = function(module, funcs){
         });
 
         var zipfile = new yazl.ZipFile();
-        _.each(site_files, function(data_file){
-          zipfile.addFile(path.join(publish_path,data_file), data_file);
-        });
+
+        var deploymentManifest = {
+          deleteFiles: []
+        };
+
+        //Add publish files to zip
+        for(var relativePath in site_files){
+
+          if(options.existingFiles){
+            if(relativePath==deploymentManifestPath) continue;
+            else if(relativePath in options.existingFiles){
+              var existingFileHash = options.existingFiles[relativePath];
+              if(existingFileHash == site_files[relativePath].md5) continue;
+            }
+          }
+          zipfile.addFile(path.join(publish_path,relativePath), relativePath);
+        }
+
+        //Find files to delete
+        for(var existingFile in options.existingFiles){
+          if(!(existingFile in site_files)) deploymentManifest.deleteFiles.push(existingFile);
+        }
+
+        //Write deployment manifest, if applicable
+        var deploymentManifestPath = 'jsHarmonyCMS.deployment.manifest.json';
+        if(options.existingFiles){
+          if(options.existingFiles){
+            zipfile.addBuffer(Buffer.from(JSON.stringify(deploymentManifest)), deploymentManifestPath);
+          }
+        }
+
         zipfile.outputStream.on('end', function() {
           return cb();
         });
@@ -2808,6 +2959,55 @@ module.exports = exports = function(module, funcs){
       cms.DeploymentJobPending = true;
       jsh.AppSrv.JobProc.Run();
       res.end(JSON.stringify({ '_success': 1 }));
+      return;
+    }
+    else return next();
+  }
+
+  exports.deployment_host_log = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+
+    if(!req.params || !req.params.deployment_id) return next();
+    var deployment_id = req.params.deployment_id;
+    if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
+
+    if (!Helper.HasRole(req, 'CMSHOST')) { Helper.GenError(req, res, -11, 'Invalid Access'); return; }
+
+    if (verb == 'post'){
+      
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, ['&logtype','&message'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      if(!_.includes(['error','info'], P.logtype)) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      //Check if deployment ID is valid
+      var sql = "select deployment_id from {schema}.v_my_deployment where deployment_id=@deployment_id";
+      var sql_ptypes = [dbtypes.BigInt];
+      var sql_params = { deployment_id: deployment_id };
+
+      appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
+        if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'Deployment not found');
+
+        if(P.logtype == 'info') funcs.deploy_log_info(deployment_id, P.message||'');
+        else if(P.logtype == 'error') funcs.deploy_log_error(deployment_id, P.message||'');
+
+        res.end(JSON.stringify({ '_success': 1 }));
+      });
       return;
     }
     else return next();

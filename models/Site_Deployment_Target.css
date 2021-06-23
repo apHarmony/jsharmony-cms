@@ -43,6 +43,14 @@
   font-size:0.9em;
   padding-bottom:5px;
 }
+.xform .xctrl_deployment_target_publish_configurator_wizard .browse_button {
+  margin-left:8px;
+  top:1px;
+  margin-right:0;
+}
+.xctrl_deployment_target_publish_configurator_wizard .browse_button img {
+  width:14px;
+}
 .xctrl_deployment_target_publish_configurator_wizard .edit_button {
   display:block;
   margin-left:6px;

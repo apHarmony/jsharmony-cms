@@ -83,6 +83,9 @@ jsHarmonyCMS.prototype.Application = function(){
   jsh.Config.onDBDriverLoaded.push(function(cb){
     _this.initBranchItems(cb);
   });
+  jsh.Config.onQueueSubscribe.push(function(cb, req, res, queueid){
+    _this.funcs.deployment_target_queue_onSubscribe(cb, req, res, queueid);
+  });
   return jsh;
 }
 
@@ -285,7 +288,7 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
   this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK = _.extend({ "blank": "(None)" }, this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES);
   this.jsh.Config.macros.LOV_CMS_PAGE_TEMPLATES_BLANK.post_process = "return jsh.Modules['"+this.name+"'].funcs.getCurrentPageTemplatesLOV(req._DBContext, values, { blank: true }, callback);";
   
-  this.jsh.Sites['main'].globalparams.isWebmaster = function (req) { return Helper.HasRole(req, "WEBMASTER"); }
+  this.jsh.Sites['main'].globalparams.isWebmaster = function (req) { return Helper.HasRole(req, 'WEBMASTER'); }
   this.jsh.Sites['main'].globalparams.site_id = function (req) { return req.gdata.site_id; }
   this.jsh.Sites['main'].globalparams.site_name = function (req) { return req.gdata.site_name; }
   this.jsh.Sites['main'].globalparams.branch_items = function(req){
@@ -763,6 +766,8 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/menu/:menu_key/': _this.funcs.menu,
         '/_funcs/sitemap/:sitemap_key/': _this.funcs.sitemap,
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
+        '/_funcs/deployment_host/:deployment_id/log': _this.funcs.deployment_host_log,
+        '/_funcs/deployment_host/:deployment_id/download': _this.funcs.req_deployment_host_download,
         '/_funcs/deployment_change_log/:deployment_id': _this.funcs.deployment_change_log,
         '/_funcs/deployment/download/:deployment_id': _this.funcs.req_deployment_download,
         '/_funcs/deployment/trigger': _this.funcs.req_deployment_trigger,

@@ -21,6 +21,9 @@
           "IsJSON",
           { "function":"js: return jsh.App[modelid].configurator_validate().join('\\n');", "selector": ".deployment_target_publish_configurator","runat":["client"] }
         ]},
+      {"name":"deployment_target_cms_host","unbound":true,"control":"hidden",
+        "popuplov": {"target": "Site_Deployment_Target_CmsHost_Listing", "code_val": "host_id", "popupstyle": "height:400px;width:770px;", "popupiconstyle": "display:none;"}
+      },
     ]
   }
 }

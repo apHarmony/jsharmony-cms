@@ -1,0 +1,18 @@
+{
+  "Site_Deployment_Target_CmsHost_Listing": {
+    "layout":"grid",
+    "title":"CMS Deployment Hosts",
+    "actions":"B",
+    "roles": { "WEBMASTER": "BIUD" },
+    "caption":[0,"CMS Host","CMS Hosts"],
+    "sort":["^host_id"],
+    "sqlselect":"select host_id from %%%CMS_HOSTS%%% %%%SQLSUFFIX%%%",
+    "grid_expand_search":1,
+    "hide_system_buttons" : ["clear"],
+    "header": "<div style='margin-bottom:10px;'>The following CMS Hosts are currently connected to this CMS server:</div>",
+    "noresultsmessage":"No CMS Deployment Hosts currently connected",
+    "fields":[
+      {"name":"host_id","type":"varchar","actions":"B","key":1,"caption":"Host ID"}
+    ]
+  }
+}

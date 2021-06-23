@@ -102,4 +102,10 @@ describe('URL Parsing', function() {
     assert.equal(parsed_url.path,'/user/test.git?@x=3');
     done();
   });
+  it('CMS Host', function(done) {
+    var parsed_url = funcs.parse_deployment_target_url('cmshost://testmachine');
+    assert.equal(parsed_url.protocol,'cmshost:');
+    assert.equal(parsed_url.hostname,'testmachine');
+    done();
+  });
 });

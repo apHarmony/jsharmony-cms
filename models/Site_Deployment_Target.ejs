@@ -16,6 +16,16 @@
             <tr><td><label>Secret Key:</label></td><td width="100%"><input type="text" data-elem="s3_config.secretAccessKey" /></td></tr>
             <tr><td class="align_top"><label>File Upload Settings:</label></td><td width="100%"><textarea data-elem="s3_config.upload_params" /></td></tr>
           </tbody>
+          <tbody class="deployment_type_container deployment_type_container_cmshost">
+              <tr>
+                <td><label>Host ID:</label></td>
+                <td width="100%"><input type="text" data-path-elem="hostid" class="parse_url" /></td>
+                <td>
+                  <a href="#" data-id="hostid_xlookup" class="hostid_xlookup xform_ctrl xlookup icon browse_button" data-code_val="host_id" data-model="<%=model.id%>" onclick="(function(){<%-jslocals%> jsh.XExt.popupShow('<%=model.namespace%>Site_Deployment_Target_CmsHost_Listing','host_id','CMS Host Selection',undefined,this,{container: '.popup_deployment_target_cms_host', OnControlUpdate:function(obj,popupData){ _this.host_id_onSelected(popupData); }}) }).call(this); return false;"><img src="<%-jsh._PUBLICURL%>images/icon_search.png" /></a>
+                </td>
+              </tr>
+              <tr><td></td><td><div class="deployment_config_caption">* Connect a CMS Host by running <a href="https://github.com/apHarmony/jsharmony-cms-host" target="_blank">jsharmony-cms-host</a> on the target system</div></td></tr>
+          </tbody>
           <tbody class="deployment_type_container deployment_type_container_ftp">
             <tr><td><label>Hostname:</label></td><td width="100%"><input type="text" data-path-elem="hostname" class="parse_url" /></td></tr>
             <tr><td><label>Port:</label></td><td width="100%"><input type="text" data-path-elem="port" placeholder="21" /></td></tr>

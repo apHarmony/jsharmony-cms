@@ -32,6 +32,7 @@ jsh.App[modelid] = new (function(){
     XExt.RenderLOV(null, jdeployment_type, [
       { code_val: '', code_txt: '(None)' },
       { code_val: 's3', code_txt: 'Amazon S3' },
+      { code_val: 'cmshost', code_txt: 'CMS Deployment Host' },
       { code_val: 'ftp', code_txt: 'FTP' },
       { code_val: 'ftps', code_txt: 'FTPS' },
       { code_val: 'file', code_txt: 'Local Filesystem' },
@@ -96,6 +97,12 @@ jsh.App[modelid] = new (function(){
     });
   }
 
+  _this.host_id_onSelected = function(popupData){
+    var jcontainer = _this.configurator_getContainer();
+    if(!popupData.result) return;
+    jcontainer.find('.deployment_type_container_cmshost [data-path-elem="hostid"]').val(popupData.result);
+  }
+
   _this.configurator_updateDeploymentType = function(val){
     var jcontainer = _this.configurator_getContainer();
     if(val) jcontainer.find('.deployment_type').val(val)
@@ -121,7 +128,7 @@ jsh.App[modelid] = new (function(){
     //Parse URL
     var pathParts = publish_path.split('://');
     var protocol = pathParts[0].toLowerCase();
-    if(!_.includes(['s3','ftp','ftps','file','git_https','git_ssh','sftp'], protocol)) protocol = '';
+    if(!_.includes(['s3','cmshost','ftp','ftps','file','git_https','git_ssh','sftp'], protocol)) protocol = '';
     _this.configurator_updateDeploymentType(protocol);
 
     if(protocol){
@@ -135,6 +142,8 @@ jsh.App[modelid] = new (function(){
         jDeploymentType.find('[data-elem="s3_config.upload_params"]').val(_.isEmpty(s3_config.upload_params)?'{\n}':JSON.stringify(s3_config.upload_params,null,2));
         _.each(['accessKeyId','secretAccessKey','upload_params'], function(key){ delete s3_config[key]; });
         if(_.isEmpty(s3_config)) delete parsed_config.s3_config;
+      })(); }
+      else if(protocol=='cmshost'){ (function(){
       })(); }
       else if(protocol=='file'){ (function(){
       })(); }
@@ -210,11 +219,15 @@ jsh.App[modelid] = new (function(){
     if(!url) return;
 
     if(url.indexOf('//')==0) url = protocol+':' + url;
-    if((url.indexOf('://') < 0) || (url.indexOf('://') > 10)) url = protocol+'://' + url;
+    if((url.indexOf('://') < 0) || (url.indexOf('://') > url.indexOf('/'))) url = protocol+'://' + url;
 
     if(protocol=='s3'){
       if(url.toLowerCase().indexOf('s3://')==0) url = url.substr(5);
       jDeploymentType.find('[data-path-elem="bucket"]').val(url);
+    }
+    else if(protocol=='cmshost'){
+      if(url.toLowerCase().indexOf('cmshost://')==0) url = url.substr(10);
+      jDeploymentType.find('[data-path-elem="hostid"]').val(url);
     }
     else if(protocol=='file'){
       if(url.toLowerCase().indexOf('file://')==0) url = url.substr(7);
@@ -258,7 +271,7 @@ jsh.App[modelid] = new (function(){
 
     var protocol = _this.getDeploymentType();
     if(url.indexOf('//')==0) url = protocol+':' + url;
-    if((url.indexOf('://') < 0) || (url.indexOf('://') > 10)) url = protocol+'://' + url;
+    if((url.indexOf('://') < 0) || (url.indexOf('://') > url.indexOf('/'))) url = protocol+'://' + url;
 
     if(url in parse_url_cache) return parse_url_cache[url];
     XForm.Post('/_funcs/deployment_target/parse_url', {}, { url: url }, function(rslt){
@@ -302,6 +315,12 @@ jsh.App[modelid] = new (function(){
         if(val) s3_config[key] = val;
       });
       if(!_.isEmpty(s3_config)) generated_config.s3_config = s3_config;
+    })(); }
+    else if(protocol=='cmshost'){ (function(){
+      var path = jDeploymentType.find('[data-path-elem="hostid"]').val().trim();
+      if(path){
+        generated_url = 'cmshost://' + path;
+      }
     })(); }
     else if(protocol=='file'){ (function(){
       var path = jDeploymentType.find('[data-path-elem="path"]').val().trim();
@@ -480,7 +499,10 @@ jsh.App[modelid] = new (function(){
         if(!jDeploymentType.find('[data-elem="s3_config.secretAccessKey"]').val().trim()) errors.push('Secret Key is required for Amazon S3 deployment');
         if(!_this.validate_json(errors, 'File Upload Settings', jDeploymentType.find('[data-elem="s3_config.upload_params"]').val())) return;
       })(); }
-      if(protocol=='file'){ (function(){
+      else if(protocol=='cmshost'){ (function(){
+        if(!jDeploymentType.find('[data-path-elem="hostid"]').val().trim()) errors.push('Host ID is required for CMS Host deployment');
+      })(); }
+      else if(protocol=='file'){ (function(){
         if(!jDeploymentType.find('[data-path-elem="path"]').val().trim()) errors.push('Path is required for Local Filesystem deployment');
       })(); }
       else if(protocol=='git_https'){ (function(){

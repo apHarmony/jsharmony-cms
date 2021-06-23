@@ -29,6 +29,11 @@
   //* Note - git_ssh will use the Public / Private Key defined in the Deployment Target as its identity
   //* Note - set the git branch in the git_config.branch parameter
 
+  //CMS Deployment Host
+  cmshost://hostid
+  //Connect as a remote host using the jsharmony-cms-host program
+  //  https://github.com/apHarmony/jsharmony-cms-host
+
 
 //Deployment Target Publish Config
 {

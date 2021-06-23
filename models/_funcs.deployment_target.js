@@ -604,5 +604,21 @@ module.exports = exports = function(module, funcs){
     else return next();
   }
 
+  exports.deployment_target_queue_onSubscribe = function(cb, req, res, queueid){
+    var jsh = module.jsh;
+
+    if(!queueid) return cb();
+    queueid = queueid.toString();
+    if(queueid.indexOf('deployment_host_')!=0) return cb();
+    if(queueid in jsh.Config.queues) return cb();
+    //Add queue
+    jsh.Log.info('Adding deployment host queue: '+queueid);
+    jsh.Config.queues[queueid] = {
+      actions: "BIUD",
+      roles: { "CMSHOST": "*" }
+    };
+    return cb();
+  }
+
   return exports;
 };
