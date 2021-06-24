@@ -195,7 +195,15 @@ describe('Branch Archive', function() {
         done(); 
       });
     });
-  });
+
+    it('branch is no longer resident', function(done) {
+      jsh.Modules.jsHarmonyCMS.funcs.branchIsDbResident('S1', branch_id, function(err, resident) {
+        assert.ifError(err);
+        assert.strictEqual(resident, false);
+        done();
+      });
+    });
+});
 
   describe('branch_indexFromFile', function() {
     var branch_id;
@@ -251,6 +259,14 @@ describe('Branch Archive', function() {
       ];
       _.forEach(fields, function(field) {
         assert.notStrictEqual(page[field], undefined, 'has a '+field);
+      });
+    });
+
+    it('branch is resident', function(done) {
+      jsh.Modules.jsHarmonyCMS.funcs.branchIsDbResident('S1', branch_id, function(err, resident) {
+        assert.ifError(err);
+        assert.strictEqual(resident, true);
+        done();
       });
     });
   });

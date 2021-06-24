@@ -1183,6 +1183,75 @@ module.exports = exports = function(module, funcs){
     if (typeof(record[field]) == 'string') record[field] = Date.parse(record[field]);
   }
 
+  exports.branchIsDbResident = function(dbcontext, branch_id, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = {branch_id: branch_id};
+
+    var count = 0;
+    async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+      var sql = "select count(*)";
+
+      sql += " from {tbl_branch_item} branch_{item}"
+
+      sql += " where branch_{item}.branch_id=@branch_id";
+
+      appsrv.ExecScalar(dbcontext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; err.model = model; return branch_item_cb(err); }
+        if(!rslt || !rslt.length || !rslt[0]){ return branch_item_cb(new Error('Error retrieving branch data')); }
+        count = count + rslt[0];
+        return branch_item_cb();
+      });
+    }, function() {
+      if (count > 0) {
+        return callback(null, true);
+      } else {
+        fs.access('data/branch/' + branch_id + '.json', fs.constants.F_OK, function(err) {
+          if (err) { // file not found, no archive
+            return callback(null, true);
+          } else { // file found, appears to be archived
+            return callback(null, false);
+          }
+        });
+      }
+    });
+  }
+
+  exports.liveBranchIds = function(dbcontext, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    async.parallel([
+      // all currently checked out branches
+      function(cb) {
+        var sql = "select distinct(branch_id) from "+(module.schema?module.schema+'.':'')+"sys_user_site";
+        appsrv.ExecRecordset(dbcontext, sql, [], {}, function(err, rslt) {
+          if (err) {err.sql = sql};
+          cb(err, _.compact(_.map(rslt[0], 'branch_id')));
+        });
+      },
+      // all releases AND all branches awaiting review
+      function(cb) {
+        var sql = "select branch_id from "+(module.schema?module.schema+'.':'')+"branch where (branch_type='PUBLIC' and branch_sts='ACTIVE') or branch_sts='REVIEW'";
+        appsrv.ExecRecordset(dbcontext, sql, [], {}, function(err, rslt) {
+          if (err) {err.sql = sql};
+          cb(err, _.compact(_.map(rslt[0], 'branch_id')));
+        });
+      },
+    ], function(err, results) {
+      callback(err, _.flatten(results));
+    })
+  }
+
+  exports.branchShouldBeDbResident = function(dbcontext, branch_id, callback) {
+    exports.liveBranchIds(dbcontext, function(err, live) {
+      if (err) return callback(err);
+      callback(err, _.includes(live, branch_id));
+    });
+  }
+
   exports.branch_indexToFile = function (dbcontext, branch_id, callback) {
     var cms = module;
     var jsh = module.jsh;
@@ -1290,6 +1359,34 @@ module.exports = exports = function(module, funcs){
     ], callback);
   }
 
+  exports.branch_makeResident = function(dbcontext, branch_id, callback) {
+    exports.branchIsDbResident(dbcontext, branch_id, function(err, resident) {
+      if (err) return callback(err);
+      if (resident) return callback();
+      exports.branch_indexFromFile(dbcontext, branch_id, callback);
+    });
+  }
+
+  exports.branch_checkEviction = function(dbcontext, branch_id, callback) {
+    async.parallel([
+      function(current_cb) {
+        exports.branchIsDbResident(dbcontext, branch_id, current_cb);
+      },
+      function(target_cb) {
+        exports.branchShouldBeDbResident(dbcontext, branch_id, target_cb);
+      },
+    ], function(err, results) {
+      var currentlyResident = results[0];
+      var shouldBeResident = results[1];
+      if (err) return callback(err);
+      if (currentlyResident && !shouldBeResident) {
+        exports.branch_indexToFile(dbcontext, branch_id, callback);
+      } else {
+        callback();
+      }
+    });
+  }
+
   exports.set_my_current_branch_id = function(dbcontext, branch_id, callback) {
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -1324,9 +1421,17 @@ module.exports = exports = function(module, funcs){
         }
       },
       function(previous_branch_id, cb) {
+        exports.branch_makeResident(dbcontext, branch_id, function(err) {
+          cb(err, previous_branch_id);
+        });
+      },
+      function(previous_branch_id, cb) {
         exports.set_my_current_branch_id(dbcontext, branch_id, function(err) {
           cb(err, previous_branch_id);
         });
+      },
+      function(previous_branch_id, cb) {
+        exports.branch_checkEviction(dbcontext, previous_branch_id, cb);
       },
     ], function(err) {
       if (err != null && !err.shortCircuit) { callback(err); return; }
