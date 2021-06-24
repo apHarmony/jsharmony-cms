@@ -24,9 +24,13 @@ var path = require('path');
 var async = require('async');
 var crypto = require('crypto');
 var urlparser = require('url');
+var wclib = require('jsharmony/WebConnect');
+var wc = new wclib.WebConnect();
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+
+  var pendingHostRequests = {};
 
   exports.parseTemplateVariables = function(deploymentType, dbcontext, site_id, site_config, template_variables, deployment_target_publish_config, callback){
     var cms = module;
@@ -609,15 +613,171 @@ module.exports = exports = function(module, funcs){
 
     if(!queueid) return cb();
     queueid = queueid.toString();
-    if(queueid.indexOf('deployment_host_')!=0) return cb();
     if(queueid in jsh.Config.queues) return cb();
-    //Add queue
-    jsh.Log.info('Adding deployment host queue: '+queueid);
-    jsh.Config.queues[queueid] = {
-      actions: "BIUD",
-      roles: { "CMSHOST": "*" }
+    else if(queueid.indexOf('deployment_host_publish_')==0){
+      //Add queue
+      jsh.Log.info('Adding deployment host publish queue: '+queueid);
+      jsh.Config.queues[queueid] = {
+        actions: "BIUD",
+        roles: { "CMSHOST": "*" }
+      };
+      return cb();
+    }
+    else if(queueid.indexOf('deployment_host_request_')==0){
+      //Add queue
+      jsh.Log.info('Adding deployment host request queue: '+queueid);
+      jsh.Config.queues[queueid] = {
+        actions: "BIUD",
+        roles: { "CMSHOST": "*" }
+      };
+      return cb();
+    }
+    else return cb();
+  }
+
+  exports.deployment_target_downloadTemplates = function(host_id, deployment_id, urls, requestOptions, cb){
+    var request_message = {
+      deployment_id: deployment_id,
+      op: 'download_templates',
+      urls: urls
     };
-    return cb();
+    funcs.deployment_target_host_requestSend(host_id, request_message, requestOptions, function(err, body){
+      if(err) err = 'Error downloading templates: '+err.toString();
+      return cb(err, body && body.urls);
+    });
+
+  }
+
+  exports.deployment_target_host_requestSend = function(host_id, request_message, options, cb){
+    options = _.extend({ timeout: 60 }, options);
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+
+    //Notify deployment host
+    var queueid = 'deployment_host_request_'+host_id;
+    var requestId = (new Date()).getTime().toString() + '_' + Math.round(Math.random()*1000000000).toString();
+    var msg = {
+      id: requestId,
+      body: request_message,
+    }
+    jsh.Log.info('CMSHOST: Sending request '+requestId+' to '+host_id);
+    var notifications = appsrv.SendQueue(queueid, JSON.stringify(msg));
+    if(!notifications) return cb(new Error('CMS Deployment Host "'+host_id+'" not connected.  Please verify jsharmony-cms-host is running on the target machine'));
+    pendingHostRequests[requestId] = {
+      queueid: queueid,
+      cb: cb,
+      timer: null,
+    };
+    //Clear callback after timeout
+    pendingHostRequests[requestId].timer = setTimeout(function(){
+      if(requestId in pendingHostRequests){
+        delete pendingHostRequests[requestId];
+        cb(new Error('Timeout during request to CMS Deployment Host "'+host_id+'".  Please verify jsharmony-cms-host is running on the target machine'));
+      }
+    }, (options.timeout||0) * 1000);
+  }
+
+  exports.deployment_host_response = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+
+    if(!req.params || !req.params.request_id) return next();
+    var requestId = req.params.request_id;
+
+    if (!Helper.HasRole(req, 'CMSHOST')) { Helper.GenError(req, res, -11, 'Invalid Access'); return; }
+
+    if (verb == 'post'){
+      
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, ['|body','|error'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      jsh.Log.info('CMSHOST: Received response '+requestId);
+
+      var body = {};
+      if(P.body){
+        try{
+          body = JSON.parse(P.body);
+        }
+        catch(ex){
+          return Helper.GenError(req, res, -9, 'Error parsing body: '+ex.toString());
+        }
+      }
+
+      if(!(requestId in pendingHostRequests)){
+        return Helper.GenError(req, res, -9, 'Request timed out or closed');
+      }
+
+      var request = pendingHostRequests[requestId];
+      delete pendingHostRequests[requestId];
+      clearTimeout(request.timer);
+      try{
+        request.cb(P.error||null, body);
+      }
+      catch(ex){
+        return Helper.GenError(req, res, -9, ex.toString());
+      }
+
+      res.end(JSON.stringify({ '_success': 1 }));
+
+      return;
+    }
+    else return next();
+  }
+
+  exports.webRequestGate = function(publish_path, publish_config, f){  // f(addWebRequest, performWebRequests, gate, downloadTemplates)
+    var host_id = '';
+    if(publish_path && (publish_path.indexOf('cmshost://')==0)) host_id = publish_path.substr(10);
+    var downloadTemplates = host_id && publish_config && publish_config.cmshost_config && publish_config.cmshost_config.download_remote_templates;
+    var webRequestURLs = [];
+    var webRequestContent = {};
+    Helper.gate(function(gate){
+      var addWebRequest = function(url, callback){
+        if(!_.includes(webRequestURLs, url)) webRequestURLs.push(url);
+        var op = gate.addOp(url, callback);
+        op.waitForGate(function(){
+          if(downloadTemplates){
+            var content = webRequestContent[url];
+            if(typeof content == 'undefined') return op.done(new Error('Remote Template not resolved by deployment host: '+url));
+            op.params[1](null, null, content, op.done);
+          }
+          else {
+            wc.req(op.params[0], 'GET', {}, {}, undefined, function(err, res, templateContent){
+              op.params[1](err, res, templateContent, op.done);
+            });
+          }
+        });
+        return op;
+      }
+      var performWebRequests = function(callback){
+        gate.waitForOps(function(){
+          Helper.execif(downloadTemplates && webRequestURLs.length,
+            function(f){
+              var requestOptions = {};
+              if('remote_timeout' in publish_config.cmshost_config) requestOptions.timeout = publish_config.cmshost_config.remote_timeout;
+              funcs.deployment_target_downloadTemplates(host_id, null, webRequestURLs, requestOptions, function(err, templates){
+                if(err) return callback(err);
+                if(templates) _.extend(webRequestContent, templates);
+                return f();
+              });
+            },
+            function(){
+              gate.open();
+              gate.waitForDone(callback);
+            }
+          );
+        });
+      };
+      f(addWebRequest, performWebRequests, gate, downloadTemplates);
+    }, {
+      open: !downloadTemplates,
+      //log: function(txt){ console.log(txt); },
+    });
   }
 
   return exports;

@@ -747,16 +747,14 @@ module.exports = exports = function(module, funcs){
 
     
     //Debugging - Render Tree
-    /*
-    (function renderTree(sitemap_items, prefix){
-      prefix = prefix || '';
-      _.each(sitemap_items, function(sitemap_item){
-        console.log(prefix+(sitemap_item.selected?'*':'')+sitemap_item.sitemap_item_text);
-        renderTree(sitemap_item.children, prefix + '  ');
-      });
-    })(sitemap.tree);
-    console.log('---------');
-    */
+    //(function renderTree(sitemap_items, prefix){
+    //  prefix = prefix || '';
+    //  _.each(sitemap_items, function(sitemap_item){
+    //    console.log(prefix+(sitemap_item.selected?'*':'')+sitemap_item.sitemap_item_text);
+    //    renderTree(sitemap_item.children, prefix + '  ');
+    //  });
+    //})(sitemap.tree);
+    //console.log('---------');
 
 
     //Aliases

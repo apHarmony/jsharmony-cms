@@ -16,6 +16,11 @@
   //Local filesystem
   file://c:/path/to/folder/
 
+  //CMS Deployment Host
+  cmshost://hostid
+  //Connect as a remote host using the jsharmony-cms-host program
+  //  https://github.com/apHarmony/jsharmony-cms-host
+
   //Amazon S3
   s3://path/to/bucket/
   //Set access key and secret key in s3_config parameter below
@@ -29,10 +34,6 @@
   //* Note - git_ssh will use the Public / Private Key defined in the Deployment Target as its identity
   //* Note - set the git branch in the git_config.branch parameter
 
-  //CMS Deployment Host
-  cmshost://hostid
-  //Connect as a remote host using the jsharmony-cms-host program
-  //  https://github.com/apHarmony/jsharmony-cms-host
 
 
 //Deployment Target Publish Config
@@ -57,6 +58,12 @@
 
     "ignore_certificate_errors": false,    //For FTPS, ignore self-signed certificate errors
     "compression": false,                  //For FTP / FTPS, whether to enable compression
+  },
+
+  //CMS Deployment Host settings
+  "cmshost_config": {
+    "download_remote_templates": false,   //Download remote templates via Deployment Host
+    "remote_timeout": 60,                 //Timeout (seconds) for downloading remote templates
   },
 
   //Amazon S3 deployment settings

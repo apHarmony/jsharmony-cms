@@ -144,6 +144,11 @@ jsh.App[modelid] = new (function(){
         if(_.isEmpty(s3_config)) delete parsed_config.s3_config;
       })(); }
       else if(protocol=='cmshost'){ (function(){
+        var cmshost_config = parsed_config.cmshost_config||{};
+        jDeploymentType.find('[data-elem="cmshost_config.download_remote_templates"]').prop('checked',!!cmshost_config.download_remote_templates);
+        jDeploymentType.find('[data-elem="cmshost_config.remote_timeout"]').val(cmshost_config.remote_timeout||'');
+        _.each(['download_remote_templates','remote_timeout'], function(key){ delete cmshost_config[key]; });
+        if(_.isEmpty(cmshost_config)) delete parsed_config.cmshost_config;
       })(); }
       else if(protocol=='file'){ (function(){
       })(); }
@@ -321,6 +326,16 @@ jsh.App[modelid] = new (function(){
       if(path){
         generated_url = 'cmshost://' + path;
       }
+
+      var cmshost_config = {};
+      _.each(['download_remote_templates'], function(key){
+        var val = jDeploymentType.find('[data-elem="cmshost_config.'+key+'"]').is(':checked');
+        if(val) cmshost_config[key] = true;
+      });
+      var remote_timeout = jDeploymentType.find('[data-elem="cmshost_config.remote_timeout"]').val().trim();
+      if(parseInt(remote_timeout).toString() != remote_timeout) remote_timeout = '';
+      if(remote_timeout) cmshost_config.remote_timeout = remote_timeout;
+      if(!_.isEmpty(cmshost_config)) generated_config.cmshost_config = cmshost_config;
     })(); }
     else if(protocol=='file'){ (function(){
       var path = jDeploymentType.find('[data-path-elem="path"]').val().trim();
@@ -439,7 +454,7 @@ jsh.App[modelid] = new (function(){
       }
       for(var key in ext_config){
         if(!(key in generated_config)) generated_config[key] = ext_config[key];
-        else if(_.includes(['s3_config','git_config','ftp_config'], key) && _.isObject(ext_config[key]) && _.isObject(generated_config[key])){
+        else if(_.includes(['s3_config','cmshost_config','git_config','ftp_config'], key) && _.isObject(ext_config[key]) && _.isObject(generated_config[key])){
           for(var subkey in ext_config[key]){
             if(!(subkey in generated_config[key])) generated_config[key][subkey] = ext_config[key][subkey];
           }
@@ -501,6 +516,8 @@ jsh.App[modelid] = new (function(){
       })(); }
       else if(protocol=='cmshost'){ (function(){
         if(!jDeploymentType.find('[data-path-elem="hostid"]').val().trim()) errors.push('Host ID is required for CMS Host deployment');
+        var remote_timeout = jDeploymentType.find('[data-elem="cmshost_config.remote_timeout"]').val();
+        if(remote_timeout && (remote_timeout != (parseInt(remote_timeout)).toString())) errors.push('Invalid '+protocol.toUpperCase()+' remote_timeout');
       })(); }
       else if(protocol=='file'){ (function(){
         if(!jDeploymentType.find('[data-path-elem="path"]').val().trim()) errors.push('Path is required for Local Filesystem deployment');

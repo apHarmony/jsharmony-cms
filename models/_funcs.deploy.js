@@ -29,7 +29,6 @@ var crypto = require('crypto');
 var moment = require('moment');
 var wclib = require('jsharmony/WebConnect');
 var yazl = require("yazl");
-var wc = new wclib.WebConnect();
 var baseModule = module;
 
 module.exports = exports = function(module, funcs){
@@ -248,7 +247,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.downloadRemoteTemplates = function(branchData, templates, template_html, options, download_cb){
-    options = _.extend({ templateType: 'PAGE', exportTemplates: {} }, options);
+    options = _.extend({ templateType: 'PAGE', exportTemplates: {}, addWebRequest: null }, options);
 
     var jsh = module.jsh;
 
@@ -286,11 +285,11 @@ module.exports = exports = function(module, funcs){
           if(branchData.publish_params) funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading remote template: '+url);
           else jsh.Log.info('Downloading remote template: '+url);
 
-          wc.req(url, 'GET', {}, {}, undefined, function(err, res, templateContent){
-            if(err) return template_action_cb(err);
+          options.addWebRequest(url, function(err, res, templateContent, req_cb){
+            if(err) return req_cb(err);
             if(res && res.statusCode){
-              if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
-              if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+              if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+              if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
             }
             //Parse and merge template config
             var templateConfig = null;
@@ -300,7 +299,7 @@ module.exports = exports = function(module, funcs){
               else throw new Error('Invalid Template Type: ' + options.templateType);
             }
             catch(ex){
-              return template_action_cb(ex);
+              return req_cb(ex);
             }
             if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
               templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.template_variables, url);
@@ -315,7 +314,7 @@ module.exports = exports = function(module, funcs){
                 if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables });
               }
               catch(ex){
-                return template_action_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
+                return req_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
               }
               template_html[template_name] = templateContent;
             }
@@ -331,8 +330,9 @@ module.exports = exports = function(module, funcs){
               }
             });
 
-            return template_action_cb();
+            return req_cb();
           });
+          return template_action_cb();
         },
       ], template_cb);
 
@@ -340,7 +340,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.downloadPublishTemplates = function(branchData, templates, template_html, options, download_cb){
-    options = _.extend({ templateType: 'PAGE', exportTemplates: {} }, options);
+    options = _.extend({ templateType: 'PAGE', exportTemplates: {}, addWebRequest: null }, options);
     async.eachOf(templates, function(template, template_name, template_cb){
 
       async.parallel([
@@ -355,15 +355,16 @@ module.exports = exports = function(module, funcs){
 
               var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.template_variables);
               funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
-              wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
-                if(err) return template_action_cb(err);
+              options.addWebRequest(url, function(err, res, rslt, req_cb){
+                if(err) return req_cb(err);
                 if(res && res.statusCode){
-                  if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
-                  if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+                  if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                  if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
                 }
                 template_html[template_name] = rslt;
-                return template_action_cb();
+                return req_cb();
               });
+              return template_action_cb();
             },
 
             //Add hard-coded templates to result
@@ -392,15 +393,16 @@ module.exports = exports = function(module, funcs){
 
                 var url = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.template_variables);
                 funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
-                wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
-                  if(err) return template_action_cb(err);
+                options.addWebRequest(url, function(err, res, rslt, req_cb){
+                  if(err) return req_cb(err);
                   if(res && res.statusCode){
-                    if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
-                    if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+                    if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                    if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
                   }
                   options.exportTemplates[template_name][exportIndex] = rslt;
-                  return template_action_cb();
+                  return req_cb();
                 });
+                return template_action_cb();
               },
 
               //Add hard-coded templates to result
@@ -1976,7 +1978,7 @@ module.exports = exports = function(module, funcs){
     var deployment_id = deployment.deployment_id;
 
     //Notify deployment host
-    var queueid = 'deployment_host_'+host_id;
+    var queueid = 'deployment_host_publish_'+host_id;
     var deployment_message = {
       deployment_id: deployment_id
     };
@@ -2737,6 +2739,7 @@ module.exports = exports = function(module, funcs){
       var existingFiles = {};
       try{
         if(P.existingFiles) existingFiles = JSON.parse(P.existingFiles);
+        else existingFiles = null;
       }
       catch(ex){
         jsh.Log.error('Invalid deployment host existingFiles JSON: '+ex.toString());
@@ -2752,6 +2755,8 @@ module.exports = exports = function(module, funcs){
         //Check if deployment status is complete
         if(deployment.deployment_sts == 'FAILED'){ return Helper.GenError(req, res, -9, 'Cannot download failed deployment'); }
 
+        if(!existingFiles) funcs.deploy_log_change(deployment_id, 'All files were overwritten (jsharmony-cms-host --overwrite-all)');
+
         var downloadParams = { 
           exec: 'deployment_download',
           deployment_id: deployment_id,
@@ -2759,7 +2764,7 @@ module.exports = exports = function(module, funcs){
           onStart: function(){
             if(req.jsproxyid) Helper.SetCookie(req, res, jsh, req.jsproxyid, 'ready', { 'path': req.baseurl });
           },
-          options: { existingFiles: existingFiles },
+          options: { existingFiles: existingFiles, log_changes: !!existingFiles },
         };
         funcs.deploymentQueue.push(downloadParams, function(err){
           if(err) return Helper.GenError(req, res, -99999, err.toString());
@@ -2773,7 +2778,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.deployment_download = function (deployment_id, dstStream, onStart, options, callback) {
-    options = _.extend({ existingFiles: null }, options);
+    options = _.extend({ existingFiles: null, log_changes: false }, options);
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -2783,6 +2788,7 @@ module.exports = exports = function(module, funcs){
     var deployment_git_revision = '';
     var zip_filename = 'cms_deployment';
     var site_files = {};
+    var folders = {};
 
     if(onStart) onStart();
 
@@ -2856,7 +2862,6 @@ module.exports = exports = function(module, funcs){
 
       //Get list of all site files
       function (cb){
-        var folders = {};
 
         HelperFS.funcRecursive(publish_path, function (filepath, relativepath, file_cb) { //filefunc
           var parentpath = path.dirname(relativepath);
@@ -2911,12 +2916,47 @@ module.exports = exports = function(module, funcs){
               if(existingFileHash == site_files[relativePath].md5) continue;
             }
           }
+          if(options.log_changes) funcs.deploy_log_change(deployment_id, 'Copying file: '+relativePath);
           zipfile.addFile(path.join(publish_path,relativePath), relativePath);
         }
 
         //Find files to delete
+        var excessFolders = {};
+        var site_folders = _.values(folders);
         for(var existingFile in options.existingFiles){
-          if(!(existingFile in site_files)) deploymentManifest.deleteFiles.push(existingFile);
+          if(!(existingFile in site_files)){
+            if(options.log_changes){
+              var logFolder = false;
+              var baseFolder = path.dirname(existingFile);
+              if(baseFolder=='.') baseFolder = '';
+
+              if(!baseFolder || (baseFolder in site_folders)){
+                funcs.deploy_log_change(deployment_id, 'Excess file: '+existingFile);
+              }
+              else if(baseFolder in excessFolders) continue;
+              else {
+
+                var newExcessFolder = false;
+                function getClosestFolder(folder){
+                  if(folder in excessFolders) return excessFolders[folder];
+
+                  var parentFolder = path.dirname(folder);
+                  if(parentFolder=='.') parentFolder = '';
+                  if(!parentFolder || (parentFolder in site_folders)) parentFolder = '';
+
+                  if(!parentFolder){
+                    excessFolders[folder] = folder;
+                    newExcessFolder = folder;
+                  }
+                  else excessFolders[folder] = getClosestFolder(parentFolder);
+                }
+
+                getClosestFolder(baseFolder);
+                if(newExcessFolder) funcs.deploy_log_change(deployment_id, 'Excess folder: '+newExcessFolder+'/*');
+              }
+            }
+            deploymentManifest.deleteFiles.push(existingFile);
+          }
         }
 
         //Write deployment manifest, if applicable

@@ -68,6 +68,7 @@ module.exports = exports = function(module, funcs){
 
     var deployment_target_template_variables_str = '';
     var deployment_target_publish_config = {};
+    var deployment_target_publish_path = '';
 
     if (verb == 'get'){
 
@@ -112,11 +113,12 @@ module.exports = exports = function(module, funcs){
 
         //Get deployment_target_template_variables
         function(cb){
-          var sql = "select v_my_site.deployment_target_template_variables, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
+          var sql = "select v_my_site.deployment_target_template_variables, deployment_target_publish_path, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
           appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
             if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
             if(rslt && rslt[0]){
               deployment_target_template_variables_str = rslt[0].deployment_target_template_variables || '';
+              deployment_target_publish_path = rslt[0].deployment_target_publish_path || '';
               try{
                 deployment_target_publish_config = funcs.parseDeploymentTargetPublishConfig(site_id, rslt[0].deployment_target_publish_config, 'editor');
               }
@@ -156,36 +158,42 @@ module.exports = exports = function(module, funcs){
         
         //Download remote templates
         function(cb){
-          async.eachOf(components, function(component, component_name, component_cb){
-            if(component.location=='LOCAL') return component_cb();
-            if(!(component.remote_templates && component.remote_templates.editor)) return component_cb();
-            if(component.optimization && component.optimization.bare_ejs_templates) return component_cb();
-            
-            var url = component.remote_templates.editor;
-            wc.req(url, 'GET', {}, {}, undefined, function(err, res, templateContent){
-              if(err) return component_cb(err);
-              if(res && res.statusCode){
-                if(res.statusCode > 500) return component_cb(new Error(res.statusCode+' Error downloading template '+url));
-                if(res.statusCode > 400) return component_cb(new Error(res.statusCode+' Error downloading template '+url));
-              }
+          funcs.webRequestGate(deployment_target_publish_path, deployment_target_publish_config, function(addWebRequest, performWebRequests, downloadTemplates){
+            async.eachOf(components, function(component, component_name, component_cb){
+              if(component.location=='LOCAL') return component_cb();
+              if(!(component.remote_templates && component.remote_templates.editor)) return component_cb();
+              if(component.optimization && component.optimization.bare_ejs_templates) return component_cb();
+              
+              var url = component.remote_templates.editor;
+              addWebRequest(url, function(err, res, templateContent, req_cb){
+                if(err) return req_cb(err);
+                if(res && res.statusCode){
+                  if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                  if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                }
 
-              //Parse and merge component config
-              var templateConfig = null;
-              try{
-                templateConfig = funcs.readComponentTemplateConfig(templateContent, 'remote component template  "'+url+'"');
-              }
-              catch(ex){
-                return component_cb(new Error('Error reading "'+component_name+'" component template config: '+ex.toString()));
-              }
-              _.merge(component, templateConfig);
+                //Parse and merge component config
+                var templateConfig = null;
+                try{
+                  templateConfig = funcs.readComponentTemplateConfig(templateContent, 'remote component template  "'+url+'"');
+                }
+                catch(ex){
+                  return req_cb(new Error('Error reading "'+component_name+'" component template config: '+ex.toString()));
+                }
+                _.merge(component, templateConfig);
 
-              component.templates.editor = templateContent;
-              delete component.remote_templates.editor;
+                component.templates.editor = templateContent;
+                delete component.remote_templates.editor;
 
-              return component_cb();
+                return req_cb();
+              });
+              component_cb();
+
+            }, function(err){
+              if(err) return cb(err);
+              performWebRequests(cb);
             });
-
-          }, cb);
+          });
         },
 
         //Parse template config

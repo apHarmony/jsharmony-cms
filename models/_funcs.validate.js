@@ -124,6 +124,7 @@ module.exports = exports = function(module, funcs){
       site_config: {},
       template_variables: null,
       branch_validate: branch_validate,
+      deployment: {},
     };
 
     async.waterfall([
@@ -139,13 +140,14 @@ module.exports = exports = function(module, funcs){
 
       //Get template_variables for branch
       function(cb){
-        var sql = "select site_editor deployment_target_id, v_my_site.deployment_target_template_variables, v_my_branch_desc.site_id, deployment_target_publish_config from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_branch_desc.branch_id=@branch_id";
+        var sql = "select site_editor deployment_target_id, v_my_site.deployment_target_template_variables, v_my_branch_desc.site_id, deployment_target_publish_config, deployment_target_publish_path from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_branch_desc.branch_id=@branch_id";
         appsrv.ExecRow(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target revision', -11));
 
           branchData.deployment_target_id = rslt[0].deployment_target_id;
           branchData.site_id = rslt[0].site_id;
+          branchData.deployment.deployment_target_publish_path = rslt[0].deployment_target_publish_path || '';
 
           //Template Variables
           var template_variables = {};
@@ -170,7 +172,7 @@ module.exports = exports = function(module, funcs){
             branchData.template_variables = template_variables;
 
             //Deployment Target Publish Params
-            var publish_params = JSON.parse(JSON.stringify(template_variables));
+            var publish_params = _.extend(JSON.parse(JSON.stringify(template_variables)), deployment_target_publish_config);
             branchData.publish_params = publish_params;
 
             return cb();

@@ -408,95 +408,149 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       validate: {
         error_columns: ['page_id','page_key','page_title','page_path','page_template_id','page_filename'],
         onBeforeValidate: function(item_errors, branchData, callback){
-          async.parallel([
-            //Page Templates
-            function(page_cb){
-              async.waterfall([
-                //Get page templates
-                function(page_template_cb){
-                  _this.funcs.getPageTemplates('deployment', branchData.site_id, { }, function(err, pageTemplates){
-                    if(err) return page_template_cb(err);
-                    branchData.page_templates = pageTemplates;
-                    return page_template_cb();
+          _this.funcs.webRequestGate(branchData.deployment.deployment_target_publish_path, branchData.publish_params, function(addWebRequest, performWebRequests, gate, downloadTemplates){
+            var onRemoteTemplatesReady = [];
+            var remoteTemplatesTrigger = new Helper.triggerCounter(2);
+
+            async.parallel([
+              //CMS Deployment Host Request
+              function(cb){
+                remoteTemplatesTrigger.action = (function(){
+                  performWebRequests(function(err){
+                    if(err) return cb(err);
+                    Helper.trigger(onRemoteTemplatesReady);
+                    gate.close();
+                    return cb();
                   });
-                },
-                //Download local template definitions
-                function(page_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.page_templates, {}, {}, page_template_cb); },
-                //Download remote template definitions
-                function(page_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.page_templates, {}, {}, page_template_cb); },
-              ], page_cb);
-            },
-            //Component Templates
-            function(cb){
-              async.waterfall([
-                //Get component templates
-                function(component_template_cb){
-                  _this.funcs.getComponentTemplates('deployment', branchData.site_id, {}, function(err, componentTemplates){
-                    if(err) return component_template_cb(err);
-                    branchData.component_templates = componentTemplates;
-                    return component_template_cb();
-                  });
-                },
-                //Download local template definitions
-                function(component_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.component_templates, {}, { templateType: 'COMPONENT', exportTemplates: {} }, component_template_cb); },
-                //Download remote template definitions
-                function(component_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.component_templates, {}, { templateType: 'COMPONENT', exportTemplates: {} }, component_template_cb); },
-              ], cb);
-            },
-            //Get all branch pages from the database
-            function(page_cb){ return _this.funcs.validate_getPages(item_errors, branchData, page_cb); }
-          ], callback);
+                });
+              },
+              //Page Templates
+              function(page_cb){
+                async.waterfall([
+                  //Get page templates
+                  function(page_template_cb){
+                    _this.funcs.getPageTemplates('deployment', branchData.site_id, { }, function(err, pageTemplates){
+                      if(err) return page_template_cb(err);
+                      branchData.page_templates = pageTemplates;
+                      return page_template_cb();
+                    });
+                  },
+                  //Download local template definitions
+                  function(page_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.page_templates, {}, {}, page_template_cb); },
+                  //Download remote template definitions
+                  function(page_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.page_templates, {}, { addWebRequest: addWebRequest }, page_template_cb); },
+                  //Wait for Remote Template Milestone
+                  function(page_template_cb){ onRemoteTemplatesReady.push(page_template_cb); remoteTemplatesTrigger.increment(); },
+                ], page_cb);
+              },
+              //Component Templates
+              function(cb){
+                async.waterfall([
+                  //Get component templates
+                  function(component_template_cb){
+                    _this.funcs.getComponentTemplates('deployment', branchData.site_id, {}, function(err, componentTemplates){
+                      if(err) return component_template_cb(err);
+                      branchData.component_templates = componentTemplates;
+                      return component_template_cb();
+                    });
+                  },
+                  //Download local template definitions
+                  function(component_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.component_templates, {}, { templateType: 'COMPONENT', exportTemplates: {} }, component_template_cb); },
+                  //Download remote template definitions
+                  function(component_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.component_templates, {}, { templateType: 'COMPONENT', exportTemplates: {}, addWebRequest: addWebRequest }, component_template_cb); },
+                  //Wait for Remote Template Milestone
+                  function(component_template_cb){ onRemoteTemplatesReady.push(component_template_cb); remoteTemplatesTrigger.increment(); },
+                ], cb);
+              },
+              //Get all branch pages from the database
+              function(page_cb){ return _this.funcs.validate_getPages(item_errors, branchData, page_cb); }
+            ], callback);
+          });
         },
         onValidate: function(item_errors, branchData, callback){ return _this.funcs.validate_page(item_errors, branchData, callback); },
       },
       deploy: {
         onBeforeDeploy: function(jsh, branchData, publish_params, callback){
-          async.parallel([
-            //Page Templates
-            function(cb){
-              async.waterfall([
-                //Get page templates
-                function(page_template_cb){
-                  _this.funcs.getPageTemplates('deployment', branchData.site_id, {}, function(err, pageTemplates){
-                    if(err) return page_template_cb(err);
-                    branchData.page_templates = pageTemplates;
-                    return page_template_cb();
+          _this.funcs.webRequestGate(branchData.deployment.deployment_target_publish_path, publish_params, function(addWebRequest, performWebRequests, gate, downloadTemplates){
+            var ops = {};
+
+            var onRemoteTemplatesReady = [];
+            var onPublishTemplatesReady = [];
+            var remoteTemplatesTrigger = new Helper.triggerCounter(2);
+            var publishTemplatesTrigger = new Helper.triggerCounter(2);
+
+            async.parallel([
+              //CMS Deployment Host Request
+              function(cb){
+                remoteTemplatesTrigger.action = (function(){
+                  performWebRequests(function(err){
+                    if(err) return cb(err);
+                    gate.close();
+                    Helper.trigger(onRemoteTemplatesReady);
                   });
-                },
-                //Download local template definitions
-                function(page_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.page_templates, branchData.page_template_html, {}, page_template_cb); },
-                //Download remote template definitions
-                function(page_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.page_templates, branchData.page_template_html, {}, page_template_cb); },
-                //Download remote template content
-                function(page_template_cb){ _this.funcs.downloadPublishTemplates(branchData, branchData.page_templates, branchData.page_template_html, {}, page_template_cb); },
-              ], cb);
-            },
-            //Component Templates
-            function(cb){
-              async.waterfall([
-                //Get component templates
-                function(component_template_cb){
-                  _this.funcs.getComponentTemplates('deployment', branchData.site_id, { withContent: true, includeLocalPath: true }, function(err, componentTemplates){
-                    if(err) return component_template_cb(err);
-                    branchData.component_templates = componentTemplates;
-                    return component_template_cb();
+                });
+
+                publishTemplatesTrigger.action = (function(){
+                  performWebRequests(function(err){
+                    if(err) return cb(err);
+                    gate.close();
+                    Helper.trigger(onPublishTemplatesReady);
+                    return cb();
                   });
-                },
-                //Download local template definitions
-                function(component_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.component_templates, branchData.component_template_html, { templateType: 'COMPONENT', exportTemplates: branchData.component_export_template_html }, component_template_cb); },
-                //Download remote template definitions
-                function(component_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.component_templates, branchData.component_template_html, { templateType: 'COMPONENT', exportTemplates: branchData.component_export_template_html }, component_template_cb); },
-                //Download remote template content
-                function(component_template_cb){ _this.funcs.downloadPublishTemplates(branchData, branchData.component_templates, branchData.component_template_html, { templateType: 'COMPONENT', exportTemplates: branchData.component_export_template_html }, component_template_cb); },
-                //Generate templates
-                function(component_template_cb){
-                  _this.funcs.generateComponentDeploymentTemplates(branchData, component_template_cb);
-                },
-              ], cb);
-            },
-            //Get all branch pages from the database
-            function(cb){ _this.funcs.deploy_getPages(jsh, branchData, publish_params, cb); },
-          ], callback);
+                });
+              },
+              //Page Templates
+              function(cb){
+                async.waterfall([
+                  //Get page templates
+                  function(page_template_cb){
+                    _this.funcs.getPageTemplates('deployment', branchData.site_id, {}, function(err, pageTemplates){
+                      if(err) return page_template_cb(err);
+                      branchData.page_templates = pageTemplates;
+                      return page_template_cb();
+                    });
+                  },
+                  //Download local template definitions
+                  function(page_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.page_templates, branchData.page_template_html, {}, page_template_cb); },
+                  //Download remote template definitions
+                  function(page_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.page_templates, branchData.page_template_html, { addWebRequest: addWebRequest }, page_template_cb); },
+                  //Wait for Remote Template Milestone
+                  function(page_template_cb){ onRemoteTemplatesReady.push(page_template_cb); remoteTemplatesTrigger.increment(); },
+                  //Download remote template content
+                  function(page_template_cb){ _this.funcs.downloadPublishTemplates(branchData, branchData.page_templates, branchData.page_template_html, { addWebRequest: addWebRequest }, page_template_cb); },
+                  //Wait for Publish Template Milestone
+                  function(page_template_cb){ onPublishTemplatesReady.push(page_template_cb); publishTemplatesTrigger.increment(); },
+                ], cb);
+              },
+              //Component Templates
+              function(cb){
+                async.waterfall([
+                  //Get component templates
+                  function(component_template_cb){
+                    _this.funcs.getComponentTemplates('deployment', branchData.site_id, { withContent: true, includeLocalPath: true }, function(err, componentTemplates){
+                      if(err) return component_template_cb(err);
+                      branchData.component_templates = componentTemplates;
+                      return component_template_cb();
+                    });
+                  },
+                  //Download local template definitions
+                  function(component_template_cb){ _this.funcs.downloadLocalTemplates(branchData, branchData.component_templates, branchData.component_template_html, { templateType: 'COMPONENT', exportTemplates: branchData.component_export_template_html }, component_template_cb); },
+                  //Download remote template definitions
+                  function(component_template_cb){ _this.funcs.downloadRemoteTemplates(branchData, branchData.component_templates, branchData.component_template_html, { templateType: 'COMPONENT', exportTemplates: branchData.component_export_template_html, addWebRequest: addWebRequest }, component_template_cb); },
+                  //Wait for Remote Template Milestone
+                  function(component_template_cb){ onRemoteTemplatesReady.push(component_template_cb); remoteTemplatesTrigger.increment(); },
+                  //Download remote template content
+                  function(component_template_cb){ _this.funcs.downloadPublishTemplates(branchData, branchData.component_templates, branchData.component_template_html, { templateType: 'COMPONENT', exportTemplates: branchData.component_export_template_html, addWebRequest: addWebRequest }, component_template_cb); },
+                  //Wait for Publish Template Milestone
+                  function(component_template_cb){ onPublishTemplatesReady.push(component_template_cb); publishTemplatesTrigger.increment(); },
+                  //Generate templates
+                  function(component_template_cb){ _this.funcs.generateComponentDeploymentTemplates(branchData, component_template_cb); },
+                ], cb);
+              },
+              //Get all branch pages from the database
+              function(cb){ _this.funcs.deploy_getPages(jsh, branchData, publish_params, cb); },
+            ], callback);
+          });
         },
         onDeploy: function(jsh, branchData, publish_params, callback){ return _this.funcs.deploy_page(jsh, branchData, publish_params, callback); },
         onDeploy_PostBuild: function(jsh, branchData, publish_params, callback){
@@ -768,6 +822,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/deployment_host/:deployment_id/log': _this.funcs.deployment_host_log,
         '/_funcs/deployment_host/:deployment_id/download': _this.funcs.req_deployment_host_download,
+        '/_funcs/deployment_host/:request_id/response': _this.funcs.deployment_host_response,
         '/_funcs/deployment_change_log/:deployment_id': _this.funcs.deployment_change_log,
         '/_funcs/deployment/download/:deployment_id': _this.funcs.req_deployment_download,
         '/_funcs/deployment/trigger': _this.funcs.req_deployment_trigger,
