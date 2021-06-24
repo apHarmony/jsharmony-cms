@@ -84,7 +84,7 @@ module.exports = exports = function(module, funcs){
     if(target_site_id=='current')
       sql = "select v_my_site.site_id, v_my_site.deployment_target_template_variables, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id={schema}.my_current_site_id()";
     else {
-      sql = "select site_id from {schema}.deployment_target where site_id=@site_id";
+      sql = "select site_id from {schema}.v_my_site where site_id=@site_id";
       sql_ptypes = [dbtypes.BigInt];
       sql_params = { site_id: target_site_id };
     }
