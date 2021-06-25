@@ -20,7 +20,7 @@ var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
 var async = require('async');
 var DiffMatchPatch = require('diff-match-patch');
-var diff2html = require("diff2html").Diff2Html;
+var diff2html = require("diff2html");
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -593,8 +593,7 @@ module.exports = exports = function(module, funcs){
     }
 
     patch = "--- compare\n+++ compare\n" + patch;
-    return Diff2Html.getPrettyHtml(patch, {
-      inputFormat: "diff",
+    return diff2html.html(patch, {
       matching: "lines"
     });
 
