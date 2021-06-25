@@ -144,7 +144,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
   var itemData = modelTemplate.populateDataInstance(itemData || {});
 
   var dialog = new FormDialog(this._jsh, this._cms, modelConfig, {
-    acceptButtonLabel: 'Save',
+    acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
