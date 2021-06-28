@@ -13,8 +13,9 @@
   ftp://username:password@ftp.domain.com:port/path
   //* Note - be sure to review the "ftp_config.delete_excess_files" option
 
-  //Local filesystem
+  //Local Filesystem
   file://c:/path/to/folder/
+  //* Note - be sure to review the "fs_config.delete_excess_files" option
 
   //CMS Deployment Host
   cmshost://hostid
@@ -59,6 +60,11 @@
     "ignore_certificate_errors": false,    //For FTPS, ignore self-signed certificate errors
     "compression": false,                  //For FTP / FTPS, whether to enable compression
   },
+
+  //Local Filesystem deployment settings
+  "fs_config": {
+    "delete_excess_files": false,   //If true, delete excess files in destination that weren't in the publish build
+  }
 
   //CMS Deployment Host settings
   "cmshost_config": {

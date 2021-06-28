@@ -169,6 +169,10 @@ jsh.App[modelid] = new (function(){
         if(_.isEmpty(cmshost_config)) delete parsed_config.cmshost_config;
       })(); }
       else if(protocol=='file'){ (function(){
+        var fs_config = parsed_config.fs_config||{};
+        jDeploymentType.find('[data-elem="fs_config.delete_excess_files"]').prop('checked',!!fs_config.delete_excess_files);
+        _.each(['delete_excess_files'], function(key){ delete fs_config[key]; });
+        if(_.isEmpty(fs_config)) delete parsed_config.fs_config;
       })(); }
       else if(protocol=='git_https'){ (function(){
         var git_config = parsed_config.git_config||{};
@@ -360,6 +364,13 @@ jsh.App[modelid] = new (function(){
       if(path){
         generated_url = 'file://' + path;
       }
+
+      var fs_config = {};
+      _.each(['delete_excess_files'], function(key){
+        var val = jDeploymentType.find('[data-elem="fs_config.'+key+'"]').is(':checked');
+        if(val) fs_config[key] = true;
+      });
+      if(!_.isEmpty(fs_config)) generated_config.fs_config = fs_config;
     })(); }
     else if(protocol=='git_https'){ (function(){
       var parsed_url = _this.parse_url(jDeploymentType.find('[data-path-elem="url"]').val().trim());
@@ -472,7 +483,7 @@ jsh.App[modelid] = new (function(){
       }
       for(var key in ext_config){
         if(!(key in generated_config)) generated_config[key] = ext_config[key];
-        else if(_.includes(['s3_config','cmshost_config','git_config','ftp_config'], key) && _.isObject(ext_config[key]) && _.isObject(generated_config[key])){
+        else if(_.includes(['s3_config','cmshost_config','fs_config','git_config','ftp_config'], key) && _.isObject(ext_config[key]) && _.isObject(generated_config[key])){
           for(var subkey in ext_config[key]){
             if(!(subkey in generated_config[key])) generated_config[key][subkey] = ext_config[key][subkey];
           }

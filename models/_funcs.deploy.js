@@ -1882,6 +1882,7 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var deployment_id = deployment.deployment_id;
+    var deployment_target_publish_path = (deployment.deployment_target_publish_path||'').toString();
 
     //Get list of folders
     var folders = {};
@@ -1901,6 +1902,11 @@ module.exports = exports = function(module, funcs){
     var found_files = {};
     var found_folders = {};
 
+    var delete_excess_files = true;
+    if(deployment_target_publish_path.indexOf('file://')==0){
+      delete_excess_files = !!(deployment.publish_params.fs_config && deployment.publish_params.fs_config.delete_excess_files);
+    }
+
     async.waterfall([
 
       //Delete extra files / folders
@@ -1908,6 +1914,7 @@ module.exports = exports = function(module, funcs){
         HelperFS.funcRecursive(deploy_path, function (filepath, relativepath, file_cb) { //filefunc
           var delfunc = function(){
             if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)) return file_cb();
+            if(!delete_excess_files) return file_cb();
             funcs.deploy_log_info(deployment_id, 'Deleting '+filepath);
             funcs.deploy_log_change(deployment_id, 'Deleting file: '+relativepath);
             fs.unlink(filepath, file_cb);
@@ -1933,6 +1940,7 @@ module.exports = exports = function(module, funcs){
           else if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)){
             return dir_cb();
           }
+          else if(!delete_excess_files) return dir_cb();
           funcs.deploy_log_info(deployment_id, 'Deleting '+dirpath);
           funcs.deploy_log_change(deployment_id, 'Deleting folder: '+relativepath);
           HelperFS.rmdirRecursive(dirpath, dir_cb);
