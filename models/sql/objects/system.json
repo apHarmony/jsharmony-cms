@@ -81,6 +81,7 @@
     "sql_drop": "",
     "columns": [
       { "name": "sys_user_id", "type": "bigint", "key": true, "null": false },
+      { "name": "sys_user_hash", "type": "binary", "length": 200, "null": false },
     ],
     "triggers": [
       { "prefix": "{schema}_", "on": ["update"], "exec": [

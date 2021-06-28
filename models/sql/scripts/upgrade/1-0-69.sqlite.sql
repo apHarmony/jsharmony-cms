@@ -9,6 +9,6 @@ create table cms_sys_user_token(
   sys_user_token_euser text,
   sys_user_token_mtstmp text,
   sys_user_token_muser text,
- foreign key (sys_user_id) references jsharmony_sys_user(sys_user_id) on delete cascade
+  foreign key (sys_user_id) references jsharmony_sys_user(sys_user_id) on delete cascade
 );
 create index index_cms_sys_user_token_1 on cms_sys_user_token(sys_user_token_hash);
