@@ -75,6 +75,25 @@
     ],
   },
 
+  "jsharmony.sys_user": {
+    "type":"table",
+    "sql_create": "",
+    "sql_drop": "",
+    "columns": [
+      { "name": "sys_user_id", "type": "bigint", "key": true, "null": false },
+    ],
+    "triggers": [
+      { "prefix": "{schema}_", "on": ["update"], "exec": [
+          "delete from {schema}.sys_user_token where sys_user_id = deleted(sys_user_id) and (update(sys_user_hash));",
+        ]
+      },
+      { "prefix": "{schema}_", "on": ["delete"], "exec": [
+          "delete from {schema}.sys_user_token where sys_user_id = deleted(sys_user_id);",
+        ]
+      }
+    ],
+  },
+
   "jsharmony.txt": {
     "init_data": [
       { "sql": "update jsharmony.txt set txt_body = 'Welcome to the jsHarmony CMS' where txt_process='CMS' and txt_attrib='Dashboard';" }

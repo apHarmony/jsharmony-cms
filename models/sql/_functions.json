@@ -198,5 +198,14 @@
         "insert into {tbl_branch_item} (branch_id, {item}_key, {item}_id, {item}_orig_id) select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id= %%%dst_branch_id%%%);",
       "\")",
     ]
-  }
+  },
+  "{schema}.insert_token": {
+    "params": ["sys_user_token_hash","sys_user_token_ext","sys_user_token_keys"],
+    "sql": [
+      "select case when exists(select sys_user_token_hash from {schema}.sys_user_token where sys_user_token_hash=%%%sys_user_token_hash%%%) then 1 else 0 end token_collision;",
+      "delete from {schema}.sys_user_token where sys_user_token_etstmp < $addDays(jsharmony.my_now(),-7);",
+      "insert into {schema}.sys_user_token(sys_user_id, sys_user_token_hash, sys_user_token_ext, sys_user_token_keys) select jsharmony.my_sys_user_id(), %%%sys_user_token_hash%%%, %%%sys_user_token_ext%%%, %%%sys_user_token_keys%%% where not exists(select sys_user_token_hash from {schema}.sys_user_token where sys_user_token_hash=%%%sys_user_token_hash%%%);"
+    ]
+  },
+  "jsHarmonyCMS_validate_token": "select sys_user_token_hash, sys_user_token_keys from {schema}.sys_user_token where sys_user_token_hash=@sys_user_token_hash and sys_user_token_etstmp >= $addDays(jsharmony.my_now(),-7)",
 }

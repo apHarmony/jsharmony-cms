@@ -4,19 +4,32 @@ jsh.App[modelid] = new (function(){
   this.default_deployment_target_publish_config = {}; //Populated onroute
 
   var parse_url_cache = {};
+  var previous_config = '';
 
   _this.template_configurator = $('.xctrl_deployment_target_publish_configurator_template').html();
 
   _this.oninit = function(){
     _this.configurator_render();
+    $('.raw_deployment_target_publish_config_view_previous').toggle(!jshInstance.is_insert);
   }
 
   _this.onload = function(){
     XForm.Get('/_funcs/deployment_target/defaults', { site_id: xmodel.get('site_id') }, {}, function(rslt){
       _this.default_deployment_target_publish_config = rslt.deployment_target_publish_config;
     }, undefined, { async: false });
-
     var xdata = xmodel.controller.form.Data;
+    var orig_path = xdata['deployment_target_publish_path'] || '<Not set>';
+    var orig_config = xdata['deployment_target_publish_config'] || '{}';
+    try{ orig_config = JSON.stringify(JSON.parse(orig_config),null,2); }
+    catch(ex){}
+    if(orig_config=='{}') orig_config = '{\n}';
+    previous_config = [
+      '<div style="text-decoration:underline;padding:0 0 5px 0;font-weight:bold;">Previous Publish Path</div>',
+      XExt.escapeHTML(orig_path),
+      '<div style="text-decoration:underline;padding:10px 0 0 0;font-weight:bold;">Previous Publish Config</div>',
+      '<pre>'+XExt.escapeHTML(orig_config)+'</pre>',
+    ].join('\n');
+
     _this.configurator_setvalue(xdata['deployment_target_publish_path'], xdata['deployment_target_publish_config']);
   }
 
@@ -94,6 +107,11 @@ jsh.App[modelid] = new (function(){
         return XExt.Alert(err_str);
       }
       _this.configurator_setvalue(xmodel.get('deployment_target_publish_path'), xmodel.get('deployment_target_publish_config'));
+    });
+    jcontainer.find('.raw_deployment_target_publish_config_view_previous').on('click', function(e){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      XExt.Alert(previous_config,null, { escapeHTML: false });
     });
   }
 

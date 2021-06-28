@@ -23,6 +23,7 @@ var async = require('async');
 var path = require('path');
 var fs = require('fs');
 var urlparser = require('url');
+var crypto = require('crypto');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -440,298 +441,293 @@ module.exports = exports = function(module, funcs){
     if(!req.params || !req.params.page_key) return next();
     var page_key = req.params.page_key;
 
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
+    var validateKeys = (verb == 'get') ?
+      { page_template_id: Q.page_template_id } :
+      { page_key: req.params.page_key, page_id: Q.page_id, page_template_id: Q.page_template_id };
+    funcs.validateClientToken(req, res, next, ['get','post'], validateKeys, function(){
+      //Get page
+      sql_ptypes = [dbtypes.BigInt];
+      sql_params = { 'page_key': page_key };
+      validate = new XValidate();
+      verrors = {};
+      validate.AddValidator('_obj.page_key', 'Page Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang';
 
-    //Get page
-    sql_ptypes = [dbtypes.BigInt];
-    sql_params = { 'page_key': page_key };
-    validate = new XValidate();
-    verrors = {};
-    validate.AddValidator('_obj.page_key', 'Page Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-    sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang';
-
-    if(Q.page_id && Q.branch_id){
-      sql_ptypes.push(dbtypes.BigInt);
-      sql_params.page_id = Q.page_id;
-      validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
-      sql_ptypes.push(dbtypes.BigInt);
-      sql_params.branch_id = Q.branch_id;
-      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
-      sql += ',@branch_id branch_id from {schema}.page where page_key=@page_key and page_id=@page_id and site_id={schema}.my_current_site_id()';
-    }
-    else if(Q.branch_id && Q.view){
-      sql_ptypes.push(dbtypes.BigInt);
-      sql_params.branch_id = Q.branch_id;
-      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
-      sql += ',branch_id from (select page.*,branch_page.branch_id from {schema}.page inner join {schema}.branch_page on branch_page.branch_id=@branch_id and branch_page.page_id=page.page_id where page.page_key=@page_key and site_id={schema}.my_current_site_id()) page';
-    }
-    else if(Q.page_id) return Helper.GenError(req, res, -4, 'Invalid parameters - missing branch_id');
-    else{
-      sql += ',(select {schema}.my_current_branch_id()) branch_id';
-      sql += ' from {schema}.v_my_page where page_key=@page_key';
-    }
-
-    var page_role = '';
-    if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
-    else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
-    else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
-
-    var fields = [];
-    var datalockstr = '';
-    appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
-    sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
-
-    verrors = _.merge(verrors, validate.Validate('B', sql_params));
-    if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-
-    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
-      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){
-        if(Q.page_id || Q.view) return Helper.GenError(req, res, -4, 'Page not found in revision');
-        return Helper.GenError(req, res, -4, 'Page not found in current site revision');
+      if(Q.page_id && Q.branch_id){
+        sql_ptypes.push(dbtypes.BigInt);
+        sql_params.page_id = Q.page_id;
+        validate.AddValidator('_obj.page_id', 'Page ID', 'B', [XValidate._v_IsNumeric()]);
+        sql_ptypes.push(dbtypes.BigInt);
+        sql_params.branch_id = Q.branch_id;
+        validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
+        sql += ',@branch_id branch_id from {schema}.page where page_key=@page_key and page_id=@page_id and site_id={schema}.my_current_site_id()';
       }
-      var page = rslt[0][0];
-
-      var baseurl = req.baseurl;
-      if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
-
-      if(!Q.page_id){
-        if(Q.branch_id){
-          if(Q.branch_id.toString()!=(page.branch_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The revision has changed.'); }
-        }
-        if(Q.page_template_id){
-          if(Q.page_template_id.toString()!=(page.page_template_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The template has changed.'); }
-        }
+      else if(Q.branch_id && Q.view){
+        sql_ptypes.push(dbtypes.BigInt);
+        sql_params.branch_id = Q.branch_id;
+        validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric()]);
+        sql += ',branch_id from (select page.*,branch_page.branch_id from {schema}.page inner join {schema}.branch_page on branch_page.branch_id=@branch_id and branch_page.page_id=page.page_id where page.page_key=@page_key and site_id={schema}.my_current_site_id()) page';
+      }
+      else if(Q.page_id) return Helper.GenError(req, res, -4, 'Invalid parameters - missing branch_id');
+      else{
+        sql += ',(select {schema}.my_current_branch_id()) branch_id';
+        sql += ' from {schema}.v_my_page where page_key=@page_key';
       }
 
-      if (verb == 'get'){
-        if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      var page_role = '';
+      if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
+      else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
+      else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
 
-        //Validate parameters
-        if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id','|view'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      var fields = [];
+      var datalockstr = '';
+      appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
+      sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
 
-        var authors = null;
-        var clientPage = null;
-        var media_files = {};
-        var sitemaps = {};
-        var menus = {};
-        var site_id = null;
-        var branch_id = page.branch_id;
+      verrors = _.merge(verrors, validate.Validate('B', sql_params));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-        if(!branch_id){ return Helper.GenError(req, res, -4, 'Invalid Parameters'); }
+      appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+        if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){
+          if(Q.page_id || Q.view) return Helper.GenError(req, res, -4, 'Page not found in revision');
+          return Helper.GenError(req, res, -4, 'Page not found in current site revision');
+        }
+        var page = rslt[0][0];
 
-        async.waterfall([
+        var baseurl = req.baseurl;
+        if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
 
-          //Get site
-          function(cb){
-            sql = "select v_my_branch_access.branch_id,branch_name,site_id from {schema}.v_my_branch_access inner join {schema}.branch_page on branch_page.branch_id=v_my_branch_access.branch_id where v_my_branch_access.branch_id=@branch_id and branch_access like 'R%' and (branch_page.page_key=(select page_key from {schema}.page where page_id=@page_id))";
-            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { page_id: page.page_id, branch_id: branch_id }, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Site Revision or Page'); }
-              site_id = rslt[0][0].site_id;
-              return cb();
-            });
-          },
-
-          //Get authors
-          function(cb){
-            if(Helper.HasRole(req, 'PUBLISHER')){
-              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from {schema}.v_sys_user_site_access where site_id=@site_id and sys_user_site_access in ('WEBMASTER','PUBLISHER','AUTHOR')) order by code_txt";
-            }
-            else {
-              sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"page where page_id=@page_id) order by code_txt";
-            }
-
-            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt, dbtypes.BigInt], { page_id: page.page_id, site_id: site_id }, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(!rslt || !rslt.length || !rslt[0]){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
-              authors = rslt[0];
-              return cb();
-            });
-          },
-
-          //Get media
-          function(cb){
-            var sql = "select media.media_key, media.media_id, media_file_id from {schema}.media inner join {schema}.branch_media on branch_media.branch_id=@branch_id and branch_media.media_id=media.media_id where (media_file_id is not null) and (media_is_folder = 0)";
-            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
-              _.each(rslt[0], function(media){
-                media_files[media.media_key] = media;
-              });
-              return cb();
-            });
-          },
-
-          //Get sitemaps
-          function(cb){
-            var sql = "select sitemap.sitemap_key, sitemap_file_id, sitemap_type from {schema}.sitemap inner join {schema}.branch_sitemap on branch_sitemap.branch_id=@branch_id and branch_sitemap.sitemap_id=sitemap.sitemap_id where (sitemap_file_id is not null)";
-            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
-              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
-              _.each(rslt[0], function(sitemap){
-                sitemaps[sitemap.sitemap_type] = sitemap;
-              });
-              async.eachOfSeries(sitemaps, function(sitemap, sitemap_type, sitemap_cb){
-                funcs.getClientSitemap(sitemap, function(err, sitemap_content){
-                  if(err) return sitemap_cb(err);
-                  if(!sitemap_content) return sitemap_cb(null);
-                  sitemap.sitemap_items = sitemap_content.sitemap_items;
-                  return sitemap_cb();
-                });
-              }, cb);
-            });
-          },
-
-          //Get menus
-          function(cb){
-            var sql = "select menu.menu_key, menu_file_id, menu_name, menu_tag from {schema}.menu inner join {schema}.branch_menu on branch_menu.branch_id=@branch_id and branch_menu.menu_id=menu.menu_id where (menu_file_id is not null)";
-            appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
-              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
-              _.each(rslt[0], function(menu){
-                menus[menu.menu_tag] = menu;
-              });
-              async.eachOfSeries(menus, function(menu, menu_tag, menu_cb){
-                funcs.getClientMenu(menu, function(err, menu_content){
-                  if(err) return menu_cb(err);
-                  if(!menu_content) return menu_cb(null);
-                  menu.menu_items = menu_content.menu_items;
-
-                  return menu_cb();
-                });
-              }, cb);
-            });
-          },
-
-          //Get page
-          function(cb){
-
-            funcs.getClientPage(req._DBContext, page, sitemaps, site_id, { includeExtraContent: true }, function(err, _clientPage){
-              if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
-              clientPage = _clientPage;
-              if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
-              funcs.localizePageURLs(clientPage.page, baseurl, !!clientPage.template.raw, ((Q.page_id || Q.view) ? branch_id : undefined), media_files);
-              return cb();
-            });
+        if(!Q.page_id){
+          if(Q.branch_id){
+            if(Q.branch_id.toString()!=(page.branch_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The revision has changed.'); }
           }
-        ], function(err){
-          if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
+          if(Q.page_template_id){
+            if(Q.page_template_id.toString()!=(page.page_template_id||'').toString()){ return Helper.GenError(req, res, -4, 'Please close and reopen editor.  The template has changed.'); }
+          }
+        }
 
-          res.end(JSON.stringify({
-            _success: 1,
-            page: clientPage.page,
-            template: clientPage.template,
-            sitemap: clientPage.sitemap,
-            menus: menus,
-            authors: authors,
-            role: page_role,
-            views: {
-              'jsh_cms_editor.css': (jsh.getEJS('jsh_cms_editor.css')||'')+(jsh.getEJS('jsh_cms_editor.css.ext')||''),
-              'jsh_cms_editor': jsh.getEJS('jsh_cms_editor')
+        if (verb == 'get'){
+          if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+          //Validate parameters
+          if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          if (!appsrv.ParamCheck('Q', Q, ['|page_id','|branch_id','|page_template_id','|view','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+          var authors = null;
+          var clientPage = null;
+          var media_files = {};
+          var sitemaps = {};
+          var menus = {};
+          var site_id = null;
+          var branch_id = page.branch_id;
+
+          if(!branch_id){ return Helper.GenError(req, res, -4, 'Invalid Parameters'); }
+
+          async.waterfall([
+
+            //Get site
+            function(cb){
+              sql = "select v_my_branch_access.branch_id,branch_name,site_id from {schema}.v_my_branch_access inner join {schema}.branch_page on branch_page.branch_id=v_my_branch_access.branch_id where v_my_branch_access.branch_id=@branch_id and branch_access like 'R%' and (branch_page.page_key=(select page_key from {schema}.page where page_id=@page_id))";
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt,dbtypes.BigInt], { page_id: page.page_id, branch_id: branch_id }, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return Helper.GenError(req, res, -12, 'Could not access Site Revision or Page'); }
+                site_id = rslt[0][0].site_id;
+                return cb();
+              });
+            },
+
+            //Get authors
+            function(cb){
+              if(Helper.HasRole(req, 'PUBLISHER')){
+                sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from {schema}.v_sys_user_site_access where site_id=@site_id and sys_user_site_access in ('WEBMASTER','PUBLISHER','AUTHOR')) order by code_txt";
+              }
+              else {
+                sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"page where page_id=@page_id) order by code_txt";
+              }
+
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt, dbtypes.BigInt], { page_id: page.page_id, site_id: site_id }, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt.length || !rslt[0]){ return Helper.GenError(req, res, -4, 'Invalid Page ID'); }
+                authors = rslt[0];
+                return cb();
+              });
+            },
+
+            //Get media
+            function(cb){
+              var sql = "select media.media_key, media.media_id, media_file_id from {schema}.media inner join {schema}.branch_media on branch_media.branch_id=@branch_id and branch_media.media_id=media.media_id where (media_file_id is not null) and (media_is_folder = 0)";
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+                _.each(rslt[0], function(media){
+                  media_files[media.media_key] = media;
+                });
+                return cb();
+              });
+            },
+
+            //Get sitemaps
+            function(cb){
+              var sql = "select sitemap.sitemap_key, sitemap_file_id, sitemap_type from {schema}.sitemap inner join {schema}.branch_sitemap on branch_sitemap.branch_id=@branch_id and branch_sitemap.sitemap_id=sitemap.sitemap_id where (sitemap_file_id is not null)";
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+                if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+                _.each(rslt[0], function(sitemap){
+                  sitemaps[sitemap.sitemap_type] = sitemap;
+                });
+                async.eachOfSeries(sitemaps, function(sitemap, sitemap_type, sitemap_cb){
+                  funcs.getClientSitemap(sitemap, function(err, sitemap_content){
+                    if(err) return sitemap_cb(err);
+                    if(!sitemap_content) return sitemap_cb(null);
+                    sitemap.sitemap_items = sitemap_content.sitemap_items;
+                    return sitemap_cb();
+                  });
+                }, cb);
+              });
+            },
+
+            //Get menus
+            function(cb){
+              var sql = "select menu.menu_key, menu_file_id, menu_name, menu_tag from {schema}.menu inner join {schema}.branch_menu on branch_menu.branch_id=@branch_id and branch_menu.menu_id=menu.menu_id where (menu_file_id is not null)";
+              appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+                if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+                _.each(rslt[0], function(menu){
+                  menus[menu.menu_tag] = menu;
+                });
+                async.eachOfSeries(menus, function(menu, menu_tag, menu_cb){
+                  funcs.getClientMenu(menu, function(err, menu_content){
+                    if(err) return menu_cb(err);
+                    if(!menu_content) return menu_cb(null);
+                    menu.menu_items = menu_content.menu_items;
+
+                    return menu_cb();
+                  });
+                }, cb);
+              });
+            },
+
+            //Get page
+            function(cb){
+
+              funcs.getClientPage(req._DBContext, page, sitemaps, site_id, { includeExtraContent: true }, function(err, _clientPage){
+                if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
+                clientPage = _clientPage;
+                if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }
+                funcs.localizePageURLs(clientPage.page, baseurl, !!clientPage.template.raw, ((Q.page_id || Q.view) ? branch_id : undefined), media_files);
+                return cb();
+              });
             }
-          }));
-        });
-      }
-      else if(verb == 'post'){
-        if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-        /*
-          var client_page = {
-            title: page.page_title||'',
-            css: page_file.css||'',
-            header: page_file.header||'',
-            footer: page_file.footer||'',
-            properties: page_file.properties||{},
-            content: page_file.content||{},
-            seo_title: page_file.seo_title||'',
-            seo_keywords: page_file.seo_keywords||'',
-            seo_metadesc: page_file.seo_metadesc||'',
-            seo_canonical_url: page_file.seo_canonical_url||'',
-            lang: page.page_lang||'',
-            tags: page.page_tags||'',
-            author: page.page_author,
-          };
-        */
+          ], function(err){
+            if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
 
-        //Validate parameters
-        if(!('properties' in P)) P.properties = {};
-        if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&properties','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-
-        //XValidate
-        var client_page = P;
-        validate = new XValidate();
-        verrors = {};
-        validate.AddValidator('_obj.title', 'Title', 'B', [XValidate._v_MaxLength(1024)]);
-        validate.AddValidator('_obj.css', 'CSS', 'B', []);
-        validate.AddValidator('_obj.header', 'Header', 'B', []);
-        validate.AddValidator('_obj.footer', 'Footer', 'B', []);
-        validate.AddValidator('_obj.properties', 'Properties', 'B', []);
-        validate.AddValidator('_obj.content', 'Content', 'B', []);
-        validate.AddValidator('_obj.seo.title', 'SEO Title', 'B', [XValidate._v_MaxLength(2048)]);
-        validate.AddValidator('_obj.seo.keywords', 'SEO Keywords', 'B', []);
-        validate.AddValidator('_obj.seo.metadesc', 'SEO Meta Description', 'B', []);
-        validate.AddValidator('_obj.seo.canonical_url', 'SEO Canonical URL', 'B', [XValidate._v_MaxLength(2048)]);
-        validate.AddValidator('_obj.lang', 'Language', 'B', [XValidate._v_MaxLength(32)]);
-        validate.AddValidator('_obj.tags', 'Tags', 'B', []);
-        validate.AddValidator('_obj.author', 'Author', 'B', [ XValidate._v_Required() ]);
-        verrors = _.merge(verrors, validate.Validate('B', client_page));
-        if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-
-        //Save to database
-        sql_ptypes = [
-          dbtypes.VarChar(1024),
-          dbtypes.VarChar(dbtypes.MAX),
-          dbtypes.BigInt,
-          dbtypes.VarChar(2048),
-          dbtypes.VarChar(2048),
-          dbtypes.VarChar(dbtypes.MAX),
-          dbtypes.VarChar(32),
-          dbtypes.BigInt,
-        ];
-        sql_params = {
-          page_title: client_page.title,
-          page_tags: client_page.tags,
-          page_author: client_page.author,
-          page_seo_title: client_page.seo.title,
-          page_seo_canonical_url: client_page.seo.canonical_url,
-          page_seo_metadesc: client_page.seo.metadesc,
-          page_lang: client_page.lang
-        };
-        sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_page set page_file_id=null,'+_.map(sql_params, function(val, key){ return key + '=@' + key }).join(',')+' where page_key=@page_key;';
-        sql += 'select page_file_id, page_path, page_folder from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key;';
-        sql_params.page_key = page_key;
-
-        fields = [];
-        datalockstr = '';
-        verrors = {};
-        appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
-        sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
-        if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
-
-        appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-          if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length || !rslt[0][0]) return Helper.GenError(req, res, -99999, 'Invalid database result');
-          page.page_file_id = rslt[0][0].page_file_id;
-          page.page_folder = rslt[0][0].page_folder;
-          //Save to disk
-          fs.writeFile(funcs.getPageFile(page.page_file_id), JSON.stringify(client_page), 'utf8', function(err){
-            res.end(JSON.stringify({ '_success': 1, page_folder: page.page_folder }));
+            res.end(JSON.stringify({
+              _success: 1,
+              page: clientPage.page,
+              template: clientPage.template,
+              sitemap: clientPage.sitemap,
+              menus: menus,
+              authors: authors,
+              role: page_role,
+              views: {
+                'jsh_cms_editor.css': (jsh.getEJS('jsh_cms_editor.css')||'')+(jsh.getEJS('jsh_cms_editor.css.ext')||''),
+                'jsh_cms_editor': jsh.getEJS('jsh_cms_editor')
+              }
+            }));
           });
-        });
+        }
+        else if(verb == 'post'){
+          if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+          /*
+            var client_page = {
+              title: page.page_title||'',
+              css: page_file.css||'',
+              header: page_file.header||'',
+              footer: page_file.footer||'',
+              properties: page_file.properties||{},
+              content: page_file.content||{},
+              seo_title: page_file.seo_title||'',
+              seo_keywords: page_file.seo_keywords||'',
+              seo_metadesc: page_file.seo_metadesc||'',
+              seo_canonical_url: page_file.seo_canonical_url||'',
+              lang: page.page_lang||'',
+              tags: page.page_tags||'',
+              author: page.page_author,
+            };
+          */
 
-        return;
-      }
-      else return next();
+          //Validate parameters
+          if(!('properties' in P)) P.properties = {};
+          if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&properties','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+          //XValidate
+          var client_page = P;
+          validate = new XValidate();
+          verrors = {};
+          validate.AddValidator('_obj.title', 'Title', 'B', [XValidate._v_MaxLength(1024)]);
+          validate.AddValidator('_obj.css', 'CSS', 'B', []);
+          validate.AddValidator('_obj.header', 'Header', 'B', []);
+          validate.AddValidator('_obj.footer', 'Footer', 'B', []);
+          validate.AddValidator('_obj.properties', 'Properties', 'B', []);
+          validate.AddValidator('_obj.content', 'Content', 'B', []);
+          validate.AddValidator('_obj.seo.title', 'SEO Title', 'B', [XValidate._v_MaxLength(2048)]);
+          validate.AddValidator('_obj.seo.keywords', 'SEO Keywords', 'B', []);
+          validate.AddValidator('_obj.seo.metadesc', 'SEO Meta Description', 'B', []);
+          validate.AddValidator('_obj.seo.canonical_url', 'SEO Canonical URL', 'B', [XValidate._v_MaxLength(2048)]);
+          validate.AddValidator('_obj.lang', 'Language', 'B', [XValidate._v_MaxLength(32)]);
+          validate.AddValidator('_obj.tags', 'Tags', 'B', []);
+          validate.AddValidator('_obj.author', 'Author', 'B', [ XValidate._v_Required() ]);
+          verrors = _.merge(verrors, validate.Validate('B', client_page));
+          if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+          //Save to database
+          sql_ptypes = [
+            dbtypes.VarChar(1024),
+            dbtypes.VarChar(dbtypes.MAX),
+            dbtypes.BigInt,
+            dbtypes.VarChar(2048),
+            dbtypes.VarChar(2048),
+            dbtypes.VarChar(dbtypes.MAX),
+            dbtypes.VarChar(32),
+            dbtypes.BigInt,
+          ];
+          sql_params = {
+            page_title: client_page.title,
+            page_tags: client_page.tags,
+            page_author: client_page.author,
+            page_seo_title: client_page.seo.title,
+            page_seo_canonical_url: client_page.seo.canonical_url,
+            page_seo_metadesc: client_page.seo.metadesc,
+            page_lang: client_page.lang
+          };
+          sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_page set page_file_id=null,'+_.map(sql_params, function(val, key){ return key + '=@' + key }).join(',')+' where page_key=@page_key;';
+          sql += 'select page_file_id, page_path, page_folder from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key;';
+          sql_params.page_key = page_key;
+
+          fields = [];
+          datalockstr = '';
+          verrors = {};
+          appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
+          sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
+          if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+            if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length || !rslt[0][0]) return Helper.GenError(req, res, -99999, 'Invalid database result');
+            page.page_file_id = rslt[0][0].page_file_id;
+            page.page_folder = rslt[0][0].page_folder;
+            //Save to disk
+            fs.writeFile(funcs.getPageFile(page.page_file_id), JSON.stringify(client_page), 'utf8', function(err){
+              res.end(JSON.stringify({ '_success': 1, page_folder: page.page_folder }));
+            });
+          });
+
+          return;
+        }
+        else return Helper.GenError(req, res, -4, 'Invalid Operation');
+      });
     });
   }
 
@@ -753,104 +749,96 @@ module.exports = exports = function(module, funcs){
 
     if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
+    funcs.validateClientToken(req, res, next, ['get'], { page_template_id: Q.page_template_id }, function(){
+      //Get Branch ID
+      sql_ptypes = [];
+      sql_params = { };
+      validate = new XValidate();
+      verrors = {};
+      sql = 'select {schema}.my_current_branch_id() branch_id, {schema}.my_current_site_id() site_id';
 
-    //Get Branch ID
-    sql_ptypes = [];
-    sql_params = { };
-    validate = new XValidate();
-    verrors = {};
-    sql = 'select {schema}.my_current_branch_id() branch_id, {schema}.my_current_site_id() site_id';
+      var page_role = '';
+      if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
+      else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
+      else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
 
-    var page_role = '';
-    if(Helper.HasRole(req, 'PUBLISHER')) page_role = 'PUBLISHER';
-    else if(Helper.HasRole(req, 'AUTHOR')) page_role = 'AUTHOR';
-    else if(Helper.HasRole(req, 'VIEWER')) page_role = 'VIEWER';
+      var fields = [];
+      var datalockstr = '';
+      appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
+      sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
 
-    var fields = [];
-    var datalockstr = '';
-    appsrv.getDataLockSQL(req, model, fields, sql_ptypes, sql_params, verrors, function (datalockquery) { datalockstr += ' and ' + datalockquery; });
-    sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
+      verrors = _.merge(verrors, validate.Validate('B', sql_params));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-    verrors = _.merge(verrors, validate.Validate('B', sql_params));
-    if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+      appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+        if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a site to use Dev Mode'); }
 
-    appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
-      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -9, 'Please checkout a site to use Dev Mode'); }
+        var devInfo = rslt[0][0];
 
-      var devInfo = rslt[0][0];
+        if (verb == 'get'){
+          if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-      if (verb == 'get'){
-        if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+          //Validate parameters
+          if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          if (!appsrv.ParamCheck('Q', Q, ['|page_template_id','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-        //Validate parameters
-        if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        if (!appsrv.ParamCheck('Q', Q, ['|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          var menus = {};
+          var page_template = {};
 
-        var menus = {};
-        var page_template = {};
+          async.waterfall([
 
-        async.waterfall([
-
-          //Get menus
-          function(cb){
-            appsrv.ExecRecordset(req._DBContext, "select menu_key, menu_file_id, menu_name, menu_tag from "+(module.schema?module.schema+'.':'')+"v_my_menu where (menu_file_id is not null)", [], {}, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; return cb(err); }
-              if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
-              _.each(rslt[0], function(menu){
-                menus[menu.menu_tag] = menu;
-              });
-              async.eachOfSeries(menus, function(menu, menu_tag, menu_cb){
-                funcs.getClientMenu(menu, function(err, menu_content){
-                  if(err) return menu_cb(err);
-                  if(!menu_content) return menu_cb(null);
-                  menu.menu_items = menu_content.menu_items;
-
-                  return menu_cb();
+            //Get menus
+            function(cb){
+              appsrv.ExecRecordset(req._DBContext, "select menu_key, menu_file_id, menu_name, menu_tag from "+(module.schema?module.schema+'.':'')+"v_my_menu where (menu_file_id is not null)", [], {}, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; return cb(err); }
+                if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
+                _.each(rslt[0], function(menu){
+                  menus[menu.menu_tag] = menu;
                 });
-              }, cb);
-            });
-          },
+                async.eachOfSeries(menus, function(menu, menu_tag, menu_cb){
+                  funcs.getClientMenu(menu, function(err, menu_content){
+                    if(err) return menu_cb(err);
+                    if(!menu_content) return menu_cb(null);
+                    menu.menu_items = menu_content.menu_items;
 
-          //Get page template
-          function(cb){
-            if(!Q.page_template_id) return cb();
-            funcs.getPageTemplate(req._DBContext, devInfo.site_id, Q.page_template_id, {}, function(err, template){
-              if(err) return cb(err);
-              if (!template) return cb();
-              page_template = template;
-              return cb();
-            });
-          },
+                    return menu_cb();
+                  });
+                }, cb);
+              });
+            },
 
-        ], function(err){
-          if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
+            //Get page template
+            function(cb){
+              if(!Q.page_template_id) return cb();
+              funcs.getPageTemplate(req._DBContext, devInfo.site_id, Q.page_template_id, {}, function(err, template){
+                if(err) return cb(err);
+                if (!template) return cb();
+                page_template = template;
+                return cb();
+              });
+            },
 
-          res.end(JSON.stringify({
-            '_success': 1,
-            'branch_id': devInfo.branch_id,
-            'site_id': devInfo.site_id,
-            'sitemap': funcs.getSampleSitemap(),
-            'menus': menus,
-            'role': page_role,
-            'template': page_template,
-            'views': {
-              'jsh_cms_editor.css': (jsh.getEJS('jsh_cms_editor.css')||'')+(jsh.getEJS('jsh_cms_editor.css.ext')||''),
-              'jsh_cms_editor': jsh.getEJS('jsh_cms_editor')
-            }
-          }));
-        });
-      }
-      else return next();
+          ], function(err){
+            if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
+
+            res.end(JSON.stringify({
+              '_success': 1,
+              'branch_id': devInfo.branch_id,
+              'site_id': devInfo.site_id,
+              'sitemap': funcs.getSampleSitemap(),
+              'menus': menus,
+              'role': page_role,
+              'template': page_template,
+              'views': {
+                'jsh_cms_editor.css': (jsh.getEJS('jsh_cms_editor.css')||'')+(jsh.getEJS('jsh_cms_editor.css.ext')||''),
+                'jsh_cms_editor': jsh.getEJS('jsh_cms_editor')
+              }
+            }));
+          });
+        }
+        else return Helper.GenError(req, res, -4, 'Invalid Operation');
+      });
     });
   }
 
@@ -983,44 +971,138 @@ module.exports = exports = function(module, funcs){
               else return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
             }
 
-            url = funcs.parseDeploymentUrl(url, template_variables);
+            funcs.genClientToken(req, template_variables.timestamp, _.pick(template_variables, ['page_id','page_key','page_template_id']), function(err, jshcms_client_token){
+              if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
 
-            //Read URL and querystring
-            try{
-              var parsedUrl = new urlparser.URL(url);
-              template_variables._ = template_variables.timestamp;
-              if(Q.devMode) template_variables.page_template_location = page_template.location;
-              var changedUrl = false;
-              //Add any missing items to the querystring
-              _.each(['branch_id','page_id','page_key','page_template_id','_','page_template_location'], function(key){
-                if(parsedUrl.searchParams.has(key)) return;
-                if(template_variables[key]){
-                  parsedUrl.searchParams.set(key, template_variables[key]);
-                  changedUrl = true;
-                }
-              });
-              if(Q.devMode){
-                _.each(['branch_id','page_id','page_key'], function(key){
-                  if(parsedUrl.searchParams.has(key)){
-                    parsedUrl.searchParams.delete(key);
+              url = funcs.parseDeploymentUrl(url, template_variables);
+
+              //Read URL and querystring
+              try{
+                var parsedUrl = new urlparser.URL(url);
+                template_variables._ = template_variables.timestamp;
+                if(Q.devMode) template_variables.page_template_location = page_template.location;
+                var changedUrl = false;
+                //Add any missing items to the querystring
+                _.each(['branch_id','page_id','page_key','page_template_id','_','page_template_location'], function(key){
+                  if(parsedUrl.searchParams.has(key)) return;
+                  if(template_variables[key]){
+                    parsedUrl.searchParams.set(key, template_variables[key]);
                     changedUrl = true;
                   }
                 });
-              }
-              if(changedUrl) url = parsedUrl.toString();
-            }
-            catch(ex){
-              jsh.Log.error(ex);
-              Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
-            }
+                if(Q.devMode){
+                  _.each(['branch_id','page_id','page_key'], function(key){
+                    if(parsedUrl.searchParams.has(key)){
+                      parsedUrl.searchParams.delete(key);
+                      changedUrl = true;
+                    }
+                  });
+                }
 
-            res.end(JSON.stringify({ '_success': 1, editor: url }));
+                parsedUrl.searchParams.set('jshcms_token', jshcms_client_token);
+                changedUrl = true;
+
+                if(changedUrl) url = parsedUrl.toString();
+              }
+              catch(ex){
+                jsh.Log.error(ex);
+                Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
+              }
+
+              res.end(JSON.stringify({ '_success': 1, editor: url }));
+            });
           });          
         });
       });
       return;
     }
     return next();
+  }
+
+  exports.genClientToken = function(req, timestamp, keys, callback){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var jshcms_client_token = '';
+    var sys_user_token_ext = null;
+
+    var sys_user_token_keys = JSON.stringify(keys);
+    if(sys_user_token_keys.length > 1024) return callback(new Error('Key length cannot exceed 1KB'));
+
+    var insert_success = false;
+    
+    async.until(function(){ return insert_success; }, function(insert_cb){
+      //Generate token
+      var base_token = (req.user_id||'').toString() + '-' + (timestamp||(new Date())).toString() + '-' + _.map(keys, function(val){ return(val||'').toString(); }).join('-') + '-' + (sys_user_token_ext||'').toString();
+      jshcms_client_token = crypto.createHash('sha1').update(base_token + '-' + jsh.Config.frontsalt).digest('hex');
+
+      //Write to database
+      var sql = "{schema}.insert_token(@sys_user_token_hash,@sys_user_token_ext,@sys_user_token_keys)";
+      var sql_ptypes = [dbtypes.NVarChar(256),dbtypes.NVarChar(32),dbtypes.NVarChar(1024)];
+      var sql_params = { sys_user_token_hash: jshcms_client_token, sys_user_token_ext: (sys_user_token_ext||'').toString(), sys_user_token_keys: sys_user_token_keys };
+      appsrv.ExecMultiRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+        if(err) return insert_cb(err);
+        if(rslt && rslt.length && rslt[0] && rslt[0].length && rslt[0][0] && rslt[0][0].length && rslt[0][0][0].token_collision){
+          //Hash collision
+          sys_user_token_ext = (Math.round(Math.random()*10000000000)).toString();
+          return insert_cb();
+        }
+        insert_success = true;
+        return insert_cb();
+      });
+    }, function(err){
+      if(err) return callback(err);
+      return callback(null, jshcms_client_token);
+    });
+  };
+
+  exports.validateClientToken = function(req, res, next, verbs, keys, callback){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var Q = req.query || {};
+    var verb = req.method.toLowerCase();
+
+    if(!_.includes(verbs, verb)) return next();
+
+    //If token not passed in querystring, return
+    if(!Q.jshcms_token) return callback();
+
+    var jshcms_client_token = Q.jshcms_token.toString();
+
+    var sql = "jsHarmonyCMS_validate_token";
+    var sql_ptypes = [dbtypes.NVarChar(256)];
+    var sql_params = { sys_user_token_hash: jshcms_client_token };
+    appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+      if(err){ err.sql = sql; appsrv.AppDBError(req, res, err); return; }
+      if(!rslt || !rslt.length || !rslt[0] || !rslt[0].sys_user_token_hash) return Helper.GenError(req, res, -10, "Session timed out.  Any unsaved changes will be lost.");
+      var sys_user_token_keys = rslt[0].sys_user_token_keys;
+      var token_keys = {};
+      try{
+        if(sys_user_token_keys) token_keys = JSON.parse(sys_user_token_keys) || {};
+      }
+      catch(ex){
+        if(ex) return Helper.GenError(req, res, -99999, ex.toString());
+      }
+      //Validate keys
+      for(var key in keys){
+        if(typeof keys[key] != 'undefined'){
+          if(token_keys[key] !== keys[key]) return Helper.GenError(req, res, -11, "Session token not authorized to perform this operation.");
+        }
+      }
+
+      var referer = req.get('Referer');
+      if(referer){
+        var urlparts = urlparser.parse(referer, true);
+        var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
+        res.setHeader('Access-Control-Allow-Origin', remote_domain);
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+        res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
+        res.setHeader('Access-Control-Allow-Credentials', true);
+      }
+
+      return callback();
+    });
   }
 
   exports.getPageSiteConfig = function(req, res, next){
@@ -1040,63 +1122,55 @@ module.exports = exports = function(module, funcs){
 
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
+    funcs.validateClientToken(req, res, next, ['get'], { }, function(){
+      //Validate parameters
+      if (!appsrv.ParamCheck('Q', Q, ['|site_id','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-    //Validate parameters
-    if (!appsrv.ParamCheck('Q', Q, ['|site_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-    if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      validate = new XValidate();
+      verrors = {};
+      validate.AddValidator('_obj.site_id', 'Site ID', 'B', [ XValidate._v_IsNumeric() ]);
+      verrors = _.merge(verrors, validate.Validate('B', Q));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-    validate = new XValidate();
-    verrors = {};
-    validate.AddValidator('_obj.site_id', 'Site ID', 'B', [ XValidate._v_IsNumeric() ]);
-    verrors = _.merge(verrors, validate.Validate('B', Q));
-    if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+      //Only dev mode uses devMode and site_id parameters
 
-    //Only dev mode uses devMode and site_id parameters
+      if (verb == 'get') {
+        var sql = "select site_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
+        var sql_ptypes = [];
+        var sql_params = {};
 
-    if (verb == 'get') {
-      var sql = "select site_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
-      var sql_ptypes = [];
-      var sql_params = {};
-
-      if(Q.devMode){
-        if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select site_id from {schema}.v_my_site where site_id=@site_id";
-        sql_ptypes = [dbtypes.BigInt];
-        sql_params = { site_id: Q.site_id };
-      }
-      appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
-        if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-        if (!rslt || !rslt.length || !rslt[0]) {
-          if(Q.devMode) Helper.GenError(req, res, -1, 'Site not found');
-          else Helper.GenError(req, res, -1, 'Site not checked out');
-          return;
+        if(Q.devMode){
+          if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          sql = "select site_id from {schema}.v_my_site where site_id=@site_id";
+          sql_ptypes = [dbtypes.BigInt];
+          sql_params = { site_id: Q.site_id };
         }
+        appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+          if (!rslt || !rslt.length || !rslt[0]) {
+            if(Q.devMode) Helper.GenError(req, res, -1, 'Site not found');
+            else Helper.GenError(req, res, -1, 'Site not checked out');
+            return;
+          }
 
-        var site_id = rslt[0].site_id || null;
+          var site_id = rslt[0].site_id || null;
 
-        if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
+          if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
 
-        funcs.getSiteConfig(req._DBContext, site_id, { continueOnConfigError: true }, function(err, siteConfig){
-          if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-          if(!siteConfig) siteConfig = {};
-          var pageSiteConfig = {
-            defaultEditorConfig: siteConfig.defaultEditorConfig||{},
-          };
-          res.end(JSON.stringify({ '_success': 1, siteConfig: pageSiteConfig }));
+          funcs.getSiteConfig(req._DBContext, site_id, { continueOnConfigError: true }, function(err, siteConfig){
+            if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+            if(!siteConfig) siteConfig = {};
+            var pageSiteConfig = {
+              defaultEditorConfig: siteConfig.defaultEditorConfig||{},
+            };
+            res.end(JSON.stringify({ '_success': 1, siteConfig: pageSiteConfig }));
+          });
         });
-      });
-      return;
-    }
-    return next();
+        return;
+      }
+      return Helper.GenError(req, res, -4, 'Invalid Operation');
+    });
   }
 
   return exports;

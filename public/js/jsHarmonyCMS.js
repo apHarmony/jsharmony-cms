@@ -2906,7 +2906,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
   var itemData = modelTemplate.populateDataInstance(itemData || {});
 
   var dialog = new FormDialog(this._jsh, this._cms, modelConfig, {
-    acceptButtonLabel: 'Save',
+    acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
@@ -3610,7 +3610,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   /** @type {import('../dialogs/formDialog').FormDialogConfig} */
   var dialogParams = {
-    acceptButtonLabel: 'Save',
+    acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_propertyFormEditor jsharmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
@@ -4316,7 +4316,9 @@ exports = module.exports = function(jsh, cms){
 
   this.loadSystemComponentTemplates = function(onError){
     var url = '../_funcs/templates/components/'+(cms.branch_id||'');
-    XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+    var qs = { };
+    if(cms.token) qs.jshcms_token = cms.token;
+    XExt.CallAppFunc(url, 'get', qs, function (rslt) { //On Success
       if ('_success' in rslt) {
         async.eachOf(rslt.components, function(component, componentId, cb) {
           var loadObj = {};
@@ -4369,7 +4371,11 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.compileTemplates = function(componentTemplates, cb) {
-    XExt.CallAppFunc('../_funcs/templates/compile_components', 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
+    var url = '../_funcs/templates/compile_components';
+    var qs = { };
+    if(cms.token) qs.jshcms_token = cms.token;
+    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+    XExt.CallAppFunc(url, 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var components = rslt.components;
         return cb(null, components);
@@ -7666,6 +7672,7 @@ var jsHarmonyCMS = function(options){
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
 
   this.branch_id = undefined;
+  this.token = undefined;
   this.site_config = {};
   this.filePickerCallback = null;        //function(url)
 
@@ -7689,6 +7696,7 @@ var jsHarmonyCMS = function(options){
   var XExt = null;
   var $ = null;
   var async = null;
+  var loadErrors = [];
 
 
   this.init = function(){
@@ -7716,6 +7724,8 @@ var jsHarmonyCMS = function(options){
       XExt = jsh.XExt;
       async = jsh.async;
 
+      if(jsh._GET['jshcms_token']) _this.token = jsh._GET['jshcms_token'];
+
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = _this.createCoreEditor()
@@ -7729,6 +7739,13 @@ var jsHarmonyCMS = function(options){
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
 
+      jsh.DefaultErrorHandler = XExt.chain(jsh.DefaultErrorHandler, function(num, txt){
+        if(num==-10){
+          XExt.Alert('Session token expired');
+          return true;
+        }
+      });
+
       jsh.xLoader = loader;
       async.parallel([
         function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
@@ -7740,8 +7757,14 @@ var jsHarmonyCMS = function(options){
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
         function(cb){
-          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', {}, {}, function(rslt){
+          var qs = {};
+          if(_this.token) qs.jshcms_token = _this.token;
+          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', qs, {}, function(rslt){
             if(rslt) _this.site_config = rslt.siteConfig || {};
+            return cb();
+          }, function(err){
+            if(err && (err.Number==-10)) loadErrors.push('Session token expired.  Please re-open the page');
+            else loadErrors.push(err);
             return cb();
           });
         },
@@ -7758,6 +7781,10 @@ var jsHarmonyCMS = function(options){
   }
 
   this.load = function(){
+    if(loadErrors.length){
+      loader.StopLoading();
+      return XExt.Alert((typeof loadErrors[0] == 'string') ? loadErrors[0] : JSON.stringify(loadErrors[0]));
+    }
     if(_this.onLoad) _this.onLoad(jsh);
     $('[cms-content-editor]').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
@@ -7851,14 +7878,15 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.20';
+  var VERSION = '4.17.21';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
 
   /** Error message constants. */
   var CORE_ERROR_TEXT = 'Unsupported core-js use. Try https://npms.io/search?q=ponyfill.',
-      FUNC_ERROR_TEXT = 'Expected a function';
+      FUNC_ERROR_TEXT = 'Expected a function',
+      INVALID_TEMPL_VAR_ERROR_TEXT = 'Invalid `variable` option passed into `_.template`';
 
   /** Used to stand-in for `undefined` hash values. */
   var HASH_UNDEFINED = '__lodash_hash_undefined__';
@@ -7991,10 +8019,11 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
       reHasRegExpChar = RegExp(reRegExpChar.source);
 
-  /** Used to match leading and trailing whitespace. */
-  var reTrim = /^\s+|\s+$/g,
-      reTrimStart = /^\s+/,
-      reTrimEnd = /\s+$/;
+  /** Used to match leading whitespace. */
+  var reTrimStart = /^\s+/;
+
+  /** Used to match a single whitespace character. */
+  var reWhitespace = /\s/;
 
   /** Used to match wrap detail comments. */
   var reWrapComment = /\{(?:\n\/\* \[wrapped with .+\] \*\/)?\n?/,
@@ -8003,6 +8032,18 @@ global.jsHarmonyCMS = jsHarmonyCMS;
 
   /** Used to match words composed of alphanumeric characters. */
   var reAsciiWord = /[^\x00-\x2f\x3a-\x40\x5b-\x60\x7b-\x7f]+/g;
+
+  /**
+   * Used to validate the `validate` option in `_.template` variable.
+   *
+   * Forbids characters which could potentially change the meaning of the function argument definition:
+   * - "()," (modification of function parameters)
+   * - "=" (default value)
+   * - "[]{}" (destructuring of function parameters)
+   * - "/" (beginning of a comment)
+   * - whitespace
+   */
+  var reForbiddenIdentifierChars = /[()=,{}\[\]\/\s]/;
 
   /** Used to match backslashes in property paths. */
   var reEscapeChar = /\\(\\)?/g;
@@ -8833,6 +8874,19 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   }
 
   /**
+   * The base implementation of `_.trim`.
+   *
+   * @private
+   * @param {string} string The string to trim.
+   * @returns {string} Returns the trimmed string.
+   */
+  function baseTrim(string) {
+    return string
+      ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
+      : string;
+  }
+
+  /**
    * The base implementation of `_.unary` without support for storing metadata.
    *
    * @private
@@ -9163,6 +9217,21 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     return hasUnicode(string)
       ? unicodeToArray(string)
       : asciiToArray(string);
+  }
+
+  /**
+   * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
+   * character of `string`.
+   *
+   * @private
+   * @param {string} string The string to inspect.
+   * @returns {number} Returns the index of the last non-whitespace character.
+   */
+  function trimmedEndIndex(string) {
+    var index = string.length;
+
+    while (index-- && reWhitespace.test(string.charAt(index))) {}
+    return index;
   }
 
   /**
@@ -20333,7 +20402,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
       if (typeof value != 'string') {
         return value === 0 ? value : +value;
       }
-      value = value.replace(reTrim, '');
+      value = baseTrim(value);
       var isBinary = reIsBinary.test(value);
       return (isBinary || reIsOctal.test(value))
         ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
@@ -22705,6 +22774,12 @@ global.jsHarmonyCMS = jsHarmonyCMS;
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
       }
+      // Throw an error if a forbidden character was found in `variable`, to prevent
+      // potential command injection attacks.
+      else if (reForbiddenIdentifierChars.test(variable)) {
+        throw new Error(INVALID_TEMPL_VAR_ERROR_TEXT);
+      }
+
       // Cleanup code by stripping empty strings.
       source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
         .replace(reEmptyStringMiddle, '$1')
@@ -22818,7 +22893,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     function trim(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return string.replace(reTrim, '');
+        return baseTrim(string);
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;
@@ -22853,7 +22928,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     function trimEnd(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return string.replace(reTrimEnd, '');
+        return string.slice(0, trimmedEndIndex(string) + 1);
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;

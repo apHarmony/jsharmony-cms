@@ -73,6 +73,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     var url = '../_funcs/pageDev';
     var params = { };
     if(_this.page_template_id) params.page_template_id = _this.page_template_id;
+    if(cms.token) params.jshcms_token = cms.token;
 
     XExt.CallAppFunc(url, 'get', params, function (rslt) { //On Success
       if (!rslt || !('_success' in rslt)) {
@@ -153,6 +154,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(_this.page_id) qs.page_id = _this.page_id;
     if(cms.branch_id) qs.branch_id = cms.branch_id;
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
+    if(cms.token) qs.jshcms_token = cms.token;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
 
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
@@ -800,6 +802,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     var qs = {};
     if(cms.branch_id) qs.branch_id = _this.branch_id;
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
+    if(cms.token) qs.jshcms_token = cms.token;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
 
     cms.toolbar.hideSlideoutButton('settings', true);
