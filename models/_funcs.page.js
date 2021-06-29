@@ -436,15 +436,16 @@ module.exports = exports = function(module, funcs){
     var validate = null;
     var model = jsh.getModel(req, module.namespace + 'Page_Editor');
 
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
     if(!req.params || !req.params.page_key) return next();
     var page_key = req.params.page_key;
 
     var validateKeys = (verb == 'get') ?
       { page_template_id: Q.page_template_id } :
       { page_key: req.params.page_key, page_id: Q.page_id, page_template_id: Q.page_template_id };
+
     funcs.validateClientToken(req, res, next, ['get','post'], validateKeys, function(){
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
       //Get page
       sql_ptypes = [dbtypes.BigInt];
       sql_params = { 'page_key': page_key };
@@ -747,9 +748,9 @@ module.exports = exports = function(module, funcs){
     var validate = null;
     var model = jsh.getModel(req, module.namespace + 'Page_Editor');
 
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
     funcs.validateClientToken(req, res, next, ['get'], { page_template_id: Q.page_template_id }, function(){
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
       //Get Branch ID
       sql_ptypes = [];
       sql_params = { };
@@ -1120,9 +1121,9 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Page_Tree');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
     funcs.validateClientToken(req, res, next, ['get'], { }, function(){
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      
       //Validate parameters
       if (!appsrv.ParamCheck('Q', Q, ['|site_id','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
       if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
