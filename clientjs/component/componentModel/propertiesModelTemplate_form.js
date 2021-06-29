@@ -37,6 +37,9 @@ function PropertiesModelTemplate_Form(componentTemplate, propertiesModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -69,6 +72,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   model.unbound = true;
   model.layout = 'form';
   model.onecolumn = true;
+  if(model.js && _.isString(model.js) && model.js.trim()) model.js = '(function(){ var cms = '+this._cms._instance+';' + model.js + ' })();';
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 }
 

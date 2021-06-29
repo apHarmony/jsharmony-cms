@@ -37,13 +37,16 @@ var PropertiesModelTemplate_Form = require('./propertiesModelTemplate_form');
  * @param {Object} componentConfig - the component configuration as defined by the component JSON.
  * @param {Object} jsh
  */
-function ComponentTemplate(componentConfig, jsh) {
+function ComponentTemplate(componentConfig, jsh, cms) {
 
   /** @private @type {Object} */
   this._componentConfig = componentConfig;
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {Object} */
+  this._cms = cms;
 
   /** @private @type {DataModelTemplate_GridPreview} */
   this._dataModelTemplate_GridPreview = undefined;
@@ -262,6 +265,9 @@ function DataModelTemplate_FormPreview(componentTemplate, dataModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -292,6 +298,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
 
   var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
+  if(modelConfig.js && _.isString(modelConfig.js) && modelConfig.js.trim()) modelConfig.js = '(function(){ var cms = '+this._cms._instance+';' + modelConfig.js + ' })();';
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
@@ -495,6 +502,9 @@ function DataModelTemplate_GridPreview(componentTemplate, dataModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -528,6 +538,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   var modelConfig = Cloner.deepClone(dataModel || {});
   if (modelConfig.layout !== 'grid_preview') return undefined;
 
+  if(modelConfig.js && _.isString(modelConfig.js) && modelConfig.js.trim()) modelConfig.js = '(function(){ var cms = '+this._cms._instance+';' + modelConfig.js + ' })();';
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
@@ -962,6 +973,9 @@ function PropertiesModelTemplate_Form(componentTemplate, propertiesModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -994,6 +1008,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   model.unbound = true;
   model.layout = 'form';
   model.onecolumn = true;
+  if(model.js && _.isString(model.js) && model.js.trim()) model.js = '(function(){ var cms = '+this._cms._instance+';' + model.js + ' })();';
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 }
 
@@ -4076,7 +4091,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   var $element = jsh.$(element);
 
   /** @type {ComponentTemplate} */
-  var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh);
+  var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh, cms);
 
   /** @public @type {BasicComponentController~beforeRender} */
   this.onBeforeRender = undefined;

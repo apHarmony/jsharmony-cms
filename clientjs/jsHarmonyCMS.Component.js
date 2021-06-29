@@ -56,7 +56,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   var $element = jsh.$(element);
 
   /** @type {ComponentTemplate} */
-  var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh);
+  var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh, cms);
 
   /** @public @type {BasicComponentController~beforeRender} */
   this.onBeforeRender = undefined;

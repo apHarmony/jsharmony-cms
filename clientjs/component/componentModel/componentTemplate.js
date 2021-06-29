@@ -36,13 +36,16 @@ var PropertiesModelTemplate_Form = require('./propertiesModelTemplate_form');
  * @param {Object} componentConfig - the component configuration as defined by the component JSON.
  * @param {Object} jsh
  */
-function ComponentTemplate(componentConfig, jsh) {
+function ComponentTemplate(componentConfig, jsh, cms) {
 
   /** @private @type {Object} */
   this._componentConfig = componentConfig;
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {Object} */
+  this._cms = cms;
 
   /** @private @type {DataModelTemplate_GridPreview} */
   this._dataModelTemplate_GridPreview = undefined;

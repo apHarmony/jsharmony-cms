@@ -38,6 +38,9 @@ function DataModelTemplate_FormPreview(componentTemplate, dataModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -68,6 +71,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
 
   var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
+  if(modelConfig.js && _.isString(modelConfig.js) && modelConfig.js.trim()) modelConfig.js = '(function(){ var cms = '+this._cms._instance+';' + modelConfig.js + ' })();';
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
