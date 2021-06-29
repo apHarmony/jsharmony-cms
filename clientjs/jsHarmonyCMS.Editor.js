@@ -42,6 +42,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.onBeginEdit = null; //function(mceEditor){};
   this.onEndEdit = null; //function(mceEditor){};
+  this.onSetContent = null; //function(mceEditor){};
 
   this.editorConfig = {
     base: null,
@@ -150,6 +151,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           }
           
           cms.refreshLayout();
+          var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
+          $('body').not('.jsharmony_cms_editing').addClass('jsharmony_cms_editing');
+          if(jshEditorId) $('body').addClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
           if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
         });
         mceEditor.on('blur', function(){
@@ -166,6 +170,18 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
           }
           if(_this.onEndEdit) _this.onEndEdit(mceEditor);
+          var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
+          $('body').removeClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
+          //Remove class
+          if(!$('.mce-edit-focus').length){
+            $('body.jsharmony_cms_editing').removeClass('jsharmony_cms_editing');
+            var bodyElem = $('body')[0];
+            if(bodyElem){
+              var editingClasses = [];
+              _.each(bodyElem.classList||[], function(className){ if(className.indexOf('jsharmony_cms_editing_')>=0) editingClasses.push(className); });
+              _.each(editingClasses, function(className){ $('body').removeClass(className); });
+            }
+          }
         });
         //Override background color icon
         var allIcons = mceEditor.ui.registry.getAll();
@@ -265,7 +281,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       var mceEditor = window.tinymce.get(containerId);
       if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div cms-content-editor="'+desc+'"></div>');
       if(!_this.isInitialized) mceEditor.undoManager.clear();
-      mceEditor.setContent(val);
+      mceEditor.setContent(val, { jsHarmonyCmsSource: 'editor' });
       if(!_this.isInitialized) mceEditor.undoManager.add();
     }
   }

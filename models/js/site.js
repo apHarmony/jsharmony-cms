@@ -132,6 +132,22 @@
     }
   }
 
+  jsh.System.viewPageTemplates = function(){
+    var site_id = jsh.globalparams.site_id;
+    if(!site_id) return XExt.Alert('No site currently checked out');
+    var tabs = {};
+    tabs['{namespace}Site_Tabs'] = '{namespace}Site_Template_Page'
+    var qs = {
+      site_id:site_id,
+      tabs: JSON.stringify(tabs)
+    };
+    XExt.popupForm('{namespace}Site_Tabs', 'update', qs);
+  }
+
+  jsh.System.applyRoles = function(){
+    if(jsh.globalparams.isWebmaster) jsh.$root('.jsHarmonyCms_role_WEBMASTER').removeClass('jsHarmonyCms_role_WEBMASTER');
+  }
+
   jsh.System.renderEditorSelection = function(LOV_site_editor, site_id, sys_user_site_editor, options){
     if(!LOV_site_editor || (LOV_site_editor.length <= 2)) return;
     options = _.extend({ after: null, container: null, containerClass: '', }, options);

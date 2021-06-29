@@ -1568,6 +1568,21 @@ module.exports = exports = function(module, funcs){
     content = funcs.replaceTemplateVariables(options.template_variables, content);
 
     var htdoc = new funcs.HTMLDoc(content);
+    
+    //First pass - extract page config and inline templates
+    htdoc.applyNodes([
+      { //Remove page config tag
+        pred: function(node){ return htdoc.isTag(node, 'cms-page-config'); },
+        exec: function(node){
+          var pageConfig = htdoc.getNodeContent(node, 'Page Config Tag');
+          pageConfig = '<script type="text/cms-page-config">'+pageConfig+'</script>';
+          htdoc.replaceNode(node, pageConfig, 'Page Config Tag');
+        }
+      },
+    ]);
+    content = htdoc.content;
+
+    htdoc = new funcs.HTMLDoc(content);
     var htparts = htdoc.getParts();
 
     //Ensure HTML document is properly configured

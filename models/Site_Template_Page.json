@@ -37,7 +37,7 @@
         { "function":"js:if(!_obj.site_template_path && !(_obj.site_template_config||'').toString().trim()) return 'Either URL or Config is required';", "selector": ".site_template_path,.site_template_config" }
       ]},
       {"name":"site_template_config","caption":"Config","control":"textzoom","controlstyle":"display:none;","cellstyle":"text-align:center;","cellclass":"site_template_config_cell","validate":[{ "function": "IsJSON", "selector": ".site_template_config_cell .xform_ctrl_textzoom_container" }],"controlparams":{"icon":"edit"}},
-      {"control":"html","caption":"Preview","link":"js:_this.previewTemplate(this)","value":"<img src='/images/icon_browse.png' class='xicon' />","cellclass":"site_template_preview_cell"}
+      {"control":"html","caption":"Dev Mode","link":"js:_this.previewTemplate(this)","value":"<img src='/images/icon_browse.png' class='xicon' />","cellclass":"site_template_preview_cell"}
     ]
   }
 }

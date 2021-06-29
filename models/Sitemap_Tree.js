@@ -36,6 +36,7 @@ jsh.App[modelid] = new (function(){
   this.orig_current_sitemap_item = null;
 
   this.oninit = function(){
+    jsh.System.applyRoles();
     if(jsh._GET.sitemap_id) {
       this.sitemap_id = jsh._GET.sitemap_id;
     } else {
@@ -188,7 +189,7 @@ jsh.App[modelid] = new (function(){
         if(page_key){
           if(action=='edit'){
             //Update URL
-            $(obj).on('mousedown', function(e){
+            $(obj).off('.sitemap_load_url').on('mousedown.sitemap_load_url', function(e){
               var jobj = $(this);
               //Right click
               if(e.which==3){

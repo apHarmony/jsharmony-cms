@@ -496,7 +496,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             });
           });
     
-          $('[cms-content-editor]').on('focus input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
+          $('[cms-content-editor]').on('focus input keyup',function(){
+            var checkForUpdate = function(){ if(!_this.hasChanges) _this.getValues(); }
+            checkForUpdate();
+            setTimeout(checkForUpdate, 100);
+          });
+
           $('[cms-title]').on('input keyup',function(){ _this.onTitleUpdate(this); });
     
           $(window).bind('beforeunload', function(){
@@ -690,7 +695,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(!src || (src.id != 'jsharmony_cms_title_editor')){
       if($('[cms-title]').length){
         if(cms.readonly) $('[cms-title]').text(_this.page.title);
-        else window.tinymce.get('jsharmony_cms_title_editor').setContent(_this.page.title);
+        else window.tinymce.get('jsharmony_cms_title_editor').setContent(_this.page.title, { jsHarmonyCmsSource: 'title' });
       }
     }
     if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').val(_this.page.title);

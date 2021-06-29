@@ -190,6 +190,9 @@ jsh.App[modelid] = new (function(){
           jobj.attr('href', url || '#');
         });
       }
+      else {
+        jobj.attr('href', '#');
+      }
     });
   }
 

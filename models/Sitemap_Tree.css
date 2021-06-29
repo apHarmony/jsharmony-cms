@@ -52,4 +52,7 @@
 .xsubform.Sitemap_Tree_Info .xtitle {
   padding-bottom:19px;
 }
-
+.page_template_browse {
+  display:inline-block;
+  padding-left:8px;
+}

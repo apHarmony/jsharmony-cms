@@ -266,3 +266,4 @@
   position:relative;
   color:#555;
 }
+<%-(rootcss)%> .jsHarmonyCms_role_WEBMASTER { display:none !important; }

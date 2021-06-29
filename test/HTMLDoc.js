@@ -278,6 +278,33 @@ describe('Page Editor Template Generation', function() {
     ].join(''));
     done();
   });
+
+  it('cms-page-config', function(done) {
+    var rslt = funcs.generateEditorTemplate([
+      '<html>',
+      '<head>',
+      '<cms-page-config>{ "id": "test" }</cms-page-config>',
+      '<title>Title</title>',
+      '</head>',
+      '<body>',
+      'Test',
+      '</body>',
+      '</html>',
+    ].join(''));
+    assert.equal(rslt, [
+      '<!DOCTYPE HTML><html>',
+      '<head>',
+      '<script type="text/cms-page-config">{ "id": "test" }</script>',
+      '<title>Title</title>',
+      '</head>',
+      '<body>',
+      '<script type="text/javascript" class="removeOnPublish" src="/js/jsHarmonyCMS.js"></script>',
+      'Test',
+      '</body>',
+      '</html>',
+    ].join(''));
+    done();
+  });
 });
 
 describe('Page Deployment Template Generation', function() {

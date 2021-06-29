@@ -113,7 +113,7 @@ var jsHarmonyCMS = function(options){
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
-      _this.toolbar.saveOrigOffsets();
+      _this.toolbar.saveOrigOffsets({ preload: true });
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
@@ -162,6 +162,7 @@ var jsHarmonyCMS = function(options){
   }
 
   this.load = function(){
+    _this.toolbar.saveOrigOffsets({ refreshExisting: true });
     if(loadErrors.length){
       loader.StopLoading();
       return XExt.Alert((typeof loadErrors[0] == 'string') ? loadErrors[0] : JSON.stringify(loadErrors[0]));

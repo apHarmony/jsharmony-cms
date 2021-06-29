@@ -33,6 +33,21 @@ jsh.App[modelid] = new (function(){
     }
   }
 
+  this.viewFileActions = function(obj){
+    if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing page');
+
+    var jobj = $(obj);
+    var rowid = jobj.closest('tr').data('id');
+    var page_key = xmodel.get('page_key', rowid);
+    
+    if(!page_key) return XExt.Alert('Please save changes');
+
+    var jpos = jobj.offset();
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key, undefined, { top: jpos.top + jobj.find('img').outerHeight() + 6, left: jpos.left - 1 });
+  }
+
   this.editFile = function(obj){ //obj || page_key
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing page');
 
