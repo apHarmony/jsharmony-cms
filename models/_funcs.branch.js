@@ -1393,7 +1393,8 @@ module.exports = exports = function(module, funcs){
 
   exports.branch_evictExcessBranches = function(dbcontext, callback) {
     exports.evictableBranches(dbcontext, function(err, results) {
-      var evictable = results.length - 5;
+      var keep = Math.max(1, (module.Config && typeof(module.Config.cachedDbResidentBranches) == 'number' && module.Config.cachedDbResidentBranches) || 5);
+      var evictable = results.length - keep;
       if (evictable < 1) return callback();
       var evicted = results.slice(0, evictable);
       return async.eachOfSeries(evicted, function(branch_id, i, cb) {

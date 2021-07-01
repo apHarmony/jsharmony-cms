@@ -125,6 +125,8 @@ function jsHarmonyCMSConfig(){
                                                  //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
   };
 
+  this.cachedDbResidentBranches = 5;   //Number of branches to maintain in the database (vs. archived to file) NOT INCLUDING (always resident) checkouts, reviews, and releases
+
   this.showLocalTemplatePaths = true;   //Display local template file system paths in Site Templates Administration
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
