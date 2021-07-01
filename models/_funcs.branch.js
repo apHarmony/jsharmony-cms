@@ -87,6 +87,9 @@ module.exports = exports = function(module, funcs){
           };
 
           async.waterfall([
+            function(load_cb){
+              exports.branch_makeResident(req._DBContext, branch_id, load_cb);
+            },
             function(download_cb){
               async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
                 if(!branch_item.download) return branch_item_cb();
@@ -1437,9 +1440,7 @@ module.exports = exports = function(module, funcs){
         }
       },
       function(cb) {
-        exports.branch_makeResident(dbcontext, branch_id, function(err) {
-          cb(err);
-        });
+        exports.branch_makeResident(dbcontext, branch_id, cb);
       },
       function(cb) {
         exports.set_my_current_branch_id(dbcontext, branch_id, function(err) {

@@ -504,6 +504,16 @@ module.exports = exports = function(module, funcs){
         });
       },
 
+      //Ensure branch is not archived to disk
+      function(load_cb){
+        funcs.branch_makeResident(context, src_branch_id, load_cb);
+      },
+
+      //Ensure branch is not archived to disk
+      function(load_cb){
+        funcs.branch_makeResident(context, dst_branch_id, load_cb);
+      },
+
       //Run onBeforeConflicts functions
       function(cb){
         async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
@@ -704,9 +714,19 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('U', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      //Validate user has access to branch
-      var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
-      appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+      async.waterfall([
+        //Ensure branch is not archived to disk
+        function(load_cb){
+          funcs.branch_makeResident(req._DBContext, branch_id, load_cb);
+        },
+
+        //Validate user has access to branch
+        function(update_cb){
+          var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
+          appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, update_cb);
+        },
+      ],
+      function (err, rslt) {
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({ '_success': 1 }));

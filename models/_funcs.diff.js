@@ -92,6 +92,11 @@ module.exports = exports = function(module, funcs){
             });
           },
 
+          //Ensure branch is not archived to disk
+          function(load_cb){
+            funcs.branch_makeResident(req._DBContext, branch_id, load_cb);
+          },
+
           //Run onBeforeDiff functions
           function(cb){
             async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
