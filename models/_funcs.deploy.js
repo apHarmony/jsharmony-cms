@@ -1982,17 +1982,16 @@ module.exports = exports = function(module, funcs){
 
   exports.deploy_cmshost = function(deployment, publish_path, host_id, site_files, cb){
     var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
     var deployment_id = deployment.deployment_id;
 
     //Notify deployment host
-    var queueid = 'deployment_host_publish_'+host_id;
     var deployment_message = {
       deployment_id: deployment_id
     };
-    var notifications = appsrv.SendQueue(queueid, JSON.stringify(deployment_message));
-    if(!notifications) return cb(new Error('CMS Deployment Host "'+host_id+'" not connected.  Please verify jsharmony-cms-host is running on the target machine'));
-    return cb();
+    funcs.deployment_target_host_sendQueue('deployment_host_publish', host_id, deployment_message, function(err){
+      if(err) return cb(err);
+      return cb();
+    });
   }
 
   exports.deploy_git = function(deployment, publish_path, deploy_path, site_files, cb) {

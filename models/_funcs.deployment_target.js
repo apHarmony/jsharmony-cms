@@ -648,33 +648,53 @@ module.exports = exports = function(module, funcs){
 
   }
 
-  exports.deployment_target_host_requestSend = function(host_id, request_message, options, cb){
-    options = _.extend({ timeout: 60 }, options);
+  exports.deployment_target_host_sendQueue = function(queue_name, host_id, msg, callback, retry){
+    var MAX_RETRIES = 15;
+    var RETRY_SLEEP = 2000;
+
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
 
+    retry = retry || 0;
+    if(typeof msg == 'undefined') msg = null;
+    if(!_.isString(msg)) msg = JSON.stringify(msg);
+    var notifications = appsrv.SendQueue(queue_name + '_' + host_id, msg);
+    if(notifications) return callback();
+
+    if(retry >= MAX_RETRIES) return callback(new Error('CMS Deployment Host "'+host_id+'" not connected.  Please verify jsharmony-cms-host is running on the target machine'));
+    setTimeout(function(){
+      funcs.deployment_target_host_sendQueue(queue_name, host_id, msg, callback, retry+1);
+    }, RETRY_SLEEP);
+  }
+
+  exports.deployment_target_host_requestSend = function(host_id, request_message, options, cb){
+    options = _.extend({ timeout: 60 }, options);
+    var jsh = module.jsh;
+
     //Notify deployment host
-    var queueid = 'deployment_host_request_'+host_id;
+    var queue_name = 'deployment_host_request';
     var requestId = (new Date()).getTime().toString() + '_' + Math.round(Math.random()*1000000000).toString();
     var msg = {
       id: requestId,
       body: request_message,
     }
     jsh.Log.info('CMSHOST: Sending request '+requestId+' to '+host_id);
-    var notifications = appsrv.SendQueue(queueid, JSON.stringify(msg));
-    if(!notifications) return cb(new Error('CMS Deployment Host "'+host_id+'" not connected.  Please verify jsharmony-cms-host is running on the target machine'));
-    pendingHostRequests[requestId] = {
-      queueid: queueid,
-      cb: cb,
-      timer: null,
-    };
-    //Clear callback after timeout
-    pendingHostRequests[requestId].timer = setTimeout(function(){
-      if(requestId in pendingHostRequests){
-        delete pendingHostRequests[requestId];
-        cb(new Error('Timeout during request to CMS Deployment Host "'+host_id+'".  Please verify jsharmony-cms-host is running on the target machine'));
-      }
-    }, (options.timeout||0) * 1000);
+    funcs.deployment_target_host_sendQueue(queue_name, host_id, msg, function(err){
+      if(err) return cb(err);
+      pendingHostRequests[requestId] = {
+        queue_name: queue_name,
+        host_id: host_id,
+        cb: cb,
+        timer: null,
+      };
+      //Clear callback after timeout
+      pendingHostRequests[requestId].timer = setTimeout(function(){
+        if(requestId in pendingHostRequests){
+          delete pendingHostRequests[requestId];
+          cb(new Error('Timeout during request to CMS Deployment Host "'+host_id+'".  Please verify jsharmony-cms-host is running on the target machine'));
+        }
+      }, (options.timeout||0) * 1000);
+    });
   }
 
   exports.deployment_host_response = function (req, res, next) {
