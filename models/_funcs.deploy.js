@@ -482,7 +482,7 @@ module.exports = exports = function(module, funcs){
 
     //Update deployment to running status
     var sql = "select \
-        deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_template_variables, deployment_target_publish_config, deployment_target_sts, deployment_git_revision, \
+        deployment_id, dt.site_id, branch_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_template_variables, deployment_target_publish_config, deployment_target_sts, deployment_git_revision, \
         d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
         site.site_default_page_filename site_default_page_filename \
@@ -902,7 +902,12 @@ module.exports = exports = function(module, funcs){
                 });
               },
 
-              //Run onBeforeDeploy functions
+              //Ensure branch item data is loaded into database
+              function(load_cb){
+                funcs.branch_makeResident('deployment', deployment.branch_id, load_cb);
+              },
+
+             //Run onBeforeDeploy functions
               function(cb){
                 async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
                   if(!branch_item.deploy) return branch_item_cb();
