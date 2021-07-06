@@ -495,14 +495,17 @@ module.exports = exports = function(module, funcs){
       for(var i=0;i<sitemap_items.length;i++){
         var sitemap_item = sitemap_items[i];
 
-        //Get children of current item
-        if(sitemap_item.sitemap_item_parent_id==current_item.sitemap_item_id){ children.push(sitemap_item); }
+        if(!sitemap_item.sitemap_item_exclude_from_parent_menu){
+          //Children of current item
+          if(sitemap_item.sitemap_item_parent_id==current_item.sitemap_item_id){ children.push(sitemap_item); }
 
-        //Get siblings of current item
-        if(!sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_parent_id==current_item.sitemap_item_parent_id)){ current_item.sitemap_item_siblings.push(removeSiblings(sitemap_item)); }
-        //Get siblings of each parent in the hierarchy from current item to root
-        for(var j=0;j<parents.length;j++){
-          if(!sitemap_item.sitemap_item_exclude_from_parent_menu && (sitemap_item.sitemap_item_parent_id==parents[j].sitemap_item_parent_id)){ parents[j].sitemap_item_siblings.push(removeSiblings(sitemap_item)); }
+          //Siblings of current item
+          if(sitemap_item.sitemap_item_parent_id==current_item.sitemap_item_parent_id){ current_item.sitemap_item_siblings.push(removeSiblings(sitemap_item)); }
+          
+          //Siblings of each parent in the hierarchy from current item to root
+          for(var j=0;j<parents.length;j++){
+            if(sitemap_item.sitemap_item_parent_id==parents[j].sitemap_item_parent_id){ parents[j].sitemap_item_siblings.push(removeSiblings(sitemap_item)); }
+          }
         }
       }
 
