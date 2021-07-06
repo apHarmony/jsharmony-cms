@@ -654,7 +654,6 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         },
       },
       upload: {
-        onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validateMenu(errors, branchItems, branchData, callback); },
         onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importMenu(dbtasks, branchItems, branchData, callback); },
       },
     },
