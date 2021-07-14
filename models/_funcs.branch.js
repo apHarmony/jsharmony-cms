@@ -1161,7 +1161,7 @@ module.exports = exports = function(module, funcs){
     if (typeof(record[field]) == 'string') record[field] = Date.parse(record[field]);
   }
 
-  exports.branchIsDbResident = function(dbcontext, branch_id, callback) {
+  exports.branch_isDbResident = function(dbcontext, branch_id, callback) {
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -1196,17 +1196,7 @@ module.exports = exports = function(module, funcs){
     });
   }
 
-  exports.liveBranchIds = function(dbcontext, callback) {
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var sql = "select distinct(branch_id) from {schema}.sys_user_site where branch_id is not null union select branch_id from {schema}.branch where (branch_type='PUBLIC' and branch_sts='ACTIVE') or branch_sts='REVIEW'";
-    appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), [], {}, function(err, rslt) {
-      if (err) {err.sql = sql};
-      callback(err, _.compact(_.map(rslt[0], 'branch_id')));
-    })
-  }
-
-  exports.evictableBranches = function(dbcontext, callback) {
+  exports.branch_evictableBranches = function(dbcontext, callback) {
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -1225,13 +1215,6 @@ module.exports = exports = function(module, funcs){
       if (err) {err.sql = sql};
       callback(err, _.compact(_.map(rslt[0], 'branch_id')));
     })
-  }
-
-  exports.branchShouldBeDbResident = function(dbcontext, branch_id, callback) {
-    exports.liveBranchIds(dbcontext, function(err, live) {
-      if (err) return callback(err);
-      callback(err, _.includes(live, branch_id));
-    });
   }
 
   exports.branch_indexToFile = function (dbcontext, branch_id, callback) {
@@ -1340,35 +1323,15 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.branch_makeResident = function(dbcontext, branch_id, callback) {
-    exports.branchIsDbResident(dbcontext, branch_id, function(err, resident) {
+    exports.branch_isDbResident(dbcontext, branch_id, function(err, resident) {
       if (err) return callback(err);
       if (resident) return callback();
       exports.branch_indexFromFile(dbcontext, branch_id, callback);
     });
   }
 
-  exports.branch_checkEviction = function(dbcontext, branch_id, callback) {
-    async.parallel([
-      function(current_cb) {
-        exports.branchIsDbResident(dbcontext, branch_id, current_cb);
-      },
-      function(target_cb) {
-        exports.branchShouldBeDbResident(dbcontext, branch_id, target_cb);
-      },
-    ], function(err, results) {
-      var currentlyResident = results[0];
-      var shouldBeResident = results[1];
-      if (err) return callback(err);
-      if (currentlyResident && !shouldBeResident) {
-        exports.branch_indexToFile(dbcontext, branch_id, callback);
-      } else {
-        callback();
-      }
-    });
-  }
-
   exports.branch_evictExcessBranches = function(dbcontext, callback) {
-    exports.evictableBranches(dbcontext, function(err, results) {
+    exports.branch_evictableBranches(dbcontext, function(err, results) {
       var keep = Math.max(1, (module.Config && typeof(module.Config.cachedDbResidentBranches) == 'number' && module.Config.cachedDbResidentBranches) || 5);
       var evictable = results.length - keep;
       if (evictable < 1) return callback();

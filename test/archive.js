@@ -197,7 +197,7 @@ describe('Branch Archive', function() {
     });
 
     it('branch is no longer resident', function(done) {
-      jsh.Modules.jsHarmonyCMS.funcs.branchIsDbResident('S1', branch_id, function(err, resident) {
+      jsh.Modules.jsHarmonyCMS.funcs.branch_isDbResident('S1', branch_id, function(err, resident) {
         assert.ifError(err);
         assert.strictEqual(resident, false);
         done();
@@ -263,7 +263,7 @@ describe('Branch Archive', function() {
     });
 
     it('branch is resident', function(done) {
-      jsh.Modules.jsHarmonyCMS.funcs.branchIsDbResident('S1', branch_id, function(err, resident) {
+      jsh.Modules.jsHarmonyCMS.funcs.branch_isDbResident('S1', branch_id, function(err, resident) {
         assert.ifError(err);
         assert.strictEqual(resident, true);
         done();
