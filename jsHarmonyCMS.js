@@ -735,6 +735,30 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     }
   };
 
+  configFactory.scheduled_tasks['evictExcessBranches'] = {
+    action: function(jobproc) {
+      _this.funcs.branch_evictExcessBranches.call(_this.jsh.AppSrv, 'jobproc', function(){})
+    },
+    options: {
+      quiet: false
+    },
+    when: function (curdt, lastdt) {  //return true if the job should run
+      return (curdt.getTime() - lastdt.getTime() > _this.Config.evictBranchesJobDelay);
+    }
+  };
+
+  configFactory.scheduled_tasks['cleanupOrphanBranchArchives'] = {
+    action: function(jobproc) {
+      _this.funcs.branch_cleanupOrphanBranchArchives.call(_this.jsh.AppSrv, 'jobproc', function(){})
+    },
+    options: {
+      quiet: false
+    },
+    when: function (curdt, lastdt) {  //return true if the job should run
+      return (curdt.getTime() - lastdt.getTime() > _this.Config.cleanupOrphanBranchesJobDelay);
+    }
+  };
+
   return {
     cookie_samesite: 'none',
     globalparams: {},

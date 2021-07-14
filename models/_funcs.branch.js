@@ -1342,6 +1342,37 @@ module.exports = exports = function(module, funcs){
     });
   }
 
+  exports.branch_cleanupOrphanBranchArchives = function(dbcontext, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    async.parallel([
+      function(db_cb) {
+        var sql = "select branch_id from "+(module.schema?module.schema+'.':'')+"branch";
+        appsrv.ExecRecordset(dbcontext, sql, [], {}, function(err, rslt) {
+          if (err) {err.sql = sql};
+          var branches = _.map(rslt[0], 'branch_id');
+          db_cb(err, branches);
+        });
+      },
+      function(dir_cb) {
+        fs.readdir(path.join(module.jsh.Config.datadir, 'branch'), dir_cb);
+      },
+    ],
+    function(err, results) {
+      if (err) return callback(err);
+      var branches = results[0];
+      var dir = results[1];
+      async.each(dir, function(file, cb) {
+        var branch_id = parseInt(file);
+        if (typeof(branch_id) == 'number' && branches.indexOf(branch_id) == -1) {
+          fs.unlink(branchArchivePath(branch_id), cb);
+        } else {
+          cb();
+        }
+      }, callback);
+    });
+  }
+
   exports.set_my_current_branch_id = function(dbcontext, branch_id, callback) {
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -1382,9 +1413,6 @@ module.exports = exports = function(module, funcs){
         exports.set_my_current_branch_id(dbcontext, branch_id, function(err) {
           cb(err);
         });
-      },
-      function(cb) {
-        exports.branch_evictExcessBranches(dbcontext, cb);
       },
     ], function(err) {
       if (err != null && !err.shortCircuit) { callback(err); return; }
