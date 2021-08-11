@@ -439,7 +439,7 @@ module.exports = exports = function(module, funcs){
     return indent + (text || '').replace(/\r?\n/g, `${NEW_LINE_OUTPUT}${indent}`);
   }
 
-  exports.replacePageComponentsWithContentComponents = function(content, branchData, pageComponents){
+  exports.replacePageComponentsWithContentComponents = function(content, branchData, pageComponents, exportJSON){
     if(!content) return content;
     if(content.indexOf('cms-component')<0) return content;
 
@@ -452,6 +452,7 @@ module.exports = exports = function(module, funcs){
           var componentType = htdoc.getAttr(node, 'cms-component');
           var componentProperties = htdoc.getAttr(node, 'cms-component-properties');
           var componentData = htdoc.getAttr(node, 'cms-component-data');
+          var menuTag = htdoc.getAttr(node, 'cms-menu-tag');
 
           if(componentType){
             var component = undefined;
@@ -466,7 +467,6 @@ module.exports = exports = function(module, funcs){
             var defaultProperties = funcs.getComponentDefaultValues(component.properties);
             var defaultData = funcs.getComponentDefaultValues(component.data);
 
-            
             //Parse component data
             try{
               if(!componentData){
@@ -504,17 +504,30 @@ module.exports = exports = function(module, funcs){
             htdoc.removeAttr(node, 'cms-component');
             htdoc.removeAttr(node, 'cms-component-data');
             htdoc.removeAttr(node, 'cms-component-properties');
-            htdoc.removeAttr(node, 'data-component');
-            htdoc.removeAttr(node, 'data-component-data');
-            htdoc.removeAttr(node, 'data-component-properties');
-            htdoc.appendAttr(node, 'data-component', componentType);
-            if(componentData) htdoc.appendAttr(node, 'data-component-data', Buffer.from(componentData).toString('base64'));
-            if(componentProperties) htdoc.appendAttr(node, 'data-component-properties', Buffer.from(componentProperties).toString('base64'));
+            htdoc.removeAttr(node, 'cms-component-content');
+            htdoc.removeAttr(node, 'cms-menu-tag');
+
+            if(exportJSON){
+              var renderOptions = {};
+              if(componentData) renderOptions.data = JSON.parse(componentData);
+              if(componentProperties) renderOptions.properties = JSON.parse(componentProperties);
+              if(menuTag) renderOptions.menu_tag = menuTag;
+              htdoc.replaceNodeContent(node, '<%-renderComponent('+JSON.stringify(componentType)+(!_.isEmpty(renderOptions)?', '+JSON.stringify(renderOptions):'')+')%>');
+            }
+            else{
+              htdoc.removeAttr(node, 'data-component');
+              htdoc.removeAttr(node, 'data-component-data');
+              htdoc.removeAttr(node, 'data-component-properties');
+              htdoc.appendAttr(node, 'data-component', componentType);
+              if(componentData) htdoc.appendAttr(node, 'data-component-data', Buffer.from(componentData).toString('base64'));
+              if(componentProperties) htdoc.appendAttr(node, 'data-component-properties', Buffer.from(componentProperties).toString('base64'));
+            }
           }
         }
       },
     ]);
     htdoc.trimRemoved();
+
     return htdoc.content;
   }
 

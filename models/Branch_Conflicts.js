@@ -128,13 +128,14 @@ jsh.App[modelid] = new (function(){
   this.previewPage = function(obj){
     var jobj = $(obj);
     var page_template_id = jobj.data('page_template_id');
+    var page_template_path = jobj.data('page_template_path');
     var page_key = jobj.data('page_key');
     var page_filename = jobj.data('page_filename');
     var page_id = jobj.data('page_id');
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { source: 'branch_conflicts', branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id  });
+    jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { source: 'branch_conflicts', branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, page_template_path: page_template_path  });
   }
 
   this.previewMedia = function(obj){

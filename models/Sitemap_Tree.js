@@ -627,14 +627,15 @@ jsh.App[modelid] = new (function(){
 
     //Render Dialog for Page
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
-      XExt.RenderLOV(xform.Data, jsh.$root('.xdialogblock ' + sel + ' .page_template_id'), xform.LOVs.page_template_id);
+      XExt.RenderLOV(xform.Data, jsh.$dialogBlock(sel + ' .page_template_id'), xform.LOVs.page_template_id);
 
       //Clear Values / Set Defaults
       jprompt.find('.page_path').val('');
       jprompt.find('.page_title').val('');
       jprompt.find('.page_template_id').val(jsh.XPage.getBreadcrumbs().site_default_page_template_id);
+      jprompt.find('.page_template_path').val('');
       jprompt.find('.page_path_default').prop('checked', true);
       jprompt.find('.sitemap_item_text_default').prop('checked', true);
 
@@ -676,13 +677,19 @@ jsh.App[modelid] = new (function(){
           jsitemaptext.removeClass('uneditable');
         }
       });
+
+      var jTemplateId = jprompt.find('.page_template_id');
+      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); }
+      jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
+      toggleTemplatePath();
     }, function (success) { //onAccept
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
       //Validate File Selected
       var page_path = jprompt.find('.page_path').val();
       var page_title = jprompt.find('.page_title').val();
       var page_template_id = jprompt.find('.page_template_id').val();
+      var page_template_path = jprompt.find('.page_template_path').val();
       var sitemap_item_text = jprompt.find('.sitemap_item_text').val();
 
       if (!page_path) return XExt.Alert('Please enter a page path');
@@ -691,12 +698,18 @@ jsh.App[modelid] = new (function(){
 
       if (!page_template_id) return XExt.Alert('Please select a template.');
 
+      if (page_template_id=='<Standalone>'){
+        if (!page_template_path) return XExt.Alert('Please enter a page template path.');
+      }
+      else page_template_path = null;
+
       if (page_path.indexOf('.') < 0) page_path += '.html';
 
       var params = {
         page_path: page_path,
         page_title: page_title,
-        page_template_id: page_template_id
+        page_template_id: page_template_id,
+        page_template_path: page_template_path,
       };
 
       var execModel = xmodel.module_namespace+'Page_Tree_Listing';
@@ -797,11 +810,12 @@ jsh.App[modelid] = new (function(){
     var page_key = page.page_key;
     var page_id = page.page_id;
     var page_template_id = page.page_template_id;
+    var page_template_path = page.page_template_path;
     var page_filename = page.page_filename||'';
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
-    var editorParams = { source: 'sitemap', rawEditorDialog: '.'+xmodel.class+'_RawTextEditor' };
+    var editorParams = { source: 'sitemap', rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_template_path: page_template_path };
     if(options.readonly) editorParams.page_id = page_id;
     if(options.getURL) editorParams.getURL = true;
     if(options.onComplete) editorParams.onComplete = options.onComplete;
@@ -839,24 +853,31 @@ jsh.App[modelid] = new (function(){
     _this.getPageInfo(page_key, function(page){
       //Render Dialog for Page
       XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-        var jprompt = jsh.$root('.xdialogblock ' + sel);
+        var jprompt = jsh.$dialogBlock(sel);
 
-        XExt.RenderLOV(xform.Data, jsh.$root('.xdialogblock ' + sel + ' .page_template_id'), xform.LOVs.page_template_id);
+        XExt.RenderLOV(xform.Data, jsh.$dialogBlock(sel + ' .page_template_id'), xform.LOVs.page_template_id);
 
         //Clear Values / Set Defaults
         jprompt.find('.page_path').val(page.page_path);
         jprompt.find('.page_title').val(page.page_title);
         jprompt.find('.page_template_id').val(page.page_template_id);
+        jprompt.find('.page_template_path').val(page.page_template_path);
 
         jprompt.find('input,select').removeClass('default_focus');
         if(focus_target) jprompt.find('.'+focus_target).addClass('default_focus');
+
+        var jTemplateId = jprompt.find('.page_template_id');
+        var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); }
+        jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
+        toggleTemplatePath();
       }, function (success) { //onAccept
-        var jprompt = jsh.$root('.xdialogblock ' + sel);
+        var jprompt = jsh.$dialogBlock(sel);
 
         //Validate File Selected
         var page_path = jprompt.find('.page_path').val();
         var page_title = jprompt.find('.page_title').val();
         var page_template_id = jprompt.find('.page_template_id').val();
+        var page_template_path = jprompt.find('.page_template_path').val();
 
         if (!page_path) return XExt.Alert('Please enter a page path');
         if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
@@ -864,12 +885,18 @@ jsh.App[modelid] = new (function(){
 
         if (!page_template_id) return XExt.Alert('Please select a template.');
 
+        if (page_template_id=='<Standalone>'){
+          if (!page_template_path) return XExt.Alert('Please enter a page template path.');
+        }
+        else page_template_path = null;
+
         if (page_path.indexOf('.') < 0) page_path += '.html';
 
         var params = {
           page_path: page_path,
           page_title: page_title,
-          page_template_id: page_template_id
+          page_template_id: page_template_id,
+          page_template_path: page_template_path,
         };
 
         var execModel = xmodel.module_namespace+'Page_Tree_Listing';
@@ -965,7 +992,7 @@ jsh.App[modelid] = new (function(){
   
       //Render Dialog for Page
       XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-        var jprompt = jsh.$root('.xdialogblock ' + sel);
+        var jprompt = jsh.$dialogBlock(sel);
   
         //Clear Values / Set Defaults
         jprompt.find('.source_page_path').val(source_page.page_path);
@@ -1015,7 +1042,7 @@ jsh.App[modelid] = new (function(){
           }
         });
       }, function (success) { //onAccept
-        var jprompt = jsh.$root('.xdialogblock ' + sel);
+        var jprompt = jsh.$dialogBlock(sel);
   
         //Validate File Selected
         var page_path = jprompt.find('.page_path').val();

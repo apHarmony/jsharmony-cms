@@ -23,7 +23,11 @@
       ".xform<%=model.class%> td.page_filename .page_details { margin-top:2px; }",
       ".xform<%=model.class%> td.page_filename .page_details label { font-weight:bold; margin:2px 6px 0 30px; display:inline-block; }",
       ".xform<%=model.class%> td.page_filename .page_details span { display:inline-block; }",
-      ".xbodyhead.xelem<%=model.class%> { display:none !important; }"
+      ".xbodyhead.xelem<%=model.class%> { display:none !important; }",
+      ".xform<%=model.class%> .page_template_selection_path { display:none; margin-top:9px; }",
+      ".xform<%=model.class%> .page_template.standalone .page_template_selection_path { display:block; }",
+      ".<%=model.class%>_AddFile .page_template_browse { display:none; padding-left:12px; font-size:0.9em; }",
+      ".<%=model.class%>_AddFile .page_template_path_container { display:none; }",
     ],
     "oninit": "_this.oninit(xmodel);",
     "onrowbind": "_this.onrowbind(xmodel,jobj,datarow);",
@@ -43,7 +47,9 @@
           "<div><label>Path:</label><span class='page_details_path'><%=(XExt.endsWith(data.page_path,site_default_page_filename)?(data.page_path.substr(0, data.page_path.length - site_default_page_filename.length)):data.page_path)%></span></div>",
           "</div>",
         ]},
-      {"name":"page_template_id","caption":"Template","control":"dropdown","lov":"#LOV_CMS_PAGE_TEMPLATES","actions":"BIU","validate":["Required"]},
+      {"name":"page_template_id","caption":"Template","control":"hidden","lov":"#LOV_CMS_PAGE_TEMPLATES","actions":"BIU","validate":[{"function":"Required", "selector": ".page_template_selection"}]},
+      {"name":"page_template_path","caption":"Template Path","control":"hidden","actions":"BIU","validate": [{"function":"js:if(_obj.page_template_id!='<Standalone>') return ''; if(_val) return ''; return _caption+' is required for <Standalone> templates.';", "selector": ".page_template_selection"}]},
+      {"name":"page_template","caption":"Template","control":"label","unbound":true,"actions":"BIU","value": "<div class='page_template_selection'><#-_this.page_template_selection_render(obj, data)#></div>"},
       {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"},
       {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
       {"name":"page_edit","caption":"","link":"js:_this.editFile(this)","control":"html","value":"<img data-rowid='<%=rowid%>' src='/images/icon_edit.png' height=12 class='xicon' />","cellstyle": "text-align:center; border-right:0;", "captionstyle": "border-right:0;" },
@@ -53,8 +59,10 @@
   "Page_Browser_Listing": {
     "inherits": "Page_Tree_Listing",
     "actions":"B",
+    "sqlwhere":"(page_is_folder = 0) and (page_template_id != '<Standalone>')",
     "fields":[
       {"name":"page_template_id","control":"label","cellstyle":"white-space:nowrap;","actions":""},
+      {"name":"page_template","actions":""},
       {"name":"page_edit","actions":""},
       {"name":"page_actions","actions":""},
       {"name":"page_select","caption":"Select","link":"js:_this.sendToEditor(this)","control":"html","value":"Select","cellstyle": "text-align:center;", "__AFTER__":"page_edit" }

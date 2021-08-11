@@ -24,6 +24,7 @@ var path = require('path');
 var fs = require('fs');
 var urlparser = require('url');
 var crypto = require('crypto');
+var querystring = require('querystring');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -61,7 +62,12 @@ module.exports = exports = function(module, funcs){
 
           //Add content elements if they do not exist
           var template_content_elements = template.content_elements;
-          if(!template_content_elements) template_content_elements = { body: { type: 'htmleditor', title: 'Body' } };
+          if(!template_content_elements){
+            if(!options.pageTemplates && (template.location == 'REMOTE')){ }
+            else {
+              template_content_elements = { body: { type: 'htmleditor', title: 'Body' } };
+            }
+          }
           for(var key in template_content_elements){
             template_content_elements[key] = _.extend({
               type: 'htmleditor',
@@ -82,17 +88,23 @@ module.exports = exports = function(module, funcs){
           catch(ex){
             module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_content);
           }
+          for(var key in template.content){ page_file_content[key] = template.content[key]; }
           page_file = page_file || { };
           if(!('content' in page_file)) page_file.content = {};
           for(var key in template_content_elements){
             if(key in page_file.content) page_file_content[key] = page_file.content[key];
           }
-          if(template.location == 'REMOTE'){
+          var extraContent = false;
+          if(template.standalone){
+            extraContent = true;
+          }
+          else if(template.location == 'REMOTE'){
             //Add extra content_areas that are not defined in template (if using in-template script config)
-            if(options.includeExtraContent){
-              for(var key in page_file.content){
-                if(!(key in page_file_content)) page_file_content[key] = page_file.content[key];
-              }
+            if(options.includeExtraContent) extraContent = true;
+          }
+          if(extraContent){
+            for(var key in page_file.content){
+              if(!(key in page_file_content)) page_file_content[key] = page_file.content[key];
             }
           }
           page_file.content = page_file_content;
@@ -141,6 +153,7 @@ module.exports = exports = function(module, funcs){
             lang: page.page_lang||'',
             tags: page.page_tags||'',
             author: page.page_author,
+            page_template_id: page_template_id,
           };
           var client_template = {
             title: template.title||'',
@@ -152,6 +165,7 @@ module.exports = exports = function(module, funcs){
             js: template.js||'',
             content_elements: template_content_elements,
             raw: template.raw||false,
+            standalone: template.standalone||false,
             options: template.options||{},
             components: template.components||{},
           };
@@ -660,11 +674,12 @@ module.exports = exports = function(module, funcs){
 
           //Validate parameters
           if(!('properties' in P)) P.properties = {};
-          if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&properties','&content','&seo','&lang','&tags','&author'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          if (!appsrv.ParamCheck('P', P, ['&title','&css','&header','&footer','&properties','&content','&seo','&lang','&tags','&author','|page_template_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
           if (!appsrv.ParamCheck('Q', Q, ['|branch_id','|page_template_id','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
           //XValidate
           var client_page = P;
+          P.page_template_id = page.page_template_id;
           validate = new XValidate();
           verrors = {};
           validate.AddValidator('_obj.title', 'Title', 'B', [XValidate._v_MaxLength(1024)]);
@@ -861,7 +876,7 @@ module.exports = exports = function(module, funcs){
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
     //Validate parameters
-    if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id', '|devMode', '|site_id', '|render'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id', '|devMode', '|site_id', '|render', '|page_template_path'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
     if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
     validate = new XValidate();
@@ -877,13 +892,13 @@ module.exports = exports = function(module, funcs){
     //Only dev mode uses devMode and site_id parameters
 
     if (verb == 'get') {
-      var sql = "select site_id current_site_id,site_id,deployment_target_template_variables from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
+      var sql = "select site_id current_site_id,site_id,deployment_target_template_variables,deployment_target_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
       var sql_ptypes = [];
       var sql_params = {};
 
       if(Q.devMode){
         if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select {schema}.my_current_site_id() current_site_id,v_my_site.site_id,v_my_site.deployment_target_template_variables,deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
+        sql = "select {schema}.my_current_site_id() current_site_id,v_my_site.site_id,v_my_site.deployment_target_template_variables,deployment_target_publish_config,deployment_target.deployment_target_id from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { site_id: Q.site_id };
       }
@@ -905,6 +920,7 @@ module.exports = exports = function(module, funcs){
         catch(ex){
           return Helper.GenError(req, res, -99999, ex.toString());
         }
+        var deployment_target_id = rslt[0].deployment_target_id;
 
         if(!site_id) { Helper.GenError(req, res, -1, 'Site not found'); return; }
 
@@ -922,6 +938,9 @@ module.exports = exports = function(module, funcs){
             url = cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]) + page_template.path;
             //Generate an error if the preview server revision is not checked out
             if(current_site_id != site_id) return Helper.GenError(req, res, -9, 'Please checkout this site to preview the template');
+          }
+          if(page_template.standalone && Q.page_template_path){
+            url = Q.page_template_path;
           }
           if(page_template.remote_templates && page_template.remote_templates.editor) {
             url = page_template.remote_templates.editor;
@@ -951,7 +970,7 @@ module.exports = exports = function(module, funcs){
             if(err){ Helper.GenError(req, res, -99999, err.toString()); return; }
 
             if(!url){
-              if(page_template.templates.editor){
+              if(page_template.templates && page_template.templates.editor){
                 //Return full page
                 if(Q.render){
                   var cmsBaseUrl = cms.getCmsBaseUrlFromReq(req);
@@ -978,8 +997,9 @@ module.exports = exports = function(module, funcs){
               url = funcs.parseDeploymentUrl(url, template_variables);
 
               //Read URL and querystring
+              var parsedUrl = null;
               try{
-                var parsedUrl = new urlparser.URL(url);
+                parsedUrl = new urlparser.URL(url);
                 template_variables._ = template_variables.timestamp;
                 if(Q.devMode) template_variables.page_template_location = page_template.location;
                 var changedUrl = false;
@@ -1000,6 +1020,7 @@ module.exports = exports = function(module, funcs){
                   });
                 }
 
+                //Add token
                 parsedUrl.searchParams.set('jshcms_token', jshcms_client_token);
                 changedUrl = true;
 
@@ -1007,10 +1028,29 @@ module.exports = exports = function(module, funcs){
               }
               catch(ex){
                 jsh.Log.error(ex);
-                Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
+                return Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
               }
 
-              res.end(JSON.stringify({ '_success': 1, editor: url }));
+              Helper.execif(true || page_template.standalone,
+                function(next){
+                  //Throw error if no deployment_target_id selected
+                  if(!deployment_target_id) return Helper.GenError(req, res, -9, 'Editing a Standalone template requires a Deployment Target to be defined.  Configure Deployment Target in the Sites tab.');
+                  
+                  //Get Access Key
+                  var jshcms_url = cms.getCmsBaseUrlFromReq(req);
+                  cms.funcs.getAccessKey(req._DBContext, deployment_target_id, jshcms_url, { timestamp: template_variables.timestamp }, function(err, jshcms_access_key){
+                    if(err) return Helper.GenError(req, res, -99999, err.toString());
+
+                    parsedUrl.searchParams.set('jshcms_url', jshcms_url);
+                    parsedUrl.searchParams.set('jshcms_access_key', jshcms_access_key);
+                    url = parsedUrl.toString();
+                    return next();
+                  });
+                },
+                function(){
+                  res.end(JSON.stringify({ '_success': 1, editor: url }));
+                }
+              );
             });
           });          
         });
@@ -1035,7 +1075,7 @@ module.exports = exports = function(module, funcs){
     async.until(function(){ return insert_success; }, function(insert_cb){
       //Generate token
       var base_token = (req.user_id||'').toString() + '-' + (timestamp||(new Date())).toString() + '-' + _.map(keys, function(val){ return(val||'').toString(); }).join('-') + '-' + (sys_user_token_ext||'').toString();
-      jshcms_client_token = crypto.createHash('sha1').update(base_token + '-' + jsh.Config.frontsalt).digest('hex');
+      jshcms_client_token = crypto.createHash('sha256').update(base_token + '-' + jsh.Config.frontsalt).digest('hex');
 
       //Write to database
       var sql = "{schema}.insert_token(@sys_user_token_hash,@sys_user_token_ext,@sys_user_token_keys)";
@@ -1074,7 +1114,7 @@ module.exports = exports = function(module, funcs){
     var sql = "jsHarmonyCMS_validate_token";
     var sql_ptypes = [dbtypes.NVarChar(256)];
     var sql_params = { sys_user_token_hash: jshcms_client_token };
-    appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+    appsrv.ExecRow(req._DBContext||'token', funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if(err){ err.sql = sql; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt.length || !rslt[0] || !rslt[0].sys_user_token_hash) return Helper.GenError(req, res, -10, "Session timed out.  Any unsaved changes will be lost.");
       var sys_user_token_keys = rslt[0].sys_user_token_keys;
@@ -1165,6 +1205,13 @@ module.exports = exports = function(module, funcs){
             var pageSiteConfig = {
               defaultEditorConfig: siteConfig.defaultEditorConfig||{},
             };
+            if(typeof pageSiteConfig.defaultEditorConfig.webSnippetsPath == 'undefined'){
+              if(cms.PreviewServer){
+                var webSnippetPath = cms.PreviewServer.getURL((req.headers.host||'').split(':')[0]) + '/templates/websnippets/';
+                if(Q.jshcms_token) webSnippetPath += '?' + querystring.stringify({ jshcms_token: Q.jshcms_token });
+                pageSiteConfig.defaultEditorConfig.webSnippetsPath = webSnippetPath;
+              }
+            }
             res.end(JSON.stringify({ '_success': 1, siteConfig: pageSiteConfig }));
           });
         });

@@ -63,7 +63,7 @@ if((routetype == 'd')||(routetype == 'csv')){
                 //Read Page Template Config
                 var templateConfig = null;
                 try{
-                  templateConfig = cms.funcs.readPageTemplateConfig(templateContent, 'local page template  "'+file+'"', { continueOnConfigError: true });
+                  templateConfig = cms.funcs.readPageTemplateConfig(templateContent, 'local page template  "'+file+'"', { continueOnConfigError: true, templateName: templateName });
                 }
                 catch(ex){
                   return file_cb(ex);

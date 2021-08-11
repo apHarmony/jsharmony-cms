@@ -149,7 +149,7 @@ module.exports = exports = function(module, funcs){
             //Parse and merge template config
             var templateConfig = null;
             try{
-              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'local page template "'+template.path+'"');
+              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'local page template "'+template.path+'"', { templateName: template_name });
               else if(options.templateType == 'COMPONENT') templateConfig = funcs.readComponentTemplateConfig(templateContent, 'local component template "'+template.path+'"');
               else throw new Error('Invalid Template Type: ' + options.templateType);
             }
@@ -189,7 +189,7 @@ module.exports = exports = function(module, funcs){
 
                     if(!(template.remote_templates && template.remote_templates.publish)){
                       try{
-                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables });
+                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables, template_name: template_name });
                       }
                       catch(ex){
                         return template_publish_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
@@ -294,7 +294,7 @@ module.exports = exports = function(module, funcs){
             //Parse and merge template config
             var templateConfig = null;
             try{
-              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'remote page template "'+url + '"');
+              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'remote page template "'+url + '"', { templateName: template_name });
               else if(options.templateType == 'COMPONENT') templateConfig = funcs.readComponentTemplateConfig(templateContent, 'remote component template "'+url+'"');
               else throw new Error('Invalid Template Type: ' + options.templateType);
             }
@@ -311,7 +311,7 @@ module.exports = exports = function(module, funcs){
             }
             else if(!template.remote_templates.publish){
               try{
-                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables });
+                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables, template_name: template_name });
               }
               catch(ex){
                 return req_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
@@ -590,6 +590,7 @@ module.exports = exports = function(module, funcs){
             page_redirects: {},
             page_base_paths: {},
             page_files: {},
+            page_data: {},
 
             component_templates: null,
             component_template_html: {},
@@ -1238,6 +1239,7 @@ module.exports = exports = function(module, funcs){
           branchData.page_keys[page.page_key] = page_cmspath;
           branchData.page_redirects[page_cmspath] = page_urlpath;
           branchData.page_base_paths[page.page_key] = page_basepath;
+          branchData.page_data[page.page_key] = {};
           if(path.basename(page_cmspath)==publish_params.site_default_page_filename){
             var base_page_dir = publish_params.url_prefix + publish_params.page_subfolder;
             if(!Helper.isNullUndefined(publish_params.url_prefix_page_override)){ base_page_dir = publish_params.url_prefix_page_override; }
@@ -1308,7 +1310,7 @@ module.exports = exports = function(module, funcs){
     //  Merge content with template
     //  Save template to file
     var sql = 'select \
-      p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id, \
+      p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path, \
       page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
       from '+(module.schema?module.schema+'.':'')+'page p \
       inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
@@ -1365,7 +1367,8 @@ module.exports = exports = function(module, funcs){
               content: clientPage.page.content||{},
               footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
               properties: _.extend({}, clientPage.template.default_properties, clientPage.page.properties),
-              title: clientPage.page.title
+              title: clientPage.page.title,
+              page_template_id: page.page_template_id,
             },
             _: _,
             Helper: Helper,
@@ -1411,23 +1414,31 @@ module.exports = exports = function(module, funcs){
           var page_content = '';
           if(page.page_template_id in branchData.page_template_html){
             page_content = branchData.page_template_html[page.page_template_id]||'';
+            var exportJSON = (page_content.toString().trim()=='format:json');
+
             try{
               //Replace cms-component with data-component in clientPage.page.content
               for(var key in clientPage.page.content){
-                clientPage.page.content[key] = funcs.replacePageComponentsWithContentComponents(clientPage.page.content[key], branchData, clientPage.template.components);
+                clientPage.page.content[key] = funcs.replacePageComponentsWithContentComponents(clientPage.page.content[key], branchData, clientPage.template.components, exportJSON);
               }
-              //Render page
-              page_content = ejs.render(page_content, ejsparams);
             }
             catch(ex){
               var errmsg = 'Could not render page '+page.page_path+': '+ex.message;
               return cb(new Error(errmsg));
             }
-            try{
-              page_content = funcs.renderComponents(page_content, branchData, clientPage.template.components, {
+
+            function renderContent(pageContent){
+              try{
+                //Render page
+                pageContent = ejs.render(pageContent, ejsparams);
+              }
+              catch(ex){
+                throw new Error('Could not render page '+page.page_path+': '+ex.message);
+              }
+              pageContent = funcs.renderComponents(pageContent, branchData, clientPage.template.components, {
                 include: includePage,
               });
-              page_content = funcs.applyRenderTags(page_content, { page: ejsparams.page });
+              pageContent = funcs.applyRenderTags(pageContent, { page: ejsparams.page });
               var replaceBranchURLsParams = {
                 getMediaURL: function(media_key){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
@@ -1440,16 +1451,35 @@ module.exports = exports = function(module, funcs){
                 branchData: branchData,
                 removeClass: true
               };
-              page_content = funcs.replaceBranchURLs(page_content, replaceBranchURLsParams);
+              pageContent = funcs.replaceBranchURLs(pageContent, replaceBranchURLsParams);
               pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), _.extend(replaceBranchURLsParams, {
                 getPageURL: function(page_key){
                   if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
                   return branchData.page_keys[page_key];
                 },
               })));
+              return pageContent;
+            }
+
+            try{
+              if(exportJSON){
+                if(!(page.page_key in branchData.page_data)) throw new Error('Page '+page.page_path+' not defined in page_data');
+                branchData.page_data[page.page_key].format = 'json';
+                //Flatten Page
+                var flatPage = funcs.flattenObject(ejsparams.page);
+                //Render Page
+                flatPage.content = renderContent(flatPage.content);
+                //Unflatten Page
+                funcs.unflattenObject(ejsparams.page, flatPage.content, flatPage.keys);
+                //Save to JSON
+                page_content = JSON.stringify(ejsparams.page);
+              }
+              else{
+                page_content = renderContent(page_content);
+              }
             }
             catch(ex){
-              return cb(ex);
+              return cb(new Error('Error rendering page '+page.page_path+' :: '+ex.toString()));
             }
           }
           else {
@@ -1631,6 +1661,9 @@ module.exports = exports = function(module, funcs){
               var pagesToInclude = pagesWithIncludes[page_path];
               delete pagesWithIncludes[page_path];
 
+              //Get Page Key from page_path
+              var page_key = _.findKey(branchData.page_base_paths, function(val){ return val == ('/'+page_path); });
+
               //Read file from disk
               var page_fpath = path.join(publish_params.publish_path, page_path);
               fs.readFile(page_fpath, 'utf8', function(err, page_content){
@@ -1640,10 +1673,17 @@ module.exports = exports = function(module, funcs){
                   for(var i=0; i<pagesToInclude.length;i++){
                     var key = pagesToInclude[i];
                     var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify(includeFileMapping[key])+')-->';
+                    var includeContent = includeFileContent[key];
+                    if(page_key && branchData.page_data[page_key] && (branchData.page_data[page_key].format=='json')){
+                      includeCode = JSON.stringify(includeCode);
+                      includeCode = includeCode.substr(1,includeCode.length-2);
+                      includeContent = JSON.stringify(includeContent);
+                      includeContent = includeContent.substr(1,includeContent.length-2);
+                    }
                     if(page_content.indexOf(includeCode) < 0){
                       return rewrite_page_cb(new Error('Include script for "'+key+'" not found on page "'+page_fpath+'"'));
                     }
-                    page_content = Helper.ReplaceAll(page_content, includeCode, includeFileContent[key]);
+                    page_content = Helper.ReplaceAll(page_content, includeCode, includeContent);
                   }
                   //Recompute MD5
                   branchData.site_files[page_path] = {

@@ -1,7 +1,7 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.default_deployment_target_publish_config = {}; //Populated onroute
+  this.default_deployment_target_publish_config = {};
 
   var parse_url_cache = {};
   var previous_config = '';
@@ -10,7 +10,7 @@ jsh.App[modelid] = new (function(){
 
   _this.oninit = function(){
     _this.configurator_render();
-    $('.raw_deployment_target_publish_config_view_previous').toggle(!jshInstance.is_insert);
+    $('.src_deployment_target_publish_config_view_previous').toggle(!jsh.is_insert);
   }
 
   _this.onload = function(){
@@ -43,7 +43,7 @@ jsh.App[modelid] = new (function(){
 
     var jdeployment_type = jcontainer.find('.deployment_type');
     XExt.RenderLOV(null, jdeployment_type, [
-      { code_val: '', code_txt: '(None)' },
+      { code_val: '', code_txt: '(No Publish Target)' },
       { code_val: 's3', code_txt: 'Amazon S3' },
       { code_val: 'cmshost', code_txt: 'CMS Deployment Host' },
       { code_val: 'ftp', code_txt: 'FTP' },
@@ -108,7 +108,7 @@ jsh.App[modelid] = new (function(){
       }
       _this.configurator_setvalue(xmodel.get('deployment_target_publish_path'), xmodel.get('deployment_target_publish_config'));
     });
-    jcontainer.find('.raw_deployment_target_publish_config_view_previous').on('click', function(e){
+    jcontainer.find('.src_deployment_target_publish_config_view_previous').on('click', function(e){
       e.preventDefault();
       e.stopImmediatePropagation();
       XExt.Alert(previous_config,null, { escapeHTML: false });
@@ -133,14 +133,14 @@ jsh.App[modelid] = new (function(){
     publish_path = publish_path || '';
     publish_config = publish_config || '';
     var jcontainer = _this.configurator_getContainer();
-    jcontainer.find('.raw_deployment_target_publish_path').val(publish_path);
+    jcontainer.find('.src_deployment_target_publish_path').val(publish_path);
     var parsed_config = {};
     try {
       parsed_config = JSON.parse(publish_config);
       publish_config = _.isEmpty(parsed_config)?'{\n}':JSON.stringify(parsed_config,null,2);
     }
     catch(ex){}
-    jcontainer.find('.raw_deployment_target_publish_config').val(publish_config);
+    jcontainer.find('.src_deployment_target_publish_config').val(publish_config);
 
 
     //Parse URL
@@ -494,17 +494,17 @@ jsh.App[modelid] = new (function(){
       xmodel.controller.form.Data._is_dirty = true;
     }
     else {
-      jcontainer.find('.raw_deployment_target_publish_path').val(generated_url);
-      jcontainer.find('.raw_deployment_target_publish_config').val(_.isEmpty(generated_config)?'{\n}':JSON.stringify(generated_config,null,2));
+      jcontainer.find('.src_deployment_target_publish_path').val(generated_url);
+      jcontainer.find('.src_deployment_target_publish_config').val(_.isEmpty(generated_config)?'{\n}':JSON.stringify(generated_config,null,2));
     }
   }
 
   _this.configurator_getvalue = function(){
     _this.generateJSON();
     var jcontainer = _this.configurator_getContainer();
-    var publish_path = jcontainer.find('.raw_deployment_target_publish_path').val();
+    var publish_path = jcontainer.find('.src_deployment_target_publish_path').val();
     if(!publish_path) publish_path = null;
-    var publish_config = jcontainer.find('.raw_deployment_target_publish_config').val().trim();
+    var publish_config = jcontainer.find('.src_deployment_target_publish_config').val().trim();
     try{
       var publish_config_obj = JSON.parse(publish_config);
       if(!publish_config_obj || _.isEmpty(publish_config_obj)) publish_config = null;
@@ -575,7 +575,7 @@ jsh.App[modelid] = new (function(){
     }
     else {
       //JSON tab
-      if(!_this.validate_json(errors, 'Publish Config', jcontainer.find('.raw_deployment_target_publish_config').val())) return errors;
+      if(!_this.validate_json(errors, 'Publish Config', jcontainer.find('.src_deployment_target_publish_config').val())) return errors;
     }
     return errors;
   }

@@ -656,7 +656,7 @@ jsh.App[modelid] = new (function(){
     var sel = '.'+xmodel.class+'_ReplaceMedia';
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
       jprompt.off('.file_upload');
       jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
@@ -765,7 +765,7 @@ jsh.App[modelid] = new (function(){
     var sel = '.'+xmodel.class+'_AddMedia';
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
       jprompt.off('.file_upload');
       jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);

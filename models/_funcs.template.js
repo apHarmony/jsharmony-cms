@@ -24,6 +24,7 @@ var async = require('async');
 var path = require('path');
 var fs = require('fs');
 var parse5 = require('parse5');
+var crypto = require('crypto');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -122,7 +123,11 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.parseConfig = function(content, configType, desc, options){
-    options = _.extend({ continueOnConfigError: false, extractFromContent: false }, options);
+    options = _.extend({
+      continueOnConfigError: false,
+      extractFromContent: false,
+      templateName: null,
+    }, options);
     var rslt = {
       config: {},
       content: content,
@@ -134,6 +139,14 @@ module.exports = exports = function(module, funcs){
         { //Apply properties
           pred: function(node){ return (htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/'+configType)) || (htdoc.isTag(node, configType)); },
           exec: function(node){
+            if(options.templateName){
+              //Check if config applies to this template
+              var templateCond = htdoc.getAttr(node, 'cms-template');
+              if(options.templateName && templateCond && !funcs.evalBoolAttr(templateCond, function(val){ return val == options.templateName; })){
+                htdoc.removeNode(node);
+                return;
+              }
+            }
             var configScript = htdoc.getNodeContent(node);
             htdoc.removeNode(node);
             var config = {};
@@ -1556,6 +1569,16 @@ module.exports = exports = function(module, funcs){
           }
         }
       },
+      { //Template-specific elements
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-template'); },
+        exec: function(node){
+          var templateCond = (htdoc.getAttr(node, 'cms-template')||'').toString();
+          //Remove code from Doc
+          htdoc.removeAttr(node, 'cms-template');
+          //Render Parameters
+          if(!funcs.evalBoolAttr(templateCond, function(val){ return val == page.page_template_id; })) htdoc.removeNode(node, 'cms-template Node');
+        }
+      },
     ]);
     return htdoc.content;
   }
@@ -1575,7 +1598,8 @@ module.exports = exports = function(module, funcs){
         pred: function(node){ return htdoc.isTag(node, 'cms-page-config'); },
         exec: function(node){
           var pageConfig = htdoc.getNodeContent(node, 'Page Config Tag');
-          pageConfig = '<script type="text/cms-page-config">'+pageConfig+'</script>';
+          var templateName = htdoc.getAttr('cms-template');
+          pageConfig = '<script type="text/cms-page-config"'+(templateName?' cms-template="'+Helper.escapeHTML(templateName)+'"':'')+'>'+pageConfig+'</script>';
           htdoc.replaceNode(node, pageConfig, 'Page Config Tag');
         }
       },
@@ -1625,8 +1649,23 @@ module.exports = exports = function(module, funcs){
     return content;
   }
 
+  exports.evalBoolAttr = function(expr, f){
+    expr = _.map(expr.split('||'), function(val){ return val.split('&&'); });
+    var rsltOr = false;
+    for(var i=0;i<expr.length;i++){
+      var exprOr = expr[i];
+      var rsltAnd = true;
+      for(var j=0;j<exprOr.length;j++){
+        var exprAnd=exprOr[j].trim();
+        rsltAnd = rsltAnd && (exprAnd && (exprAnd[0]=='!')) ? !f(exprAnd.substr(1)) : !!f(exprAnd);
+      }
+      rsltOr = rsltOr || rsltAnd;
+    }
+    return rsltOr;
+  }
+
   exports.generateDeploymentTemplate = function(template, content, options){
-    options = _.extend({ template_variables: {} }, options);
+    options = _.extend({ template_variables: {}, template_name: null }, options);
     if(!content) return '';
     if(!template) template = {};
     if(!template.components) template.components = {};
@@ -1638,6 +1677,10 @@ module.exports = exports = function(module, funcs){
     
     //First pass - extract page config and inline templates
     htdoc.applyNodes([
+      { //Remove tags based on template name
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-template'); },
+        exec: function(node){ if(options.template_name && !funcs.evalBoolAttr(htdoc.getAttr(node, 'cms-template'), function(val){ return val == options.template_name; })) htdoc.removeNode(node, 'Page Config Script'); }
+      },
       { //Remove page config script
         pred: function(node){ return htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/cms-page-config'); },
         exec: function(node){ htdoc.removeNode(node, 'Page Config Script'); }
@@ -1719,6 +1762,7 @@ module.exports = exports = function(module, funcs){
                 htdoc.removeAttr(node, propName);
               }
             }
+            if(htdoc.hasAttr(node, 'cms-component-content')) throw new Error('Error in component '+componentId+': The cms-component-content tag is only supported when the page publish template is set to "format:json"');
             htdoc.removeAttr(node, 'cms-component', 'Component '+componentId);
             htdoc.removeAttr(node, 'cms-component-properties', 'Component '+componentId);
             htdoc.removeAttr(node, 'cms-component-data', 'Component '+componentId);
@@ -1966,6 +2010,63 @@ module.exports = exports = function(module, funcs){
     htdoc.trimRemoved();
     return htdoc.content;
 
+  }
+
+  //Flattens object as:
+  //vvvvvvvvvvhashvvvvvvvvvv
+  //value
+  //^^^^^^^^^^hash^^^^^^^^^^
+  //Returns: { content: '...', keys: { 'KEY.KEY.KEY': 'HASH' } }
+  exports.flattenObject = function(obj, baseKey){
+    if(!baseKey) baseKey = '';
+    var keys = {};
+    var content = '';
+    for(var key in obj){
+      var val = obj[key];
+      if(!val) continue;
+      if(_.isString(val)){
+        //Generate hash
+        var rndString = crypto.randomBytes(32).toString('hex');
+        keys[baseKey+key] = rndString;
+        content += 'vvvvvvvvvv' + rndString + 'vvvvvvvvvv\n';
+        content += val + '\n';
+        content += '^^^^^^^^^^' + rndString + '^^^^^^^^^^\n';
+      }
+      else if(_.isArray(val)){
+        var flatVal = funcs.flattenObject(val, baseKey+key+'.');
+        for(var flatKey in flatVal.keys) keys[flatKey] = flatVal.keys[flatKey];
+        content += flatVal.content;
+      }
+      else if(_.isObject(val)){
+        var flatVal = funcs.flattenObject(val, baseKey+key+'.');
+        for(var flatKey in flatVal.keys) keys[flatKey] = flatVal.keys[flatKey];
+        content += flatVal.content;
+      }
+    }
+    return {
+      content: content,
+      keys: keys,
+    };
+  }
+
+  exports.unflattenObject = function(obj, content, keys){
+    function setValue(subobj, multiKey, val, idx){
+      if(!idx) idx = 0;
+      var subkey = multiKey[idx];
+      if(!(subkey in subobj)) throw new Error('Missing '+multiKey.join('.')+' in target');
+      if(idx >= (multiKey.length-1)) subobj[subkey] = val;
+      else setValue(subobj[subkey], multiKey, val, idx+1);
+    }
+    for(var key in keys){
+      var startTag = 'vvvvvvvvvv' + keys[key] + 'vvvvvvvvvv\n';
+      var startIdx = content.indexOf(startTag) + startTag.length;
+      var endTag = '\n^^^^^^^^^^' + keys[key] + '^^^^^^^^^^\n';
+      var endIdx = content.indexOf(endTag);
+      if((startIdx < 0) || (endIdx < 0)) throw new Error('Could not unflatten - key '+key+' not found in content');
+      var val = content.substr(startIdx, endIdx - startIdx);
+      //Apply val to obj
+      setValue(obj, key.split('.'), val);
+    }
   }
 
   return exports;

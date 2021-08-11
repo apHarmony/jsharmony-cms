@@ -17,9 +17,9 @@ if(routetype == 'model'){
       });
     },
     function(){
-      let sql = undefined;
-      let sql_ptypes = undefined;
-      let sql_params = undefined;
+      var sql = undefined;
+      var sql_ptypes = undefined;
+      var sql_params = undefined;
 
       if (req.query.init_page_key) {
         sql = "select page_folder from {schema}.v_my_page where page_key=@page_key";

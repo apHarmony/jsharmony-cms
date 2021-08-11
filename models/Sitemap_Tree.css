@@ -54,5 +54,10 @@
 }
 .page_template_browse {
   display:inline-block;
-  padding-left:8px;
+  display:none;
+  padding-left:12px;
+  font-size:0.9em;
+}
+.page_template_path_container {
+  display:none;
 }

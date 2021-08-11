@@ -162,6 +162,107 @@ module.exports = exports = function(module, funcs){
     if(orig_content != content) return funcs.replaceTemplateVariables(template_variables, content);
     return content;
   }
+
+  exports.getAccessKey = function(dbcontext, deployment_target_id, server_url, options, callback){
+    options = _.extend({ timestamp: null }, options);
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    var deployment_target_client_salt = null;
+
+    async.waterfall([
+      function(key_cb){
+        var sql = "select deployment_target_client_salt from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+        var sql_ptypes = [dbtypes.BigInt];
+        var sql_params = { deployment_target_id: deployment_target_id };
+
+        appsrv.ExecRow(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if(err) return key_cb(err);
+          if(!rslt || !rslt.length || !rslt[0]) return key_cb(new Error('Deployment target not found'));
+
+          deployment_target_client_salt = rslt[0].deployment_target_client_salt || null;
+          return key_cb();
+        });
+      },
+      function(key_cb){
+        if(deployment_target_client_salt) return key_cb();
+
+        //Generate salt if not defined
+        deployment_target_client_salt = crypto.randomBytes(16).toString('hex');
+        var sql = "update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id";
+        var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256)];
+        var sql_params = { deployment_target_id: deployment_target_id, deployment_target_client_salt: deployment_target_client_salt };
+
+        appsrv.ExecCommand(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if(err) return key_cb(err);
+          return key_cb();
+        });
+      },
+      function(key_cb){
+        deployment_target_client_salt = (deployment_target_client_salt||'').toString().toLowerCase();
+        if(deployment_target_client_salt.length != 32) return key_cb(new Error('Invalid deployment_target_client_salt'));
+        //Generate access_key
+        var domain_hash = crypto.createHash('sha256').update(deployment_target_client_salt + '-' + server_url.toLowerCase() + (options.timestamp ? '-' + options.timestamp.toString() : '')).digest('hex').toLowerCase();
+        var access_key = '';
+        for(var i=0;i<8;i++){
+          var salt_part = parseInt(deployment_target_client_salt.substr(i*4,4), 16);
+          var domain_part = parseInt(domain_hash.substr(i*4,4), 16);
+          access_key += Helper.pad((salt_part ^ domain_part).toString(16).toLowerCase(), '0', 4);
+        }
+        access_key += domain_hash;
+        return callback(null, access_key);
+      },
+    ], callback);
+  }
+
+  exports.req_deployment_target_regenerate_access_key = function(req, res, next){
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+
+    var Q = req.query;
+    var P = req.body;
+    var appsrv = this;
+    var jsh = module.jsh;
+    var dbtypes = appsrv.DB.types;
+
+    var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target_IntegrationCode');
+
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+    var deployment_target_id = req.params.deployment_target_id||'';
+    if(!deployment_target_id) return next();
+    if(deployment_target_id.toString() != parseInt(deployment_target_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
+
+    var sql = "select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_target_id: deployment_target_id };
+    appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+      if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment Target ID');
+      var deployment_target = rslt[0];
+      deployment_target_id = deployment_target.deployment_target_id;
+
+      if (verb == 'post') {
+        //Validate parameters
+        if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+        var deployment_target_client_salt = crypto.randomBytes(16).toString('hex');
+        sql = "update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id";
+        sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256)];
+        sql_params = { deployment_target_id: deployment_target_id, deployment_target_client_salt: deployment_target_client_salt };
+        appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+          return res.send(JSON.stringify({ _success: 1 }));
+        });
+      }
+      else {
+        return next();
+      }
+    });
+  }
  
   exports.req_deployment_target_public_key = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -173,7 +274,7 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Download');
+    var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target_Key');
 
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
@@ -231,7 +332,7 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Download');
+    var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target_Key');
 
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
@@ -581,6 +682,7 @@ module.exports = exports = function(module, funcs){
     var P = req.body;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
 
     var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target');
     if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
@@ -595,12 +697,24 @@ module.exports = exports = function(module, funcs){
 
       funcs.getTemplateVariables(site_id , req._DBContext, 'publish', {}, {}, { }, function(err, template_variables, deployment_target_publish_config){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
+
+        //Get site_default_page_filename
+        var sql = 'select site_default_page_filename from {schema}.site where site_id=@site_id';
+        appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
+          if (err) return callback(err);
+          if (!rslt || !rslt.length || !rslt[0]) return callback(new Error('Site not found'));
+
+          var site_default_page_filename = rslt[0].site_default_page_filename;
+
+          res.end(JSON.stringify({
+            _success: 1,
+            template_variables: template_variables,
+            deployment_target_publish_config: deployment_target_publish_config,
+            site_default_page_filename: site_default_page_filename,
+          }));
+        });
       
-        res.end(JSON.stringify({
-          _success: 1,
-          template_variables: template_variables,
-          deployment_target_publish_config: deployment_target_publish_config,
-        }));
+        
       });
       
       return;

@@ -1,4 +1,4 @@
-.raw_deployment_target_publish_config_view_previous {
+.src_deployment_target_publish_config_view_previous {
   display:inline-block;
   padding-left:9px;
 }
@@ -32,7 +32,7 @@
 .xctrl_deployment_target_publish_configurator textarea {
   height:10em;
 }
-.xctrl_deployment_target_publish_configurator textarea.raw_deployment_target_publish_config {
+.xctrl_deployment_target_publish_configurator textarea.src_deployment_target_publish_config {
   height:20em;
 }
 .deployment_type_container {

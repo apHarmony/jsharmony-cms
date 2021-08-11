@@ -3,8 +3,8 @@
     "layout":"form",
     "popup":[800,400],
     "table":"{schema}.deployment_target",
-    "actions":"BIUD",
-    "roles": { "WEBMASTER": "BIUD" },
+    "actions":"BIU",
+    "roles": { "WEBMASTER": "BIU" },
     "caption":["Deployment Target Permissions"],
     "title":"Restrict access to the following roles:",
     "fields": [

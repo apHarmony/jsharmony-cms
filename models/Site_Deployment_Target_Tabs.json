@@ -2,17 +2,18 @@
   "Site_Deployment_Target_Tabs": {
     "layout":"form",
     "onecolumn":true,
-    "popup":[800,600],
+    "popup":[900,600],
     "table":"{schema}.deployment_target",
-    "actions":"BIUD",
-    "roles": { "WEBMASTER": "BIUD" },
+    "actions":"BIU",
+    "roles": { "WEBMASTER": "BIU" },
     "tabpos":"top",
     "tabpanelstyle": "min-width:700px;",
 	  "tabs":[
       {"name":"Overview","target":"Site_Deployment_Target"},
       {"name":"Permissions","target":"Site_Deployment_Target_Role"},
       {"name":"Template Variables","target":"Site_Deployment_Target_TemplateVariables"},
-      {"name":"Public / Private Key","target":"Site_Deployment_Target_Key"}
+      {"name":"Public / Private Key","target":"Site_Deployment_Target_Key"},
+      {"name":"Integration Code","target":"Site_Deployment_Target_IntegrationCode"},
     ],
     "caption":["Deployment Target","Deployment Targets"],
     "title": {

@@ -278,6 +278,13 @@ jsHarmonyCMS.prototype.LoadTemplates = function(){
     content_elements: { body: { type: 'texteditor', title: 'Body' } },
     content: {}
   };
+  _this.SystemPageTemplates['<Standalone>'] = {
+    title: '<Standalone>',
+    standalone: true,
+    templates: { publish: 'format:json' },
+    content_elements: { body: { type: 'htmleditor', title: 'Body' } },
+    content: {}
+  };
 
   
   //List of Values for Page Templates
@@ -355,7 +362,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       tbl_branch_item: (_this.schema?_this.schema+'.':'')+'branch_page',
       tbl_item: (_this.schema?_this.schema+'.':'')+'page',
       diff: {
-        columns: ['page_path','page_title','page_tags','page_file_id','page_filename','page_template_id'],
+        columns: ['page_path','page_title','page_tags','page_file_id','page_filename','page_template_id','page_template_path'],
         sqlwhere: "(old_page.page_is_folder=0 or new_page.page_is_folder=0)",
         onBeforeDiff: function(branch_data, callback){
           async.parallel([
@@ -389,7 +396,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         }
       },
       conflicts: {
-        columns: ['page_path','page_title','page_tags','page_file_id','page_filename','page_template_id'],
+        columns: ['page_path','page_title','page_tags','page_file_id','page_filename','page_template_id','page_template_path'],
         sqlwhere: "(src_orig_{item}.{item}_is_folder=0 or dst_orig_{item}.{item}_is_folder=0 or src_{item}.{item}_is_folder=0 or dst_{item}.{item}_is_folder=0)",
         onBeforeConflicts: function(branch_data, callback){
           async.parallel([
@@ -406,7 +413,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_page(branch_items, branch_data, callback); },
       },
       validate: {
-        error_columns: ['page_id','page_key','page_title','page_path','page_template_id','page_filename'],
+        error_columns: ['page_id','page_key','page_title','page_path','page_template_id','page_template_path','page_filename'],
         onBeforeValidate: function(item_errors, branchData, callback){
           _this.funcs.webRequestGate(branchData.deployment.deployment_target_publish_path, branchData.publish_params, function(addWebRequest, performWebRequests, gate, downloadTemplates){
             var onRemoteTemplatesReady = [];
@@ -561,7 +568,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         },
       },
       download: {
-        columns: ['page_path','page_is_folder','page_title','page_tags','page_file_id','page_template_id','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'],
+        columns: ['page_path','page_is_folder','page_title','page_tags','page_file_id','page_template_id','page_template_path','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'],
         onGenerate: function(branch_items, branch_data, callback){
           _.each(branch_items, function(branch_item){ if(branch_item.page_file_id) branch_data.data_files.push('page/'+branch_item.page_file_id+'.json'); });
           return callback();
@@ -789,6 +796,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   };
 
   return {
+    instance: 'jshInstance_CMS',
     cookie_samesite: 'none',
     globalparams: {},
     title: 'Content Management System',
@@ -827,6 +835,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/deployment/trigger': _this.funcs.req_deployment_trigger,
         '/_funcs/deployment_target/:deployment_target_id/public_key': _this.funcs.req_deployment_target_public_key,
         '/_funcs/deployment_target/:deployment_target_id/private_key': _this.funcs.req_deployment_target_private_key,
+        '/_funcs/deployment_target/:deployment_target_id/regenerate_access_key': _this.funcs.req_deployment_target_regenerate_access_key,
         '/_funcs/deployment_target/parse_url': _this.funcs.req_parse_deployment_target_url,
         '/_funcs/deployment_target/defaults': _this.funcs.req_deployment_target_defaults,
         '/_funcs/diff': _this.funcs.diff,

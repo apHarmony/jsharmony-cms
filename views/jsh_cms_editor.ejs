@@ -47,6 +47,14 @@
 &lt;div cms-component="menus/main.top" cms-menu-tag="main"&gt;&lt;/div&gt;
 &lt;div cms-component="tiles" cms-component-properties='{"cssClass":"testClass"}' cms-component-data='[{"image":"test"}]'&gt;&lt;/div&gt;
 
+-- cms-component in client-side JS, with JSON export:
+&lt;div cms-component="breadcrumbs" cms-component-content="page.content.breadcrumbs"&gt;&lt;/div&gt;
+  * In the Page Template Config, set:
+    {
+      "templates": { "publish": "format:json" },
+      "content": { "topmenu": "breadcrumbs": "&lt;div cms-component='breadcrumbs'&gt;&lt;/div&gt;" }
+    }
+
 -- Page Config
 &lt;cms-page-config&gt;...&lt;/cms-page-config&gt;
 &lt;script type="text/cms-page-config"&gt;

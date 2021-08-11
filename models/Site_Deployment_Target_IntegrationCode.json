@@ -1,0 +1,27 @@
+{
+  "Site_Deployment_Target_IntegrationCode": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[800,400],
+    "table":"{schema}.deployment_target",
+    "actions":"BU",
+    "roles": { "WEBMASTER": "BU" },
+    "caption":["Deployment Target Integration Code","Deployment Target Integration Code"],
+    "title":"Integration Code",
+    "onload":"_this.onload();",
+    "css": [
+      ".xform<%=model.class%> .integration_code_client_js { box-sizing:border-box;width:100%;margin-bottom:7px;background-color:#f2f2f2;border:1px solid #ccc;padding:3px 7px 5px 7px;white-space: pre; overflow-x:scroll; overflow-wrap: normal;font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif; }",
+    ],
+    "fields": [
+      {"name":"deployment_target_id","actions":"B","key":1,"control":"hidden"},
+      {"name":"site_id","actions":"B","foreignkey":1,"control":"hidden"},
+      {"control":"html","value":"<div style='margin:28px 0 10px 0;'><h3>Access Key</h3>The Access Key is tied to the CMS Server URL.  If using more than one CMS Server URL, an access key is required for each URL.</div>"},
+      {"name":"access_key","actions":"B","unbound":true,"control":"label","caption":"Access Key","captionstyle":"font-weight:bold;"},
+      {"name":"server_url","actions":"B","unbound":true,"control":"label","caption":"CMS Server URL","captionstyle":"font-weight:bold;"},
+      {"name":"regenerate_access_key","value":"Regenerate Access Key","control":"button","onclick":"js:_this.regenerateAccessKey();","unbound":true,"controlstyle":"width:220px;margin-top:8px;"},
+      {"name":"deployment_target_publish_config","control":"hidden","actions":"B"},
+      {"control":"html","value":"<div style='margin:35px 0 10px 0;'><h3>Client-side Integration Code</h3>Use the code below to add CMS to an application using client-side JavaScript</div>"},
+      {"control":"html","value":"<textarea readonly='readonly' class='integration_code_client_js'></textarea><a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>"},
+    ]
+  }
+}

@@ -2005,7 +2005,7 @@ OverlayService.prototype.popDialog = function() {
 
   OverlayService._dialogStack.pop();
   if (OverlayService._dialogStack.length < 1) {
-    this.jsh.$('.xdialogblock .xdialogoverlay').remove();
+    this.jsh.$dialogBlock('.xdialogoverlay').remove();
     return;
   }
 
@@ -2038,17 +2038,17 @@ OverlayService.prototype.pushDialog = function(dialog) {
  * @returns {JQuery}
  */
 OverlayService.prototype.getOverlay = function() {
-  var $dialogBlock = this.jsh.$('.xdialogblock');
-  var $childOverlay = $dialogBlock.find('.xdialogoverlay');
+  var _this = this;
+  var $childOverlay = _this.jsh.$dialogBlock('.xdialogoverlay');
   if ($childOverlay.length > 0) {
     return $childOverlay;
   }
 
-  $childOverlay = this.jsh.$('<div class="xdialogoverlay"></div>');
-  $dialogBlock.prepend($childOverlay);
+  $childOverlay = _this.jsh.$('<div class="xdialogoverlay"></div>');
+  _this.jsh.dialogBlock.prepend($childOverlay);
 
   $childOverlay.off('click').on('click', function() {
-    $dialogBlock.click();
+    _this.jsh.dialogBlock.click();
   });
 
   return $childOverlay;
@@ -7296,7 +7296,7 @@ exports = module.exports = function(cms){
       else loader_obj.style.display = 'block';
     }
     else {
-      var loader_obj = document.createElement('div');
+      loader_obj = document.createElement('div');
       loader_obj.id = 'jsHarmonyCMSLoading';
       //loader_obj.style.backgroundColor = 'rgba(0,0,0,0.5)';
       loader_obj.style.backgroundColor = 'rgba(255,255,255,1)';
@@ -7793,14 +7793,14 @@ var jsHarmonyCMS = function(options){
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
-      jsh = _this.jsh = window.jshInstance = new jsHarmony({
+      jsh = _this.jsh = window.jshInstance_CMS = new jsHarmony({
         _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},
         home_url: _this._baseurl,
         uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
-        _instance: "jshInstance",
+        _instance: "jshInstance_CMS",
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,

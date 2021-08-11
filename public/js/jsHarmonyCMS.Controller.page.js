@@ -70,6 +70,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(jsh._GET['page_template_id']) _this.page_template_id = jsh._GET['page_template_id'];
     if(jsh._GET['page_template_location']) _this.page_template_location = jsh._GET['page_template_location'];
 
+    if(_this.page_template_id == '<Standalone>'){
+      onComplete(new Error('Error Loading Dev Mode'));
+      XExt.Alert('Please open Standalone templates from the Sitemap View or Folder View');
+      return;
+    }
+
     var url = '../_funcs/pageDev';
     var params = { };
     if(_this.page_template_id) params.page_template_id = _this.page_template_id;
@@ -113,6 +119,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             properties: {},
             footer: '',
             author: ' ',
+            page_template_id: _this.page_template_id,
           };
           _this.template = _.extend({}, rslt.template);
           _this.sitemap = rslt.sitemap;
@@ -204,6 +211,25 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
   this.initTemplate = function(cb){
     var errors = [];
+
+    if(_this.template.standalone){
+      var foundContentAreas = [];
+      $('[cms-content-editor]').each(function(){
+        var jobj = $(this);
+        foundContentAreas.push(_this.getPageContentId(jobj.attr('cms-content-editor')));
+      });
+      if(foundContentAreas.length){
+        _this.template.content_elements = {};
+        _.each(foundContentAreas, function(contentId){ _this.template.content_elements[contentId] = { type: 'htmleditor', title: contentId }; });
+      }
+    }
+
+    $('[cms-template]').each(function(){
+      var templateCond = $(this).attr('cms-template');
+      if(_this.page_template_id && !_this.evalBoolAttr(templateCond, function(val){ return val == _this.page_template_id; })){
+        $(this).remove();
+      }
+    });
 
     $('script[type="text/cms-page-config"],cms-page-config').each(function(){
       var config = $(this).html();
@@ -373,13 +399,28 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   }
 
   this.getPageContentId = function(contentId){
-    return (XExt.beginsWith(contentId, 'page.content.') ? contentId.substr(('page.content.').length) : '');
+    return (XExt.beginsWith(contentId, 'page.content.') ? contentId.substr(('page.content.').length) : contentId);
   }
 
   this.getFullPageContentId = function(contentId){
     if(!contentId) return '';
     if(contentId.indexOf('page.content.')!=0) return 'page.content.'+contentId;
     return contentId;
+  }
+
+  this.evalBoolAttr = function(expr, f){
+    expr = _.map(expr.split('||'), function(val){ return val.split('&&'); });
+    var rsltOr = false;
+    for(var i=0;i<expr.length;i++){
+      var exprOr = expr[i];
+      var rsltAnd = true;
+      for(var j=0;j<exprOr.length;j++){
+        var exprAnd=exprOr[j].trim();
+        rsltAnd = rsltAnd && (exprAnd && (exprAnd[0]=='!')) ? !f(exprAnd.substr(1)) : !!f(exprAnd);
+      }
+      rsltOr = rsltOr || rsltAnd;
+    }
+    return rsltOr;
   }
 
   this.createWorkspace = function(cb){
@@ -593,7 +634,22 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     }
     else if($('#jsharmony_cms_footer_start').length){
       //Delete everything between start and end
-      $('#jsharmony_cms_footer_start').nextUntil('#jsharmony_cms_footer_end').remove();
+      var footerContainer = $('#jsharmony_cms_footer_start')[0].parentNode;
+      var footerFoundStart = false;
+      if(footerContainer) for(var i=0;i<footerContainer.childNodes.length;i++){
+        var node = footerContainer.childNodes[i];
+        if(!node) continue;
+        var nodeId = node.id;
+        if(!footerFoundStart){
+          if(nodeId == ('jsharmony_cms_footer_start')) footerFoundStart = true;
+          continue;
+        }
+        if(footerFoundStart){
+          if(nodeId == ('jsharmony_cms_footer_end')) break;
+          footerContainer.removeChild(node);
+          i--;
+        }
+      }
       try{
         $('#jsharmony_cms_footer_start').after(footerHtml);
       }
@@ -649,7 +705,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     var origStyleText = jobj.attr('style')||'';
     origStyleText += (XExt.endsWith(origStyleText.trim(),';')?'':';');
-    origStyleText += strStyle;
 
     var origStyle = {};
     for(var i=0;i<this.style.length;i++){

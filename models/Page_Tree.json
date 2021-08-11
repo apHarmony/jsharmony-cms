@@ -76,7 +76,10 @@
     "popup": [1000, 600],
     "fields":[
       {"name":"form_instructions","__REMOVE__":true},
-      {"name":"page_folder","controlparams":{ "item_context_menu":[] } },
+      {"name":"page_folder",
+        "lov": { "sql": "select distinct null as code_id, null as code_parent_id, (case $ifnull(page_folder,'') when '' then '/' else page_folder end) as code_val, null as code_txt, 'folder' as code_icon from {schema}.v_my_page where page_template_id <> '<Standalone>' order by (case $ifnull(page_folder,'') when '' then '/' else page_folder end)" },
+        "controlparams":{ "item_context_menu":[] }
+      },
       {"name":"Page_Tree_Listing","target":"Page_Browser_Listing"}
     ]
   },
@@ -105,7 +108,7 @@
     "actions": "U",
     "roles": {"AUTHOR": "U","PUBLISHER": "U"},
     "sqlexec": [
-      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select @page_path, page_file_id, page_title, page_template_id, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=@page_key;"
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select @page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=@page_key;"
     ],
     "fields": [
       {"name":"page_key", "actions":"U", "type":"bigint", "caption":"Page Key", "validate": ["Required"]},

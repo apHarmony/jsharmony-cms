@@ -21,7 +21,7 @@ var jsHarmonyModuleTransform = require('jsharmony/jsHarmonyModuleTransform');
 
 function jsHarmonyCMSTransform(module){
   this.sql = {
-    '{deployment_env}': 'default'
+    '{deployment_env}': 'default',
   };
 
   jsHarmonyModuleTransform.call(this, module);

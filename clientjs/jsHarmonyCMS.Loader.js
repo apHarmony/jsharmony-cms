@@ -46,7 +46,7 @@ exports = module.exports = function(cms){
       else loader_obj.style.display = 'block';
     }
     else {
-      var loader_obj = document.createElement('div');
+      loader_obj = document.createElement('div');
       loader_obj.id = 'jsHarmonyCMSLoading';
       //loader_obj.style.backgroundColor = 'rgba(0,0,0,0.5)';
       loader_obj.style.backgroundColor = 'rgba(255,255,255,1)';

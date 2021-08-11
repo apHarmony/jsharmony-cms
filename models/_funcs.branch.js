@@ -555,7 +555,7 @@ module.exports = exports = function(module, funcs){
           cols = ['page_is_folder','page_path'];
         }
         else {
-          cols = ['page_path','page_title','page_tags','page_template_id','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'];
+          cols = ['page_path','page_title','page_tags','page_template_id','page_template_path','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'];
         }
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
@@ -580,6 +580,7 @@ module.exports = exports = function(module, funcs){
           'page_title': null,
           'page_tags': null,
           'page_template_id': null,
+          'page_template_path': null,
           'page_seo_title': null,
           'page_seo_canonical_url': null,
           'page_seo_metadesc': null,

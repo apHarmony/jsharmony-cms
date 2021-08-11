@@ -85,14 +85,14 @@ var jsHarmonyCMS = function(options){
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
-      jsh = _this.jsh = window.jshInstance = new jsHarmony({
+      jsh = _this.jsh = window.jshInstance_CMS = new jsHarmony({
         _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},
         home_url: _this._baseurl,
         uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
-        _instance: "jshInstance",
+        _instance: "jshInstance_CMS",
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,

@@ -5,8 +5,9 @@
     "footer": "Default Footer Content"
   },
   "templates": { //Templates as string
-    "editor": "...", // Prepended by <templateBaseFileName>.templates.editor.ejs
+    "editor": "...",  // Prepended by <templateBaseFileName>.templates.editor.ejs
     "publish": "...", // Prepended by <templateBaseFileName>.templates.publish.ejs
+                      //   Export as JSON by setting templates.publish to "format:json"
   },
   "remote_templates": { //Templates downloaded as URLs
     "editor": "https://server/templates/pages/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
@@ -56,4 +57,5 @@
   "content": { "content_element_name": "..." }, //SYSTEM - Hard-coded content element content.  Generally use "default_content" instead
   "components": { "component_name": { /* Component definition */ } }, //SYSTEM - Inline page components
   "raw": false, //SYSTEM - Used only on the <Raw Text> template
+  "standalone": false, //SYSTEM - Used only on the <Standalone> template
 }

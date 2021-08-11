@@ -102,7 +102,9 @@ jsh.App[modelid] = new (function(){
       else {
         var page = rslt[execModel][0];
         jtitle.text(page.page_title);
-        jtemplate.text(XExt.getLOVTxt(xmodel.controller.form.LOVs.page_template_id, page.page_template_id)||'');
+        var templateText = XExt.getLOVTxt(xmodel.controller.form.LOVs.page_template_id, page.page_template_id)||'';
+        if(page.page_template_id=='<Standalone>') templateText += ' ' + (page.page_template_path||'');
+        jtemplate.text(templateText);
         jpath.text(page.page_path);
       }
     });
