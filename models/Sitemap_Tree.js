@@ -549,7 +549,8 @@ jsh.App[modelid] = new (function(){
       var page_key = sitemap_item.sitemap_item_link_dest;
       var page_path = sitemap_item.sitemap_item_link_page;
       if(!page_path) page_path = 'Page #' + page_key;
-      deletedPages.push({ page_key: page_key, page_path: page_path });
+      if(page_path == 'PAGE :: '+(page_key||'').toString()+' :: Not found'){ }
+      else deletedPages.push({ page_key: page_key, page_path: page_path });
     }
     _.each(sitemap_item_children, function(sitemap_item_id){
       var deletedChildPages = _this.deleteSitemapItem(sitemap_item_id, true);
