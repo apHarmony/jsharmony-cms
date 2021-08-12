@@ -70,6 +70,9 @@ function jsHarmonyCMSConfig(){
   this.template_variables = { //Default template variables
   };
 
+  this.redirect_listing_path = null;  //Default path where redirects will be exported by a site component
+                                      //* Path should be relative to deployment target URL Prefix
+
   this.deployment_target_publish_config = { //Default deployment target publish config
     page_subfolder: '',   //Stores CMS page files in a subfolder of the publish directory, ex. 'pages/'
     media_subfolder: '',  //Stores CMS media files in a subfolder of the publish directory, ex. 'media/'

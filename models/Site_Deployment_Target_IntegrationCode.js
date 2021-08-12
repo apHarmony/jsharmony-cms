@@ -3,15 +3,17 @@ jsh.App[modelid] = new (function(){
 
   this.default_deployment_target_publish_config = {};
   this.site_default_page_filename = '';
+  this.redirect_listing_path = null;
 
-  this.access_key = '';    //Populated onroute
-  this.server_url = '';    //Populated onroute
-  this.client_params = {}; //Populated onroute
+  this.access_key = '';              //Populated onroute
+  this.server_url = '';              //Populated onroute
+  this.client_params = {};           //Populated onroute
 
   this.onload = function(){
     XForm.Get('/_funcs/deployment_target/defaults', { site_id: xmodel.get('site_id') }, {}, function(rslt){
       _this.default_deployment_target_publish_config = rslt.deployment_target_publish_config;
       _this.site_default_page_filename = rslt.site_default_page_filename;
+      _this.redirect_listing_path = rslt.redirect_listing_path;
     }, undefined, { async: false });
 
     xmodel.set('access_key', _this.access_key);
@@ -48,6 +50,8 @@ jsh.App[modelid] = new (function(){
     if(!XExt.isNullUndefinedEmpty(page_files_path)) client_js_params.page_files_path = page_files_path;
 
     if(_this.site_default_page_filename != 'index.html') client_js_params.default_document = 'index.html';
+
+    if(_this.redirect_listing_path) client_js_params.redirect_listing_path = _this.redirect_listing_path;
 
     client_js_params.access_keys = [_this.access_key];
 

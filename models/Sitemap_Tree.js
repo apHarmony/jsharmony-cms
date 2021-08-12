@@ -639,6 +639,7 @@ jsh.App[modelid] = new (function(){
       jprompt.find('.page_template_path').val('');
       jprompt.find('.page_path_default').prop('checked', true);
       jprompt.find('.sitemap_item_text_default').prop('checked', true);
+      jprompt.find('.site_default_page_filename').text(jsh.XPage.getBreadcrumbs().site_default_page_filename);
 
       var jfilename = jprompt.find('.page_path');
       jfilename.prop('readonly', true);
@@ -680,7 +681,7 @@ jsh.App[modelid] = new (function(){
       });
 
       var jTemplateId = jprompt.find('.page_template_id');
-      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); }
+      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); }
       jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
       toggleTemplatePath();
     }, function (success) { //onAccept
@@ -863,12 +864,13 @@ jsh.App[modelid] = new (function(){
         jprompt.find('.page_title').val(page.page_title);
         jprompt.find('.page_template_id').val(page.page_template_id);
         jprompt.find('.page_template_path').val(page.page_template_path);
+        jprompt.find('.site_default_page_filename').text(jsh.XPage.getBreadcrumbs().site_default_page_filename);
 
         jprompt.find('input,select').removeClass('default_focus');
         if(focus_target) jprompt.find('.'+focus_target).addClass('default_focus');
 
         var jTemplateId = jprompt.find('.page_template_id');
-        var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); }
+        var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); }
         jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
         toggleTemplatePath();
       }, function (success) { //onAccept

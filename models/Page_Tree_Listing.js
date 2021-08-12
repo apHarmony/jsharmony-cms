@@ -173,6 +173,7 @@ jsh.App[modelid] = new (function(){
       jprompt.find('.page_title').val('');
       jprompt.find('.page_template_id').val(jsh.XPage.getBreadcrumbs().site_default_page_template_id);
       jprompt.find('.page_template_path').val('');
+      jprompt.find('.site_default_page_filename').text(jsh.XPage.getBreadcrumbs().site_default_page_filename);
 
       var jfilename = jprompt.find('.page_filename');
       jprompt.find('.page_filename_default_document').off('click').on('click', function(){
@@ -189,7 +190,7 @@ jsh.App[modelid] = new (function(){
       });
 
       var jTemplateId = jprompt.find('.page_template_id');
-      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); }
+      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); }
       jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
       toggleTemplatePath();
     }, function (success) { //onAccept

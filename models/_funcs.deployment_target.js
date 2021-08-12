@@ -701,17 +701,22 @@ module.exports = exports = function(module, funcs){
         //Get site_default_page_filename
         var sql = 'select site_default_page_filename from {schema}.site where site_id=@site_id';
         appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
-          if (err) return callback(err);
-          if (!rslt || !rslt.length || !rslt[0]) return callback(new Error('Site not found'));
+          if (err) return Helper.GenError(req, res, -99999, err.toString());
+          if (!rslt || !rslt.length || !rslt[0]) { Helper.GenError(req, res, -3, 'Site not found'); return; }
 
           var site_default_page_filename = rslt[0].site_default_page_filename;
 
-          res.end(JSON.stringify({
-            _success: 1,
-            template_variables: template_variables,
-            deployment_target_publish_config: deployment_target_publish_config,
-            site_default_page_filename: site_default_page_filename,
-          }));
+          funcs.getSiteConfig(req._DBContext, site_id, { continueOnConfigError: true }, function(err, siteConfig){
+            if(err) return Helper.GenError(req, res, -99999, err.toString());
+        
+            res.end(JSON.stringify({
+              _success: 1,
+              template_variables: template_variables,
+              deployment_target_publish_config: deployment_target_publish_config,
+              site_default_page_filename: site_default_page_filename,
+              redirect_listing_path: siteConfig.redirect_listing_path,
+            }));
+          });
         });
       
         

@@ -58,6 +58,6 @@
   padding-left:12px;
   font-size:0.9em;
 }
-.page_template_path_container {
+.page_template_path_container, .page_template_path_tips {
   display:none;
 }
