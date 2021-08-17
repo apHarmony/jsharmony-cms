@@ -1576,7 +1576,7 @@ module.exports = exports = function(module, funcs){
           //Remove code from Doc
           htdoc.removeAttr(node, 'cms-template');
           //Render Parameters
-          if(!funcs.evalBoolAttr(templateCond, function(val){ return val == page.page_template_id; })) htdoc.removeNode(node, 'cms-template Node');
+          if(params.page && !funcs.evalBoolAttr(templateCond, function(val){ return val == params.page.page_template_id; })) htdoc.removeNode(node, 'cms-template Node');
         }
       },
     ]);

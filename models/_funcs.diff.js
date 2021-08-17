@@ -435,8 +435,13 @@ module.exports = exports = function(module, funcs){
       var content_diff = funcs.diffPageHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
       diff.content[key] = content_diff;
     }
-    _.each(['page_title','template_title','page_tags'], function(key){
+    _.each(['page_title','template_title','page_tags','page_template_path'], function(key){
       if(old_page[key] != new_page[key]) diff[key] = new_page[key];
+      if(key=='page_template_path'){
+        if((old_page['template_title'] != '<Standalone>')||(new_page['template_title'] != '<Standalone>')){
+          delete diff[key];
+        }
+      }
     });
     diff.seo = {};
     _.each(['title','keywords','metadesc','canonical_url'], function(key){

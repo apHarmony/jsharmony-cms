@@ -1479,7 +1479,7 @@ module.exports = exports = function(module, funcs){
               }
             }
             catch(ex){
-              return cb(new Error('Error rendering page '+page.page_path+' :: '+ex.toString()));
+              return cb(new Error('Error rendering page '+page.page_path+' :: '+ex.toString()+(ex.stack?'\n'+ex.stack:'')));
             }
           }
           else {

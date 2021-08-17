@@ -61,7 +61,7 @@
     <# } #>
   </h4>
 
-  <# _.each(_.pick(branch_page.diff,['page_title','template_title','page_tags']), function(val, key){ #>
+  <# _.each(_.pick(branch_page.diff,['page_title','template_title','page_tags','page_template_path']), function(val, key){ #>
     <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
   <# }); #>
 
@@ -69,7 +69,7 @@
     <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
   <# }); #>
 
-  <# _.each(_.omit(branch_page.diff,['seo','content','content_elements','page_title','template_title','page_tags']), function(val, key){ #>
+  <# _.each(_.omit(branch_page.diff,['seo','content','content_elements','page_title','template_title','page_tags','page_template_path']), function(val, key){ #>
     <div class="diff_head"><#=map(key,'page')#></div>
     <div class="diff"><#-val#></div>
   <# }); #>

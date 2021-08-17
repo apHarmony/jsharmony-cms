@@ -569,6 +569,7 @@ module.exports = exports = function(module, funcs){
           dbtypes.VarChar(1024),
           dbtypes.VarChar(-1),
           dbtypes.VarChar(255),
+          dbtypes.VarChar(-1),
           dbtypes.VarChar(2048),
           dbtypes.VarChar(2048),
           dbtypes.VarChar(-1),

@@ -1,0 +1,173 @@
+<div style="display:none;">
+
+  <div class="<%=model.class%>_Integration_CLIENTJS_STANDALONE">
+    <ol>
+      <li>Download jsHarmonyCmsClient.min.js into your project from the <a href="https://github.com/apHarmony/jsharmony-cms-sdk-clientjs" target="_blank">jsHarmony CMS ClientJS SDK</a></li>
+      <li>Add the Integration Code below to the target page</li>
+      <li>Add "cms-title" and "cms-content-editor" tags on the target page to indicate where content will go</li>
+      <li>Add a CMS Page to the site, setting the template to &lt;Standalone&gt;, the Template Path to the target page, and the Page URL to the path passed to the cmsClient.Standalone function</li>
+      <li>Publish to the deployment target and test</li>
+    </ol>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; src=&quot;path&#x2F;to&#x2F;jsHarmonyCmsClient.min.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot;&gt;
+var cmsClient = new jsHarmonyCmsClient(%%%INTEGRATION_PARAMS_ACCESS_KEYS%%%);
+cmsClient.Standalone('path/to/cms_content_page.html');
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+  </div>
+
+  <div class="<%=model.class%>_Integration_CLIENTJS_ROUTER">
+      <ol>
+        <li>Download jsHarmonyCmsClient.min.js into your project from the <a href="https://github.com/apHarmony/jsharmony-cms-sdk-clientjs" target="_blank">jsHarmony CMS ClientJS SDK</a></li>
+        <li>Add a "catchall" page to the web server</li>
+        <li>Add the Integration Code below to the catchall page</li>
+        <li>Add "cms-title" and "cms-content-editor" tags on the catchall page to indicate where content will go</li>
+        <li>Make sure the CMS template page config has templates.publish set to "format:json"</li>
+        <li>Publish to the deployment target and test</li>
+        <li>For Redirects, add a Site Component that will export the redirects as JSON, and set the redirect_listing_path in site_config.json</li>
+      </ol>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; src=&quot;path&#x2F;to&#x2F;jsHarmonyCmsClient.min.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot;&gt;
+var cmsClient = new jsHarmonyCmsClient(%%%INTEGRATION_PARAMS_ACCESS_KEYS%%%);
+cmsClient.Router();
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+  </div>
+
+  <div class="<%=model.class%>_Integration_EXPRESSJS_ROUTER">
+      <ol>
+        <li>In an existing Node.js / Express.js application, install the "jsharmony-cms-sdk-express" dependency:</li>
+      </ol>
+<textarea readonly='readonly' class='integration_code'>
+npm install jsharmony-cms-sdk-express</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+      <ol start="2">
+        <li>Initialize the jsHarmonyCmsRouter, and add the router to your Express.js Application (modify the content_path option as necessary):</li>
+      </ol>
+    <textarea readonly='readonly' class='integration_code'>
+const express = require('express');
+const jsHarmonyCmsRouter = require('jsharmony-cms-sdk-express').Router;
+const cmsRouter = new jsHarmonyCmsRouter(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+
+var app = express();
+app.use(cmsRouter.getRouter({ generate404OnNotFound: true }));
+
+var server = app.listen(8080);</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <ol start="3">
+      <li>If your CMS Templates are defined in the jsHarmony CMS Local FTP, you are done.  Otherwise, if your templates are remote, make sure your templates are accessible in the Node.js / Express.js app, and have been added to the Site Config - "Page Templates" tab.</li>
+      <li>Add the CMS Editor Launcher to each Remote Page Template, and make sure to add the "removeOnPublish" class to the Launcher script tags, so that the Editor Launcher will not be added to published pages:</li>
+    </ol>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish" src=&quot;/.jsHarmonyCms/jsHarmonyCmsEditor.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish"&gt;
+jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%);
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <ol start="5">
+      <li>Publish the content and test.</li>
+    </ol>
+  </div>
+
+  <div class="<%=model.class%>_Integration_EXPRESSJS_STANDALONE">
+      <ol>
+        <li>In an existing Node.js / Express.js application, install the "jsharmony-cms-sdk-express" dependency:</li>
+      </ol>
+<textarea readonly='readonly' class='integration_code'>
+npm install jsharmony-cms-sdk-express</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+      <ol start="2">
+        <li>Initialize the jsHarmonyCmsRouter, and add the standalone page content as a variable to your Express.js route for the standalone page (modify the content_path option and script below as necessary)
+          <ul>
+            <li>Be sure to add the "async" keyword to the render function, so that the cmsRouter.getStandalone function can execute asynchronously</li>
+            <li>If the CMS Page Path does not match the actual Standalone Page Path, add a "url" parameter to the getStandalone function</li>
+          </ul>
+        </li>
+      </ol>
+    <textarea readonly='readonly' class='integration_code'>
+const express = require('express');
+const jsHarmonyCmsRouter = require('jsharmony-cms-sdk-express').Router;
+const cmsRouter = new jsHarmonyCmsRouter(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+
+var app = express();
+app.get('/standalone_page', async function(req, res, next){
+  var page = await cmsRouter.getStandalone(req);
+  res.render('standalone_page.ejs', { page: page });
+});
+
+var server = app.listen(8080);</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <ol start="3">
+      <li>In the standalone page, add template areas using the "cms-title", "cms-content-editor" and other Page Template tags as required.</li>
+      <li>Add the CMS Editor Script to the Standalone template:</li>
+    </ol>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;%-page.editorScript&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <ol start="5">
+      <li>Render the CMS Content in the page as necessary using the Express.js templating language (EJS in this example):</li>
+    </ol>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;html&gt;
+&lt;head&gt;
+  &lt;% if(page.seo.title){ %&gt;&lt;title&gt;&lt;%=page.seo.title%&gt;&lt;&#x2F;title&gt;&lt;% } %&gt;
+  &lt;% if(page.seo.keywords){ %&gt;&lt;meta name=&quot;keywords&quot; content=&quot;&lt;%=page.seo.keywords%&gt;&quot; &#x2F;&gt;&lt;% } %&gt;
+  &lt;% if(page.seo.metadesc){ %&gt;&lt;meta name=&quot;description&quot; content=&quot;&lt;%=page.seo.metadesc%&gt;&quot; &#x2F;&gt;&lt;% } %&gt;
+  &lt;% if(page.seo.canonical_url){ %&gt;&lt;link rel=&quot;canonical&quot; href=&quot;&lt;%=page.seo.canonical_url%&gt;&quot; &#x2F;&gt;&lt;% } %&gt;
+  &lt;% if(page.css){ %&gt;&lt;style type=&quot;text&#x2F;css&quot;&gt;&lt;%-page.css%&gt;&lt;&#x2F;style&gt;&lt;% } %&gt;
+  &lt;% if(page.js){ %&gt;&lt;script type=&quot;text&#x2F;javascript&quot;&gt;&lt;%-page.js%&gt;&lt;&#x2F;script&gt;&lt;% } %&gt;
+  &lt;%-page.header%&gt;
+&lt;&#x2F;head&gt;
+&lt;body&gt;
+  &lt;h1 cms-title&gt;&lt;%=page.title%&gt;&lt;&#x2F;h1&gt;
+  &lt;div cms-content-editor=&quot;page.content.body&quot;&gt;&lt;%-page.content.body%&gt;&lt;&#x2F;div&gt;
+  &lt;%-page.footer%&gt;
+&lt;&#x2F;body&gt;
+&lt;&#x2F;html&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <ol start="6">
+      <li>Add advanced CMS features, such as a Page Template Config, Static Page Components, and onRender functions:</li>
+    </ol>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;!-- Page Template Config --&gt;
+&lt;script type=&quot;text&#x2F;cms-page-config&quot;&gt;
+  {
+    &quot;default_content&quot;: { &quot;body&quot;: &quot;Default Page Content&quot; },
+    &quot;properties&quot;: {
+      &quot;fields&quot;: [
+        { &quot;name&quot;: &quot;showTitle&quot;, &quot;caption&quot;: &quot;Show Title&quot;, &quot;control&quot;: &quot;checkbox&quot;, &quot;default&quot;: &quot;Y&quot;, &quot;controlparams&quot;: { &quot;value_true&quot;: &quot;Y&quot;, &quot;value_false&quot;: &quot;N&quot; } },
+        { &quot;name&quot;: &quot;containerClass&quot;, &quot;caption&quot;: &quot;Container CSS Class&quot; },
+        { &quot;name&quot;: &quot;containerStyle&quot;, &quot;caption&quot;: &quot;Container CSS Style&quot; },
+      ]
+    }
+  }
+&lt;&#x2F;script&gt;
+
+&lt;!-- Static Page Component --&gt;
+&lt;div cms-component=&quot;breadcrumbs&quot; cms-component-content=&quot;breadcrumbs&quot;&gt;&lt;%-page.content.breadcrumbs%&gt;&lt;&#x2F;div&gt;
+
+&lt;!-- onRender &#x2F; showIf --&gt;
+&lt;% if(page.properties.showTitle!=&#39;N&#39;){ %&gt;&lt;h1 cms-title cms-onRender=&quot;showIf(page.properties.showTitle!=&#39;N&#39;);&quot;&gt;&lt;%=page.title%&gt;&lt;&#x2F;h1&gt;&lt;% } %&gt;
+
+&lt;!-- onRender &#x2F; addClass --&gt;
+&lt;div cms-onRender=&quot;addClass(page.properties.containerClass);&quot; class=&quot;&lt;%=page.properties.containerClass%&gt;&quot;&gt;&lt;&#x2F;div&gt;
+
+&lt;!-- onRender &#x2F; addStyle --&gt;
+&lt;div cms-onRender=&quot;addStyle(page.properties.containerStyle);&quot; class=&quot;&lt;%=page.properties.containerStyle%&gt;&quot;&gt;&lt;&#x2F;div&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <ol start="7">
+      <li>Publish the content and test.</li>
+    </ol>
+  </div>
+
+</div>

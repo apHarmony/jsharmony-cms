@@ -38,7 +38,7 @@
           "errorif((($ifnull(inserted(page_is_folder),0) = 0) and ({schema}.filename(inserted(page_path)) = '')),'Invalid page_path - filename is required');",
           "errorif((inserted(page_filename) is not null) and (inserted(page_is_folder) = 1),'Cannot set page_filename on folder');",
           "errorif((inserted(site_id) is not null) and not exists(select site_id from {schema}.site where site_id=inserted(site_id)),'Site ID not found');",
-          "errorif((inserted(page_template_id) = '<Standalone>') and (inserted(page_template_path) is null),'Standalone template requires page_template_path');",
+          "errorif((inserted(page_template_id) = '<Standalone>') and ($ifnull(inserted(page_template_path),'') = ''),'Standalone template requires page_template_path');",
         ]
       },
       { "on": ["insert"], "exec": [

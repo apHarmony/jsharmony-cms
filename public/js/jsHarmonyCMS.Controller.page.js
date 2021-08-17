@@ -849,6 +849,23 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return true;
   }
 
+  this.getSaveData = function(){
+    if(_this.page_template_id != '<Standalone>') return _this.page;
+
+    var pageData = _.extend({}, _this.page);
+    pageData.content = _.extend({}, pageData.content);
+    $('[cms-component-content]').each(function(){
+      var contentId = this.getAttribute('cms-component-content');
+      if(contentId){
+        var componentObj = $(this).clone().empty().removeClass('mceNonEditable initialized')[0];
+        if(componentObj.hasAttribute('class') && !componentObj.getAttribute('class').trim()) componentObj.removeAttribute('class');
+        componentObj.removeAttribute('cms-component-content');
+        pageData.content[contentId] = componentObj.outerHTML;
+      }
+    });
+    return pageData;
+  }
+
   this.save = function(){
     //Validate
     if(!_this.validate()) return;
@@ -866,7 +883,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
 
     cms.toolbar.hideSlideoutButton('settings', true);
-    XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
+    XExt.CallAppFunc(url, 'post', _this.getSaveData(), function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.hasChanges = false;
         _this.load(function(err){
