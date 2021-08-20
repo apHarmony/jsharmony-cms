@@ -80,9 +80,9 @@ jsh.App[modelid] = new (function(){
     if(!onCancel) onCancel = function(){};
 
     if(typeof val == 'undefined') val = xmodel.get('page_template_path', rowid);
-    XExt.Prompt('Template Path', val, function(rslt){
+    XExt.Prompt('Template URL', val, function(rslt){
       if(rslt===''){
-        return XExt.Alert('Template Path is required for <Standalone> Templates', function(){
+        return XExt.Alert('Template URL is required for <Standalone> Templates', function(){
           _this.page_template_selection_path_popup(obj, val, onAccept, onCancel);
         });
       }
@@ -209,7 +209,7 @@ jsh.App[modelid] = new (function(){
       if (!page_template_id) return XExt.Alert('Please select a template.');
 
       if (page_template_id=='<Standalone>'){
-        if (!page_template_path) return XExt.Alert('Please enter a page template path.');
+        if (!page_template_path) return XExt.Alert('Please enter a page Template URL.');
       }
       else page_template_path = null;
 

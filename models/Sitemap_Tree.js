@@ -594,9 +594,27 @@ jsh.App[modelid] = new (function(){
     return jsh.XPage.getBreadcrumbs().site_default_page_filename;
   }
 
-  this.getDefaultPageFilename = function(page_type, page_folder, title){
+  this.getDefaultPageFilename = function(page_type, page_folder, title, page_template_id, page_template_path){
     title = title || '';
     if(page_type=='home') return '/' + _this.getDefaultPage();
+    if(page_template_id=='<Standalone>'){
+      //Get path from page_template_path
+      if(!page_template_path) return '';
+      if(page_template_path.indexOf('//')<0) return '';
+      var rslt_path = '';
+      try{
+        var parsed_page_template_path = XExt.getURLObj(page_template_path);
+        rslt_path = parsed_page_template_path.pathname || '';
+      }
+      catch(ex){
+        return '';
+      }
+      var rslt_file = XExt.basename(rslt_path);
+      if(!rslt_path) rslt_path = '/';
+      if(rslt_path && rslt_path[rslt_path.length-1]=='/') return rslt_path + _this.getDefaultPage();
+      else if(rslt_file && (rslt_file.indexOf('.')>=0)) return rslt_path;
+      else return rslt_path + '/' + _this.getDefaultPage();
+    }
     if(!title.trim()) return '';
     return page_folder + XExt.prettyURL(title.trim()) + '/' + _this.getDefaultPage();
   }
@@ -649,17 +667,28 @@ jsh.App[modelid] = new (function(){
       jsitemaptext.prop('readonly', true);
       jsitemaptext.addClass('uneditable');
 
+      var jTemplateId = jprompt.find('.page_template_id');
       var jtitle = jprompt.find('.page_title');
-      jtitle.off('input keyup').on('input keyup', function(){
-        if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val()));
+      var jTemplatePath = jprompt.find('.page_template_path');
+      function refreshDefaultValues(){
+        if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val(), jTemplateId.val(), jTemplatePath.val()));
         if(jprompt.find('.sitemap_item_text_default').prop('checked')) jsitemaptext.val(jtitle.val());
-      });
-      jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val()));
+      }
+
+      var toggleTemplatePath = function(){
+        jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>');
+        jsh.XWindowResize();
+      }
+      jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); refreshDefaultValues(); });
+      toggleTemplatePath();
+
+      jprompt.find('.page_title,.page_template_path').off('input keyup').on('input keyup', function(){ refreshDefaultValues(); });
+      jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val(), jTemplateId.val(), jTemplatePath.val()));
 
       jprompt.find('.page_path_default').off('click').on('click', function(){
         if($(this).is(':checked')){
           jfilename.prop('readonly', true);
-          jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val()));
+          jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val(), jTemplateId.val(), jTemplatePath.val()));
           jfilename.addClass('uneditable');
         }
         else{
@@ -679,11 +708,6 @@ jsh.App[modelid] = new (function(){
           jsitemaptext.removeClass('uneditable');
         }
       });
-
-      var jTemplateId = jprompt.find('.page_template_id');
-      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); }
-      jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
-      toggleTemplatePath();
     }, function (success) { //onAccept
       var jprompt = jsh.$dialogBlock(sel);
 
@@ -694,16 +718,17 @@ jsh.App[modelid] = new (function(){
       var page_template_path = jprompt.find('.page_template_path').val();
       var sitemap_item_text = jprompt.find('.sitemap_item_text').val();
 
-      if (!page_path) return XExt.Alert('Please enter a page path');
-      if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
-      if (XExt.cleanFilePath(page_path) != page_path) return XExt.Alert('Page path contains invalid characters');
-
       if (!page_template_id) return XExt.Alert('Please select a template.');
 
       if (page_template_id=='<Standalone>'){
-        if (!page_template_path) return XExt.Alert('Please enter a page template path.');
+        if (!page_template_path) return XExt.Alert('Please enter a page template URL.');
+        if (page_template_path.indexOf('//') < 0)  return XExt.Alert('Page template URL should include the domain and protocol, ex: https://example.com/page');
       }
       else page_template_path = null;
+
+      if (!page_path) return XExt.Alert('Please enter a page path');
+      if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
+      if (XExt.cleanFilePath(page_path) != page_path) return XExt.Alert('Page path contains invalid characters');
 
       if (page_path.indexOf('.') < 0) page_path += '.html';
 
@@ -882,16 +907,17 @@ jsh.App[modelid] = new (function(){
         var page_template_id = jprompt.find('.page_template_id').val();
         var page_template_path = jprompt.find('.page_template_path').val();
 
-        if (!page_path) return XExt.Alert('Please enter a page path');
-        if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
-        if (XExt.cleanFilePath(page_path) != page_path) return XExt.Alert('Page path contains invalid characters');
-
         if (!page_template_id) return XExt.Alert('Please select a template.');
 
         if (page_template_id=='<Standalone>'){
-          if (!page_template_path) return XExt.Alert('Please enter a page template path.');
+          if (!page_template_path) return XExt.Alert('Please enter a page template URL.');
+          if (page_template_path.indexOf('//') < 0)  return XExt.Alert('Page template URL should include the domain and protocol, ex: https://example.com/page');
         }
         else page_template_path = null;
+
+        if (!page_path) return XExt.Alert('Please enter a page path');
+        if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');
+        if (XExt.cleanFilePath(page_path) != page_path) return XExt.Alert('Page path contains invalid characters');
 
         if (page_path.indexOf('.') < 0) page_path += '.html';
 

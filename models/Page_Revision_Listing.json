@@ -24,7 +24,7 @@
       {"name":"page_title","caption":"Title","control":"label"},
       {"name":"page_path","caption":"Path","control":"label","format":"js:return (val||'').toString().replace(/\\//g,'/\\u200B');"},
       {"name":"page_template_id","caption":"Template","control":"label","lov":{"values":[]}},
-      {"name":"page_template_path","caption":"Template Path","control":"hidden"},
+      {"name":"page_template_path","caption":"Template URL","control":"hidden"},
       {"name":"page_tags","caption":"Tags","control":"label"},
       {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"}
     ]

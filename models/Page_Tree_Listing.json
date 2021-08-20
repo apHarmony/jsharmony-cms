@@ -48,7 +48,7 @@
           "</div>",
         ]},
       {"name":"page_template_id","caption":"Template","control":"hidden","lov":"#LOV_CMS_PAGE_TEMPLATES","actions":"BIU","validate":[{"function":"Required", "selector": ".page_template_selection"}]},
-      {"name":"page_template_path","caption":"Template Path","control":"hidden","actions":"BIU","validate": [{"function":"js:if(_obj.page_template_id!='<Standalone>') return ''; if(_val) return ''; return _caption+' is required for <Standalone> templates.';", "selector": ".page_template_selection"}]},
+      {"name":"page_template_path","caption":"Template URL","control":"hidden","actions":"BIU","validate": [{"function":"js:if(_obj.page_template_id!='<Standalone>') return ''; if(_val) return ''; return _caption+' is required for <Standalone> templates.';", "selector": ".page_template_selection"}]},
       {"name":"page_template","caption":"Template","control":"label","unbound":true,"actions":"BIU","value": "<div class='page_template_selection'><#-_this.page_template_selection_render(obj, data)#></div>"},
       {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)","cellstyle":"white-space:nowrap;"},
       {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},

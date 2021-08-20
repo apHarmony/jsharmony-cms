@@ -1,0 +1,25 @@
+{
+  "Site_SFTP": {
+    "layout":"form",
+    "onecolumn":true,
+    "table":"{schema}.site",
+    "title": "Site SFTP",
+    "caption":["SFTP","SFTP"],
+    "popup": [960, 600],
+    "actions": "B",
+    "roles": { "WEBMASTER": "B" },
+    "onload":"_this.onload();",
+    "breadcrumbs": {
+      "title": "",
+      "sql": "select @site_id site_id,(select site_name from {schema}.site where site_id=@site_id) site_name"
+    },
+    "css":[
+      ".<%=model.class%>_Config_Location label { font-weight:bold; display:block; }",
+      ".<%=model.class%>_Config_Location label div { font-weight:normal; display:inline-block; margin-left:5px; }",
+    ],
+    "fields": [
+      {"name":"site_id","actions":"B","control":"hidden"},
+      {"control":"html","value":"<h3>SFTP Login Information</h3>The site SFTP can be used to store local page templates, components, and web snippets in the \"templates\" subfolder.  Additional files and assets stored in the site SFTP will be copied to the deployment folder on publish.<div class='sftp_info' style='margin-top:16px;'></div>"},
+    ]
+  }
+}

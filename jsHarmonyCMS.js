@@ -392,7 +392,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
             'page_tags': 'Page Tags',
             'properties': 'Page Properties',
             'template_title': 'Template',
-            'page_template_path': 'Template Path',
+            'page_template_path': 'Template URL',
           }
         }
       },

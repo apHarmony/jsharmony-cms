@@ -309,6 +309,9 @@ module.exports = exports = function(module, funcs){
             if(isPublishTemplate){
               template_html[template_name] = templateContent;
             }
+            else if(template.templates && ('publish' in template.templates)){
+              template_html[template_name] = '';
+            }
             else if(!template.remote_templates.publish){
               try{
                 if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables, template_name: template_name });

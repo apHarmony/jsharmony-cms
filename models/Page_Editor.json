@@ -12,7 +12,7 @@
       {"name":"page_title","caption":"Title","control":"textbox_M"},
       {"name":"page_path","caption":"URL","control":"textbox_M"},
       {"name":"page_template_id","caption":"Template","control":"dropdown","lov":"#LOV_CMS_PAGE_TEMPLATES"},
-      {"name":"page_template_path","caption":"Template Path","control":"textbox_M"},
+      {"name":"page_template_path","caption":"Template URL","control":"textbox_M"},
       {"name":"page_author_name","caption":"Author","actions":"B","control":"label","sqlselect":"jsharmony.get_sys_user_name(page_author)"},
       {"name":"page_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"]}
     ]

@@ -98,7 +98,7 @@ jsh.App[modelid] = new (function(){
     var tmpl = $('.'+xmodel.class+'_Integration_'+newval).html()||'';
 
     var params = _.extend({}, _this.integration_params);
-    if((newval=='EXPRESSJS_ROUTER')||(newval=='EXPRESSJS_STANDALONE')) params['content_path'] = 'path/to/published_cms_content';
+    if((newval=='EXPRESSJS_ROUTER')||(newval=='EXPRESSJS_STANDALONE')) params['content_path'] = 'path/to/published_files';
 
     for(var key in params){
       var val = params[key];
