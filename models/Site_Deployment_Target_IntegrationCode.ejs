@@ -1,5 +1,21 @@
 <div style="display:none;">
 
+    <!-- Remote Template -->
+  <div class="<%=model.class%>_Integration_REMOTE_TEMPLATE">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/documentation/page-templates/#remotePageTemplates" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Editor Launcher for Remote Page Templates</h3>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish" src=&quot;path/to/jsHarmonyCmsClient.min.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish"&gt;
+jsHarmonyCmsClient({"access_keys":%%%ACCESS_KEYS%%%});
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+    <div style="margin: 10px 0 15px 0;" >* Be sure to include the "removeOnPublish" class to the Launcher script tags, so that the Editor Launcher will not be added to published pages.</div>
+  </div>
+
   <!-- Client-side JavaScript - Router -->
   <div class="<%=model.class%>_Integration_CLIENTJS_ROUTER">
     <div style="margin-top:15px;">
@@ -54,7 +70,7 @@ var server = app.listen(8080);</textarea>
     <textarea readonly='readonly' class='integration_code'>
 &lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish" src=&quot;/.jsHarmonyCms/jsHarmonyCmsEditor.js&quot;&gt;&lt;&#x2F;script&gt;
 &lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish"&gt;
-jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%);
+jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%});
 &lt;&#x2F;script&gt;</textarea>
     <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
     <div style="margin: 10px 0 15px 0;" >* Be sure to include the "removeOnPublish" class to the Launcher script tags, so that the Editor Launcher will not be added to published pages.</div>

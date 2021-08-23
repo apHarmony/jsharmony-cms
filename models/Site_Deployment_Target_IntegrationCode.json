@@ -24,6 +24,7 @@
       {"control":"html","value":"<h3 style='margin:35px 0 0 0;'>Integration Code</h3>"},
       {"name":"integration_target","unbound":true,"control":"dropdown","caption":"Environment",
         "lov":{ "values": {
+          "REMOTE_TEMPLATE": "Remote Template",
           "CLIENTJS_ROUTER": "Client-side JavaScript - Router",
           "CLIENTJS_STANDALONE": "Client-side JavaScript - Standalone",
           "EXPRESSJS_ROUTER": "Server-side Node.js / Express.js - Router",
