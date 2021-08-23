@@ -190,10 +190,30 @@ module.exports = exports = function(module, funcs){
       branchData: {}
     }, options);
 
+    var rtag = '#@JSHCMS';
+
     function replaceURL(url, getLinkContent){
       if(!url) return url;
+      var orig_url = url;
+
+      function addUrlSuffix(url){
+        if(!url  || (url==orig_url)) return url;
+        var orig_urlparts = urlparser.parse(orig_url, true);
+        var suffix = '';
+        if(Helper.beginsWith(orig_urlparts.hash || '', rtag)){
+          suffix = orig_urlparts.hash.substr(rtag.length);
+        }
+        if(!suffix) return url;
+        var urlparts = urlparser.parse(url, true);
+        if(urlparts.hash) return url + suffix;
+        if(urlparts.search){
+          if(suffix[0]=='?') return url + '&' + suffix.substr(1);
+        }
+        return url + suffix;
+      }
+
       if(module.Config.onReplaceBranchURL){
-        var customURL = module.Config.onReplaceBranchURL(url, options.branchData, getLinkContent, options);
+        var customURL = module.Config.onReplaceBranchURL(url, options.branchData, getLinkContent, addUrlSuffix, options);
         if(typeof customURL != 'undefined') return customURL;
       }
       var urlparts = urlparser.parse(url, true);
@@ -211,7 +231,7 @@ module.exports = exports = function(module, funcs){
             else throw ex;
             return '';
           }
-          return media_url;
+          return addUrlSuffix(media_url);
         }
       }
       if((urlparts.path.indexOf('/_funcs/page/')==0) && (patharr.length>=4)){
@@ -225,7 +245,7 @@ module.exports = exports = function(module, funcs){
             else throw ex;
             return '';
           }
-          return page_url;
+          return addUrlSuffix(page_url);
         }
       }
 
@@ -240,7 +260,6 @@ module.exports = exports = function(module, funcs){
       if(newURL && (newURL!=url)) jobj.attr(prop, newURL);
     }
 
-    var rtag = '#@JSHCMS';
     var rtagidx = content.indexOf(rtag);
     while(rtagidx >= 0){
       var startofstr = rtagidx;
@@ -293,7 +312,7 @@ module.exports = exports = function(module, funcs){
         newURL = Helper.escapeHTML(newURL);
       }
 
-      if(true || newURL && (newURL!=url)){
+      if(newURL!=url){
         content = content.substr(0, startofstr) + newURL + content.substr(endofstr + 1);
         rtagidx = endofstr;
       }

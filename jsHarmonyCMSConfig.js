@@ -132,7 +132,7 @@ function jsHarmonyCMSConfig(){
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing
-  this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, options){ return url; } //return a value (not undefined) to stop processing
+  this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, addUrlSuffix, options){ return url; } //return a value (not undefined) to stop processing
   this.onDeploy_LoadData = null; //function(jsh, branchData, template_variables, callback){ return callback(err); }
   this.onValidate_LoadData = null; //function(jsh, branchData, template_variables, callback){ return callback(err); }
   this.onDeploy_GenerateRedirects = null; //function(jsh, branchData, template_variables, callback){ return callback(err, generated_redirect_files); }
