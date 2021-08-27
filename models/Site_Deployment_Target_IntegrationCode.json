@@ -27,8 +27,10 @@
           "REMOTE_TEMPLATE": "Remote Template",
           "CLIENTJS_ROUTER": "Client-side JavaScript - Router",
           "CLIENTJS_STANDALONE": "Client-side JavaScript - Standalone",
-          "EXPRESSJS_ROUTER": "Server-side Node.js / Express.js - Router",
-          "EXPRESSJS_STANDALONE": "Server-side Node.js / Express.js - Standalone",
+          "EXPRESSJS_ROUTER": "Node.js / Express.js - Router",
+          "EXPRESSJS_STANDALONE": "Node.js / Express.js - Standalone",
+          "PHP_ROUTER": "PHP - Router",
+          "PHP_STANDALONE": "PHP - Standalone",
         } }, "onchange":"_this.integration_target_onchange(obj, newval, undoChange);"},
       {"control":"html","value":"<div class='integration_doc'></div>"},
     ]

@@ -86,6 +86,7 @@ function jsHarmonyCMSConfig(){
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
     copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
+    ignore_remote_template_certificate: false,  //When downloading remote templates, ignore self-signed certificate errors
 
     //List of remote paths to ignore
     //* Future - Not implemented

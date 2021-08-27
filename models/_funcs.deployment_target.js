@@ -888,7 +888,7 @@ module.exports = exports = function(module, funcs){
           else {
             wc.req(op.params[0], 'GET', {}, {}, undefined, function(err, res, templateContent){
               op.params[1](err, res, templateContent, op.done);
-            });
+            }, { rejectUnauthorized: !publish_config.ignore_remote_template_certificate });
           }
         });
         return op;

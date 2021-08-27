@@ -76,29 +76,57 @@ jsh.App[modelid] = new (function(){
     });
   }
 
-  this.getIntegrationParamsString = function(options){
+  this.getIntegrationParamsString = function(platform, options){
+    var STRMAP = {
+      JS: {
+        OBJ_START: '{',
+        OBJ_KEY_PRE: '',
+        OBJ_KEY_POST: '',
+        OBJ_EQ: ': ',
+        OBJ_END: '}',
+      },
+      PHP: {
+        OBJ_START: '[',
+        OBJ_KEY_PRE: '"',
+        OBJ_KEY_POST: '"',
+        OBJ_EQ: ' => ',
+        OBJ_END: ']',
+      }
+    };
+    var _s = STRMAP['JS'];
+    if(platform=='PHP') _s = STRMAP['PHP'];
     options = _.extend({
       access_keys: false,
       cms_server_urls: false,
       params: _this.integration_params,
     }, options);
-    var integrationParamsString = '{';
+    var integrationParamsString = _s.OBJ_START;
     var firstParam = true;
     for(var key in options.params){
       if((key=='access_keys')&&!options.access_keys) continue;
       if((key=='cms_server_urls')&&!options.cms_server_urls) continue;
-      integrationParamsString += (firstParam ? '' : ',')+'\n    '+key+': '+JSON.stringify(options.params[key]);
+      integrationParamsString += (firstParam ? '' : ',')+'\n    '+_s.OBJ_KEY_PRE+key+_s.OBJ_KEY_POST+_s.OBJ_EQ+JSON.stringify(options.params[key]);
       firstParam = false;
     }
-    integrationParamsString += (firstParam ? '' : '\n') + '}';
+    integrationParamsString += (firstParam ? '' : '\n') + _s.OBJ_END;
     return integrationParamsString;
   }
 
   this.integration_target_onchange = function(obj, newval, undoChange){
     var tmpl = $('.'+xmodel.class+'_Integration_'+newval).html()||'';
+    var platform = newval;
+    if((platform=='EXPRESSJS_ROUTER')||(platform=='EXPRESSJS_STANDALONE')) platform = 'EXPRESSJS';
+    else if((platform=='PHP_ROUTER')||(platform=='PHP_STANDALONE')) platform = 'PHP';
 
     var params = _.extend({}, _this.integration_params);
-    if((newval=='EXPRESSJS_ROUTER')||(newval=='EXPRESSJS_STANDALONE')) params['content_path'] = 'path/to/published_files';
+    if(platform=='EXPRESSJS'){
+      delete params.page_files_path;
+      params['content_path'] = 'path/to/published_files';
+    }
+    else if(platform=='PHP'){
+      delete params.page_files_path;
+      params['content_path'] = '%%%PHP_DOCUMENT_ROOT%%%/path/to/published_files';
+    }
 
     for(var key in params){
       var val = params[key];
@@ -106,8 +134,9 @@ jsh.App[modelid] = new (function(){
       tmpl = XExt.ReplaceAll(tmpl, '%%%'+key.toUpperCase()+'%%%', val);
     }
 
-    tmpl = XExt.ReplaceAll(tmpl, '%%%INTEGRATION_PARAMS_ACCESS_KEYS%%%', _this.getIntegrationParamsString({ access_keys: true, params: params }));
-    tmpl = XExt.ReplaceAll(tmpl, '%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%', _this.getIntegrationParamsString({ cms_server_urls: true, params: params }));
+    tmpl = XExt.ReplaceAll(tmpl, '%%%INTEGRATION_PARAMS_ACCESS_KEYS%%%', _this.getIntegrationParamsString(platform, { access_keys: true, params: params }));
+    tmpl = XExt.ReplaceAll(tmpl, '%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%', _this.getIntegrationParamsString(platform, { cms_server_urls: true, params: params }));
+    tmpl = XExt.ReplaceAll(tmpl, '"%%%PHP_DOCUMENT_ROOT%%%', "$_SERVER['DOCUMENT_ROOT'].\"");
     jsh.$root('.integration_doc').html(tmpl);
     jsh.$root('.integration_doc').find('.integration_code').each(function(){
       this.style.height = '10px';
