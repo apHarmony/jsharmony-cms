@@ -22,6 +22,7 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   var MERGE_TYPES = [
     'apply',
@@ -39,6 +40,9 @@ module.exports = exports = function(module, funcs){
     var appsrv = this;
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
+
+    var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'post') {
       //Validate parameters
@@ -162,6 +166,9 @@ module.exports = exports = function(module, funcs){
     var appsrv = this;
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
+
+    var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'post') {
       if (!appsrv.ParamCheck('B', B, ['&dst_branch_id','&src_branch_id','&merge_type'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }

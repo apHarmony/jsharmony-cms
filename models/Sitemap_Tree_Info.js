@@ -158,7 +158,7 @@ jsh.App[modelid] = new (function(){
     jdestcaption.text(jdestcaptiontext);
 
     var jpage_options = $('.'+xmodel.class+'_page_options');
-    if(!XExt.hasAction(xmodel.actions,'U')) jpage_options.find('a').hide();
+    if(!XExt.hasAction(xmodel.actions,'U')) jpage_options.find('a.page_edit_settings,a.page_duplicate').hide();
     jpage_options.toggle(sitemap_item_link_type=='PAGE');
 
     _this.updatePageInfo();

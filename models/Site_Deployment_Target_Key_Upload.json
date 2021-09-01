@@ -23,7 +23,7 @@
           "data_folder":"key_upload"
         },
         "validate": ["Required","MaxSize:100000","Extension:['.PEM']"]},
-      {"control":"button","value":"Upload","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.uploadPrivateKey();"}
+      {"control":"button","value":"Upload","actions":"U","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.uploadPrivateKey();"}
     ]
   }
 }

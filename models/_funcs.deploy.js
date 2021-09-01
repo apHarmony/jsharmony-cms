@@ -33,6 +33,7 @@ var baseModule = module;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   funcs.deploymentQueue = async.queue(function (op, done){
     var jsh = module.jsh;
@@ -2570,7 +2571,7 @@ module.exports = exports = function(module, funcs){
     if(!deployment_id) return next();
     if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var sql = "select deployment_target.site_id, deployment_id, deployment_sts, branch_id, (select code_txt from {schema}.code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date, deployment_target_publish_config from {schema}.deployment left outer join {schema}.deployment_target on deployment_target.deployment_target_id = deployment.deployment_target_id where deployment_id=@deployment_id";
     appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
@@ -2634,7 +2635,7 @@ module.exports = exports = function(module, funcs){
     if(!deployment_id) return next();
     if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
     appsrv.ExecRow(req._DBContext, sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
@@ -2693,7 +2694,7 @@ module.exports = exports = function(module, funcs){
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cms_deployment_download_'+deployment_id+'_'+request_id;
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(!req.params || !req.params.deployment_id) return next();
 
@@ -3041,10 +3042,10 @@ module.exports = exports = function(module, funcs){
     var verrors = {};
     var dbtypes = appsrv.DB.types;
     var validate = null;
-    var model = jsh.getModel(req, module.namespace + 'Publish_Add');
+    var model = jsh.getModel(req, module.namespace + 'Publish_Add_Release_Exec');
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       cms.DeploymentJobPending = true;
       jsh.AppSrv.JobProc.Run();

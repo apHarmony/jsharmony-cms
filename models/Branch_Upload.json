@@ -41,7 +41,7 @@
           "data_folder":"branch_upload"
         },
         "validate": ["Extension:['.ZIP']","Required"]},
-      {"control":"button","value":"Upload","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; jsh.System.UploadBranch(xmodel.get('new_site_id'),xmodel.get('new_branch_type'),xmodel.get('new_branch_name'),xmodel.get('branch_content'));"}
+      {"control":"button","value":"Upload","actions":"U","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "if(!xmodel.controller.form.Data.Commit()) return; jsh.System.UploadBranch(xmodel.get('new_site_id'),xmodel.get('new_branch_type'),xmodel.get('new_branch_name'),xmodel.get('branch_content'));"}
     ]
   }
 }

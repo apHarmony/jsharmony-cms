@@ -29,6 +29,7 @@ var wc = new wclib.WebConnect();
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   var pendingHostRequests = {};
 
@@ -229,7 +230,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target_IntegrationCode');
 
-    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var deployment_target_id = req.params.deployment_target_id||'';
     if(!deployment_target_id) return next();
@@ -278,7 +279,7 @@ module.exports = exports = function(module, funcs){
 
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var deployment_target_id = req.params.deployment_target_id||'';
     if(!deployment_target_id) return next();
@@ -336,7 +337,7 @@ module.exports = exports = function(module, funcs){
 
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var deployment_target_id = req.params.deployment_target_id;
     if(!deployment_target_id) return next();
@@ -608,7 +609,7 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
 
     var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'post'){
       if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -685,7 +686,7 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get'){
       if (!appsrv.ParamCheck('Q', Q, ['&site_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }

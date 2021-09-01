@@ -22,6 +22,7 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.validate_req = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -40,7 +41,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Validate');
     
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get') {
       var branch_id = req.query.branch_id;

@@ -163,5 +163,18 @@
       { "menu_id": 600, "sys_role_name": "*" },
       { "menu_id": 60001, "sys_role_name": "*" }
     ]
+  },
+
+  "jsharmony.help_target": {
+    "init_data": [
+      { "help_target_code": "*", "help_target_desc": "jsHarmony CMS" }
+    ]
+  },
+
+  "jsharmony.help": {
+    "data_keys": ["help_target_code"],
+    "init_data": [
+      { "help_target_code": "*", "help_title": "jsHarmony CMS", "help_text": "<p><span style=\"font-size:16px\">Explore the full jsHarmony CMS Reference at <a href=\"https://www.jsharmonycms.com/resources/\" target=\"_blank\">jsHarmonyCMS.com</a>, including:</span></p><table border=\"0\" cellpadding=\"7\" cellspacing=\"1\"><tbody><tr><td><span style=\"font-size:16px\">:: Getting Started Video Tutorials</span></td></tr><tr><td><span style=\"font-size:16px\">:: Starter Templates</span></td></tr><tr><td><span style=\"font-size:16px\">:: Documentation</span></td></tr><tr><td><span style=\"font-size:16px\">:: Source Code</span></td></tr></tbody></table>" }
+    ]
   }
 }

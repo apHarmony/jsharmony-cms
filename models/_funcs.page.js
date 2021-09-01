@@ -28,6 +28,7 @@ var querystring = require('querystring');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.getPageFile = function(page_file_id){
     if(!page_file_id) throw new Error('Invalid page_file_id');
@@ -331,9 +332,19 @@ module.exports = exports = function(module, funcs){
           var delim = '';
           var validAttr = (chr == '=');
 
+          var firstChar = true;
+          var isEscaped = false;
           if(validAttr){
             chr = content[++idx];
             while((idx < content.length)&&((chr=='\t')||(chr=='\n')||(chr=='\r')||(chr=='\f')||(chr==' '))) chr = content[++idx];
+
+            if(firstChar){
+              firstChar = false;
+              isEscaped = (chr == '\\');
+              if(isEscaped){
+                chr = content[++idx];
+              }
+            }
 
             if(chr=='"'){ delim = '"'; chr = content[++idx]; }
             else if(chr=="'"){ delim = "'"; chr = content[++idx]; }
@@ -347,6 +358,7 @@ module.exports = exports = function(module, funcs){
 
               while(!atEnd && (idx < content.length)){
                 chr = content[idx];
+                if(isEscaped && (chr == '\\')) chr = content[++idx];
 
                 if(delim = '"'){
                   if(chr == '"') atEnd = true;
@@ -362,6 +374,7 @@ module.exports = exports = function(module, funcs){
                 }
                 idx++;
               }
+
               if(f){
                 var oldVal = content.substr(startPos, endPos - startPos);
                 var newVal = f(oldVal);
@@ -477,7 +490,7 @@ module.exports = exports = function(module, funcs){
       { page_key: req.params.page_key, page_id: Q.page_id, page_template_id: Q.page_template_id };
 
     funcs.validateClientToken(req, res, next, ['get','post'], validateKeys, function(){
-      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Get page
       sql_ptypes = [dbtypes.BigInt];
@@ -542,7 +555,7 @@ module.exports = exports = function(module, funcs){
         }
 
         if (verb == 'get'){
-          if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+          if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
           //Validate parameters
           if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -672,7 +685,7 @@ module.exports = exports = function(module, funcs){
           });
         }
         else if(verb == 'post'){
-          if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+          if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
           /*
             var client_page = {
               title: page.page_title||'',
@@ -783,7 +796,7 @@ module.exports = exports = function(module, funcs){
     var model = jsh.getModel(req, module.namespace + 'Page_Editor');
 
     funcs.validateClientToken(req, res, next, ['get'], { page_template_id: Q.page_template_id }, function(){
-      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Get Branch ID
       sql_ptypes = [];
@@ -812,7 +825,7 @@ module.exports = exports = function(module, funcs){
         var devInfo = rslt[0][0];
 
         if (verb == 'get'){
-          if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+          if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
           //Validate parameters
           if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -892,7 +905,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Page_Tree');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     //Validate parameters
     if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id', '|devMode', '|site_id', '|render', '|page_template_path'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -1181,7 +1194,7 @@ module.exports = exports = function(module, funcs){
     var model = jsh.getModel(req, module.namespace + 'Page_Tree');
 
     funcs.validateClientToken(req, res, next, ['get'], { }, function(){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
       
       //Validate parameters
       if (!appsrv.ParamCheck('Q', Q, ['|site_id','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }

@@ -136,7 +136,17 @@ jsh.App[modelid] = new (function(){
           jsh.XExt.Alert('Error Uploading File: ' + JSON.stringify(jdata ? jdata : ''));
         }
       },
-      error: function (err) { jsh.xLoader.StopLoading(_this.loadobj); XExt.Alert('Error uploading file: '+XExt.stringify(err)); }
+      error: function (err) {
+        jsh.xLoader.StopLoading(_this.loadobj);
+        if(err && err.responseJSON){
+          var _error = err.responseJSON._error;
+          if(_error){
+            jsh.XExt.Alert('Error #' + (_error.Number||'') + ': ' + (_error.Message||''));
+            return;
+          }
+        }
+        XExt.Alert('Error uploading file: '+XExt.stringify(err));
+      }
     });
   }
 
@@ -181,7 +191,17 @@ jsh.App[modelid] = new (function(){
           jsh.XExt.Alert('Error Uploading File: ' + JSON.stringify(jdata ? jdata : ''));
         }
       },
-      error: function (err) { jsh.xLoader.StopLoading(_this.loadobj); XExt.Alert('Error uploading file: '+XExt.stringify(err)); }
+      error: function (err) {
+        jsh.xLoader.StopLoading(_this.loadobj);
+        if(err && err.responseJSON){
+          var _error = err.responseJSON._error;
+          if(_error){
+            jsh.XExt.Alert('Error #' + (_error.Number||'') + ': ' + (_error.Message||''));
+            return;
+          }
+        }
+        XExt.Alert('Error uploading file: '+XExt.stringify(err));
+      }
     });
   }
 

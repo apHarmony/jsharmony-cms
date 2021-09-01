@@ -22,6 +22,7 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   //Add old and new pages to branch_data.page_keys
   exports.conflicts_getPages = function(branch_data, callback){
@@ -626,7 +627,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
     
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get') {
       //Validate parameters
@@ -676,7 +677,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
     
-    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'post') {
       //Validate parameters

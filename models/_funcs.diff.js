@@ -24,6 +24,7 @@ var diff2html = require("diff2html");
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   var dmp = new DiffMatchPatch();
 
@@ -45,7 +46,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Diff');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get') {
       var branch_id = req.query.branch_id;

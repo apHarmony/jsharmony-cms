@@ -32,5 +32,5 @@ https://github.com/apHarmony/jsharmony-cms-sample
 
 ### New Empty Project Installer
 
-https://github.com/apHarmony/jsharmony-cms-sample
+https://github.com/apHarmony/jsharmony-cms-empty
 

@@ -26,6 +26,7 @@ var querystring = require('querystring');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.getMediaFile = function(media_file_id, media_ext, thumbnail_name, thumbnail_config){
     var fname = media_file_id.toString();
@@ -56,7 +57,7 @@ module.exports = exports = function(module, funcs){
     var model = jsh.getModel(req, module.namespace + 'Media_Tree');
     
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(!req.params || !req.params.media_key) return next();
       var media_key = req.params.media_key;
@@ -172,7 +173,7 @@ module.exports = exports = function(module, funcs){
       });
     }
     else if (verb == 'put'){
-      if (!Helper.hasModelAction(req, model, 'I')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'I')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(req.params && req.params.media_key) return next();
 
@@ -347,7 +348,7 @@ module.exports = exports = function(module, funcs){
       });
     }
     else if (verb == 'post'){
-      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(!req.params || !req.params.media_key) return next();
       var media_key = req.params.media_key;
@@ -512,7 +513,7 @@ module.exports = exports = function(module, funcs){
       });
     }
     else if (verb == 'delete'){
-      if (!Helper.hasModelAction(req, model, 'D')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'D')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(!req.params || !req.params.media_key) return next();
       var media_key = req.params.media_key;

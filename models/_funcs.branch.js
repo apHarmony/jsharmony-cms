@@ -29,6 +29,7 @@ var fs = require('fs');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.branch_download = function (req, res, next) {
     var cms = module;
@@ -50,7 +51,7 @@ module.exports = exports = function(module, funcs){
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(!req.params || !req.params.branch_id) return next();
       var branch_id = parseInt(req.params.branch_id);
@@ -196,7 +197,7 @@ module.exports = exports = function(module, funcs){
     var model = jsh.getModel(req, module.namespace + 'Branch_Upload');
 
     if (verb == 'post'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Validate parameters
       if (!appsrv.ParamCheck('P', P, ['&site_id','&branch_type','&branch_name','&branch_content'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -1054,7 +1055,7 @@ module.exports = exports = function(module, funcs){
     var model = jsh.getModel(req, module.namespace + 'Site_Listing');
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Validate parameters
       if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }

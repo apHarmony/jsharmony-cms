@@ -40,6 +40,7 @@ jsh.App[modelid] = new (function(){
     return XExt.renderEJS(_this.template_page_template_selection, xmodel.id, {
       data: data,
       obj: obj,
+      editable: $(obj).parent().hasClass('editable'),
     });
   }
 

@@ -10,7 +10,7 @@
     "menu":"jsHarmonyCMS/Page_Listing",
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
-      { "name": "addPage", "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addFile();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
+      { "name": "addPage", "actions": "I", "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addFile();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
       { "name": "search", "link":"Page_Listing","icon":"search","text":"Search","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} }
     ],
     "hide_system_buttons" : ["print","export"], 

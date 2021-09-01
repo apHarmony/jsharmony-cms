@@ -33,6 +33,7 @@ var INDENT_STRING = '  ';
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.templates_components = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -48,7 +49,7 @@ module.exports = exports = function(module, funcs){
 
     funcs.validateClientToken(req, res, next, ['get'], { }, function(){
       var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Get page
       var sql_ptypes = [dbtypes.BigInt];
@@ -240,7 +241,7 @@ module.exports = exports = function(module, funcs){
 
     funcs.validateClientToken(req, res, next, ['post'], { }, function(){
       var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if (verb == 'post'){
         if (!appsrv.ParamCheck('Q', Q, ['|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
