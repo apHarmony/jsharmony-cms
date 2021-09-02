@@ -1063,7 +1063,7 @@ module.exports = exports = function(module, funcs){
                 return Helper.GenError(req, res, -9, 'Error parsing Editor URL: '+url);
               }
 
-              Helper.execif(true || page_template.standalone,
+              Helper.execif(deployment_target_id || page_template.standalone,
                 function(next){
                   //Throw error if no deployment_target_id selected
                   if(!deployment_target_id) return Helper.GenError(req, res, -9, 'Editing a Standalone template requires a Deployment Target to be defined.  Configure Deployment Target in the Sites tab.');
