@@ -415,7 +415,7 @@ module.exports = exports = function(module, funcs){
 
           //Write new private key to disk
           function(upload_cb){
-            fs.writeFile(privateKeyPath, privateKey, { encoding: 'utf8', mode: 0o640 }, upload_cb);
+            fs.writeFile(privateKeyPath, privateKey, { encoding: 'utf8', mode: 0o600 }, upload_cb);
           },
 
           //Delete pem public key if it exists
@@ -560,10 +560,10 @@ module.exports = exports = function(module, funcs){
         createPrivateKey(function(err, newPublicKey, newPrivateKey){
           if(err) return gen_cb(err);
     
-          fs.writeFile(privateKeyPath, newPrivateKey, { encoding: 'utf8', mode: 0o640 }, function(err){
+          fs.writeFile(privateKeyPath, newPrivateKey, { encoding: 'utf8', mode: 0o600 }, function(err){
             if(err) return gen_cb(err);
             privateKey = newPrivateKey;
-            fs.writeFile(publicKeyPath, newPublicKey, { encoding: 'utf8', mode: 0o640 }, function(err){
+            fs.writeFile(publicKeyPath, newPublicKey, { encoding: 'utf8', mode: 0o600 }, function(err){
               if(err) return gen_cb(err);
               publicKey = newPublicKey;
               return gen_cb();
@@ -579,7 +579,7 @@ module.exports = exports = function(module, funcs){
         createPublicKey(privateKey, function(err, newPublicKey){
           if(err) return gen_cb(err);
 
-          fs.writeFile(publicKeyPath, newPublicKey, { encoding: 'utf8', mode: 0o640 }, function(err){
+          fs.writeFile(publicKeyPath, newPublicKey, { encoding: 'utf8', mode: 0o600 }, function(err){
             if(err) return gen_cb(err);
             publicKey = newPublicKey;
             return gen_cb();
@@ -593,7 +593,7 @@ module.exports = exports = function(module, funcs){
           if(exists) return gen_cb();
           createOpensshKey(publicKey, function(err, opensshKey){
             if(err) return gen_cb(err);
-            fs.writeFile(publicOpensshKeyPath, opensshKey, { encoding: 'utf8', mode: 0o640 }, gen_cb);
+            fs.writeFile(publicOpensshKeyPath, opensshKey, { encoding: 'utf8', mode: 0o600 }, gen_cb);
           });
         });
       },
