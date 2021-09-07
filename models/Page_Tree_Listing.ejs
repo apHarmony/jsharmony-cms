@@ -37,7 +37,7 @@
 </div>
 
 <script class="xctrl_page_template_selection_template" type="text/x-ejs-template">
-  <select class="xelem<%%=xmodel.class%%> page_template_selection_id <%%=editable?'editable':'uneditable'%%>" <%%=editable?'':'disabled="disabled"'%%> onchange="<%-js('_this.page_template_selection_id_onChange(this);')%>"><%%-XExt.xejs.renderLOV(xmodel.controller.getLOV('page_template_id'), xmodel.get('page_template_id', obj))%%></select>
+  <select class="xelem<%%=xmodel.class%%> page_template_selection_id <%%-editable?'editable':'uneditable'%%>" <%%=editable?'':'disabled="disabled"'%%> onchange="<%-js('_this.page_template_selection_id_onChange(this);')%>"><%%-XExt.xejs.renderLOV(xmodel.controller.getLOV('page_template_id'), xmodel.get('page_template_id', obj))%%></select>
   <a href="#" onclick="<%-js('_this.page_template_selection_path_popup(this);return false;')%>" class="page_template_selection_path">Template URL</a>
 </script>
 

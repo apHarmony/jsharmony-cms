@@ -35,12 +35,12 @@ jsh.App[modelid] = new (function(){
     }
   }
 
-  this.page_template_selection_render = function(obj, data){
+  this.page_template_selection_render = function(obj, data, enabled){
     $(obj).toggleClass('standalone', (data.page_template_id=='<Standalone>'));
     return XExt.renderEJS(_this.template_page_template_selection, xmodel.id, {
       data: data,
       obj: obj,
-      editable: $(obj).parent().hasClass('editable'),
+      editable: (enabled===true),
     });
   }
 
