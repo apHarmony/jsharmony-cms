@@ -30,6 +30,7 @@ var fs = require('fs');
 module.exports = exports = function(module, funcs){
   var exports = {};
   var _t = module._t, _tN = module._tN;
+  var branchResidentStatus = {};
 
   exports.branch_download = function (req, res, next) {
     var cms = module;
@@ -1172,7 +1173,7 @@ module.exports = exports = function(module, funcs){
     if (typeof(record[field]) == 'string') record[field] = Date.parse(record[field]);
   }
 
-  exports.branch_isDbResident = function(dbcontext, branch_id, callback) {
+  exports.branch_reallyCheckIsDbResident = function(dbcontext, branch_id, callback) {
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -1205,6 +1206,17 @@ module.exports = exports = function(module, funcs){
         });
       }
     });
+  }
+
+  exports.branch_isDbResident = function(dbcontext, branch_id, callback) {
+    if (branch_id in branchResidentStatus) {
+      setTimeout(callback, 0, null, branchResidentStatus[branch_id]);
+    } else {
+      exports.branch_reallyCheckIsDbResident(dbcontext, branch_id, function(err, resident) {
+        if (!err) branchResidentStatus[branch_id] = resident;
+        callback(err, resident);
+      });
+    }
   }
 
   exports.branch_evictableBranches = function(dbcontext, callback) {
@@ -1280,6 +1292,10 @@ module.exports = exports = function(module, funcs){
           });
         }, function() { return delete_cb(null);} );
       },
+      function(cache_cb){
+        branchResidentStatus[branch_id] = false;
+        cache_cb();
+      },
     ], callback);
   }
 
@@ -1329,6 +1345,10 @@ module.exports = exports = function(module, funcs){
       },
       function(delete_cb){
         fs.unlink(branchArchivePath(branch_id), delete_cb);
+      },
+      function(cache_cb){
+        branchResidentStatus[branch_id] = true;
+        cache_cb();
       },
     ], callback);
   }

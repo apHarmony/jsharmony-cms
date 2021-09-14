@@ -196,8 +196,16 @@ describe('Branch Archive', function() {
       });
     });
 
-    it('branch is no longer resident', function(done) {
+    it('branch is no longer resident (cached)', function(done) {
       jsh.Modules.jsHarmonyCMS.funcs.branch_isDbResident('S1', branch_id, function(err, resident) {
+        assert.ifError(err);
+        assert.strictEqual(resident, false);
+        done();
+      });
+    });
+
+    it('branch is no longer resident (uncached)', function(done) {
+      jsh.Modules.jsHarmonyCMS.funcs.branch_reallyCheckIsDbResident('S1', branch_id, function(err, resident) {
         assert.ifError(err);
         assert.strictEqual(resident, false);
         done();
@@ -262,8 +270,16 @@ describe('Branch Archive', function() {
       });
     });
 
-    it('branch is resident', function(done) {
+    it('branch is resident (cached)', function(done) {
       jsh.Modules.jsHarmonyCMS.funcs.branch_isDbResident('S1', branch_id, function(err, resident) {
+        assert.ifError(err);
+        assert.strictEqual(resident, true);
+        done();
+      });
+    });
+
+    it('branch is resident (uncached)', function(done) {
+      jsh.Modules.jsHarmonyCMS.funcs.branch_reallyCheckIsDbResident('S1', branch_id, function(err, resident) {
         assert.ifError(err);
         assert.strictEqual(resident, true);
         done();
