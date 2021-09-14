@@ -251,16 +251,22 @@ exports = module.exports = function(jsh, cms, editor){
                   type: 'menuitem',
                   text: 'Add Line Break Before',
                   onAction: function () {
-                    var lineBreak = _this._editor.dom.create('br');
+                    var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
                     $(lineBreak).insertBefore(node);
+                    var selection = _this._editor.selection;
+                    var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
+                    selection.select(textNode);
                   }
                 },
                 {
                   type: 'menuitem',
                   text: 'Add Line Break After',
                   onAction: function () {
-                    var lineBreak = _this._editor.dom.create('br');
+                    var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
                     $(lineBreak).insertAfter(node);
+                    var selection = _this._editor.selection;
+                    var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
+                    selection.select(textNode);
                   }
                 },
                 {
@@ -602,6 +608,7 @@ exports = module.exports = function(jsh, cms, editor){
     this.createComponentContextMenu(componentInfo);
 
 
+    this._editor.on('SetContent', function(info){ if(cms.editor.onSetContent) cms.editor.onSetContent(_this._editor, info); });
     this._editor.on('undo', function(info) { _this.onUndoRedo(info); });
     this._editor.on('redo', function(info) { _this.onUndoRedo(info); });
     this._editor.on('setToolbarOptions', function(e){
@@ -649,6 +656,7 @@ exports = module.exports = function(jsh, cms, editor){
     selection.collapse(false);
 
     this._editor.insertContent(this.createComponentContainer(componentType));
+    this._editor.insertContent('<p></p>');
     domUtil.remove(domUtil.select('#' + placeholderId));
   }
 

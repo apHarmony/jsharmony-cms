@@ -38,7 +38,9 @@ exports = module.exports = function(jsh, cms){
 
   this.loadSystemComponentTemplates = function(onError){
     var url = '../_funcs/templates/components/'+(cms.branch_id||'');
-    XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+    var qs = { };
+    if(cms.token) qs.jshcms_token = cms.token;
+    XExt.CallAppFunc(url, 'get', qs, function (rslt) { //On Success
       if ('_success' in rslt) {
         async.eachOf(rslt.components, function(component, componentId, cb) {
           var loadObj = {};
@@ -91,7 +93,11 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.compileTemplates = function(componentTemplates, cb) {
-    XExt.CallAppFunc('../_funcs/templates/compile_components', 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
+    var url = '../_funcs/templates/compile_components';
+    var qs = { };
+    if(cms.token) qs.jshcms_token = cms.token;
+    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+    XExt.CallAppFunc(url, 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var components = rslt.components;
         return cb(null, components);

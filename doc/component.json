@@ -21,7 +21,7 @@
 
   //Local templates can be used to load templates from the CMS
   "templates": {
-    "editor": "...Content...", // Prepended by <templateBaseFileName>.templates.editor.ejs
+    "editor": "...Content...",  // Prepended by <templateBaseFileName>.templates.editor.ejs
     "publish": "...Content...", // Prepended by <templateBaseFileName>.templates.publish.ejs
   },
 

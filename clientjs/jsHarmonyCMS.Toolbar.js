@@ -24,9 +24,13 @@ exports = module.exports = function(jsh, cms){
 
   this.editorBarDocked = true;
   this.origMarginTop = [];
+  this.origMarginTopLoaded = false;
   this.currentOffsetTop = 0;
   this.dockPosition = 'top_offset';
   this.errors = [/*{ message: '...', type: 'text' (or 'html') }*/];
+
+  this.excludeMarginOffsetId = ['cboxOverlay','colorbox'];
+  this.excludeMarginOffsetClass = ['jsHarmonyElement'];
  
   this.render = function(){
     cms.util.addStyle('jsharmony_cms_editor_css',cms.views['jsh_cms_editor.css']);
@@ -39,19 +43,62 @@ exports = module.exports = function(jsh, cms){
     return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
   }
 
-  this.saveOrigOffsets = function(){
+  this.isAnchored = function(elem, computedStyles){
+    if(elem.tagName && (elem.tagName.toUpperCase()=='BODY')) return true;
+    if(computedStyles.position=='fixed') return true;
+    if(computedStyles.position=='absolute'){
+      //Check if there is a positioned ancestor
+      var offsetParent = $(elem).offsetParent();
+      if(offsetParent && offsetParent.length){
+        offsetParent = offsetParent[0];
+        if(offsetParent.tagName && _.includes(['HTML','BODY'], offsetParent.tagName.toUpperCase())) offsetParent = null;
+      }
+      else offsetParent = null;
+      if(!offsetParent) return true;
+    }
+    return false;
+  }
+
+  this.excludeMarginOffset = function(jobj){
+    var obj = jobj[0];
+    for(var i=0;i<_this.excludeMarginOffsetId.length;i++){
+      var excludeId = _this.excludeMarginOffsetId[i];
+      if(obj.id == excludeId) return true;
+      if(jobj.closest('#'+excludeId).length) return true;
+    }
+    for(var i=0;i<_this.excludeMarginOffsetClass.length;i++){
+      var excludeClass = _this.excludeMarginOffsetClass[i];
+      if(_.includes(obj.classList, excludeClass)) return true;
+      if(jobj.closest('.'+excludeClass).length) return true;
+    }
+    return false;
+  }
+
+  this.saveOrigOffsets = function(options){
+    options = _.extend({ preload: false, refreshExisting: false }, options);
     _.filter($('*').toArray(), function(elem){
       if(elem.id=='jsHarmonyCMSLoading') return;
       var computedStyles = window.getComputedStyle(elem);
-      if((elem.tagName && (elem.tagName.toUpperCase()=='BODY')) || (computedStyles.position=='fixed')){
+      if(_this.isAnchored(elem, computedStyles)){
         var jelem = $(elem);
-        if(typeof jelem.attr('cms-toolbar-offsetid') != 'undefined') return;
-        if(jelem.parent().closest('[cms-content-editor]').length) return;
-        var offsetId = _this.origMarginTop.length;
-        jelem.attr('cms-toolbar-offsetid', offsetId);
+        var offsetId = jelem.attr('cms-toolbar-offsetid');
+        if(typeof offsetId != 'undefined'){
+          if(!options.refreshExisting) return;
+        }
+        else if(jelem.parent().closest('[cms-content-editor]').length) return;
+        else if(typeof jelem.attr('cms-toolbar-offset-exclude') != 'undefined') return;
+        else if(_this.excludeMarginOffset(jelem)){
+          jelem.attr('cms-toolbar-offset-exclude','1');
+          return;
+        }
+        else{
+          offsetId = _this.origMarginTop.length;
+          jelem.attr('cms-toolbar-offsetid', offsetId);
+        }
         _this.origMarginTop[offsetId] = computedStyles.marginTop;
       }
     });
+    if(!options.preload) _this.origMarginTopLoaded = true;
   }
 
   this.getOffsetTop = function(){
@@ -68,7 +115,10 @@ exports = module.exports = function(jsh, cms){
     return computedStyles.marginTop;
   }
 
-  this.refreshOffsets = function(){
+  this.refreshOffsets = function(options){
+    options = _.extend({ addNewOffsets: false }, options);
+    if(!_this.origMarginTopLoaded) return;
+    if(options.addNewOffsets) _this.saveOrigOffsets();
     var offsetTop = _this.getOffsetTop();
     var origBodyOffset = null;
     var scrollTop = $(document).scrollTop();

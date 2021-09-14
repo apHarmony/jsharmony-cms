@@ -16,8 +16,8 @@ if((routetype == 'd')||(routetype == 'csv')){
   var host_ids = [];
   if(jsh.Config.queues) for(var queueid in jsh.Config.queues){
     queueid = (queueid||'').toString();
-    if(queueid.toString().indexOf('deployment_host_')==0){
-      host_ids.push(queueid.substr(('deployment_host_').length));
+    if(queueid.toString().indexOf('deployment_host_publish_')==0){
+      host_ids.push(queueid.substr(('deployment_host_publish_').length));
     }
   }
 

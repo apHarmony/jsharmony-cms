@@ -24,9 +24,14 @@ var path = require('path');
 var async = require('async');
 var crypto = require('crypto');
 var urlparser = require('url');
+var wclib = require('jsharmony/WebConnect');
+var wc = new wclib.WebConnect();
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
+
+  var pendingHostRequests = {};
 
   exports.parseTemplateVariables = function(deploymentType, dbcontext, site_id, site_config, template_variables, deployment_target_publish_config, callback){
     var cms = module;
@@ -84,7 +89,7 @@ module.exports = exports = function(module, funcs){
     if(target_site_id=='current')
       sql = "select v_my_site.site_id, v_my_site.deployment_target_template_variables, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id={schema}.my_current_site_id()";
     else {
-      sql = "select site_id from {schema}.deployment_target where site_id=@site_id";
+      sql = "select site_id from {schema}.v_my_site where site_id=@site_id";
       sql_ptypes = [dbtypes.BigInt];
       sql_params = { site_id: target_site_id };
     }
@@ -158,6 +163,107 @@ module.exports = exports = function(module, funcs){
     if(orig_content != content) return funcs.replaceTemplateVariables(template_variables, content);
     return content;
   }
+
+  exports.getAccessKey = function(dbcontext, deployment_target_id, server_url, options, callback){
+    options = _.extend({ timestamp: null }, options);
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    var deployment_target_client_salt = null;
+
+    async.waterfall([
+      function(key_cb){
+        var sql = "select deployment_target_client_salt from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+        var sql_ptypes = [dbtypes.BigInt];
+        var sql_params = { deployment_target_id: deployment_target_id };
+
+        appsrv.ExecRow(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if(err) return key_cb(err);
+          if(!rslt || !rslt.length || !rslt[0]) return key_cb(new Error('Deployment target not found'));
+
+          deployment_target_client_salt = rslt[0].deployment_target_client_salt || null;
+          return key_cb();
+        });
+      },
+      function(key_cb){
+        if(deployment_target_client_salt) return key_cb();
+
+        //Generate salt if not defined
+        deployment_target_client_salt = crypto.randomBytes(16).toString('hex');
+        var sql = "update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id";
+        var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256)];
+        var sql_params = { deployment_target_id: deployment_target_id, deployment_target_client_salt: deployment_target_client_salt };
+
+        appsrv.ExecCommand(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if(err) return key_cb(err);
+          return key_cb();
+        });
+      },
+      function(key_cb){
+        deployment_target_client_salt = (deployment_target_client_salt||'').toString().toLowerCase();
+        if(deployment_target_client_salt.length != 32) return key_cb(new Error('Invalid deployment_target_client_salt'));
+        //Generate access_key
+        var domain_hash = crypto.createHash('sha256').update(deployment_target_client_salt + '-' + server_url.toLowerCase() + (options.timestamp ? '-' + options.timestamp.toString() : '')).digest('hex').toLowerCase();
+        var access_key = '';
+        for(var i=0;i<8;i++){
+          var salt_part = parseInt(deployment_target_client_salt.substr(i*4,4), 16);
+          var domain_part = parseInt(domain_hash.substr(i*4,4), 16);
+          access_key += Helper.pad((salt_part ^ domain_part).toString(16).toLowerCase(), '0', 4);
+        }
+        access_key += domain_hash;
+        return callback(null, access_key);
+      },
+    ], callback);
+  }
+
+  exports.req_deployment_target_regenerate_access_key = function(req, res, next){
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+
+    var Q = req.query;
+    var P = req.body;
+    var appsrv = this;
+    var jsh = module.jsh;
+    var dbtypes = appsrv.DB.types;
+
+    var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target_IntegrationCode');
+
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
+
+    var deployment_target_id = req.params.deployment_target_id||'';
+    if(!deployment_target_id) return next();
+    if(deployment_target_id.toString() != parseInt(deployment_target_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
+
+    var sql = "select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { deployment_target_id: deployment_target_id };
+    appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+      if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment Target ID');
+      var deployment_target = rslt[0];
+      deployment_target_id = deployment_target.deployment_target_id;
+
+      if (verb == 'post') {
+        //Validate parameters
+        if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+        var deployment_target_client_salt = crypto.randomBytes(16).toString('hex');
+        sql = "update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id";
+        sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256)];
+        sql_params = { deployment_target_id: deployment_target_id, deployment_target_client_salt: deployment_target_client_salt };
+        appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+          return res.send(JSON.stringify({ _success: 1 }));
+        });
+      }
+      else {
+        return next();
+      }
+    });
+  }
  
   exports.req_deployment_target_public_key = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -169,11 +275,11 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Download');
+    var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target_Key');
 
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var deployment_target_id = req.params.deployment_target_id||'';
     if(!deployment_target_id) return next();
@@ -227,11 +333,11 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var dbtypes = appsrv.DB.types;
 
-    var model = jsh.getModel(req, module.namespace + 'Branch_Download');
+    var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target_Key');
 
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var deployment_target_id = req.params.deployment_target_id;
     if(!deployment_target_id) return next();
@@ -309,7 +415,7 @@ module.exports = exports = function(module, funcs){
 
           //Write new private key to disk
           function(upload_cb){
-            fs.writeFile(privateKeyPath, privateKey, 'utf8', upload_cb);
+            fs.writeFile(privateKeyPath, privateKey, { encoding: 'utf8', mode: 0o600 }, upload_cb);
           },
 
           //Delete pem public key if it exists
@@ -454,10 +560,10 @@ module.exports = exports = function(module, funcs){
         createPrivateKey(function(err, newPublicKey, newPrivateKey){
           if(err) return gen_cb(err);
     
-          fs.writeFile(privateKeyPath, newPrivateKey, 'utf8', function(err){
+          fs.writeFile(privateKeyPath, newPrivateKey, { encoding: 'utf8', mode: 0o600 }, function(err){
             if(err) return gen_cb(err);
             privateKey = newPrivateKey;
-            fs.writeFile(publicKeyPath, newPublicKey, 'utf8', function(err){
+            fs.writeFile(publicKeyPath, newPublicKey, { encoding: 'utf8', mode: 0o600 }, function(err){
               if(err) return gen_cb(err);
               publicKey = newPublicKey;
               return gen_cb();
@@ -473,7 +579,7 @@ module.exports = exports = function(module, funcs){
         createPublicKey(privateKey, function(err, newPublicKey){
           if(err) return gen_cb(err);
 
-          fs.writeFile(publicKeyPath, newPublicKey, 'utf8', function(err){
+          fs.writeFile(publicKeyPath, newPublicKey, { encoding: 'utf8', mode: 0o600 }, function(err){
             if(err) return gen_cb(err);
             publicKey = newPublicKey;
             return gen_cb();
@@ -487,7 +593,7 @@ module.exports = exports = function(module, funcs){
           if(exists) return gen_cb();
           createOpensshKey(publicKey, function(err, opensshKey){
             if(err) return gen_cb(err);
-            fs.writeFile(publicOpensshKeyPath, opensshKey, 'utf8', gen_cb);
+            fs.writeFile(publicOpensshKeyPath, opensshKey, { encoding: 'utf8', mode: 0o600 }, gen_cb);
           });
         });
       },
@@ -503,7 +609,7 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
 
     var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'post'){
       if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -577,9 +683,10 @@ module.exports = exports = function(module, funcs){
     var P = req.body;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
 
     var model = jsh.getModel(req, module.namespace + 'Site_Deployment_Target');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get'){
       if (!appsrv.ParamCheck('Q', Q, ['&site_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -591,12 +698,29 @@ module.exports = exports = function(module, funcs){
 
       funcs.getTemplateVariables(site_id , req._DBContext, 'publish', {}, {}, { }, function(err, template_variables, deployment_target_publish_config){
         if(err) return Helper.GenError(req, res, -99999, err.toString());
+
+        //Get site_default_page_filename
+        var sql = 'select site_default_page_filename from {schema}.site where site_id=@site_id';
+        appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
+          if (err) return Helper.GenError(req, res, -99999, err.toString());
+          if (!rslt || !rslt.length || !rslt[0]) { Helper.GenError(req, res, -3, 'Site not found'); return; }
+
+          var site_default_page_filename = rslt[0].site_default_page_filename;
+
+          funcs.getSiteConfig(req._DBContext, site_id, { continueOnConfigError: true }, function(err, siteConfig){
+            if(err) return Helper.GenError(req, res, -99999, err.toString());
+        
+            res.end(JSON.stringify({
+              _success: 1,
+              template_variables: template_variables,
+              deployment_target_publish_config: deployment_target_publish_config,
+              site_default_page_filename: site_default_page_filename,
+              redirect_listing_path: siteConfig.redirect_listing_path,
+            }));
+          });
+        });
       
-        res.end(JSON.stringify({
-          _success: 1,
-          template_variables: template_variables,
-          deployment_target_publish_config: deployment_target_publish_config,
-        }));
+        
       });
       
       return;
@@ -609,15 +733,191 @@ module.exports = exports = function(module, funcs){
 
     if(!queueid) return cb();
     queueid = queueid.toString();
-    if(queueid.indexOf('deployment_host_')!=0) return cb();
     if(queueid in jsh.Config.queues) return cb();
-    //Add queue
-    jsh.Log.info('Adding deployment host queue: '+queueid);
-    jsh.Config.queues[queueid] = {
-      actions: "BIUD",
-      roles: { "CMSHOST": "*" }
+    else if(queueid.indexOf('deployment_host_publish_')==0){
+      //Add queue
+      jsh.Log.info('Adding deployment host publish queue: '+queueid);
+      jsh.Config.queues[queueid] = {
+        actions: "BIUD",
+        roles: { "CMSHOST": "*" }
+      };
+      return cb();
+    }
+    else if(queueid.indexOf('deployment_host_request_')==0){
+      //Add queue
+      jsh.Log.info('Adding deployment host request queue: '+queueid);
+      jsh.Config.queues[queueid] = {
+        actions: "BIUD",
+        roles: { "CMSHOST": "*" }
+      };
+      return cb();
+    }
+    else return cb();
+  }
+
+  exports.deployment_target_downloadTemplates = function(host_id, deployment_id, urls, requestOptions, cb){
+    var request_message = {
+      deployment_id: deployment_id,
+      op: 'download_templates',
+      urls: urls
     };
-    return cb();
+    funcs.deployment_target_host_requestSend(host_id, request_message, requestOptions, function(err, body){
+      if(err) err = 'Error downloading templates: '+err.toString();
+      return cb(err, body && body.urls);
+    });
+
+  }
+
+  exports.deployment_target_host_sendQueue = function(queue_name, host_id, msg, callback, retry){
+    var MAX_RETRIES = 15;
+    var RETRY_SLEEP = 2000;
+
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+
+    retry = retry || 0;
+    if(typeof msg == 'undefined') msg = null;
+    if(!_.isString(msg)) msg = JSON.stringify(msg);
+    var notifications = appsrv.SendQueue(queue_name + '_' + host_id, msg);
+    if(notifications) return callback();
+
+    if(retry >= MAX_RETRIES) return callback(new Error('CMS Deployment Host "'+host_id+'" not connected.  Please verify jsharmony-cms-host is running on the target machine'));
+    setTimeout(function(){
+      funcs.deployment_target_host_sendQueue(queue_name, host_id, msg, callback, retry+1);
+    }, RETRY_SLEEP);
+  }
+
+  exports.deployment_target_host_requestSend = function(host_id, request_message, options, cb){
+    options = _.extend({ timeout: 60 }, options);
+    var jsh = module.jsh;
+
+    //Notify deployment host
+    var queue_name = 'deployment_host_request';
+    var requestId = (new Date()).getTime().toString() + '_' + Math.round(Math.random()*1000000000).toString();
+    var msg = {
+      id: requestId,
+      body: request_message,
+    }
+    jsh.Log.info('CMSHOST: Sending request '+requestId+' to '+host_id);
+    funcs.deployment_target_host_sendQueue(queue_name, host_id, msg, function(err){
+      if(err) return cb(err);
+      pendingHostRequests[requestId] = {
+        queue_name: queue_name,
+        host_id: host_id,
+        cb: cb,
+        timer: null,
+      };
+      //Clear callback after timeout
+      pendingHostRequests[requestId].timer = setTimeout(function(){
+        if(requestId in pendingHostRequests){
+          delete pendingHostRequests[requestId];
+          cb(new Error('Timeout during request to CMS Deployment Host "'+host_id+'".  Please verify jsharmony-cms-host is running on the target machine'));
+        }
+      }, (options.timeout||0) * 1000);
+    });
+  }
+
+  exports.deployment_host_response = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+
+    if(!req.params || !req.params.request_id) return next();
+    var requestId = req.params.request_id;
+
+    if (!Helper.HasRole(req, 'CMSHOST')) { Helper.GenError(req, res, -11, 'Invalid Access'); return; }
+
+    if (verb == 'post'){
+      
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, ['|body','|error'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      jsh.Log.info('CMSHOST: Received response '+requestId);
+
+      var body = {};
+      if(P.body){
+        try{
+          body = JSON.parse(P.body);
+        }
+        catch(ex){
+          return Helper.GenError(req, res, -9, 'Error parsing body: '+ex.toString());
+        }
+      }
+
+      if(!(requestId in pendingHostRequests)){
+        return Helper.GenError(req, res, -9, 'Request timed out or closed');
+      }
+
+      var request = pendingHostRequests[requestId];
+      delete pendingHostRequests[requestId];
+      clearTimeout(request.timer);
+      try{
+        request.cb(P.error||null, body);
+      }
+      catch(ex){
+        return Helper.GenError(req, res, -9, ex.toString());
+      }
+
+      res.end(JSON.stringify({ '_success': 1 }));
+
+      return;
+    }
+    else return next();
+  }
+
+  exports.webRequestGate = function(publish_path, publish_config, f){  // f(addWebRequest, performWebRequests, gate, downloadTemplates)
+    var host_id = '';
+    if(publish_path && (publish_path.indexOf('cmshost://')==0)) host_id = publish_path.substr(10);
+    var downloadTemplates = host_id && publish_config && publish_config.cmshost_config && publish_config.cmshost_config.download_remote_templates;
+    var webRequestURLs = [];
+    var webRequestContent = {};
+    Helper.gate(function(gate){
+      var addWebRequest = function(url, callback){
+        if(!_.includes(webRequestURLs, url)) webRequestURLs.push(url);
+        var op = gate.addOp(url, callback);
+        op.waitForGate(function(){
+          if(downloadTemplates){
+            var content = webRequestContent[url];
+            if(typeof content == 'undefined') return op.done(new Error('Remote Template not resolved by deployment host: '+url));
+            op.params[1](null, null, content, op.done);
+          }
+          else {
+            wc.req(op.params[0], 'GET', {}, {}, undefined, function(err, res, templateContent){
+              op.params[1](err, res, templateContent, op.done);
+            }, { rejectUnauthorized: !publish_config.ignore_remote_template_certificate });
+          }
+        });
+        return op;
+      }
+      var performWebRequests = function(callback){
+        gate.waitForOps(function(){
+          Helper.execif(downloadTemplates && webRequestURLs.length,
+            function(f){
+              var requestOptions = {};
+              if('remote_timeout' in publish_config.cmshost_config) requestOptions.timeout = publish_config.cmshost_config.remote_timeout;
+              funcs.deployment_target_downloadTemplates(host_id, null, webRequestURLs, requestOptions, function(err, templates){
+                if(err) return callback(err);
+                if(templates) _.extend(webRequestContent, templates);
+                return f();
+              });
+            },
+            function(){
+              gate.open();
+              gate.waitForDone(callback);
+            }
+          );
+        });
+      };
+      f(addWebRequest, performWebRequests, gate, downloadTemplates);
+    }, {
+      open: !downloadTemplates,
+      //log: function(txt){ console.log(txt); },
+    });
   }
 
   return exports;

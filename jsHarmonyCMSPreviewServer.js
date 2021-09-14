@@ -105,6 +105,12 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
     return next();
   });
 
+  app.all('*', function(req, res, next){
+    cms.funcs.validateClientToken(req, res, next, ['get','options'], { }, function(){
+      return next();
+    });
+  });
+
   //Authenticate the user
   app.all('*', function (req, res, next) {
     if(!siteConfig.auth){ return jsh.Auth.NoAuth(req, res, next); }

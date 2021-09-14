@@ -1,6 +1,6 @@
 {
   "name": "jsharmony-cms",
-  "version": "1.0.63",
+  "version": "1.1.7",
   "description": "jsHarmony CMS",
   "main": "index.js",
   "scripts": {
@@ -22,19 +22,19 @@
   },
   "homepage": "https://github.com/apHarmony/jsharmony-cms",
   "devDependencies": {
-    "mocha": "^7.2.0"
+    "mocha": "^8.4.0"
   },
   "dependencies": {
     "async": "^2.6.2",
     "compression": "^1.7.4",
     "diff-match-patch": "^1.0.4",
-    "diff2html": "^2.12.1",
+    "diff2html": "3.4.1",
     "ejs": "2.7.4",
     "js-beautify": "^1.11.0",
     "jsharmony": "^1.1.201",
     "jsharmony-factory": "^1.1.97",
     "lodash": "^4.17.19",
-    "node-forge": "^0.9.1",
+    "node-forge": "^0.10.0",
     "parse5": "^6.0.1",
     "ssh2": "^0.8.9",
     "yauzl": "^2.10.0",

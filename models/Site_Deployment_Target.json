@@ -2,7 +2,7 @@
   "Site_Deployment_Target": {
     "layout":"form",
     "onecolumn":true,
-    "popup":[800,400],
+    "popup":[900,400],
     "table":"{schema}.deployment_target",
     "actions":"BIUD",
     "roles": { "WEBMASTER": "BIUD" },

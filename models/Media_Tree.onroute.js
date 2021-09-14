@@ -39,9 +39,9 @@ else if(routetype == 'model'){
   var model = jsh.getModel(req, modelid);
   if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
 
-  let sql = undefined;
-  let sql_ptypes = undefined;
-  let sql_params = undefined;
+  var sql = undefined;
+  var sql_ptypes = undefined;
+  var sql_params = undefined;
   if (req.query.init_media_key) {
     sql = "select media_folder from {schema}.v_my_media where media_key=@media_key";
     sql_ptypes = [dbtypes.BigInt];

@@ -33,6 +33,7 @@ var INDENT_STRING = '  ';
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.templates_components = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -46,188 +47,188 @@ module.exports = exports = function(module, funcs){
     var branch_id = null;
     if(req.params && req.params.branch_id) branch_id = req.params.branch_id;
 
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
+    funcs.validateClientToken(req, res, next, ['get'], { }, function(){
+      var model = jsh.getModel(req, module.namespace + 'Page_Editor');
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
-    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      //Get page
+      var sql_ptypes = [dbtypes.BigInt];
+      var sql_params = { 'branch_id': branch_id };
+      var validate = new XValidate();
+      var verrors = {};
+      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
 
-    //Get page
-    var sql_ptypes = [dbtypes.BigInt];
-    var sql_params = { 'branch_id': branch_id };
-    var validate = new XValidate();
-    var verrors = {};
-    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+      var deployment_target_template_variables_str = '';
+      var deployment_target_publish_config = {};
+      var deployment_target_publish_path = '';
 
-    var deployment_target_template_variables_str = '';
-    var deployment_target_publish_config = {};
+      if (verb == 'get'){
 
-    if (verb == 'get'){
+        var components = null;
+        var site_id = null;
+        var template_variables = {};
 
-      var components = null;
-      var site_id = null;
-      var template_variables = {};
+        async.waterfall([
 
-      async.waterfall([
+          //Check if branch exists
+          function(cb){
+            if(branch_id){
+              var sql = "select branch_desc,site_id from {schema}.v_my_branch_desc where branch_id=@branch_id";
+              appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this revision'); }
+                site_id = rslt[0].site_id;
+                if(!site_id){ return Helper.GenError(req, res, -4, 'No site revision is currently checked out'); }
+                return cb();
+              });
+            }
+            else {
+              var sql = "select {schema}.my_current_site_id() site_id";
+              appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+                if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+                if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'Error loading site data'); }
+                site_id = rslt[0].site_id;
+                if(!site_id){ return Helper.GenError(req, res, -4, 'No site is currently checked out'); }
+                return cb();
+              });
+            }
+          },
 
-        //Check if branch exists
-        function(cb){
-          if(branch_id){
-            var sql = "select branch_desc,site_id from {schema}.v_my_branch_desc where branch_id=@branch_id";
-            appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
-              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this revision'); }
-              site_id = rslt[0].site_id;
-              if(!site_id){ return Helper.GenError(req, res, -4, 'No site revision is currently checked out'); }
+          //Get components
+          function(cb){
+            funcs.getComponentTemplates(req._DBContext, site_id, { withContent: true }, function(err, _components){
+              if(err) return cb(err);
+              components = _components;
               return cb();
             });
-          }
-          else {
-            var sql = "select {schema}.my_current_site_id() site_id";
-            appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          },
+
+          //Get deployment_target_template_variables
+          function(cb){
+            var sql = "select v_my_site.deployment_target_template_variables, deployment_target_publish_path, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
+            appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-              if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'Error loading site data'); }
-              site_id = rslt[0].site_id;
-              if(!site_id){ return Helper.GenError(req, res, -4, 'No site is currently checked out'); }
+              if(rslt && rslt[0]){
+                deployment_target_template_variables_str = rslt[0].deployment_target_template_variables || '';
+                deployment_target_publish_path = rslt[0].deployment_target_publish_path || '';
+                try{
+                  deployment_target_publish_config = funcs.parseDeploymentTargetPublishConfig(site_id, rslt[0].deployment_target_publish_config, 'editor');
+                }
+                catch(ex){
+                  return cb(ex);
+                }
+              }
               return cb();
             });
-          }
-        },
+          },
 
-        //Get components
-        function(cb){
-          funcs.getComponentTemplates(req._DBContext, site_id, { withContent: true }, function(err, _components){
-            if(err) return cb(err);
-            components = _components;
-            return cb();
-          });
-        },
-
-        //Get deployment_target_template_variables
-        function(cb){
-          var sql = "select v_my_site.deployment_target_template_variables, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
-          appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(rslt && rslt[0]){
-              deployment_target_template_variables_str = rslt[0].deployment_target_template_variables || '';
-              try{
-                deployment_target_publish_config = funcs.parseDeploymentTargetPublishConfig(site_id, rslt[0].deployment_target_publish_config, 'editor');
-              }
-              catch(ex){
-                return cb(ex);
-              }
-            }
-            return cb();
-          });
-        },
-
-        //Generate components
-        function(cb){
-          template_variables = {
-            branch_id: branch_id,
-          };
-          try{
-            if(deployment_target_template_variables_str) template_variables = _.extend(template_variables, JSON.parse(deployment_target_template_variables_str));
-          }
-          catch(ex){
-            return cb('Publish Target has invalid deployment_target_template_variables: '+deployment_target_template_variables_str);
-          }
-
-          funcs.parseTemplateVariables('editor', req._DBContext, site_id, undefined, template_variables, deployment_target_publish_config, function(err, parsed_template_variables){
-            if(err) return cb(err);
-            template_variables = parsed_template_variables;
-
-            _.each(components, function(component){
-              if(component.remote_templates && component.remote_templates.editor){
-                component.remote_templates.editor = funcs.parseDeploymentUrl(component.remote_templates.editor, template_variables);
-              }
-            });
-
-            return cb();
-          });          
-        },
-        
-        //Download remote templates
-        function(cb){
-          async.eachOf(components, function(component, component_name, component_cb){
-            if(component.location=='LOCAL') return component_cb();
-            if(!(component.remote_templates && component.remote_templates.editor)) return component_cb();
-            if(component.optimization && component.optimization.bare_ejs_templates) return component_cb();
-            
-            var url = component.remote_templates.editor;
-            wc.req(url, 'GET', {}, {}, undefined, function(err, res, templateContent){
-              if(err) return component_cb(err);
-              if(res && res.statusCode){
-                if(res.statusCode > 500) return component_cb(new Error(res.statusCode+' Error downloading template '+url));
-                if(res.statusCode > 400) return component_cb(new Error(res.statusCode+' Error downloading template '+url));
-              }
-
-              //Parse and merge component config
-              var templateConfig = null;
-              try{
-                templateConfig = funcs.readComponentTemplateConfig(templateContent, 'remote component template  "'+url+'"');
-              }
-              catch(ex){
-                return component_cb(new Error('Error reading "'+component_name+'" component template config: '+ex.toString()));
-              }
-              _.merge(component, templateConfig);
-
-              component.templates.editor = templateContent;
-              delete component.remote_templates.editor;
-
-              return component_cb();
-            });
-
-          }, cb);
-        },
-
-        //Parse template config
-        function(cb){
-          for(var component_name in components){
-            var component = components[component_name];
-            if(!(component.templates && component.templates.editor) && !(component.remote_templates && component.remote_templates.editor)) continue;
+          //Generate components
+          function(cb){
+            template_variables = {
+              branch_id: branch_id,
+            };
             try{
-              funcs.parseComponentTemplateConfigExtensions(component);
+              if(deployment_target_template_variables_str) template_variables = _.extend(template_variables, JSON.parse(deployment_target_template_variables_str));
             }
             catch(ex){
-              return cb(new Error('Could not parse "'+component_name+'" component template config: '+ex.toString()));
+              return cb('Publish Target has invalid deployment_target_template_variables: '+deployment_target_template_variables_str);
             }
-          }
-          return cb();
-        },
 
-        //Parse template content
-        function(cb){
-          for(var component_name in components){
-            var component = components[component_name];
-            if(!(component.templates && component.templates.editor)) continue;
-            if(component.optimization && component.optimization.bare_ejs_templates) continue;
-            try{
-              component.templates.editor = funcs.generateComponentTemplate(component, component.templates.editor, { template_variables: template_variables });
-            }
-            catch(ex){
-              return cb(new Error('Could not parse "'+component_name+'" component editor template: '+ex.toString()));
-            }
-          }
-          return cb();
-        },
-      ], function(err){
-        if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
+            funcs.parseTemplateVariables('editor', req._DBContext, site_id, undefined, template_variables, deployment_target_publish_config, function(err, parsed_template_variables){
+              if(err) return cb(err);
+              template_variables = parsed_template_variables;
 
-        res.end(JSON.stringify({
-          '_success': 1,
-          'components': components
-        }));
-      });
-    }
-    else return next();
+              _.each(components, function(component){
+                if(component.remote_templates && component.remote_templates.editor){
+                  component.remote_templates.editor = funcs.parseDeploymentUrl(component.remote_templates.editor, template_variables);
+                }
+              });
+
+              return cb();
+            });          
+          },
+          
+          //Download remote templates
+          function(cb){
+            funcs.webRequestGate(deployment_target_publish_path, deployment_target_publish_config, function(addWebRequest, performWebRequests, downloadTemplates){
+              async.eachOf(components, function(component, component_name, component_cb){
+                if(component.location=='LOCAL') return component_cb();
+                if(!(component.remote_templates && component.remote_templates.editor)) return component_cb();
+                if(component.optimization && component.optimization.bare_ejs_templates) return component_cb();
+                
+                var url = component.remote_templates.editor;
+                addWebRequest(url, function(err, res, templateContent, req_cb){
+                  if(err) return req_cb(err);
+                  if(res && res.statusCode){
+                    if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                    if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                  }
+
+                  //Parse and merge component config
+                  var templateConfig = null;
+                  try{
+                    templateConfig = funcs.readComponentTemplateConfig(templateContent, 'remote component template  "'+url+'"');
+                  }
+                  catch(ex){
+                    return req_cb(new Error('Error reading "'+component_name+'" component template config: '+ex.toString()));
+                  }
+                  _.merge(component, templateConfig);
+
+                  component.templates.editor = templateContent;
+                  delete component.remote_templates.editor;
+
+                  return req_cb();
+                });
+                component_cb();
+
+              }, function(err){
+                if(err) return cb(err);
+                performWebRequests(cb);
+              });
+            });
+          },
+
+          //Parse template config
+          function(cb){
+            for(var component_name in components){
+              var component = components[component_name];
+              if(!(component.templates && component.templates.editor) && !(component.remote_templates && component.remote_templates.editor)) continue;
+              try{
+                funcs.parseComponentTemplateConfigExtensions(component);
+              }
+              catch(ex){
+                return cb(new Error('Could not parse "'+component_name+'" component template config: '+ex.toString()));
+              }
+            }
+            return cb();
+          },
+
+          //Parse template content
+          function(cb){
+            for(var component_name in components){
+              var component = components[component_name];
+              if(!(component.templates && component.templates.editor)) continue;
+              if(component.optimization && component.optimization.bare_ejs_templates) continue;
+              try{
+                component.templates.editor = funcs.generateComponentTemplate(component, component.templates.editor, { template_variables: template_variables });
+              }
+              catch(ex){
+                return cb(new Error('Could not parse "'+component_name+'" component editor template: '+ex.toString()));
+              }
+            }
+            return cb();
+          },
+        ], function(err){
+          if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
+
+          res.end(JSON.stringify({
+            '_success': 1,
+            'components': components
+          }));
+        });
+      }
+      else return Helper.GenError(req, res, -4, 'Invalid Operation');
+    });
   }
 
   exports.templates_compile_components = function(req, res, next){
@@ -238,50 +239,42 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
 
-    var referer = req.get('Referer');
-    if(referer){
-      var urlparts = urlparser.parse(referer, true);
-      var remote_domain = urlparts.protocol + '//' + (urlparts.auth?urlparts.auth+'@':'') + urlparts.hostname + (urlparts.port?':'+urlparts.port:'');
-      res.setHeader('Access-Control-Allow-Origin', remote_domain);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Origin,X-Requested-With, Content-Type, Accept');
-      res.setHeader('Access-Control-Allow-Credentials', true);
-    }
+    funcs.validateClientToken(req, res, next, ['post'], { }, function(){
+      var model = jsh.getModel(req, module.namespace + 'Page_Editor');
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
-    var model = jsh.getModel(req, module.namespace + 'Page_Editor');
-    if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
-
-    if (verb == 'post'){
-      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-      if (!appsrv.ParamCheck('P', P, ['&components'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-      
-      var componentContent = [];
-      try {
-        componentContent = JSON.parse(P.components) || [];
-      }
-      catch(ex){
-        Helper.GenError(req, res, -4, 'Invalid Parameters'); return;
-      }
-
-      funcs.getTemplateVariables('current', req._DBContext, 'editor', {}, {}, {}, function(err, template_variables){
-        if(err) return Helper.GenError(req, res, -99999, err.toString());
-
-        try{
-          components = funcs.compileInlineComponents(componentContent, template_variables);
+      if (verb == 'post'){
+        if (!appsrv.ParamCheck('Q', Q, ['|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        if (!appsrv.ParamCheck('P', P, ['&components'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+        
+        var componentContent = [];
+        try {
+          componentContent = JSON.parse(P.components) || [];
         }
-        catch(err){
-          return Helper.GenError(req, res, -9, err.toString());
+        catch(ex){
+          Helper.GenError(req, res, -4, 'Invalid Parameters'); return;
         }
-  
-        res.end(JSON.stringify({
-          '_success': 1,
-          'components': components
-        }));
-      });
 
-      return;
-    }
-    else return next();
+        funcs.getTemplateVariables('current', req._DBContext, 'editor', {}, {}, {}, function(err, template_variables){
+          if(err) return Helper.GenError(req, res, -99999, err.toString());
+
+          try{
+            components = funcs.compileInlineComponents(componentContent, template_variables);
+          }
+          catch(err){
+            return Helper.GenError(req, res, -9, err.toString());
+          }
+    
+          res.end(JSON.stringify({
+            '_success': 1,
+            'components': components
+          }));
+        });
+
+        return;
+      }
+      else return Helper.GenError(req, res, -4, 'Invalid Operation');
+    });
   }
 
   exports.compileInlineComponents = function(componentContent, template_variables){
@@ -447,7 +440,7 @@ module.exports = exports = function(module, funcs){
     return indent + (text || '').replace(/\r?\n/g, `${NEW_LINE_OUTPUT}${indent}`);
   }
 
-  exports.replacePageComponentsWithContentComponents = function(content, branchData, pageComponents){
+  exports.replacePageComponentsWithContentComponents = function(content, branchData, pageComponents, exportJSON){
     if(!content) return content;
     if(content.indexOf('cms-component')<0) return content;
 
@@ -460,6 +453,7 @@ module.exports = exports = function(module, funcs){
           var componentType = htdoc.getAttr(node, 'cms-component');
           var componentProperties = htdoc.getAttr(node, 'cms-component-properties');
           var componentData = htdoc.getAttr(node, 'cms-component-data');
+          var menuTag = htdoc.getAttr(node, 'cms-menu-tag');
 
           if(componentType){
             var component = undefined;
@@ -474,7 +468,6 @@ module.exports = exports = function(module, funcs){
             var defaultProperties = funcs.getComponentDefaultValues(component.properties);
             var defaultData = funcs.getComponentDefaultValues(component.data);
 
-            
             //Parse component data
             try{
               if(!componentData){
@@ -512,17 +505,30 @@ module.exports = exports = function(module, funcs){
             htdoc.removeAttr(node, 'cms-component');
             htdoc.removeAttr(node, 'cms-component-data');
             htdoc.removeAttr(node, 'cms-component-properties');
-            htdoc.removeAttr(node, 'data-component');
-            htdoc.removeAttr(node, 'data-component-data');
-            htdoc.removeAttr(node, 'data-component-properties');
-            htdoc.appendAttr(node, 'data-component', componentType);
-            if(componentData) htdoc.appendAttr(node, 'data-component-data', Buffer.from(componentData).toString('base64'));
-            if(componentProperties) htdoc.appendAttr(node, 'data-component-properties', Buffer.from(componentProperties).toString('base64'));
+            htdoc.removeAttr(node, 'cms-component-content');
+            htdoc.removeAttr(node, 'cms-menu-tag');
+
+            if(exportJSON){
+              var renderOptions = {};
+              if(componentData) renderOptions.data = JSON.parse(componentData);
+              if(componentProperties) renderOptions.properties = JSON.parse(componentProperties);
+              if(menuTag) renderOptions.menu_tag = menuTag;
+              htdoc.replaceNodeContent(node, '<%-renderComponent('+JSON.stringify(componentType)+(!_.isEmpty(renderOptions)?', '+JSON.stringify(renderOptions):'')+')%>');
+            }
+            else{
+              htdoc.removeAttr(node, 'data-component');
+              htdoc.removeAttr(node, 'data-component-data');
+              htdoc.removeAttr(node, 'data-component-properties');
+              htdoc.appendAttr(node, 'data-component', componentType);
+              if(componentData) htdoc.appendAttr(node, 'data-component-data', Buffer.from(componentData).toString('base64'));
+              if(componentProperties) htdoc.appendAttr(node, 'data-component-properties', Buffer.from(componentProperties).toString('base64'));
+            }
           }
         }
       },
     ]);
     htdoc.trimRemoved();
+
     return htdoc.content;
   }
 

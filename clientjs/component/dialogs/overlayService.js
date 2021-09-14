@@ -44,7 +44,7 @@ OverlayService.prototype.popDialog = function() {
 
   OverlayService._dialogStack.pop();
   if (OverlayService._dialogStack.length < 1) {
-    this.jsh.$('.xdialogblock .xdialogoverlay').remove();
+    this.jsh.$dialogBlock('.xdialogoverlay').remove();
     return;
   }
 
@@ -77,17 +77,17 @@ OverlayService.prototype.pushDialog = function(dialog) {
  * @returns {JQuery}
  */
 OverlayService.prototype.getOverlay = function() {
-  var $dialogBlock = this.jsh.$('.xdialogblock');
-  var $childOverlay = $dialogBlock.find('.xdialogoverlay');
+  var _this = this;
+  var $childOverlay = _this.jsh.$dialogBlock('.xdialogoverlay');
   if ($childOverlay.length > 0) {
     return $childOverlay;
   }
 
-  $childOverlay = this.jsh.$('<div class="xdialogoverlay"></div>');
-  $dialogBlock.prepend($childOverlay);
+  $childOverlay = _this.jsh.$('<div class="xdialogoverlay"></div>');
+  _this.jsh.dialogBlock.prepend($childOverlay);
 
   $childOverlay.off('click').on('click', function() {
-    $dialogBlock.click();
+    _this.jsh.dialogBlock.click();
   });
 
   return $childOverlay;

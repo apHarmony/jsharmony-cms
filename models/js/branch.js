@@ -135,4 +135,4 @@
       });
     });
   }
-})(window.jshInstance);
+})(window.{req.jshsite.instance});

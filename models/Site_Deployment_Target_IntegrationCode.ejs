@@ -1,0 +1,157 @@
+<div style="display:none;">
+
+    <!-- Remote Template -->
+  <div class="<%=model.class%>_Integration_REMOTE_TEMPLATE">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/documentation/page-templates/#remotePageTemplates" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Editor Launcher for Remote Page Templates</h3>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish" src=&quot;path/to/jsHarmonyCmsClient.min.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish"&gt;
+jsHarmonyCmsClient({"access_keys":%%%ACCESS_KEYS%%%});
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+    <div style="margin: 10px 0 15px 0;" >* Be sure to include the "removeOnPublish" class to the Launcher script tags, so that the Editor Launcher will not be added to published pages.</div>
+  </div>
+
+  <!-- Client-side JavaScript - Router -->
+  <div class="<%=model.class%>_Integration_CLIENTJS_ROUTER">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/client-side-js/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Router Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; src=&quot;path&#x2F;to&#x2F;jsHarmonyCmsClient.min.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot;&gt;
+var cmsClient = new jsHarmonyCmsClient(%%%INTEGRATION_PARAMS_ACCESS_KEYS%%%);
+cmsClient.Router();
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+  </div>
+
+  <!-- Client-side JavaScript - Standalone -->
+  <div class="<%=model.class%>_Integration_CLIENTJS_STANDALONE">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/client-side-js/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Standalone Page Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; src=&quot;path&#x2F;to&#x2F;jsHarmonyCmsClient.min.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot;&gt;
+var cmsClient = new jsHarmonyCmsClient(%%%INTEGRATION_PARAMS_ACCESS_KEYS%%%);
+cmsClient.Standalone('/path/to/cms_content_page.html');
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+  </div>
+
+  <!-- Node.js / Express.js - Router -->
+  <div class="<%=model.class%>_Integration_EXPRESSJS_ROUTER">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/node-js-express-js/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Router Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+const express = require('express');
+const jsHarmonyCmsRouter = require('jsharmony-cms-sdk-express').Router;
+const cmsRouter = new jsHarmonyCmsRouter(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+
+var app = express();
+app.use(cmsRouter.getRouter({ generate404OnNotFound: true }));
+
+var server = app.listen(8080);</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <h3>Editor Launcher for Remote Page Templates</h3>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish" src=&quot;/.jsHarmonyCms/jsHarmonyCmsEditor.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish"&gt;
+jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%});
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+    <div style="margin: 10px 0 15px 0;" >* Be sure to include the "removeOnPublish" class to the Launcher script tags, so that the Editor Launcher will not be added to published pages.</div>
+
+  </div>
+
+  <!-- Node.js / Express.js - Standalone -->
+  <div class="<%=model.class%>_Integration_EXPRESSJS_STANDALONE">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/node-js-express-js/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Standalone Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+// Initialize the jsHarmonyCmsRouter
+const jsHarmonyCmsRouter = require('jsharmony-cms-sdk-express').Router;
+const cmsRouter = new jsHarmonyCmsRouter(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+
+// Example - existing page route (be sure to use the async keyword)
+app.get('/standalone_page', async function(req, res, next){
+  // In your existing page route, load the page content and pass it as a parameter
+  // * If your standalone page URL does not match the CMS page path, pass the CMS page path as a parameter
+  var page = await cmsRouter.getStandalone(req); // or (req, '/cms_page_path');
+  res.render('standalone_page.ejs', { page: page });
+});</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+  </div>
+
+  <!-- PHP - Router -->
+  <div class="<%=model.class%>_Integration_PHP_ROUTER">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/php/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Router Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+// If not already included in your application, auto-load Composer
+require_once __DIR__.'/vendor/autoload.php';
+
+// Initialize the jsHarmony CMS Router
+use apHarmony\jsHarmonyCms\Router;
+$cmsRouter = new Router(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+
+// Serve CMS content for the current URL
+if(!$cmsRouter-&gt;serve()){
+    $cmsRouter-&gt;generate404();
+}</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+    <h3>Editor Launcher for Remote Page Templates</h3>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish" src=&quot;/.jsHarmonyCms/jsHarmonyCmsEditor.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish"&gt;
+jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%});
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+    <div style="margin: 10px 0 15px 0;" >* Be sure to include the "removeOnPublish" class to the Launcher script tags, so that the Editor Launcher will not be added to published pages.</div>
+
+  </div>
+
+  <!-- PHP - Standalone -->
+  <div class="<%=model.class%>_Integration_PHP_STANDALONE">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/php/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Standalone Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+// If not already included in your application, auto-load Composer
+require_once __DIR__.'/vendor/autoload.php';
+
+// Initialize the jsHarmony CMS Router
+use apHarmony\jsHarmonyCms\Router;
+$cmsRouter = new Router(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+
+// Get the CMS content for this page
+$page = $cmsRouter->getStandalone();
+</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+  </div>
+
+</div>

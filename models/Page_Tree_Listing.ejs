@@ -10,7 +10,17 @@
       <label style="display:inline-block; font-weight:normal; margin-bottom:7px; font-size:14px;"><input class="page_filename_default_document" style="position:relative;top:2px;" type="checkbox" /> Default Document</label><br/>
 
       <div style="display: inline-block; width: 100px;margin-bottom:10px;">Template:</div>
-      <select class="page_template_id dropdown"></select><br/>
+      <select class="page_template_id dropdown"></select>
+      <a href="#" class="page_template_browse jsHarmonyCms_role_WEBMASTER" onclick="<%-js('jsh.System.viewPageTemplates();')%>">Configure</a>
+      <br/>
+
+      <div class="page_template_path_container">
+        <div style="display: inline-block; width: 100px;margin-bottom:10px;">Template URL:</div>
+        <input class="page_template_path" style="width:350px;" type="text" /><br/>
+        * To simplify integration, set File Path to match Template URL, ex:<br/>
+        Template URL: "https://example.com/auth/login"<br/>
+        File Path: "/auth/login/<span class="site_default_page_filename"></span>"
+      </div>
 
       <div style="text-align:center;"><input type="button" value="Add" class="button_ok" style="margin-right:15px;" /> <input type="button" value="Cancel" class="button_cancel" /></div>
     </div>
@@ -25,6 +35,11 @@
     </div>
   </div>
 </div>
+
+<script class="xctrl_page_template_selection_template" type="text/x-ejs-template">
+  <select class="xelem<%%=xmodel.class%%> page_template_selection_id <%%-editable?'editable':'uneditable'%%>" <%%=editable?'':'disabled="disabled"'%%> onchange="<%-js('_this.page_template_selection_id_onChange(this);')%>"><%%-XExt.xejs.renderLOV(xmodel.controller.getLOV('page_template_id'), xmodel.get('page_template_id', obj))%%></select>
+  <a href="#" onclick="<%-js('_this.page_template_selection_path_popup(this);return false;')%>" class="page_template_selection_path">Template URL</a>
+</script>
 
 <div class="xcontext_menu <%=model.class%>_file_context_menu">
   <a onclick="<%-js('_this.editFile(jsh.xContextMenuItem); return false;')%>"><img src="/images/icon_edit.png" />Edit</a>

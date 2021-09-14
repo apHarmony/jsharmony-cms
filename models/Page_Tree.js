@@ -11,6 +11,7 @@ jsh.App[modelid] = new (function(){
   this.state = _.extend({}, this.state_default);
 
   this.oninit = function(){
+    jsh.System.applyRoles();
     jsh.System.RequireBranch(xmodel);
     if(this.isInEditor){
       jsh.$root('.xbody').addClass('InEditor');

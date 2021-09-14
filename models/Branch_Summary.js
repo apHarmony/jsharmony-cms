@@ -45,12 +45,12 @@ jsh.App[modelid] = new (function(){
     if(!xmodel.get('dst_branch_id')) return XExt.Alert('Please clone or checkout the destination revision');
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
-      jsh.$root('.xdialogblock ' + sel + ' .src_branch_desc').html(xform.Data.src_branch_desc);
-      jsh.$root('.xdialogblock ' + sel + ' .dst_branch_desc').html(xform.Data.dst_branch_desc);
+      jsh.$dialogBlock(sel + ' .src_branch_desc').html(xform.Data.src_branch_desc);
+      jsh.$dialogBlock(sel + ' .dst_branch_desc').html(xform.Data.dst_branch_desc);
     }, function (success) { //onAccept
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
       var mergeType = 'changes';
       var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");

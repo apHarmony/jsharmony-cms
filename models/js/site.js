@@ -18,6 +18,7 @@
       site_id: undefined,
       rawEditorDialog: '',
       page_id: undefined,
+      page_template_path: undefined,
       getURL: false,
       async: true,
       devMode: false,
@@ -35,6 +36,7 @@
       }
       var params = { page_template_id: page_template_id }
       if(page_key) params.page_key = page_key;
+      if(options.page_template_path) params.page_template_path = options.page_template_path;
       if(jsh.bcrumbs && jsh.bcrumbs.branch_id) params.branch_id = jsh.bcrumbs.branch_id;
       _.each(['branch_id', 'site_id', 'page_id', 'devMode'], function(key){ if(options[key]) params[key] = options[key]; });
 
@@ -69,7 +71,7 @@
               var sel = options.rawEditorDialog;
               if(!sel) return XExt.Alert('Raw Text Editor not defined');
               XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-                var jprompt = jsh.$root('.xdialogblock ' + sel);
+                var jprompt = jsh.$dialogBlock(sel);
                 jprompt.find('.edit_page_title').text('Edit: '+page_filename);
                 jprompt.find('.page_content').val(page.content.body||'');
                 jprompt.find('.page_content').prop('readonly', readonly);
@@ -78,7 +80,7 @@
               }, function (success) { //onAccept
                 if(readonly) return success();
                 //Save content to server
-                var jprompt = jsh.$root('.xdialogblock ' + sel);
+                var jprompt = jsh.$dialogBlock(sel);
                 page.content.body = jprompt.find('.page_content').val();
                 url = '../_funcs/page/'+page_key;
                 XExt.CallAppFunc(url, 'post', page, success, function (err) { });
@@ -130,6 +132,22 @@
       var url = jsh._BASEURL+'_funcs/media/'+media_key+'/?download'+(qs?'&'+qs:'');
       jsh.getFileProxy().prop('src', url);
     }
+  }
+
+  jsh.System.viewPageTemplates = function(){
+    var site_id = jsh.globalparams.site_id;
+    if(!site_id) return XExt.Alert('No site currently checked out');
+    var tabs = {};
+    tabs['{namespace}Site_Tabs'] = '{namespace}Site_Template_Page'
+    var qs = {
+      site_id:site_id,
+      tabs: JSON.stringify(tabs)
+    };
+    XExt.popupForm('{namespace}Site_Tabs', 'update', qs);
+  }
+
+  jsh.System.applyRoles = function(){
+    if(jsh.globalparams.isWebmaster) jsh.$root('.jsHarmonyCms_role_WEBMASTER').removeClass('jsHarmonyCms_role_WEBMASTER');
   }
 
   jsh.System.renderEditorSelection = function(LOV_site_editor, site_id, sys_user_site_editor, options){
@@ -242,4 +260,4 @@
     jsh.getFileProxy().prop('src', url);
   }
 
-})(window.jshInstance);
+})(window.{req.jshsite.instance});

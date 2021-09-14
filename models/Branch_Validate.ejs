@@ -47,7 +47,7 @@
   <h4 class="<%=model.class%>_branch_validate_item_header">
     <i class="material-icons branch_error_icon error">error</i>
     PAGE &nbsp;&nbsp;<#-XExt.escapeHTML(branch_page.page_path)#>
-    <a href="#" class="preview view_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.page_template_id#>" data-page_filename="<#=branch_page.page_filename#>" data-page_id="<#=branch_page.page_id#>"><img src="/images/icon_browse.png" />View</a>
+    <a href="#" class="preview view_page" data-page_key="<#=branch_page.page_key#>" data-page_template_id="<#=branch_page.page_template_id#>" data-page_template_path="<#=branch_page.page_template_path#>" data-page_filename="<#=branch_page.page_filename#>" data-page_id="<#=branch_page.page_id#>"><img src="/images/icon_browse.png" />View</a>
   </h4>
 
   <# _.each(branch_page.errors, function(errtxt){ #>

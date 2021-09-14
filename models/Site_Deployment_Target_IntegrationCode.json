@@ -1,0 +1,38 @@
+{
+  "Site_Deployment_Target_IntegrationCode": {
+    "layout":"form",
+    "onecolumn":true,
+    "popup":[800,400],
+    "table":"{schema}.deployment_target",
+    "actions":"BU",
+    "roles": { "WEBMASTER": "BU" },
+    "caption":["Deployment Target Integration Code","Deployment Target Integration Code"],
+    "title":"Integration Code",
+    "onload":"_this.onload();",
+    "css": [
+      ".xform<%=model.class%> .integration_code { box-sizing:border-box;width:100%;margin-bottom:7px;background-color:#f2f2f2;border:1px solid #ccc;padding:3px 7px 5px 7px;white-space: pre; overflow-x:scroll; overflow-wrap: normal;font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif; }",
+      ".xform<%=model.class%> .integration_doc ol li { padding-top: 10px; }",
+    ],
+    "fields": [
+      {"name":"deployment_target_id","actions":"B","key":1,"control":"hidden"},
+      {"name":"site_id","actions":"B","foreignkey":1,"control":"hidden"},
+      {"control":"html","value":"<div style='margin:28px 0 10px 0;'><h3>Access Key</h3>The Access Key is tied to the CMS Server URL.  If using more than one CMS Server URL, an access key is required for each URL.</div>"},
+      {"name":"access_key","actions":"B","unbound":true,"control":"label","caption":"Access Key","captionstyle":"font-weight:bold;"},
+      {"name":"cms_server_url","actions":"B","unbound":true,"control":"label","caption":"CMS Server URL","captionstyle":"font-weight:bold;"},
+      {"name":"regenerate_access_key","value":"Regenerate Access Key","control":"button","onclick":"js:_this.regenerateAccessKey();","unbound":true,"controlstyle":"width:220px;margin-top:8px;"},
+      {"name":"deployment_target_publish_config","control":"hidden","actions":"B"},
+      {"control":"html","value":"<h3 style='margin:35px 0 0 0;'>Integration Code</h3>"},
+      {"name":"integration_target","unbound":true,"control":"dropdown","caption":"Environment",
+        "lov":{ "values": {
+          "REMOTE_TEMPLATE": "Remote Template",
+          "CLIENTJS_ROUTER": "Client-side JavaScript - Router",
+          "CLIENTJS_STANDALONE": "Client-side JavaScript - Standalone",
+          "EXPRESSJS_ROUTER": "Node.js / Express.js - Router",
+          "EXPRESSJS_STANDALONE": "Node.js / Express.js - Standalone",
+          "PHP_ROUTER": "PHP - Router",
+          "PHP_STANDALONE": "PHP - Standalone",
+        } }, "onchange":"_this.integration_target_onchange(obj, newval, undoChange);"},
+      {"control":"html","value":"<div class='integration_doc'></div>"},
+    ]
+  }
+}

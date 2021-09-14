@@ -126,6 +126,33 @@
       { "sys_user_id": "1", "site_id": "1" }
     ]
   },
+
+  "sys_user_token": {
+    "type": "table",
+    "caption": ["User Token", "User Tokens"],
+    "columns": [
+      { "name": "sys_user_token_id", "type": "bigint", "key": true, "identity": true, "null": false },
+      { "name": "sys_user_id", "type": "bigint", "foreignkey": { "jsharmony.sys_user": { "column": "sys_user_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
+      { "name": "sys_user_token_hash", "type": "varchar", "length": 256, "null": false, "unique": true },
+      { "name": "sys_user_token_ext", "type": "varchar", "length": 32 },
+      { "name": "sys_user_token_keys", "type": "varchar", "length": 1024 },
+
+      { "name": "sys_user_token_etstmp", "type": "datetime", "length": 7, "default": { "sql": "%%%%%%jsh.map.timestamp%%%%%%" } },
+      { "name": "sys_user_token_euser", "type": "varchar", "length": 20, "default": { "sql": "%%%%%%jsh.map.current_user%%%%%%" } },
+      { "name": "sys_user_token_mtstmp", "type": "datetime", "length": 7 },
+      { "name": "sys_user_token_muser", "type": "varchar", "length": 20 }
+    ],
+    "index": [
+      { "columns": ["sys_user_token_hash"] }
+    ],
+    "triggers": [
+      { "on": ["update", "insert"], "exec": [
+          "set(sys_user_token_mtstmp,%%%%%%jsh.map.timestamp%%%%%%);",
+          "set(sys_user_token_muser,%%%%%%jsh.map.current_user%%%%%%);"
+        ]
+      }
+    ]
+  },
   
   "sys_user_site": {
     "type": "table",

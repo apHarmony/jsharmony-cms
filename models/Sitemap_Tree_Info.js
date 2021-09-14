@@ -102,7 +102,9 @@ jsh.App[modelid] = new (function(){
       else {
         var page = rslt[execModel][0];
         jtitle.text(page.page_title);
-        jtemplate.text(XExt.getLOVTxt(xmodel.controller.form.LOVs.page_template_id, page.page_template_id)||'');
+        var templateText = XExt.getLOVTxt(xmodel.controller.form.LOVs.page_template_id, page.page_template_id)||'';
+        if(page.page_template_id=='<Standalone>') templateText += ' ' + (page.page_template_path||'');
+        jtemplate.text(templateText);
         jpath.text(page.page_path);
       }
     });
@@ -156,7 +158,7 @@ jsh.App[modelid] = new (function(){
     jdestcaption.text(jdestcaptiontext);
 
     var jpage_options = $('.'+xmodel.class+'_page_options');
-    if(!XExt.hasAction(xmodel.actions,'U')) jpage_options.find('a').hide();
+    if(!XExt.hasAction(xmodel.actions,'U')) jpage_options.find('a.page_edit_settings,a.page_duplicate').hide();
     jpage_options.toggle(sitemap_item_link_type=='PAGE');
 
     _this.updatePageInfo();
@@ -189,6 +191,9 @@ jsh.App[modelid] = new (function(){
         jsh.App[xmodel.parent].getEditorURL(page_key, function(url){
           jobj.attr('href', url || '#');
         });
+      }
+      else {
+        jobj.attr('href', '#');
       }
     });
   }

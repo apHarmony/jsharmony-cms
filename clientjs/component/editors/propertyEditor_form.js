@@ -55,7 +55,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   /** @type {import('../dialogs/formDialog').FormDialogConfig} */
   var dialogParams = {
-    acceptButtonLabel: 'Save',
+    acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_propertyFormEditor jsharmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),

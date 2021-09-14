@@ -1,22 +1,35 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.default_deployment_target_publish_config = {}; //Populated onroute
+  this.default_deployment_target_publish_config = {};
 
   var parse_url_cache = {};
+  var previous_config = '';
 
   _this.template_configurator = $('.xctrl_deployment_target_publish_configurator_template').html();
 
   _this.oninit = function(){
     _this.configurator_render();
+    $('.src_deployment_target_publish_config_view_previous').toggle(!jsh.is_insert);
   }
 
   _this.onload = function(){
     XForm.Get('/_funcs/deployment_target/defaults', { site_id: xmodel.get('site_id') }, {}, function(rslt){
       _this.default_deployment_target_publish_config = rslt.deployment_target_publish_config;
     }, undefined, { async: false });
-
     var xdata = xmodel.controller.form.Data;
+    var orig_path = xdata['deployment_target_publish_path'] || '<Not set>';
+    var orig_config = xdata['deployment_target_publish_config'] || '{}';
+    try{ orig_config = JSON.stringify(JSON.parse(orig_config),null,2); }
+    catch(ex){}
+    if(orig_config=='{}') orig_config = '{\n}';
+    previous_config = [
+      '<div style="text-decoration:underline;padding:0 0 5px 0;font-weight:bold;">Previous Publish Path</div>',
+      XExt.escapeHTML(orig_path),
+      '<div style="text-decoration:underline;padding:10px 0 0 0;font-weight:bold;">Previous Publish Config</div>',
+      '<pre>'+XExt.escapeHTML(orig_config)+'</pre>',
+    ].join('\n');
+
     _this.configurator_setvalue(xdata['deployment_target_publish_path'], xdata['deployment_target_publish_config']);
   }
 
@@ -30,7 +43,7 @@ jsh.App[modelid] = new (function(){
 
     var jdeployment_type = jcontainer.find('.deployment_type');
     XExt.RenderLOV(null, jdeployment_type, [
-      { code_val: '', code_txt: '(None)' },
+      { code_val: '', code_txt: '(No Publish Target)' },
       { code_val: 's3', code_txt: 'Amazon S3' },
       { code_val: 'cmshost', code_txt: 'CMS Deployment Host' },
       { code_val: 'ftp', code_txt: 'FTP' },
@@ -95,6 +108,11 @@ jsh.App[modelid] = new (function(){
       }
       _this.configurator_setvalue(xmodel.get('deployment_target_publish_path'), xmodel.get('deployment_target_publish_config'));
     });
+    jcontainer.find('.src_deployment_target_publish_config_view_previous').on('click', function(e){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      XExt.Alert(previous_config,null, { escapeHTML: false });
+    });
   }
 
   _this.host_id_onSelected = function(popupData){
@@ -115,14 +133,14 @@ jsh.App[modelid] = new (function(){
     publish_path = publish_path || '';
     publish_config = publish_config || '';
     var jcontainer = _this.configurator_getContainer();
-    jcontainer.find('.raw_deployment_target_publish_path').val(publish_path);
+    jcontainer.find('.src_deployment_target_publish_path').val(publish_path);
     var parsed_config = {};
     try {
       parsed_config = JSON.parse(publish_config);
       publish_config = _.isEmpty(parsed_config)?'{\n}':JSON.stringify(parsed_config,null,2);
     }
     catch(ex){}
-    jcontainer.find('.raw_deployment_target_publish_config').val(publish_config);
+    jcontainer.find('.src_deployment_target_publish_config').val(publish_config);
 
 
     //Parse URL
@@ -144,8 +162,17 @@ jsh.App[modelid] = new (function(){
         if(_.isEmpty(s3_config)) delete parsed_config.s3_config;
       })(); }
       else if(protocol=='cmshost'){ (function(){
+        var cmshost_config = parsed_config.cmshost_config||{};
+        jDeploymentType.find('[data-elem="cmshost_config.download_remote_templates"]').prop('checked',!!cmshost_config.download_remote_templates);
+        jDeploymentType.find('[data-elem="cmshost_config.remote_timeout"]').val(cmshost_config.remote_timeout||'');
+        _.each(['download_remote_templates','remote_timeout'], function(key){ delete cmshost_config[key]; });
+        if(_.isEmpty(cmshost_config)) delete parsed_config.cmshost_config;
       })(); }
       else if(protocol=='file'){ (function(){
+        var fs_config = parsed_config.fs_config||{};
+        jDeploymentType.find('[data-elem="fs_config.delete_excess_files"]').prop('checked',!!fs_config.delete_excess_files);
+        _.each(['delete_excess_files'], function(key){ delete fs_config[key]; });
+        if(_.isEmpty(fs_config)) delete parsed_config.fs_config;
       })(); }
       else if(protocol=='git_https'){ (function(){
         var git_config = parsed_config.git_config||{};
@@ -177,6 +204,7 @@ jsh.App[modelid] = new (function(){
     jcontainer.find('[data-elem="url_prefix_media_override"]').val(parsed_config.url_prefix_media_override);
     jcontainer.find('[data-elem="page_subfolder"]').val(parsed_config.page_subfolder);
     jcontainer.find('[data-elem="media_subfolder"]').val(parsed_config.media_subfolder);
+    jcontainer.find('[data-elem="ignore_remote_template_certificate"]').prop('checked',!!parsed_config.ignore_remote_template_certificate);
 
     jcontainer.find('.edit_button').each(function(){
       var jthis = $(this);
@@ -190,7 +218,7 @@ jsh.App[modelid] = new (function(){
     });
     
     var ext_config = JSON.parse(JSON.stringify(parsed_config));
-    _.each(['url_prefix','published_url','url_prefix_page_override','url_prefix_media_override','page_subfolder','media_subfolder'], function(key){ delete ext_config[key]; });
+    _.each(['url_prefix','published_url','url_prefix_page_override','url_prefix_media_override','page_subfolder','media_subfolder','ignore_remote_template_certificate'], function(key){ delete ext_config[key]; });
     jcontainer.find('[data-elem="ext_config"]').val(_.isEmpty(ext_config)?'{\n}':JSON.stringify(ext_config,null,2));
   }
 
@@ -321,12 +349,29 @@ jsh.App[modelid] = new (function(){
       if(path){
         generated_url = 'cmshost://' + path;
       }
+
+      var cmshost_config = {};
+      _.each(['download_remote_templates'], function(key){
+        var val = jDeploymentType.find('[data-elem="cmshost_config.'+key+'"]').is(':checked');
+        if(val) cmshost_config[key] = true;
+      });
+      var remote_timeout = jDeploymentType.find('[data-elem="cmshost_config.remote_timeout"]').val().trim();
+      if(parseInt(remote_timeout).toString() != remote_timeout) remote_timeout = '';
+      if(remote_timeout) cmshost_config.remote_timeout = remote_timeout;
+      if(!_.isEmpty(cmshost_config)) generated_config.cmshost_config = cmshost_config;
     })(); }
     else if(protocol=='file'){ (function(){
       var path = jDeploymentType.find('[data-path-elem="path"]').val().trim();
       if(path){
         generated_url = 'file://' + path;
       }
+
+      var fs_config = {};
+      _.each(['delete_excess_files'], function(key){
+        var val = jDeploymentType.find('[data-elem="fs_config.'+key+'"]').is(':checked');
+        if(val) fs_config[key] = true;
+      });
+      if(!_.isEmpty(fs_config)) generated_config.fs_config = fs_config;
     })(); }
     else if(protocol=='git_https'){ (function(){
       var parsed_url = _this.parse_url(jDeploymentType.find('[data-path-elem="url"]').val().trim());
@@ -428,6 +473,10 @@ jsh.App[modelid] = new (function(){
         if(val) generated_config[key] = val;
       }
     });
+    _.each(['ignore_remote_template_certificate'], function(key){
+      var val = jcontainer.find('[data-elem="'+key+'"]').is(':checked');
+      if(val) generated_config[key] = true;
+    });
     //ext_config
     var ext_config = jcontainer.find('[data-elem="ext_config"]').val().trim();
     if(ext_config){
@@ -439,7 +488,7 @@ jsh.App[modelid] = new (function(){
       }
       for(var key in ext_config){
         if(!(key in generated_config)) generated_config[key] = ext_config[key];
-        else if(_.includes(['s3_config','git_config','ftp_config'], key) && _.isObject(ext_config[key]) && _.isObject(generated_config[key])){
+        else if(_.includes(['s3_config','cmshost_config','fs_config','git_config','ftp_config'], key) && _.isObject(ext_config[key]) && _.isObject(generated_config[key])){
           for(var subkey in ext_config[key]){
             if(!(subkey in generated_config[key])) generated_config[key][subkey] = ext_config[key][subkey];
           }
@@ -450,17 +499,17 @@ jsh.App[modelid] = new (function(){
       xmodel.controller.form.Data._is_dirty = true;
     }
     else {
-      jcontainer.find('.raw_deployment_target_publish_path').val(generated_url);
-      jcontainer.find('.raw_deployment_target_publish_config').val(_.isEmpty(generated_config)?'{\n}':JSON.stringify(generated_config,null,2));
+      jcontainer.find('.src_deployment_target_publish_path').val(generated_url);
+      jcontainer.find('.src_deployment_target_publish_config').val(_.isEmpty(generated_config)?'{\n}':JSON.stringify(generated_config,null,2));
     }
   }
 
   _this.configurator_getvalue = function(){
     _this.generateJSON();
     var jcontainer = _this.configurator_getContainer();
-    var publish_path = jcontainer.find('.raw_deployment_target_publish_path').val();
+    var publish_path = jcontainer.find('.src_deployment_target_publish_path').val();
     if(!publish_path) publish_path = null;
-    var publish_config = jcontainer.find('.raw_deployment_target_publish_config').val().trim();
+    var publish_config = jcontainer.find('.src_deployment_target_publish_config').val().trim();
     try{
       var publish_config_obj = JSON.parse(publish_config);
       if(!publish_config_obj || _.isEmpty(publish_config_obj)) publish_config = null;
@@ -501,6 +550,8 @@ jsh.App[modelid] = new (function(){
       })(); }
       else if(protocol=='cmshost'){ (function(){
         if(!jDeploymentType.find('[data-path-elem="hostid"]').val().trim()) errors.push('Host ID is required for CMS Host deployment');
+        var remote_timeout = jDeploymentType.find('[data-elem="cmshost_config.remote_timeout"]').val();
+        if(remote_timeout && (remote_timeout != (parseInt(remote_timeout)).toString())) errors.push('Invalid '+protocol.toUpperCase()+' remote_timeout');
       })(); }
       else if(protocol=='file'){ (function(){
         if(!jDeploymentType.find('[data-path-elem="path"]').val().trim()) errors.push('Path is required for Local Filesystem deployment');
@@ -529,7 +580,7 @@ jsh.App[modelid] = new (function(){
     }
     else {
       //JSON tab
-      if(!_this.validate_json(errors, 'Publish Config', jcontainer.find('.raw_deployment_target_publish_config').val())) return errors;
+      if(!_this.validate_json(errors, 'Publish Config', jcontainer.find('.src_deployment_target_publish_config').val())) return errors;
     }
     return errors;
   }

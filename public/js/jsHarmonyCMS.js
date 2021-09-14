@@ -37,13 +37,16 @@ var PropertiesModelTemplate_Form = require('./propertiesModelTemplate_form');
  * @param {Object} componentConfig - the component configuration as defined by the component JSON.
  * @param {Object} jsh
  */
-function ComponentTemplate(componentConfig, jsh) {
+function ComponentTemplate(componentConfig, jsh, cms) {
 
   /** @private @type {Object} */
   this._componentConfig = componentConfig;
 
   /** @private @type {Object} */
   this._jsh = jsh;
+
+  /** @private @type {Object} */
+  this._cms = cms;
 
   /** @private @type {DataModelTemplate_GridPreview} */
   this._dataModelTemplate_GridPreview = undefined;
@@ -262,6 +265,9 @@ function DataModelTemplate_FormPreview(componentTemplate, dataModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -292,6 +298,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
 
   var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
+  if(modelConfig.js && _.isString(modelConfig.js) && modelConfig.js.trim()) modelConfig.js = '(function(){ var cms = '+this._cms._instance+';' + modelConfig.js + ' })();';
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
@@ -495,6 +502,9 @@ function DataModelTemplate_GridPreview(componentTemplate, dataModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -528,6 +538,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   var modelConfig = Cloner.deepClone(dataModel || {});
   if (modelConfig.layout !== 'grid_preview') return undefined;
 
+  if(modelConfig.js && _.isString(modelConfig.js) && modelConfig.js.trim()) modelConfig.js = '(function(){ var cms = '+this._cms._instance+';' + modelConfig.js + ' })();';
   this._rawOriginalJs = '\r\n' + (modelConfig.js || '') + '\r\n';
 
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
@@ -962,6 +973,9 @@ function PropertiesModelTemplate_Form(componentTemplate, propertiesModel) {
   this._jsh = componentTemplate._jsh;
 
   /** @private @type {Object} */
+  this._cms = componentTemplate._cms;
+
+  /** @private @type {Object} */
   this._componentTemplate = componentTemplate;
 
   /** @private @type {string} */
@@ -994,6 +1008,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   model.unbound = true;
   model.layout = 'form';
   model.onecolumn = true;
+  if(model.js && _.isString(model.js) && model.js.trim()) model.js = '(function(){ var cms = '+this._cms._instance+';' + model.js + ' })();';
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
 }
 
@@ -1990,7 +2005,7 @@ OverlayService.prototype.popDialog = function() {
 
   OverlayService._dialogStack.pop();
   if (OverlayService._dialogStack.length < 1) {
-    this.jsh.$('.xdialogblock .xdialogoverlay').remove();
+    this.jsh.$dialogBlock('.xdialogoverlay').remove();
     return;
   }
 
@@ -2023,17 +2038,17 @@ OverlayService.prototype.pushDialog = function(dialog) {
  * @returns {JQuery}
  */
 OverlayService.prototype.getOverlay = function() {
-  var $dialogBlock = this.jsh.$('.xdialogblock');
-  var $childOverlay = $dialogBlock.find('.xdialogoverlay');
+  var _this = this;
+  var $childOverlay = _this.jsh.$dialogBlock('.xdialogoverlay');
   if ($childOverlay.length > 0) {
     return $childOverlay;
   }
 
-  $childOverlay = this.jsh.$('<div class="xdialogoverlay"></div>');
-  $dialogBlock.prepend($childOverlay);
+  $childOverlay = _this.jsh.$('<div class="xdialogoverlay"></div>');
+  _this.jsh.dialogBlock.prepend($childOverlay);
 
   $childOverlay.off('click').on('click', function() {
-    $dialogBlock.click();
+    _this.jsh.dialogBlock.click();
   });
 
   return $childOverlay;
@@ -2906,7 +2921,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
   var itemData = modelTemplate.populateDataInstance(itemData || {});
 
   var dialog = new FormDialog(this._jsh, this._cms, modelConfig, {
-    acceptButtonLabel: 'Save',
+    acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
@@ -3610,7 +3625,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   /** @type {import('../dialogs/formDialog').FormDialogConfig} */
   var dialogParams = {
-    acceptButtonLabel: 'Save',
+    acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
     cssClass: 'jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_propertyFormEditor jsharmony_cms_component_propertyFormEditor_' + this._componentTemplate.getTemplateId(),
@@ -4076,7 +4091,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   var $element = jsh.$(element);
 
   /** @type {ComponentTemplate} */
-  var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh);
+  var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh, cms);
 
   /** @public @type {BasicComponentController~beforeRender} */
   this.onBeforeRender = undefined;
@@ -4316,7 +4331,9 @@ exports = module.exports = function(jsh, cms){
 
   this.loadSystemComponentTemplates = function(onError){
     var url = '../_funcs/templates/components/'+(cms.branch_id||'');
-    XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
+    var qs = { };
+    if(cms.token) qs.jshcms_token = cms.token;
+    XExt.CallAppFunc(url, 'get', qs, function (rslt) { //On Success
       if ('_success' in rslt) {
         async.eachOf(rslt.components, function(component, componentId, cb) {
           var loadObj = {};
@@ -4369,7 +4386,11 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.compileTemplates = function(componentTemplates, cb) {
-    XExt.CallAppFunc('../_funcs/templates/compile_components', 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
+    var url = '../_funcs/templates/compile_components';
+    var qs = { };
+    if(cms.token) qs.jshcms_token = cms.token;
+    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+    XExt.CallAppFunc(url, 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var components = rslt.components;
         return cb(null, components);
@@ -5336,16 +5357,22 @@ exports = module.exports = function(jsh, cms, editor){
                   type: 'menuitem',
                   text: 'Add Line Break Before',
                   onAction: function () {
-                    var lineBreak = _this._editor.dom.create('br');
+                    var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
                     $(lineBreak).insertBefore(node);
+                    var selection = _this._editor.selection;
+                    var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
+                    selection.select(textNode);
                   }
                 },
                 {
                   type: 'menuitem',
                   text: 'Add Line Break After',
                   onAction: function () {
-                    var lineBreak = _this._editor.dom.create('br');
+                    var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
                     $(lineBreak).insertAfter(node);
+                    var selection = _this._editor.selection;
+                    var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
+                    selection.select(textNode);
                   }
                 },
                 {
@@ -5687,6 +5714,7 @@ exports = module.exports = function(jsh, cms, editor){
     this.createComponentContextMenu(componentInfo);
 
 
+    this._editor.on('SetContent', function(info){ if(cms.editor.onSetContent) cms.editor.onSetContent(_this._editor, info); });
     this._editor.on('undo', function(info) { _this.onUndoRedo(info); });
     this._editor.on('redo', function(info) { _this.onUndoRedo(info); });
     this._editor.on('setToolbarOptions', function(e){
@@ -5734,6 +5762,7 @@ exports = module.exports = function(jsh, cms, editor){
     selection.collapse(false);
 
     this._editor.insertContent(this.createComponentContainer(componentType));
+    this._editor.insertContent('<p></p>');
     domUtil.remove(domUtil.select('#' + placeholderId));
   }
 
@@ -5921,6 +5950,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.onBeginEdit = null; //function(mceEditor){};
   this.onEndEdit = null; //function(mceEditor){};
+  this.onSetContent = null; //function(mceEditor){};
 
   this.editorConfig = {
     base: null,
@@ -6029,6 +6059,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           }
           
           cms.refreshLayout();
+          var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
+          $('body').not('.jsharmony_cms_editing').addClass('jsharmony_cms_editing');
+          if(jshEditorId) $('body').addClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
           if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
         });
         mceEditor.on('blur', function(){
@@ -6045,6 +6078,18 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
             _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
           }
           if(_this.onEndEdit) _this.onEndEdit(mceEditor);
+          var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
+          $('body').removeClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
+          //Remove class
+          if(!$('.mce-edit-focus').length){
+            $('body.jsharmony_cms_editing').removeClass('jsharmony_cms_editing');
+            var bodyElem = $('body')[0];
+            if(bodyElem){
+              var editingClasses = [];
+              _.each(bodyElem.classList||[], function(className){ if(className.indexOf('jsharmony_cms_editing_')>=0) editingClasses.push(className); });
+              _.each(editingClasses, function(className){ $('body').removeClass(className); });
+            }
+          }
         });
         //Override background color icon
         var allIcons = mceEditor.ui.registry.getAll();
@@ -6144,7 +6189,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       var mceEditor = window.tinymce.get(containerId);
       if(!mceEditor) cms.fatalError('editor.setContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div cms-content-editor="'+desc+'"></div>');
       if(!_this.isInitialized) mceEditor.undoManager.clear();
-      mceEditor.setContent(val);
+      mceEditor.setContent(val, { jsHarmonyCmsSource: 'editor' });
       if(!_this.isInitialized) mceEditor.undoManager.add();
     }
   }
@@ -7251,7 +7296,7 @@ exports = module.exports = function(cms){
       else loader_obj.style.display = 'block';
     }
     else {
-      var loader_obj = document.createElement('div');
+      loader_obj = document.createElement('div');
       loader_obj.id = 'jsHarmonyCMSLoading';
       //loader_obj.style.backgroundColor = 'rgba(0,0,0,0.5)';
       loader_obj.style.backgroundColor = 'rgba(255,255,255,1)';
@@ -7330,9 +7375,13 @@ exports = module.exports = function(jsh, cms){
 
   this.editorBarDocked = true;
   this.origMarginTop = [];
+  this.origMarginTopLoaded = false;
   this.currentOffsetTop = 0;
   this.dockPosition = 'top_offset';
   this.errors = [/*{ message: '...', type: 'text' (or 'html') }*/];
+
+  this.excludeMarginOffsetId = ['cboxOverlay','colorbox'];
+  this.excludeMarginOffsetClass = ['jsHarmonyElement'];
  
   this.render = function(){
     cms.util.addStyle('jsharmony_cms_editor_css',cms.views['jsh_cms_editor.css']);
@@ -7345,19 +7394,62 @@ exports = module.exports = function(jsh, cms){
     return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
   }
 
-  this.saveOrigOffsets = function(){
+  this.isAnchored = function(elem, computedStyles){
+    if(elem.tagName && (elem.tagName.toUpperCase()=='BODY')) return true;
+    if(computedStyles.position=='fixed') return true;
+    if(computedStyles.position=='absolute'){
+      //Check if there is a positioned ancestor
+      var offsetParent = $(elem).offsetParent();
+      if(offsetParent && offsetParent.length){
+        offsetParent = offsetParent[0];
+        if(offsetParent.tagName && _.includes(['HTML','BODY'], offsetParent.tagName.toUpperCase())) offsetParent = null;
+      }
+      else offsetParent = null;
+      if(!offsetParent) return true;
+    }
+    return false;
+  }
+
+  this.excludeMarginOffset = function(jobj){
+    var obj = jobj[0];
+    for(var i=0;i<_this.excludeMarginOffsetId.length;i++){
+      var excludeId = _this.excludeMarginOffsetId[i];
+      if(obj.id == excludeId) return true;
+      if(jobj.closest('#'+excludeId).length) return true;
+    }
+    for(var i=0;i<_this.excludeMarginOffsetClass.length;i++){
+      var excludeClass = _this.excludeMarginOffsetClass[i];
+      if(_.includes(obj.classList, excludeClass)) return true;
+      if(jobj.closest('.'+excludeClass).length) return true;
+    }
+    return false;
+  }
+
+  this.saveOrigOffsets = function(options){
+    options = _.extend({ preload: false, refreshExisting: false }, options);
     _.filter($('*').toArray(), function(elem){
       if(elem.id=='jsHarmonyCMSLoading') return;
       var computedStyles = window.getComputedStyle(elem);
-      if((elem.tagName && (elem.tagName.toUpperCase()=='BODY')) || (computedStyles.position=='fixed')){
+      if(_this.isAnchored(elem, computedStyles)){
         var jelem = $(elem);
-        if(typeof jelem.attr('cms-toolbar-offsetid') != 'undefined') return;
-        if(jelem.parent().closest('[cms-content-editor]').length) return;
-        var offsetId = _this.origMarginTop.length;
-        jelem.attr('cms-toolbar-offsetid', offsetId);
+        var offsetId = jelem.attr('cms-toolbar-offsetid');
+        if(typeof offsetId != 'undefined'){
+          if(!options.refreshExisting) return;
+        }
+        else if(jelem.parent().closest('[cms-content-editor]').length) return;
+        else if(typeof jelem.attr('cms-toolbar-offset-exclude') != 'undefined') return;
+        else if(_this.excludeMarginOffset(jelem)){
+          jelem.attr('cms-toolbar-offset-exclude','1');
+          return;
+        }
+        else{
+          offsetId = _this.origMarginTop.length;
+          jelem.attr('cms-toolbar-offsetid', offsetId);
+        }
         _this.origMarginTop[offsetId] = computedStyles.marginTop;
       }
     });
+    if(!options.preload) _this.origMarginTopLoaded = true;
   }
 
   this.getOffsetTop = function(){
@@ -7374,7 +7466,10 @@ exports = module.exports = function(jsh, cms){
     return computedStyles.marginTop;
   }
 
-  this.refreshOffsets = function(){
+  this.refreshOffsets = function(options){
+    options = _.extend({ addNewOffsets: false }, options);
+    if(!_this.origMarginTopLoaded) return;
+    if(options.addNewOffsets) _this.saveOrigOffsets();
     var offsetTop = _this.getOffsetTop();
     var origBodyOffset = null;
     var scrollTop = $(document).scrollTop();
@@ -7666,6 +7761,7 @@ var jsHarmonyCMS = function(options){
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
 
   this.branch_id = undefined;
+  this.token = undefined;
   this.site_config = {};
   this.filePickerCallback = null;        //function(url)
 
@@ -7689,6 +7785,7 @@ var jsHarmonyCMS = function(options){
   var XExt = null;
   var $ = null;
   var async = null;
+  var loadErrors = [];
 
 
   this.init = function(){
@@ -7696,14 +7793,14 @@ var jsHarmonyCMS = function(options){
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
-      jsh = _this.jsh = window.jshInstance = new jsHarmony({
+      jsh = _this.jsh = window.jshInstance_CMS = new jsHarmony({
         _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},
         home_url: _this._baseurl,
         uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
-        _instance: "jshInstance",
+        _instance: "jshInstance_CMS",
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,
@@ -7716,18 +7813,27 @@ var jsHarmonyCMS = function(options){
       XExt = jsh.XExt;
       async = jsh.async;
 
+      if(jsh._GET['jshcms_token']) _this.token = jsh._GET['jshcms_token'];
+
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = _this.createCoreEditor()
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
-      _this.toolbar.saveOrigOffsets();
+      _this.toolbar.saveOrigOffsets({ preload: true });
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
+
+      jsh.DefaultErrorHandler = XExt.chain(jsh.DefaultErrorHandler, function(num, txt){
+        if(num==-10){
+          XExt.Alert('Session token expired');
+          return true;
+        }
+      });
 
       jsh.xLoader = loader;
       async.parallel([
@@ -7740,8 +7846,14 @@ var jsHarmonyCMS = function(options){
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
         function(cb){
-          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', {}, {}, function(rslt){
+          var qs = {};
+          if(_this.token) qs.jshcms_token = _this.token;
+          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', qs, {}, function(rslt){
             if(rslt) _this.site_config = rslt.siteConfig || {};
+            return cb();
+          }, function(err){
+            if(err && (err.Number==-10)) loadErrors.push('Session token expired.  Please re-open the page');
+            else loadErrors.push(err);
             return cb();
           });
         },
@@ -7758,6 +7870,11 @@ var jsHarmonyCMS = function(options){
   }
 
   this.load = function(){
+    _this.toolbar.saveOrigOffsets({ refreshExisting: true });
+    if(loadErrors.length){
+      loader.StopLoading();
+      return XExt.Alert((typeof loadErrors[0] == 'string') ? loadErrors[0] : JSON.stringify(loadErrors[0]));
+    }
     if(_this.onLoad) _this.onLoad(jsh);
     $('[cms-content-editor]').prop('contenteditable','true');
     if(jsh._GET['branch_id']){
@@ -7851,14 +7968,15 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.20';
+  var VERSION = '4.17.21';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
 
   /** Error message constants. */
   var CORE_ERROR_TEXT = 'Unsupported core-js use. Try https://npms.io/search?q=ponyfill.',
-      FUNC_ERROR_TEXT = 'Expected a function';
+      FUNC_ERROR_TEXT = 'Expected a function',
+      INVALID_TEMPL_VAR_ERROR_TEXT = 'Invalid `variable` option passed into `_.template`';
 
   /** Used to stand-in for `undefined` hash values. */
   var HASH_UNDEFINED = '__lodash_hash_undefined__';
@@ -7991,10 +8109,11 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
       reHasRegExpChar = RegExp(reRegExpChar.source);
 
-  /** Used to match leading and trailing whitespace. */
-  var reTrim = /^\s+|\s+$/g,
-      reTrimStart = /^\s+/,
-      reTrimEnd = /\s+$/;
+  /** Used to match leading whitespace. */
+  var reTrimStart = /^\s+/;
+
+  /** Used to match a single whitespace character. */
+  var reWhitespace = /\s/;
 
   /** Used to match wrap detail comments. */
   var reWrapComment = /\{(?:\n\/\* \[wrapped with .+\] \*\/)?\n?/,
@@ -8003,6 +8122,18 @@ global.jsHarmonyCMS = jsHarmonyCMS;
 
   /** Used to match words composed of alphanumeric characters. */
   var reAsciiWord = /[^\x00-\x2f\x3a-\x40\x5b-\x60\x7b-\x7f]+/g;
+
+  /**
+   * Used to validate the `validate` option in `_.template` variable.
+   *
+   * Forbids characters which could potentially change the meaning of the function argument definition:
+   * - "()," (modification of function parameters)
+   * - "=" (default value)
+   * - "[]{}" (destructuring of function parameters)
+   * - "/" (beginning of a comment)
+   * - whitespace
+   */
+  var reForbiddenIdentifierChars = /[()=,{}\[\]\/\s]/;
 
   /** Used to match backslashes in property paths. */
   var reEscapeChar = /\\(\\)?/g;
@@ -8833,6 +8964,19 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   }
 
   /**
+   * The base implementation of `_.trim`.
+   *
+   * @private
+   * @param {string} string The string to trim.
+   * @returns {string} Returns the trimmed string.
+   */
+  function baseTrim(string) {
+    return string
+      ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
+      : string;
+  }
+
+  /**
    * The base implementation of `_.unary` without support for storing metadata.
    *
    * @private
@@ -9163,6 +9307,21 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     return hasUnicode(string)
       ? unicodeToArray(string)
       : asciiToArray(string);
+  }
+
+  /**
+   * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
+   * character of `string`.
+   *
+   * @private
+   * @param {string} string The string to inspect.
+   * @returns {number} Returns the index of the last non-whitespace character.
+   */
+  function trimmedEndIndex(string) {
+    var index = string.length;
+
+    while (index-- && reWhitespace.test(string.charAt(index))) {}
+    return index;
   }
 
   /**
@@ -20333,7 +20492,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
       if (typeof value != 'string') {
         return value === 0 ? value : +value;
       }
-      value = value.replace(reTrim, '');
+      value = baseTrim(value);
       var isBinary = reIsBinary.test(value);
       return (isBinary || reIsOctal.test(value))
         ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
@@ -22705,6 +22864,12 @@ global.jsHarmonyCMS = jsHarmonyCMS;
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
       }
+      // Throw an error if a forbidden character was found in `variable`, to prevent
+      // potential command injection attacks.
+      else if (reForbiddenIdentifierChars.test(variable)) {
+        throw new Error(INVALID_TEMPL_VAR_ERROR_TEXT);
+      }
+
       // Cleanup code by stripping empty strings.
       source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
         .replace(reEmptyStringMiddle, '$1')
@@ -22818,7 +22983,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     function trim(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return string.replace(reTrim, '');
+        return baseTrim(string);
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;
@@ -22853,7 +23018,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     function trimEnd(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return string.replace(reTrimEnd, '');
+        return string.slice(0, trimmedEndIndex(string) + 1);
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;

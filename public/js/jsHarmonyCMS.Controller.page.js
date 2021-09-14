@@ -70,9 +70,16 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(jsh._GET['page_template_id']) _this.page_template_id = jsh._GET['page_template_id'];
     if(jsh._GET['page_template_location']) _this.page_template_location = jsh._GET['page_template_location'];
 
+    if(_this.page_template_id == '<Standalone>'){
+      onComplete(new Error('Error Loading Dev Mode'));
+      XExt.Alert('Please open Standalone templates from the Sitemap View or Folder View');
+      return;
+    }
+
     var url = '../_funcs/pageDev';
     var params = { };
     if(_this.page_template_id) params.page_template_id = _this.page_template_id;
+    if(cms.token) params.jshcms_token = cms.token;
 
     XExt.CallAppFunc(url, 'get', params, function (rslt) { //On Success
       if (!rslt || !('_success' in rslt)) {
@@ -112,6 +119,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             properties: {},
             footer: '',
             author: ' ',
+            page_template_id: _this.page_template_id,
           };
           _this.template = _.extend({}, rslt.template);
           _this.sitemap = rslt.sitemap;
@@ -153,6 +161,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(_this.page_id) qs.page_id = _this.page_id;
     if(cms.branch_id) qs.branch_id = cms.branch_id;
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
+    if(cms.token) qs.jshcms_token = cms.token;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
 
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
@@ -202,6 +211,25 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
   this.initTemplate = function(cb){
     var errors = [];
+
+    if(_this.template.standalone){
+      var foundContentAreas = [];
+      $('[cms-content-editor]').each(function(){
+        var jobj = $(this);
+        foundContentAreas.push(_this.getPageContentId(jobj.attr('cms-content-editor')));
+      });
+      if(foundContentAreas.length){
+        _this.template.content_elements = {};
+        _.each(foundContentAreas, function(contentId){ _this.template.content_elements[contentId] = { type: 'htmleditor', title: contentId }; });
+      }
+    }
+
+    $('[cms-template]').each(function(){
+      var templateCond = $(this).attr('cms-template');
+      if(_this.page_template_id && !_this.evalBoolAttr(templateCond, function(val){ return val == _this.page_template_id; })){
+        $(this).remove();
+      }
+    });
 
     $('script[type="text/cms-page-config"],cms-page-config').each(function(){
       var config = $(this).html();
@@ -371,13 +399,28 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   }
 
   this.getPageContentId = function(contentId){
-    return (XExt.beginsWith(contentId, 'page.content.') ? contentId.substr(('page.content.').length) : '');
+    return (XExt.beginsWith(contentId, 'page.content.') ? contentId.substr(('page.content.').length) : contentId);
   }
 
   this.getFullPageContentId = function(contentId){
     if(!contentId) return '';
     if(contentId.indexOf('page.content.')!=0) return 'page.content.'+contentId;
     return contentId;
+  }
+
+  this.evalBoolAttr = function(expr, f){
+    expr = _.map(expr.split('||'), function(val){ return val.split('&&'); });
+    var rsltOr = false;
+    for(var i=0;i<expr.length;i++){
+      var exprOr = expr[i];
+      var rsltAnd = true;
+      for(var j=0;j<exprOr.length;j++){
+        var exprAnd=exprOr[j].trim();
+        rsltAnd = rsltAnd && (exprAnd && (exprAnd[0]=='!')) ? !f(exprAnd.substr(1)) : !!f(exprAnd);
+      }
+      rsltOr = rsltOr || rsltAnd;
+    }
+    return rsltOr;
   }
 
   this.createWorkspace = function(cb){
@@ -494,7 +537,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             });
           });
     
-          $('[cms-content-editor]').on('focus input keyup',function(){ if(!_this.hasChanges) _this.getValues(); });
+          $('[cms-content-editor]').on('focus input keyup',function(){
+            var checkForUpdate = function(){ if(!_this.hasChanges) _this.getValues(); }
+            checkForUpdate();
+            setTimeout(checkForUpdate, 100);
+          });
+
           $('[cms-title]').on('input keyup',function(){ _this.onTitleUpdate(this); });
     
           $(window).bind('beforeunload', function(){
@@ -586,7 +634,22 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     }
     else if($('#jsharmony_cms_footer_start').length){
       //Delete everything between start and end
-      $('#jsharmony_cms_footer_start').nextUntil('#jsharmony_cms_footer_end').remove();
+      var footerContainer = $('#jsharmony_cms_footer_start')[0].parentNode;
+      var footerFoundStart = false;
+      if(footerContainer) for(var i=0;i<footerContainer.childNodes.length;i++){
+        var node = footerContainer.childNodes[i];
+        if(!node) continue;
+        var nodeId = node.id;
+        if(!footerFoundStart){
+          if(nodeId == ('jsharmony_cms_footer_start')) footerFoundStart = true;
+          continue;
+        }
+        if(footerFoundStart){
+          if(nodeId == ('jsharmony_cms_footer_end')) break;
+          footerContainer.removeChild(node);
+          i--;
+        }
+      }
       try{
         $('#jsharmony_cms_footer_start').after(footerHtml);
       }
@@ -642,7 +705,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     var origStyleText = jobj.attr('style')||'';
     origStyleText += (XExt.endsWith(origStyleText.trim(),';')?'':';');
-    origStyleText += strStyle;
 
     var origStyle = {};
     for(var i=0;i<this.style.length;i++){
@@ -688,7 +750,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(!src || (src.id != 'jsharmony_cms_title_editor')){
       if($('[cms-title]').length){
         if(cms.readonly) $('[cms-title]').text(_this.page.title);
-        else window.tinymce.get('jsharmony_cms_title_editor').setContent(_this.page.title);
+        else window.tinymce.get('jsharmony_cms_title_editor').setContent(_this.page.title, { jsHarmonyCmsSource: 'title' });
       }
     }
     if(!src || !jsrc.hasClass('page_settings_title')) $('#jsharmony_cms_page_toolbar .page_settings .page_settings_title').val(_this.page.title);
@@ -787,6 +849,23 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     return true;
   }
 
+  this.getSaveData = function(){
+    if(_this.page_template_id != '<Standalone>') return _this.page;
+
+    var pageData = _.extend({}, _this.page);
+    pageData.content = _.extend({}, pageData.content);
+    $('[cms-component-content]').each(function(){
+      var contentId = this.getAttribute('cms-component-content');
+      if(contentId){
+        var componentObj = $(this).clone().empty().removeClass('mceNonEditable initialized')[0];
+        if(componentObj.hasAttribute('class') && !componentObj.getAttribute('class').trim()) componentObj.removeAttribute('class');
+        componentObj.removeAttribute('cms-component-content');
+        pageData.content[contentId] = componentObj.outerHTML;
+      }
+    });
+    return pageData;
+  }
+
   this.save = function(){
     //Validate
     if(!_this.validate()) return;
@@ -800,10 +879,11 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     var qs = {};
     if(cms.branch_id) qs.branch_id = _this.branch_id;
     if(_this.page_template_id) qs.page_template_id = _this.page_template_id;
+    if(cms.token) qs.jshcms_token = cms.token;
     if(!_.isEmpty(qs)) url += '?' + $.param(qs);
 
     cms.toolbar.hideSlideoutButton('settings', true);
-    XExt.CallAppFunc(url, 'post', _this.page, function (rslt) { //On Success
+    XExt.CallAppFunc(url, 'post', _this.getSaveData(), function (rslt) { //On Success
       if ('_success' in rslt) {
         _this.hasChanges = false;
         _this.load(function(err){

@@ -5,8 +5,9 @@
     "footer": "Default Footer Content"
   },
   "templates": { //Templates as string
-    "editor": "...", // Prepended by <templateBaseFileName>.templates.editor.ejs
+    "editor": "...",  // Prepended by <templateBaseFileName>.templates.editor.ejs
     "publish": "...", // Prepended by <templateBaseFileName>.templates.publish.ejs
+                      //   Export as JSON by setting templates.publish to "format:json"
   },
   "remote_templates": { //Templates downloaded as URLs
     "editor": "https://server/templates/pages/1col_sidebar.editor.html?page_key=%%%page_key%%%&page_id=%%%page_id%%%&branch_id=%%%branch_id%%%&page_template_id=%%%page_template_id%%%&env=%%%env%%%&_=%%%timestamp%%%",
@@ -45,7 +46,10 @@
                            //    "top_offset"  ::  (Default) Dock to top, and add margin-top to <body> and all fixed elements
                            //    "top"         ::  Dock to top, and do not offset existing content.
                            //    "bottom"      ::  Dock to bottom
-                           //The "jsharmony_cms_editor" class is added to the <body> tag in the Editor for additional user styling
+                           //The following classes are added to the <body> tag during editing:
+                           //  jsharmony_cms_editor                       - Always added when viewing a page in the Page Editor
+                           //  jsharmony_cms_editing                      - Added when currently editing a content element
+                           //  jsharmony_cms_editing_<content_element_id> - Added when currently editing a content element
     },
   },
 
@@ -53,4 +57,5 @@
   "content": { "content_element_name": "..." }, //SYSTEM - Hard-coded content element content.  Generally use "default_content" instead
   "components": { "component_name": { /* Component definition */ } }, //SYSTEM - Inline page components
   "raw": false, //SYSTEM - Used only on the <Raw Text> template
+  "standalone": false, //SYSTEM - Used only on the <Standalone> template
 }

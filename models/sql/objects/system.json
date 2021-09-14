@@ -75,6 +75,26 @@
     ],
   },
 
+  "jsharmony.sys_user": {
+    "type":"table",
+    "sql_create": "",
+    "sql_drop": "",
+    "columns": [
+      { "name": "sys_user_id", "type": "bigint", "key": true, "null": false },
+      { "name": "sys_user_hash", "type": "binary", "length": 200, "null": false },
+    ],
+    "triggers": [
+      { "prefix": "{schema}_", "on": ["update"], "exec": [
+          "delete from {schema}.sys_user_token where sys_user_id = deleted(sys_user_id) and (update(sys_user_hash));",
+        ]
+      },
+      { "prefix": "{schema}_", "on": ["delete"], "exec": [
+          "delete from {schema}.sys_user_token where sys_user_id = deleted(sys_user_id);",
+        ]
+      }
+    ],
+  },
+
   "jsharmony.txt": {
     "init_data": [
       { "sql": "update jsharmony.txt set txt_body = 'Welcome to the jsHarmony CMS' where txt_process='CMS' and txt_attrib='Dashboard';" }
@@ -142,6 +162,19 @@
 
       { "menu_id": 600, "sys_role_name": "*" },
       { "menu_id": 60001, "sys_role_name": "*" }
+    ]
+  },
+
+  "jsharmony.help_target": {
+    "init_data": [
+      { "help_target_code": "*", "help_target_desc": "jsHarmony CMS" }
+    ]
+  },
+
+  "jsharmony.help": {
+    "data_keys": ["help_target_code"],
+    "init_data": [
+      { "help_target_code": "*", "help_title": "jsHarmony CMS", "help_text": "<p><span style=\"font-size:16px\">Explore the full jsHarmony CMS Reference at <a href=\"https://www.jsharmonycms.com/resources/\" target=\"_blank\">jsHarmonyCMS.com</a>, including:</span></p><table border=\"0\" cellpadding=\"7\" cellspacing=\"1\"><tbody><tr><td><span style=\"font-size:16px\">:: Getting Started Video Tutorials</span></td></tr><tr><td><span style=\"font-size:16px\">:: Starter Templates</span></td></tr><tr><td><span style=\"font-size:16px\">:: Documentation</span></td></tr><tr><td><span style=\"font-size:16px\">:: Source Code</span></td></tr></tbody></table>" }
     ]
   }
 }

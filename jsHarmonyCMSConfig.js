@@ -70,6 +70,9 @@ function jsHarmonyCMSConfig(){
   this.template_variables = { //Default template variables
   };
 
+  this.redirect_listing_path = null;  //Default path where redirects will be exported by a site component
+                                      //* Path should be relative to deployment target URL Prefix
+
   this.deployment_target_publish_config = { //Default deployment target publish config
     page_subfolder: '',   //Stores CMS page files in a subfolder of the publish directory, ex. 'pages/'
     media_subfolder: '',  //Stores CMS media files in a subfolder of the publish directory, ex. 'media/'
@@ -83,6 +86,7 @@ function jsHarmonyCMSConfig(){
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
     copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
+    ignore_remote_template_certificate: false,  //When downloading remote templates, ignore self-signed certificate errors
 
     //List of remote paths to ignore
     //* Future - Not implemented
@@ -119,10 +123,10 @@ function jsHarmonyCMSConfig(){
     sftp_log: false,                    //Log SFTP session
   };
 
-  this.defaultEditorConfig = {          //Default GUI page editor config
-    webSnippetsPath: '/templates/websnippets/',  //Web snippets listing path
-    materialIcons: false,                        //Whether to enable Material Icons in the Editor
-                                                 //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
+  this.defaultEditorConfig = {   //Default GUI page editor config
+    webSnippetsPath: undefined,  //Web snippets listing path - defaults to PREVIEW_SERVER/templates/websnippets/
+    materialIcons: false,        //Whether to enable Material Icons in the Editor
+                                 //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
   };
 
   this.cachedDbResidentBranches = 5;   //Number of branches to maintain in the database (vs. archived to file) NOT INCLUDING (always resident) checkouts, reviews, and releases
@@ -135,7 +139,7 @@ function jsHarmonyCMSConfig(){
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'
   this.onRouteLinkBrowser = null; //function(jsh, req, res, model, callback){ return callback(); } //callback(false) to stop further processing
-  this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, options){ return url; } //return a value (not undefined) to stop processing
+  this.onReplaceBranchURL = null; //function(url, branchData, getLinkContent, addUrlSuffix, options){ return url; } //return a value (not undefined) to stop processing
   this.onDeploy_LoadData = null; //function(jsh, branchData, template_variables, callback){ return callback(err); }
   this.onValidate_LoadData = null; //function(jsh, branchData, template_variables, callback){ return callback(err); }
   this.onDeploy_GenerateRedirects = null; //function(jsh, branchData, template_variables, callback){ return callback(err, generated_redirect_files); }

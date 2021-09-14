@@ -136,7 +136,17 @@ jsh.App[modelid] = new (function(){
           jsh.XExt.Alert('Error Uploading File: ' + JSON.stringify(jdata ? jdata : ''));
         }
       },
-      error: function (err) { jsh.xLoader.StopLoading(_this.loadobj); XExt.Alert('Error uploading file: '+XExt.stringify(err)); }
+      error: function (err) {
+        jsh.xLoader.StopLoading(_this.loadobj);
+        if(err && err.responseJSON){
+          var _error = err.responseJSON._error;
+          if(_error){
+            jsh.XExt.Alert('Error #' + (_error.Number||'') + ': ' + (_error.Message||''));
+            return;
+          }
+        }
+        XExt.Alert('Error uploading file: '+XExt.stringify(err));
+      }
     });
   }
 
@@ -181,7 +191,17 @@ jsh.App[modelid] = new (function(){
           jsh.XExt.Alert('Error Uploading File: ' + JSON.stringify(jdata ? jdata : ''));
         }
       },
-      error: function (err) { jsh.xLoader.StopLoading(_this.loadobj); XExt.Alert('Error uploading file: '+XExt.stringify(err)); }
+      error: function (err) {
+        jsh.xLoader.StopLoading(_this.loadobj);
+        if(err && err.responseJSON){
+          var _error = err.responseJSON._error;
+          if(_error){
+            jsh.XExt.Alert('Error #' + (_error.Number||'') + ': ' + (_error.Message||''));
+            return;
+          }
+        }
+        XExt.Alert('Error uploading file: '+XExt.stringify(err));
+      }
     });
   }
 
@@ -656,7 +676,7 @@ jsh.App[modelid] = new (function(){
     var sel = '.'+xmodel.class+'_ReplaceMedia';
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
       jprompt.off('.file_upload');
       jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
@@ -765,7 +785,7 @@ jsh.App[modelid] = new (function(){
     var sel = '.'+xmodel.class+'_AddMedia';
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
       jprompt.off('.file_upload');
       jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);

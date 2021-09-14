@@ -29,6 +29,7 @@ var fs = require('fs');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.branch_download = function (req, res, next) {
     var cms = module;
@@ -50,7 +51,7 @@ module.exports = exports = function(module, funcs){
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cmsfiledownloader';
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(!req.params || !req.params.branch_id) return next();
       var branch_id = parseInt(req.params.branch_id);
@@ -127,6 +128,22 @@ module.exports = exports = function(module, funcs){
               }, download_cb);
             },
             function(download_cb){
+              //Check if all data files exist
+              var remove_files = [];
+              async.each(branchData.data_files, function(file_path, file_cb){
+                var file_fullpath = path.join(module.jsh.Config.datadir,file_path);
+                fs.exists(file_fullpath, function(exists){
+                  if(!exists) remove_files.push(file_path);
+                  return file_cb();
+                });
+              }, function(err){
+                if(err) return download_cb(err);
+                //Remove missing files
+                _.remove(branchData.data_files, function(file_path){ return _.includes(remove_files, file_path); });
+                return download_cb();
+              });
+            },
+            function(download_cb){
               //Create zip file and stream back to user
               //data_files => "data" folder
               //"items.json"
@@ -137,12 +154,20 @@ module.exports = exports = function(module, funcs){
               });
 
               var zipfile = new yazl.ZipFile();
+              var zipClosed = false;
+              zipfile.on('error', function(err){
+                if(zipClosed) return;
+                zipClosed = true;
+                jsh.Log.error('Error generating backup: '+err.toString());
+                return res.end();
+              });
               zipfile.addBuffer(Buffer.from(JSON.stringify(branchData,null,4)), "items.json");
               _.each(branchData.data_files, function(data_file){
                 zipfile.addFile(path.join(module.jsh.Config.datadir,data_file), "data/"+data_file);
               });
               zipfile.outputStream.pipe(res).on("close", function() {
                 //Done
+                zipClosed = true;
               });
               zipfile.end();
             },
@@ -175,7 +200,7 @@ module.exports = exports = function(module, funcs){
     var model = jsh.getModel(req, module.namespace + 'Branch_Upload');
 
     if (verb == 'post'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Validate parameters
       if (!appsrv.ParamCheck('P', P, ['&site_id','&branch_type','&branch_name','&branch_content'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -469,8 +494,6 @@ module.exports = exports = function(module, funcs){
         //Check pages for errors
         _.each(branchItems, function(item){
           if(item.page_template_id && !(item.page_template_id in branchData.pageTemplates)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Page Template "'+item.page_template_id+'" not defined in current site');
-          var contentFileName = 'data/page/'+item.page_file_id+'.json';
-          if(!item.page_is_folder && item.page_file_id && !(contentFileName in branchData.contentFiles)) errors.push('Page #'+item.page_id+' '+item.page_path+' - Missing content file: '+contentFileName);
         });
         return cb();
       },
@@ -487,18 +510,6 @@ module.exports = exports = function(module, funcs){
           if(!item.media_is_folder && item.media_file_id && !(contentFileName in branchData.contentFiles)) errors.push('Media #'+item.media_id+' '+item.media_path+' - Missing content file: '+contentFileName);
           return item_cb();
         }, cb);
-      },
-    ], callback);
-  }
-
-  exports.branch_upload_validateMenu = function(errors, branchItems, branchData, callback){
-    async.waterfall([
-      function(cb){
-        _.each(branchItems, function(item){
-          var contentFileName = 'data/menu/'+item.menu_file_id+'.json';
-          if(!(contentFileName in branchData.contentFiles)) errors.push('Menu #'+item.menu_id+' '+item.menu_name+' - Missing content file: '+contentFileName);
-        });
-        return cb();
       },
     ], callback);
   }
@@ -523,8 +534,6 @@ module.exports = exports = function(module, funcs){
       function(cb){
         _.each(branchItems, function(item){
           if(item.sitemap_type && !(item.sitemap_type in branchData.LOVs.sitemap_type)) errors.push('Sitemap #'+item.sitemap_id+' '+item.sitemap_name+' - Invalid sitemap type: '+item.sitemap_type);
-          var contentFileName = 'data/sitemap/'+item.sitemap_file_id+'.json';
-          if(!(contentFileName in branchData.contentFiles)) errors.push('Sitemap #'+item.sitemap_id+' '+item.sitemap_name+' - Missing content file: '+contentFileName);
         });
         return cb();
       },
@@ -550,7 +559,7 @@ module.exports = exports = function(module, funcs){
           cols = ['page_is_folder','page_path'];
         }
         else {
-          cols = ['page_path','page_title','page_tags','page_template_id','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'];
+          cols = ['page_path','page_title','page_tags','page_template_id','page_template_path','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'];
         }
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
@@ -564,6 +573,7 @@ module.exports = exports = function(module, funcs){
           dbtypes.VarChar(1024),
           dbtypes.VarChar(-1),
           dbtypes.VarChar(255),
+          dbtypes.VarChar(-1),
           dbtypes.VarChar(2048),
           dbtypes.VarChar(2048),
           dbtypes.VarChar(-1),
@@ -575,6 +585,7 @@ module.exports = exports = function(module, funcs){
           'page_title': null,
           'page_tags': null,
           'page_template_id': null,
+          'page_template_path': null,
           'page_seo_title': null,
           'page_seo_canonical_url': null,
           'page_seo_metadesc': null,
@@ -1047,7 +1058,7 @@ module.exports = exports = function(module, funcs){
     var model = jsh.getModel(req, module.namespace + 'Site_Listing');
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Validate parameters
       if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }

@@ -53,6 +53,7 @@ var jsHarmonyCMS = function(options){
   this.defaultControllerUrl = 'js/jsHarmonyCMS.Controller.page.js';
 
   this.branch_id = undefined;
+  this.token = undefined;
   this.site_config = {};
   this.filePickerCallback = null;        //function(url)
 
@@ -76,6 +77,7 @@ var jsHarmonyCMS = function(options){
   var XExt = null;
   var $ = null;
   var async = null;
+  var loadErrors = [];
 
 
   this.init = function(){
@@ -83,14 +85,14 @@ var jsHarmonyCMS = function(options){
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
-      jsh = _this.jsh = window.jshInstance = new jsHarmony({
+      jsh = _this.jsh = window.jshInstance_CMS = new jsHarmony({
         _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},
         home_url: _this._baseurl,
         uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
-        _instance: "jshInstance",
+        _instance: "jshInstance_CMS",
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,
@@ -103,18 +105,27 @@ var jsHarmonyCMS = function(options){
       XExt = jsh.XExt;
       async = jsh.async;
 
+      if(jsh._GET['jshcms_token']) _this.token = jsh._GET['jshcms_token'];
+
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
       _this.editor = _this.createCoreEditor()
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
-      _this.toolbar.saveOrigOffsets();
+      _this.toolbar.saveOrigOffsets({ preload: true });
       if(_this.onInit) _this.onInit(jsh);
 
       var controllerUrl = '';
       if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
       if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
+
+      jsh.DefaultErrorHandler = XExt.chain(jsh.DefaultErrorHandler, function(num, txt){
+        if(num==-10){
+          XExt.Alert('Session token expired');
+          return true;
+        }
+      });
 
       jsh.xLoader = loader;
       async.parallel([
@@ -127,8 +138,14 @@ var jsHarmonyCMS = function(options){
         function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
         function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
         function(cb){
-          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', {}, {}, function(rslt){
+          var qs = {};
+          if(_this.token) qs.jshcms_token = _this.token;
+          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', qs, {}, function(rslt){
             if(rslt) _this.site_config = rslt.siteConfig || {};
+            return cb();
+          }, function(err){
+            if(err && (err.Number==-10)) loadErrors.push('Session token expired.  Please re-open the page');
+            else loadErrors.push(err);
             return cb();
           });
         },
@@ -145,6 +162,11 @@ var jsHarmonyCMS = function(options){
   }
 
   this.load = function(){
+    _this.toolbar.saveOrigOffsets({ refreshExisting: true });
+    if(loadErrors.length){
+      loader.StopLoading();
+      return XExt.Alert((typeof loadErrors[0] == 'string') ? loadErrors[0] : JSON.stringify(loadErrors[0]));
+    }
     if(_this.onLoad) _this.onLoad(jsh);
     $('[cms-content-editor]').prop('contenteditable','true');
     if(jsh._GET['branch_id']){

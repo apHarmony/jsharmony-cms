@@ -13,7 +13,18 @@
 {
   "menus": [ //Array of required menus
     { "name": "Main Menu", "tag": "main", "max_depth": 2 }
-  ]
+  ],
+  "redirect_listing_path": "jshcms_redirects.json", // For integrations - Path where redirect listing will be exported by a site component
+                                                    // * Requires a site component that will generate a JSON export of all redirects to this path
+                                                    // * Path should be relative to URL Prefix
+  "defaultEditorConfig": {                          // Default GUI page editor config
+    "webSnippetsPath": "/templates/websnippets/",   // Web snippets listing path
+    "materialIcons": false                          // Whether to enable Material Icons in the Editor
+                                                    //   If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
+  },
+  "template_variables": {                           // Default values for Template Variables
+    "key": "value"
+  }
 }</pre>
 </div>
 <div style="clear:both;height:5px;"></div>

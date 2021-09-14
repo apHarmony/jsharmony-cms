@@ -29,11 +29,11 @@ var crypto = require('crypto');
 var moment = require('moment');
 var wclib = require('jsharmony/WebConnect');
 var yazl = require("yazl");
-var wc = new wclib.WebConnect();
 var baseModule = module;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   funcs.deploymentQueue = async.queue(function (op, done){
     var jsh = module.jsh;
@@ -150,7 +150,7 @@ module.exports = exports = function(module, funcs){
             //Parse and merge template config
             var templateConfig = null;
             try{
-              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'local page template "'+template.path+'"');
+              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'local page template "'+template.path+'"', { templateName: template_name });
               else if(options.templateType == 'COMPONENT') templateConfig = funcs.readComponentTemplateConfig(templateContent, 'local component template "'+template.path+'"');
               else throw new Error('Invalid Template Type: ' + options.templateType);
             }
@@ -190,7 +190,7 @@ module.exports = exports = function(module, funcs){
 
                     if(!(template.remote_templates && template.remote_templates.publish)){
                       try{
-                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables });
+                        if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables, template_name: template_name });
                       }
                       catch(ex){
                         return template_publish_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
@@ -248,7 +248,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.downloadRemoteTemplates = function(branchData, templates, template_html, options, download_cb){
-    options = _.extend({ templateType: 'PAGE', exportTemplates: {} }, options);
+    options = _.extend({ templateType: 'PAGE', exportTemplates: {}, addWebRequest: null }, options);
 
     var jsh = module.jsh;
 
@@ -286,21 +286,21 @@ module.exports = exports = function(module, funcs){
           if(branchData.publish_params) funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading remote template: '+url);
           else jsh.Log.info('Downloading remote template: '+url);
 
-          wc.req(url, 'GET', {}, {}, undefined, function(err, res, templateContent){
-            if(err) return template_action_cb(err);
+          options.addWebRequest(url, function(err, res, templateContent, req_cb){
+            if(err) return req_cb(err);
             if(res && res.statusCode){
-              if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
-              if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+              if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+              if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
             }
             //Parse and merge template config
             var templateConfig = null;
             try{
-              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'remote page template "'+url + '"');
+              if(options.templateType == 'PAGE') templateConfig = funcs.readPageTemplateConfig(templateContent, 'remote page template "'+url + '"', { templateName: template_name });
               else if(options.templateType == 'COMPONENT') templateConfig = funcs.readComponentTemplateConfig(templateContent, 'remote component template "'+url+'"');
               else throw new Error('Invalid Template Type: ' + options.templateType);
             }
             catch(ex){
-              return template_action_cb(ex);
+              return req_cb(ex);
             }
             if(templateConfig && templateConfig.remote_templates && templateConfig.remote_templates.publish){
               templateConfig.remote_templates.publish = funcs.parseDeploymentUrl(templateConfig.remote_templates.publish, branchData.template_variables, url);
@@ -310,12 +310,15 @@ module.exports = exports = function(module, funcs){
             if(isPublishTemplate){
               template_html[template_name] = templateContent;
             }
+            else if(template.templates && ('publish' in template.templates)){
+              template_html[template_name] = '';
+            }
             else if(!template.remote_templates.publish){
               try{
-                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables });
+                if(options.templateType == 'PAGE') templateContent = funcs.generateDeploymentTemplate(template, templateContent, { template_variables: branchData.template_variables, template_name: template_name });
               }
               catch(ex){
-                return template_action_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
+                return req_cb(new Error('Could not parse "'+template_name+'" '+options.templateType.toLowerCase()+' template: '+ex.toString()));
               }
               template_html[template_name] = templateContent;
             }
@@ -331,8 +334,9 @@ module.exports = exports = function(module, funcs){
               }
             });
 
-            return template_action_cb();
+            return req_cb();
           });
+          return template_action_cb();
         },
       ], template_cb);
 
@@ -340,7 +344,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.downloadPublishTemplates = function(branchData, templates, template_html, options, download_cb){
-    options = _.extend({ templateType: 'PAGE', exportTemplates: {} }, options);
+    options = _.extend({ templateType: 'PAGE', exportTemplates: {}, addWebRequest: null }, options);
     async.eachOf(templates, function(template, template_name, template_cb){
 
       async.parallel([
@@ -355,15 +359,16 @@ module.exports = exports = function(module, funcs){
 
               var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.template_variables);
               funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
-              wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
-                if(err) return template_action_cb(err);
+              options.addWebRequest(url, function(err, res, rslt, req_cb){
+                if(err) return req_cb(err);
                 if(res && res.statusCode){
-                  if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
-                  if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+                  if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                  if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
                 }
                 template_html[template_name] = rslt;
-                return template_action_cb();
+                return req_cb();
               });
+              return template_action_cb();
             },
 
             //Add hard-coded templates to result
@@ -392,15 +397,16 @@ module.exports = exports = function(module, funcs){
 
                 var url = funcs.parseDeploymentUrl(exportItem.remote_template, branchData.template_variables);
                 funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
-                wc.req(url, 'GET', {}, {}, undefined, function(err, res, rslt){
-                  if(err) return template_action_cb(err);
+                options.addWebRequest(url, function(err, res, rslt, req_cb){
+                  if(err) return req_cb(err);
                   if(res && res.statusCode){
-                    if(res.statusCode > 500) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
-                    if(res.statusCode > 400) return template_action_cb(new Error(res.statusCode+' Error downloading template '+url));
+                    if(res.statusCode > 500) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
+                    if(res.statusCode > 400) return req_cb(new Error(res.statusCode+' Error downloading template '+url));
                   }
                   options.exportTemplates[template_name][exportIndex] = rslt;
-                  return template_action_cb();
+                  return req_cb();
                 });
+                return template_action_cb();
               },
 
               //Add hard-coded templates to result
@@ -588,6 +594,7 @@ module.exports = exports = function(module, funcs){
             page_redirects: {},
             page_base_paths: {},
             page_files: {},
+            page_data: {},
 
             component_templates: null,
             component_template_html: {},
@@ -1241,6 +1248,7 @@ module.exports = exports = function(module, funcs){
           branchData.page_keys[page.page_key] = page_cmspath;
           branchData.page_redirects[page_cmspath] = page_urlpath;
           branchData.page_base_paths[page.page_key] = page_basepath;
+          branchData.page_data[page.page_key] = {};
           if(path.basename(page_cmspath)==publish_params.site_default_page_filename){
             var base_page_dir = publish_params.url_prefix + publish_params.page_subfolder;
             if(!Helper.isNullUndefined(publish_params.url_prefix_page_override)){ base_page_dir = publish_params.url_prefix_page_override; }
@@ -1311,7 +1319,7 @@ module.exports = exports = function(module, funcs){
     //  Merge content with template
     //  Save template to file
     var sql = 'select \
-      p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id, \
+      p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path, \
       page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
       from '+(module.schema?module.schema+'.':'')+'page p \
       inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
@@ -1368,7 +1376,8 @@ module.exports = exports = function(module, funcs){
               content: clientPage.page.content||{},
               footer: (clientPage.template.footer||'')+(clientPage.page.footer||''),
               properties: _.extend({}, clientPage.template.default_properties, clientPage.page.properties),
-              title: clientPage.page.title
+              title: clientPage.page.title,
+              page_template_id: page.page_template_id,
             },
             _: _,
             Helper: Helper,
@@ -1414,23 +1423,31 @@ module.exports = exports = function(module, funcs){
           var page_content = '';
           if(page.page_template_id in branchData.page_template_html){
             page_content = branchData.page_template_html[page.page_template_id]||'';
+            var exportJSON = (page_content.toString().trim()=='format:json');
+
             try{
               //Replace cms-component with data-component in clientPage.page.content
               for(var key in clientPage.page.content){
-                clientPage.page.content[key] = funcs.replacePageComponentsWithContentComponents(clientPage.page.content[key], branchData, clientPage.template.components);
+                clientPage.page.content[key] = funcs.replacePageComponentsWithContentComponents(clientPage.page.content[key], branchData, clientPage.template.components, exportJSON);
               }
-              //Render page
-              page_content = ejs.render(page_content, ejsparams);
             }
             catch(ex){
               var errmsg = 'Could not render page '+page.page_path+': '+ex.message;
               return cb(new Error(errmsg));
             }
-            try{
-              page_content = funcs.renderComponents(page_content, branchData, clientPage.template.components, {
+
+            function renderContent(pageContent){
+              try{
+                //Render page
+                pageContent = ejs.render(pageContent, ejsparams);
+              }
+              catch(ex){
+                throw new Error('Could not render page '+page.page_path+': '+ex.message);
+              }
+              pageContent = funcs.renderComponents(pageContent, branchData, clientPage.template.components, {
                 include: includePage,
               });
-              page_content = funcs.applyRenderTags(page_content, { page: ejsparams.page });
+              pageContent = funcs.applyRenderTags(pageContent, { page: ejsparams.page });
               var replaceBranchURLsParams = {
                 getMediaURL: function(media_key){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
@@ -1443,16 +1460,35 @@ module.exports = exports = function(module, funcs){
                 branchData: branchData,
                 removeClass: true
               };
-              page_content = funcs.replaceBranchURLs(page_content, replaceBranchURLsParams);
+              pageContent = funcs.replaceBranchURLs(pageContent, replaceBranchURLsParams);
               pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), _.extend(replaceBranchURLsParams, {
                 getPageURL: function(page_key){
                   if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
                   return branchData.page_keys[page_key];
                 },
               })));
+              return pageContent;
+            }
+
+            try{
+              if(exportJSON){
+                if(!(page.page_key in branchData.page_data)) throw new Error('Page '+page.page_path+' not defined in page_data');
+                branchData.page_data[page.page_key].format = 'json';
+                //Flatten Page
+                var flatPage = funcs.flattenObject(ejsparams.page);
+                //Render Page
+                flatPage.content = renderContent(flatPage.content);
+                //Unflatten Page
+                funcs.unflattenObject(ejsparams.page, flatPage.content, flatPage.keys);
+                //Save to JSON
+                page_content = JSON.stringify(ejsparams.page);
+              }
+              else{
+                page_content = renderContent(page_content);
+              }
             }
             catch(ex){
-              return cb(ex);
+              return cb(new Error('Error rendering page '+page.page_path+' :: '+ex.toString()+(ex.stack?'\n'+ex.stack:'')));
             }
           }
           else {
@@ -1634,6 +1670,9 @@ module.exports = exports = function(module, funcs){
               var pagesToInclude = pagesWithIncludes[page_path];
               delete pagesWithIncludes[page_path];
 
+              //Get Page Key from page_path
+              var page_key = _.findKey(branchData.page_base_paths, function(val){ return val == ('/'+page_path); });
+
               //Read file from disk
               var page_fpath = path.join(publish_params.publish_path, page_path);
               fs.readFile(page_fpath, 'utf8', function(err, page_content){
@@ -1643,10 +1682,17 @@ module.exports = exports = function(module, funcs){
                   for(var i=0; i<pagesToInclude.length;i++){
                     var key = pagesToInclude[i];
                     var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify(includeFileMapping[key])+')-->';
+                    var includeContent = includeFileContent[key];
+                    if(page_key && branchData.page_data[page_key] && (branchData.page_data[page_key].format=='json')){
+                      includeCode = JSON.stringify(includeCode);
+                      includeCode = includeCode.substr(1,includeCode.length-2);
+                      includeContent = JSON.stringify(includeContent);
+                      includeContent = includeContent.substr(1,includeContent.length-2);
+                    }
                     if(page_content.indexOf(includeCode) < 0){
                       return rewrite_page_cb(new Error('Include script for "'+key+'" not found on page "'+page_fpath+'"'));
                     }
-                    page_content = Helper.ReplaceAll(page_content, includeCode, includeFileContent[key]);
+                    page_content = Helper.ReplaceAll(page_content, includeCode, includeContent);
                   }
                   //Recompute MD5
                   branchData.site_files[page_path] = {
@@ -1885,6 +1931,7 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var deployment_id = deployment.deployment_id;
+    var deployment_target_publish_path = (deployment.deployment_target_publish_path||'').toString();
 
     //Get list of folders
     var folders = {};
@@ -1904,6 +1951,11 @@ module.exports = exports = function(module, funcs){
     var found_files = {};
     var found_folders = {};
 
+    var delete_excess_files = true;
+    if(deployment_target_publish_path.indexOf('file://')==0){
+      delete_excess_files = !!(deployment.publish_params.fs_config && deployment.publish_params.fs_config.delete_excess_files);
+    }
+
     async.waterfall([
 
       //Delete extra files / folders
@@ -1911,6 +1963,7 @@ module.exports = exports = function(module, funcs){
         HelperFS.funcRecursive(deploy_path, function (filepath, relativepath, file_cb) { //filefunc
           var delfunc = function(){
             if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)) return file_cb();
+            if(!delete_excess_files) return file_cb();
             funcs.deploy_log_info(deployment_id, 'Deleting '+filepath);
             funcs.deploy_log_change(deployment_id, 'Deleting file: '+relativepath);
             fs.unlink(filepath, file_cb);
@@ -1936,6 +1989,7 @@ module.exports = exports = function(module, funcs){
           else if(funcs.deploy_ignore_remote(deployment.publish_params, relativepath)){
             return dir_cb();
           }
+          else if(!delete_excess_files) return dir_cb();
           funcs.deploy_log_info(deployment_id, 'Deleting '+dirpath);
           funcs.deploy_log_change(deployment_id, 'Deleting folder: '+relativepath);
           HelperFS.rmdirRecursive(dirpath, dir_cb);
@@ -1977,17 +2031,16 @@ module.exports = exports = function(module, funcs){
 
   exports.deploy_cmshost = function(deployment, publish_path, host_id, site_files, cb){
     var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
     var deployment_id = deployment.deployment_id;
 
     //Notify deployment host
-    var queueid = 'deployment_host_'+host_id;
     var deployment_message = {
       deployment_id: deployment_id
     };
-    var notifications = appsrv.SendQueue(queueid, JSON.stringify(deployment_message));
-    if(!notifications) return cb(new Error('CMS Deployment Host "'+host_id+'" not connected.  Please verify jsharmony-cms-host is running on the target machine'));
-    return cb();
+    funcs.deployment_target_host_sendQueue('deployment_host_publish', host_id, deployment_message, function(err){
+      if(err) return cb(err);
+      return cb();
+    });
   }
 
   exports.deploy_git = function(deployment, publish_path, deploy_path, site_files, cb) {
@@ -2523,7 +2576,7 @@ module.exports = exports = function(module, funcs){
     if(!deployment_id) return next();
     if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var sql = "select deployment_target.site_id, deployment_id, deployment_sts, branch_id, (select code_txt from {schema}.code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date, deployment_target_publish_config from {schema}.deployment left outer join {schema}.deployment_target on deployment_target.deployment_target_id = deployment.deployment_target_id where deployment_id=@deployment_id";
     appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
@@ -2587,7 +2640,7 @@ module.exports = exports = function(module, funcs){
     if(!deployment_id) return next();
     if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
     appsrv.ExecRow(req._DBContext, sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
@@ -2646,7 +2699,7 @@ module.exports = exports = function(module, funcs){
     if (req.query && (req.query.source=='js')) req.jsproxyid = 'cms_deployment_download_'+deployment_id+'_'+request_id;
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       if(!req.params || !req.params.deployment_id) return next();
 
@@ -2742,6 +2795,7 @@ module.exports = exports = function(module, funcs){
       var existingFiles = {};
       try{
         if(P.existingFiles) existingFiles = JSON.parse(P.existingFiles);
+        else existingFiles = null;
       }
       catch(ex){
         jsh.Log.error('Invalid deployment host existingFiles JSON: '+ex.toString());
@@ -2757,6 +2811,8 @@ module.exports = exports = function(module, funcs){
         //Check if deployment status is complete
         if(deployment.deployment_sts == 'FAILED'){ return Helper.GenError(req, res, -9, 'Cannot download failed deployment'); }
 
+        if(!existingFiles) funcs.deploy_log_change(deployment_id, 'All files were overwritten (jsharmony-cms-host --overwrite-all)');
+
         var downloadParams = { 
           exec: 'deployment_download',
           deployment_id: deployment_id,
@@ -2764,7 +2820,7 @@ module.exports = exports = function(module, funcs){
           onStart: function(){
             if(req.jsproxyid) Helper.SetCookie(req, res, jsh, req.jsproxyid, 'ready', { 'path': req.baseurl });
           },
-          options: { existingFiles: existingFiles },
+          options: { existingFiles: existingFiles, log_changes: !!existingFiles },
         };
         funcs.deploymentQueue.push(downloadParams, function(err){
           if(err) return Helper.GenError(req, res, -99999, err.toString());
@@ -2778,7 +2834,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.deployment_download = function (deployment_id, dstStream, onStart, options, callback) {
-    options = _.extend({ existingFiles: null }, options);
+    options = _.extend({ existingFiles: null, log_changes: false }, options);
     var cms = module;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
@@ -2788,6 +2844,7 @@ module.exports = exports = function(module, funcs){
     var deployment_git_revision = '';
     var zip_filename = 'cms_deployment';
     var site_files = {};
+    var folders = {};
 
     if(onStart) onStart();
 
@@ -2861,7 +2918,6 @@ module.exports = exports = function(module, funcs){
 
       //Get list of all site files
       function (cb){
-        var folders = {};
 
         HelperFS.funcRecursive(publish_path, function (filepath, relativepath, file_cb) { //filefunc
           var parentpath = path.dirname(relativepath);
@@ -2916,12 +2972,47 @@ module.exports = exports = function(module, funcs){
               if(existingFileHash == site_files[relativePath].md5) continue;
             }
           }
+          if(options.log_changes) funcs.deploy_log_change(deployment_id, 'Copying file: '+relativePath);
           zipfile.addFile(path.join(publish_path,relativePath), relativePath);
         }
 
         //Find files to delete
+        var excessFolders = {};
+        var site_folders = _.values(folders);
         for(var existingFile in options.existingFiles){
-          if(!(existingFile in site_files)) deploymentManifest.deleteFiles.push(existingFile);
+          if(!(existingFile in site_files)){
+            if(options.log_changes){
+              var logFolder = false;
+              var baseFolder = path.dirname(existingFile);
+              if(baseFolder=='.') baseFolder = '';
+
+              if(!baseFolder || (baseFolder in site_folders)){
+                funcs.deploy_log_change(deployment_id, 'Excess file: '+existingFile);
+              }
+              else if(baseFolder in excessFolders) continue;
+              else {
+
+                var newExcessFolder = false;
+                function getClosestFolder(folder){
+                  if(folder in excessFolders) return excessFolders[folder];
+
+                  var parentFolder = path.dirname(folder);
+                  if(parentFolder=='.') parentFolder = '';
+                  if(!parentFolder || (parentFolder in site_folders)) parentFolder = '';
+
+                  if(!parentFolder){
+                    excessFolders[folder] = folder;
+                    newExcessFolder = folder;
+                  }
+                  else excessFolders[folder] = getClosestFolder(parentFolder);
+                }
+
+                getClosestFolder(baseFolder);
+                if(newExcessFolder) funcs.deploy_log_change(deployment_id, 'Excess folder: '+newExcessFolder+'/*');
+              }
+            }
+            deploymentManifest.deleteFiles.push(existingFile);
+          }
         }
 
         //Write deployment manifest, if applicable
@@ -2956,10 +3047,10 @@ module.exports = exports = function(module, funcs){
     var verrors = {};
     var dbtypes = appsrv.DB.types;
     var validate = null;
-    var model = jsh.getModel(req, module.namespace + 'Publish_Add');
+    var model = jsh.getModel(req, module.namespace + 'Publish_Add_Release_Exec');
 
     if (verb == 'get'){
-      if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+      if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       cms.DeploymentJobPending = true;
       jsh.AppSrv.JobProc.Run();

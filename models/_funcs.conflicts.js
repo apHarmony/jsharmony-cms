@@ -22,6 +22,7 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   //Add old and new pages to branch_data.page_keys
   exports.conflicts_getPages = function(branch_data, callback){
@@ -34,16 +35,16 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
     var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
     var sql = "\
-      select 'DST_NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      select 'DST_NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
         from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id) \
       union all \
-      select 'DST_PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      select 'DST_PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
         from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id) \
       union all \
-      select 'SRC_NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      select 'SRC_NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
         from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id) \
       union all \
-      select 'SRC_PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      select 'SRC_PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
         from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id) \
     ";
     appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -112,7 +113,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
         var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
-        var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+        var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
           from "+(module.schema?module.schema+'.':'')+"page page \
           where page_is_folder = 0 and (\
                   page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action is not null) or \
@@ -636,7 +637,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
     
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get') {
       //Validate parameters
@@ -686,7 +687,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
     
-    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'post') {
       //Validate parameters

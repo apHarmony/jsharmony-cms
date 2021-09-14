@@ -20,10 +20,11 @@ var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
 var async = require('async');
 var DiffMatchPatch = require('diff-match-patch');
-var diff2html = require("diff2html").Diff2Html;
+var diff2html = require("diff2html");
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   var dmp = new DiffMatchPatch();
 
@@ -45,7 +46,7 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Diff');
 
-    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get') {
       var branch_id = req.query.branch_id;
@@ -157,10 +158,10 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { 'branch_id': branch_data.branch_id };
     var sql = "\
-      select 'NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      select 'NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
           from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
         union all \
-        select 'PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+        select 'PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
           from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
     ";
     appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -219,7 +220,7 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branch_data.branch_id };
-        var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+        var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
           from "+(module.schema?module.schema+'.':'')+"page page \
           where page_is_folder = 0 and (\
                   page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action is not null) or \
@@ -440,8 +441,13 @@ module.exports = exports = function(module, funcs){
       var content_diff = funcs.diffPageHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
       diff.content[key] = content_diff;
     }
-    _.each(['page_title','template_title','page_tags'], function(key){
+    _.each(['page_title','template_title','page_tags','page_template_path'], function(key){
       if(old_page[key] != new_page[key]) diff[key] = new_page[key];
+      if(key=='page_template_path'){
+        if((old_page['template_title'] != '<Standalone>')||(new_page['template_title'] != '<Standalone>')){
+          delete diff[key];
+        }
+      }
     });
     diff.seo = {};
     _.each(['title','keywords','metadesc','canonical_url'], function(key){
@@ -598,8 +604,7 @@ module.exports = exports = function(module, funcs){
     }
 
     patch = "--- compare\n+++ compare\n" + patch;
-    return Diff2Html.getPrettyHtml(patch, {
-      inputFormat: "diff",
+    return diff2html.html(patch, {
       matching: "lines"
     });
 

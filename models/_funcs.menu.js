@@ -25,6 +25,7 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
+  var _t = module._t, _tN = module._tN;
 
   exports.getMenuFile = function(menu_file_id){
     if(!menu_file_id) throw new Error('Invalid menu_file_id');
@@ -193,7 +194,7 @@ module.exports = exports = function(module, funcs){
       var menu = rslt[0][0];
 
       if (verb == 'get'){
-        if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+        if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
         if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
         if (!appsrv.ParamCheck('Q', Q, ['|menu_id','|branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -299,7 +300,7 @@ module.exports = exports = function(module, funcs){
         });
       }
       else if (verb == 'post'){
-        if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+        if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
         //Validate parameters
         if (!appsrv.ParamCheck('P', P, ['&menu_items'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }

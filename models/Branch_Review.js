@@ -12,14 +12,14 @@ jsh.App[modelid] = new (function(){
     var sel = '.'+xmodel.class+'_Merge';
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
-      XExt.RenderLOV(xform.Data, jsh.$root('.xdialogblock ' + sel + ' .dst_branch_id'), xform.LOVs.dst_branch_id);
+      XExt.RenderLOV(xform.Data, jsh.$dialogBlock(sel + ' .dst_branch_id'), xform.LOVs.dst_branch_id);
 
       //Clear Values / Set Defaults
       jprompt.find('.dst_branch_id').val('');
     }, function (success) { //onAccept
-      var jprompt = jsh.$root('.xdialogblock ' + sel);
+      var jprompt = jsh.$dialogBlock(sel);
 
       //Validate File Selected
       if (!jprompt.find('.dst_branch_id').val()) return XExt.Alert('Please select a target revision for the merge.');

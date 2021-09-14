@@ -90,7 +90,7 @@
   <# if(branch_page_action=='DELETE'){ #>
     <i class="material-icons branch_action_icon delete">remove_circle</i>
     DELETED PAGE: <#-XExt.escapeHTML(old_page.path)#>
-    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=old_page.template_id#>" data-page_filename="<#=old_page.filename#>" data-page_id="<#=old_page.id#>"><img src="/images/icon_browse.png" />Prev</a>
+    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=old_page.template_id#>" data-page_template_path="<#=old_page.template_path#>" data-page_filename="<#=old_page.filename#>" data-page_id="<#=old_page.id#>"><img src="/images/icon_browse.png" />Prev</a>
   <# } #>
   <# if(branch_page_action=='UPDATE'){ #>
     <i class="material-icons branch_action_icon update">create</i>
@@ -106,7 +106,7 @@
     RENAMED TO: &nbsp;&nbsp;<#-XExt.escapeHTML(new_page.path)#>
   <# } #>
   <# if(new_page.id!=null){ #>
-    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" />Preview</a>
+    <a href="#" class="preview preview_page" data-page_key="<#=page_key#>" data-page_template_id="<#=new_page.template_id#>" data-page_template_path="<#=new_page.template_path#>" data-page_filename="<#=new_page.filename#>" data-page_id="<#=new_page.id#>"><img src="/images/icon_browse.png" />Preview</a>
   <# } #>
 </script>
 
@@ -139,7 +139,7 @@
       <# } #>
 
       <div class="branch_diff_item_details">
-        <# _.each(_.pick(diff,['page_title','template_title','page_tags']), function(val, key){ #>
+        <# _.each(_.pick(diff,['page_title','template_title','page_tags','page_template_path']), function(val, key){ #>
           <div class="diff_item"><b>New <#=map(key,'page')#></b>: <#=val#></div>
         <# }); #>
 
@@ -147,7 +147,7 @@
           <div class="diff_item"><b>New SEO <#=map(key,'page_seo')#></b>: <#=val#></div>
         <# }); #>
 
-        <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title','page_tags', 'diff_with_cmp_branch']), function(val, key){ #>
+        <# _.each(_.omit(diff,['seo','content','content_elements','page_title','template_title','page_tags','page_template_path','diff_with_cmp_branch']), function(val, key){ #>
           <div class="diff_head"><#=map(key,'page')#></div>
           <div class="diff"><#-val#></div>
         <# }); #>
