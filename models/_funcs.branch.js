@@ -31,6 +31,7 @@ module.exports = exports = function(module, funcs){
   var exports = {};
   var _t = module._t, _tN = module._tN;
   var branchResidentStatus = {};
+  var branchLocks = {};
 
   exports.branch_download = function (req, res, next) {
     var cms = module;
@@ -87,10 +88,15 @@ module.exports = exports = function(module, funcs){
             data_files: [],
             site_id: branch.site_id,
           };
+          var branchLock;
 
           async.waterfall([
             function(load_cb){
-              exports.branch_makeResident(req._DBContext, branch_id, load_cb);
+              exports.branch_acquireBranchLock(req._DBContext, branch_id, load_cb);
+            },
+            function(lock, cb){
+              branchLock = lock;
+              cb();
             },
             function(download_cb){
               async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
@@ -173,6 +179,7 @@ module.exports = exports = function(module, funcs){
               zipfile.end();
             },
           ], function(err){
+            if(branchLock) branchLock.release();
             if(err) return Helper.GenError(req, res, -99999, err.toString());
           });
         });
@@ -1361,6 +1368,43 @@ module.exports = exports = function(module, funcs){
     });
   }
 
+  exports.branch_acquireBranchLock = function(dbcontext, branch_id, callback) {
+    if (!branchLocks[branch_id]) branchLocks[branch_id] = {lock: null, queue: []};
+    var current = branchLocks[branch_id];
+
+    var next = function() {
+      if (current.queue.length <= 0) {
+        current.lock = null;
+      } else {
+        setTimeout(current.queue.pop(), 0);
+      }
+    };
+    var lock = {
+      release: function(cb){
+        if (cb) setTimeout(cb, 0);
+        next();
+      }
+    };
+    var acquire = function() {
+      current.lock = lock;
+      exports.branch_makeResident(dbcontext, branch_id, function(err) {
+        if (err) {
+          callback(err);
+          next();
+          return;
+        } else {
+          callback(null, lock);
+        }
+      });
+    };
+
+    if (current.lock) {
+      current.queue.push(acquire);
+    } else {
+      acquire();
+    }
+  }
+
   exports.branch_evictExcessBranches = function(dbcontext, callback) {
     exports.branch_evictableBranches(dbcontext, function(err, results) {
       var keep = Math.max(1, (module.Config && typeof(module.Config.cachedDbResidentBranches) == 'number' && module.Config.cachedDbResidentBranches) || 5);
@@ -1368,7 +1412,13 @@ module.exports = exports = function(module, funcs){
       if (evictable < 1) return callback();
       var evicted = results.slice(0, evictable);
       return async.eachOfSeries(evicted, function(branch_id, i, cb) {
-        exports.branch_indexToFile(dbcontext, branch_id, cb);
+        exports.branch_acquireBranchLock(dbcontext, branch_id, function(err, lock) {
+          if (err) return cb(err);
+          exports.branch_indexToFile(dbcontext, branch_id, function(err2) {
+            if (lock) lock.release();
+            cb(err2);
+          });
+        });
       }, callback);
     });
   }
@@ -1428,6 +1478,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.branch_checkout = function(dbcontext, branch_id, callback) {
+    var branchLock;
     async.waterfall([
       function(cb) {exports.my_current_branch_id(dbcontext, cb)},
       function(previous_branch_id, cb) {
@@ -1438,7 +1489,11 @@ module.exports = exports = function(module, funcs){
         }
       },
       function(cb) {
-        exports.branch_makeResident(dbcontext, branch_id, cb);
+        exports.branch_acquireBranchLock(dbcontext, branch_id, cb);
+      },
+      function(lock, cb) {
+        branchLock = lock;
+        cb();
       },
       function(cb) {
         exports.set_my_current_branch_id(dbcontext, branch_id, function(err) {
@@ -1446,6 +1501,7 @@ module.exports = exports = function(module, funcs){
         });
       },
     ], function(err) {
+      if (branchLock) branchLock.release();
       if (err != null && !err.shortCircuit) { callback(err); return; }
       return callback();
     });

@@ -74,6 +74,7 @@ module.exports = exports = function(module, funcs){
           deployment_target_id: undefined,
         };
         var branch_diff = {};
+        var branchLock;
 
         async.waterfall([
 
@@ -95,7 +96,11 @@ module.exports = exports = function(module, funcs){
 
           //Ensure branch is not archived to disk
           function(load_cb){
-            funcs.branch_makeResident(req._DBContext, branch_id, load_cb);
+            funcs.branch_acquireBranchLock(req._DBContext, branch_id, load_cb);
+          },
+          function(lock, cb){
+            branchLock = lock;
+            cb();
           },
 
           //Run onBeforeDiff functions
@@ -136,6 +141,7 @@ module.exports = exports = function(module, funcs){
             }, cb);
           },
         ], function(err){
+          if(branchLock) branchLock.release();
           if(err) return Helper.GenError(req, res, -99999, err.toString());
           var rslt = { _success: 1, branch_diff: _.pickBy(branch_diff, function(branch_items){ return !!branch_items.length; }) };
           res.end(JSON.stringify(rslt));

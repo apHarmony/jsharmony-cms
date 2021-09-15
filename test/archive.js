@@ -211,7 +211,7 @@ describe('Branch Archive', function() {
         done();
       });
     });
-});
+  });
 
   describe('branch_indexFromFile', function() {
     var branch_id;
@@ -284,6 +284,97 @@ describe('Branch Archive', function() {
         assert.strictEqual(resident, true);
         done();
       });
+    });
+  });
+
+  describe('branch_acquireBranchLock', function() {
+    var branch_id;
+    var other_branch_id;
+    before(function(done) {
+      basicBranchSetup('branch_acquireBranchLock1', function(err, results) {
+        branch_id = results.branch_id;
+        basicBranchSetup('branch_acquireBranchLock2', function(err, results) {
+          other_branch_id = results.branch_id;
+          done();
+        });
+      });
+    });
+
+    it('acquire and release', function(done) {
+      async.waterfall([
+        function(cb) {
+          jsh.Modules.jsHarmonyCMS.funcs.branch_acquireBranchLock('S1', branch_id, cb);
+        },
+        function(lock, cb) {
+          lock.release(cb);
+        },
+      ], done);
+    });
+
+    it('reacquire', function(done) {
+      async.waterfall([
+        function(cb) {
+          jsh.Modules.jsHarmonyCMS.funcs.branch_acquireBranchLock('S1', branch_id, cb);
+        },
+        function(lock, cb) {
+          lock.release(cb);
+        },
+        function(cb) {
+          jsh.Modules.jsHarmonyCMS.funcs.branch_acquireBranchLock('S1', branch_id, cb);
+        },
+        function(lock, cb) {
+          lock.release(cb);
+        },
+      ], done);
+    });
+
+    it('different branches', function(done) {
+      async.waterfall([
+        function(cb) {
+          jsh.Modules.jsHarmonyCMS.funcs.branch_acquireBranchLock('S1', branch_id, cb);
+        },
+        function(lock1, cb) {
+          jsh.Modules.jsHarmonyCMS.funcs.branch_acquireBranchLock('S1', other_branch_id, function(err, lock2) {
+            cb(err, lock1, lock2);
+          });
+        },
+        function(lock1, lock2, cb) {
+          lock1.release(function(err) {
+            assert.ifError(err);
+            lock2.release(cb);
+          });
+        },
+      ], done);
+    });
+
+    it('locks the same branch', function(done) {
+      var secondCallbackRun = false;
+      var lock1 = null;
+      async.waterfall([
+        function(cb) {
+          jsh.Modules.jsHarmonyCMS.funcs.branch_acquireBranchLock('S1', branch_id, cb);
+        },
+        function(lock, cb) {
+          lock1 = lock;
+          jsh.Modules.jsHarmonyCMS.funcs.branch_acquireBranchLock('S1', branch_id, function(err, lock2) {
+            secondCallbackRun = true;
+            lock2.release();
+          });
+          setTimeout(cb, 10);
+        },
+        function(cb) {
+          assert(!secondCallbackRun, 'second lock should have been blocked');
+          lock1.release(cb);
+          lock1 = null;
+        },
+        function(cb) {
+          setTimeout(cb, 10);
+        },
+        function(cb) {
+          assert(secondCallbackRun, 'second lock should have released');
+          cb();
+        },
+      ], done);
     });
   });
 });

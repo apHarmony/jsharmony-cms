@@ -756,6 +756,7 @@ module.exports = exports = function(module, funcs){
             //-------------------
             //Standard Deployment
             //-------------------
+            var branchLock;
             async.waterfall([
               //Create output folder if it does not exist
               function (cb){
@@ -911,7 +912,11 @@ module.exports = exports = function(module, funcs){
 
               //Ensure branch item data is loaded into database
               function(load_cb){
-                funcs.branch_makeResident('deployment', deployment.branch_id, load_cb);
+                funcs.branch_acquireBranchLock('deployment', deployment.branch_id, load_cb);
+              },
+              function(lock, cb){
+                branchLock = lock;
+                cb();
               },
 
              //Run onBeforeDeploy functions
@@ -1107,6 +1112,7 @@ module.exports = exports = function(module, funcs){
               }
 
             ], function (err, rslt) {
+              if (branchLock) branchLock.release();
               if (err) return deploy_cb(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
               return deploy_cb();
             });
