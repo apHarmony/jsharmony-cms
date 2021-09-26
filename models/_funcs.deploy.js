@@ -1315,7 +1315,7 @@ module.exports = exports = function(module, funcs){
     //  Save template to file
     var sql = 'select \
       p.page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path, \
-      page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
       from '+(module.schema?module.schema+'.':'')+'page p \
       inner join '+(module.schema?module.schema+'.':'')+'branch_page bp on bp.page_id = p.page_id\
       inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bp.branch_id and d.deployment_id=@deployment_id\
@@ -1431,18 +1431,20 @@ module.exports = exports = function(module, funcs){
               return cb(new Error(errmsg));
             }
 
-            function renderContent(pageContent){
+            var renderedContent = '';
+            function renderContent(_renderedContent){
+              renderedContent = _renderedContent;
               try{
                 //Render page
-                pageContent = ejs.render(pageContent, ejsparams);
+                renderedContent = ejs.render(renderedContent, ejsparams);
               }
               catch(ex){
                 throw new Error('Could not render page '+page.page_path+': '+ex.message);
               }
-              pageContent = funcs.renderComponents(pageContent, branchData, clientPage.template.components, {
+              renderedContent = funcs.renderComponents(renderedContent, branchData, clientPage.template.components, {
                 include: includePage,
               });
-              pageContent = funcs.applyRenderTags(pageContent, { page: ejsparams.page });
+              renderedContent = funcs.applyRenderTags(renderedContent, { page: ejsparams.page });
               var replaceBranchURLsParams = {
                 getMediaURL: function(media_key){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
@@ -1455,14 +1457,14 @@ module.exports = exports = function(module, funcs){
                 branchData: branchData,
                 removeClass: true
               };
-              pageContent = funcs.replaceBranchURLs(pageContent, replaceBranchURLsParams);
+              renderedContent = funcs.replaceBranchURLs(renderedContent, replaceBranchURLsParams);
               pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), _.extend(replaceBranchURLsParams, {
                 getPageURL: function(page_key){
                   if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
                   return branchData.page_keys[page_key];
                 },
               })));
-              return pageContent;
+              return renderedContent;
             }
 
             try{
@@ -1483,7 +1485,7 @@ module.exports = exports = function(module, funcs){
               }
             }
             catch(ex){
-              return cb(new Error('Error rendering page '+page.page_path+' :: '+ex.toString()+(ex.stack?'\n'+ex.stack:'')));
+              return cb(new Error('Error rendering page '+page.page_path+' :: '+ex.toString()+(ex.stack?'\n'+ex.stack:'')+(renderedContent?'\nContent\n'+renderedContent:'')));
             }
           }
           else {
@@ -2666,6 +2668,80 @@ module.exports = exports = function(module, funcs){
         }
         return next();
       });
+    });
+  }
+
+  exports.deployment_unique_tag = function (req, res, next) {
+    var verb = req.method.toLowerCase();
+    if (!req.body) req.body = {};
+
+    var Q = req.query;
+    var P = {};
+    if (req.body && ('data' in req.body)){
+      try{ P = JSON.parse(req.body.data); }
+      catch(ex){ Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    }
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+
+    var model = jsh.getModel(req, module.namespace + 'Publish_Add_Release');
+    if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
+
+    //Validate parameters
+    if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('Q', Q, ['&branch_id','&prefix'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+    var branch_id = parseInt(Q.branch_id);
+    var tag_prefix = (Q.prefix||'').toString();
+
+    sql_ptypes = [dbtypes.BigInt];
+    sql_params = { branch_id: branch_id };
+    validate = new XValidate();
+    verrors = {};
+    validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+    verrors = _.merge(verrors, validate.Validate('B', sql_params));
+    if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+    //Validate read access to branch
+    funcs.validateBranchAccess(req, res, branch_id, 'R%', ['PUBLISHER','WEBMASTER'], function(){
+      if (verb == 'get') {
+        var sql = "select site_id, (select branch_desc from {schema}.v_my_branch_desc where {schema}.v_my_branch_desc.branch_id = {schema}.branch.branch_id) branch_desc from {schema}.branch where branch_id=@branch_id";
+        appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
+          if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+          if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Branch ID');
+          var branch = rslt[0];
+          var base_deployment_tag = tag_prefix+' '+(branch.branch_desc||'Publish');
+
+          function findUniqueTag(tag_cb, checkIdx){
+            var deployment_tag = base_deployment_tag.substr(0, 256);
+            if(!checkIdx) checkIdx = 0;
+            if(checkIdx){
+              var suffix = ' ('+(checkIdx+1).toString()+')';
+              deployment_tag = base_deployment_tag.substr(0, 256 - suffix.length) + suffix;
+            }
+            var sql = 'select deployment_tag from {schema}.deployment inner join {schema}.branch on {schema}.branch.branch_id={schema}.deployment.branch_id where site_id=@site_id and deployment_tag=@deployment_tag';
+            appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt, dbtypes.VarChar(256)], { site_id: branch.site_id, deployment_tag: deployment_tag }, function (err, rslt) {
+              if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
+              if(rslt && rslt[0]) return findUniqueTag(tag_cb, ++checkIdx);
+              return tag_cb(deployment_tag);
+            });
+          }
+
+          findUniqueTag(function(unique_tag){
+            res.end(JSON.stringify({ '_success': 1, deployment_tag: unique_tag }));
+          });
+        });
+        return;
+      }
+      return next();
     });
   }
 

@@ -473,7 +473,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         }, _this.template.properties);
         _this.template.properties.id = 'jsharmony_cms_page_properties';
         if(cms.readonly) _this.template.properties.actions = 'B';
-        _this.template.properties.onchange = 'var cms = '+cms._instance+'; if(cms.isInitialized){ cms.controller.getValues(); cms.controller.renderHooks(); }'+(_this.template.properties.onchange||'');
+        _this.template.properties.onchange = 'var cms = '+cms._instance+'; if(cms.isInitialized){ cms.controller.getValues(); cms.controller.renderHooks(); cms.componentManager.renderPageComponents(); }'+(_this.template.properties.onchange||'');
         XPage.LoadVirtualModel($('.jsharmony_cms_page_settings_properties')[0], _this.template.properties, function(){
           jsh.App[_this.template.properties.id]._sys_fileSelector_onGetValue = cms.editor.picker.fileSelector_onGetValue;
           jsh.App[_this.template.properties.id]._sys_fileSelector_render = cms.editor.picker.fileSelector_render;
@@ -669,12 +669,24 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.renderFunctions.showIf = function(show){
     var jobj = $(this);
     if(show){
+      //De-initialize page components, if they were previously hidden
+      if(jobj.attr('data-jsharmony_cms_properties_toggle_hidden')=='1'){
+        jobj.find('.jsharmony_cms_component,[cms-component]').addBack('.jsharmony_cms_component,[cms-component]').each(function(){
+          cms.componentManager.resetPageComponent(this);
+        });
+      }
+
       jobj.show();
-      jobj.data('jsharmony_cms_properties_toggle_hidden', '0');
+      jobj.attr('data-jsharmony_cms_properties_toggle_hidden', '0');
     }
     else {
       jobj.hide();
-      jobj.data('jsharmony_cms_properties_toggle_hidden', '1');
+      jobj.attr('data-jsharmony_cms_properties_toggle_hidden', '1');
+      //Reset containerless components on hide
+      var containerlessComponentId = cms.componentManager.getContainerlessComponentKey(this);
+      if(containerlessComponentId){
+        cms.componentManager.restoreContainerlessComponent(containerlessComponentId);
+      }
     }
   };
   this.renderFunctions.toggle = this.renderFunctions.showIf;
@@ -731,9 +743,15 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   this.renderFunctions.setStyle = this.renderFunctions.addStyle;
 
   this.renderHooks = function(){
-    $("[cms-onRender]").each(function(){
-      var obj = this;
-      var jobj = $(this);
+    var renderElements = []
+    $("[cms-onRender]").each(function(){ renderElements.push(this); });
+    _.each(_.keys(cms.componentManager.containerlessComponents), function(key){
+      if(cms.componentManager.containerlessComponents[key].hasAttribute('cms-onrender')){
+        renderElements.push(cms.componentManager.containerlessComponents[key]);
+      }
+    });
+    _.each(renderElements, function(obj){
+      var jobj = $(obj);
       var renderParams = {
         page: _this.page,
       };
@@ -759,7 +777,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     document.title = (_this.page.seo.title ? _this.page.seo.title : _this.page.title);
     if($('[cms-title]').length && !$('[cms-title]').hasClass('hidden')){
       var titleIsVisible = $('[cms-title]').is(':visible');
-      var titleIsHiddenByProperties = ($('[cms-title]').data('jsharmony_cms_properties_toggle_hidden') == '1');
+      var titleIsHiddenByProperties = ($('[cms-title]').attr('data-jsharmony_cms_properties_toggle_hidden') == '1');
       if(!titleIsHiddenByProperties){
         if(titleIsVisible && !_this.page.title) $('[cms-title]').hide();
         else if(!titleIsVisible && _this.page.title) $('[cms-title]').show();
@@ -814,6 +832,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(_this.hasChanges){
       $('#jsharmony_cms_page_toolbar a.jsharmony_cms_button.save').toggleClass('hasChanges', true);
       _this.renderHooks();
+      cms.componentManager.renderPageComponents();
     }
   }
 
@@ -854,10 +873,13 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     var pageData = _.extend({}, _this.page);
     pageData.content = _.extend({}, pageData.content);
-    $('[cms-component-content]').each(function(){
-      var contentId = this.getAttribute('cms-component-content');
+    var contentComponents = [];
+    $('[cms-component-content]').each(function(){ contentComponents.push(this); });
+    for(var key in cms.componentManager.containerlessComponents) contentComponents.push(cms.componentManager.containerlessComponents[key]);
+    _.each(contentComponents, function(component){
+      var contentId = component.getAttribute('cms-component-content');
       if(contentId){
-        var componentObj = $(this).clone().empty().removeClass('mceNonEditable initialized')[0];
+        var componentObj = $(component).clone().empty().removeClass('mceNonEditable initialized')[0];
         if(componentObj.hasAttribute('class') && !componentObj.getAttribute('class').trim()) componentObj.removeAttribute('class');
         componentObj.removeAttribute('cms-component-content');
         pageData.content[contentId] = componentObj.outerHTML;

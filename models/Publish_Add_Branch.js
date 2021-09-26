@@ -8,10 +8,18 @@ jsh.App[modelid] = new (function(){
       jobj.find('option').each(function(){ var val = $(this).attr('value'); if(val) allOptions.push(val); });
       if(allOptions.length==1) xmodel.set(fieldName, allOptions[0]);
     }
+    //Load Deployment Tag
+    _this.setDeploymentTag(xmodel.get('branch_id'));
     //Wait for LOVs to update
     setTimeout(function(){
       autoSelectOneDropdownItem('deployment_target_id', jsh.$root('.deployment_target_id.xelem'+xmodel.class));
     }, 1);
+  }
+
+  this.setDeploymentTag = function(branch_id){
+    XForm.Get('/_funcs/deployment_unique_tag', { prefix: xmodel.get('deployment_date'), branch_id: branch_id }, {}, function(rslt){
+      xmodel.set('deployment_tag', rslt.deployment_tag);
+    }, undefined, { async: false });
   }
 
   this.publish = function(){

@@ -56,7 +56,7 @@
   "{schema}.duplicate_page":{
     "params": ["page_key", "page_path", "page_title"],
     "sql": [
-      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select %%%page_path%%%, page_file_id, %%%page_title%%%, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=%%%page_key%%% returning page_key;"
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_seo_keywords, page_lang) select %%%page_path%%%, page_file_id, %%%page_title%%%, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_seo_keywords, page_lang from {schema}.v_my_page where page_key=%%%page_key%%% returning page_key;"
     ]
   },
   "{schema}.insert_deployment":{

@@ -1,0 +1,40 @@
+{
+  "Search": {
+    "layout":"form",
+    "table":"{schema}.v_my_branch_desc",
+    "actions":"B",
+    "roles": {"AUTHOR": "B","PUBLISHER": "B","VIEWER":"B"},
+    "caption":["Item","Items"],
+    "title":"Search",
+    "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
+    "hide_system_buttons" : ["print","help"],
+    "oninit": "jsh.System.RequireBranch(xmodel);",
+    "onload": "_this.onload();",
+    "sqlselect": [
+      "select ",
+      "$ifnull((select branch_desc from {schema}.v_my_branch_desc where branch_id={schema}.my_current_branch_id()),'(No revision currently checked out)') branch_desc,",
+      "(select {schema}.my_current_branch_id()) branch_id",
+      "from jsharmony.single"
+    ],
+    "css": ["h1.xform_title { padding-top:8px; }"],
+    "nokey":true,
+    "fields": [
+      {"name":"branch_desc", "control": "hidden"},
+      {"control":"html","value":"<div class='<%=model.class%>_grid_container'></div>"}
+    ]
+ },
+
+ "Page_Search": {
+   "inherits": "Search",
+   "title":"Page Search",
+   "menu":"Pages",
+   "js": "jsh.App[modelid].itemType='page';",
+ },
+
+ "Media_Search": {
+    "inherits": "Search",
+    "title":"Media Search",
+    "menu":"Media",
+    "js": "jsh.App[modelid].itemType='media';",
+  },
+}

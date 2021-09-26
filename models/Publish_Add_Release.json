@@ -27,10 +27,10 @@
         "<a href='#' onclick='<%=jsh._instance%>.XExt.popupForm(\"{namespace}Site_Tabs\",\"update\",{site_id:<%=jsh._instance%>.globalparams.site_id}); return false;'>Configure Deployment Targets</a>",
         "<% } %>",
       ]},
-      {"name":"branch_id","control":"dropdown","caption":"Release","validate":["Required"],
+      {"name":"branch_id","control":"dropdown","caption":"Release","validate":["Required"],"onchange":"_this.branch_id_onchange(obj, newval, undoChange);",
         "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, branch_id code_val, branch_desc code_txt from {schema}.v_my_branch_desc where branch_type='PUBLIC' and branch_sts='ACTIVE' and site_id={schema}.my_current_site_id() order by site_id,branch_desc"}},
       {"name":"deployment_date","control":"textbox","caption":"Publish Date", "validate":["Required","IsDate:'YYYY-MM-DD hh:mm A'"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;"},
-      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')+' Release'"},
+      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"]},
       {"control":"button","value":"Schedule Deployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.publish();"}
     ]
   },

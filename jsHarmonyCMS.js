@@ -569,7 +569,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
         },
       },
       download: {
-        columns: ['page_path','page_is_folder','page_title','page_tags','page_file_id','page_template_id','page_template_path','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'],
+        columns: ['page_path','page_is_folder','page_title','page_tags','page_file_id','page_template_id','page_template_path','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_seo_keywords','page_lang'],
         onGenerate: function(branch_items, branch_data, callback){
           _.each(branch_items, function(branch_item){ if(branch_item.page_file_id) branch_data.data_files.push('page/'+branch_item.page_file_id+'.json'); });
           return callback();
@@ -578,6 +578,11 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       upload: {
         onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validatePage(errors, branchItems, branchData, callback); },
         onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importPage(dbtasks, branchItems, branchData, callback); },
+      },
+      search: {
+        columns: ['page_path','page_is_folder','page_title','page_tags','page_file_id','page_template_id','page_template_path','page_filename','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_seo_keywords'],
+        onBeforeSearch: function(searchItems, searchData, callback){ _this.funcs.search_getPages(searchItems, searchData, callback); },
+        onSearch: function(searchItems, searchData, callback){ return _this.funcs.search_pages(searchItems, searchData, callback); },
       },
     },
     'media': {
@@ -624,6 +629,11 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       upload: {
         onValidate: function(errors, branchItems, branchData, callback){ return _this.funcs.branch_upload_validateMedia(errors, branchItems, branchData, callback); },
         onImportDB: function(dbtasks, branchItems, branchData, callback){ return _this.funcs.branch_upload_importMedia(dbtasks, branchItems, branchData, callback); },
+      },
+      search: {
+        columns: ['media_path','media_is_folder','media_file_id','media_ext','media_width','media_height','media_desc','media_tags','media_type'],
+        onBeforeSearch: function(searchItems, searchData, callback){ _this.funcs.search_getMedia(searchItems, searchData, callback); },
+        onSearch: function(searchItems, searchData, callback){ return _this.funcs.search_media(searchItems, searchData, callback); },
       },
     },
     'menu': {
@@ -817,6 +827,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
       {
         '/_funcs/page/:page_key': _this.funcs.page,
         '/_funcs/pageDev': _this.funcs.pageDev,
+        '/_funcs/search': _this.funcs.search,
         '/_funcs/templates/components': _this.funcs.templates_components,
         '/_funcs/templates/components/:branch_id': _this.funcs.templates_components,
         '/_funcs/templates/compile_components': _this.funcs.templates_compile_components,
@@ -827,6 +838,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/media/': _this.funcs.media,
         '/_funcs/menu/:menu_key/': _this.funcs.menu,
         '/_funcs/sitemap/:sitemap_key/': _this.funcs.sitemap,
+        '/_funcs/deployment_unique_tag': _this.funcs.deployment_unique_tag,
         '/_funcs/deployment_log/:deployment_id': _this.funcs.deployment_log,
         '/_funcs/deployment_host/:deployment_id/log': _this.funcs.deployment_host_log,
         '/_funcs/deployment_host/:deployment_id/download': _this.funcs.req_deployment_host_download,

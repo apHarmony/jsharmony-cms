@@ -234,7 +234,7 @@ module.exports = exports = function(module, funcs){
 
     //Get all pages
     var sql = "\
-      select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_filename,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang \
+      select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_filename,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
         from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id)\
     ";
     var sql_ptypes = [dbtypes.BigInt];

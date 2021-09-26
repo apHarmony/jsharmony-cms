@@ -34,7 +34,7 @@ exports = module.exports = function(jsh, cms, editor){
    */
 
   /**
-   * @typedef {Object} ComponentInfo
+   * @typedef {Object} EditorComponent
    * @property {string} componentType
    * @property {bool} hasData
    * @property {bool} hasProperties
@@ -107,43 +107,92 @@ exports = module.exports = function(jsh, cms, editor){
   /**
    * Create the menu items used by the toolbar buttons, nested menu, etc..
    * @private
-   * @param {ComponentInfo[]} componentInfo
+   * @param {componentTemplates[]} componentTemplates
    * @returns {object[]}
    */
-  JsHarmonyComponentPlugin.prototype.createComponentMenuItems = function(componentInfo) {
+  JsHarmonyComponentPlugin.prototype.createComponentMenuItems = function(editorComponents) {
     var _this = this;
-    var items = _.map(componentInfo, function(item) {
-      return {
-        type: 'menuitem',
-        text: item.menuLabel,
-        icon: item.iconId,
-        onAction: function() { _this.insertComponent(item.componentType); }
+    editorComponents = editorComponents || [];
+    var menuHierarchy = {
+      root: { items: [], submenus: {} }
+    };
+    _.each(editorComponents, function(editorComponent){
+      var componentTemplate = cms.componentManager.componentTemplates[editorComponent.componentType];
+      var parentNode = menuHierarchy.root;
+      if(componentTemplate && componentTemplate.options){
+        if('menu_visibility' in componentTemplate.options){
+          if(componentTemplate.options.menu_visibility===false) return;
+          var menu_visibility = jsh.XExt.JSEval(componentTemplate.options.menu_visibility, componentTemplate, {
+            jsh: jsh,
+            cms: cms,
+            component: componentTemplate,
+            _: _,
+          });
+          if(menu_visibility === false) return;
+        }
+        if(_.isArray(componentTemplate.options.menu_parents)){
+          for(var j=0;j<componentTemplate.options.menu_parents.length;j++){
+            var menu_parent = componentTemplate.options.menu_parents[j];
+            if(!(menu_parent in parentNode.submenus)){
+              parentNode.submenus[menu_parent] = { items: [], submenus: {} };
+            }
+            parentNode = parentNode.submenus[menu_parent];
+          }
+        }
       }
+      parentNode.items.push({
+        type: 'menuitem',
+        text: editorComponent.menuLabel,
+        icon: editorComponent.iconId,
+        onAction: function() { _this.insertComponent(editorComponent.componentType); },
+      });
     });
-    items.sort(function(a,b){
-      var atext = ((a && a.text)||'').toLowerCase();
-      var btext = ((b && b.text)||'').toLowerCase();
-      if(atext > btext) return 1;
-      if(atext < btext) return -1;
-      return 0;
-    });
-    return items;
+    //Apply hierarchy
+    var getMenuItems = function(parentNode){
+      var rslt = [];
+      for(var key in parentNode.submenus){
+        (function(){
+          var childKey = key;
+          var childNode = parentNode.submenus[key];
+          var childItems = getMenuItems(childNode);
+          rslt.push({
+            type: 'nestedmenuitem',
+            text: childKey,
+            icon: 'cms_component_folder',
+            getSubmenuItems: function () {
+              return childItems;
+            },
+          });
+        })();
+      }
+      rslt = rslt.concat(parentNode.items);
+      //Sort
+      rslt.sort(function(a,b){
+        var atext = ((a && a.text)||'').toLowerCase();
+        var btext = ((b && b.text)||'').toLowerCase();
+        if(atext > btext) return 1;
+        if(atext < btext) return -1;
+        return 0;
+      });
+      return rslt;
+    }
+    return getMenuItems(menuHierarchy.root);
   }
 
   /**
    * Create the nested menu for picking components to insert.
    * @private
-   * @param {ComponentInfo[]} componentInfo
+   * @param {EditorComponent[]} editorComponents
    */
-  JsHarmonyComponentPlugin.prototype.createComponentMenuButton = function(componentInfo) {
-    if(!componentInfo || !componentInfo.length) return;
+  JsHarmonyComponentPlugin.prototype.createComponentMenuButton = function(editorComponents) {
+    if(!editorComponents || !editorComponents.length) return;
 
     var _this = this;
     this._editor.ui.registry.addNestedMenuItem('jsHarmonyCmsComponent', {
       text: 'Component',
       icon: ICONS.widgets.name,
       getSubmenuItems: function() {
-        return _this.createComponentMenuItems(componentInfo);
+        return _this.createComponentMenuItems(editorComponents);
       }
     });
   }
@@ -151,23 +200,23 @@ exports = module.exports = function(jsh, cms, editor){
   /**
    * Create the toolbar menu button for picking components to insert.
    * @private
-   * @param {ComponentInfo[]} componentInfo
+   * @param {EditorComponent[]} editorComponents
    */
-  JsHarmonyComponentPlugin.prototype.createComponentToolbarButton = function(componentInfo) {
-    if(!componentInfo || !componentInfo.length) return;
+  JsHarmonyComponentPlugin.prototype.createComponentToolbarButton = function(editorComponents) {
+    if(!editorComponents || !editorComponents.length) return;
 
     var _this = this;
     _this._editor.ui.registry.addMenuButton('jsHarmonyCmsComponent', {
       icon: ICONS.widgets.name,
       text: 'Component',
       fetch: function(cb) {
-        cb(_this.createComponentMenuItems(componentInfo));
+        cb(_this.createComponentMenuItems(editorComponents));
       }
     });
   }
 
-  JsHarmonyComponentPlugin.prototype.createComponentContextMenu = function(componentInfo) {
-    if(!componentInfo || !componentInfo.length) return;
+  JsHarmonyComponentPlugin.prototype.createComponentContextMenu = function(editorComponents) {
+    if(!editorComponents || !editorComponents.length) return;
 
     var _this = this;
 
@@ -190,7 +239,7 @@ exports = module.exports = function(jsh, cms, editor){
       update: function (element) {
         var componentType = getComponentType(element);
         if(componentType){
-          var info = _.find(componentInfo, function(info) { return info.componentType === componentType });
+          var info = _.find(editorComponents, function(info) { return info.componentType === componentType });
           if (!info) return '';
           var menuItems = [];
           if(info.hasData) menuItems.push('jsHarmonyCmsComponent_Edit');
@@ -273,7 +322,11 @@ exports = module.exports = function(jsh, cms, editor){
                   type: 'menuitem',
                   text: 'Delete Element',
                   onAction: function () {
+                    var nextSelection = node.nextSibling || node.previousSibling || node.parentNode;
                     node.remove();
+                    var selection = _this._editor.selection;
+                    if(nextSelection) selection.select(nextSelection);
+                    _this.checkForUpdate();
                   }
                 }
               ];
@@ -282,6 +335,13 @@ exports = module.exports = function(jsh, cms, editor){
         });
       }
     });
+  }
+
+  JsHarmonyComponentPlugin.prototype.checkForUpdate = function(){
+    if(!cms.controller) return;
+    var checkForUpdate = function(){ if(!cms.controller.hasChanges) cms.controller.getValues(); }
+    checkForUpdate();
+    setTimeout(checkForUpdate, 100);
   }
 
   JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
@@ -418,7 +478,7 @@ exports = module.exports = function(jsh, cms, editor){
   /**
    * Create menu button for Spell Check
    * @private
-   * @param {ComponentInfo[]} componentInfo
+   * @param {EditorComponent[]} editorComponents
    */
   JsHarmonyComponentPlugin.prototype.createSpellCheckMessageMenuButton = function() {
     var _this = this;
@@ -440,7 +500,7 @@ exports = module.exports = function(jsh, cms, editor){
     });
   }
   
-  JsHarmonyComponentPlugin.prototype.createContextToolbar = function(componentInfos) {
+  JsHarmonyComponentPlugin.prototype.createContextToolbar = function(editorComponents) {
 
     var _this = this;
     var propButtonId = 'jsharmonyComponentPropEditor';
@@ -471,11 +531,11 @@ exports = module.exports = function(jsh, cms, editor){
           return false;
         }
         var componentType = _this._editor.dom.getAttrib(node, 'data-component');
-        var componentInfo = _.find(componentInfos, function(info) { return info.componentType === componentType });
-        if (!componentInfo) {
+        var editorComponent = _.find(editorComponents, function(info) { return info.componentType === componentType });
+        if (!editorComponent) {
           return false;
         };
-        return enableData === componentInfo.hasData && enableProps === componentInfo.hasProperties;
+        return enableData === editorComponent.hasData && enableProps === editorComponent.hasProperties;
       }
     }
 
@@ -553,8 +613,10 @@ exports = module.exports = function(jsh, cms, editor){
 
     var _this = this;
 
-    /** @type {ComponentInfo[]} */
-    var componentInfo = [];
+    /** @type {EditorComponent[]} */
+    var editorComponents = [];
+
+    _this._editor.ui.registry.addIcon('cms_component_folder', '<span class="material-icons" style="font-family: \'Material Icons\' !important;font-size:18px;">folder_open</span>');
 
     // Register component icons and build
     // component info.
@@ -580,7 +642,7 @@ exports = module.exports = function(jsh, cms, editor){
 
         _this._editor.ui.registry.addIcon(iconRegistryName, icon);
 
-        componentInfo.push({
+        editorComponents.push({
           componentType: component.id,
           hasData: ((component.data || {}).fields || []).length > 0,
           hasProperties: ((component.properties || {}).fields || []).length > 0,
@@ -596,16 +658,16 @@ exports = module.exports = function(jsh, cms, editor){
     }
 
     //Create menu buttons, toolbar buttons, and context menu buttons
-    this.createContextToolbar(componentInfo);
-    this.createComponentToolbarButton(componentInfo);
+    this.createContextToolbar(editorComponents);
+    this.createComponentToolbarButton(editorComponents);
     this.createToolbarViewOptions();
     this.createMenuViewOptions();
     this.createElementPathMenuButton();
-    this.createComponentMenuButton(componentInfo);
+    this.createComponentMenuButton(editorComponents);
     this.createSpellCheckMessageMenuButton();
     this.createEndEditMenuButton();
     this.createEndEditToolbarButton();
-    this.createComponentContextMenu(componentInfo);
+    this.createComponentContextMenu(editorComponents);
 
 
     this._editor.on('SetContent', function(info){ if(cms.editor.onSetContent) cms.editor.onSetContent(_this._editor, info); });
@@ -630,7 +692,8 @@ exports = module.exports = function(jsh, cms, editor){
     this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
 
     this._editor.on('init', function() {
-      _this._editor.serializer.addNodeFilter('div', function(nodes) { _this.serializerFilter(nodes); });
+      _this._editor.serializer.addAttributeFilter('data-component', function(nodes) { _this.serializerFilter(nodes); });
+      _this._editor.serializer.addAttributeFilter('cms-component', function(nodes) { _this.serializerFilter(nodes); });
       _this._editor.parser.addAttributeFilter('data-component', function(nodes) { _this.renderContentComponents(nodes); });
       _this._editor.parser.addAttributeFilter('cms-component', function(nodes) { _this.replacePageComponentsWithContentComponents(nodes); });
     });
@@ -642,22 +705,39 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {string} componentType - the type of the component to insert.
    */
   JsHarmonyComponentPlugin.prototype.insertComponent = function(componentType) {
-    var domUtil = this._editor.dom;
-    var selection = this._editor.selection;
+    var _this = this;
+    var domUtil = _this._editor.dom;
+    var selection = _this._editor.selection;
 
-    var currentNode = selection.getEnd();
+    var componentTemplate = cms.componentManager.componentTemplates[componentType];
+    var isInline = (componentTemplate && componentTemplate.options && componentTemplate.options.editor_container) == 'inline';
 
-    var placeholderId = domUtil.uniqueId();
-    var placeholder = domUtil.create('div', { id: placeholderId }, '');
+    if(isInline){
+      jsh.XExt.execif(!selection.isCollapsed(),
+        function(next){
+          selection.collapse(false);
+          setTimeout(next, 0);
+        },
+        function(){
+          _this._editor.insertContent(_this.createComponentContainer(componentType));
+        }
+      );
+    }
+    else {
+      var currentNode = selection.getEnd();
 
-    $(placeholder).insertBefore(currentNode);
+      var placeholderId = domUtil.uniqueId();
+      var placeholder = domUtil.create('div', { id: placeholderId }, '');
 
-    selection.select(placeholder);
-    selection.collapse(false);
+      $(placeholder).insertBefore(currentNode);
 
-    this._editor.insertContent(this.createComponentContainer(componentType));
-    this._editor.insertContent('<p></p>');
-    domUtil.remove(domUtil.select('#' + placeholderId));
+      selection.select(placeholder);
+      selection.collapse(false);
+
+      _this._editor.insertContent(_this.createComponentContainer(componentType));
+      _this._editor.insertContent('<p></p>');
+      domUtil.remove(domUtil.select('#' + placeholderId));
+    }
   }
 
   /**
@@ -668,7 +748,19 @@ exports = module.exports = function(jsh, cms, editor){
    * @returns {string} - HTML string
    */
   JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
-    return '<div class="mceNonEditable" data-component="' + jsh.XExt.escapeHTML(componentType) + '" data-component-properties="" data-component-content="" data-is-insert="true"></div>';
+    var componentTemplate = cms.componentManager.componentTemplates[componentType];
+    var isInline = (componentTemplate && componentTemplate.options && componentTemplate.options.editor_container) == 'inline';
+    var componentCode = 
+      '<'+(isInline?'span':'div')+
+        ' class="mceNonEditable"'+
+        ' data-component="' + jsh.XExt.escapeHTML(componentType) + '"'+
+        ' data-component-properties=""'+
+        ' data-component-content=""'+
+        ' data-is-insert="true"'+
+      '>'+
+      (isInline?'&nbsp;':'') + 
+      '</'+(isInline?'span':'div')+'>';
+    return componentCode;
   }
 
   /**
@@ -706,8 +798,16 @@ exports = module.exports = function(jsh, cms, editor){
     var _this = this;
     _.each(nodes, function(node) {
       var id = cms.componentManager.getNextComponentId();
-      // var id = node.attributes.map['data-component-id'];
       node.attr('data-component-id', id);
+      // Check if editor_container is correct
+      var componentType = node.attr('data-component');
+      var componentTemplate = componentType && cms.componentManager.componentTemplates[componentType];
+      var isInline = (componentTemplate && componentTemplate.options && componentTemplate.options.editor_container) == 'inline';
+      var nodeIsInline = ((node.name||'').toString().toLowerCase()=='span');
+      if(nodeIsInline !== isInline){
+        if(isInline) node.name = 'span';
+        else node.name = 'div';
+      }
       // Content is not actually in the DOM yet.
       // Wait for next loop
       var isInitialized = cms.isInitialized;
@@ -789,6 +889,7 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {Array.<object>} nodes - a list of TinyMce nodes
    */
   JsHarmonyComponentPlugin.prototype.serializerFilter = function(nodes) {
+    var _this = this;
     for(var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
       var componentAttr = node.attr('data-component');
@@ -796,6 +897,11 @@ exports = module.exports = function(jsh, cms, editor){
         continue;
       }
       node.empty();
+      var newNode = tinymce.html.Node.create('#text');
+      newNode.value = String.fromCharCode(0x00A0);
+      node.append(newNode);
+      _this._editor.dom.setHTML(node, '&nbsp;')
+      
     }
   }
 }

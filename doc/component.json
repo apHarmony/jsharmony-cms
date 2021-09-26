@@ -43,8 +43,14 @@
   },
 
   "options": {
-    "component_preview_size": "expand",  //Defines how component preview will be rendered in "Component Data" Grid and Form
-                                         //"expand" (default) expands preview to width of container.  "collapse" shrinks container to fit preview
+    //Editor Options
+    "component_preview_size": "expand", //Defines how the component preview will be rendered when editing Component Data in the Grid and Form
+                                        //  "expand" (default) expands preview to width of container.  "collapse" shrinks container to fit preview
+    "editor_container": "block",        //Defines how content components will be displayed in the editor preview (*on publish, content components do not have a container)
+                                        //  "block" (default) displays the component in a separate block.  "inline" enables components that flow with existing text
+    "menu_parents": ["Parent 1","Parent 2"], //(Array <string>) Parent menu hierarchy, so that the content component will be grouped under a flyout menu
+    "menu_visibility": "return cms.controller.page.page_template_id=='two-column';" //JS Function that returns a boolean of whether or not to show the content component in the menu
+                                                                                    //  Parameters: jsh, cms, component, window (DOM)
   },
   
   //The following property is a shortcut for "properties.fields".  Values are appended to the properties.fields array

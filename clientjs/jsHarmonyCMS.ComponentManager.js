@@ -31,6 +31,8 @@ exports = module.exports = function(jsh, cms){
   this.components = {};
   this.isInitialized = false;
   this.lastComponentId = 0;
+  this.containerlessComponents = {};
+  this.cntContainerlessComponents = 0;
 
   this.load = function(onError){
     _this.loadSystemComponentTemplates(onError);
@@ -118,13 +120,15 @@ exports = module.exports = function(jsh, cms){
   this.renderPageComponents = function(){
     $('.jsharmony_cms_component,[cms-component]').not('.initialized').each(function(){
       var jobj = $(this);
-      if(jobj.closest('[cms-content-editor]').length) return; //Do not render components in content editor
+      if(jobj.closest('[cms-content-editor]').length) return; //Do not render page components in content editor
+      if(jobj.closest('[data-jsharmony_cms_properties_toggle_hidden=1]').length) return; //Do not render page components if hidden by cms-onRender function
       var component_id = jobj.attr('cms-component');
       if(!component_id){
         component_id = jobj.data('id');
         jobj.attr('cms-component', component_id);
       }
 
+      var removeContainer = (typeof jobj.attr('cms-component-remove-container') != 'undefined')
       var isContentComponent = !component_id && jobj.closest('[data-component]').length > 0;
       if (isContentComponent) return;
 
@@ -170,8 +174,51 @@ exports = module.exports = function(jsh, cms){
           cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
         }
       }
-      jobj.html(component_content);
+      if(removeContainer){
+        var containerlessComponentId = ++_this.cntContainerlessComponents;
+        _this.containerlessComponents[containerlessComponentId] = jobj[0];
+        jobj[0].insertAdjacentHTML('beforebegin', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-start"></script>');
+        jobj[0].insertAdjacentHTML('afterend', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-end"></script>');
+        jobj.replaceWith(component_content);
+      }
+      else {
+        jobj.html(component_content);
+      }
     });
+  }
+
+  this.getContainerlessComponentKey = function(obj){
+    for(var key in _this.containerlessComponents){
+      if(_this.containerlessComponents[key]==obj) return key;
+    }
+    return null;
+  }
+
+  this.restoreContainerlessComponent = function(containerlessComponentId){
+    if(!(containerlessComponentId in _this.containerlessComponents)) throw new Error('Containerless component not found');
+    var startNode = $('#jshcms-component-containerless-'+containerlessComponentId.toString()+'-start');
+    if(!startNode.length) throw new Error('Containerless start node not found');
+    var foundEnd = false;
+    var childNodes = [startNode[0]];
+    var curNode = startNode;
+    while(!foundEnd && (curNode = curNode.next())){
+      if(!curNode.length) break;
+      childNodes.push(curNode[0]);
+      if(curNode[0].id=='jshcms-component-containerless-'+containerlessComponentId.toString()+'-end'){
+        foundEnd = true;
+      }
+    }
+    if(!foundEnd) throw new Error('Containerless end node not found');
+    childNodes[0].replaceWith(_this.containerlessComponents[containerlessComponentId]);
+    for(var i=1;i<childNodes.length;i++){
+      $(childNodes[i]).remove();
+    }
+    _this.resetPageComponent(_this.containerlessComponents[containerlessComponentId]);
+    delete _this.containerlessComponents[containerlessComponentId];
+  }
+
+  this.resetPageComponent = function(obj){
+    if($(obj).hasClass('initialized')) $(obj).removeClass('initialized mceNonEditable').empty();
   }
 
   this.getDefaultValues = function(model){

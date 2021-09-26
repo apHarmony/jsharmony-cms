@@ -316,6 +316,10 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   clear: both;
 }
 
+[cms-title].hidden {
+  display: none !important;
+}
+
 .mce-content-body:focus,.mce-content-body.mce-edit-focus {
   outline: 2px solid #b4d7ff;
 }
@@ -323,6 +327,10 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
 [cms-content-editor].mce-content-body [contentEditable=false][data-mce-selected] {
   cursor: pointer;
   outline: 1px dashed #b4d7ff;
+}
+
+span[data-component] {
+  display:inline-block;
 }
 
 .jsharmony_cms_component_preview {
@@ -384,11 +392,11 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   color: #555;
 }
 
-.xdialogblock .jsharmony_cms_component_dialog {
+.jsharmony_cms.xdialogblock .jsharmony_cms_component_dialog {
   padding-top:0px;
 }
 
-.jsharmony_cms_component_dialog > .xbodyhead {
+.jsharmony_cms .jsharmony_cms_component_dialog > .xbodyhead {
   position:sticky;
   top:0px;
   z-index:999999999;
@@ -402,7 +410,7 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   margin-right:-20px;
 }
 
-.jsharmony_cms_component_dialog > .xformcontainer {
+.jsharmony_cms .jsharmony_cms_component_dialog > .xformcontainer {
   padding-top:14px;
 }
 
@@ -480,7 +488,7 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   border:1px solid #b4d7ff88;
 }
 
-.xdialogblock {
+.jsharmony_cms.xdialogblock {
   z-index:2147483641;
 }
 
@@ -497,11 +505,12 @@ body .tox-tbtn[title="Configure"] .tox-icon .material-icons {
   width:100%;
 }
 
-.jsharmony_cms_component_dataGridEditor > .xtbl tbody,
-.jsharmony_cms_component_dataGridEditor > .xtbl thead,
-.jsharmony_cms_component_dataGridEditor > .xtbl tr,
-.jsharmony_cms_component_dataGridEditor > .xtbl th,
-.jsharmony_cms_component_dataGridEditor > .xtbl td {
+.jsharmony_cms .jsharmony_cms_component_dataGridEditor > .xtbl tbody,
+.jsharmony_cms .jsharmony_cms_component_dataGridEditor > .xtbl thead,
+.jsharmony_cms .jsharmony_cms_component_dataGridEditor > .xtbl tr,
+.jsharmony_cms .jsharmony_cms_component_dataGridEditor > .xtbl tr.even,
+.jsharmony_cms .jsharmony_cms_component_dataGridEditor > .xtbl th,
+.jsharmony_cms .jsharmony_cms_component_dataGridEditor > .xtbl td {
   padding:0;
   border:0;
   background:none;

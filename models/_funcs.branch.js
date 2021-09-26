@@ -556,7 +556,7 @@ module.exports = exports = function(module, funcs){
           cols = ['page_is_folder','page_path'];
         }
         else {
-          cols = ['page_path','page_title','page_tags','page_template_id','page_template_path','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_lang'];
+          cols = ['page_path','page_title','page_tags','page_template_id','page_template_path','page_seo_title','page_seo_canonical_url','page_seo_metadesc','page_seo_keywords','page_lang'];
         }
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
@@ -574,6 +574,7 @@ module.exports = exports = function(module, funcs){
           dbtypes.VarChar(2048),
           dbtypes.VarChar(2048),
           dbtypes.VarChar(-1),
+          dbtypes.VarChar(-1),
           dbtypes.VarChar(32),
         ];
         var sql_params = {
@@ -586,6 +587,7 @@ module.exports = exports = function(module, funcs){
           'page_seo_title': null,
           'page_seo_canonical_url': null,
           'page_seo_metadesc': null,
+          'page_seo_keywords': null,
           'page_lang': null
         };
         for(var key in item){ if(key in sql_params) sql_params[key] = item[key]; }

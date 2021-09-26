@@ -11,7 +11,8 @@
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS",
     "buttons":[
       { "name": "addPage", "actions": "I", "link":"js:jsh.App[jsh.XBase['jsHarmonyCMS/Page_Tree_Listing'][0]].addFile();","icon":"add","text":"Add Page","roles": { "AUTHOR": "B", "PUBLISHER": "B" } },
-      { "name": "search", "link":"Page_Listing","icon":"search","text":"Search","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} }
+      { "name": "search", "link":"Page_Search","icon":"search","text":"Search","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} },
+      { "name": "review", "link":"Page_Listing","icon":"export","text":"Review","roles": { "AUTHOR": "B", "PUBLISHER": "B", "VIEWER":"B" }, "bindings": {} }
     ],
     "hide_system_buttons" : ["print","export"], 
     "oninit": "_this.oninit();",
@@ -108,7 +109,7 @@
     "actions": "U",
     "roles": {"AUTHOR": "U","PUBLISHER": "U"},
     "sqlexec": [
-      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang) select @page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_lang from {schema}.v_my_page where page_key=@page_key;"
+      "insert into {schema}.v_my_page(page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_seo_keywords, page_lang) select @page_path, page_file_id, page_title, page_template_id, page_template_path, page_seo_title, page_seo_canonical_url, page_seo_metadesc, page_seo_keywords, page_lang from {schema}.v_my_page where page_key=@page_key;"
     ],
     "fields": [
       {"name":"page_key", "actions":"U", "type":"bigint", "caption":"Page Key", "validate": ["Required"]},

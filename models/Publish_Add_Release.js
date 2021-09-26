@@ -1,6 +1,8 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
+  var lastAutoDeploymentTag = '';
+
   this.onload = function(){
     var firstSite = _.find(xmodel.controller.getLOV('site_id'),function(item){ return !!(item&&item.code_val) });
     if(firstSite){
@@ -22,6 +24,24 @@ jsh.App[modelid] = new (function(){
     setTimeout(function(){
       autoSelectOneDropdownItem('deployment_target_id', jsh.$root('.deployment_target_id.xelem'+xmodel.class));
     }, 1);
+  }
+
+  this.branch_id_onchange = function(obj, newval, undoChange){
+    var deployment_tag = xmodel.get('deployment_tag');
+    if(!deployment_tag || (deployment_tag==lastAutoDeploymentTag)) _this.setDeploymentTag(newval);
+  }
+
+  this.setDeploymentTag = function(branch_id){
+    if(!branch_id){
+      lastAutoDeploymentTag = '';
+      xmodel.set('deployment_tag', '');
+    }
+    else {
+      XForm.Get('/_funcs/deployment_unique_tag', { prefix: xmodel.get('deployment_date'), branch_id: branch_id }, {}, function(rslt){
+        lastAutoDeploymentTag = rslt.deployment_tag;
+        xmodel.set('deployment_tag', rslt.deployment_tag);
+      }, undefined, { async: false });
+    }
   }
 
   this.publish = function(){

@@ -453,6 +453,7 @@ module.exports = exports = function(module, funcs){
           var componentType = htdoc.getAttr(node, 'cms-component');
           var componentProperties = htdoc.getAttr(node, 'cms-component-properties');
           var componentData = htdoc.getAttr(node, 'cms-component-data');
+          var removeContainer = htdoc.hasAttr(node, 'cms-component-remove-container');
           var menuTag = htdoc.getAttr(node, 'cms-menu-tag');
 
           if(componentType){
@@ -506,6 +507,7 @@ module.exports = exports = function(module, funcs){
             htdoc.removeAttr(node, 'cms-component-data');
             htdoc.removeAttr(node, 'cms-component-properties');
             htdoc.removeAttr(node, 'cms-component-content');
+            htdoc.removeAttr(node, 'cms-component-remove-container');
             htdoc.removeAttr(node, 'cms-menu-tag');
 
             if(exportJSON){
@@ -513,7 +515,13 @@ module.exports = exports = function(module, funcs){
               if(componentData) renderOptions.data = JSON.parse(componentData);
               if(componentProperties) renderOptions.properties = JSON.parse(componentProperties);
               if(menuTag) renderOptions.menu_tag = menuTag;
-              htdoc.replaceNodeContent(node, '<%-renderComponent('+JSON.stringify(componentType)+(!_.isEmpty(renderOptions)?', '+JSON.stringify(renderOptions):'')+')%>');
+              var nodeContent = '<%-renderComponent('+JSON.stringify(componentType)+(!_.isEmpty(renderOptions)?', '+JSON.stringify(renderOptions):'')+')%>';
+              if(removeContainer){
+                htdoc.replaceNode(node, nodeContent);
+              }
+              else {
+                htdoc.replaceNodeContent(node, nodeContent);
+              }
             }
             else{
               htdoc.removeAttr(node, 'data-component');

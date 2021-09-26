@@ -92,7 +92,8 @@ var jsHarmonyCMS = function(options){
         forcequery: {},
         home_url: _this._baseurl,
         uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
-        _instance: "jshInstance_CMS",
+        _instance: 'jshInstance_CMS',
+        _baseClass: 'jsharmony_cms',
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,
@@ -153,7 +154,6 @@ var jsHarmonyCMS = function(options){
         setTimeout(function(){ _this.load(); }, 1);
       });
     });
-    util.loadCSS(_this._baseurl+'jsharmony.css');
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
       WebFont.load({ google: { api: 'https://fonts.googleapis.com/css', families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });

@@ -91,6 +91,7 @@ module.exports = exports = function(module, funcs){
     //Add config.options
     config.options = config.options || {};
     if(!('component_preview_size' in config.options)) config.options.component_preview_size = 'expand';
+    if(!('editor_container' in config.options)) config.options.editor_container = 'block';
     
     //Apply config.caption
     if(!('caption' in config)){
@@ -1091,8 +1092,9 @@ module.exports = exports = function(module, funcs){
 
     this.removeNode = function(node, desc){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       var startIndex = _this.offsetIndex(nodeInfo.startOffset, nodeInfo.offsetFrom);
       var endIndex = _this.offsetIndex(nodeInfo.endOffset, nodeInfo.offsetFrom);
       _this.content = _this.content.substr(0, startIndex) + _this.content.substr(endIndex);
@@ -1106,8 +1108,9 @@ module.exports = exports = function(module, funcs){
 
     this.getNodeContent = function(node, desc){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       if(!nodeInfo.startTag) return '';
       if(!nodeInfo.endTag) return '';
       var startIndex = _this.offsetIndex(nodeInfo.startTag.endOffset, nodeInfo.startTag.offsetFrom);
@@ -1117,8 +1120,9 @@ module.exports = exports = function(module, funcs){
 
     this.getNodeHtml = function(node, desc){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       var startIndex = 0;
       var endIndex = 0;
       if(nodeInfo.startTag && nodeInfo.endTag){
@@ -1146,8 +1150,9 @@ module.exports = exports = function(module, funcs){
 
     this.replaceNodeContent = function(node, newContent, desc){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       if(!nodeInfo.startTag) throw new Error('Error processing template: '+desc+' node missing start tag');
       if(!nodeInfo.endTag) throw new Error('Error processing template: '+desc+' node missing end tag');
       var startIndex = _this.offsetIndex(nodeInfo.startTag.endOffset, nodeInfo.startTag.offsetFrom);
@@ -1165,8 +1170,9 @@ module.exports = exports = function(module, funcs){
 
     this.replaceNode = function(node, newContent, desc){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       if(!nodeInfo.startTag) throw new Error('Error processing template: '+desc+' node missing start tag');
       var startTag = nodeInfo.startTag;
       var endTag = nodeInfo.endTag || startTag;
@@ -1174,7 +1180,7 @@ module.exports = exports = function(module, funcs){
       var endIndex = _this.offsetIndex(endTag.endOffset, startTag.offsetFrom);
       
       _this.content = _this.content.substr(0, startIndex) + newContent + _this.content.substr(endIndex);
-      _this.offsets.push({ start: startIndex, length: (startIndex - endIndex + newContent.length) });
+      _this.offsets.push({ start: ((endIndex > startIndex) && newContent.length ? startIndex+1 : startIndex), length: (startIndex - endIndex + newContent.length) });
       if(!startTag.offsetFrom){
         _this.removed.push({ start: startTag.startOffset, end: endTag.endOffset });
         _this.pendingTrim.push({ start: startTag.startOffset, end: endTag.endOffset, type: 'content' });
@@ -1185,8 +1191,9 @@ module.exports = exports = function(module, funcs){
     }
 
     this.wrapNode = function(node, pre, post, desc){
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       pre = pre || '';
       post = post || '';
       var startIndex = _this.offsetIndex(nodeInfo.startOffset, nodeInfo.offsetFrom);
@@ -1198,8 +1205,9 @@ module.exports = exports = function(module, funcs){
     }
 
     this.wrapNodeContent = function(node, pre, post, desc){
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       if(!nodeInfo.startTag) throw new Error('Error processing template: '+desc+' node missing start tag');
       if(!nodeInfo.endTag) throw new Error('Error processing template: '+desc+' node missing end tag');
       pre = pre || '';
@@ -1288,8 +1296,9 @@ module.exports = exports = function(module, funcs){
 
     this.removeAttr = function(node, key, desc){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       if(!nodeInfo.attrs) return;
       var toDelete = [];
       for(var attrName in nodeInfo.attrs){
@@ -1317,8 +1326,9 @@ module.exports = exports = function(module, funcs){
 
     this.appendAttr = function(node, key, value, separator, desc, options){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       key = (key||'').toLowerCase();
       separator = separator||'';
       options = options || { noEscape: false };
@@ -1353,7 +1363,7 @@ module.exports = exports = function(module, funcs){
           offsetFrom: _this.offsets.length,
         };
       }
-      if(!nodeInfo.attrs[key]) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation.attr for key '+key);
+      if(!nodeInfo.attrs[key]) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation.attr for key '+key);
       var attrInfo = nodeInfo.attrs[key];
 
       //Update node.attrs
@@ -1377,13 +1387,13 @@ module.exports = exports = function(module, funcs){
 
     this.replaceAttr = function(node, key, val, desc, options){
       if(!node || !node.attrs || node.removed) return;
-
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       key = (key||'').toLowerCase();
       options = _.extend({ noEscape: false, logRemoved: true }, options);
 
-      if(!nodeInfo.attrs[key]) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation.attr for key '+key);
+      if(!nodeInfo.attrs[key]) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation.attr for key '+key);
       var attrInfo = nodeInfo.attrs[key];
 
       //Update node.attrs
@@ -1406,8 +1416,9 @@ module.exports = exports = function(module, funcs){
 
     this.wrapAttr = function(node, key, pre, post, desc){
       if(node.removed) return;
+      desc = desc || node.tagName;
       var nodeInfo = node.sourceCodeLocation;
-      if(!nodeInfo) throw new Error('Error processing template: '+desc+' node missing sourceCodeLocation');
+      if(!nodeInfo) throw new Error('Error processing template: '+desc+' element was not fully parsed - missing sourceCodeLocation');
       if(!nodeInfo.attrs) return;
       
       for(var attrName in nodeInfo.attrs){
@@ -1542,7 +1553,58 @@ module.exports = exports = function(module, funcs){
 
     var htdoc = new funcs.HTMLDoc(content);
     htdoc.applyNodes([
-      { //Apply properties
+      { //cms-onRender-range property (for containerless components)
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-onRender-range'); },
+        exec: function(node){
+          var code = (htdoc.getAttr(node, 'cms-onRender-range')||'').toString();
+          //Get Range Nodes
+          var parentNode = node.parentNode;
+          if(!parentNode) throw new Error('onRender Range missing parent');
+          var rangeId = htdoc.getAttr(node, 'cms-onRender-rangeId');
+          if(!rangeId) throw new Error('onRender Range missing rangeId');
+          var nodeStart = null;
+          var nodeEnd = null;
+          var nodeRange = [];
+          if(parentNode.childNodes) for(var i=0;i<parentNode.childNodes.length;i++){
+            var curNode = parentNode.childNodes[i];
+            if(curNode==node){ nodeStart = curNode; continue; }
+            if(!nodeStart) continue;
+            if(htdoc.getAttr(curNode, 'id')==(rangeId+'-end')){
+              nodeEnd = curNode;
+              break;
+            }
+            nodeRange.push(curNode);
+          }
+          if(!nodeStart) throw new Error('onRender Range start node not found in parent');
+          if(!nodeEnd) throw new Error('onRender Range missing end node - HTML is possibly malformed');
+
+          htdoc.removeNode(nodeStart, 'onRender Range Start Node');
+          _.each(nodeRange, function(node){
+            //Render Parameters
+            var renderParams = _.extend({
+              page: {}
+            }, params);
+            //Render Functions
+            renderParams.showIf = function(cond){ if(!cond) htdoc.removeNode(node, 'showIf Target Node'); };
+            renderParams.toggle = renderParams.showIf;
+            renderParams.addClass = function(classTxt){ throw new Error('addClass not supported on containerless components'); };
+            renderParams.setClass = renderParams.addClass;
+            renderParams.addStyle = function(styleTxt){ throw new Error('addStyle not supported on containerless components'); };
+            renderParams.setStyle = renderParams.addStyle;
+
+            //Execute Code
+            try{
+              code = '(function(){'+code+'})()';
+              Helper.JSEval(code, {}, renderParams);
+            }
+            catch(ex){
+              throw new ErrorError('Error evaluating ' + code + ': ' + ex.toString());
+            }
+          });
+          htdoc.removeNode(nodeEnd, 'onRender Range End Node');
+        }
+      },
+      { //cms-onRender Property
         pred: function(node){ return htdoc.hasAttr(node, 'cms-onRender'); },
         exec: function(node){
           var code = (htdoc.getAttr(node, 'cms-onRender')||'').toString();
@@ -1562,7 +1624,7 @@ module.exports = exports = function(module, funcs){
           //Execute Code
           try{
             code = '(function(){'+code+'})()';
-            Helper.JSEval(code, {}, renderParams)
+            Helper.JSEval(code, {}, renderParams);
           }
           catch(ex){
             throw new Error('Error evaluating ' + code + ': ' + ex.toString());
@@ -1706,43 +1768,24 @@ module.exports = exports = function(module, funcs){
         exec: function(node){ htdoc.removeNode(node, 'Inline Websnippet Templates'); }
       },
     ]);
+
     content = htdoc.content;
     htdoc = new funcs.HTMLDoc(content, { extractEJS: true });
 
-    var prevSeoTitle = false;
-    var prevSeoKeywords = false;
-    var prevSeoMetadesc = false;
-    var prevSeoCanonicalUrl = false;
-
-    //Second pass - transform EJS
+    //Second Pass - Resolve Page Components
+    var containerlessComponentId = 0;
     htdoc.applyNodes([
-      { //Replace page title
-        pred: function(node){ return htdoc.isTag(node, 'h1') && htdoc.hasAttr(node, 'cms-title'); },
-        exec: function(node){
-          htdoc.replaceNodeContent(node, '<%=page.title%>', 'Title H1');
-          htdoc.wrapNode(node, '<% if(page.title){ %>', '<% } %>', 'Title H1')
-          htdoc.removeAttr(node, 'cms-title');
-        }
+      { //Remove any nodes with the "removeOnPublish" class, such as the jsHarmony CMS script
+        pred: function(node){ return htdoc.hasClass(node, 'removeOnPublish'); },
+        exec: function(node){ htdoc.removeNode(node, 'removeOnPublish'); }
       },
-      { //Add editable regions
-        pred: function(node){ return htdoc.hasAttr(node, 'cms-content-editor'); },
-        exec: function(node){
-          //Get data-id
-          var contentId = (htdoc.getAttr(node, 'cms-content-editor')||'').toString();
-          var pageContentId = (Helper.beginsWith(contentId, 'page.content.')) ? contentId.substr(('page.content.').length) : contentId;
-          if(pageContentId){
-            var defaultContent = htdoc.getNodeContent(node, 'Content '+contentId);
-            htdoc.replaceNodeContent(node, '<%-page.content['+JSON.stringify(pageContentId)+']%>', 'Content '+contentId);
-            if(!(pageContentId in template.default_content)) template.default_content[pageContentId] = defaultContent;
-          }
-          htdoc.removeAttr(node, 'cms-content-editor');
-        }
-      },
+      //Consider containerless components
       { //Process Components
         pred: function(node){ return htdoc.hasAttr(node, 'cms-component') || htdoc.hasClass(node, 'jsharmony_cms_component'); },
         exec: function(node){
           //Get component id
           var componentId = (htdoc.getAttr(node, 'cms-component')||'').toString();
+          var removeContainer = htdoc.hasAttr(node, 'cms-component-remove-container');
           if(!componentId) (htdoc.getAttr(node, 'data-id')||'').toString();
           if(componentId){
             var props = {
@@ -1766,13 +1809,62 @@ module.exports = exports = function(module, funcs){
             htdoc.removeAttr(node, 'cms-component', 'Component '+componentId);
             htdoc.removeAttr(node, 'cms-component-properties', 'Component '+componentId);
             htdoc.removeAttr(node, 'cms-component-data', 'Component '+componentId);
-            htdoc.replaceNodeContent(node, '<%-renderComponent('+JSON.stringify(componentId)+(!_.isEmpty(renderOptions)?', '+JSON.stringify(renderOptions):'')+')%>', 'Component '+componentId);
+            htdoc.removeAttr(node, 'cms-component-remove-container', 'Component '+componentId);
+            var nodeContent = '<%-renderComponent('+JSON.stringify(componentId)+(!_.isEmpty(renderOptions)?', '+JSON.stringify(renderOptions):'')+')%>';
+            if(removeContainer){
+              containerlessComponentId++;
+              var onRender = (htdoc.getAttr(node, 'cms-onRender')||'').toString();
+              if(onRender){
+                htdoc.removeAttr(node, 'cms-onRender', 'Component '+componentId);
+                nodeContent = 
+                  '<script id="jshcms-component-containerless-'+containerlessComponentId+'-start" cms-onRender-range="'+Helper.escapeHTML(onRender)+'" cms-onRender-rangeId="jshcms-component-containerless-'+containerlessComponentId+'"></script>' +
+                  nodeContent +
+                  '<script id="jshcms-component-containerless-'+containerlessComponentId+'-end"></script>';
+              }
+              htdoc.replaceNode(node, nodeContent, 'Component '+componentId);
+            }
+            else {
+              htdoc.replaceNodeContent(node, nodeContent, 'Component '+componentId);
+            }
           }
         }
       },
-      { //Remove any nodes with the "removeOnPublish" class, such as the jsHarmony CMS script
-        pred: function(node){ return htdoc.hasClass(node, 'removeOnPublish'); },
-        exec: function(node){ htdoc.removeNode(node, 'removeOnPublish'); }
+    ]);
+
+    htdoc.restoreEJS();
+    htdoc.trimRemoved();
+    content = htdoc.content;
+    htdoc = new funcs.HTMLDoc(content, { extractEJS: true });
+
+    var prevSeoTitle = false;
+    var prevSeoKeywords = false;
+    var prevSeoMetadesc = false;
+    var prevSeoCanonicalUrl = false;
+
+    //Third pass - Title / Meta Tags
+    var containerlessComponentId = 0;
+    htdoc.applyNodes([
+      { //Replace page title
+        pred: function(node){ return htdoc.isTag(node, 'h1') && htdoc.hasAttr(node, 'cms-title'); },
+        exec: function(node){
+          htdoc.replaceNodeContent(node, '<%=page.title%>', 'Title H1');
+          htdoc.wrapNode(node, '<% if(page.title){ %>', '<% } %>', 'Title H1')
+          htdoc.removeAttr(node, 'cms-title');
+        }
+      },
+      { //Add editable regions
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-content-editor'); },
+        exec: function(node){
+          //Get data-id
+          var contentId = (htdoc.getAttr(node, 'cms-content-editor')||'').toString();
+          var pageContentId = (Helper.beginsWith(contentId, 'page.content.')) ? contentId.substr(('page.content.').length) : contentId;
+          if(pageContentId){
+            var defaultContent = htdoc.getNodeContent(node, 'Content '+contentId);
+            htdoc.replaceNodeContent(node, '<%-page.content['+JSON.stringify(pageContentId)+']%>', 'Content '+contentId);
+            if(!(pageContentId in template.default_content)) template.default_content[pageContentId] = defaultContent;
+          }
+          htdoc.removeAttr(node, 'cms-content-editor');
+        }
       },
       { //SEO Title Update
         pred: function(node){ return htdoc.isTag(node, 'title'); },

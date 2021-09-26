@@ -1,0 +1,14 @@
+<div style="clear:both;height:5px;"></div>
+<div>
+  Search: <input type="text" class="<%=model.class%>_query" style="width:300px;margin-right:11px;margin-left:4px;" /><input type="button" value="Search" class="<%=model.class%>_submit" />
+</div>
+<div style="display:none;">
+  <div class="<%=model.class%>_RawTextEditor xdialogbox xpromptbox" style="min-width:350px;width:90%;height:90vh;box-sizing:border-box;display:flex;flex-direction:column;">
+    <h3 class="edit_page_title">Edit Page</h3>
+    <div align="left" style="padding-top:15px;display:flex;flex-direction:column;flex-grow:1;">
+      <textarea class="page_content default_focus" style="width:100%;box-sizing:border-box;flex-grow:1;"></textarea>
+
+      <div style="text-align:center;"><input type="button" value="Save" class="button_ok" style="margin-right:15px;margin-top:18px;" /> <input type="button" value="Cancel" class="button_cancel" style="margin-top:18px;" /></div>
+    </div>
+  </div>
+</div>

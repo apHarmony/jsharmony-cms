@@ -24,7 +24,7 @@
       ]},
       {"name":"branch_desc","control":"label","caption":"Revision","sqlselect":"(select branch_desc from {schema}.v_my_branch_desc where {schema}.v_my_branch_desc.branch_id = {schema}.branch.branch_id)"},
       {"name":"deployment_date","control":"textbox","caption":"Publish Date", "validate":["Required","IsDate:'YYYY-MM-DD hh:mm A'"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')","controlstyle":"width:160px;","unbound":true},
-      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"default":"js:jsh.moment().format('YYYY-MM-DD hh:mm A')+' '+xmodel.controller.form.Data.branch_desc","unbound":true},
+      {"name":"deployment_tag","control":"textbox_L","caption":"Tag", "validate":["Required","MaxLength:256"],"unbound":true},
       {"control":"button","value":"Schedule Deployment","controlstyle": "padding:3px 8px;margin-top:6px;","onclick": "_this.publish();"}
     ]
   },

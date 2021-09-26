@@ -45,7 +45,7 @@ module.exports = exports = function(module, funcs){
 
     if(options.pageTemplates) template = options.pageTemplates[page_template_id];
 
-    Helper.execif(!options.pageTemplates,
+    Helper.execif(!options.pageTemplates && (options.pageTemplates !== false),
       function(f){
         funcs.getPageTemplate(dbcontext, site_id, page_template_id, {}, function(err, pageTemplate){
           if(err) return cb(err);
@@ -186,6 +186,8 @@ module.exports = exports = function(module, funcs){
       getMediaURL: function(media_key, branchData, getLinkContent, urlparts){ return ''; },
       getPageURL: function(page_key, branchData, getLinkContent, urlparts){ return ''; },
       onError: function(err){ },
+      onComponentData: null, //function(content){ return content; },
+      onComponentProperties: null, //function(content){ return content; },
       removeClass: false,
       replaceComponents: false,
       branchData: {}
@@ -388,7 +390,7 @@ module.exports = exports = function(module, funcs){
       return content;
     }
 
-    function replaceBase64Attribute(content, attr){
+    function replaceBase64Attribute(content, attr, onReplace){
       return parseAttribute(content, attr, function(val){
         if(!val) return val;
         var strval = val;
@@ -399,6 +401,7 @@ module.exports = exports = function(module, funcs){
           throw new Error('Error parsing base 64 data: '+ex);
         }
         strval = funcs.replaceBranchURLs(strval, options);
+        if(onReplace) strval = onReplace(strval);
         return Buffer.from(strval).toString('base64');
       });
     }
@@ -416,8 +419,8 @@ module.exports = exports = function(module, funcs){
             return val;
           });
         }
-        content = replaceBase64Attribute(content, 'data-component-data');
-        content = replaceBase64Attribute(content, 'data-component-properties');
+        content = replaceBase64Attribute(content, 'data-component-data', options.onComponentData);
+        content = replaceBase64Attribute(content, 'data-component-properties', options.onComponentProperties);
       }
       catch(ex){
         if(options.onError) options.onError(ex);
@@ -498,7 +501,7 @@ module.exports = exports = function(module, funcs){
       validate = new XValidate();
       verrors = {};
       validate.AddValidator('_obj.page_key', 'Page Key', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_review_sts,page_lang';
+      sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang';
 
       if(Q.page_id && Q.branch_id){
         sql_ptypes.push(dbtypes.BigInt);
@@ -738,6 +741,7 @@ module.exports = exports = function(module, funcs){
             dbtypes.VarChar(2048),
             dbtypes.VarChar(2048),
             dbtypes.VarChar(dbtypes.MAX),
+            dbtypes.VarChar(dbtypes.MAX),
             dbtypes.VarChar(32),
             dbtypes.BigInt,
           ];
@@ -748,6 +752,7 @@ module.exports = exports = function(module, funcs){
             page_seo_title: client_page.seo.title,
             page_seo_canonical_url: client_page.seo.canonical_url,
             page_seo_metadesc: client_page.seo.metadesc,
+            page_seo_keywords: client_page.seo.keywords,
             page_lang: client_page.lang
           };
           sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_page set page_file_id=null,'+_.map(sql_params, function(val, key){ return key + '=@' + key }).join(',')+' where page_key=@page_key;';

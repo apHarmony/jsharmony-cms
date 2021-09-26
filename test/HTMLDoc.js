@@ -21,6 +21,7 @@ var assert = require('assert');
 var jsHarmonyCMS = require('../jsHarmonyCMS.js');
 var async = require('async');
 var _ = require('lodash');
+var ejs = require('ejs');
 
 var jsh = new jsHarmonyCMS.Application();
 var jshcms = jsh.Modules['jsHarmonyCMS'];
@@ -470,6 +471,7 @@ describe('Page Deployment Template Generation', function() {
   it('Component Tag', function(done) {
     var rslt = funcs.generateDeploymentTemplate(null, [
       '<div cms-component="menus/main.top" cms-menu-tag="main"></div>',
+      '<div cms-component="analytics" cms-component-remove-container></div>',
       'Test Content',
       '<div cms-component="sidebar"></div>',
       '<div cms-component="tiles" cms-component-properties=\'{"cssClass":"testClass"}\' cms-component-data=\'[{"image":"test"}]\'></div>',
@@ -483,10 +485,117 @@ describe('Page Deployment Template Generation', function() {
       '<% if(page.js){ %><script type="text/javascript"><%-page.js%></script><% } %>',
       '<%-page.header%>',
       '<div><%-renderComponent("menus/main.top", {"menu_tag":"main"})%></div>',
+      '<%-renderComponent("analytics")%>',
       'Test Content',
       '<div><%-renderComponent("sidebar")%></div>',
       '<div><%-renderComponent("tiles", {"properties":{"cssClass":"testClass"},"data":[{"image":"test"}]})%></div>',
       '<%-page.footer%>',
+    ].join(''));
+    done();
+  });
+  it('Page Component', function(done) {
+    var rslt = funcs.generateDeploymentTemplate(null, [
+      '<div cms-component="analytics"></div>',
+      'Test Content',
+    ].join(''));
+    assert.equal(rslt, [
+      '<% if(page.seo.title){ %><title><%=page.seo.title%></title><% } %>',
+      '<% if(page.seo.keywords){ %><meta name="keywords" content="<%=page.seo.keywords%>" /><% } %>',
+      '<% if(page.seo.metadesc){ %><meta name="description" content="<%=page.seo.metadesc%>" /><% } %>',
+      '<% if(page.seo.canonical_url){ %><link rel="canonical" href="<%=page.seo.canonical_url%>" /><% } %>',
+      '<% if(page.css){ %><style type="text/css"><%-page.css%></style><% } %>',
+      '<% if(page.js){ %><script type="text/javascript"><%-page.js%></script><% } %>',
+      '<%-page.header%>',
+      '<div><%-renderComponent("analytics")%></div>',
+      'Test Content',
+      '<%-page.footer%>',
+    ].join(''));
+    done();
+  });
+  it('Containerless Page Component', function(done) {
+    var rslt = funcs.generateDeploymentTemplate(null, [
+      '<div cms-component="analytics" cms-component-remove-container></div>',
+      'Test Content',
+    ].join(''));
+    assert.equal(rslt, [
+      '<% if(page.seo.title){ %><title><%=page.seo.title%></title><% } %>',
+      '<% if(page.seo.keywords){ %><meta name="keywords" content="<%=page.seo.keywords%>" /><% } %>',
+      '<% if(page.seo.metadesc){ %><meta name="description" content="<%=page.seo.metadesc%>" /><% } %>',
+      '<% if(page.seo.canonical_url){ %><link rel="canonical" href="<%=page.seo.canonical_url%>" /><% } %>',
+      '<% if(page.css){ %><style type="text/css"><%-page.css%></style><% } %>',
+      '<% if(page.js){ %><script type="text/javascript"><%-page.js%></script><% } %>',
+      '<%-page.header%>',
+      '<%-renderComponent("analytics")%>',
+      'Test Content',
+      '<%-page.footer%>',
+    ].join(''));
+    done();
+  });
+  it('Containerless Page Component with onRender', function(done) {
+    var rslt = funcs.generateDeploymentTemplate(null, [
+      '<div cms-component="analytics" cms-component-remove-container cms-onRender="showIf(page.properties.showAnalytics!=\'N\');"></div>',
+      'Test Content',
+    ].join(''));
+    assert.equal(rslt, [
+      '<% if(page.seo.title){ %><title><%=page.seo.title%></title><% } %>',
+      '<% if(page.seo.keywords){ %><meta name="keywords" content="<%=page.seo.keywords%>" /><% } %>',
+      '<% if(page.seo.metadesc){ %><meta name="description" content="<%=page.seo.metadesc%>" /><% } %>',
+      '<% if(page.seo.canonical_url){ %><link rel="canonical" href="<%=page.seo.canonical_url%>" /><% } %>',
+      '<% if(page.css){ %><style type="text/css"><%-page.css%></style><% } %>',
+      '<% if(page.js){ %><script type="text/javascript"><%-page.js%></script><% } %>',
+      '<%-page.header%>',
+      '<script id="jshcms-component-containerless-1-start" cms-onRender-range="showIf(page.properties.showAnalytics!=&#39;N&#39;);" cms-onRender-rangeId="jshcms-component-containerless-1"></script>',
+      '<%-renderComponent("analytics")%>',
+      '<script id="jshcms-component-containerless-1-end"></script>',
+      'Test Content',
+      '<%-page.footer%>',
+    ].join(''));
+    var page = {
+      seo: {
+        title: 'Test Title',
+        keywords: 'Test Keywords',
+        metadesc: 'Test Metadesc',
+        canonical_url: 'Test Canonical URL',
+      },
+      css: 'body { border: 1px solid red; }',
+      js: 'alert("test");',
+      header: 'Page Header',
+      footer: 'Page Footer',
+      properties: {
+        showAnalytics: 'Y',
+      }
+    };
+    function renderPage(_page){
+      var content = ejs.render(rslt, {
+        page: _page,
+        renderComponent: function(id, renderOptions){ return 'analytics<br/><div>Test</div>'; },
+      });
+      content = funcs.applyRenderTags(content, { page: _page });
+      return content;
+    }
+    assert.equal(renderPage(page), [
+      '<title>Test Title</title>',
+      '<meta name="keywords" content="Test Keywords" />',
+      '<meta name="description" content="Test Metadesc" />',
+      '<link rel="canonical" href="Test Canonical URL" />',
+      '<style type="text/css">body { border: 1px solid red; }</style>',
+      '<script type="text/javascript">alert("test");</script>',
+      'Page Header',
+      'analytics<br/><div>Test</div>',
+      'Test Content',
+      'Page Footer',
+    ].join(''));
+    page.properties.showAnalytics = 'N';
+    assert.equal(renderPage(page), [
+      '<title>Test Title</title>',
+      '<meta name="keywords" content="Test Keywords" />',
+      '<meta name="description" content="Test Metadesc" />',
+      '<link rel="canonical" href="Test Canonical URL" />',
+      '<style type="text/css">body { border: 1px solid red; }</style>',
+      '<script type="text/javascript">alert("test");</script>',
+      'Page Header',
+      'Test Content',
+      'Page Footer',
     ].join(''));
     done();
   });
@@ -1500,7 +1609,7 @@ describe('Component Export', function() {
     return done();
   });
 
-  it('Wildcart Export - Add File Conflict', function(done) {
+  it('Wildcard Export - Add File Conflict', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); addFile("folder1/file1.html"); %>');
     assert.throws(function(){
       funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
@@ -1508,7 +1617,7 @@ describe('Component Export', function() {
     return done();
   });
 
-  it('Wildcart Export - Invalid File Name', function(done) {
+  it('Wildcard Export - Invalid File Name', function(done) {
     var params = getParams('<% addFile("menu\\\\menu1.html", "Menu content"); %>');
     assert.throws(function(){
       funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
@@ -1516,7 +1625,7 @@ describe('Component Export', function() {
     return done();
   });
 
-  it('Wildcart Export - Invalid File Name \\', function(done) {
+  it('Wildcard Export - Invalid File Name \\', function(done) {
     var params = getParams('<% addFile("/menu/menu1.html", "Menu content"); %>');
     assert.throws(function(){
       funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
@@ -1524,7 +1633,7 @@ describe('Component Export', function() {
     return done();
   });
   
-  it('Wildcart Export - Invalid File Name %', function(done) {
+  it('Wildcard Export - Invalid File Name %', function(done) {
     var params = getParams('<% addFile("menu/menu1|.html", "Menu content"); %>');
     assert.throws(function(){
       funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
@@ -1532,14 +1641,14 @@ describe('Component Export', function() {
     return done();
   });
 
-  it('Wildcart Export - Delete Added File', function(done) {
+  it('Wildcard Export - Delete Added File', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); %>');
     funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     assert(_.isEmpty(params.branchData.fsOps.addedFiles));
     return done();
   });
 
-  it('Wildcart Export - Delete Site File', function(done) {
+  it('Wildcard Export - Delete Site File', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("folder1/file1.html"); %>');
     funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     assert(params.branchData.fsOps.addedFiles['menu/menu1.html'] == 'Menu content');
@@ -1547,7 +1656,7 @@ describe('Component Export', function() {
     return done();
   });
 
-  it('Wildcart Export - Cannot Delete Added File Twice', function(done) {
+  it('Wildcard Export - Cannot Delete Added File Twice', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); deleteFile("menu/menu1.html"); %>');
     assert.throws(function(){
       funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
@@ -1555,7 +1664,7 @@ describe('Component Export', function() {
     return done();
   });
 
-  it('Wildcart Export - Cannot Delete Site File Twice', function(done) {
+  it('Wildcard Export - Cannot Delete Site File Twice', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("folder1/file1.html"); deleteFile("folder1/file1.html"); %>');
     assert.throws(function(){
       funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
@@ -1563,21 +1672,21 @@ describe('Component Export', function() {
     return done();
   });
 
-  it('Wildcart Export - Can Add and Delete Twice', function(done) {
+  it('Wildcard Export - Can Add and Delete Twice', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); addFile("menu/menu1.html", "Menu content"); deleteFile("menu/menu1.html"); %>');
     funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     assert(_.isEmpty(params.branchData.fsOps.addedFiles));
     return done();
   });
 
-  it('Wildcart Export - Delete Twice with HasFile', function(done) {
+  it('Wildcard Export - Delete Twice with HasFile', function(done) {
     var params = getParams('<% addFile("menu/menu1.html", "Menu content"); if(hasFile("menu/menu1.html")) deleteFile("menu/menu1.html"); if(hasFile("menu/menu1.html")) deleteFile("menu/menu1.html"); %>');
     funcs.deploy_exportComponentRender(jsh, params.branchData, null, 'menu/top', params.branchData.component_templates['menu/top'].export[0], 0);
     assert(_.isEmpty(params.branchData.fsOps.addedFiles));
     return done();
   });
 
-  it('Wildcart Export - getEJSOutput', function(done) {
+  it('Wildcard Export - getEJSOutput', function(done) {
     var params = getParams([
       '<% function getTemplate(type){ return getEJSOutput(function(){ -%>',
       '<div><%=type%></div>',
