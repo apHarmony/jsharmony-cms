@@ -7954,7 +7954,7 @@ var jsHarmonyCMS = function(options){
         home_url: _this._baseurl,
         uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
         _instance: 'jshInstance_CMS',
-        _baseClass: 'jsharmony_cms',
+        _dialogBaseClass: 'jsharmony_cms_dialog',
         cookie_suffix: _this._cookie_suffix,
         isAuthenticated: true,
         dev: 1,

@@ -36,7 +36,7 @@ module.exports = exports = function(module, funcs){
   }
 
   exports.getClientPage = function(dbcontext, page, sitemaps, site_id, options, cb){
-    options = _.extend({ includeExtraContent: false, pageTemplates: null, ignoreInvalidPageTemplate: false }, options);
+    options = _.extend({ includeAllExtraContent: false, includeExtraRemoteContent: false, pageTemplates: null, ignoreInvalidPageTemplate: false }, options);
     var page_file_id = page.page_file_id;
     var page_template_id = page.page_template_id;
     if(!page_template_id) return cb(new Error('Page template: '+page_template_id));
@@ -95,13 +95,13 @@ module.exports = exports = function(module, funcs){
           for(var key in template_content_elements){
             if(key in page_file.content) page_file_content[key] = page_file.content[key];
           }
-          var extraContent = false;
+          var extraContent = !!options.includeAllExtraContent;
           if(template.standalone){
             extraContent = true;
           }
           else if(template.location == 'REMOTE'){
             //Add extra content_areas that are not defined in template (if using in-template script config)
-            if(options.includeExtraContent) extraContent = true;
+            if(options.includeExtraRemoteContent) extraContent = true;
           }
           if(extraContent){
             for(var key in page_file.content){
@@ -661,7 +661,7 @@ module.exports = exports = function(module, funcs){
             //Get page
             function(cb){
 
-              funcs.getClientPage(req._DBContext, page, sitemaps, site_id, { includeExtraContent: true }, function(err, _clientPage){
+              funcs.getClientPage(req._DBContext, page, sitemaps, site_id, { includeExtraRemoteContent: true }, function(err, _clientPage){
                 if(err) { Helper.GenError(req, res, -9, err.toString()); return; }
                 clientPage = _clientPage;
                 if(!clientPage.page.content || _.isString(clientPage.page.content)) { Helper.GenError(req, res, -99999, 'page.content must be a data structure'); return; }

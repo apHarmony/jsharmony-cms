@@ -882,6 +882,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         var componentObj = $(component).clone().empty().removeClass('mceNonEditable initialized')[0];
         if(componentObj.hasAttribute('class') && !componentObj.getAttribute('class').trim()) componentObj.removeAttribute('class');
         componentObj.removeAttribute('cms-component-content');
+        componentObj.setAttribute('cms-component-remove-container','');
         pageData.content[contentId] = componentObj.outerHTML;
       }
     });

@@ -256,7 +256,7 @@ module.exports = exports = function(module, funcs){
       });
       Helper.execif(page.page_file_id,
         function(done){
-          funcs.getClientPage(searchData._DBContext, page, null, searchData.site_id, { includeExtraContent: true, ignoreInvalidPageTemplate: true, pageTemplates: false }, function(err, clientPage){
+          funcs.getClientPage(searchData._DBContext, page, null, searchData.site_id, { includeAllExtraContent: true, ignoreInvalidPageTemplate: true, pageTemplates: false }, function(err, clientPage){
             if(err) return page_cb(err);
             if(!clientPage || !clientPage.page) return done(); 
 

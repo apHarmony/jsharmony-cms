@@ -161,6 +161,30 @@ module.exports = exports = function(module, funcs){
             _.extend(rslt.config, config);
           }
         },
+        {
+          pred: function(node){ return ((configType=='cms-page-config') && htdoc.hasAttr(node, 'cms-component-content')); },
+          exec: function(node){
+            try {
+              var contentArea = htdoc.getAttr(node, 'cms-component-content');
+              var nodeContent = htdoc.getNodeContent(node, 'cms-component-content');
+              if(!htdoc.hasAttr(node, 'cms-component')) return;
+              if(contentArea.indexOf('page.content.')!=0) throw new Error('Invalid page component content area name: "'+contentArea+'".  Content area must begin with "page.content."');
+              contentArea = contentArea.substr(('page.content.').length);
+              if(!('content' in rslt.config)) rslt.config.content = {};
+              if(!(contentArea in rslt.config.content)){
+                var componentPropNames = ['cms-component','cms-component-properties','cms-component-data','cms-component-remove-container','cms-onRender','cms-menu-tag'];
+                var componentProps = {};
+                _.each(componentPropNames, function(key){ if(htdoc.hasAttr(node, key)) componentProps[key] = htdoc.getAttr(node, key); });
+                var containerHtml = '<div '+_.map(componentProps, function(val, key){ return key+'="'+Helper.escapeHTML(val)+'"'; }).join(' ')+' cms-component-remove-container>'+nodeContent+'</div>';
+                rslt.config.content[contentArea] = containerHtml;
+              }
+            }
+            catch(ex){
+              if(options.continueOnConfigError) module.jsh.Log.info(new Error('Error parsing page component in ' + desc + ': ' + ex.toString()));
+              else throw ex;
+            }
+          }
+        },
       ]);
     }
     catch(ex){
