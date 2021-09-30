@@ -7927,6 +7927,7 @@ var jsHarmonyCMS = function(options){
   this.onFilePickerCallback = null;      //function(jdata)
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
   this.onRender = null;                  //function(page)
+  this.onRendered = null;                //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); }
 
   for(var key in options){
