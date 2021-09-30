@@ -192,10 +192,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
               if(!cms.isInitialized){
                 cms.onTemplateLoaded(function(){
                   cms.isInitialized = true;
+                  if(cms.onRendered) cms.onRendered();
                   if(onComplete) onComplete();
                 });
               }
-              else{ if(onComplete) onComplete(); }
+              else{
+                if(cms.onRendered) cms.onRendered();
+                if(onComplete) onComplete();
+              }
             });
           }
           else{
