@@ -118,6 +118,7 @@ GridDialog.prototype.open = function() {
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
+    _this.jsh.$('.xbodyhead.xelem'+xmodel.class).addClass('jsharmony_cms');
     _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);

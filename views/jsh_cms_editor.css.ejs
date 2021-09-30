@@ -474,7 +474,17 @@ span[data-component] {
   font-family: 'Material Icons' !important;
 }
 
+.xform .jsharmony_cms .xform_label,
+.xform .jsharmony_cms input,
+.xform .jsharmony_cms select,
+.xform .jsharmony_cms textarea,
+.xform .jsharmony_cms .htmlarea_container {
+  margin:2px 10px 2px 0;
+}
+
+.jsharmony_cms_component_dialog .xform input.xform_ctrl,
 .jsharmony_cms_component_dialog input.xform_ctrl,
+.jsharmony_cms_component_dialog .xform select.xform_ctrl,
 .jsharmony_cms_component_dialog select.xform_ctrl {
   margin-bottom:11px;
 }
@@ -503,6 +513,18 @@ span[data-component] {
 
  .jsharmony_cms_component_dataGridEditor > .jsharmony_cms_component_preview_expand.xtbl {
   width:100%;
+}
+
+.jsharmony_cms_dialog .jsharmony_cms_component_dataGridEditor > .xtbl {
+  border-spacing: 0px;
+  position:relative;
+  border-collapse: collapse;
+  clear:both;
+}
+
+.jsharmony_cms_dialog .jsharmony_cms_component_dataGridEditor > .xtbl thead th.tdhidden,
+.jsharmony_cms_dialog .jsharmony_cms_component_dataGridEditor > .xtbl tbody td.tdhidden {
+  display:none;
 }
 
 .jsharmony_cms_dialog .jsharmony_cms_component_dataGridEditor > .xtbl tbody,

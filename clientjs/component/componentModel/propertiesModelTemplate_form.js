@@ -63,8 +63,8 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   var model = _.extend({}, modelConfig);
 
   if(modelConfig.fields && modelConfig.fields.length){
-    modelConfig.fields.unshift({ control:'html', value:'<div class="jsharmony_cms">'});
-    modelConfig.fields.push({ control:'html', value:'</div>'});
+    modelConfig.fields.unshift({ control:'html', value:'<div class="jsharmony_cms">',captionclass:"hidden"});
+    modelConfig.fields.push({ control:'html', value:'</div>',captionclass:"hidden"});
   }
 
   this._modelTemplate = model;

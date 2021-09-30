@@ -136,11 +136,11 @@ FormDialog.prototype.augmentModel = function(model, config) {
   var newFields = [];
   var newButtons = [];
   if (config.acceptButtonLabel && !this.cms.readonly) {
-    newFields.push({ name: 'save_button', control: 'button', value: config.acceptButtonLabel, controlstyle: 'margin-right:10px; margin-top:15px;' });
+    newFields.push({ name: 'save_button', control: 'button', value: config.acceptButtonLabel, controlstyle: 'margin-right:10px; margin-top:15px;', captionstyle: 'display:inline-block;' });
     newButtons.push({ class: 'save_button', text: config.acceptButtonLabel, actions: 'BIU' });
   }
   if (config.cancelButtonLabel) {
-    newFields.push({ name: 'cancel_button', control: 'button', value: config.cancelButtonLabel, controlclass: 'secondary', nl:false });
+    newFields.push({ name: 'cancel_button', control: 'button', value: config.cancelButtonLabel, controlclass: 'secondary', nl:false, captionstyle: 'display:inline-block;' });
     newButtons.push({ class: 'cancel_button secondary', text: config.cancelButtonLabel, actions: 'BIU'  });
   }
 
@@ -181,6 +181,7 @@ FormDialog.prototype.open = function(data) {
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
+    _this.jsh.$('.xbodyhead.xelem'+xmodel.class).addClass('jsharmony_cms');
     _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);

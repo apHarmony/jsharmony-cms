@@ -20,7 +20,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var _ = require('lodash');
 var ComponentTemplate = require('../componentModel/componentTemplate');
 var GridDialog = require('../dialogs/gridDialog');
-var DataEditor_GridPreviewController = require('./dataEditor_ gridPreviewController');
+var DataEditor_GridPreviewController = require('./dataEditor_gridPreviewController');
 
 
 

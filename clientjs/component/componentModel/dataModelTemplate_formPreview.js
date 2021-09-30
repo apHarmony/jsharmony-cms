@@ -77,10 +77,10 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
 
   var fields = modelConfig.fields || [];
-  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">'});
-  fields.push({ control:'html', value:'</div>'});
+  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">', captionclass:"hidden"});
+  fields.push({ control:'html', value:'</div>', captionclass:"hidden"});
   fields.push({
-    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true
+    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true, captionclass:"hidden"
   });
 
   var model = _.extend({}, modelConfig);
