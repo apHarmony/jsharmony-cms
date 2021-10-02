@@ -86,6 +86,7 @@ function jsHarmonyCMSConfig(){
                                      //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
     copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
+    publish_local_templates: false,      //Whether to include the site's "templates" folder in the published files
     ignore_remote_template_certificate: false,  //When downloading remote templates, ignore self-signed certificate errors
 
     //List of remote paths to ignore
@@ -111,6 +112,14 @@ function jsHarmonyCMSConfig(){
         //More parameters can be found at:
         //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property
       }
+    },
+
+    //Advanced options
+    //----------------
+    generate: { //Items to generate on publish
+      'onBeforeDeploy': true,      //true, false, or array of items, ex: ['page','media']
+      'onDeploy': true,            //true, false, or array of items, ex: ['page','media'] 
+      'onDeploy_PostBuild': true,  //true, false, or array of items, ex: ['page','media']
     },
   };
 

@@ -99,7 +99,11 @@ module.exports = exports = function(module, funcs){
       var log = logQueue[i];
       if(log && logfile && (log.logfile == logfile)){ waiting = true; break; }
     }
-    if(waiting){ setTimeout(function(){ exports.deploy_waitForLog(deployment_id, onComplete); }, 50); return; }
+    if(waiting){
+      if(jsh.Config.interactive) jsh.Log.flush();
+      setTimeout(function(){ exports.deploy_waitForLog(deployment_id, onComplete); }, 50);
+      return;
+    }
     if(onComplete) onComplete();
   }
 
@@ -893,6 +897,7 @@ module.exports = exports = function(module, funcs){
                   HelperFS.copyRecursive(sitePath, publish_path,
                     {
                       forEachDir: function(dirpath, targetpath, relativepath, dir_cb){
+                        if((relativepath=='templates') && !publish_params.publish_local_templates) return dir_cb(false);
                         if(relativepath=='.git') return dir_cb(false);
                         return dir_cb(true);
                       },
@@ -913,6 +918,8 @@ module.exports = exports = function(module, funcs){
               function(cb){
                 async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
                   if(!branch_item.deploy) return branch_item_cb();
+                  if(!publish_params.generate || !publish_params.generate.onBeforeDeploy) return branch_item_cb();
+                  if(_.isArray(publish_params.generate.onBeforeDeploy) && !_.includes(publish_params.generate.onBeforeDeploy, branch_item_type)) return branch_item_cb();
                   Helper.execif(branch_item.deploy.onBeforeDeploy,
                     function(f){
                       branch_item.deploy.onBeforeDeploy(jsh, branchData, publish_params, f);
@@ -935,6 +942,8 @@ module.exports = exports = function(module, funcs){
                   funcs.deploy_log_info(deployment_id, 'Generating: '+branch_item_type.toUpperCase()+' items');
                   var branch_item = cms.BranchItems[branch_item_type];
                   if(!branch_item.deploy) return branch_item_cb();
+                  if(!publish_params.generate || !publish_params.generate.onDeploy) return branch_item_cb();
+                  if(_.isArray(publish_params.generate.onDeploy) && !_.includes(publish_params.generate.onDeploy, branch_item_type)) return branch_item_cb();
                   Helper.execif(branch_item.deploy.onDeploy,
                     function(f){
                       branch_item.deploy.onDeploy(jsh, branchData, publish_params, f);
@@ -956,6 +965,8 @@ module.exports = exports = function(module, funcs){
                 async.eachSeries(branchItemTypes, function(branch_item_type, branch_item_cb){
                   var branch_item = cms.BranchItems[branch_item_type];
                   if(!branch_item.deploy) return branch_item_cb();
+                  if(!publish_params.generate || !publish_params.generate.onDeploy_PostBuild) return branch_item_cb();
+                  if(_.isArray(publish_params.generate.onDeploy_PostBuild) && !_.includes(publish_params.generate.onDeploy_PostBuild, branch_item_type)) return branch_item_cb();
                   Helper.execif(branch_item.deploy.onDeploy_PostBuild,
                     function(f){
                       branch_item.deploy.onDeploy_PostBuild(jsh, branchData, publish_params, f);
