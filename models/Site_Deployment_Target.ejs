@@ -109,7 +109,16 @@
               <tr><td></td><td><div class="deployment_config_caption">* Store CMS page files in a subfolder of the publish directory, ex "pages/"</div></td></tr>
               <tr><td><label>Media Files Subfolder:</label></td><td width="100%"><input type="text" data-elem="media_subfolder" /></td></tr>
               <tr><td></td><td><div class="deployment_config_caption">* Store CMS media files in a subfolder of the publish directory, ex "media/"</div></td></tr>
-              <tr><td>Remote Templates:</td><td width="100%"><label><input type="checkbox" class="checkbox" data-elem="ignore_remote_template_certificate" /> Ignore certificate errors when downloading remote templates</label></td></tr>
+              <tr><td class="align_top"><label class="deployment_target_checkbox_label">Local Templates:</label></td><td width="100%">
+                <div class="deployment_config_group">
+                  <label><input type="checkbox" class="checkbox" data-elem="publish_local_templates" /> Include "templates" folder in published files</label>
+                </div>
+              </td></tr>
+              <tr><td class="align_top"><label class="deployment_target_checkbox_label">Remote Templates:</label></td><td width="100%">
+                <div class="deployment_config_group">
+                  <label><input type="checkbox" class="checkbox" data-elem="ignore_remote_template_certificate" /> Ignore certificate errors when downloading remote templates</label>
+                </div>
+              </td></tr>
               <tr><td class="align_top"><label>Extended Config:</label></td><td width="100%"><textarea data-elem="ext_config" /></td></tr>
             </tbody>
         </table>

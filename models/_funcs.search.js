@@ -30,7 +30,19 @@ module.exports = exports = function(module, funcs){
   function parseSearchQuery(str){
     str = (str || '').toString().trim().toLowerCase();
     if(!str) return null;
-    var keywords = _.filter(str.split(/[\s,]+/),function(keyword){ return keyword.length });
+    var keywords = [];
+    var quotedKeywords = str.split('"');
+    for(var i=0;i<quotedKeywords.length;i++){
+      var quotedKeyword = quotedKeywords[i].trim();
+      if(!quotedKeyword) continue;
+      if((i%2)==1){
+        keywords.push(quotedKeyword.trim());
+      }
+      else {
+        var subKeywords = quotedKeyword.split(/[\s,]+/);
+        _.each(subKeywords, function(subKeyword){ subKeyword = subKeyword.trim();  if(subKeyword) keywords.push(subKeyword); });
+      }
+    }
     return keywords;
   }
 

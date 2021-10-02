@@ -204,6 +204,7 @@ jsh.App[modelid] = new (function(){
     jcontainer.find('[data-elem="url_prefix_media_override"]').val(parsed_config.url_prefix_media_override);
     jcontainer.find('[data-elem="page_subfolder"]').val(parsed_config.page_subfolder);
     jcontainer.find('[data-elem="media_subfolder"]').val(parsed_config.media_subfolder);
+    jcontainer.find('[data-elem="publish_local_templates"]').prop('checked',!!parsed_config.publish_local_templates);
     jcontainer.find('[data-elem="ignore_remote_template_certificate"]').prop('checked',!!parsed_config.ignore_remote_template_certificate);
 
     jcontainer.find('.edit_button').each(function(){
@@ -218,7 +219,7 @@ jsh.App[modelid] = new (function(){
     });
     
     var ext_config = JSON.parse(JSON.stringify(parsed_config));
-    _.each(['url_prefix','published_url','url_prefix_page_override','url_prefix_media_override','page_subfolder','media_subfolder','ignore_remote_template_certificate'], function(key){ delete ext_config[key]; });
+    _.each(['url_prefix','published_url','url_prefix_page_override','url_prefix_media_override','page_subfolder','media_subfolder','publish_local_templates','ignore_remote_template_certificate'], function(key){ delete ext_config[key]; });
     jcontainer.find('[data-elem="ext_config"]').val(_.isEmpty(ext_config)?'{\n}':JSON.stringify(ext_config,null,2));
   }
 
@@ -473,7 +474,7 @@ jsh.App[modelid] = new (function(){
         if(val) generated_config[key] = val;
       }
     });
-    _.each(['ignore_remote_template_certificate'], function(key){
+    _.each(['publish_local_templates','ignore_remote_template_certificate'], function(key){
       var val = jcontainer.find('[data-elem="'+key+'"]').is(':checked');
       if(val) generated_config[key] = true;
     });

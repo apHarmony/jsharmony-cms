@@ -552,6 +552,7 @@ module.exports = exports = function(module, funcs){
 
       //Add page to database
       dbtasks['page_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
+        var cols = [];
         if(item.page_is_folder){
           cols = ['page_is_folder','page_path'];
         }
@@ -560,6 +561,7 @@ module.exports = exports = function(module, funcs){
         }
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{tgtschema}.', module.schema?module.schema+'.':'');
         sql = Helper.ReplaceAll(sql, '{item}', 'page');
         sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
         sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
@@ -746,6 +748,7 @@ module.exports = exports = function(module, funcs){
 
           //Add media to database
           dbtasks['media_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
+            var cols = [];
             if(item.media_is_folder){
               cols = ['media_is_folder','media_path'];
             }
@@ -787,6 +790,7 @@ module.exports = exports = function(module, funcs){
             }
 
             var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+            sql = Helper.ReplaceAll(sql, '{tgtschema}.', module.schema?module.schema+'.':'');
             sql = Helper.ReplaceAll(sql, '{item}', 'media');
             sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
             sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
@@ -835,9 +839,10 @@ module.exports = exports = function(module, funcs){
     _.each(branchItems, function(item){
       //Add menu to database
       dbtasks['menu_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
-        cols = ['menu_name','menu_tag','menu_lang'];
+        var cols = ['menu_name','menu_tag','menu_lang'];
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{tgtschema}.', module.schema?module.schema+'.':'');
         sql = Helper.ReplaceAll(sql, '{item}', 'menu');
         sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
         sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
@@ -920,9 +925,10 @@ module.exports = exports = function(module, funcs){
     _.each(branchItems, function(item){
       //Add redirect to database
       dbtasks['redirect_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
-        cols = ['redirect_url','redirect_url_type','redirect_seq','redirect_dest','redirect_http_code'];
+        var cols = ['redirect_url','redirect_url_type','redirect_seq','redirect_dest','redirect_http_code'];
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{tgtschema}.', module.schema?module.schema+'.':'');
         sql = Helper.ReplaceAll(sql, '{item}', 'redirect');
         sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
         sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));
@@ -962,9 +968,10 @@ module.exports = exports = function(module, funcs){
     _.each(branchItems, function(item){
       //Add sitemap to database
       dbtasks['sitemap_'+(dbtaskid++)] = function (dbtrans, callback, transtbl) {
-        cols = ['sitemap_name','sitemap_type','sitemap_lang'];
+        var cols = ['sitemap_name','sitemap_type','sitemap_lang'];
 
         var sql = appsrv.parseSQL('jsHarmonyCMS_Upload');
+        sql = Helper.ReplaceAll(sql, '{tgtschema}.', module.schema?module.schema+'.':'');
         sql = Helper.ReplaceAll(sql, '{item}', 'sitemap');
         sql = Helper.ReplaceAll(sql, '{columns}', cols.join(','));
         sql = Helper.ReplaceAll(sql, '{values}', _.map(cols, function(col){ return '@' + col; }).join(','));

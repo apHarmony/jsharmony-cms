@@ -17,6 +17,9 @@
 .xctrl_deployment_target_publish_configurator td.align_top label {
   padding-top:7px;
 }
+.xctrl_deployment_target_publish_configurator td.align_top label.deployment_target_checkbox_label {
+  padding-top:3px;
+}
 .xctrl_deployment_target_publish_configurator textarea,
 .xctrl_deployment_target_publish_configurator input {
   width:100%;
@@ -49,6 +52,9 @@
 .deployment_config_caption {
   font-size:0.9em;
   padding-bottom:5px;
+}
+.deployment_config_group {
+  padding-bottom:6px;
 }
 .xform .xctrl_deployment_target_publish_configurator_wizard .browse_button {
   margin-left:8px;

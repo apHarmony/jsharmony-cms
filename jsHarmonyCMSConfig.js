@@ -117,9 +117,9 @@ function jsHarmonyCMSConfig(){
     //Advanced options
     //----------------
     generate: { //Items to generate on publish
-      'onBeforeDeploy': true,      //true, false, or array of items, ex: ['page','media']
-      'onDeploy': true,            //true, false, or array of items, ex: ['page','media'] 
-      'onDeploy_PostBuild': true,  //true, false, or array of items, ex: ['page','media']
+      'onBeforeDeploy': true,      //true (all), false (none), or array of items, ex: ['page','media']
+      'onDeploy': true,            //true (all), false (none), or array of items, ex: ['page','media'] 
+      'onDeploy_PostBuild': true,  //true (all), false (none), or array of items, ex: ['page','media']
     },
   };
 

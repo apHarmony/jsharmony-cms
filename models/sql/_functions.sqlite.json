@@ -71,6 +71,6 @@
       "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_git_revision) select site_id, %%%deployment_target_id%%%, branch_id, %%%deployment_date%%%, %%%deployment_tag%%%, deployment_git_revision from {schema}.v_my_deployment where deployment_id=%%%src_deployment_id%%%;select last_insert_rowid_override deployment_id from jsharmony_meta;"
     ]
   },
-  "jsHarmonyCMS_Upload": "insert into {schema}.v_my_{item}({columns}) values ({values}); select last_insert_rowid_override {item}_key from jsharmony_meta;",
+  "jsHarmonyCMS_Upload": "insert into {tgtschema}.v_my_{item}({columns}) values ({values}); select last_insert_rowid_override {item}_key from jsharmony_meta;",
   "jsHarmonyCMS_GetNextDeployment": "select deployment_id from {schema}.deployment where deployment_sts='PENDING' and strftime('%Y-%m-%dT%H:%M:%f',deployment_date) <= strftime('%Y-%m-%dT%H:%M:%f',%%%%%%jsh.map.timestamp%%%%%%) order by deployment_date asc;",
 }
