@@ -7994,8 +7994,6 @@ var jsHarmonyCMS = function(options){
 
       jsh.xLoader = loader;
       async.parallel([
-        function(cb){ util.loadScript(_this._baseurl+'application.js', function(){ cb(); }); },
-        function(cb){ util.loadScript(_this._baseurl+'js/site.js', function(){ cb(); }); },
         function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){
           jsh.Config.debug_params.monitor_globals = false;
           cb();

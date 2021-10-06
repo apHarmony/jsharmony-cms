@@ -6,6 +6,7 @@
     "roles": { "*": "BU" },
     "caption":["Site","Sites"],
     "menu":"jsHarmonyCMS/Site_Listing",
+    "sort":["^site_name"],
     "buttons":[{ "name":"insertSite", "link":"insert:Site_Tabs","icon":"add","text":"Add Site" }],
     "breadcrumbs":"#CMS_BRANCH_BREADCRUMBS_OPTIONAL",
     "oncommit": "XPage.Reload({ browserRefresh:true });",

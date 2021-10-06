@@ -24,7 +24,6 @@
         "actions": "BIUD",
         "__AFTER__": "sys_user_sys_user_role"
       },
-      {"name":"sys_user_sys_user_func","__REMOVE__": true},
     ],
   },
   "SysUser_Site": {
