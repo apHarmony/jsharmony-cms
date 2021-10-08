@@ -168,8 +168,7 @@ module.exports = exports = function(module, funcs){
               var contentArea = htdoc.getAttr(node, 'cms-component-content');
               var nodeContent = htdoc.getNodeContent(node, 'cms-component-content');
               if(!htdoc.hasAttr(node, 'cms-component')) return;
-              if(contentArea.indexOf('page.content.')!=0) throw new Error('Invalid page component content area name: "'+contentArea+'".  Content area must begin with "page.content."');
-              contentArea = contentArea.substr(('page.content.').length);
+              if(contentArea.indexOf('page.content.')==0) contentArea = contentArea.substr(('page.content.').length);
               if(!('content' in rslt.config)) rslt.config.content = {};
               if(!(contentArea in rslt.config.content)){
                 var componentPropNames = ['cms-component','cms-component-properties','cms-component-data','cms-component-remove-container','cms-onRender','cms-menu-tag'];

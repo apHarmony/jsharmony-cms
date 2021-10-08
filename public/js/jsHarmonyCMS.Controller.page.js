@@ -582,9 +582,20 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(!_this.page) return;
     var jeditorbar = $('#jsharmony_cms_page_toolbar');
 
+    //Get list of content components
+    var contentComponents = [];
+    var componentContentAreas = {};
+    $('[cms-component-content]').each(function(){ contentComponents.push(this); });
+    for(var key in cms.componentManager.containerlessComponents) contentComponents.push(cms.componentManager.containerlessComponents[key]);
+    _.each(contentComponents, function(component){
+      var contentArea = (component.getAttribute('cms-component-content')||'').toString();
+      if(contentArea.indexOf('page.content.')==0) contentArea = contentArea.substr(('page.content.').length);
+      componentContentAreas[contentArea] = contentArea;
+    });
+
     //Delete extra content areas
     _.each(_.keys(_this.page.content), function(contentId){
-      if(!(contentId in _this.template.content_elements)){
+      if(!(contentId in _this.template.content_elements) && !(contentId in componentContentAreas)){
         console.log('Deleting excess content area: '+contentId);
         delete _this.page.content[contentId];
       }
@@ -881,13 +892,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     $('[cms-component-content]').each(function(){ contentComponents.push(this); });
     for(var key in cms.componentManager.containerlessComponents) contentComponents.push(cms.componentManager.containerlessComponents[key]);
     _.each(contentComponents, function(component){
-      var contentId = component.getAttribute('cms-component-content');
-      if(contentId){
+      var contentArea = (component.getAttribute('cms-component-content')||'').toString();
+      if(contentArea.indexOf('page.content.')==0) contentArea = contentArea.substr(('page.content.').length);
+      if(contentArea){
         var componentObj = $(component).clone().empty().removeClass('mceNonEditable initialized')[0];
         if(componentObj.hasAttribute('class') && !componentObj.getAttribute('class').trim()) componentObj.removeAttribute('class');
         componentObj.removeAttribute('cms-component-content');
         componentObj.setAttribute('cms-component-remove-container','');
-        pageData.content[contentId] = componentObj.outerHTML;
+        pageData.content[contentArea] = componentObj.outerHTML;
       }
     });
     return pageData;

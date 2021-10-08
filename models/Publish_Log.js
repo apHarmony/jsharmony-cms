@@ -3,6 +3,8 @@ jsh.App[modelid] = new (function(){
 
   var initialized = false;
   var isActive = true;
+  var sleepsWithoutUpdate = 0;
+  var lastLog = '';
 
   this.onload = function(){
     this.updateButtons(xmodel.get('deployment_sts'));
@@ -20,12 +22,26 @@ jsh.App[modelid] = new (function(){
     if(_.includes(['COMPLETE'], deployment_sts)) jsh.$root('.xform_button_redeploy.xelem'+xmodel.class).show();
   }
 
+  this.getSleepTime = function(){
+    sleepsWithoutUpdate++;
+    var minSleepTime = 500;
+    var maxSleepTime = 3000;
+    var sleepTime = Math.min(
+      minSleepTime + sleepsWithoutUpdate * ((maxSleepTime - minSleepTime) / 20),
+      maxSleepTime
+    );
+    return sleepTime;
+  }
+
   this.loadData = function(){
     if(!isActive) return;
     if(jsh._debug) console.log('Loading deployment log '+xmodel.get('deployment_id'));
     var emodelid = '../_funcs/deployment_log/'+xmodel.get('deployment_id');
     XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
+        var newLog = JSON.stringify(rslt);
+        if(newLog != lastLog) sleepsWithoutUpdate = 0;
+        lastLog = newLog;
         var deployment_sts = (rslt.deployment.deployment_sts||'').toUpperCase();
         var deployment_sts_txt = rslt.deployment.deployment_sts_txt;
         _this.updateButtons(deployment_sts);
@@ -59,7 +75,7 @@ jsh.App[modelid] = new (function(){
           if(curDocumentHeight-$(window).height() > 0) $(window).scrollTop(curDocumentHeight-$(window).height());
         }
         //Auto-refresh
-        if(_.includes(['PENDING','RUNNING'], deployment_sts)) setTimeout(function(){ _this.loadData(); }, 3000);
+        if(_.includes(['PENDING','RUNNING'], deployment_sts)) setTimeout(function(){ _this.loadData(); }, _this.getSleepTime());
 
         initialized = true;
       }

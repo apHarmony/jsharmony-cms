@@ -1676,6 +1676,7 @@ module.exports = exports = function(module, funcs){
           function(rewrite_cb){
             async.each(pagesReadyToRewrite, function(page_path, rewrite_page_cb){
               var pagesToInclude = pagesWithIncludes[page_path];
+              var includesProcessed = {};
               delete pagesWithIncludes[page_path];
 
               //Get Page Key from page_path
@@ -1689,6 +1690,7 @@ module.exports = exports = function(module, funcs){
                 if(page_content.indexOf('<!--#jsharmony_cms_include(') >= 0){
                   for(var i=0; i<pagesToInclude.length;i++){
                     var key = pagesToInclude[i];
+                    if(key in includesProcessed) continue;
                     var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify(includeFileMapping[key])+')-->';
                     var includeContent = includeFileContent[key];
                     if(page_key && branchData.page_data[page_key] && (branchData.page_data[page_key].format=='json')){
@@ -1701,6 +1703,7 @@ module.exports = exports = function(module, funcs){
                       return rewrite_page_cb(new Error('Include script for "'+key+'" not found on page "'+page_fpath+'"'));
                     }
                     page_content = Helper.ReplaceAll(page_content, includeCode, includeContent);
+                    includesProcessed[key] = true;
                   }
                   //Recompute MD5
                   branchData.site_files[page_path] = {
