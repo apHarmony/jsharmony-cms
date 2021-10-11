@@ -219,7 +219,7 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('B', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      funcs.validateSiteAccess(req, res, P.site_id, ['PUBLISHER'], function(){
+      funcs.validateSiteAccess(req, res, P.site_id, ['PUBLISHER','WEBMASTER'], function(){
 
         var baseurl = req.baseurl;
         if(baseurl.indexOf('//')<0) baseurl = req.protocol + '://' + req.get('host') + baseurl;
@@ -1150,7 +1150,7 @@ module.exports = exports = function(module, funcs){
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
-      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target revision');
+      if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No '+(site_access&&site_access.length?site_access.join(' / ')+' ':'')+'access to target site');
       callback(null);
     });
   }

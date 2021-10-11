@@ -666,7 +666,12 @@ module.exports = exports = function(module, funcs){
         i--;
       }
     }
-    if(!site_id) return;
+    if(!site_id){
+      var rsltlov = [];
+      if(options.blank) rsltlov.push({ code_val: '', code_txt: '(None)' });
+      cb(null, rsltlov);
+      return false;
+    }
 
     funcs.getPageTemplates(dbcontext, site_id, { continueOnConfigError: true }, function(err, pageTemplates){
       if(err) return cb(err);

@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var ssh2 = require('ssh2');
+var ssh2 = require('ssh2-classic');
 var path = require('path');
 var fs = require('fs');
 var Helper = require('jsharmony/Helper');
