@@ -112,8 +112,8 @@ app.get('/standalone_page', async function(req, res, next){
 require_once __DIR__.'/vendor/autoload.php';
 
 // Initialize the jsHarmony CMS Router
-use apHarmony\jsHarmonyCms\Router;
-$cmsRouter = new Router(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+use apHarmony\jsHarmonyCms\CmsRouter;
+$cmsRouter = new CmsRouter(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
 
 // Serve CMS content for the current URL
 if(!$cmsRouter-&gt;serve()){
@@ -144,8 +144,8 @@ jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%});
 require_once __DIR__.'/vendor/autoload.php';
 
 // Initialize the jsHarmony CMS Router
-use apHarmony\jsHarmonyCms\Router;
-$cmsRouter = new Router(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
+use apHarmony\jsHarmonyCms\CmsRouter;
+$cmsRouter = new CmsRouter(%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%);
 
 // Get the CMS content for this page
 $page = $cmsRouter->getStandalone();

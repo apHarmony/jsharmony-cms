@@ -595,7 +595,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     //Delete extra content areas
     _.each(_.keys(_this.page.content), function(contentId){
-      if(!(contentId in _this.template.content_elements) && !(contentId in componentContentAreas)){
+      if(!(contentId in _this.template.content_elements) && !(contentId in componentContentAreas) && (!_this.template.content || !(contentId in _this.template.content))){
         console.log('Deleting excess content area: '+contentId);
         delete _this.page.content[contentId];
       }
@@ -887,7 +887,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(_this.page_template_id != '<Standalone>') return _this.page;
 
     var pageData = _.extend({}, _this.page);
-    pageData.content = _.extend({}, pageData.content);
+    pageData.content = _.extend({}, _this.template && _this.template.content, pageData.content);
     var contentComponents = [];
     $('[cms-component-content]').each(function(){ contentComponents.push(this); });
     for(var key in cms.componentManager.containerlessComponents) contentComponents.push(cms.componentManager.containerlessComponents[key]);
