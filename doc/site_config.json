@@ -12,5 +12,12 @@
   },
   "template_variables": {                           // Default values for Template Variables
     "key": "value"
+  },
+  "media_thumbnails": {
+    "file_tile": { "resize": [150, 150], "format": "jpg" },
+    "file_preview": { "resize": [300, 300], "format": "jpg" },
+    "small": { "resize": [512, 384], "export": true },
+    "medium": { "resize": [1024, 768], "export": true },
+    "large": { "resize": [2048, 1538] }
   }
 }

@@ -119,10 +119,19 @@ module.exports = exports = function(module, funcs){
     return page_fpath;
   }
 
-  exports.getMediaRelativePath = function(media, publish_params){
+  exports.getMediaRelativePath = function(media, publish_params, thumbnail_name){
     var media_fpath = media.media_path||'';
     if(!media_fpath) return '';
     while(media_fpath.substr(0,1)=='/') media_fpath = media_fpath.substr(1);
+
+    if(thumbnail_name){
+      var lastDot = media_fpath.lastIndexOf('.');
+      var lastSlash = Math.max(media_fpath.lastIndexOf('/'),media_fpath.lastIndexOf('\\'));
+      if((lastDot < 0) || (lastDot < lastSlash)) media_fpath += '.'+thumbnail_name;
+      else {
+        media_fpath = media_fpath.substr(0, lastDot) + '.' + thumbnail_name + media_fpath.substr(lastDot);
+      }
+    }
 
     var is_folder = (media_fpath[media_fpath.length-1]=='/');
     if(is_folder) throw new Error('Media path:'+media.media_path+' cannot be a folder');
@@ -1735,7 +1744,7 @@ module.exports = exports = function(module, funcs){
     //For each media
     //  Save media to file
     var sql = 'select \
-      m.media_key,media_file_id,media_path,media_ext \
+      m.media_key,media_file_id,media_path,media_ext,media_filename \
       from '+(module.schema?module.schema+'.':'')+'media m \
       inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
       inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
@@ -1746,32 +1755,73 @@ module.exports = exports = function(module, funcs){
     appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; return cb(err); }
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
-      async.eachSeries(rslt[0], function(media, cb){
-        var srcpath = funcs.getMediaFile(media.media_file_id, media.media_ext);
-        fs.readFile(srcpath, null, function(err, media_content){
-          if(err) return cb(err);
+      async.eachSeries(rslt[0], function(media, item_cb){
+        var srcpath = funcs.getMediaFilename(media.media_file_id, media.media_ext);
+        var media_fpath = '';
+        async.waterfall([
+          //Export primary media file
+          function(generate_cb){
+            fs.readFile(srcpath, null, function(err, media_content){
+              if(err) return generate_cb(err);
 
-          var media_fpath = '';
-          try{
-            media_fpath = funcs.getMediaRelativePath(media, publish_params);
-          }
-          catch(ex){
-            return cb(ex);
-          }
-          if(!media_fpath) return cb(new Error('Media has no path: '+media.media_key));
+              try{
+                media_fpath = funcs.getMediaRelativePath(media, publish_params);
+              }
+              catch(ex){
+                return generate_cb(ex);
+              }
+              if(!media_fpath) return generate_cb(new Error('Media has no path: '+media.media_key));
 
-          branchData.site_files[media_fpath] = {
-            md5: crypto.createHash('md5').update(media_content).digest("hex")
-          };
-          media_fpath = path.join(publish_params.publish_path, media_fpath);
+              branchData.site_files[media_fpath] = {
+                md5: crypto.createHash('md5').update(media_content).digest("hex")
+              };
+              media_fpath = path.join(publish_params.publish_path, media_fpath);
 
-          //Create folders for path
-          HelperFS.createFolderRecursive(path.dirname(media_fpath), function(err){
-            if(err) return cb(err);
-            //Save media to publish folder
-            HelperFS.copyFile(srcpath, media_fpath, cb);
-          });
-        });
+              //Create folders for path
+              HelperFS.createFolderRecursive(path.dirname(media_fpath), function(err){
+                if(err) return generate_cb(err);
+                //Save media to publish folder
+                HelperFS.copyFile(srcpath, media_fpath, generate_cb);
+              });
+            });
+          },
+          //Export thumbnails
+          function(generate_cb){
+            async.eachOfSeries(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_name, thumbnail_cb){
+              if(!thumbnail_config || !thumbnail_config.export) return thumbnail_cb();
+              if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return cb();
+
+              funcs.getMediaFile(media.media_file_id, media.media_filename, media.media_ext, thumbnail_name, thumbnail_config, function(err, thumbnail_srcpath, stat){
+                if(err) return thumbnail_cb('Error getting thumbnail for '+media_fpath+':'+thumbnail_name+' - '+err.toString());
+                
+                fs.readFile(thumbnail_srcpath, null, function(err, thumbnail_content){
+                  if(err) return thumbnail_cb(err);
+    
+                  var thumbnail_fpath = '';
+                  try{
+                    thumbnail_fpath = funcs.getMediaRelativePath(media, publish_params, thumbnail_name);
+                  }
+                  catch(ex){
+                    return thumbnail_cb(ex);
+                  }
+                  if(!thumbnail_fpath) return thumbnail_cb(new Error('Thumbnail deployment path could not be generated for: '+media.media_fpath+':'+thumbnail_name));
+    
+                  branchData.site_files[thumbnail_fpath] = {
+                    md5: crypto.createHash('md5').update(thumbnail_content).digest("hex")
+                  };
+                  thumbnail_fpath = path.join(publish_params.publish_path, thumbnail_fpath);
+    
+                  //Create folders for path
+                  HelperFS.createFolderRecursive(path.dirname(thumbnail_fpath), function(err){
+                    if(err) return thumbnail_cb(err);
+                    //Save thumbnail to publish folder
+                    HelperFS.copyFile(thumbnail_srcpath, thumbnail_fpath, thumbnail_cb);
+                  });
+                });
+              });
+            }, generate_cb);
+          },
+        ], item_cb);
       }, cb);
     });
   }

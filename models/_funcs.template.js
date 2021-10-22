@@ -713,7 +713,37 @@ module.exports = exports = function(module, funcs){
     var localConfig = {};
     var dbConfig = {};
     
-    return async.parallel([
+    return (site_id ? async.parallel : async.waterfall)([
+
+      //Get config from database
+      function(data_cb){
+        var sql = "select site_config from {schema}.site where site_id=@site_id";
+        var sql_ptypes = [dbtypes.BigInt];
+        var sql_params = { site_id: site_id };
+        if(!site_id){
+          sql = "select site_id, site_config from {schema}.site where site_id={schema}.my_current_site_id()";
+          sql_ptypes = [];
+          sql_params = { };
+        }
+        appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
+          if(err) return data_cb(err);
+          if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return data_cb(new Error('Error loading database site config')); }
+          site_id = rslt[0][0].site_id;
+          var configText = rslt[0][0].site_config || '';
+          if(configText){
+
+            //Read Site Config
+            try{
+              dbConfig = jshParser.ParseJSON(configText, 'Database site config', { trimErrors: true });
+            }
+            catch(ex){
+              if(options.continueOnConfigError) module.jsh.Log.info(new Error('Could not parse database site config: ' + ex.toString()));
+              else return data_cb(err);
+            }
+          }
+          return data_cb();
+        });
+      },
 
       //Get config from file system
       function(data_cb){
@@ -742,33 +772,13 @@ module.exports = exports = function(module, funcs){
           });
         });
       },
-
-      //Get config from database
-      function(data_cb){
-        if(!site_id) return data_cb();
-        var sql = "select site_config from {schema}.site where site_id=@site_id";
-        appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
-          if(err) return data_cb(err);
-          if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return data_cb(new Error('Error loading database site config')); }
-          var configText = rslt[0][0].site_config || '';
-          if(configText){
-
-            //Read Site Config
-            try{
-              dbConfig = jshParser.ParseJSON(configText, 'Database site config', { trimErrors: true });
-            }
-            catch(ex){
-              if(options.continueOnConfigError) module.jsh.Log.info(new Error('Could not parse database site config: ' + ex.toString()));
-              else return data_cb(err);
-            }
-          }
-          return data_cb();
-        });
-      },
     ], function(err){
       if(err) return callback(err);
 
-      rsltConfig = funcs.mergeSiteConfig(systemConfig, localConfig, dbConfig);
+      rsltConfig = funcs.mergeSiteConfig({
+        media_thumbnails: cms.Config.media_thumbnails,
+        redirect_listing_path: cms.Config.redirect_listing_path,
+      },systemConfig, localConfig, dbConfig);
       return callback(null, rsltConfig);
     });
   }
