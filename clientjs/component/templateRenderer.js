@@ -111,6 +111,8 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
     isInEditor: true,
     isInPageEditor: true,
     isInComponentEditor: ((type=='gridRowDataPreview') || (type=='gridItemPreview')),
+    componentRenderClass: 'jsharmony_cms_componentRender_'+jsh.XExt.escapeCSSClass((componentConfig&&componentConfig.id)||'')+'_'+cms.getUniqueId().toString(),
+    getMediaThumbnails: function(url){ return []; },
     renderPlaceholder: renderPlaceholder,
   }, additionalRenderParams));
   

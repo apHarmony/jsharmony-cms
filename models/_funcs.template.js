@@ -25,6 +25,7 @@ var path = require('path');
 var fs = require('fs');
 var parse5 = require('parse5');
 var crypto = require('crypto');
+var urlparser = require('url');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -1677,6 +1678,92 @@ module.exports = exports = function(module, funcs){
           htdoc.removeAttr(node, 'cms-template');
           //Render Parameters
           if(params.page && !funcs.evalBoolAttr(templateCond, function(val){ return val == params.page.page_template_id; })) htdoc.removeNode(node, 'cms-template Node');
+        }
+      },
+    ]);
+    return htdoc.content;
+  }
+
+  exports.applyResponsiveImg = function(content, thumbnails, media_items){
+    if(!content) return content;
+    media_items = media_items || {};
+
+    var responsiveThumbnails = {};
+    if(thumbnails) for(var key in thumbnails){
+      if(thumbnails[key].responsive) responsiveThumbnails[key] = thumbnails[key];
+    }
+
+    if(_.isEmpty(responsiveThumbnails)) return content;
+
+    //If no img tags, return
+    if(content.toLowerCase().indexOf('img') < 0) return content;
+
+    var htdoc = new funcs.HTMLDoc(content);
+    htdoc.applyNodes([
+      { //img tags
+        pred: function(node){ return htdoc.isTag(node, 'img'); },
+        exec: function(node){
+          var src = (htdoc.getAttr(node, 'src')||'').toString();
+          if(!src) return;
+          if(htdoc.hasAttr(node, 'srcset')) return;
+
+          //Check for #@JSHCMS
+          var urlparts = null;
+          try{
+            urlparts = urlparser.parse(src, true);
+          }
+          catch(ex){
+          }
+          if(!urlparts) return;
+
+          if(!Helper.beginsWith(urlparts.hash || '', '#@JSHCMS')) return;
+          if((urlparts.pathname||'').indexOf('/_funcs/media/')!=0) return;
+
+          var patharr = (urlparts.pathname||'').split('/');
+          if(patharr.length < 4) return;
+          var media_key = patharr[3];
+          var media_thumbnail = patharr[4];
+
+          //Check if media_key is valid
+          var media_item = media_items[media_key];
+          var media_width = 0;
+          if(media_item && media_item.media_width) media_width = media_item.media_width;
+          if(media_thumbnail && (media_thumbnail in thumbnails)){
+            var tgtThumbnail = thumbnails[media_thumbnail];
+            if(tgtThumbnail.resize && tgtThumbnail.resize.length) media_width = tgtThumbnail.resize[0];
+            else if(tgtThumbnail.crop && tgtThumbnail.crop.length) media_width = tgtThumbnail.crop[0];
+          }
+
+          var srcsets = [];
+          var max_width = media_width;
+          for(var thumbnail_id in responsiveThumbnails){
+            var thumbnail = responsiveThumbnails[thumbnail_id];
+            var srcsetCondition = '';
+            if(_.isString(thumbnail.responsive)) srcsetCondition = thumbnail.responsive;
+            else {
+              var thumbnail_width = 0;
+              if(media_item && media_item.media_width) thumbnail_width = media_item.media_width;
+              if(thumbnail.resize && thumbnail.resize.length) thumbnail_width = thumbnail.resize[0];
+              else if(thumbnail.crop && thumbnail.crop.length) thumbnail_width = thumbnail.crop[0];
+
+              if(thumbnail_width && (!media_width || (thumbnail_width < media_width))){
+                srcsetCondition = thumbnail_width + 'w';
+                if(thumbnail_width >= max_width) max_width = thumbnail_width + 1;
+              }
+            }
+
+            if(srcsetCondition){
+              //Generate srcset
+              var srcsetUrl = urlparts.protocol+'//'+urlparts.host+'/_funcs/media/'+media_key+'/'+thumbnail_id+'/#@JSHCMS'+urlparts.hash.substr(('#@JSHCMS').length);
+              srcsets.push(srcsetUrl+' '+srcsetCondition);
+            }
+          }
+
+          //Update img tag
+          if(srcsets.length){
+            srcsets.push(src + ' ' + max_width + 'w');
+            htdoc.appendAttr(node, 'srcset', srcsets.join(', '), 'srcset');
+          }
         }
       },
     ]);

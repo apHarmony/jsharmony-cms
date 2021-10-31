@@ -13,11 +13,36 @@
   "template_variables": {                           // Default values for Template Variables
     "key": "value"
   },
+
+  //Media thumbnail configuration
   "media_thumbnails": {
+    "thumbnail_id": {
+      //(Optional) Resize thumbnail to fit within target width and height
+      "resize": [150, 150],  // [width, height]
+
+      //(Optional) Crop thumbnail to target width and height
+      "crop": [150, 150],  // [width, height]
+
+      //(Optional) Resample thumbnail to target format (jpg, png, gif, tif)
+      "format": "jpg",
+
+      //(Optional) Export thumbnail on publish, as filename.thumbnail_id.extension
+      "export": true,
+
+      //(Optional) Add as an srcset responsive breakpoint to IMG tags in published content
+      //  If set to a string, the value will be used as the srcset condition, ex. "1x" "2x" "2048w"
+      //  If set to true, the thumbnail width will be used as the srcset condition, ex "150w"
+      "responsive": true,
+    },
+
+    //Default Thumbnails
     "file_tile": { "resize": [150, 150], "format": "jpg" },
     "file_preview": { "resize": [300, 300], "format": "jpg" },
     "small": { "resize": [512, 384], "export": true },
     "medium": { "resize": [1024, 768], "export": true },
-    "large": { "resize": [2048, 1538] }
+    "large": { "resize": [2048, 1538] },
+
+    //(Optional) Set a maximum image size for uploaded media
+    "maximum": { "resize": [2048, 1538] }
   }
 }

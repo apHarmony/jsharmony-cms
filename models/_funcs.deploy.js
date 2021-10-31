@@ -119,17 +119,19 @@ module.exports = exports = function(module, funcs){
     return page_fpath;
   }
 
-  exports.getMediaRelativePath = function(media, publish_params, thumbnail_name){
+  exports.getMediaRelativePath = function(media, publish_params, thumbnail_id, thumbnail_config){
     var media_fpath = media.media_path||'';
     if(!media_fpath) return '';
     while(media_fpath.substr(0,1)=='/') media_fpath = media_fpath.substr(1);
 
-    if(thumbnail_name){
+    if(thumbnail_id){
       var lastDot = media_fpath.lastIndexOf('.');
       var lastSlash = Math.max(media_fpath.lastIndexOf('/'),media_fpath.lastIndexOf('\\'));
-      if((lastDot < 0) || (lastDot < lastSlash)) media_fpath += '.'+thumbnail_name;
+      if((lastDot < 0) || (lastDot < lastSlash)) media_fpath += '.'+thumbnail_id;
       else {
-        media_fpath = media_fpath.substr(0, lastDot) + '.' + thumbnail_name + media_fpath.substr(lastDot);
+        media_fpath = media_fpath.substr(0, lastDot) +
+          '.' + thumbnail_id +
+          ((thumbnail_config && thumbnail_config.format) ? '.' + thumbnail_config.format : media_fpath.substr(lastDot));
       }
     }
 
@@ -140,6 +142,35 @@ module.exports = exports = function(module, funcs){
     if(media_fpath.indexOf('./') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
     if(publish_params) media_fpath = publish_params.media_subfolder + media_fpath;
     return media_fpath;
+  }
+
+  exports.getMediaThumbnails = function(url, branchData){
+    if(!branchData || !branchData.media_items || !branchData.site_config || !branchData.site_config.media_thumbnails) return {};
+    var urlparts = null;
+    try{
+      urlparts = urlparser.parse(url, true);
+    }
+    catch(ex){
+      return {};
+    }
+    if(!urlparts.pathname) return {};
+    var patharr = (urlparts.pathname||'').split('/');
+
+    var rslt = {};
+    if((urlparts.pathname.indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
+      var media_key = patharr[3];
+      if(!(media_key in branchData.media_items)) return {};
+      var media = branchData.media_items[media_key];
+      for(var thumbnail_id in branchData.site_config.media_thumbnails){
+        var thumbnail_config = branchData.site_config.media_thumbnails[thumbnail_id];
+        if(!thumbnail_config || !thumbnail_config.export) continue;
+        if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) continue;
+        if((patharr.length >= 5) && patharr[4]) patharr[4] = thumbnail_id;
+        else patharr.splice(4,0,thumbnail_id);
+        rslt[thumbnail_id] = urlparts.protocol + '//' + urlparts.host + patharr.join('/') + (urlparts.search||'') + (urlparts.hash||'');
+      }
+    }
+    return rslt;
   }
 
   exports.downloadLocalTemplates = function(branchData, templates, template_html, options, download_cb){
@@ -592,6 +623,8 @@ module.exports = exports = function(module, funcs){
           deployment.publish_params = publish_params;
 
           //Branch Data
+          var component_maxUniqueId = 0;
+          var component_maxUniqueIdSalt = crypto.randomBytes(16).toString('hex');
           var branchData = {
             publish_params: publish_params,
             template_variables: template_variables,
@@ -612,8 +645,10 @@ module.exports = exports = function(module, funcs){
             component_templates: null,
             component_template_html: {},
             component_export_template_html: {},
+            component_getUniqueId: function(){ return crypto.createHash('md5').update(component_maxUniqueIdSalt+'.'+(++component_maxUniqueId).toString()).digest("hex"); },
 
             media_keys: {},
+            media_items: {},
 
             menus: {},
             menu_template_html: {},
@@ -1289,7 +1324,7 @@ module.exports = exports = function(module, funcs){
 
     //Get list of all media_keys
     var sql = 'select \
-      m.media_key,media_file_id,media_path \
+      m.media_key,media_file_id,media_path,media_width,media_height,media_ext \
       from '+(module.schema?module.schema+'.':'')+'media m \
       inner join '+(module.schema?module.schema+'.':'')+'branch_media bm on bm.media_id = m.media_id\
       inner join '+(module.schema?module.schema+'.':'')+'deployment d on d.branch_id = bm.branch_id and d.deployment_id=@deployment_id\
@@ -1311,7 +1346,10 @@ module.exports = exports = function(module, funcs){
         }
         catch(ex){ }
 
-        if(media_urlpath) branchData.media_keys[media.media_key] = media_urlpath;
+        if(media_urlpath){
+          branchData.media_keys[media.media_key] = media_urlpath;
+          branchData.media_items[media.media_key] = media;
+        }
       });
       return cb();
     });
@@ -1416,10 +1454,12 @@ module.exports = exports = function(module, funcs){
                 //Additional parameters for static render
                 page: clientPage.page,
                 template: clientPage.template,
+
                 sitemap: clientPage.sitemap,
                 getSitemapURL: function(sitemap_item){ return funcs.getSitemapUrl(sitemap_item, branchData); },
                 menu: null,
                 getMenuURL: function(menu_item){ return funcs.getMenuUrl(menu_item, branchData); },
+
                 include: includePage,
               }
               if(renderOptions.menu_tag){
@@ -1465,9 +1505,14 @@ module.exports = exports = function(module, funcs){
                 include: includePage,
               });
               renderedContent = funcs.applyRenderTags(renderedContent, { page: ejsparams.page });
+              renderedContent = funcs.applyResponsiveImg(renderedContent, branchData.site_config.media_thumbnails, branchData.media_items);
               var replaceBranchURLsParams = {
-                getMediaURL: function(media_key){
+                getMediaURL: function(media_key, thumbnail_id){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
+                  if(thumbnail_id){
+                    if(!(branchData.site_config.media_thumbnails && branchData.site_config.media_thumbnails[thumbnail_id])) throw new Error('Page '+page.page_path+', Media #'+media_key.toString()+' links to invalid Thumbnail ID: '+thumbnail_id);
+                    return funcs.appendThumbnail(branchData.media_keys[media_key], thumbnail_id, branchData.site_config.media_thumbnails && branchData.site_config.media_thumbnails[thumbnail_id]);
+                  }
                   return branchData.media_keys[media_key];
                 },
                 getPageURL: function(page_key){
@@ -1589,7 +1634,7 @@ module.exports = exports = function(module, funcs){
       _.each(renderParams.menu.items, function(menu_item){ menu_item.selected = false; });
     }
 
-    var rslt = funcs.renderComponent(branchData.component_export_template_html[template_name][exportIndex] || '', null, renderOptions, renderParams);
+    var rslt = funcs.renderComponent(branchData.component_export_template_html[template_name][exportIndex] || '', branchData, renderOptions, renderParams);
     if(exportItem.export_path){
       branchData.fsOps.addFile(branchData.fsOps.getValidFilePath(exportItem.export_path), rslt);
     }
@@ -1787,24 +1832,24 @@ module.exports = exports = function(module, funcs){
           },
           //Export thumbnails
           function(generate_cb){
-            async.eachOfSeries(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_name, thumbnail_cb){
+            async.eachOfSeries(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_id, thumbnail_cb){
               if(!thumbnail_config || !thumbnail_config.export) return thumbnail_cb();
               if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return cb();
 
-              funcs.getMediaFile(media.media_file_id, media.media_filename, media.media_ext, thumbnail_name, thumbnail_config, function(err, thumbnail_srcpath, stat){
-                if(err) return thumbnail_cb('Error getting thumbnail for '+media_fpath+':'+thumbnail_name+' - '+err.toString());
+              funcs.getMediaFile(media.media_file_id, media.media_filename, media.media_ext, thumbnail_id, thumbnail_config, function(err, thumbnail_srcpath, thumbnail_fname, stat){
+                if(err) return thumbnail_cb('Error getting thumbnail for '+media_fpath+':'+thumbnail_id+' - '+err.toString());
                 
                 fs.readFile(thumbnail_srcpath, null, function(err, thumbnail_content){
                   if(err) return thumbnail_cb(err);
     
                   var thumbnail_fpath = '';
                   try{
-                    thumbnail_fpath = funcs.getMediaRelativePath(media, publish_params, thumbnail_name);
+                    thumbnail_fpath = funcs.getMediaRelativePath(media, publish_params, thumbnail_id, thumbnail_config);
                   }
                   catch(ex){
                     return thumbnail_cb(ex);
                   }
-                  if(!thumbnail_fpath) return thumbnail_cb(new Error('Thumbnail deployment path could not be generated for: '+media.media_fpath+':'+thumbnail_name));
+                  if(!thumbnail_fpath) return thumbnail_cb(new Error('Thumbnail deployment path could not be generated for: '+media.media_fpath+':'+thumbnail_id));
     
                   branchData.site_files[thumbnail_fpath] = {
                     md5: crypto.createHash('md5').update(thumbnail_content).digest("hex")

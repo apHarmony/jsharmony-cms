@@ -183,7 +183,7 @@ module.exports = exports = function(module, funcs){
 
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
-      getMediaURL: function(media_key, branchData, getLinkContent, urlparts){ return ''; },
+      getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent, thumbnail, urlparts){ return ''; },
       getPageURL: function(page_key, branchData, getLinkContent, urlparts){ return ''; },
       onError: function(err){ },
       onComponentData: null, //function(content){ return content; },
@@ -221,13 +221,14 @@ module.exports = exports = function(module, funcs){
       }
       var urlparts = urlparser.parse(url, true);
       if(!urlparts.path) return url;
-      var patharr = (urlparts.path||'').split('/');
+      var patharr = (urlparts.pathname||'').split('/');
 
       if((urlparts.path.indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
         var media_key = patharr[3];
         if(parseInt(media_key).toString()==media_key){
           try{
-            var media_url = options.getMediaURL(media_key, options.branchData, getLinkContent, urlparts);
+            var thumbnail_id = ((patharr.length >= 5) ? patharr[4] : '');
+            var media_url = options.getMediaURL(media_key, thumbnail_id, options.branchData, getLinkContent, urlparts);
           }
           catch(ex){
             if(options.onError) options.onError(ex);
@@ -444,11 +445,11 @@ module.exports = exports = function(module, funcs){
 
     function replaceURLs(content, options){
       var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
-        getMediaURL: function(media_key, branchData, getLinkContent, urlparts){
+        getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent, urlparts){
           if(!media_files){
             return baseurl + urlparts.path.substr(1) + '#@JSHCMS';
           }
-          return baseurl+'_funcs/media/'+media_key+'/?media_id='+media_files[media_key].media_id+'#@JSHCMS';
+          return baseurl+'_funcs/media/'+media_key+(thumbnail_id?'/'+thumbnail_id:'')+'/?media_id='+media_files[media_key].media_id+'#@JSHCMS';
         },
         getPageURL: function(page_key, branchData, getLinkContent, urlparts){
           if(branch_id) return baseurl+'_funcs/page/'+page_key+'/?branch_id='+branch_id+'&view=1#@JSHCMS';

@@ -375,6 +375,8 @@ exports = module.exports = function(jsh, cms){
       isInEditor: true,
       isInPageEditor: false,
       isInComponentEditor: false,
+      componentRenderClass: 'jsharmony_cms_componentRender_'+XExt.escapeCSSClass((component&&component.id)||'')+'_'+cms.getUniqueId().toString(),
+      getMediaThumbnails: function(url){ return []; },
       items: data.items,
       item: data.item,
       component: properties,

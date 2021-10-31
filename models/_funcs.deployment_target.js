@@ -888,6 +888,11 @@ module.exports = exports = function(module, funcs){
           }
           else {
             wc.req(op.params[0], 'GET', {}, {}, undefined, function(err, res, templateContent){
+              if(err){
+                if((err.code=='DEPTH_ZERO_SELF_SIGNED_CERT')||(err.code=='SELF_SIGNED_CERT_IN_CHAIN')||(err.message=='self signed certificate')){
+                  err.message = 'Self-signed certificate found for URL: '+op.params[0] + ' :: Select the "Ignore certificate errors when downloading remote templates" option in the Deployment Target configuration to allow self-signed certificates.';
+                }
+              }
               op.params[1](err, res, templateContent, op.done);
             }, { rejectUnauthorized: !publish_config.ignore_remote_template_certificate });
           }

@@ -629,14 +629,14 @@ module.exports = exports = function(module, funcs){
           //Replace URLs
           function replaceURLs(content, options){
             var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
-              getMediaURL: function(media_key, _branchData, getLinkContent){
+              getMediaURL: function(media_key, thumbnail_id, _branchData, getLinkContent){
                 var orig_media_key = media_key;
                 var media_file_id = media_key;
                 if(branchData.media_mapping[orig_media_key]){
                   media_key = branchData.media_mapping[orig_media_key].new_media_id;
                   media_file_id = branchData.media_mapping[orig_media_key].new_media_file_id || media_key;
                 }
-                return branchData._baseurl+'_funcs/media/'+media_key+'/?media_file_id='+media_file_id+'#@JSHCMS';
+                return branchData._baseurl+'_funcs/media/'+media_key+(thumbnail_id?'/'+thumbnail_id:'')+'/?media_file_id='+media_file_id+'#@JSHCMS';
               },
               getPageURL: function(page_key){
                 var orig_page_key = page_key;

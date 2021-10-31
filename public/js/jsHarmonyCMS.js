@@ -3786,6 +3786,8 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
     isInEditor: true,
     isInPageEditor: true,
     isInComponentEditor: ((type=='gridRowDataPreview') || (type=='gridItemPreview')),
+    componentRenderClass: 'jsharmony_cms_componentRender_'+jsh.XExt.escapeCSSClass((componentConfig&&componentConfig.id)||'')+'_'+cms.getUniqueId().toString(),
+    getMediaThumbnails: function(url){ return []; },
     renderPlaceholder: renderPlaceholder,
   }, additionalRenderParams));
   
@@ -4670,6 +4672,8 @@ exports = module.exports = function(jsh, cms){
       isInEditor: true,
       isInPageEditor: false,
       isInComponentEditor: false,
+      componentRenderClass: 'jsharmony_cms_componentRender_'+XExt.escapeCSSClass((component&&component.id)||'')+'_'+cms.getUniqueId().toString(),
+      getMediaThumbnails: function(url){ return []; },
       items: data.items,
       item: data.item,
       component: properties,
@@ -7942,6 +7946,7 @@ var jsHarmonyCMS = function(options){
   var $ = null;
   var async = null;
   var loadErrors = [];
+  var maxUniqueId = 0;
 
 
   this.init = function(){
@@ -8098,6 +8103,8 @@ var jsHarmonyCMS = function(options){
   this.createJsHarmonyCMSEditor = function(toolbarElement) {
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
   }
+
+  this.getUniqueId = function(){ return ++maxUniqueId; }
 
   //Run Init
   _this.init();

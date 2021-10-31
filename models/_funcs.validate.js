@@ -130,15 +130,6 @@ module.exports = exports = function(module, funcs){
 
     async.waterfall([
 
-      //Get site config
-      function(cb){
-        funcs.getSiteConfig('deployment', branchData.site_id, { }, function(err, siteConfig){
-          if(err) return cb(err);
-          branchData.site_config = siteConfig || {};
-          return cb();
-        });
-      },
-
       //Get template_variables for branch
       function(cb){
         var sql = "select site_editor deployment_target_id, v_my_site.deployment_target_template_variables, v_my_branch_desc.site_id, deployment_target_publish_config, deployment_target_publish_path from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_branch_desc.branch_id=@branch_id";
@@ -167,16 +158,22 @@ module.exports = exports = function(module, funcs){
             return deploy_cb('Error parsing deployment_target_publish_config: '+ex.toString());
           }
 
-          funcs.parseTemplateVariables('publish', 'deployment', branchData.site_id, branchData.site_config, template_variables, deployment_target_publish_config, function(err, parsed_template_variables){
+          //Get site config
+          funcs.getSiteConfig('deployment', branchData.site_id, { }, function(err, siteConfig){
             if(err) return cb(err);
-            template_variables = parsed_template_variables;
-            branchData.template_variables = template_variables;
+            branchData.site_config = siteConfig || {};
 
-            //Deployment Target Publish Params
-            var publish_params = _.extend(JSON.parse(JSON.stringify(template_variables)), deployment_target_publish_config);
-            branchData.publish_params = publish_params;
+            funcs.parseTemplateVariables('publish', 'deployment', branchData.site_id, branchData.site_config, template_variables, deployment_target_publish_config, function(err, parsed_template_variables){
+              if(err) return cb(err);
+              template_variables = parsed_template_variables;
+              branchData.template_variables = template_variables;
 
-            return cb();
+              //Deployment Target Publish Params
+              var publish_params = _.extend(JSON.parse(JSON.stringify(template_variables)), deployment_target_publish_config);
+              branchData.publish_params = publish_params;
+
+              return cb();
+            });
           });
         });
       },
@@ -322,8 +319,11 @@ module.exports = exports = function(module, funcs){
         if(page.compiled.content) for(var key in page.compiled.content) allContent[key + ' content'] = page.compiled.content[key];
         for(var key in allContent){
           funcs.replaceBranchURLs(allContent[key], {
-            getMediaURL: function(media_key, branchData, getLinkContent){
+            getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent){
               if(!(media_key in branchData.media_keys)) throw new Error('<' + key + '>: Link to missing Media ID #'+media_key.toString()+': ...'+getLinkContent()+'...');
+              if(thumbnail_id){
+                if(!(branchData.site_config.media_thumbnails && branchData.site_config.media_thumbnails[thumbnail_id])) throw new Error('<' + key + '>: Media #'+media_key.toString()+' links to invalid Thumbnail ID: '+thumbnail_id+' ...'+getLinkContent()+'...');
+              }
               return '';
             },
             getPageURL: function(page_key, branchData, getLinkContent){

@@ -120,11 +120,21 @@ module.exports = exports = function(module, funcs){
             media_keys: {},
             page_keys: {},
             results: [],
+            site_config: {},
           };
           var sql_ptypes = [dbtypes.BigInt];
           var sql_params = { 'branch_id': branch_id };
           
           async.waterfall([
+            //Get site_config
+            function(search_cb){
+              funcs.getSiteConfig(req._DBContext, site_id, { continueOnConfigError: true }, function(err, siteConfig){
+                if(err) return search_cb(err);
+                searchData.site_config = siteConfig || {};
+                return search_cb();
+              });
+            },
+            //Search pages
             function(search_cb){
               async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, search_item_cb){
                 if(!branch_item.search) return search_item_cb();
@@ -289,8 +299,9 @@ module.exports = exports = function(module, funcs){
                 return content;
               }
               var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, {
-                getMediaURL: function(media_key){
+                getMediaURL: function(media_key, thumbnail_id){
                   if(!(media_key in searchData.media_keys)) return '';
+                  if(thumbnail_id) return funcs.appendThumbnail(searchData.media_keys[media_key], thumbnail_id, searchData.site_config.media_thumbnails && searchData.site_config.media_thumbnails[thumbnail_id]);
                   return searchData.media_keys[media_key];
                 },
                 getPageURL: function(page_key){

@@ -659,9 +659,11 @@ module.exports = exports = function(module, funcs){
       isInEditor: false,
       isInPageEditor: false,
       isInComponentEditor: false,
+      componentRenderClass: 'jsharmony_cms_componentRender_'+Helper.escapeCSSClass((renderOptions.templateName)||'')+'_'+((branchData && branchData.component_getUniqueId && branchData.component_getUniqueId())||'').toString(),
       items: [],
       item: {},
       component: properties,
+      getMediaThumbnails: function(url){ return funcs.getMediaThumbnails(url, branchData); },
       renderPlaceholder: function(){ return ''; },
       renderTemplate: function(locals, templateName, items){
         if(!items || (_.isArray(items) && !items.length)) return '';

@@ -79,6 +79,7 @@ var jsHarmonyCMS = function(options){
   var $ = null;
   var async = null;
   var loadErrors = [];
+  var maxUniqueId = 0;
 
 
   this.init = function(){
@@ -235,6 +236,8 @@ var jsHarmonyCMS = function(options){
   this.createJsHarmonyCMSEditor = function(toolbarElement) {
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
   }
+
+  this.getUniqueId = function(){ return ++maxUniqueId; }
 
   //Run Init
   _this.init();

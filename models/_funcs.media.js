@@ -29,22 +29,22 @@ module.exports = exports = function(module, funcs){
   var exports = {};
   var _t = module._t, _tN = module._tN;
 
-  exports.getMediaFilename = function(media_file_id, media_ext, thumbnail_name, thumbnail_config){
+  exports.getMediaFilename = function(media_file_id, media_ext, thumbnail_id, thumbnail_config){
     var fname = media_file_id.toString();
-    if(thumbnail_name) fname += '.' + thumbnail_name;
+    if(thumbnail_id) fname += '.' + thumbnail_id;
     else if(thumbnail_config && thumbnail_config.resize){
       fname += '.custom.'+(thumbnail_config.resize[0]||'').toString()+'x'+(thumbnail_config.resize[1]||'').toString();
     }
     else if(thumbnail_config) throw new Error('Unsupported media file name: '+JSON.stringify(thumbnail_config));
-    fname += media_ext;
+    fname += ((thumbnail_config && thumbnail_config.format) ? '.' + thumbnail_config.format : media_ext);
     return path.join(path.join(module.jsh.Config.datadir,'media'),fname);
   }
 
-  exports.getMediaFile = function(media_file_id, media_filename, media_ext, thumbnail_name, thumbnail_config, callback){
+  exports.getMediaFile = function(media_file_id, media_filename, media_ext, thumbnail_id, thumbnail_config, callback){
     var jsh = module.jsh;
 
     var srcpath = funcs.getMediaFilename(media_file_id, media_ext);
-    var fpath = funcs.getMediaFilename(media_file_id, media_ext, thumbnail_name, thumbnail_config);
+    var fpath = funcs.getMediaFilename(media_file_id, media_ext, thumbnail_id, thumbnail_config);
     var fname = path.basename(media_filename);
 
     if(thumbnail_config && thumbnail_config.format){
@@ -54,7 +54,7 @@ module.exports = exports = function(module, funcs){
 
     var transformMedia = function(transform_callback){
       if('resize' in thumbnail_config) jsh.Extensions.image.resize(srcpath, fpath, thumbnail_config.resize, thumbnail_config.format, transform_callback);
-      else if('crop' in thumbnail_config) jsh.Extensions.image.crop(srcpath, fpath, thumbnail_config.format, transform_callback);
+      else if('crop' in thumbnail_config) jsh.Extensions.image.crop(srcpath, fpath, thumbnail_config.crop, thumbnail_config.format, transform_callback);
       else if('format' in thumbnail_config) jsh.Extensions.image.resample(srcpath, fpath, thumbnail_config.format, transform_callback);
       else return transform_callback(new Error('Invalid thumbnail_config: '+JSON.stringify(thumbnail_config)));
     }
@@ -68,14 +68,25 @@ module.exports = exports = function(module, funcs){
             if(err) return callback(err);
             fs.stat(fpath, function (err, stat) {
               if(err) return callback(err);
-              return callback(null, fpath, stat);
+              return callback(null, fpath, fname, stat);
             });
           });
         }
         else return callback(err);
       }
-      else return callback(null, fpath, stat);
+      else return callback(null, fpath, fname, stat);
     });
+  }
+
+  exports.appendThumbnail = function(fpath, thumbnail_id, thumbnail_config){
+    if(!fpath) return fpath;
+    var fname = path.basename(fpath);
+    var fext = path.extname(fname);
+    fpath = fpath.substr(0, fpath.length - fext.length) + '.' + thumbnail_id + fext;
+    if(thumbnail_config && thumbnail_config.format){
+      if(fext.length > 1) fpath = fpath.substr(0, fpath.length - fext.length) + '.' + thumbnail_config.format;
+    }
+    return fpath;
   }
 
   exports.media = function (req, res, next) {
@@ -103,12 +114,12 @@ module.exports = exports = function(module, funcs){
       if (verb == 'get'){
         if(!req.params || !req.params.media_key) return next();
         var media_key = req.params.media_key;
-        var thumbnail_name = req.params.thumbnail;
+        var thumbnail_id = req.params.thumbnail;
         var thumbnail_config = null;
-        if(thumbnail_name) thumbnail_config = siteConfig.media_thumbnails[thumbnail_name];
+        if(thumbnail_id) thumbnail_config = siteConfig.media_thumbnails[thumbnail_id];
 
         //Invalid Thumbnail
-        if(thumbnail_name && !thumbnail_config) return next();
+        if(thumbnail_id && !thumbnail_config) return next();
 
         //Check if media exists
         sql_ptypes = [dbtypes.BigInt];
@@ -167,11 +178,10 @@ module.exports = exports = function(module, funcs){
           }
 
           var serveoptions = { attachment: !!('download' in Q), mime_override: media.media_ext };
-          var fname = path.basename(media.media_filename);
 
           if(thumbnail_config && thumbnail_config.format) serveoptions.mime_override = '.' + thumbnail_config.format;
 
-          funcs.getMediaFile(media.media_file_id, media.media_filename, media.media_ext, thumbnail_name, thumbnail_config, function(err, fpath, stat){
+          funcs.getMediaFile(media.media_file_id, media.media_filename, media.media_ext, thumbnail_id, thumbnail_config, function(err, fpath, fname, stat){
             if(err){
               if(err.message == 'Media file not found') return Helper.GenError(req, res, -33, 'Media file not found.');
               jsh.Log.error(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
