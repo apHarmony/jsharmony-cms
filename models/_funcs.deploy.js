@@ -146,6 +146,7 @@ module.exports = exports = function(module, funcs){
 
   exports.getMediaThumbnails = function(url, branchData){
     if(!branchData || !branchData.media_items || !branchData.site_config || !branchData.site_config.media_thumbnails) return {};
+    if(!url || (url.indexOf('#@JSHCMS') < 0)) return {};
     var urlparts = null;
     try{
       urlparts = urlparser.parse(url, true);

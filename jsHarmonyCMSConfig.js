@@ -58,7 +58,7 @@ function jsHarmonyCMSConfig(){
     serverHttpsCa: undefined,   // path/to/https-ca.pem
   };
 
-  this.media_thumbnails = {  //Media thumbnail configuration.  See options defined in site_config.json
+  this.media_thumbnails = {  //Media thumbnail configuration.  See site_config.json for options
     file_tile: { resize: [150, 150], format: "jpg" },
     file_preview: { resize: [300, 300], format: "jpg" },
     small: { resize: [512, 384] },

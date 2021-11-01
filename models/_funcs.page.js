@@ -1242,6 +1242,7 @@ module.exports = exports = function(module, funcs){
             if(!siteConfig) siteConfig = {};
             var pageSiteConfig = {
               defaultEditorConfig: siteConfig.defaultEditorConfig||{},
+              media_thumbnails: {},
             };
             if(typeof pageSiteConfig.defaultEditorConfig.webSnippetsPath == 'undefined'){
               if(cms.PreviewServer){
@@ -1250,6 +1251,10 @@ module.exports = exports = function(module, funcs){
                 pageSiteConfig.defaultEditorConfig.webSnippetsPath = webSnippetPath;
               }
             }
+            _.each(siteConfig.media_thumbnails, function(thumbnail_config, thumbnail_id){
+              if(!thumbnail_config || !thumbnail_config.export) return;
+              pageSiteConfig.media_thumbnails[thumbnail_id] = true;
+            });
             res.end(JSON.stringify({ '_success': 1, siteConfig: pageSiteConfig }));
           });
         });

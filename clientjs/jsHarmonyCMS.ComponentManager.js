@@ -34,6 +34,8 @@ exports = module.exports = function(jsh, cms){
   this.containerlessComponents = {};
   this.cntContainerlessComponents = 0;
 
+  var maxUniqueId = 0;
+
   this.load = function(onError){
     _this.loadSystemComponentTemplates(onError);
   }
@@ -375,8 +377,8 @@ exports = module.exports = function(jsh, cms){
       isInEditor: true,
       isInPageEditor: false,
       isInComponentEditor: false,
-      componentRenderClass: 'jsharmony_cms_componentRender_'+XExt.escapeCSSClass((component&&component.id)||'')+'_'+cms.getUniqueId().toString(),
-      getMediaThumbnails: function(url){ return []; },
+      componentRenderClass: 'jsharmony_cms_componentRender_'+XExt.escapeCSSClass((component&&component.id)||'')+'_'+cms.componentManager.getUniqueId().toString(),
+      getMediaThumbnails: function(url){ return cms.componentManager.getMediaThumbnails(url); },
       items: data.items,
       item: data.item,
       component: properties,
@@ -400,6 +402,26 @@ exports = module.exports = function(jsh, cms){
       }
       rslt.items = data.items;
       rslt.item = data.item;
+    }
+    return rslt;
+  }
+
+  this.getUniqueId = function(){ return ++maxUniqueId; }
+
+  this.getMediaThumbnails = function(url){
+    if(!cms.site_config || !cms.site_config.media_thumbnails) return {};
+    if(!url || (url.indexOf('#@JSHCMS') < 0)) return {};
+    
+    var urlparts = document.createElement('a');
+    urlparts.href = url;
+    var patharr = (urlparts.pathname||'').split('/');
+    var rslt = {};
+    if(((urlparts.pathname||'').indexOf('/_funcs/media/')==0) && (patharr.length>=4)){
+      for(var thumbnail_id in cms.site_config.media_thumbnails){
+        if((patharr.length >= 5) && patharr[4]) patharr[4] = thumbnail_id;
+        else patharr.splice(4,0,thumbnail_id);
+        rslt[thumbnail_id] = urlparts.protocol + '//' + urlparts.host + patharr.join('/') + (urlparts.search||'') + (urlparts.hash||'');
+      }
     }
     return rslt;
   }
