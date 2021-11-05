@@ -83,6 +83,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         ],
         contextmenu: 'jsharmonycmscomponentcontextmenu link linkchecker image imagetools table spellchecker configurepermanentpen',
         toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView | jsHarmonyCmsEndEdit',
+        mobile: {
+          toolbar_mode: 'floating',
+        },
         removed_menuitems: 'newdocument',
         image_advtab: true,
         menu: {

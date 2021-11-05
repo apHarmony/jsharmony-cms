@@ -14,6 +14,9 @@
   padding-right:19px;
   white-space:nowrap;
 }
+.xform<%=model.class%> th a {
+  color:#555;
+}
 .xform<%=model.class%> td {
   font-family: 'PT Sans', arial, helvetica, sans-serif;
   font-size:1.2em;

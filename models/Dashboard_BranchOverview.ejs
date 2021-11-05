@@ -30,7 +30,7 @@
   <%% } %%>
   <%% _.each(cur_branch && branch_data, function(branch_item){ if(branch_item.code_val=='branch') return; %%>
     <tr>
-      <th valign="bottom">&nbsp;&nbsp;<%%=branch_item.code_txt%%></th>
+      <th valign="bottom">&nbsp;&nbsp;<a href="<%%=jsh.globalparams.branch_items[branch_item.code_val].editor_url%%>"><%%=branch_item.code_txt%%></a></th>
       <td valign="bottom">
         <%%=branch_item.cnt%%>
       </td>
