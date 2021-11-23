@@ -1727,11 +1727,21 @@ module.exports = exports = function(module, funcs){
           //Check if media_key is valid
           var media_item = media_items[media_key];
           var media_width = 0;
-          if(media_item && media_item.media_width) media_width = media_item.media_width;
+          var media_height = 0;
+          if(media_item){
+            if(media_item.media_width) media_width = media_item.media_width;
+            if(media_item.media_height) media_height = media_item.media_height;
+          }
           if(media_thumbnail && (media_thumbnail in thumbnails)){
             var tgtThumbnail = thumbnails[media_thumbnail];
-            if(tgtThumbnail.resize && tgtThumbnail.resize.length) media_width = tgtThumbnail.resize[0];
-            else if(tgtThumbnail.crop && tgtThumbnail.crop.length) media_width = tgtThumbnail.crop[0];
+            if(tgtThumbnail.resize && tgtThumbnail.resize.length){
+              media_width = tgtThumbnail.resize[0];
+              media_height = tgtThumbnail.resize[1];
+            }
+            else if(tgtThumbnail.crop && tgtThumbnail.crop.length){
+              media_width = tgtThumbnail.crop[0];
+              media_height = tgtThumbnail.crop[1];
+            }
           }
 
           var srcsets = [];
@@ -1763,6 +1773,14 @@ module.exports = exports = function(module, funcs){
           if(srcsets.length){
             srcsets.push(src + ' ' + max_width + 'w');
             htdoc.appendAttr(node, 'srcset', srcsets.join(', '), 'srcset');
+          }
+
+          if(media_width && media_height && htdoc.hasAttr(node, 'cms-image-dimensions')){
+            if(!htdoc.hasAttr(node, 'width') && !htdoc.hasAttr(node, 'height')){
+              htdoc.appendAttr(node, 'width', media_width.toString());
+              htdoc.appendAttr(node, 'height', media_height.toString());
+              htdoc.removeAttr(node, 'cms-image-dimensions');
+            }
           }
         }
       },
