@@ -1835,7 +1835,7 @@ module.exports = exports = function(module, funcs){
           function(generate_cb){
             async.eachOfSeries(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_id, thumbnail_cb){
               if(!thumbnail_config || !thumbnail_config.export) return thumbnail_cb();
-              if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return cb();
+              if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return thumbnail_cb();
 
               funcs.getMediaFile(media.media_file_id, media.media_filename, media.media_ext, thumbnail_id, thumbnail_config, function(err, thumbnail_srcpath, thumbnail_fname, stat){
                 if(err) return thumbnail_cb('Error getting thumbnail for '+media_fpath+':'+thumbnail_id+' - '+err.toString());

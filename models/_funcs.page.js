@@ -447,7 +447,7 @@ module.exports = exports = function(module, funcs){
       var rslt = funcs.replaceBranchURLs(content, _.extend({ replaceComponents: true }, options, {
         getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent, urlparts){
           if(!media_files){
-            return baseurl + urlparts.path.substr(1) + '#@JSHCMS';
+            return baseurl + urlparts.pathname.substr(1) + '#@JSHCMS';
           }
           return baseurl+'_funcs/media/'+media_key+(thumbnail_id?'/'+thumbnail_id:'')+'/?media_id='+media_files[media_key].media_id+'#@JSHCMS';
         },
