@@ -30,18 +30,26 @@
       {"name":"sitemap_item_path","control":"hidden"},
       {"name":"sitemap_item_text","control":"textbox_M","controlstyle":"width:300px;","caption":"Link Text","validate":["Required"],"nl":true,"onchange":"_this.sitemap_item_text_onchange(obj,newval);", "captionstyle":"width:68px;"},
       {"name":"sitemap_item_link_type","control":"dropdown","caption":"Link Type","lov":{ "blank": "(No Link)", "values": { "JS": "JavaScript", "MEDIA": "Media", "PAGE": "Page", "URL": "URL" } }, "onchange":"_this.sitemap_item_link_type_onchange(obj, newval, undoChange);","nl":true},
+      {"control":"html","value":"<span class='<%=model.class%>_link_target_group'>"},
       {"name":"sitemap_item_link_target","control":"dropdown","caption":"Target","lov":{ "blank": "Same Window", "values": { "NEWWIN": "New Window" } }},
+      {"control":"html","value":"</span>"},
 
-      {"name":"sitemap_item_link_dest","control":"textbox_L","caption":"Destination","controlstyle":"width:300px;","nl":true,
+      {"control":"html","value":"<span class='<%=model.class%>_link_dest_group'>"},
+      {"name":"sitemap_item_link_dest","control":"textbox_L","caption":"Destination","captionclass":"sitemap_item_link_dest_caption","controlstyle":"width:300px;","nl":true,
         "validate":[{"function":"js:if((_obj.sitemap_item_link_type=='URL') && !_obj.sitemap_item_link_dest) return 'URL is required'; if((_obj.sitemap_item_link_type=='JS') && !_obj.sitemap_item_link_dest) return 'JS is required';"}]},
+      {"control":"html","value":"</span>"},
 
+      {"control":"html","value":"<span class='<%=model.class%>_link_page_group'>"},
       {"name":"sitemap_item_link_page","control":"textbox_M","caption":"Page","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
         "validate":[{"function":"js:if((_obj.sitemap_item_link_type=='PAGE') && !_obj.sitemap_item_link_dest) return 'Page is required';"}]},
       {"name":"sitemap_item_link_page_browse","control":"button","value":"Browse","onclick":"js:_this.browsePage();","actions":"IU"},
+      {"control":"html","value":"</span>"},
 
+      {"control":"html","value":"<span class='<%=model.class%>_link_media_group'>"},
       {"name":"sitemap_item_link_media","control":"textbox_M","caption":"Media","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
         "validate":[{"function":"js:if((_obj.sitemap_item_link_type=='MEDIA') && !_obj.sitemap_item_link_dest) return 'Media is required';"}]},
       {"name":"sitemap_item_link_media_browse","control":"button","value":"Browse","onclick":"js:_this.browseMedia();","actions":"IU"},
+      {"control":"html","value":"</span>"},
 
       {"control":"html","value":"<div class='<%=model.class%>_page_options'>"},
       {"control":"html","value":"<div class='<%=model.class%>_divider'>:: Page</div>"},

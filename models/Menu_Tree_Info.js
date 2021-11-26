@@ -61,18 +61,11 @@ jsh.App[modelid] = new (function(){
   this.updateEnabledState = function(){
     var menu_item_link_type = xmodel.get('menu_item_link_type');
 
-    var jtarget = $('.menu_item_link_target.xelem'+xmodel.class);
-    var jtarget_group = jtarget.add(jtarget.prevUntil('.xelem'+xmodel.class));
-
-    var jdest = $('.menu_item_link_dest.xelem'+xmodel.class);
-    var jdestcaption = jdest.prev();
-    var jdest_group = jdest.add(jdest.prevUntil('.xelem'+xmodel.class));
-
-    var jdest_page = $('.menu_item_link_page.xelem'+xmodel.class);
-    var jdest_page_group = jdest_page.add(jdest_page.prevUntil('.xelem'+xmodel.class)).add(jdest_page.next('.xelem'+xmodel.class));
-
-    var jdest_media = $('.menu_item_link_media.xelem'+xmodel.class);
-    var jdest_media_group = jdest_media.add(jdest_media.prevUntil('.xelem'+xmodel.class)).add(jdest_media.next('.xelem'+xmodel.class));
+    var jtarget_group = $('.'+xmodel.class+'_link_target_group');
+    var jdestcaption = $('.sitemap_item_link_dest_caption');
+    var jdest_group = $('.'+xmodel.class+'_link_dest_group');
+    var jdest_page_group = $('.'+xmodel.class+'_link_page_group');
+    var jdest_media_group = $('.'+xmodel.class+'_link_media_group');
 
     var enable_target = true;
     var enable_dest = false;

@@ -1693,7 +1693,8 @@ module.exports = exports = function(module, funcs){
       if(thumbnails[key].responsive) responsiveThumbnails[key] = thumbnails[key];
     }
 
-    if(_.isEmpty(responsiveThumbnails)) return content;
+    var lcontent = content.toLowerCase();
+    if(_.isEmpty(responsiveThumbnails) && (lcontent.indexOf('cms-image-dimensions') < 0)) return content;
 
     //If no img tags, return
     if(content.toLowerCase().indexOf('img') < 0) return content;
@@ -1705,7 +1706,7 @@ module.exports = exports = function(module, funcs){
         exec: function(node){
           var src = (htdoc.getAttr(node, 'src')||'').toString();
           if(!src) return;
-          if(htdoc.hasAttr(node, 'srcset')) return;
+          if(htdoc.hasAttr(node, 'srcset') && !htdoc.hasAttr(node, 'cms-image-dimensions')) return;
 
           //Check for #@JSHCMS
           var urlparts = null;
@@ -1744,35 +1745,37 @@ module.exports = exports = function(module, funcs){
             }
           }
 
-          var srcsets = [];
-          var max_width = media_width;
-          for(var thumbnail_id in responsiveThumbnails){
-            var thumbnail = responsiveThumbnails[thumbnail_id];
-            var srcsetCondition = '';
-            if(_.isString(thumbnail.responsive)) srcsetCondition = thumbnail.responsive;
-            else {
-              var thumbnail_width = 0;
-              if(media_item && media_item.media_width) thumbnail_width = media_item.media_width;
-              if(thumbnail.resize && thumbnail.resize.length) thumbnail_width = thumbnail.resize[0];
-              else if(thumbnail.crop && thumbnail.crop.length) thumbnail_width = thumbnail.crop[0];
+          if(!htdoc.hasAttr(node, 'srcset')){
+            var srcsets = [];
+            var max_width = media_width;
+            for(var thumbnail_id in responsiveThumbnails){
+              var thumbnail = responsiveThumbnails[thumbnail_id];
+              var srcsetCondition = '';
+              if(_.isString(thumbnail.responsive)) srcsetCondition = thumbnail.responsive;
+              else {
+                var thumbnail_width = 0;
+                if(media_item && media_item.media_width) thumbnail_width = media_item.media_width;
+                if(thumbnail.resize && thumbnail.resize.length) thumbnail_width = thumbnail.resize[0];
+                else if(thumbnail.crop && thumbnail.crop.length) thumbnail_width = thumbnail.crop[0];
 
-              if(thumbnail_width && (!media_width || (thumbnail_width < media_width))){
-                srcsetCondition = thumbnail_width + 'w';
-                if(thumbnail_width >= max_width) max_width = thumbnail_width + 1;
+                if(thumbnail_width && (!media_width || (thumbnail_width < media_width))){
+                  srcsetCondition = thumbnail_width + 'w';
+                  if(thumbnail_width >= max_width) max_width = thumbnail_width + 1;
+                }
+              }
+
+              if(srcsetCondition){
+                //Generate srcset
+                var srcsetUrl = urlparts.protocol+'//'+urlparts.host+'/_funcs/media/'+media_key+'/'+thumbnail_id+'/#@JSHCMS'+urlparts.hash.substr(('#@JSHCMS').length);
+                srcsets.push(srcsetUrl+' '+srcsetCondition);
               }
             }
 
-            if(srcsetCondition){
-              //Generate srcset
-              var srcsetUrl = urlparts.protocol+'//'+urlparts.host+'/_funcs/media/'+media_key+'/'+thumbnail_id+'/#@JSHCMS'+urlparts.hash.substr(('#@JSHCMS').length);
-              srcsets.push(srcsetUrl+' '+srcsetCondition);
+            //Update img tag
+            if(srcsets.length){
+              srcsets.push(src + ' ' + max_width + 'w');
+              htdoc.appendAttr(node, 'srcset', srcsets.join(', '), 'srcset');
             }
-          }
-
-          //Update img tag
-          if(srcsets.length){
-            srcsets.push(src + ' ' + max_width + 'w');
-            htdoc.appendAttr(node, 'srcset', srcsets.join(', '), 'srcset');
           }
 
           if(media_width && media_height && htdoc.hasAttr(node, 'cms-image-dimensions')){

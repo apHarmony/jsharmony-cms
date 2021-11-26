@@ -19,7 +19,7 @@ jsh.App[modelid] = new (function(){
     }
     var diffModel = jsh.XModels[jsh.$root('.xform'+xmodel.class+' .xsubform_diff .xpanel .xform').first().data('id')];
     var actionsBar = jsh.$root('.'+diffModel.class+'_actions_bar');
-    actionsBar.prev('.xform_caption').show();
+    jsh.$root('.xform'+diffModel.class+' .actions_bar_caption').show();
     var buttonGroup = jsh.$root('.xactions_group.xelem'+xmodel.class+'[data-group="Actions"]');
     actionsBar.html(buttonGroup.html());
   }

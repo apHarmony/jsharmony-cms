@@ -20,18 +20,26 @@
       {"name":"menu_item_path","control":"hidden"},
       {"name":"menu_item_text","control":"textbox_M","caption":"Text","controlstyle":"width:300px;","validate":["Required"],"nl":true,"onchange":"_this.menu_item_text_onchange(obj,newval);", "captionstyle":"width:68px;"},
       {"name":"menu_item_link_type","control":"dropdown","caption":"Link Type","lov":{ "blank": "(No Link)", "values": { "JS": "JavaScript", "MEDIA": "Media", "PAGE": "Page", "URL": "URL" } }, "onchange":"_this.menu_item_link_type_onchange(obj, newval, undoChange);","nl":true},
+      {"control":"html","value":"<span class='<%=model.class%>_link_target_group'>"},
       {"name":"menu_item_link_target","control":"dropdown","caption":"Target","lov":{ "blank": "Same Window", "values": { "NEWWIN": "New Window" } }},
+      {"control":"html","value":"</span>"},
 
-      {"name":"menu_item_link_dest","control":"textbox_L","caption":"Destination","controlstyle":"width:300px;","nl":true,
+      {"control":"html","value":"<span class='<%=model.class%>_link_dest_group'>"},
+      {"name":"menu_item_link_dest","control":"textbox_L","caption":"Destination","captionclass":"menu_item_link_dest_caption","controlstyle":"width:300px;","nl":true,
         "validate":[{"function":"js:if((_obj.menu_item_link_type=='URL') && !_obj.menu_item_link_dest) return 'URL is required'; if((_obj.menu_item_link_type=='JS') && !_obj.menu_item_link_dest) return 'JS is required';"}]},
+      {"control":"html","value":"</span>"},
 
+      {"control":"html","value":"<span class='<%=model.class%>_link_page_group'>"},
       {"name":"menu_item_link_page","control":"textbox_M","caption":"Page","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
         "validate":[{"function":"js:if((_obj.menu_item_link_type=='PAGE') && !_obj.menu_item_link_dest) return 'Page is required';"}]},
       {"name":"menu_item_link_page_browse","control":"button","value":"Browse","onclick":"js:_this.browsePage();","actions":"IU"},
+      {"control":"html","value":"</span>"},
 
+      {"control":"html","value":"<span class='<%=model.class%>_link_media_group'>"},
       {"name":"menu_item_link_media","control":"textbox_M","caption":"Media","controlstyle":"margin-right:4px;","readonly":true,"nl":true,
         "validate":[{"function":"js:if((_obj.menu_item_link_type=='MEDIA') && !_obj.menu_item_link_dest) return 'Media is required';"}]},
       {"name":"menu_item_link_media_browse","control":"button","value":"Browse","onclick":"js:_this.browseMedia();","actions":"IU"},
+      {"control":"html","value":"</span>"},
 
       {"control":"html","value":"<div class='<%=model.class%>_divider'>:: Advanced Options</div>","nl":true},
       {"name":"menu_item_type","control":"dropdown","caption":"Render As","default":"TEXT","lov":{ "blank": false, "values": { "TEXT": "Text", "HTML": "HTML" } }, "captionstyle":"width:130px;"},

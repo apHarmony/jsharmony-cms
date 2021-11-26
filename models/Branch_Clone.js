@@ -9,9 +9,7 @@ jsh.App[modelid] = new (function(){
       jChangeStatus.html(XExt.renderClientEJS(tmpl, { _: _, jsh: jsh }));
     }
     else {
-      jChangeStatus.hide(); //Control
-      jChangeStatus.prev('.xform_caption').hide(); //Caption
-      jChangeStatus.prev().prev('br').hide(); //Newline
+      jsh.$root('.'+xmodel.class+'_change_status_group').hide();
     }
   };
 
