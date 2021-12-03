@@ -1773,7 +1773,7 @@ module.exports = exports = function(module, funcs){
 
             //Update img tag
             if(srcsets.length){
-              srcsets.push(src + ' ' + max_width + 'w');
+              srcsets.unshift(src + ' ' + max_width + 'w');
               htdoc.appendAttr(node, 'srcset', srcsets.join(', '), 'srcset');
             }
           }
