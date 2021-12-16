@@ -2011,27 +2011,16 @@ module.exports = exports = function(module, funcs){
 
   exports.deploy_ignore_remote = function(publish_params, fpath){
     if(fpath=='.git') return true;
-    return false;
-    /*
     if(!publish_params || !publish_params.ignore_remote) return false;
-    var origpath = fpath;
     fpath = HelperFS.convertWindowsToPosix(fpath);
-    while(fpath){
-      for(var i=0;i<publish_params.ignore_remote.length;i++){
-        var ignore_expr = publish_params.ignore_remote[i];
-        if(!ignore_expr) continue;
-        if(ignore_expr.regex){
-        }
-        else {
-          if(ignore_expr == fpath) return true;
-        }
-      }
-      fpath = path.dirname(fpath);
-      if(fpath=='.') fpath = '';
-      if(fpath=='..') fpath = '';
+    for(var i=0;i<publish_params.ignore_remote.length;i++){
+      var ignore_expr = publish_params.ignore_remote[i];
+      if(!ignore_expr) continue;
+      var ignore_path = HelperFS.convertWindowsToPosix(ignore_expr.toString());
+      if(ignore_path == fpath) return true;
+      if(fpath.indexOf(ignore_path+'/')==0) return true;
     }
-    return true;
-    */
+    return false;
   }
 
   exports.deploy_fs = function(deployment, publish_path, deploy_path, site_files, cb){
@@ -2613,7 +2602,9 @@ module.exports = exports = function(module, funcs){
             if(site_md5 != s3_md5) s3_upload.push(fname);
           }
           else {
-            s3_delete.push(fname);
+            if(!funcs.deploy_ignore_remote(deployment.publish_params, fname)){
+              s3_delete.push(fname);
+            }
           }
         }
         for(var fname in site_files){

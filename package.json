@@ -1,6 +1,6 @@
 {
   "name": "jsharmony-cms",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "jsHarmony CMS",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
     "diff2html": "3.4.1",
     "ejs": "2.7.4",
     "js-beautify": "^1.11.0",
-    "jsharmony": "^1.4.0",
+    "jsharmony": "^1.5.2",
     "jsharmony-factory": "^1.2.0",
     "lodash": "^4.17.19",
     "node-forge": "^0.10.0",

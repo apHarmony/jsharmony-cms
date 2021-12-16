@@ -101,6 +101,12 @@
     "onDeploy": true,            //true (all), false (none), or array of items, ex: ["page","media"] 
     "onDeploy_PostBuild": true,  //true (all), false (none), or array of items, ex: ["page","media"]
   },
+  //Remote folders or files to ignore when deleting excess files on publish
+  //Use with FTP, FTPS, SFTP, S3, and Local File System deployments
+  "ignore_remote": [
+    "path/to/folder",
+    "path/to/file"
+  ]
 }
 
 //Template Variables
