@@ -514,7 +514,10 @@ module.exports = exports = function(module, funcs){
     var cms = module;
     var git_path = cms.Config.git.bin_path || 'git';
     return funcs.shellExec(git_path, repo_path, params, function(err, rslt, stderr){
-      if(err) return cb(new Error('Git Error: ' + err.toString() + ' ' + (stderr||'')), rslt);
+      if(err){
+        if(err && (err.code == 'ENOENT')) err = new Error('Git executable not found.  Please install git, or set the git.bin_path config parameter');
+        return cb(new Error('Git Error: ' + err.toString() + ' ' + (stderr||'')), rslt);
+      }
       return cb(err, rslt);
     }, exec_options);
   }
@@ -2626,7 +2629,6 @@ module.exports = exports = function(module, funcs){
             Bucket: bucket,
             Key: page_bpath,
             Body: fstream,
-            ACL: 'public-read'
           };
           var contentType = HelperFS.getMimeType(page_bpath);
           if(contentType) uploadParams.ContentType = contentType;
