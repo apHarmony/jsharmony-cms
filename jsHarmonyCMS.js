@@ -806,6 +806,30 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
     }
   };
 
+  configFactory.scheduled_tasks['evictExcessBranches'] = {
+    action: function(jobproc) {
+      _this.funcs.branch_evictExcessBranches.call(_this.jsh.AppSrv, 'jobproc', function(){})
+    },
+    options: {
+      quiet: false
+    },
+    when: function (curdt, lastdt) {  //return true if the job should run
+      return (curdt.getTime() - lastdt.getTime() > _this.Config.evictBranchesJobDelay);
+    }
+  };
+
+  configFactory.scheduled_tasks['cleanupOrphanBranchArchives'] = {
+    action: function(jobproc) {
+      _this.funcs.branch_cleanupOrphanBranchArchives.call(_this.jsh.AppSrv, 'jobproc', function(){})
+    },
+    options: {
+      quiet: false
+    },
+    when: function (curdt, lastdt) {  //return true if the job should run
+      return (curdt.getTime() - lastdt.getTime() > _this.Config.cleanupOrphanBranchesJobDelay);
+    }
+  };
+
   return {
     instance: 'jshInstance_CMS',
     cookie_samesite: 'none',
@@ -859,6 +883,7 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
         '/_funcs/begin_merge': _this.funcs.req_begin_merge,
         '/_funcs/branch/download/:branch_id': _this.funcs.branch_download,
         '/_funcs/branch/upload': _this.funcs.branch_upload,
+        '/_funcs/branch/checkout/:branch_id': _this.funcs.req_branch_checkout,
         '/_funcs/site/checkout': _this.funcs.site_checkout,
       }
     ]

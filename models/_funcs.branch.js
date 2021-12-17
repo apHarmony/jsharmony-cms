@@ -30,6 +30,8 @@ var fs = require('fs');
 module.exports = exports = function(module, funcs){
   var exports = {};
   var _t = module._t, _tN = module._tN;
+  var branchResidentStatus = {};
+  var branchLocks = {};
 
   exports.branch_download = function (req, res, next) {
     var cms = module;
@@ -86,8 +88,16 @@ module.exports = exports = function(module, funcs){
             data_files: [],
             site_id: branch.site_id,
           };
+          var branchLock;
 
           async.waterfall([
+            function(load_cb){
+              exports.branch_acquireBranchLock(req._DBContext, branch_id, load_cb);
+            },
+            function(lock, cb){
+              branchLock = lock;
+              cb();
+            },
             function(download_cb){
               async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
                 if(!branch_item.download) return branch_item_cb();
@@ -169,6 +179,7 @@ module.exports = exports = function(module, funcs){
               zipfile.end();
             },
           ], function(err){
+            if(branchLock) branchLock.release();
             if(err) return Helper.GenError(req, res, -99999, err.toString());
           });
         });
@@ -1153,6 +1164,400 @@ module.exports = exports = function(module, funcs){
       if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No '+(site_access&&site_access.length?site_access.join(' / ')+' ':'')+'access to target site');
       callback(null);
     });
+  }
+
+  var branchArchivePath = function(branch_id) {
+    return path.join(module.jsh.Config.datadir, 'branch', branch_id + '.json');
+  }
+
+  var branchArchiveColumns = function(dbtypes){
+    return {
+      'branch_{item}_id': dbtypes.BigInt,
+      'branch_id': dbtypes.BigInt,
+      '{item}_key': dbtypes.BigInt,
+      '{item}_id': dbtypes.BigInt,
+      'branch_{item}_action': dbtypes.VarChar(32),
+      '{item}_orig_id': dbtypes.BigInt,
+      'branch_{item}_etstmp': dbtypes.DateTime(7),
+      'branch_{item}_euser': dbtypes.VarChar(20),
+      'branch_{item}_mtstmp': dbtypes.DateTime(7),
+      'branch_{item}_muser': dbtypes.VarChar(20),
+    };
+  };
+
+  var asMs = function(record, field) {
+    if (typeof(record[field]) == 'string') record[field] = Date.parse(record[field]);
+  }
+
+  exports.branch_reallyCheckIsDbResident = function(dbcontext, branch_id, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = {branch_id: branch_id};
+
+    var itemsSql = _.map(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+      var sql = "select count(*) as n";
+
+      sql += " from {tbl_branch_item} branch_{item}"
+
+      sql += " where branch_{item}.branch_id=@branch_id";
+
+      return cms.applyBranchItemSQL(branch_item_type, sql);
+    }).join(' union ');
+    var sql = "select sum(n) from ("+itemsSql+")";
+    appsrv.ExecScalar(dbcontext, sql, sql_ptypes, sql_params, function (err, rslt) {
+      if (err != null) { err.sql = sql; err.model = model; return callback(err); }
+      if(!rslt || !rslt.length || typeof(rslt[0]) != 'number'){ return callback(new Error('Error retrieving branch data')); }
+      if (rslt[0] > 0) {
+        return callback(null, true);
+      } else {
+        fs.access('data/branch/' + branch_id + '.json', fs.constants.F_OK, function(err) {
+          if (err) { // file not found, no archive
+            return callback(null, true);
+          } else { // file found, appears to be archived
+            return callback(null, false);
+          }
+        });
+      }
+    });
+  }
+
+  exports.branch_isDbResident = function(dbcontext, branch_id, callback) {
+    if (branch_id in branchResidentStatus) {
+      setTimeout(callback, 0, null, branchResidentStatus[branch_id]);
+    } else {
+      exports.branch_reallyCheckIsDbResident(dbcontext, branch_id, function(err, resident) {
+        if (!err) branchResidentStatus[branch_id] = resident;
+        callback(err, resident);
+      });
+    }
+  }
+
+  exports.branch_evictableBranches = function(dbcontext, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var itemsSql = _.map(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+      var sql = "select branch_id";
+
+      sql += " from {tbl_branch_item} branch_{item}"
+
+      sql += " group by branch_id having count(*) > 0";
+
+      return cms.applyBranchItemSQL(branch_item_type, sql);
+    }).join(' union ');
+
+    var sql = "select branch_id from cms_branch where not ((branch_type='PUBLIC' and branch_sts='ACTIVE') or branch_sts='REVIEW') and branch_id not in (select branch_id from cms_sys_user_site where branch_id is not null) and branch_id in ("+itemsSql+") order by branch_mtstmp";
+    appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), [], {}, function(err, rslt) {
+      if (err) {err.sql = sql};
+      callback(err, _.compact(_.map(rslt[0], 'branch_id')));
+    })
+  }
+
+  exports.branch_indexToFile = function (dbcontext, branch_id, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = {branch_id: branch_id};
+
+    async.waterfall([
+      function(dir_cb){
+        fs.mkdir(path.join(module.jsh.Config.datadir, 'branch'), {recursive:true}, dir_cb);
+      },
+      function(index_cb){
+        var branchData = {};
+        var columns = _.without(_.keys(branchArchiveColumns(dbtypes)), 'branch_id');
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          var sql = "select ";
+          sql += _.map(columns || [], function(colname){ return 'branch_{item}.'+colname; }).join(',');
+
+          sql += " from {tbl_branch_item} branch_{item}"
+
+          sql += " where branch_{item}.branch_id=@branch_id";
+
+          appsrv.ExecRecordset(dbcontext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; err.model = model; return branch_item_cb(err); }
+            if(!rslt || !rslt.length || !rslt[0]){ return branch_item_cb(new Error('Error retrieving branch data')); }
+            branchData[branch_item_type] = rslt[0];
+            return branch_item_cb();
+          });
+        }, function() { return index_cb(null, branchData);} );
+      },
+      function(branchData, convert_cb){
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          async.eachOfSeries(branchData[branch_item_type], function(record, record_index, record_cb) {
+            asMs(record, 'branch_'+branch_item_type+'_etstmp');
+            asMs(record, 'branch_'+branch_item_type+'_mtstmp');
+            record_cb();
+          }, branch_item_cb);
+        }, function(err) {return convert_cb(err, branchData);});
+      },
+      function(branchData, write_cb){
+        fs.writeFile(branchArchivePath(branch_id), JSON.stringify(branchData, null, 2), 'utf8', write_cb);
+      },
+      function(delete_cb){
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          var sql = "delete from {tbl_branch_item} where branch_id=@branch_id";
+          appsrv.ExecCommand(dbcontext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+            if (err != null) { err.sql = sql; return branch_item_cb(err); }
+            return branch_item_cb();
+          });
+        }, function() { return delete_cb(null);} );
+      },
+      function(cache_cb){
+        branchResidentStatus[branch_id] = false;
+        cache_cb();
+      },
+    ], callback);
+  }
+
+  exports.branch_indexFromFile = function (dbcontext, branch_id, callback) {
+    var cms = module;
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = {branch_id: branch_id};
+
+    async.waterfall([
+      function(read_cb){
+        fs.readFile(branchArchivePath(branch_id), read_cb);
+      },
+      function(data, parse_cb){
+        json = JSON.parse(data);
+        if(json && json.page) return parse_cb(null, json);
+        parse_cb(new Error('Error unarchiving branch data'));
+      },
+      function(branchData, insert_cb){
+        var bac = branchArchiveColumns(dbtypes);
+        var columns = _.keys(bac);
+        var sql_ptypes = _.values(bac);
+
+        var sql = "insert into {tbl_branch_item}(";
+        sql += _.map(columns || [], function(colname){ return colname; }).join(',');
+        sql += ") values(";
+        sql += _.map(columns || [], function(colname){ return '@'+colname; }).join(',');
+        sql += ")";
+
+        async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
+          async.eachOfSeries(branchData[branch_item_type], function(record, record_index, record_cb) {
+            var sql_params = {};
+            for(var key in bac){
+              sql_params[cms.applyBranchItemSQL(branch_item_type, key)] = null;
+            };
+            sql_params['branch_id'] = branch_id;
+            for(var key in record){ if(key in sql_params) sql_params[key] = record[key]; }
+
+            appsrv.ExecCommand(dbcontext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+              if (err != null) { err.sql = sql; return record_cb(err); }
+              return record_cb();
+            });
+          }, branch_item_cb);
+        }, insert_cb);
+      },
+      function(delete_cb){
+        fs.unlink(branchArchivePath(branch_id), delete_cb);
+      },
+      function(cache_cb){
+        branchResidentStatus[branch_id] = true;
+        cache_cb();
+      },
+    ], callback);
+  }
+
+  exports.branch_makeResident = function(dbcontext, branch_id, callback) {
+    exports.branch_isDbResident(dbcontext, branch_id, function(err, resident) {
+      if (err) return callback(err);
+      if (resident) return callback();
+      exports.branch_indexFromFile(dbcontext, branch_id, callback);
+    });
+  }
+
+  exports.branch_acquireBranchLock = function(dbcontext, branch_id, callback) {
+    if (!branchLocks[branch_id]) branchLocks[branch_id] = {lock: null, queue: []};
+    var current = branchLocks[branch_id];
+
+    var next = function() {
+      if (current.queue.length <= 0) {
+        current.lock = null;
+      } else {
+        setTimeout(current.queue.pop(), 0);
+      }
+    };
+    var lock = {
+      release: function(cb){
+        if (cb) setTimeout(cb, 0);
+        next();
+      }
+    };
+    var acquire = function() {
+      current.lock = lock;
+      exports.branch_makeResident(dbcontext, branch_id, function(err) {
+        if (err) {
+          callback(err);
+          next();
+          return;
+        } else {
+          callback(null, lock);
+        }
+      });
+    };
+
+    if (current.lock) {
+      current.queue.push(acquire);
+    } else {
+      acquire();
+    }
+  }
+
+  exports.branch_evictExcessBranches = function(dbcontext, callback) {
+    exports.branch_evictableBranches(dbcontext, function(err, results) {
+      var keep = Math.max(1, (module.Config && typeof(module.Config.cachedDbResidentBranches) == 'number' && module.Config.cachedDbResidentBranches) || 5);
+      var evictable = results.length - keep;
+      if (evictable < 1) return callback();
+      var evicted = results.slice(0, evictable);
+      return async.eachOfSeries(evicted, function(branch_id, i, cb) {
+        exports.branch_acquireBranchLock(dbcontext, branch_id, function(err, lock) {
+          if (err) return cb(err);
+          exports.branch_indexToFile(dbcontext, branch_id, function(err2) {
+            if (lock) lock.release();
+            cb(err2);
+          });
+        });
+      }, callback);
+    });
+  }
+
+  exports.branch_cleanupOrphanBranchArchives = function(dbcontext, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    async.parallel([
+      function(db_cb) {
+        var sql = "select branch_id from "+(module.schema?module.schema+'.':'')+"branch";
+        appsrv.ExecRecordset(dbcontext, sql, [], {}, function(err, rslt) {
+          if (err) {err.sql = sql};
+          var branches = _.map(rslt[0], 'branch_id');
+          db_cb(err, branches);
+        });
+      },
+      function(dir_cb) {
+        fs.readdir(path.join(module.jsh.Config.datadir, 'branch'), dir_cb);
+      },
+    ],
+    function(err, results) {
+      if (err) return callback(err);
+      var branches = results[0];
+      var dir = results[1];
+      async.each(dir, function(file, cb) {
+        var branch_id = parseInt(file);
+        if (typeof(branch_id) == 'number' && branches.indexOf(branch_id) == -1) {
+          fs.unlink(branchArchivePath(branch_id), cb);
+        } else {
+          cb();
+        }
+      }, callback);
+    });
+  }
+
+  exports.set_my_current_branch_id = function(dbcontext, branch_id, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+    var sql_ptypes = [dbtypes.BigInt];
+    var sql_params = { 'branch_id': branch_id };
+    var sql = "update "+(module.schema?module.schema+'.':'')+"v_my_current_branch set new_branch_id=@branch_id";
+    appsrv.ExecCommand(dbcontext, sql, sql_ptypes, sql_params, function(err) {
+      if (err) {err.sql = sql};
+      callback(err);
+    });
+  }
+
+  exports.my_current_branch_id = function(dbcontext, callback) {
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var sql = "select "+(module.schema?module.schema+'.':'')+"my_current_branch_id()";
+    appsrv.ExecScalar(dbcontext, sql, [], {}, function(err, rslt) {
+      if (err) {err.sql = sql};
+      callback(err, rslt[0]);
+    });
+  }
+
+  exports.branch_checkout = function(dbcontext, branch_id, callback) {
+    var branchLock;
+    async.waterfall([
+      function(cb) {exports.my_current_branch_id(dbcontext, cb)},
+      function(previous_branch_id, cb) {
+        if (branch_id == previous_branch_id) {
+          cb({shortCircuit: true});
+        } else {
+          cb(null);
+        }
+      },
+      function(cb) {
+        exports.branch_acquireBranchLock(dbcontext, branch_id, cb);
+      },
+      function(lock, cb) {
+        branchLock = lock;
+        cb();
+      },
+      function(cb) {
+        exports.set_my_current_branch_id(dbcontext, branch_id, function(err) {
+          cb(err);
+        });
+      },
+    ], function(err) {
+      if (branchLock) branchLock.release();
+      if (err != null && !err.shortCircuit) { callback(err); return; }
+      return callback();
+    });
+  }
+
+  exports.req_branch_checkout = function (req, res, next) {
+    var cms = module;
+    var verb = req.method.toLowerCase();
+    
+    var Q = req.query;
+    var P = req.body;
+    var appsrv = this;
+    var jsh = module.jsh;
+    var XValidate = jsh.XValidate;
+    var sql = '';
+    var sql_ptypes = [];
+    var sql_params = {};
+    var verrors = {};
+    var dbtypes = appsrv.DB.types;
+    var validate = null;
+    var model = jsh.getModel(req, module.namespace + 'Branch_Checkout');
+
+    if (verb == 'post'){
+      if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, 'Invalid Model Access'); return; }
+
+      if(!req.params || !req.params.branch_id) return next();
+      var branch_id = parseInt(req.params.branch_id);
+
+      //Validate parameters
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      sql_ptypes = [dbtypes.BigInt];
+      sql_params = { 'branch_id': branch_id };
+      validate = new XValidate();
+      validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+      verrors = validate.Validate('B', sql_params);
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
+      exports.branch_checkout(req._DBContext, branch_id, function(err) {
+        if (err != null) { err.model = model; appsrv.AppDBError(req, res, err); return; }
+        //Return success
+        return res.send(JSON.stringify({ _success: 1 }));
+      });
+    }
+    else return next();
   }
 
   return exports;

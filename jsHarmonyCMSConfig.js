@@ -138,6 +138,12 @@ function jsHarmonyCMSConfig(){
                                  //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
   };
 
+  this.cachedDbResidentBranches = 5;   //Number of branches to maintain in the database (vs. archived to file) NOT INCLUDING (always resident) checkouts, reviews, and releases
+
+  this.evictBranchesJobDelay = (1000 * 60 * 60 * 24);  //How often to check for unused branches that can be archived to file (reloaded on demand)
+
+  this.cleanupOrphanBranchesJobDelay = (1000 * 60 * 60 * 24 * 7);  //How often to check for branch archive files whose branch was deleted
+
   this.showLocalTemplatePaths = true;   //Display local template file system paths in Site Templates Administration
 
   this.onRender = null; //function(target, content, callback){ return callback(new_content); }  //target = 'editor', 'publish'

@@ -468,6 +468,9 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
     var sql_params = { src_branch_id: src_branch_id, dst_branch_id: dst_branch_id };
 
+    var srcLock;
+    var dstLock;
+
     async.waterfall([
 
       function(cb){
@@ -503,6 +506,24 @@ module.exports = exports = function(module, funcs){
           }
           return cb();
         });
+      },
+
+      //Ensure branch is not archived to disk
+      function(load_cb){
+        funcs.branch_acquireBranchLock(context, src_branch_id, load_cb);
+      },
+      function(lock, cb){
+        srcLock = lock;
+        cb();
+      },
+
+      //Ensure branch is not archived to disk
+      function(load_cb){
+        funcs.branch_acquireBranchLock(context, dst_branch_id, load_cb);
+      },
+      function(lock, cb){
+        dstLock = lock;
+        cb();
       },
 
       //Run onBeforeConflicts functions
@@ -603,6 +624,8 @@ module.exports = exports = function(module, funcs){
       },
 
     ], function(err){
+      if (srcLock) srcLock.release();
+      if (dstLock) dstLock.release();
       callback(err, {
         _success: 1,
         src_branch_desc: src_branch_desc,
@@ -705,9 +728,26 @@ module.exports = exports = function(module, funcs){
       verrors = _.merge(verrors, validate.Validate('U', sql_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-      //Validate user has access to branch
-      var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
-      appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
+      var branchLock;
+
+      async.waterfall([
+        //Ensure branch is not archived to disk
+        function(load_cb){
+          funcs.branch_acquireBranchLock(req._DBContext, branch_id, load_cb);
+        },
+        function(lock, cb){
+          branchLock = lock;
+          cb();
+        },
+
+        //Validate user has access to branch
+        function(update_cb){
+          var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
+          appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, update_cb);
+        },
+      ],
+      function (err, rslt) {
+        if (branchLock) branchLock.release();
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({ '_success': 1 }));
