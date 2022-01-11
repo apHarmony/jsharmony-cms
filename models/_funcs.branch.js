@@ -537,6 +537,14 @@ module.exports = exports = function(module, funcs){
     ], callback);
   }
 
+  var pageSort = function(a, b) {
+    if (a.page_is_folder != b.page_is_folder) {
+      return b.page_is_folder - a.page_is_folder;
+    } else {
+      return a.page_path.length - b.page_path.length;
+    }
+  };
+
   exports.branch_upload_importPage = function(dbtasks, branchItems, branchData, callback){
     var dbtaskid = 1;
     var jsh = module.jsh;
@@ -545,6 +553,7 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     branchData.page_mapping = {};
+    branchItems.sort(pageSort);
 
     _.each(branchItems, function(item){
       //Create mapping
@@ -671,6 +680,14 @@ module.exports = exports = function(module, funcs){
     return callback();
   }
 
+  var mediaSort = function(a, b) {
+    if (a.media_is_folder != b.media_is_folder) {
+      return b.media_is_folder - a.media_is_folder;
+    } else {
+      return a.media_path.length - b.media_path.length;
+    }
+  };
+
   exports.branch_upload_importMedia = function(dbtasks, branchItems, branchData, callback){
     var dbtaskid = 1;
     var jsh = module.jsh;
@@ -679,6 +696,7 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     branchData.media_mapping = {};
+    branchItems.sort(mediaSort);
 
     async.waterfall([
       function(cb){
