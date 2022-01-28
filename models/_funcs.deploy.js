@@ -515,7 +515,7 @@ module.exports = exports = function(module, funcs){
     var git_path = cms.Config.git.bin_path || 'git';
     return funcs.shellExec(git_path, repo_path, params, function(err, rslt, stderr){
       if(err){
-        if(err && (err.code == 'ENOENT')) err = new Error('Git executable not found.  Please install git, or set the git.bin_path config parameter');
+        if(err && (err.code == 'ENOENT')) err = new Error('Git executable not found using command: "'+git_path+'".  Please install git, or set the git.bin_path config parameter');
         return cb(new Error('Git Error: ' + err.toString() + ' ' + (stderr||'')), rslt);
       }
       return cb(err, rslt);
@@ -1804,7 +1804,7 @@ module.exports = exports = function(module, funcs){
     appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; return cb(err); }
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
-      async.eachSeries(rslt[0], function(media, item_cb){
+      async.eachLimit(rslt[0], 10, function(media, item_cb){
         var srcpath = funcs.getMediaFilename(media.media_file_id, media.media_ext);
         var media_fpath = '';
         async.waterfall([
@@ -1836,7 +1836,7 @@ module.exports = exports = function(module, funcs){
           },
           //Export thumbnails
           function(generate_cb){
-            async.eachOfSeries(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_id, thumbnail_cb){
+            async.eachOf(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_id, thumbnail_cb){
               if(!thumbnail_config || !thumbnail_config.export) return thumbnail_cb();
               if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return thumbnail_cb();
 
@@ -2570,6 +2570,7 @@ module.exports = exports = function(module, funcs){
     if(bucket_prefix){
       if(!bucket_prefix || (bucket_prefix[bucket_prefix.length-1]!='/')) bucket_prefix += '/';
     }
+    var S3_THREADS = 10;
 
     var s3_files = {};
     var s3_upload = [];
@@ -2619,7 +2620,7 @@ module.exports = exports = function(module, funcs){
 
       //Upload new files to S3
       function(s3_cb){
-        async.eachSeries(s3_upload, function(page_path, page_cb){
+        async.eachLimit(s3_upload, S3_THREADS, function(page_path, page_cb){
           var page_bpath = bucket_prefix + page_path;
           var page_fpath = path.join(publish_path, page_path);
           var fstream = fs.createReadStream(page_fpath);
@@ -2641,7 +2642,7 @@ module.exports = exports = function(module, funcs){
 
       //Delete removed files from S3
       function(s3_cb){
-        async.eachSeries(s3_delete, function(page_path, page_cb){
+        async.eachLimit(s3_delete, S3_THREADS, function(page_path, page_cb){
           var page_bpath = bucket_prefix + page_path;
           funcs.deploy_log_info(deployment_id, 'Deleting: '+page_path);
           funcs.deploy_log_change(deployment_id, 'Deleting file: '+page_path);

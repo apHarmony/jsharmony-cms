@@ -4390,7 +4390,7 @@ exports = module.exports = function(jsh, cms){
         complete_cb();
       },
       error: function(xhr, status, err){
-        complete_cb(error);
+        complete_cb(err);
       }
     });
   }

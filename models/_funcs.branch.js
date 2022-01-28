@@ -546,6 +546,19 @@ module.exports = exports = function(module, funcs){
 
     branchData.page_mapping = {};
 
+    //Sort folders first, then by path length
+    branchItems = (branchItems||[]).sort(function(a,b){
+      a = a || {};
+      b = b || {};
+      if(!(a.page_is_folder) && (b.page_is_folder)) return 1;
+      if((a.page_is_folder) && !(b.page_is_folder)) return -1;
+      var apath = (a.page_path||'').toString();
+      var bpath = (b.page_path||'').toString();
+      if(apath.length > bpath.length) return 1;
+      if(apath.length < bpath.length) return -1;
+      return 0;
+    });
+
     _.each(branchItems, function(item){
       //Create mapping
       branchData.page_mapping[item.page_key] = item;
@@ -679,6 +692,19 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     branchData.media_mapping = {};
+
+    //Sort folders first, then by path length
+    branchItems = (branchItems||[]).sort(function(a,b){
+      a = a || {};
+      b = b || {};
+      if(!(a.media_is_folder) && (b.media_is_folder)) return 1;
+      if((a.media_is_folder) && !(b.media_is_folder)) return -1;
+      var apath = (a.media_path||'').toString();
+      var bpath = (b.media_path||'').toString();
+      if(apath.length > bpath.length) return 1;
+      if(apath.length < bpath.length) return -1;
+      return 0;
+    });
 
     async.waterfall([
       function(cb){

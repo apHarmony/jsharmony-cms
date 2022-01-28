@@ -111,7 +111,7 @@ function jsHarmonyCMSConfig(){
         //"ACL": "public-read",
         //More parameters can be found at:
         //https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property
-      }
+      },
     },
 
     //Advanced options
