@@ -26,14 +26,13 @@ var ejs = require('ejs');
 var fs = require('fs');
 var async = require('async');
 var crypto = require('crypto');
-var moment = require('moment');
 var wclib = require('jsharmony/WebConnect');
-var yazl = require("yazl");
+var yazl = require('yazl');
 var baseModule = module;
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   funcs.deploymentQueue = async.queue(function (op, done){
     var jsh = module.jsh;
@@ -56,39 +55,39 @@ module.exports = exports = function(module, funcs){
 
   exports.deployment_getLogFileName = function (deployment_id) {
     return path.join(module.jsh.Config.datadir, 'publish_log', deployment_id + '.log');
-  }
+  };
 
   exports.deployment_getChangeLogFileName = function (deployment_id) {
     return path.join(module.jsh.Config.datadir, 'publish_log', deployment_id + '.changes.log');
-  }
+  };
 
   exports.deploy_log = function (deployment_id, txt, logtype){
     var jsh = module.jsh;
     jsh.Log[logtype](txt);
     var logfile = funcs.deployment_getLogFileName(deployment_id);
     jsh.Log[logtype](logtype.toUpperCase() + ' ' + txt, { logfile: logfile });
-  }
+  };
 
   exports.deploy_log_error = function (deployment_id, txt){
     funcs.deploy_log(deployment_id, 'Publish Failed: '+(txt||'').toString(), 'error');
-  }
+  };
 
   exports.deploy_log_info = function (deployment_id, txt){
     funcs.deploy_log(deployment_id, txt, 'info');
-  }
+  };
 
   exports.deploy_log_change = function (deployment_id, txt){
     var jsh = module.jsh;
     if(!jsh.Config.logdir) return;
     var logfile = funcs.deployment_getChangeLogFileName(deployment_id);
     jsh.Log.info(txt, { logfile: logfile });
-  }
+  };
 
   exports.deploy = function (deployment_id, onComplete) {
     funcs.deploymentQueue.push({ exec: 'deployment', deployment_id: deployment_id }, function(err){
       if(onComplete) return onComplete();
     });
-  }
+  };
 
   exports.deploy_waitForLog = function(deployment_id, onComplete){
     var jsh = module.jsh;
@@ -105,7 +104,7 @@ module.exports = exports = function(module, funcs){
       return;
     }
     if(onComplete) onComplete();
-  }
+  };
 
   exports.getPageRelativePath = function(page, publish_params){
     var page_fpath = page.page_path||'';
@@ -117,7 +116,7 @@ module.exports = exports = function(module, funcs){
     if(path.isAbsolute(page_fpath)) throw new Error('Page path:'+page.page_path+' cannot be absolute');
     if(page_fpath.indexOf('..') >= 0) throw new Error('Page path:'+page.page_path+' cannot contain directory traversals');
     return page_fpath;
-  }
+  };
 
   exports.getMediaRelativePath = function(media, publish_params, thumbnail_id, thumbnail_config){
     var media_fpath = media.media_path||'';
@@ -142,7 +141,7 @@ module.exports = exports = function(module, funcs){
     if(media_fpath.indexOf('./') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
     if(publish_params) media_fpath = publish_params.media_subfolder + media_fpath;
     return media_fpath;
-  }
+  };
 
   exports.getMediaThumbnails = function(url, branchData){
     if(!branchData || !branchData.media_items || !branchData.site_config || !branchData.site_config.media_thumbnails) return {};
@@ -172,7 +171,7 @@ module.exports = exports = function(module, funcs){
       }
     }
     return rslt;
-  }
+  };
 
   exports.downloadLocalTemplates = function(branchData, templates, template_html, options, download_cb){
     options = _.extend({ templateType: 'PAGE', exportTemplates: {} }, options);
@@ -290,7 +289,7 @@ module.exports = exports = function(module, funcs){
       ], template_cb);
 
     }, download_cb);
-  }
+  };
 
   exports.downloadRemoteTemplates = function(branchData, templates, template_html, options, download_cb){
     options = _.extend({ templateType: 'PAGE', exportTemplates: {}, addWebRequest: null }, options);
@@ -386,7 +385,7 @@ module.exports = exports = function(module, funcs){
       ], template_cb);
 
     }, download_cb);
-  }
+  };
 
   exports.downloadPublishTemplates = function(branchData, templates, template_html, options, download_cb){
     options = _.extend({ templateType: 'PAGE', exportTemplates: {}, addWebRequest: null }, options);
@@ -470,7 +469,7 @@ module.exports = exports = function(module, funcs){
       ], template_cb);
 
     }, download_cb);
-  }
+  };
 
   exports.getDeploymentSortedBranchItemTypes = function(){
     var cms = module;
@@ -483,7 +482,7 @@ module.exports = exports = function(module, funcs){
       return 0;
     });
     return branchItemTypes;
-  }
+  };
 
   //Shell Commands
   exports.shellExec = function(cmd, default_cwd, params, cb, exec_options){
@@ -495,7 +494,7 @@ module.exports = exports = function(module, funcs){
       if(returned) return;
       returned = true;
       return orig_cb(err, rslt, stderr);
-    }
+    };
     exec_options = _.extend({ cwd: default_cwd }, exec_options);
     wclib.xlib.exec(cmd, params, function(err){ //cb
       if(err) return cb(err, rslt.trim(), stderr.trim());
@@ -507,7 +506,7 @@ module.exports = exports = function(module, funcs){
     }, function(err){ //onError
       return cb(err, rslt.trim(), stderr.trim());
     }, exec_options);
-  }
+  };
 
   //Git Commands
   exports.gitExec = function(repo_path, params, cb, exec_options){
@@ -520,12 +519,12 @@ module.exports = exports = function(module, funcs){
       }
       return cb(err, rslt);
     }, exec_options);
-  }
+  };
 
   exports.gitExecVerbose = function(deployment_id, repo_path, params, cb, exec_options){
     funcs.deploy_log_info(deployment_id, 'git '+(params||[]).join(' '));
     return exports.gitExec(repo_path, params, cb, exec_options);
-  }
+  };
 
   exports.deploy_exec = function (deployment_id, onComplete) {
     if(!onComplete) onComplete = function(){};
@@ -540,9 +539,9 @@ module.exports = exports = function(module, funcs){
         d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
         site.site_default_page_filename site_default_page_filename \
-        from "+(module.schema?module.schema+'.':'')+"deployment d \
-        inner join "+(module.schema?module.schema+'.':'')+"deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
-        inner join "+(module.schema?module.schema+'.':'')+"site site on site.site_id = dt.site_id\
+        from "+(module.schema?module.schema+'.':'')+'deployment d \
+        inner join '+(module.schema?module.schema+'.':'')+'deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
+        inner join '+(module.schema?module.schema+'.':'')+"site site on site.site_id = dt.site_id\
         where deployment_sts='PENDING' and deployment_id=@deployment_id\
       ";
     appsrv.ExecRow('deployment', sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
@@ -552,13 +551,13 @@ module.exports = exports = function(module, funcs){
       var template_variables = {};
       var publish_path = '';
       var publish_params = {};
-      if(!deployment) { var err = 'Invalid Deployment ID'; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
+      if(!deployment) { let err = 'Invalid Deployment ID'; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
 
       async.waterfall([
 
         //Change status to RUNNING
         function(deploy_cb){
-          var sql = "update "+(module.schema?module.schema+'.':'')+"deployment set deployment_sts='RUNNING' where deployment_id=@deployment_id;";
+          var sql = 'update '+(module.schema?module.schema+'.':'')+"deployment set deployment_sts='RUNNING' where deployment_id=@deployment_id;";
           var sql_ptypes = [dbtypes.BigInt];
           var sql_params = { deployment_id: deployment_id };
           appsrv.ExecCommand('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -649,7 +648,7 @@ module.exports = exports = function(module, funcs){
             component_templates: null,
             component_template_html: {},
             component_export_template_html: {},
-            component_getUniqueId: function(){ return crypto.createHash('md5').update(component_maxUniqueIdSalt+'.'+(++component_maxUniqueId).toString()).digest("hex"); },
+            component_getUniqueId: function(){ return crypto.createHash('md5').update(component_maxUniqueIdSalt+'.'+(++component_maxUniqueId).toString()).digest('hex'); },
 
             media_keys: {},
             media_items: {},
@@ -660,7 +659,7 @@ module.exports = exports = function(module, funcs){
             sitemaps: {},
 
             pageIncludes: {},
-          }
+          };
 
           var git_branch = Helper.ReplaceAll(publish_params.git_branch, '%%%SITE_ID%%%', deployment.site_id);
           var deployment_git_revision = (deployment.deployment_git_revision||'');
@@ -729,7 +728,7 @@ module.exports = exports = function(module, funcs){
                   fs.readFile(filepath, null, function(err, filecontent){
                     if(err) return cb(err);
                     branchData.site_files[webpath] = {
-                      md5: crypto.createHash('md5').update(filecontent).digest("hex")
+                      md5: crypto.createHash('md5').update(filecontent).digest('hex')
                     };
                     return file_cb();
                   });
@@ -767,7 +766,7 @@ module.exports = exports = function(module, funcs){
                   return funcs.deploy_cmshost(deployment, publish_path, deploy_path.substr(10), branchData.site_files, cb);
                 }
                 else if((deploy_path.indexOf('ftps://')==0)||(deploy_path.indexOf('ftp://')==0)||(deploy_path.indexOf('sftp://')==0)) {
-                  return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb)
+                  return funcs.deploy_ftp(deployment, publish_path, deploy_path, branchData.site_files, cb);
                 }
                 else if((deploy_path.indexOf('git_ssh://')==0)||(deploy_path.indexOf('git_https://')==0)) {
                   return funcs.deploy_git(deployment, publish_path, deploy_path, branchData.site_files, cb);
@@ -782,11 +781,11 @@ module.exports = exports = function(module, funcs){
                   publish_params.exec_post_deployment.cmd,
                   publish_path,
                   publish_params.exec_post_deployment.params, function(err, rslt){
-                  if(err) return cb(err);
-                  if(rslt) rslt = rslt.trim();
-                  funcs.deploy_log_info(deployment_id, rslt);
-                  return cb();
-                });
+                    if(err) return cb(err);
+                    if(rslt) rslt = rslt.trim();
+                    funcs.deploy_log_info(deployment_id, rslt);
+                    return cb();
+                  });
               },
 
               //Log success
@@ -890,7 +889,6 @@ module.exports = exports = function(module, funcs){
               //Clear output folder
               function (cb){
                 //rmdirRecursive
-                var isBasePath = false;
                 HelperFS.funcRecursive(publish_path, function (filepath, relativepath, file_cb) { //filefunc
                   fs.unlink(filepath, file_cb);
                 }, function (dirpath, relativepath, dir_cb) { //dirfunc
@@ -1044,7 +1042,7 @@ module.exports = exports = function(module, funcs){
                         function(file_cb){
                           async.eachOf(branchData.fsOps.addedFiles, function(fcontent, fpath, add_cb){
                             branchData.site_files[fpath] = {
-                              md5: crypto.createHash('md5').update(fcontent).digest("hex")
+                              md5: crypto.createHash('md5').update(fcontent).digest('hex')
                             };
                             fpath = path.join(publish_params.publish_path, fpath);
                           
@@ -1070,11 +1068,11 @@ module.exports = exports = function(module, funcs){
                   publish_params.exec_pre_deployment.cmd,
                   publish_path,
                   publish_params.exec_pre_deployment.params, function(err, rslt){
-                  if(err) return cb(err);
-                  if(rslt) rslt = rslt.trim();
-                  funcs.deploy_log_info(deployment_id, rslt);
-                  return cb();
-                });
+                    if(err) return cb(err);
+                    if(rslt) rslt = rslt.trim();
+                    funcs.deploy_log_info(deployment_id, rslt);
+                    return cb();
+                  });
               },
 
               //Save to Git
@@ -1087,23 +1085,23 @@ module.exports = exports = function(module, funcs){
                     funcs.gitExec(publish_path, ['add','-A'], function(err, rslt){
                       if(err) return git_cb(err);
                       funcs.deploy_log_info(deployment_id, 'Saving deployment commit');
-                        funcs.gitExec(publish_path, ['commit','--allow-empty','-m','Deployment '+deployment.deployment_tag], function(err, rslt){
+                      funcs.gitExec(publish_path, ['commit','--allow-empty','-m','Deployment '+deployment.deployment_tag], function(err, rslt){
+                        if(err) return git_cb(err);
+                        funcs.gitExec(publish_path, ['rev-parse','HEAD'], function(err, rslt){
                           if(err) return git_cb(err);
-                          funcs.gitExec(publish_path, ['rev-parse','HEAD'], function(err, rslt){
-                            if(err) return git_cb(err);
-                            deployment_git_revision = (rslt||'').toString();
-                            funcs.deploy_log_info(deployment_id, 'Revision: '+deployment_git_revision);
-                            if(!deployment_git_revision) return git_cb(new Error('No git revision returned'));
+                          deployment_git_revision = (rslt||'').toString();
+                          funcs.deploy_log_info(deployment_id, 'Revision: '+deployment_git_revision);
+                          if(!deployment_git_revision) return git_cb(new Error('No git revision returned'));
 
-                            var sql = "update "+(module.schema?module.schema+'.':'')+"deployment set deployment_git_revision=@deployment_git_revision where deployment_id=@deployment_id;";
-                            var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(1024)];
-                            var sql_params = { deployment_id: deployment_id, deployment_git_revision: deployment_git_revision };
-                            appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
-                              if (err != null) { err.sql = sql; return git_cb(err); }
-                              return git_cb(null);
-                            });
+                          var sql = 'update '+(module.schema?module.schema+'.':'')+'deployment set deployment_git_revision=@deployment_git_revision where deployment_id=@deployment_id;';
+                          var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(1024)];
+                          var sql_params = { deployment_id: deployment_id, deployment_git_revision: deployment_git_revision };
+                          appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+                            if (err != null) { err.sql = sql; return git_cb(err); }
+                            return git_cb(null);
                           });
                         });
+                      });
                     });
                   }
                 ], cb);
@@ -1143,11 +1141,11 @@ module.exports = exports = function(module, funcs){
                   publish_params.exec_post_deployment.cmd,
                   publish_path,
                   publish_params.exec_post_deployment.params, function(err, rslt){
-                  if(rslt) rslt = rslt.trim();
-                  funcs.deploy_log_info(deployment_id, rslt);
-                  if(err) return cb(err);
-                  return cb();
-                });
+                    if(rslt) rslt = rslt.trim();
+                    funcs.deploy_log_info(deployment_id, rslt);
+                    if(err) return cb(err);
+                    return cb();
+                  });
               },
 
               //Log success
@@ -1176,7 +1174,7 @@ module.exports = exports = function(module, funcs){
           //In no_publish_complete debug mode, do not set finish the deployment
           if(module.Config.debug_params.no_publish_complete) return;
           //Otherwise, update deployment status
-          var sql = "update "+(module.schema?module.schema+'.':'')+"deployment set deployment_sts=@deployment_sts where deployment_id=@deployment_id;";
+          var sql = 'update '+(module.schema?module.schema+'.':'')+'deployment set deployment_sts=@deployment_sts where deployment_id=@deployment_id;';
           var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(32)];
           var sql_params = { deployment_id: deployment_id, deployment_sts: deployment_sts };
           appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -1186,7 +1184,7 @@ module.exports = exports = function(module, funcs){
         });
       });
     });
-  }
+  };
 
   exports.deploy_getFS = function(site_files){
     var fsOps = {
@@ -1194,7 +1192,7 @@ module.exports = exports = function(module, funcs){
       addedFiles: {},
       addedFilesUpper: {},
       deletedFilesUpper: {},
-    }
+    };
     for(var fname in site_files) fsOps.siteFiles[fname.toUpperCase()] = fname;
 
     fsOps.getValidFilePath = function(filePath){
@@ -1206,7 +1204,7 @@ module.exports = exports = function(module, funcs){
       if((filePath.indexOf('/../')>0) || (filePath.indexOf('../')==0)) throw new Error('Directory tranversals not allowed in file path: "' + filePath + '"');
       if((filePath.indexOf('/./')>0) || (filePath.indexOf('./')==0)) throw new Error('Directory tranversals not allowed in file path: "' + filePath + '"');
       return filePath;
-    }
+    };
     fsOps.hasFile = function(filePath){
       var filePathUpper = filePath.toUpperCase();
       if(filePathUpper in fsOps.addedFilesUpper) return true;
@@ -1234,7 +1232,7 @@ module.exports = exports = function(module, funcs){
     };
     return fsOps;
 
-  }
+  };
 
   exports.deploy_getSitemaps = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
@@ -1265,7 +1263,7 @@ module.exports = exports = function(module, funcs){
         });
       }, cb);
     });
-  }
+  };
 
   exports.deploy_getPages = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
@@ -1288,6 +1286,7 @@ module.exports = exports = function(module, funcs){
 
         var page_urlpath = '';
         var page_cmspath = '';
+        var page_basepath = '';
         try{
           var relativePath = funcs.getPageRelativePath(page, publish_params);
           if(!relativePath) return cb(new Error('Page has no path: '+page.page_key));
@@ -1296,7 +1295,7 @@ module.exports = exports = function(module, funcs){
           if(!Helper.isNullUndefined(publish_params.url_prefix_page_override)){ page_cmspath = publish_params.url_prefix_page_override + relativePath; }
           page_basepath = '/' + publish_params.page_subfolder + relativePath;
         }
-        catch(ex){ }
+        catch(ex){ /* Do nothing */ }
 
         if(page_urlpath){
           branchData.page_keys[page.page_key] = page_cmspath;
@@ -1320,7 +1319,7 @@ module.exports = exports = function(module, funcs){
       });
       return cb();
     });
-  }
+  };
 
   exports.deploy_getMedia = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
@@ -1348,7 +1347,7 @@ module.exports = exports = function(module, funcs){
           media_urlpath = publish_params.url_prefix + relativePath;
           if(!Helper.isNullUndefined(publish_params.url_prefix_media_override)){ media_urlpath = publish_params.url_prefix_media_override + relativePath; }
         }
-        catch(ex){ }
+        catch(ex){ /* Do nothing */ }
 
         if(media_urlpath){
           branchData.media_keys[media.media_key] = media_urlpath;
@@ -1357,7 +1356,7 @@ module.exports = exports = function(module, funcs){
       });
       return cb();
     });
-  }
+  };
 
   exports.deploy_page = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
@@ -1465,7 +1464,7 @@ module.exports = exports = function(module, funcs){
                 getMenuURL: function(menu_item){ return funcs.getMenuUrl(menu_item, branchData); },
 
                 include: includePage,
-              }
+              };
               if(renderOptions.menu_tag){
                 if(!branchData.menus[renderOptions.menu_tag]) throw new Error('Menu with menu tag "'+Helper.escapeHTML(renderOptions.menu_tag)+'" is not defined in this site');
                 renderParams.menu = branchData.menus[renderOptions.menu_tag];
@@ -1486,7 +1485,7 @@ module.exports = exports = function(module, funcs){
 
             try{
               //Replace cms-component with data-component in clientPage.page.content
-              for(var key in clientPage.page.content){
+              for(let key in clientPage.page.content){
                 clientPage.page.content[key] = funcs.replacePageComponentsWithContentComponents(clientPage.page.content[key], branchData, clientPage.template.components, exportJSON);
               }
             }
@@ -1496,7 +1495,7 @@ module.exports = exports = function(module, funcs){
             }
 
             var renderedContent = '';
-            function renderContent(_renderedContent){
+            var renderContent = function(_renderedContent){
               renderedContent = _renderedContent;
               try{
                 //Render page
@@ -1534,7 +1533,7 @@ module.exports = exports = function(module, funcs){
                 },
               })));
               return renderedContent;
-            }
+            };
 
             try{
               if(exportJSON){
@@ -1562,7 +1561,7 @@ module.exports = exports = function(module, funcs){
             page_content = ejsparams.page.content.body||'';
           }
 
-          for(var key in pageIncludes){
+          for(let key in pageIncludes){
             //Resolve relative URLs
             if(!key || !_.isString(key) || (key.indexOf('//')>=0)) return cb(new Error('Invalid page include "'+key+'" in "'+page_fpath+'"'));
             var abskey = key;
@@ -1576,7 +1575,7 @@ module.exports = exports = function(module, funcs){
           }
 
           branchData.site_files[page_fpath] = {
-            md5: crypto.createHash('md5').update(page_content).digest("hex")
+            md5: crypto.createHash('md5').update(page_content).digest('hex')
           };
           branchData.page_files[page.page_key] = page_fpath;
           page_fpath = path.join(publish_params.publish_path, page_fpath);
@@ -1590,7 +1589,7 @@ module.exports = exports = function(module, funcs){
         });
       }, cb);
     });
-  }
+  };
 
   exports.deploy_exportComponentRender = function(jsh, branchData, publish_params, template_name, exportItem, exportIndex){
 
@@ -1606,7 +1605,7 @@ module.exports = exports = function(module, funcs){
       if(key in exportItem) renderOptions[key] = exportItem[key];
     });
 
-    var sitemap = funcs.getPageSitemapRelatives((branchData.sitemaps||{}).PRIMARY||{})
+    var sitemap = funcs.getPageSitemapRelatives((branchData.sitemaps||{}).PRIMARY||{});
     funcs.createSitemapTree(sitemap, branchData);
 
     var renderParams = {
@@ -1642,7 +1641,7 @@ module.exports = exports = function(module, funcs){
     if(exportItem.export_path){
       branchData.fsOps.addFile(branchData.fsOps.getValidFilePath(exportItem.export_path), rslt);
     }
-  }
+  };
 
   exports.deploy_exportComponents = function(jsh, branchData, publish_params, cb){
     //Get all components
@@ -1659,13 +1658,13 @@ module.exports = exports = function(module, funcs){
         return export_cb();
       }, generate_cb);
     }, cb);
-  }
+  };
 
   exports.deploy_pageIncludes = function(jsh, branchData, publish_params, cb){
     //Create ordered list of pages that need to be updated
     var pagesWithIncludes = {};
     var includeFileMapping = {};
-    for(var key in branchData.pageIncludes){
+    for(let key in branchData.pageIncludes){
       var includePageKey = null;
       for(var page_key in branchData.page_keys){
         if(branchData.page_keys[page_key]==key){ includePageKey = page_key; break; }
@@ -1699,7 +1698,7 @@ module.exports = exports = function(module, funcs){
       function(include_cb){
         //Get pages that are ready to resolve
         var pagesReadyToRewrite = [];
-        for(var key in pagesWithIncludes){
+        for(let key in pagesWithIncludes){
           var hasDependencies = false;
           _.each(pagesWithIncludes[key], function(includedPage){
             if(includedPage in pagesWithIncludes) hasDependencies = true;
@@ -1747,7 +1746,7 @@ module.exports = exports = function(module, funcs){
     
                 if(page_content.indexOf('<!--#jsharmony_cms_include(') >= 0){
                   for(var i=0; i<pagesToInclude.length;i++){
-                    var key = pagesToInclude[i];
+                    let key = pagesToInclude[i];
                     if(key in includesProcessed) continue;
                     var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify(includeFileMapping[key])+')-->';
                     var includeContent = includeFileContent[key];
@@ -1765,7 +1764,7 @@ module.exports = exports = function(module, funcs){
                   }
                   //Recompute MD5
                   branchData.site_files[page_path] = {
-                    md5: crypto.createHash('md5').update(page_content).digest("hex")
+                    md5: crypto.createHash('md5').update(page_content).digest('hex')
                   };
                   //Write file
                   fs.writeFile(page_fpath, page_content, 'utf8', rewrite_page_cb);
@@ -1783,7 +1782,7 @@ module.exports = exports = function(module, funcs){
         return cb(err);
       },
     );
-  }
+  };
 
   exports.deploy_media = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
@@ -1822,7 +1821,7 @@ module.exports = exports = function(module, funcs){
               if(!media_fpath) return generate_cb(new Error('Media has no path: '+media.media_key));
 
               branchData.site_files[media_fpath] = {
-                md5: crypto.createHash('md5').update(media_content).digest("hex")
+                md5: crypto.createHash('md5').update(media_content).digest('hex')
               };
               media_fpath = path.join(publish_params.publish_path, media_fpath);
 
@@ -1856,7 +1855,7 @@ module.exports = exports = function(module, funcs){
                   if(!thumbnail_fpath) return thumbnail_cb(new Error('Thumbnail deployment path could not be generated for: '+media.media_fpath+':'+thumbnail_id));
     
                   branchData.site_files[thumbnail_fpath] = {
-                    md5: crypto.createHash('md5').update(thumbnail_content).digest("hex")
+                    md5: crypto.createHash('md5').update(thumbnail_content).digest('hex')
                   };
                   thumbnail_fpath = path.join(publish_params.publish_path, thumbnail_fpath);
     
@@ -1873,7 +1872,7 @@ module.exports = exports = function(module, funcs){
         ], item_cb);
       }, cb);
     });
-  }
+  };
 
   exports.deploy_redirect = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
@@ -1912,7 +1911,7 @@ module.exports = exports = function(module, funcs){
         if(err) return cb(err);
         async.eachOfSeries(redirect_files, function(fcontent, fpath, redirect_cb){
           branchData.site_files[fpath] = {
-            md5: crypto.createHash('md5').update(fcontent).digest("hex")
+            md5: crypto.createHash('md5').update(fcontent).digest('hex')
           };
           fpath = path.join(publish_params.publish_path, fpath);
 
@@ -1924,7 +1923,7 @@ module.exports = exports = function(module, funcs){
         }, cb);
       });
     });
-  }
+  };
 
   exports.deploy_menu = function(jsh, branchData, publish_params, cb){
     var appsrv = jsh.AppSrv;
@@ -1948,7 +1947,7 @@ module.exports = exports = function(module, funcs){
       
       //Get list of all defined menu tags
       var menu_tags = {};
-      for(var i=0;i<menus.length;i++){
+      for(let i=0;i<menus.length;i++){
         var menu = menus[i];
         if(menu.menu_tag) menu_tags[menu.menu_tag] = menu.menu_tag;
       }
@@ -1956,7 +1955,7 @@ module.exports = exports = function(module, funcs){
       //Get menu configs
       var menu_configs = {};
       if(branchData.site_config && branchData.site_config.menus && branchData.site_config.menus.length){
-        for(var i=0;i<branchData.site_config.menus.length;i++){
+        for(let i=0;i<branchData.site_config.menus.length;i++){
           var site_menu_config = branchData.site_config.menus[i];
           if(site_menu_config && site_menu_config.tag){
             var menu_tag = site_menu_config.tag;
@@ -1988,7 +1987,7 @@ module.exports = exports = function(module, funcs){
               if(menu_configs[menu.menu_tag]){
                 var max_depth = menu_configs[menu.menu_tag].max_depth;
                 if(max_depth && menu.items){
-                  for(var i=0;i<menu.items.length;i++){
+                  for(let i=0;i<menu.items.length;i++){
                     var menu_item = menu.items[i];
                     if(menu_item.depth > max_depth){
                       return menu_file_cb(new Error('Menu with menu tag "'+menu.menu_tag+'" has a menu item ("'+(menu_item.text||'').toString()+'") that exceeds the maximum menu depth of '+max_depth.toString()));
@@ -2010,7 +2009,7 @@ module.exports = exports = function(module, funcs){
         },
       ], cb);
     });
-  }
+  };
 
   exports.deploy_ignore_remote = function(publish_params, fpath){
     if(fpath=='.git') return true;
@@ -2024,11 +2023,9 @@ module.exports = exports = function(module, funcs){
       if(fpath.indexOf(ignore_path+'/')==0) return true;
     }
     return false;
-  }
+  };
 
   exports.deploy_fs = function(deployment, publish_path, deploy_path, site_files, cb){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
     var deployment_id = deployment.deployment_id;
     var deployment_target_publish_path = (deployment.deployment_target_publish_path||'').toString();
 
@@ -2126,10 +2123,9 @@ module.exports = exports = function(module, funcs){
         }, fs_cb);
       }
     ], cb);
-  }
+  };
 
   exports.deploy_cmshost = function(deployment, publish_path, host_id, site_files, cb){
-    var jsh = module.jsh;
     var deployment_id = deployment.deployment_id;
 
     //Notify deployment host
@@ -2140,11 +2136,10 @@ module.exports = exports = function(module, funcs){
       if(err) return cb(err);
       return cb();
     });
-  }
+  };
 
   exports.deploy_git = function(deployment, publish_path, deploy_path, site_files, cb) {
     var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
     var cms = module;
     var deployment_id = deployment.deployment_id;
 
@@ -2182,7 +2177,7 @@ module.exports = exports = function(module, funcs){
       'core.safecrlf': 'false',
       'user.email': 'cms@localhost',
       'user.name': 'CMS',
-    }
+    };
     
     if(git_type=='ssh'){
       var ssh_command = cms.Config.git.ssh_command;
@@ -2196,11 +2191,9 @@ module.exports = exports = function(module, funcs){
     }
 
     var git_config = JSON.parse(JSON.stringify(deployment.publish_params.git_config || {}));
-    git_config_options = _.extend(git_base_config, git_config.options||{});
+    var git_config_options = _.extend(git_base_config, git_config.options||{});
 
     var git_branch = git_config.branch || 'master';
-
-    var branchIsNew = false;
 
     var stagingBranch = 'JSHARMONY_CMS_STAGING_BRANCH_'+(new Date()).getTime();
 
@@ -2251,7 +2244,7 @@ module.exports = exports = function(module, funcs){
       function(git_cb){
         funcs.gitExecVerbose(deployment_id, gitRepoPath, ['for-each-ref','--format','%(refname:short)','HEAD','refs/heads/'], function(err, rslt){
           if(err) return git_cb(err);
-          localBranches = (rslt||'').split('\n');
+          var localBranches = (rslt||'').split('\n');
           async.eachSeries(localBranches, function(localBranch, branch_cb){
             localBranch = localBranch.trim();
             if(!localBranch) return branch_cb();
@@ -2278,7 +2271,6 @@ module.exports = exports = function(module, funcs){
           }
           else {
             //Create new empty branch if it does not exist
-            branchIsNew = true;
             funcs.gitExecVerbose(deployment_id, gitRepoPath, ['checkout','-f','--orphan',git_branch], function(err, rslt){
               if(err) return git_cb(err);
               funcs.gitExecVerbose(deployment_id, gitRepoPath, ['commit','--allow-empty','-m','Initial commit'], function(err, rslt){
@@ -2307,7 +2299,7 @@ module.exports = exports = function(module, funcs){
       function(git_cb){ funcs.gitExecVerbose(deployment_id, gitRepoPath, ['push','--set-upstream','origin',git_branch], function(err, rslt){ return git_cb(err); }); },
 
     ], cb);
-  }
+  };
 
   exports.deploy_ftp = function(deployment, publish_path, deploy_path, site_files, cb) {
 
@@ -2334,7 +2326,7 @@ module.exports = exports = function(module, funcs){
 
       // remote_host is used for reporting. remote_hostname is used for connecting.
       // remote_host includes port, remote_hostname does not.
-      remote_host = parsed_url.host; 
+      remote_host = parsed_url.host;
       var remote_hostname = parsed_url.hostname;
       var port =  (parsed_url.port != undefined) ? parseInt(parsed_url.port) : undefined;
 
@@ -2361,7 +2353,7 @@ module.exports = exports = function(module, funcs){
         password,
         private_key,
         port,
-      }
+      };
 
       ftpClient = new funcs.ftpClient(protocol, connectionParams, deployment.publish_params.ftp_config, function(msg){ funcs.deploy_log_info(deployment_id, msg); });
 
@@ -2378,182 +2370,179 @@ module.exports = exports = function(module, funcs){
     ftpClient.connect()
 
     //Create Remote Root Directory If Not Exists
-    .then(function() {
+      .then(function() {
 
-      // Need to build the tree so we
-      // can handle nested paths.
-      var child_path = remote_path;
-      var paths = [];
-      while (child_path !== '/') {
-        paths.unshift(child_path);
-        child_path = path.dirname(child_path);
-      }
+        // Need to build the tree so we
+        // can handle nested paths.
+        var child_path = remote_path;
+        var paths = [];
+        while (child_path !== '/') {
+          paths.unshift(child_path);
+          child_path = path.dirname(child_path);
+        }
 
-      if (paths.length < 1) return Promise.resolve();
+        if (paths.length < 1) return Promise.resolve();
 
-      funcs.deploy_log_info(deployment_id, `Verifying remote publish directory exists: ${remote_host_desc}${remote_path}`);
-      return ftpClient.createDirectoriesIfNotExists(paths);
-    })
+        funcs.deploy_log_info(deployment_id, `Verifying remote publish directory exists: ${remote_host_desc}${remote_path}`);
+        return ftpClient.createDirectoriesIfNotExists(paths);
+      })
 
     //Build Local Manifests
-    .then(function() {
-      funcs.deploy_log_info(deployment_id, `Building local manifest`);
-      return ftpClient.createLocalManifest(publish_path, site_files).then(function(manifest){ return local_manifest = manifest; });
-    })
+      .then(function() {
+        funcs.deploy_log_info(deployment_id, 'Building local manifest');
+        return ftpClient.createLocalManifest(publish_path, site_files).then(function(manifest){ return local_manifest = manifest; });
+      })
 
     //Load Remote File Listing
-    .then(function() {
-      funcs.deploy_log_info(deployment_id, 'Retrieving file listing: '+remote_host_desc+remote_path);
-      var numPaths = 0;
-      return ftpClient.getDirectoryListRecursive(remote_path, remote_path, function(p){
-        numPaths++;
-        if((numPaths % 50)==0) funcs.deploy_log_info(deployment_id, 'Retrieving file listing #'+numPaths+': '+remote_host_desc+p);
+      .then(function() {
+        funcs.deploy_log_info(deployment_id, 'Retrieving file listing: '+remote_host_desc+remote_path);
+        var numPaths = 0;
+        return ftpClient.getDirectoryListRecursive(remote_path, remote_path, function(p){
+          numPaths++;
+          if((numPaths % 50)==0) funcs.deploy_log_info(deployment_id, 'Retrieving file listing #'+numPaths+': '+remote_host_desc+p);
+        })
+          .then(function(files){
+            return remote_files = files || [];
+          });
       })
-      .then(function(files){
-        return remote_files = files || [];
-      });
-    })
 
     //Load Remote File Index Cache
-    .then(function() {
-      var cacheFound = false;
-      var cachePath = remote_path + '/' + file_cache_info_path;
-      _.each(remote_files, function(remote_file){
-        if(remote_file.path == file_cache_info_path) cacheFound = true;
-      });
-      if(!cacheFound) return;
-      funcs.deploy_log_info(deployment_id, 'Retrieving CMS file index: '+remote_host_desc+cachePath);
-      return ftpClient.readFile(cachePath)
-        .then(function(file_info_cache){
-          remote_file_info_cache = file_info_cache ?  JSON.parse(file_info_cache) : undefined;
+      .then(function() {
+        var cacheFound = false;
+        var cachePath = remote_path + '/' + file_cache_info_path;
+        _.each(remote_files, function(remote_file){
+          if(remote_file.path == file_cache_info_path) cacheFound = true;
         });
-    })
+        if(!cacheFound) return;
+        funcs.deploy_log_info(deployment_id, 'Retrieving CMS file index: '+remote_host_desc+cachePath);
+        return ftpClient.readFile(cachePath)
+          .then(function(file_info_cache){
+            remote_file_info_cache = file_info_cache ?  JSON.parse(file_info_cache) : undefined;
+          });
+      })
 
     //Display statistics
-    .then(function(){
-      var ignore_files = {
-        [file_cache_info_path]: {},
-        [path.dirname(file_cache_info_path)]: {}
-      };
+      .then(function(){
+        var ignore_files = {
+          [file_cache_info_path]: {},
+          [path.dirname(file_cache_info_path)]: {}
+        };
 
-      operations = ftpClient.getOperations(
-        deployment,
-        local_manifest,
-        remote_file_info_cache,
-        remote_files,
-        ignore_files
-      );
+        operations = ftpClient.getOperations(
+          deployment,
+          local_manifest,
+          remote_file_info_cache,
+          remote_files,
+          ignore_files
+        );
 
-      if(operations.matching_file_count) funcs.deploy_log_info(deployment_id, 'Unchanged files: '+operations.matching_file_count);
-      if(operations.missing_file_in_remote_count) funcs.deploy_log_info(deployment_id, 'New files: '+operations.missing_file_in_remote_count);
-      if(operations.modified_file_count) funcs.deploy_log_info(deployment_id, 'Modified files: '+operations.modified_file_count);
-      if(operations.missing_file_in_local_count) funcs.deploy_log_info(deployment_id, ((deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files)?'Deleting: ':'Ignoring: ')+operations.missing_file_in_local_count+' excess files.');
-      if(operations.missing_folder_in_local_count) funcs.deploy_log_info(deployment_id, ((deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files)?'Deleting: ':'Ignoring: ')+operations.missing_folder_in_local_count+' excess directories.');
-    })
+        if(operations.matching_file_count) funcs.deploy_log_info(deployment_id, 'Unchanged files: '+operations.matching_file_count);
+        if(operations.missing_file_in_remote_count) funcs.deploy_log_info(deployment_id, 'New files: '+operations.missing_file_in_remote_count);
+        if(operations.modified_file_count) funcs.deploy_log_info(deployment_id, 'Modified files: '+operations.modified_file_count);
+        if(operations.missing_file_in_local_count) funcs.deploy_log_info(deployment_id, ((deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files)?'Deleting: ':'Ignoring: ')+operations.missing_file_in_local_count+' excess files.');
+        if(operations.missing_folder_in_local_count) funcs.deploy_log_info(deployment_id, ((deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files)?'Deleting: ':'Ignoring: ')+operations.missing_folder_in_local_count+' excess directories.');
+      })
 
     //Delete excess remote files
-    .then(function() {
+      .then(function() {
 
-      if (operations.files_to_delete.length < 1) return Promise.resolve();
+        if (operations.files_to_delete.length < 1) return Promise.resolve();
 
-      var current_index = 1;
-      var total = operations.files_to_delete.length;
-      var files_to_delete = operations.files_to_delete.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
+        var current_index = 1;
+        var total = operations.files_to_delete.length;
+        var files_to_delete = operations.files_to_delete.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
 
-      funcs.deploy_log_info(deployment_id, `Deleting ${total} remote files from ${remote_host_desc}${remote_path}`);
-      return ftpClient.deleteFiles(files_to_delete, function(p){
-        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host_desc + p}`);
-        funcs.deploy_log_change(deployment_id, 'Deleting file: '+p);
-      });
-    })
+        funcs.deploy_log_info(deployment_id, `Deleting ${total} remote files from ${remote_host_desc}${remote_path}`);
+        return ftpClient.deleteFiles(files_to_delete, function(p){
+          funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host_desc + p}`);
+          funcs.deploy_log_change(deployment_id, 'Deleting file: '+p);
+        });
+      })
 
     //Delete excess remote folders
-    .then(function() {
+      .then(function() {
 
-      if (operations.folders_to_delete.length < 1) return Promise.resolve();
+        if (operations.folders_to_delete.length < 1) return Promise.resolve();
 
-      var current_index = 1;
-      var total = operations.folders_to_delete.length
-      var folders_to_delete = operations.folders_to_delete.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/') });
+        var current_index = 1;
+        var total = operations.folders_to_delete.length;
+        var folders_to_delete = operations.folders_to_delete.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
 
         funcs.deploy_log_info(deployment_id, `Deleting ${total} remote directories from ${remote_host_desc}`);
         return ftpClient.deleteDirectoriesRecursive(folders_to_delete, function(p){
           funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Deleting ${remote_host_desc + p}`);
           funcs.deploy_log_change(deployment_id, 'Deleting folder: '+p);
         });
-    })
+      })
 
     //Create new remote folders
-    .then(function() {
+      .then(function() {
 
-      if (operations.folders_to_create.length < 1) return Promise.resolve();
+        if (operations.folders_to_create.length < 1) return Promise.resolve();
 
-      var current_index = 1;
-      var total = operations.folders_to_create.length;
+        var current_index = 1;
+        var total = operations.folders_to_create.length;
 
-      var dirs = operations.folders_to_create.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
-      return ftpClient.createDirectoriesIfNotExists(dirs, function(p){
-        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Creating directory: ${remote_host_desc + p}`);
-        funcs.deploy_log_change(deployment_id, 'Creating folder: '+p);
-      });
-    })
+        var dirs = operations.folders_to_create.map(function(p){ return path.join(remote_path, p).replace(/\\/g,  '/'); });
+        return ftpClient.createDirectoriesIfNotExists(dirs, function(p){
+          funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Creating directory: ${remote_host_desc + p}`);
+          funcs.deploy_log_change(deployment_id, 'Creating folder: '+p);
+        });
+      })
 
     //Upload files to remote
-    .then(function() {
-      var files_to_upload = [];
-      var path_mapper = function(rel_path){
-        return {
-          local_path: path.join(publish_path, rel_path),
-          dest_path: path.join(remote_path, rel_path).replace(/\\/g, '/')
-        }
-      };
+      .then(function() {
+        var files_to_upload = [];
+        var path_mapper = function(rel_path){
+          return {
+            local_path: path.join(publish_path, rel_path),
+            dest_path: path.join(remote_path, rel_path).replace(/\\/g, '/')
+          };
+        };
 
-      operations.files_to_upload.forEach(function(p){ files_to_upload.push(path_mapper(p)) });
+        operations.files_to_upload.forEach(function(p){ files_to_upload.push(path_mapper(p)); });
 
-      var current_index = 1;
-      var total = files_to_upload.length;
+        var current_index = 1;
+        var total = files_to_upload.length;
 
-      if (total < 1) return Promise.resolve();
+        if (total < 1) return Promise.resolve();
 
-      return ftpClient.writeFiles(files_to_upload, function(p){
-        funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Uploading file: ${remote_host_desc + p}`);
-        funcs.deploy_log_change(deployment_id, 'Copying file: '+p);
-      });
-    })
+        return ftpClient.writeFiles(files_to_upload, function(p){
+          funcs.deploy_log_info(deployment_id, `(${current_index++}/${total}) Uploading file: ${remote_host_desc + p}`);
+          funcs.deploy_log_change(deployment_id, 'Copying file: '+p);
+        });
+      })
 
     //Upload File Index Cache to remote
-    .then(function() {
+      .then(function() {
 
-      var file_info = {
-        files: {}
-      };
+        var file_info = {
+          files: {}
+        };
 
-      local_manifest.file_index.forEach(function(info, file){
-        file_info.files[file] = info;
-      });
+        local_manifest.file_index.forEach(function(info, file){
+          file_info.files[file] = info;
+        });
 
-      var file_info_string = JSON.stringify(file_info, null, 2);
-      var upload_path = path.join(remote_path, file_cache_info_path).replace(/\\/g, '/');
+        var file_info_string = JSON.stringify(file_info, null, 2);
+        var upload_path = path.join(remote_path, file_cache_info_path).replace(/\\/g, '/');
 
-      funcs.deploy_log_info(deployment_id, `Updating CMS file index: ${remote_host_desc}${upload_path}`);
+        funcs.deploy_log_info(deployment_id, `Updating CMS file index: ${remote_host_desc}${upload_path}`);
 
-      return ftpClient.createDirectoriesIfNotExists([path.dirname(upload_path)]).then(function(){
-        return ftpClient.writeString(file_info_string, upload_path);
-      });
-    })
+        return ftpClient.createDirectoriesIfNotExists([path.dirname(upload_path)]).then(function(){
+          return ftpClient.writeString(file_info_string, upload_path);
+        });
+      })
 
     //Handle Errors
-    .catch(function(err){ return err; })
-    .then(function(err){
-      ftpClient.end();
-      cb(err);
-    });
-  }
+      .catch(function(err){ return err; })
+      .then(function(err){
+        ftpClient.end();
+        cb(err);
+      });
+  };
 
   exports.deploy_s3 = function(deployment, publish_path, deploy_path, site_files, cb){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var cms = module;
     var deployment_id = deployment.deployment_id;
 
     var s3url = urlparser.parse(deploy_path);
@@ -2599,7 +2588,7 @@ module.exports = exports = function(module, funcs){
 
       //Decide which files need to be uploaded or deleted
       function(s3_cb){
-        for(var fname in s3_files){
+        for(let fname in s3_files){
           if(fname in site_files){
             var site_md5 = site_files[fname].md5;
             var s3_md5 = s3_files[fname].ETag.replace(/"/g,'');
@@ -2611,7 +2600,7 @@ module.exports = exports = function(module, funcs){
             }
           }
         }
-        for(var fname in site_files){
+        for(let fname in site_files){
           if(!(fname in s3_files)) s3_upload.push(fname);
         }
         if(!s3_delete.length && !s3_upload.length) funcs.deploy_log_info(deployment_id, 'No changes required');
@@ -2654,7 +2643,7 @@ module.exports = exports = function(module, funcs){
       }
 
     ], cb);
-  }
+  };
 
   exports.deployment_log = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -2679,7 +2668,10 @@ module.exports = exports = function(module, funcs){
 
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
-    var sql = "select deployment_target.site_id, deployment_id, deployment_sts, branch_id, (select code_txt from {schema}.code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date, deployment_target_publish_config from {schema}.deployment left outer join {schema}.deployment_target on deployment_target.deployment_target_id = deployment.deployment_target_id where deployment_id=@deployment_id";
+    if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+    var sql = 'select deployment_target.site_id, deployment_id, deployment_sts, branch_id, (select code_txt from {schema}.code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date, deployment_target_publish_config from {schema}.deployment left outer join {schema}.deployment_target on deployment_target.deployment_target_id = deployment.deployment_target_id where deployment_id=@deployment_id';
     appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment ID');
@@ -2719,7 +2711,7 @@ module.exports = exports = function(module, funcs){
         return next();
       });
     });
-  }
+  };
 
   exports.deployment_change_log = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -2737,13 +2729,16 @@ module.exports = exports = function(module, funcs){
 
     var model = jsh.getModel(req, module.namespace + 'Publish_Change_Log');
 
+    if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+    if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
     var deployment_id = req.params.deployment_id;
     if(!deployment_id) return next();
     if(deployment_id.toString() != parseInt(deployment_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
-    var sql = "select deployment_id, deployment_sts, branch_id, (select code_txt from "+(module.schema?module.schema+'.':'')+"code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from "+(module.schema?module.schema+'.':'')+"deployment where deployment_id=@deployment_id";
+    var sql = 'select deployment_id, deployment_sts, branch_id, (select code_txt from '+(module.schema?module.schema+'.':'')+'code_deployment_sts where code_deployment_sts.code_val = deployment.deployment_sts) deployment_sts_txt, deployment_date from '+(module.schema?module.schema+'.':'')+'deployment where deployment_id=@deployment_id';
     appsrv.ExecRow(req._DBContext, sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment ID');
@@ -2773,7 +2768,7 @@ module.exports = exports = function(module, funcs){
         return next();
       });
     });
-  }
+  };
 
   exports.deployment_unique_tag = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -2789,11 +2784,9 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
     var XValidate = jsh.XValidate;
-    var sql = '';
     var sql_ptypes = [];
     var sql_params = {};
     var verrors = {};
-    var dbtypes = appsrv.DB.types;
     var validate = null;
 
     var model = jsh.getModel(req, module.namespace + 'Publish_Add_Release');
@@ -2817,7 +2810,7 @@ module.exports = exports = function(module, funcs){
     //Validate read access to branch
     funcs.validateBranchAccess(req, res, branch_id, 'R%', ['PUBLISHER','WEBMASTER'], function(){
       if (verb == 'get') {
-        var sql = "select site_id, (select branch_desc from {schema}.v_my_branch_desc where {schema}.v_my_branch_desc.branch_id = {schema}.branch.branch_id) branch_desc from {schema}.branch where branch_id=@branch_id";
+        var sql = 'select site_id, (select branch_desc from {schema}.v_my_branch_desc where {schema}.v_my_branch_desc.branch_id = {schema}.branch.branch_id) branch_desc from {schema}.branch where branch_id=@branch_id';
         appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
           if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Branch ID');
@@ -2847,10 +2840,9 @@ module.exports = exports = function(module, funcs){
       }
       return next();
     });
-  }
+  };
 
   exports.req_deployment_download = function (req, res, next) {
-    var cms = module;
     var verb = req.method.toLowerCase();
     
     var Q = req.query;
@@ -2890,7 +2882,7 @@ module.exports = exports = function(module, funcs){
         validate = new XValidate();
         verrors = {};
         validate.AddValidator('_obj.deployment_id', 'Deployment ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-        sql = "select deployment_id,deployment_tag,deployment_sts,site_id from {schema}.v_my_deployment where deployment_id=@deployment_id";
+        sql = 'select deployment_id,deployment_tag,deployment_sts,site_id from {schema}.v_my_deployment where deployment_id=@deployment_id';
 
         var fields = [];
         var datalockstr = '';
@@ -2909,10 +2901,10 @@ module.exports = exports = function(module, funcs){
           if(deployment.deployment_sts == 'FAILED'){ return Helper.GenError(req, res, -9, 'Cannot download failed deployment'); }
           if(deployment.deployment_sts != 'COMPLETE'){ return Helper.GenError(req, res, -9, 'Cannot download incomplete deployment'); }
 
-          var downloadParams = { 
-            exec: 'deployment_download', 
-            deployment_id: deployment_id, 
-            dstStream: res, 
+          var downloadParams = {
+            exec: 'deployment_download',
+            deployment_id: deployment_id,
+            dstStream: res,
             onStart: function(){
               if(req.jsproxyid) Helper.SetCookie(req, res, jsh, req.jsproxyid, 'ready', { 'path': req.baseurl });
             }
@@ -2924,10 +2916,9 @@ module.exports = exports = function(module, funcs){
       });
     }
     else return next();
-  }
+  };
 
   exports.req_deployment_host_download = function (req, res, next) {
-    var cms = module;
     var verb = req.method.toLowerCase();
     
     var Q = req.query;
@@ -2955,9 +2946,9 @@ module.exports = exports = function(module, funcs){
       if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
       //Check if deployment ID is valid
-      var sql = "select deployment_id,deployment_tag,deployment_sts,site_id from {schema}.v_my_deployment where deployment_id=@deployment_id";
-      var sql_ptypes = [dbtypes.BigInt];
-      var sql_params = { deployment_id: deployment_id };
+      sql = 'select deployment_id,deployment_tag,deployment_sts,site_id from {schema}.v_my_deployment where deployment_id=@deployment_id';
+      sql_ptypes = [dbtypes.BigInt];
+      sql_params = { deployment_id: deployment_id };
 
       validate = new XValidate();
       verrors = {};
@@ -2988,7 +2979,7 @@ module.exports = exports = function(module, funcs){
 
         if(!existingFiles) funcs.deploy_log_change(deployment_id, 'All files were overwritten (jsharmony-cms-host --overwrite-all)');
 
-        var downloadParams = { 
+        var downloadParams = {
           exec: 'deployment_download',
           deployment_id: deployment_id,
           dstStream: res,
@@ -3006,7 +2997,7 @@ module.exports = exports = function(module, funcs){
     }
     else return next();
 
-  }
+  };
 
   exports.deployment_download = function (deployment_id, dstStream, onStart, options, callback) {
     options = _.extend({ existingFiles: null, log_changes: false }, options);
@@ -3031,8 +3022,8 @@ module.exports = exports = function(module, funcs){
           deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_git_revision, \
           d.deployment_target_id, \
           (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt \
-          from "+(module.schema?module.schema+'.':'')+"deployment d \
-          inner join "+(module.schema?module.schema+'.':'')+"deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
+          from "+(module.schema?module.schema+'.':'')+'deployment d \
+          inner join '+(module.schema?module.schema+'.':'')+"deployment_target dt on d.deployment_target_id = dt.deployment_target_id \
           where deployment_sts='COMPLETE' and deployment_id=@deployment_id\
         ";
         appsrv.ExecRow('deployment', sql, [dbtypes.BigInt], { deployment_id: deployment_id }, function (err, rslt) {
@@ -3102,7 +3093,7 @@ module.exports = exports = function(module, funcs){
           fs.readFile(filepath, null, function(err, filecontent){
             if(err) return file_cb(err);
             site_files[webpath] = {
-              md5: crypto.createHash('md5').update(filecontent).digest("hex")
+              md5: crypto.createHash('md5').update(filecontent).digest('hex')
             };
             return file_cb();
           });
@@ -3157,7 +3148,6 @@ module.exports = exports = function(module, funcs){
         for(var existingFile in options.existingFiles){
           if(!(existingFile in site_files)){
             if(options.log_changes){
-              var logFolder = false;
               var baseFolder = path.dirname(existingFile);
               if(baseFolder=='.') baseFolder = '';
 
@@ -3168,7 +3158,7 @@ module.exports = exports = function(module, funcs){
               else {
 
                 var newExcessFolder = false;
-                function getClosestFolder(folder){
+                var getClosestFolder = function(folder){
                   if(folder in excessFolders) return excessFolders[folder];
 
                   var parentFolder = path.dirname(folder);
@@ -3180,7 +3170,7 @@ module.exports = exports = function(module, funcs){
                     newExcessFolder = folder;
                   }
                   else excessFolders[folder] = getClosestFolder(parentFolder);
-                }
+                };
 
                 getClosestFolder(baseFolder);
                 if(newExcessFolder) funcs.deploy_log_change(deployment_id, 'Excess folder: '+newExcessFolder+'/*');
@@ -3205,7 +3195,7 @@ module.exports = exports = function(module, funcs){
         zipfile.end();
       },
     ], callback);
-  }
+  };
 
   exports.req_deployment_trigger = function (req, res, next) {
     var cms = module;
@@ -3215,17 +3205,13 @@ module.exports = exports = function(module, funcs){
     var P = req.body;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
-    var XValidate = jsh.XValidate;
-    var sql = '';
-    var sql_ptypes = [];
-    var sql_params = {};
-    var verrors = {};
-    var dbtypes = appsrv.DB.types;
-    var validate = null;
     var model = jsh.getModel(req, module.namespace + 'Publish_Add_Release_Exec');
 
     if (verb == 'get'){
       if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
+        
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
       cms.DeploymentJobPending = true;
       jsh.AppSrv.JobProc.Run();
@@ -3233,23 +3219,19 @@ module.exports = exports = function(module, funcs){
       return;
     }
     else return next();
-  }
+  };
 
   exports.deployment_host_log = function (req, res, next) {
-    var cms = module;
     var verb = req.method.toLowerCase();
     
     var Q = req.query;
     var P = req.body;
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
-    var XValidate = jsh.XValidate;
     var sql = '';
     var sql_ptypes = [];
     var sql_params = {};
-    var verrors = {};
     var dbtypes = appsrv.DB.types;
-    var validate = null;
 
     if(!req.params || !req.params.deployment_id) return next();
     var deployment_id = req.params.deployment_id;
@@ -3266,9 +3248,9 @@ module.exports = exports = function(module, funcs){
       if(!_.includes(['error','info'], P.logtype)) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
       //Check if deployment ID is valid
-      var sql = "select deployment_id from {schema}.v_my_deployment where deployment_id=@deployment_id";
-      var sql_ptypes = [dbtypes.BigInt];
-      var sql_params = { deployment_id: deployment_id };
+      sql = 'select deployment_id from {schema}.v_my_deployment where deployment_id=@deployment_id';
+      sql_ptypes = [dbtypes.BigInt];
+      sql_params = { deployment_id: deployment_id };
 
       appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
         if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
@@ -3282,7 +3264,7 @@ module.exports = exports = function(module, funcs){
       return;
     }
     else return next();
-  }
+  };
 
   exports.validateDeploymentAccess = function(req, res, deployment_id, site_access, callback){
     var jsh = module.jsh;
@@ -3291,21 +3273,21 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { deployment_id: deployment_id };
 
-    var sql = "select deployment_id from {schema}.v_my_deployment where deployment_id=@deployment_id"
+    var sql = 'select deployment_id from {schema}.v_my_deployment where deployment_id=@deployment_id';
     if(site_access && site_access.length){
       if(!_.isArray(site_access)) site_access = [site_access];
       for(var i=0;i<site_access.length;i++){
         sql_ptypes.push(dbtypes.VarChar(32));
         sql_params['site_access'+i.toString()] = site_access[i];
       }
-      sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_deployment.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
+      sql += ' and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_deployment.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ('+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+'))';
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
       if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target deployment');
       callback(null);
     });
-  }
+  };
 
 
   return exports;

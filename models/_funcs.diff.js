@@ -20,11 +20,11 @@ var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
 var async = require('async');
 var DiffMatchPatch = require('diff-match-patch');
-var diff2html = require("diff2html");
+var diff2html = require('diff2html');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   var dmp = new DiffMatchPatch();
 
@@ -49,7 +49,10 @@ module.exports = exports = function(module, funcs){
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get') {
-      var branch_id = req.query.branch_id;
+      if (!appsrv.ParamCheck('Q', Q, ['&branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      var branch_id = Q.branch_id;
 
       //Check if item is defined
       var sql_ptypes = [dbtypes.BigInt];
@@ -79,7 +82,7 @@ module.exports = exports = function(module, funcs){
 
           //Get branch data
           function(cb){
-            var sql = "select site_editor deployment_target_id,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id";
+            var sql = 'select site_editor deployment_target_id,v_my_branch_desc.site_id from '+(module.schema?module.schema+'.':'')+'v_my_branch_desc left outer join '+(module.schema?module.schema+'.':'')+'v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@branch_id';
             appsrv.ExecRow(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
               if (err != null) { err.sql = sql; return cb(err); }
               if(rslt && rslt[0]){
@@ -87,7 +90,7 @@ module.exports = exports = function(module, funcs){
                   branch_data.deployment_target_id = rslt[0].deployment_target_id;
                   branch_data.site_id = rslt[0].site_id;
                 }
-                catch(ex){}
+                catch(ex){ /* Do nothing */ }
               }
               return cb();
             });
@@ -110,12 +113,12 @@ module.exports = exports = function(module, funcs){
           function(cb){
             async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
               if(!branch_item.diff) return branch_item_cb();
-              var sql = "select branch_{item}.{item}_key, branch_{item}.branch_{item}_action, branch_{item}.{item}_id, branch_{item}.{item}_orig_id" +
+              var sql = 'select branch_{item}.{item}_key, branch_{item}.branch_{item}_action, branch_{item}.{item}_id, branch_{item}.{item}_orig_id' +
                 _.map(branch_item.diff.columns || [], function(column_name){ return ', old_{item}.' + column_name + ' old_' + column_name + ', new_{item}.' + column_name + ' new_' + column_name + ' '; }).join('') +
-                "from {tbl_branch_item} branch_{item} \
+                'from {tbl_branch_item} branch_{item} \
                   left outer join {tbl_item} old_{item} on old_{item}.{item}_id=branch_{item}.{item}_orig_id \
                   left outer join {tbl_item} new_{item} on new_{item}.{item}_id=branch_{item}.{item}_id \
-                where branch_id=@branch_id and branch_{item}_action is not null" + (branch_item.diff.sqlwhere ? ' and (' + branch_item.diff.sqlwhere + ')' : '');
+                where branch_id=@branch_id and branch_{item}_action is not null' + (branch_item.diff.sqlwhere ? ' and (' + branch_item.diff.sqlwhere + ')' : '');
               appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
                 if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
                 if(rslt && rslt[0]) branch_diff[branch_item_type] = rslt[0];
@@ -141,7 +144,7 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
-  }
+  };
 
   //Add old and new pages to branch_data.page_keys
   exports.diff_getPages = function(branch_data, callback){
@@ -154,11 +157,11 @@ module.exports = exports = function(module, funcs){
     var sql_params = { 'branch_id': branch_data.branch_id };
     var sql = "\
       select 'NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-          from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
+          from "+(module.schema?module.schema+'.':'')+'page page where page_is_folder = 0 and page.page_id in (select page_id from '+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
         union all \
         select 'PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-          from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id) \
-    ";
+          from "+(module.schema?module.schema+'.':'')+'page page where page_is_folder = 0 and page.page_id in (select page_orig_id from '+(module.schema?module.schema+'.':'')+'branch_page where branch_id=@branch_id) \
+    ';
     appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err) return callback(err);
       if(rslt && rslt[0]){
@@ -167,12 +170,12 @@ module.exports = exports = function(module, funcs){
           if(
             (page.branch_diff_type=='NEW') ||
             (page.branch_diff_type=='PREV' && !(page.page_key in branch_data.page_keys))
-            ) branch_data.page_keys[page.page_key] = page;
+          ) branch_data.page_keys[page.page_key] = page;
         });
       }
       return callback();
     });
-  }
+  };
 
   //Add old and new media to branch_data.media_keys
   exports.diff_getMedia = function(branch_data, callback){
@@ -185,11 +188,11 @@ module.exports = exports = function(module, funcs){
     var sql_params = { 'branch_id': branch_data.branch_id };
     var sql = "\
     select 'NEW' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
-        from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id)\
+        from "+(module.schema?module.schema+'.':'')+'media media where media_is_folder=0 and media.media_id in (select media_id from '+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id)\
       union all \
       select 'PREV' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
-        from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id)\
-    ";
+        from "+(module.schema?module.schema+'.':'')+'media media where media_is_folder=0 and media.media_id in (select media_orig_id from '+(module.schema?module.schema+'.':'')+'branch_media where branch_id=@branch_id)\
+    ';
     appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err) return callback(err);
       if(rslt && rslt[0]){
@@ -197,12 +200,12 @@ module.exports = exports = function(module, funcs){
           if(
             (media.branch_diff_type=='NEW') ||
             (media.branch_diff_type=='PREV' && !(media.media_key in branch_data.media_keys))
-            ) branch_data.media_keys[media.media_key] = media;
+          ) branch_data.media_keys[media.media_key] = media;
         });
       }
       return callback();
     });
-  }
+  };
 
   exports.diff_page = function(branch_pages, branch_data, callback){
     var jsh = module.jsh;
@@ -215,11 +218,11 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branch_data.branch_id };
-        var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-          from "+(module.schema?module.schema+'.':'')+"page page \
+        var sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
+          from '+(module.schema?module.schema+'.':'')+'page page \
           where page_is_folder = 0 and (\
-                  page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action is not null) or \
-                  page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action = 'UPDATE') \
+                  page.page_id in (select page_id from '+(module.schema?module.schema+'.':'')+'branch_page where branch_id=@branch_id and branch_page_action is not null) or \
+                  page.page_id in (select page_orig_id from '+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id and branch_page_action = 'UPDATE') \
                 )";
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err) return callback(err);
@@ -269,7 +272,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.diff_media = function(branch_media, branch_data, callback){
     var jsh = module.jsh;
@@ -282,10 +285,10 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branch_data.branch_id };
-        var sql = "select media_id,media_key,media_file_id,media_desc,media_tags,media_type,media_path \
-          from "+(module.schema?module.schema+'.':'')+"media media \
-          where media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action is not null) or \
-                media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE')";
+        var sql = 'select media_id,media_key,media_file_id,media_desc,media_tags,media_type,media_path \
+          from '+(module.schema?module.schema+'.':'')+'media media \
+          where media.media_id in (select media_id from '+(module.schema?module.schema+'.':'')+'branch_media where branch_id=@branch_id and branch_media_action is not null) or \
+                media.media_id in (select media_orig_id from '+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id and branch_media_action = 'UPDATE')";
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err) return callback(err);
           if(rslt && rslt[0]){
@@ -307,7 +310,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.diff_menu = function(branch_menus, branch_data, callback){
     var jsh = module.jsh;
@@ -320,10 +323,10 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branch_data.branch_id };
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
-          from "+(module.schema?module.schema+'.':'')+"menu menu \
-          where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
-                menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
+        var sql = 'select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
+          from '+(module.schema?module.schema+'.':'')+'menu menu \
+          where menu.menu_id in (select menu_id from '+(module.schema?module.schema+'.':'')+'branch_menu where branch_id=@branch_id and branch_menu_action is not null) or \
+                menu.menu_id in (select menu_orig_id from '+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id and branch_menu_action = 'UPDATE')";
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err) return callback(err);
           if(rslt && rslt[0]){
@@ -357,7 +360,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.diff_sitemap = function(branch_sitemaps, branch_data, callback){
     var jsh = module.jsh;
@@ -370,10 +373,10 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branch_data.branch_id };
-        var sql = "select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
-          from "+(module.schema?module.schema+'.':'')+"sitemap sitemap \
-          where sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id and branch_sitemap_action is not null) or \
-                sitemap.sitemap_id in (select sitemap_orig_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id and branch_sitemap_action = 'UPDATE')";
+        var sql = 'select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
+          from '+(module.schema?module.schema+'.':'')+'sitemap sitemap \
+          where sitemap.sitemap_id in (select sitemap_id from '+(module.schema?module.schema+'.':'')+'branch_sitemap where branch_id=@branch_id and branch_sitemap_action is not null) or \
+                sitemap.sitemap_id in (select sitemap_orig_id from '+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id and branch_sitemap_action = 'UPDATE')";
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err) return callback(err);
           if(rslt && rslt[0]){
@@ -407,7 +410,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.diff_pageContent = function(old_page, new_page){
     if(!old_page || !new_page) return null;
@@ -420,19 +423,17 @@ module.exports = exports = function(module, funcs){
       var key_diff = funcs.diffPageHTML(JSON.stringify(old_page.compiled[key],null,4), JSON.stringify(new_page.compiled[key], null, 4));
       if(key_diff) diff[key] = key_diff;
     });
-    var old_content_keys = _.keys(old_page.compiled.content);
-    var new_content_keys = _.keys(new_page.compiled.content);
-    for(var key in old_page.compiled.content){ if(!(key in new_page.compiled.content)) new_page.compiled.content[key] = ''; }
-    for(var key in new_page.compiled.content){ if(!(key in old_page.compiled.content)) old_page.compiled.content[key] = ''; }
+    for(let key in old_page.compiled.content){ if(!(key in new_page.compiled.content)) new_page.compiled.content[key] = ''; }
+    for(let key in new_page.compiled.content){ if(!(key in old_page.compiled.content)) old_page.compiled.content[key] = ''; }
 
     diff.content_elements = {};
-    for(var key in old_page.template.content_elements){ diff.content_elements[key] = old_page.template.content_elements[key].title; }
-    for(var key in new_page.template.content_elements){ diff.content_elements[key] = new_page.template.content_elements[key].title; }
-    for(var key in new_page.compiled.content){ if(!(key in diff.content_elements)) diff.content_elements[key] = key; }
-    for(var key in old_page.compiled.content){ if(!(key in diff.content_elements)) diff.content_elements[key] = key; }
+    for(let key in old_page.template.content_elements){ diff.content_elements[key] = old_page.template.content_elements[key].title; }
+    for(let key in new_page.template.content_elements){ diff.content_elements[key] = new_page.template.content_elements[key].title; }
+    for(let key in new_page.compiled.content){ if(!(key in diff.content_elements)) diff.content_elements[key] = key; }
+    for(let key in old_page.compiled.content){ if(!(key in diff.content_elements)) diff.content_elements[key] = key; }
 
     diff.content = {};
-    for(var key in old_page.compiled.content){
+    for(let key in old_page.compiled.content){
       var content_diff = funcs.diffPageHTML(old_page.compiled.content[key], new_page.compiled.content[key]);
       diff.content[key] = content_diff;
     }
@@ -449,7 +450,7 @@ module.exports = exports = function(module, funcs){
       if(old_page.compiled.seo[key] != new_page.compiled.seo[key]) diff.seo[key] = new_page.compiled.seo[key];
     });
     return diff;
-  }
+  };
 
   exports.mediaDiff = function(old_media, new_media){
     var diff = {};
@@ -457,7 +458,7 @@ module.exports = exports = function(module, funcs){
       if(old_media[key] != new_media[key]) diff[key] = new_media[key];
     });
     return diff;
-  }
+  };
 
   exports.menuDiff = function(old_menu, new_menu){
     var diff = {};
@@ -467,7 +468,7 @@ module.exports = exports = function(module, funcs){
       if(old_menu[key] != new_menu[key]) diff[key] = new_menu[key];
     });
     return diff;
-  }
+  };
 
   exports.sitemapDiff = function(old_sitemap, new_sitemap){
     var diff = {};
@@ -477,7 +478,7 @@ module.exports = exports = function(module, funcs){
       if(old_sitemap[key] != new_sitemap[key]) diff[key] = new_sitemap[key];
     });
     return diff;
-  }
+  };
 
   exports.diffPageHTML = function(a, b){
     if(a==b) return '';
@@ -486,17 +487,14 @@ module.exports = exports = function(module, funcs){
     b = funcs.renderComponentsPretty(b);
 
     return funcs.diffText(a, b);
-  }
+  };
 
   exports.diffText = function(a, b){
     if(a==b) return '';
 
-    var diff_lines = dmp.diff_linesToChars_(a, b);
-    var diff_lineText1 = diff_lines.chars1;
-    var diff_lineText2 = diff_lines.chars2;
-    var diff_lineArray = diff_lines.lineArray;
-    var diff = dmp.diff_main(diff_lineText1, diff_lineText2, false);
-    dmp.diff_charsToLines_(diff, diff_lineArray);
+    var dmp_diff_lines = dmp.diff_linesToChars_(a, b);
+    var diff = dmp.diff_main(dmp_diff_lines.chars1, dmp_diff_lines.chars2, false);
+    dmp.diff_charsToLines_(diff, dmp_diff_lines.lineArray);
 
     //Generate patch
     var patch_lines = [];
@@ -505,16 +503,16 @@ module.exports = exports = function(module, funcs){
     var last_line = 0;
     if(diff.length){
       last_line = diff.length-1;
-      if(diff[last_line][0]==0){}
+      if(diff[last_line][0]==0){ /* Do nothing */ }
       else{
         if(diff.length > 1){
-          if((diff[last_line-1][0]==0)||(diff[last_line-1][0]==diff[last_line][0])){}
+          if((diff[last_line-1][0]==0)||(diff[last_line-1][0]==diff[last_line][0])){ /* Do nothing */ }
           else last_line-=1;
         }
       }
     }
 
-    for(var i=0;i<diff.length;i++){
+    for(let i=0;i<diff.length;i++){
       var diff_line = diff[i];
       var diff_line_type = diff_line[0];
       var diff_line_text = diff_line[1]||'';
@@ -540,12 +538,13 @@ module.exports = exports = function(module, funcs){
         dest_line += diff_lines.length;
       }
     }
+
     //Create patch
-    var source_line = 0;
-    var dest_line = 0;
+    source_line = 0;
+    dest_line = 0;
     var patch_batches = [];
     var cur_patch_batch = null;
-    for(var i=0;i<patch_lines.length;i++){
+    for(let i=0;i<patch_lines.length;i++){
       var patch_line = patch_lines[i];
       if(patch_line[0]==' '){
         source_line++;
@@ -595,15 +594,15 @@ module.exports = exports = function(module, funcs){
     for(var i=0;i<patch_batches.length;i++){
       var patch_batch = patch_batches[i];
       patch += '@@ -'+patch_batch.source_start_line+','+patch_batch.source_end_line+' +'+patch_batch.dest_start_line+','+patch_batch.dest_end_line+' @@\n';
-      patch += patch_batch.lines.join('\n')+'\n';;
+      patch += patch_batch.lines.join('\n')+'\n';
     }
 
-    patch = "--- compare\n+++ compare\n" + patch;
+    patch = '--- compare\n+++ compare\n' + patch;
     return diff2html.html(patch, {
-      matching: "lines"
+      matching: 'lines'
     });
 
-  }
+  };
 
   exports.formatDiff = function(diff){
     var html = [];
@@ -621,7 +620,7 @@ module.exports = exports = function(module, funcs){
       }
     }
     return html.join('');
-  }
+  };
 
   return exports;
 };

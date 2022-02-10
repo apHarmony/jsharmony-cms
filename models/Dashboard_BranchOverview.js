@@ -11,7 +11,7 @@ jsh.App[modelid] = new (function(){
     }
     //Load API Data
     this.loadData();
-  }
+  };
 
   this.loadData = function(onComplete){
     var emodelid = xmodel.namespace+'Dashboard_BranchOverview_Data';
@@ -26,13 +26,13 @@ jsh.App[modelid] = new (function(){
     }, function (err) {
       //Optionally, handle errors
     });
-  }
+  };
 
   this.render = function(){
     var tmpl = jsh.$root('.'+xmodel.class+'_template_QuickLinks').html();
     var jContent = jsh.$root('.'+xmodel.class+'_content');
 
     jContent.html(XExt.renderClientEJS(tmpl, { _: _, jsh: jsh, branch_data: _this.branch_data }));
-  }
+  };
 
 })();

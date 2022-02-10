@@ -19,13 +19,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 var _ = require('lodash');
 var FormDialog = require('../dialogs/formDialog');
-var ComponentTemplate = require('../componentModel/componentTemplate');
 var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
 var TemplateRenderer = require('../templateRenderer');
 
 /** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
 
 /** @typedef {import('../componentModel/componentTemplate').MediaBrowserControlInfo} MediaBrowserControlInfo */
+
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /**
  * @callback DataEditor_Form~beforeRenderDataItemPreview
@@ -107,7 +108,7 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
     editor.initialize(function() {});
     _this._htmlEditors.push(editor);
   });
-}
+};
 
 /**
  * @private
@@ -120,7 +121,7 @@ DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable)
   if(jctrl.hasClass('editable')){
     $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
   }
-}
+};
 
 /**
  * Open the editor
@@ -141,7 +142,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     modelConfig.actions = 'B';
   }
 
-  var itemData = modelTemplate.populateDataInstance(itemData || {});
+  itemData = modelTemplate.populateDataInstance(itemData || {});
 
   var dialog = new FormDialog(this._jsh, this._cms, modelConfig, {
     acceptButtonLabel: 'OK',
@@ -194,7 +195,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       // Don't attach any events until after the onRenderGridItemPreview hook is called.
       // Otherwise, the events might be attached to elements that get replaced or removed.
       _this.attachEditors($dialog, $wrapper, $toolbar);
-    }
+    };
 
     // This function NEEDS to be debounced.
     // It SHOULD be anyway so it doesn't re-render the preview on every
@@ -239,9 +240,9 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         }, xmodel.get(browserControlName));
       }
       else {
-        console.warn(new Error('Unknown browser type ' + info.browserType));
+        console.warn(new Error('Unknown editor browser type ' + info.browserType)); // eslint-disable-line no-console
       }
-    }
+    };
 
     editor.onChangeBrowserTitleControl = function(browserControlName) {
       // When the user manually changes the link title,
@@ -250,7 +251,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       if (info == undefined) return;
       xmodel.set(browserControlName, xmodel.get(info.titleFieldName));
       editor.onChangeData();
-    }
+    };
 
     editor.resetEditorBrowser = function(linkControlName) {
       var info = modelTemplate.getBrowserFieldInfo(linkControlName);
@@ -259,13 +260,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       xmodel.set(linkControlName, '');
       xmodel.set(info.titleFieldName, '');
       editor.onChangeData();
-    }
+    };
 
     _this._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
     _this._onRenderDataItemPreview = editor.onRenderDataItemPreview;
 
     if(onComplete) onComplete();
-  }
+  };
 
   dialog.onOpened = function($dialog, xmodel) {
     var editor = _this._jsh.App[xmodel.id];
@@ -276,14 +277,14 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         $dialog.css('opacity', '1');
       }, 50);
     });
-  }
+  };
 
   dialog.onAccept = function($dialog, xmodel) {
     if(!xmodel.controller.Commit(itemData, 'U')) return false;
     itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
-  }
+  };
 
   dialog.onCancel = function(options, $dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
@@ -293,7 +294,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       });
       return false;
     }
-  }
+  };
 
   dialog.onClose = function($dialog, xmodel) {
     //Destroy model
@@ -304,10 +305,10 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     delete _this._jsh.App[xmodel.id];
     _.forEach(_this._htmlEditors, function(editor) { editor.destroy(); });
     if (_.isFunction(onCloseCb)) onCloseCb();
-  }
+  };
 
   dialog.open(itemData);
-}
+};
 
 /**
  * @private
@@ -336,7 +337,7 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   $wrapper.empty().append(rendered);
 
-  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper)
+  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
 
   if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
 
@@ -345,6 +346,6 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
       _this._cms.componentManager.renderContentComponent(el);
     });
   }, 50);
-}
+};
 
 exports = module.exports = DataEditor_Form;

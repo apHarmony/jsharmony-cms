@@ -70,7 +70,7 @@ TemplateRenderer.createRenderConfig = function(template, data, properties, cms) 
   };
 
   return config;
-}
+};
 
 /**
  * @public
@@ -90,7 +90,7 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
       componentConfig: componentConfig,
       XExt: jsh.XExt,
       errors: '',
-    }, params))
+    }, params));
   };
 
   var renderOptions = {
@@ -118,7 +118,7 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
   
   if(componentConfig){
 
-    function generateValidators(model){
+    var generateValidators = function(model){
       var xvalidate = new XValidate(jsh);
       if(model){
         _.each(model.fields, function(field){
@@ -134,13 +134,13 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
         });
       }
       return xvalidate;
-    }
+    };
 
-    function validate(xvalidate, data, desc){
+    var validate = function(xvalidate, data, desc){
       var verrors = xvalidate.Validate('B', data||{});
       if (!_.isEmpty(verrors)) return 'Error: ' + desc + '\n' + verrors[''].join('\n');
       return '';
-    }
+    };
 
     //Generate missing validators
     var dataValidators = generateValidators(componentConfig.data);
@@ -157,21 +157,21 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
     if(componentConfig.editor_placeholder && componentConfig.editor_placeholder.invalid_fields){
       //Single item, validation error in data or properties
       if(!componentConfig.multiple_items){
-        var dataErrors = validate(dataValidators, renderContext.item, 'Component Data');
+        let dataErrors = validate(dataValidators, renderContext.item, 'Component Data');
         if(dataErrors) return renderPlaceholder({ errors: dataErrors });
 
-        var propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
+        let propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
         if(propertyErrors) return renderPlaceholder({ errors: propertyErrors });
       }
       else if(componentConfig.multiple_items){
-        var propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
+        let propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
         if(propertyErrors) return renderPlaceholder({ errors: propertyErrors });
       }
     }
 
     if(componentConfig.multiple_items){
       for(var i=0;i<renderContext.items.length;i++){
-        var dataErrors = validate(dataValidators, renderContext.items[i], 'Component Data');  
+        let dataErrors = validate(dataValidators, renderContext.items[i], 'Component Data');
         if(dataErrors) renderContext.items[i].jsh_validation_errors = dataErrors;
       }
     }
@@ -183,11 +183,11 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
     rendered = jsh.ejs.render(config.template || '', renderContext);
   } catch (error) {
     rendered = cms.componentManager.formatComponentError('Component Rendering Error: '+error.toString());
-    console.log('Render Context:');
-    console.log(renderContext);
-    console.error(error);
+    console.log('Render Context:'); // eslint-disable-line no-console
+    console.log(renderContext); // eslint-disable-line no-console
+    console.error(error); // eslint-disable-line no-console
   }
   return rendered;
-}
+};
 
 exports = module.exports = TemplateRenderer;

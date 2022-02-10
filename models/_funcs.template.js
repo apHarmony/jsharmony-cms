@@ -33,12 +33,12 @@ module.exports = exports = function(module, funcs){
   exports.readPageTemplateConfig = function(templateContent, desc, options){
     var templateParts = funcs.parseConfig(templateContent, 'cms-page-config', desc, options);
     return templateParts.config;
-  }
+  };
   
   exports.readComponentTemplateConfig = function(templateContent, desc, options){
     var templateParts = funcs.parseConfig(templateContent, 'cms-component-config', desc, options);
     return templateParts.config;
-  }
+  };
 
   exports.parseComponentTemplateConfigExtensions = function(config){
     if(!config) return;
@@ -122,7 +122,7 @@ module.exports = exports = function(module, funcs){
         field.type = field.type || 'varchar';
       }
     });
-  }
+  };
 
   exports.parseConfig = function(content, configType, desc, options){
     options = _.extend({
@@ -136,7 +136,7 @@ module.exports = exports = function(module, funcs){
     };
     var htdoc = null;
     try{
-      var htdoc = new funcs.HTMLDoc(content, { extractEJS: 'parseOnly' });
+      htdoc = new funcs.HTMLDoc(content, { extractEJS: 'parseOnly' });
       htdoc.applyNodes([
         { //Apply properties
           pred: function(node){ return (htdoc.isTag(node, 'script') && htdoc.hasAttr(node, 'type', 'text/'+configType)) || (htdoc.isTag(node, configType)); },
@@ -188,30 +188,30 @@ module.exports = exports = function(module, funcs){
       ]);
     }
     catch(ex){
-      ex = new Error('Could not parse ' + configType + ' script tag in ' + desc + ': ' + ex.toString());
-      if(options.continueOnConfigError) module.jsh.Log.info(ex);
-      else throw ex;
+      let ex_det = new Error('Could not parse ' + configType + ' script tag in ' + desc + ': ' + ex.toString());
+      if(options.continueOnConfigError) module.jsh.Log.info(ex_det);
+      else throw ex_det;
     }
     if(htdoc && options.extractFromContent){
       try{
         htdoc.trimRemoved();
       }
       catch(ex){
-        ex = new Error('Could not parse ' + configType + ' in ' + desc + ': ' + ex.toString());
-        if(options.continueOnConfigError) module.jsh.Log.info(ex);
-        else throw ex;
+        let ex_det = new Error('Could not parse ' + configType + ' in ' + desc + ': ' + ex.toString());
+        if(options.continueOnConfigError) module.jsh.Log.info(ex_det);
+        else throw ex_det;
       }
       rslt.content = htdoc.content;
     }
     return rslt;
-  }
+  };
 
   exports.getPageTemplate = function(dbcontext, site_id, template_id, options, callback){
     funcs.getPageTemplates(dbcontext, site_id, _.extend({ target_template_id: template_id }, options), function(err, pageTemplates){
       if(err) return callback(err);
       return callback(null, pageTemplates[template_id]);
     });
-  }
+  };
 
   exports.getPageTemplates = function(dbcontext, site_id, options, callback){
     var cms = module;
@@ -266,6 +266,7 @@ module.exports = exports = function(module, funcs){
               templateConfig = JSON.parse(template.site_template_config);
             }
             catch(ex){
+              /* Do nothing */
             }
           }
           else{
@@ -281,7 +282,7 @@ module.exports = exports = function(module, funcs){
 
       return callback(null, rsltTemplates);
     });
-  }
+  };
 
   exports.getComponentTemplates = function(dbcontext, site_id, options, callback){
     var cms = module;
@@ -356,6 +357,7 @@ module.exports = exports = function(module, funcs){
                   templateConfig = JSON.parse(template.site_template_config);
                 }
                 catch(ex){
+                  /* Do nothing */
                 }
               }
               else{
@@ -375,7 +377,7 @@ module.exports = exports = function(module, funcs){
       if(err) return callback(err);
       return callback(null, componentTemplates);
     });
-  }
+  };
 
   exports.getSiteTemplates = function(dbcontext, site_id, options, callback){
     options = _.extend({
@@ -567,7 +569,7 @@ module.exports = exports = function(module, funcs){
                   if(localTemplate.site_template_path in publishTemplatePaths){
                     //Do not allow publish templates to have a templateConfig
                     if(!_.isEmpty(localTemplate.site_template_config)){
-                      var source = publishTemplatePaths[localTemplate.site_template_path].source;
+                      let source = publishTemplatePaths[localTemplate.site_template_path].source;
                       return data_cb(new Error('Error processing publish template ' + localTemplate.site_template_path + ': Publish templates cannot contain a "' + options.script_config_type + '" script tag.  This template is used as a publish template by '+source+' via the remote_templates.publish property.\r\n\r\nPlease make sure not to use Editor templates as Publish templates.  Remove the remote_templates.publish property from the Editor template to auto-generate a Publish template based on the current editor template.'));
                     }
                     //Remove template
@@ -580,7 +582,7 @@ module.exports = exports = function(module, funcs){
                   if(localTemplate.site_template_path in exportTemplatePaths){
                     //Do not allow export templates to have a templateConfig
                     if(!_.isEmpty(localTemplate.site_template_config)){
-                      var source = exportTemplatePaths[localTemplate.site_template_path].source;
+                      let source = exportTemplatePaths[localTemplate.site_template_path].source;
                       return data_cb(new Error('Error processing export template ' + localTemplate.site_template_path + ': Export templates cannot contain a "' + options.script_config_type + '" script tag.  This template is used as a export template by '+source+' via the export[].remote_template property.\r\n\r\nPlease make sure not to use Editor templates as Export templates.  Remove the export[].remote_template property from the Editor template to auto-generate an Export template based on the current editor template.'));
                     }
                     //Remove template
@@ -619,9 +621,9 @@ module.exports = exports = function(module, funcs){
       },
   
       //Generate SQL
-      function(data_cb){      
+      function(data_cb){
         //Remote Templates
-        var sql = "select site_template_id,site_id,site_template_type,site_template_name,site_template_title,site_template_path,site_template_config from "+(cms.schema?cms.schema+'.':'')+"site_template where site_template_type=@site_template_type and site_id=@site_id";
+        var sql = 'select site_template_id,site_id,site_template_type,site_template_name,site_template_title,site_template_path,site_template_config from '+(cms.schema?cms.schema+'.':'')+'site_template where site_template_type=@site_template_type and site_id=@site_id';
         appsrv.ExecRecordset(dbcontext, sql, [dbtypes.BigInt, dbtypes.VarChar(32)], { site_id: site_id, site_template_type: options.site_template_type }, function (err, rslt) {
           if(err) return data_cb(err);
           if(!rslt || !rslt.length || !rslt[0]){ return data_cb(new Error('Error loading remote '+options.site_template_type.toLowerCase()+' templates')); }
@@ -655,7 +657,7 @@ module.exports = exports = function(module, funcs){
 
       return callback(null, rsltTemplates);
     });
-  }
+  };
 
   exports.getCurrentPageTemplatesLOV = function(dbcontext, values, options, cb){
     options = _.extend({ blank:false }, options);
@@ -694,7 +696,7 @@ module.exports = exports = function(module, funcs){
       return cb(null, rsltlov);
     });
     return false;
-  }
+  };
 
   exports.getSiteConfig = function(dbcontext, site_id, options, callback){
     options = _.extend({
@@ -718,15 +720,15 @@ module.exports = exports = function(module, funcs){
 
       //Get config from database
       function(data_cb){
-        var sql = "select site_config from {schema}.site where site_id=@site_id";
+        var sql = 'select site_config from {schema}.site where site_id=@site_id';
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { site_id: site_id };
         if(!site_id){
-          sql = "select site_id, site_config from {schema}.site where site_id={schema}.my_current_site_id()";
+          sql = 'select site_id, site_config from {schema}.site where site_id={schema}.my_current_site_id()';
           sql_ptypes = [];
           sql_params = { };
         }
-        appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), [dbtypes.BigInt], { site_id: site_id }, function (err, rslt) {
+        appsrv.ExecRecordset(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
           if(err) return data_cb(err);
           if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length){ return data_cb(new Error('Error loading database site config')); }
           site_id = rslt[0][0].site_id;
@@ -750,7 +752,6 @@ module.exports = exports = function(module, funcs){
       function(data_cb){
         if(!site_id) return data_cb();
         var sitePath = path.join(path.join(jsh.Config.datadir,'site'),site_id.toString());
-        var normalizedSitePath = path.normalize(sitePath);
         var configPath = path.join(sitePath, 'templates', 'site_config.json');
   
         //Get local site config from site\#\templates\site_config.json
@@ -758,7 +759,7 @@ module.exports = exports = function(module, funcs){
           if (!exists) return data_cb();
 
           fs.readFile(configPath, 'utf8', function(err, configText){
-            if(err) return file_cb(err);
+            if(err) return data_cb(err);
 
             //Read Site Config
             try{
@@ -782,7 +783,7 @@ module.exports = exports = function(module, funcs){
       },systemConfig, localConfig, dbConfig);
       return callback(null, rsltConfig);
     });
-  }
+  };
 
   exports.mergeSiteConfig = function(){
     if(!arguments.length) return {};
@@ -798,7 +799,7 @@ module.exports = exports = function(module, funcs){
       }
     }
     return rslt;
-  }
+  };
 
   exports.HTMLDoc = function(_content, options){
     options = _.extend({
@@ -865,20 +866,20 @@ module.exports = exports = function(module, funcs){
         startIdx = nextStartIdx;
       }
       _this.content = str;
-    }
+    };
 
     //Find containers for each containerSlurp script
     this.findEJSContainers = function(){
       var scripts = [];
 
-      for(var i=0;i<_this.ejsScripts.length;i++){
+      for(let i=0;i<_this.ejsScripts.length;i++){
         var ejsScript = _this.ejsScripts[i];
         if(ejsScript.container) continue;
         if(ejsScript.scriptType != 'containerSlurp') continue;
 
         //Check if script was removed
         var skip = false;
-        for(var j=0;j<_this.removed.length;j++){
+        for(let j=0;j<_this.removed.length;j++){
           var removed = _this.removed[j];
           if((removed.end - removed.start) <= 0) continue;
           if((removed.start < ejsScript.end) && (removed.end > ejsScript.start)){
@@ -923,10 +924,10 @@ module.exports = exports = function(module, funcs){
         if(a.end > b.end) return 1;
         return 0;
       });
-      for(var i=0;i<allNodes.length;i++){
-        var node = allNodes[i];
+      for(let i=0;i<allNodes.length;i++){
+        let node = allNodes[i];
         if(node.type=='script'){
-          for(var j=i-1;j>=0;j--){
+          for(let j=i-1;j>=0;j--){
             var prevNode = allNodes[j];
             if(node.end <= prevNode.end){
               node.parent = prevNode;
@@ -935,7 +936,7 @@ module.exports = exports = function(module, funcs){
           }
         }
       }
-      for(var i=0;i<scripts.length;i++){
+      for(let i=0;i<scripts.length;i++){
         var script = scripts[i];
         try{
           var container = {
@@ -946,7 +947,7 @@ module.exports = exports = function(module, funcs){
           //containerSlurp must be inside a parent element
           if(!parentMatch) throw new Error('EJS container slurp <%~ tag must be inside an HTML element');
 
-          var node = parentMatch.node;
+          let node = parentMatch.node;
           var nodeInfo = node.sourceCodeLocation;
           //Make sure parent node was not deleted
           if(node.removed) throw new Error('EJS container slurp <%~ tag should have been removed when node was removed');
@@ -995,7 +996,7 @@ module.exports = exports = function(module, funcs){
           throw new Error(errmsg);
         }
       }
-    }
+    };
 
     this.restoreEJS = function(options){
       options = _.extend({ containerSlurp: true }, options);
@@ -1080,7 +1081,7 @@ module.exports = exports = function(module, funcs){
         }
       }
       _this.ejsScripts = [];
-    }
+    };
 
     this.trimRemoved = function(){
       for(var i=0;i<_this.pendingTrim.length;i++){
@@ -1098,7 +1099,7 @@ module.exports = exports = function(module, funcs){
           }
         }
       }
-    }
+    };
 
     this.spliceContent = function(startIndex, endIndex, newContent){
       newContent = newContent || '';
@@ -1108,7 +1109,7 @@ module.exports = exports = function(module, funcs){
         _this.removed.push({ start: startIndex, end: endIndex });
         _this.pendingTrim.push({ start: startIndex, end: endIndex, type: 'content' });
       }
-    }
+    };
 
     this.offsetIndex = function(index, from){
       if(!from) from = 0;
@@ -1119,7 +1120,7 @@ module.exports = exports = function(module, funcs){
         }
       }
       return index;
-    }
+    };
 
     this.insertHtml = function(position, newContent){
       newContent = newContent || '';
@@ -1127,7 +1128,7 @@ module.exports = exports = function(module, funcs){
       
       _this.content = _this.content.substr(0, startIndex) + newContent + _this.content.substr(startIndex);
       _this.offsets.push({ start: startIndex, length: (newContent.length) });
-    }
+    };
 
     this.removeNode = function(node, desc){
       if(node.removed) return;
@@ -1143,7 +1144,7 @@ module.exports = exports = function(module, funcs){
         _this.pendingTrim.push({ start: nodeInfo.startOffset, end: nodeInfo.endOffset, type: 'node' });
       }
       node.removed = true;
-    }
+    };
 
     this.getNodeContent = function(node, desc){
       if(node.removed) return;
@@ -1155,7 +1156,7 @@ module.exports = exports = function(module, funcs){
       var startIndex = _this.offsetIndex(nodeInfo.startTag.endOffset, nodeInfo.startTag.offsetFrom);
       var endIndex = _this.offsetIndex(nodeInfo.endTag.startOffset, nodeInfo.startTag.offsetFrom);
       return _this.content.substr(startIndex, endIndex - startIndex);
-    }
+    };
 
     this.getNodeHtml = function(node, desc){
       if(node.removed) return;
@@ -1178,14 +1179,14 @@ module.exports = exports = function(module, funcs){
       }
       else return '';
       return _this.content.substr(startIndex, endIndex - startIndex);
-    }
+    };
 
     this.removeChildren = function(childNodes){
       _.each(childNodes, function(childNode){
         _this.removeChildren(childNode.childNodes);
         childNode.removed = true;
       });
-    }
+    };
 
     this.replaceNodeContent = function(node, newContent, desc){
       if(node.removed) return;
@@ -1205,7 +1206,7 @@ module.exports = exports = function(module, funcs){
       }
       //Remove children
       _this.removeChildren(node.childNodes);
-    }
+    };
 
     this.replaceNode = function(node, newContent, desc){
       if(node.removed) return;
@@ -1227,7 +1228,7 @@ module.exports = exports = function(module, funcs){
       node.removed = true;
       //Remove children
       _this.removeChildren(node.childNodes);
-    }
+    };
 
     this.wrapNode = function(node, pre, post, desc){
       desc = desc || node.tagName;
@@ -1241,7 +1242,7 @@ module.exports = exports = function(module, funcs){
       _this.content = _this.content.substr(0, startIndex) + pre + _this.content.substr(startIndex, endIndex - startIndex) + post + _this.content.substr(endIndex);
       _this.offsets.push({ start: startIndex, length: pre.length });
       _this.offsets.push({ start: endIndex + pre.length, length: post.length });
-    }
+    };
 
     this.wrapNodeContent = function(node, pre, post, desc){
       desc = desc || node.tagName;
@@ -1257,13 +1258,13 @@ module.exports = exports = function(module, funcs){
       _this.content = _this.content.substr(0, startIndex) + pre + _this.content.substr(startIndex, endIndex - startIndex) + post + _this.content.substr(endIndex);
       _this.offsets.push({ start: startIndex, length: pre.length });
       _this.offsets.push({ start: endIndex + pre.length, length: post.length });
-    }
+    };
 
     this.hasParent = function(node, pred){
       if(!node || !node.tagName || node.removed) return false;
       if(pred(node)) return true;
       return _this.hasParent(node.parent);
-    }
+    };
 
     this.findNodes = function(pred, tree, rslt){
       if(typeof tree == 'undefined') tree = _this.nodes;
@@ -1276,33 +1277,33 @@ module.exports = exports = function(module, funcs){
         }
       }
       return rslt;
-    }
+    };
 
     this.applyNodes = function(actions, tree){
       if(typeof tree == 'undefined') tree = _this.nodes;
       if(tree.removed) return;
       if(!actions) actions = [];
-      for(var i=0;i<actions.length;i++){
+      for(let i=0;i<actions.length;i++){
         if(actions[i].pred(tree)) actions[i].exec(tree);
       }
       if(tree.childNodes){
-        for(var i=0;i<tree.childNodes.length;i++){
+        for(let i=0;i<tree.childNodes.length;i++){
           if(tree.childNodes[i]) _this.applyNodes(actions, tree.childNodes[i]);
         }
       }
-    }
+    };
 
     this.isTag = function(node, tag){
       if(!node || !node.tagName || node.removed) return false;
       if(node.tagName.toString().toLowerCase() == tag.toLowerCase()) return true;
       return false;
-    }
+    };
 
     this.isNodeName = function(node, tag){
       if(!node || !node.nodeName || node.removed) return false;
       if(node.nodeName.toString().toLowerCase() == tag.toLowerCase()) return true;
       return false;
-    }
+    };
 
     this.hasAttr = function(node, key, value, options){
       if(!node || !node.attrs || node.removed) return false;
@@ -1320,7 +1321,7 @@ module.exports = exports = function(module, funcs){
         }
       }
       return false;
-    }
+    };
 
     this.getAttr = function(node, key){
       if(!node || !node.attrs || node.removed) return undefined;
@@ -1331,7 +1332,7 @@ module.exports = exports = function(module, funcs){
         }
       }
       return undefined;
-    }
+    };
 
     this.removeAttr = function(node, key, desc){
       if(node.removed) return;
@@ -1361,7 +1362,7 @@ module.exports = exports = function(module, funcs){
           i--;
         }
       }
-    }
+    };
 
     this.appendAttr = function(node, key, value, separator, desc, options){
       if(node.removed) return;
@@ -1410,7 +1411,7 @@ module.exports = exports = function(module, funcs){
       for(var i=0;i<node.attrs.length;i++){
         if((node.attrs[i].name||'').toLowerCase()==key){
           oldValue = (node.attrs[i].value||'');
-          node.attrs[i].value = oldValue + (oldValue ? separator : '') + value; 
+          node.attrs[i].value = oldValue + (oldValue ? separator : '') + value;
           break;
         }
       }
@@ -1422,7 +1423,7 @@ module.exports = exports = function(module, funcs){
       if(options.noEscape) newAttribute = (key+'="'+ oldValue + (oldValue ? separator : '') + value +'"');
       _this.content = _this.content.substr(0, startIndex) + newAttribute + _this.content.substr(endIndex);
       _this.offsets.push({ start: endIndex, length: (startIndex - endIndex + newAttribute.length) });
-    }
+    };
 
     this.replaceAttr = function(node, key, val, desc, options){
       if(!node || !node.attrs || node.removed) return;
@@ -1451,7 +1452,7 @@ module.exports = exports = function(module, funcs){
       _this.content = _this.content.substr(0, startIndex) + newAttribute + _this.content.substr(endIndex);
       _this.offsets.push({ start: endIndex, length: (startIndex - endIndex + newAttribute.length) });
       if(options.logRemoved && !nodeInfo.offsetFrom) _this.removed.push({ start: nodeInfo.startOffset, end: nodeInfo.endOffset });
-    }
+    };
 
     this.wrapAttr = function(node, key, pre, post, desc){
       if(node.removed) return;
@@ -1471,7 +1472,7 @@ module.exports = exports = function(module, funcs){
         _this.offsets.push({ start: startIndex, length: pre.length });
         _this.offsets.push({ start: endIndex + pre.length, length: post.length });
       }
-    }
+    };
 
     this.hasClass = function(node, className){
       if(!node || !node.attrs || node.removed) return false;
@@ -1483,14 +1484,14 @@ module.exports = exports = function(module, funcs){
         }
       }
       return false;
-    }
+    };
 
     this.addClass = function(node, classTxt, desc, options){
       if(!node || node.removed) return;
       classTxt = (classTxt||'').toString();
       if(!classTxt.trim()) return;
       _this.appendAttr(node, 'class', classTxt, ' ', desc, options);
-    }
+    };
 
     this.removeClass = function(node, className, desc, options){
       if(!node || !node.attrs || node.removed) return false;
@@ -1511,7 +1512,7 @@ module.exports = exports = function(module, funcs){
         return true;
       }
       return false;
-    }
+    };
 
     this.getParts = function(){
       var rslt = {
@@ -1539,7 +1540,7 @@ module.exports = exports = function(module, funcs){
         },
       ]);
       return rslt;
-    }
+    };
 
     this.getAndRemoveAttr = function(node, attrName, defaultValue){
       var rslt = defaultValue;
@@ -1548,11 +1549,11 @@ module.exports = exports = function(module, funcs){
         _this.removeAttr(node, attrName);
       }
       return rslt||'';
-    }
+    };
 
     this.serialize = function(){
       return parse5.serialize(this.nodes);
-    }
+    };
     
     //Constructor
     if(options.extractEJS) this.extractEJS();
@@ -1575,13 +1576,13 @@ module.exports = exports = function(module, funcs){
               throw new Error('Duplicate attribute "'+attrName+'" at line '+err.startLine+', character '+err.startCol);
             }
           }
-        }
+        };
       }
-      return parse5.parse(content, parseOptions)
+      return parse5.parse(content, parseOptions);
     }
     this.nodes = parseContent(this.content);
     if(options.extractEJS=='parseOnly') this.restoreEJS({ containerSlurp: false });
-  }
+  };
 
   exports.applyRenderTags = function(content, params){
     if(!content) return content;
@@ -1637,7 +1638,7 @@ module.exports = exports = function(module, funcs){
               Helper.JSEval(code, {}, renderParams);
             }
             catch(ex){
-              throw new ErrorError('Error evaluating ' + code + ': ' + ex.toString());
+              throw new Error('Error evaluating ' + code + ': ' + ex.toString());
             }
           });
           htdoc.removeNode(nodeEnd, 'onRender Range End Node');
@@ -1654,11 +1655,11 @@ module.exports = exports = function(module, funcs){
             page: {}
           }, params);
           //Render Functions
-          renderParams.showIf = function(cond){ if(!cond) htdoc.removeNode(node, 'showIf Target Node'); }
+          renderParams.showIf = function(cond){ if(!cond) htdoc.removeNode(node, 'showIf Target Node'); };
           renderParams.toggle = renderParams.showIf;
-          renderParams.addClass = function(classTxt){ htdoc.addClass(node, classTxt, 'addClass Target Node'); }
+          renderParams.addClass = function(classTxt){ htdoc.addClass(node, classTxt, 'addClass Target Node'); };
           renderParams.setClass = renderParams.addClass;
-          renderParams.addStyle = function(styleTxt){ styleTxt = (styleTxt||'').toString(); if(styleTxt.trim()) htdoc.appendAttr(node, 'style', styleTxt, ';', 'addStyle Target Node'); }
+          renderParams.addStyle = function(styleTxt){ styleTxt = (styleTxt||'').toString(); if(styleTxt.trim()) htdoc.appendAttr(node, 'style', styleTxt, ';', 'addStyle Target Node'); };
           renderParams.setStyle = renderParams.addStyle;
           //Execute Code
           try{
@@ -1682,7 +1683,7 @@ module.exports = exports = function(module, funcs){
       },
     ]);
     return htdoc.content;
-  }
+  };
 
   exports.applyResponsiveImg = function(content, thumbnails, media_items){
     if(!content) return content;
@@ -1714,6 +1715,7 @@ module.exports = exports = function(module, funcs){
             urlparts = urlparser.parse(src, true);
           }
           catch(ex){
+            /* Do nothing */
           }
           if(!urlparts) return;
 
@@ -1789,7 +1791,7 @@ module.exports = exports = function(module, funcs){
       },
     ]);
     return htdoc.content;
-  }
+  };
 
   exports.generateEditorTemplate = function(content, options){
     options = _.extend({ cmsBaseUrl: '/', template_variables: {} }, options);
@@ -1855,7 +1857,7 @@ module.exports = exports = function(module, funcs){
     }
 
     return content;
-  }
+  };
 
   exports.evalBoolAttr = function(expr, f){
     expr = _.map(expr.split('||'), function(val){ return val.split('&&'); });
@@ -1870,7 +1872,7 @@ module.exports = exports = function(module, funcs){
       rsltOr = rsltOr || rsltAnd;
     }
     return rsltOr;
-  }
+  };
 
   exports.generateDeploymentTemplate = function(template, content, options){
     options = _.extend({ template_variables: {}, template_name: null }, options);
@@ -1938,7 +1940,7 @@ module.exports = exports = function(module, funcs){
               'cms-menu-tag': { renderParam: 'menu_tag', type: 'string'},
               'cms-component-properties': { renderParam: 'properties', type: 'json'},
               'cms-component-data': { renderParam: 'data', type: 'json'},
-            }
+            };
             var renderOptions = {};
             for(var propName in props){
               var prop = props[propName];
@@ -1962,7 +1964,7 @@ module.exports = exports = function(module, funcs){
               var onRender = (htdoc.getAttr(node, 'cms-onRender')||'').toString();
               if(onRender){
                 htdoc.removeAttr(node, 'cms-onRender', 'Component '+componentId);
-                nodeContent = 
+                nodeContent =
                   '<script id="jshcms-component-containerless-'+containerlessComponentId+'-start" cms-onRender-range="'+Helper.escapeHTML(onRender)+'" cms-onRender-rangeId="jshcms-component-containerless-'+containerlessComponentId+'"></script>' +
                   nodeContent +
                   '<script id="jshcms-component-containerless-'+containerlessComponentId+'-end"></script>';
@@ -1988,13 +1990,13 @@ module.exports = exports = function(module, funcs){
     var prevSeoCanonicalUrl = false;
 
     //Third pass - Title / Meta Tags
-    var containerlessComponentId = 0;
+    containerlessComponentId = 0;
     htdoc.applyNodes([
       { //Replace page title
         pred: function(node){ return htdoc.isTag(node, 'h1') && htdoc.hasAttr(node, 'cms-title'); },
         exec: function(node){
           htdoc.replaceNodeContent(node, '<%=page.title%>', 'Title H1');
-          htdoc.wrapNode(node, '<% if(page.title){ %>', '<% } %>', 'Title H1')
+          htdoc.wrapNode(node, '<% if(page.title){ %>', '<% } %>', 'Title H1');
           htdoc.removeAttr(node, 'cms-title');
         }
       },
@@ -2016,7 +2018,7 @@ module.exports = exports = function(module, funcs){
         pred: function(node){ return htdoc.isTag(node, 'title'); },
         exec: function(node){
           htdoc.replaceNodeContent(node, '<%=page.seo.title%>', 'Title Tag');
-          htdoc.wrapNode(node, '<% if(page.seo.title){ %>', '<% } %>', 'Title Tag')
+          htdoc.wrapNode(node, '<% if(page.seo.title){ %>', '<% } %>', 'Title Tag');
           prevSeoTitle = true;
         }
       },
@@ -2025,7 +2027,7 @@ module.exports = exports = function(module, funcs){
         exec: function(node){
           htdoc.removeAttr(node, 'content');
           htdoc.appendAttr(node, 'content', '<%=page.seo.keywords%>', '', 'Meta Keywords Tag', { noEscape: true });
-          htdoc.wrapNode(node, '<% if(page.seo.keywords){ %>', '<% } %>', 'Meta Keywords Tag')
+          htdoc.wrapNode(node, '<% if(page.seo.keywords){ %>', '<% } %>', 'Meta Keywords Tag');
           prevSeoKeywords = true;
         }
       },
@@ -2034,7 +2036,7 @@ module.exports = exports = function(module, funcs){
         exec: function(node){
           htdoc.removeAttr(node, 'content');
           htdoc.appendAttr(node, 'content', '<%=page.seo.metadesc%>', '', 'Meta Description Tag', { noEscape: true });
-          htdoc.wrapNode(node, '<% if(page.seo.metadesc){ %>', '<% } %>', 'Meta Description Tag')
+          htdoc.wrapNode(node, '<% if(page.seo.metadesc){ %>', '<% } %>', 'Meta Description Tag');
           prevSeoMetadesc = true;
         }
       },
@@ -2043,7 +2045,7 @@ module.exports = exports = function(module, funcs){
         exec: function(node){
           htdoc.removeAttr(node, 'href');
           htdoc.appendAttr(node, 'href', '<%=page.seo.canonical_url%>', '', 'Canonical URL Tag', { noEscape: true });
-          htdoc.wrapNode(node, '<% if(page.seo.canonical_url){ %>', '<% } %>', 'Canonical URL Tag')
+          htdoc.wrapNode(node, '<% if(page.seo.canonical_url){ %>', '<% } %>', 'Canonical URL Tag');
           prevSeoCanonicalUrl = true;
         }
       },
@@ -2080,7 +2082,7 @@ module.exports = exports = function(module, funcs){
     htdoc.restoreEJS();
     htdoc.trimRemoved();
     return htdoc.content;
-  }
+  };
 
   exports.generateComponentTemplate = function(component, content, options){
     options = _.extend({ template_variables: {} }, options);
@@ -2097,7 +2099,7 @@ module.exports = exports = function(module, funcs){
         exec: function(node){ htdoc.removeNode(node, 'Component Config Script'); }
       },
       { //Remove component config tag
-        pred: function(node){ return htdoc.isTag(node, 'cms-component-config') },
+        pred: function(node){ return htdoc.isTag(node, 'cms-component-config'); },
         exec: function(node){ htdoc.removeNode(node, 'Component Config Tag'); }
       },
       { //jsh-group-items
@@ -2121,7 +2123,7 @@ module.exports = exports = function(module, funcs){
               rslt[key].push(items[i]);
             }
             return rslt;
-          }
+          };
 
           if(groupInto){
             var groupIntoStr = groupInto;
@@ -2248,7 +2250,7 @@ module.exports = exports = function(module, funcs){
     htdoc.trimRemoved();
     return htdoc.content;
 
-  }
+  };
 
   //Flattens object as:
   //vvvvvvvvvvhashvvvvvvvvvv
@@ -2271,13 +2273,13 @@ module.exports = exports = function(module, funcs){
         content += '^^^^^^^^^^' + rndString + '^^^^^^^^^^\n';
       }
       else if(_.isArray(val)){
-        var flatVal = funcs.flattenObject(val, baseKey+key+'.');
-        for(var flatKey in flatVal.keys) keys[flatKey] = flatVal.keys[flatKey];
+        let flatVal = funcs.flattenObject(val, baseKey+key+'.');
+        for(let flatKey in flatVal.keys) keys[flatKey] = flatVal.keys[flatKey];
         content += flatVal.content;
       }
       else if(_.isObject(val)){
-        var flatVal = funcs.flattenObject(val, baseKey+key+'.');
-        for(var flatKey in flatVal.keys) keys[flatKey] = flatVal.keys[flatKey];
+        let flatVal = funcs.flattenObject(val, baseKey+key+'.');
+        for(let flatKey in flatVal.keys) keys[flatKey] = flatVal.keys[flatKey];
         content += flatVal.content;
       }
     }
@@ -2285,7 +2287,7 @@ module.exports = exports = function(module, funcs){
       content: content,
       keys: keys,
     };
-  }
+  };
 
   exports.unflattenObject = function(obj, content, keys){
     function setValue(subobj, multiKey, val, idx){
@@ -2305,7 +2307,7 @@ module.exports = exports = function(module, funcs){
       //Apply val to obj
       setValue(obj, key.split('.'), val);
     }
-  }
+  };
 
   return exports;
 };

@@ -1,12 +1,11 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.publish = function(){
+  _this.publish = function(){
     if(!xmodel.controller.form.Data.deployment_git_revision) return XExt.Alert('Cannot redeploy - no GIT revision is available for this deployment.');
     if(!xmodel.controller.form.Data.Commit()) return;
     var deployment_target_id = xmodel.get('deployment_target_id');
     var deployment_target_name = XExt.getLOVTxt(xmodel.controller.form.LOVs.deployment_target_id, deployment_target_id);
-    var deployment_git_revision = xmodel.controller.form.Data.deployment_git_revision;
     var branch_desc = xmodel.controller.form.Data.branch_desc;
     XExt.Confirm('<b>Revision:</b> ' + XExt.escapeHTML(branch_desc) + '<br/><b>Destination:</b> ' + XExt.escapeHTML(deployment_target_name) + '<br/>Continue?', function(){
       var params = _.extend(
@@ -28,7 +27,7 @@ jsh.App[modelid] = new (function(){
           emodelid = '../_funcs/deployment/trigger';
           XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
             if ('_success' in rslt) {
-              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id); 
+              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id);
             }
             else XExt.Alert('Error while trigering deployment');
           });
@@ -37,6 +36,6 @@ jsh.App[modelid] = new (function(){
       });
 
     }, undefined, { message_type: 'html' });
-  }
+  };
 
 })();

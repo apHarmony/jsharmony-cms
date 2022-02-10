@@ -79,7 +79,7 @@ module.exports = exports = function(module, funcs) {
           }
         );
       });
-    }
+    };
 
 
     /**
@@ -98,7 +98,7 @@ module.exports = exports = function(module, funcs) {
           }
         });
       });
-    }
+    };
 
     /**
      * @public
@@ -107,36 +107,36 @@ module.exports = exports = function(module, funcs) {
      */
     this.deleteDirectoryRecursive = function(directory_path) {
       return _this.getDirectoryList(directory_path)
-      .catch(err => {
-        if (err.code === ERR_CODE_DOES_NOT_EXIST) {
-          return [];
-        } else {
-          throw err;
-        }
-      })
-      .then(items => {
+        .catch(err => {
+          if (err.code === ERR_CODE_DOES_NOT_EXIST) {
+            return [];
+          } else {
+            throw err;
+          }
+        })
+        .then(items => {
 
-        var files = [];
-        var dirs = [];
-        (items || []).forEach(item => {
-          if (item.isDir) dirs.push(item.path)
-          else files.push(item.path);
-        });
+          var files = [];
+          var dirs = [];
+          (items || []).forEach(item => {
+            if (item.isDir) dirs.push(item.path);
+            else files.push(item.path);
+          });
 
-        if (files.length < 1) return dirs;
+          if (files.length < 1) return dirs;
 
-        var delete_functions = files.map(file_path => () => _this.deleteFile(file_path));
-        return delete_functions.reduce((prev, func) => prev.then(() => func()), Promise.resolve()).then(() => dirs);
-      })
-      .then(dirs => {
+          var delete_functions = files.map(file_path => () => _this.deleteFile(file_path));
+          return delete_functions.reduce((prev, func) => prev.then(() => func()), Promise.resolve()).then(() => dirs);
+        })
+        .then(dirs => {
 
-        if (dirs.length < 1) return;
+          if (dirs.length < 1) return;
 
-        var delete_functions = dirs.map(dir_path => () => _this.deleteDirectoryRecursive(dir_path));
-        return delete_functions.reduce((prev, func) => prev.then(() => func()), Promise.resolve());
-      })
-      .then(() => _this.deleteDirectory(directory_path));
-    }
+          var delete_functions = dirs.map(dir_path => () => _this.deleteDirectoryRecursive(dir_path));
+          return delete_functions.reduce((prev, func) => prev.then(() => func()), Promise.resolve());
+        })
+        .then(() => _this.deleteDirectory(directory_path));
+    };
 
     /**
      * @param {string} file_path
@@ -152,7 +152,7 @@ module.exports = exports = function(module, funcs) {
           }
         });
       });
-    }
+    };
 
     /**
      * @public
@@ -160,7 +160,7 @@ module.exports = exports = function(module, funcs) {
      */
     this.end = function() {
       connection.end();
-    }
+    };
 
     /**
      * @public
@@ -177,7 +177,7 @@ module.exports = exports = function(module, funcs) {
           }
         });
       });
-    }
+    };
 
     /**
      * @public
@@ -197,14 +197,14 @@ module.exports = exports = function(module, funcs) {
                 name: item.filename,
                 path:  path.join(directory_path, item.filename).replace(/\\/g, '/'),
                 size: item.attrs.size
-              }
+              };
               return retVal;
             });
             resolve(items);
           }
         });
       });
-    }
+    };
 
     /**
      * @public
@@ -221,11 +221,11 @@ module.exports = exports = function(module, funcs) {
           if (stream_error.code === ERR_CODE_DOES_NOT_EXIST) {
             resolve(undefined);
           } else {
-            reject(stream_error)
+            reject(stream_error);
           }
         });
       });
-    }
+    };
 
     /**
      * @public
@@ -237,7 +237,7 @@ module.exports = exports = function(module, funcs) {
       return new Promise((resolve, reject) => {
         client.fastPut(local_path, dest_path, err => err ? reject(err) : resolve());
       });
-    }
+    };
 
     /**
      * @public
@@ -249,8 +249,8 @@ module.exports = exports = function(module, funcs) {
       return new Promise((resolve, reject) => {
         client.writeFile(dest_path, string_data, { flag: 'w+'}, write_error => write_error ? reject(write_error) : resolve());
       });
-    }
-  }
+    };
+  };
 
   return exports;
-}
+};

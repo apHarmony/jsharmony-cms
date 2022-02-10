@@ -18,11 +18,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var _ = require('lodash');
-var ComponentTemplate = require('../componentModel/componentTemplate');
 var GridDialog = require('../dialogs/gridDialog');
 var DataEditor_GridPreviewController = require('./dataEditor_gridPreviewController');
 
-
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /**
  * @class
@@ -86,41 +85,41 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
     dataController.onDataUpdated = function(updatedData) {
       if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
-    }
+    };
 
     dataController.onBeforeRenderGridRow = function(renderOptions) {
       if (_.isFunction(componentInstance.onBeforeRenderGridRow)) componentInstance.onBeforeRenderGridRow(renderOptions);
-    }
+    };
 
     dataController.onRenderGridRow = function(element, data, properties, cms, component) {
       if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
-    }
+    };
 
     var modelInterface = _this._jsh.App[xmodel.id];
 
     modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
       if (!dataController) return;
       dataController.addRow(jobj, dataRow);
-    }
+    };
 
     modelInterface.onCommit = function(xmodel, rowId, callback) {
       callback();
-    }
+    };
 
     modelInterface.close = function() {
       _this._jsh.XExt.CancelDialog();
-    }
+    };
 
     modelInterface.addItem = function() {
       dataController.addItem();
-    }
+    };
 
     if(onComplete) onComplete();
-  }
+  };
 
   dialog.onOpened = function($dialog, xmodel) {
     dataController.initialize();
-  }
+  };
 
   dialog.onClose = function($dialog, xmodel) {
     //Destroy model
@@ -130,11 +129,11 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     delete _this._jsh.XModels[xmodel.id];
     delete _this._jsh.App[xmodel.id];
     delete _this._jsh.App[componentInstanceId];
-  }
+  };
 
   dialog.open();
 
-}
+};
 
 DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captions) {
 
@@ -143,7 +142,7 @@ DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captio
   var $el = this._jsh.$(selector);
   var $img = $el.find('img');
   $el.empty().append($img).append(text);
-}
+};
 
 
 exports = module.exports = DataEditor_GridPreview;

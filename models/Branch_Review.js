@@ -5,7 +5,7 @@ jsh.App[modelid] = new (function(){
     XForm.Post(xmodel.module_namespace+'Branch_Review_Reject', { }, { branch_id: xmodel.get('branch_id') }, function(rslt){
       XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
     });
-  }
+  };
 
   _this.approveBranch = function(xmodel){
     var xform = xmodel.controller.form;
@@ -30,7 +30,7 @@ jsh.App[modelid] = new (function(){
 
       if (mergeType == 'overwrite') {
         // no conflicts possible
-        var params = {
+        let params = {
           src_branch_id: xmodel.get('branch_id'),
           dst_branch_id: jprompt.find('.dst_branch_id').val(),
         };
@@ -41,7 +41,7 @@ jsh.App[modelid] = new (function(){
           });
         });
       } else {
-        var params = {
+        let params = {
           src_branch_id: xmodel.get('branch_id'),
           dst_branch_id: jprompt.find('.dst_branch_id').val(),
           merge_type: mergeType,
@@ -57,5 +57,5 @@ jsh.App[modelid] = new (function(){
         });
       }
     });
-  }
+  };
 })();

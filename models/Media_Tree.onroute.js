@@ -1,14 +1,12 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
-var _ = require('lodash');
 var Helper = require('../Helper.js');
-var ejsext = require('../lib/ejsext.js');
 var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
 
 if(routetype == 'd'){
-  jsh.AppSrv.ExecRow(req._DBContext, "select v_my_site.site_id, (select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = v_my_site.deployment_target_id) deployment_target_publish_config from {schema}.v_my_site where site_id={schema}.my_current_site_id()", [], { }, function (err, rslt) {
-    if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, "An unexpected error has occurred"); return; }
+  jsh.AppSrv.ExecRow(req._DBContext, 'select v_my_site.site_id, (select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = v_my_site.deployment_target_id) deployment_target_publish_config from {schema}.v_my_site where site_id={schema}.my_current_site_id()', [], { }, function (err, rslt) {
+    if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, 'An unexpected error has occurred'); return; }
 
     var root_txt = '(Root)';
     if (rslt && rslt.length && rslt[0]) {
@@ -43,13 +41,13 @@ else if(routetype == 'model'){
   var sql_ptypes = undefined;
   var sql_params = undefined;
   if (req.query.init_media_key) {
-    sql = "select media_folder from {schema}.v_my_media where media_key=@media_key";
+    sql = 'select media_folder from {schema}.v_my_media where media_key=@media_key';
     sql_ptypes = [dbtypes.BigInt];
     sql_params ={ media_key: req.query.init_media_key };
   }
   else if (req.query.init_media_path) {
     if (!req.query.init_media_path.endsWith('/')) req.query.init_media_path = req.query.init_media_path + '/';
-    sql = "select media_folder from {schema}.v_my_media where substr(media_folder, 1, length(@media_folder))=@media_folder";
+    sql = 'select media_folder from {schema}.v_my_media where substr(media_folder, 1, length(@media_folder))=@media_folder';
     sql_ptypes = [dbtypes.NVarChar(dbtypes.MAX)];
     sql_params = { media_folder: req.query.init_media_path };
   }

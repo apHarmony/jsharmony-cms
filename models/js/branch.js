@@ -6,13 +6,13 @@
   jsh.System.RequireBranch = function(xmodel){
     function showNoBranchMessage(){
       XExt.Alert('Please clone or checkout a revision', function(){
-        XExt.navTo(jsh._BASEURL+'{namespace}Branch_Active_Listing', { force: true })
+        XExt.navTo(jsh._BASEURL+'{namespace}Branch_Active_Listing', { force: true });
       });
     }
 
     function showNoSiteMessage(){
       XExt.Alert('Please checkout a site', function(){
-        XExt.navTo(jsh._BASEURL+'{namespace}Site_Listing', { force: true })
+        XExt.navTo(jsh._BASEURL+'{namespace}Site_Listing', { force: true });
       });
     }
     
@@ -26,7 +26,7 @@
           showNoBranchMessage();
           return true;
         }
-      }
+      };
     }
     else if(xmodel.controller.form){
       xmodel.controller.form.OnDBError = function(err){
@@ -38,14 +38,14 @@
           showNoBranchMessage();
           return false;
         }
-      }
+      };
     }
-  }
+  };
 
   jsh.System.RequireSite = function(xmodel){
     function showNoSiteMessage(){
       XExt.Alert('Please checkout a site', function(){
-        XExt.navTo(jsh._BASEURL+'{namespace}Site_Listing', { force: true })
+        XExt.navTo(jsh._BASEURL+'{namespace}Site_Listing', { force: true });
       });
     }
 
@@ -57,7 +57,7 @@
           showNoSiteMessage();
           return true;
         }
-      }
+      };
     }
     else if(xmodel.controller.form){
       xmodel.controller.form.OnDBError = function(err){
@@ -65,14 +65,14 @@
           showNoSiteMessage();
           return false;
         }
-      }
+      };
     }
-  }
+  };
 
   jsh.System.ViewBranchSummary = function(xmodel, branch_id) {
-    if(branch_id) XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Summary?action=update&branch_id='+encodeURIComponent(branch_id), { force: true })
-    else XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true })
-  }
+    if(branch_id) XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Summary?action=update&branch_id='+encodeURIComponent(branch_id), { force: true });
+    else XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing', { force: true });
+  };
 
   jsh.System.ArchiveBranch = function(branch_id) {
     //Save Changes Before Executing
@@ -83,7 +83,7 @@
         XPage.Refresh();
       });
     });
-  }
+  };
 
   jsh.System.DownloadBranch = function(branch_id) {
     //Save Changes Before Executing
@@ -91,7 +91,7 @@
 
     var url = jsh._BASEURL+'_funcs/branch/download/'+branch_id+'?source=js';
     jsh.getFileProxy().prop('src', url);
-  }
+  };
 
   jsh.System.CheckoutBranch = function(xmodel, branch_id, branch_type) {
     //Save Changes Before Executing
@@ -102,13 +102,13 @@
         XExt.Confirm('<div style="text-align:left;">Instead of checking out a release, it is recommended to:<br/><br/>1. Clone a Release to a local Revision<br/>2. Make changes in your local Revision<br/>3. Submit for publish review when changes are complete.<br/><br/>Are you sure you want to checkout this release?</div>', f, undefined, { message_type: 'html' });
       },
       function(){
-        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Checkout?action=update&branch_id='+encodeURIComponent(branch_id), { force: true })
+        XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Checkout?action=update&branch_id='+encodeURIComponent(branch_id), { force: true });
       }
     );
-  }
+  };
 
   jsh.System.UploadBranch = function(site_id, branch_type, branch_name, branch_content) {
-    XForm.Post('../_funcs/branch/upload', {}, 
+    XForm.Post('../_funcs/branch/upload', {},
       {
         site_id: site_id,
         branch_type: branch_type,
@@ -122,7 +122,7 @@
         });
       }
     );
-  }
+  };
 
   jsh.System.SubmitBranch = function(xmodel, branch_id) {
     //Save Changes Before Executing
@@ -134,5 +134,5 @@
         else XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Active_Listing');
       });
     });
-  }
-})(window.{req.jshsite.instance});
+  };
+})(window['{req.jshsite.instance}']);

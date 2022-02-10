@@ -41,6 +41,6 @@ Convert.toNumber = function(input, allowNan) {
   } else {
     return undefined;
   }
-}
+};
 
 exports = module.exports = Convert;

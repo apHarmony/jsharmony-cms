@@ -22,7 +22,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 var assert = require('assert');
 var jsHarmonyCMS = require('../jsHarmonyCMS.js');
-var DB = require('jsharmony-db');
 var async = require('async');
 var _ = require('lodash');
 
@@ -38,13 +37,12 @@ describe('Merges', function() {
 
   var dbconfig;
   var db;
-  var dbtypes = DB.types;
   var testBaseBranchId = -1;
   var testEditBranchId = -1;
 
 
   function assertBranchState(branch_id, state, done) {
-    var sql = "select branch_page_action, page_title, page_path from cms.branch_page inner join cms.page on (page.page_id=branch_page.page_id) where branch_id="+branch_id+" and (branch_page_action<>'DELETE' or branch_page_action is null)\
+    var sql = 'select branch_page_action, page_title, page_path from cms.branch_page inner join cms.page on (page.page_id=branch_page.page_id) where branch_id='+branch_id+" and (branch_page_action<>'DELETE' or branch_page_action is null)\
     union\
     select branch_page_action, page_title, page_path from cms.branch_page inner join cms.page on (page.page_id=branch_page.page_orig_id) where branch_id="+branch_id+" and branch_page_action='DELETE'\
     order by page_path;";
@@ -63,12 +61,12 @@ describe('Merges', function() {
         console.log(JSON.stringify(state,null,4));
         throw(ex);
       }
-      done(); 
+      done();
     });
   }
 
   function basicBranchSetup(name, done) {
-    results = {}
+    var results = {};
     async.waterfall([
       function(cb){
         jsh.Modules.jsHarmonyCMS.funcs.merge_clone('S1', {branch_parent_id: testBaseBranchId, branch_name: 'Merge Test Data: '+name+' master', new_branch_changes: 'RESET'}, function(err, id, stats) {
@@ -101,7 +99,7 @@ describe('Merges', function() {
     delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
     delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
     delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-    delete from cms.branch where branch_name like 'Merge Test Data:%';"
+    delete from cms.branch where branch_name like 'Merge Test Data:%';";
     db.Command('S1', sql, [], {}, function(err, dbrslt, stats) {
       assert.ifError(err);
       cb();
@@ -138,7 +136,7 @@ describe('Merges', function() {
           db.MultiRecordset('', sql, [], {}, function (err, dbrslt, stats) {
             testBaseBranchId = dbrslt[0][0].branch_id;
             testEditBranchId = dbrslt[1][0].branch_id;
-            cb(); 
+            cb();
           });
         },
       ], function(err){
@@ -159,10 +157,10 @@ describe('Merges', function() {
   it('database initialized', function(done) {
     var sql = "select count(*) from cms.branch where branch_name='Merge Test Data: Base Branch';";
     db.Scalar('', sql, [], {}, function (err, dbrslt, stats) {
-      assert.strictEqual(parseInt(dbrslt), 1, "test branch should exist");
-      assert.notStrictEqual(testBaseBranchId, -1, "base branch id should be captured")
-      assert.notStrictEqual(testEditBranchId, -1, "edit branch id should be captured")
-      done(); 
+      assert.strictEqual(parseInt(dbrslt), 1, 'test branch should exist');
+      assert.notStrictEqual(testBaseBranchId, -1, 'base branch id should be captured');
+      assert.notStrictEqual(testEditBranchId, -1, 'edit branch id should be captured');
+      done();
     });
   });
 
@@ -196,7 +194,7 @@ describe('Merges', function() {
             page_title: 'Update After',
             page_path: '/test/update/index.html',
           },
-        ], done);  
+        ], done);
       });
     });
   });
@@ -236,7 +234,7 @@ describe('Merges', function() {
             page_title: 'Update After',
             page_path: '/test/update/index.html',
           },
-        ], done);  
+        ], done);
       });
     });
   });
@@ -276,7 +274,7 @@ describe('Merges', function() {
             page_title: 'Update After',
             page_path: '/test/update/index.html',
           },
-        ], done);  
+        ], done);
       });
     });
   });
@@ -316,7 +314,7 @@ describe('Merges', function() {
             page_title: 'Update After',
             page_path: '/test/update/index.html',
           },
-        ], done);  
+        ], done);
       });
     });
   });

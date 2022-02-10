@@ -24,25 +24,25 @@ exports = module.exports = function(){
       jobj.html(html);
     }
     catch(ex){
-      console.log(ex);
+      console.log(ex); // eslint-disable-line no-console
     }
-  }
+  };
 
   this.appendHTML = function(jobj, html){
     try{
       jobj.append(html);
     }
     catch(ex){
-      console.log(ex);
+      console.log(ex); // eslint-disable-line no-console
     }
-  }
+  };
 
   this.refreshParentPageTree = function(page_folder, page_key){
     if(window.opener){
       window.opener.postMessage('jsharmony-cms:refresh_page_folder:'+page_folder, '*');
       if(page_key) window.opener.postMessage('jsharmony-cms:refresh_page_key:'+page_key, '*');
     }
-  }
+  };
 
   this.disableControl = function(jctrl){
     jctrl.removeClass('editable');
@@ -55,14 +55,14 @@ exports = module.exports = function(){
       jctrl.prev().find('input').prop('disabled', true);
     }
     else jctrl.prop('readonly', true);
-  }
+  };
 
   this.loadScript = function(url, cb){
     var script = document.createElement('script');
     if(cb) script.onload = cb;
     script.src = url;
     document.head.appendChild(script);
-  }
+  };
 
   this.loadCSS = function(url, cb){
     var link = document.createElement('link');
@@ -71,7 +71,7 @@ exports = module.exports = function(){
     link.href = url;
     link.media = 'all';
     document.head.appendChild(link);
-  }
+  };
 
   this.addStyle = function(id, css){
     var style = document.createElement('style');
@@ -80,10 +80,10 @@ exports = module.exports = function(){
     style.id = id;
     style.appendChild(document.createTextNode(css));
     document.head.appendChild(style);
-  }
+  };
 
   this.removeStyle = function(id){
     var elem = document.getElementById(id);
     if(elem) elem.parentNode.removeChild(elem);
-  }
-}
+  };
+};

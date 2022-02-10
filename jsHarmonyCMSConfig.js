@@ -18,7 +18,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var jsHarmonyConfig = require('jsharmony/jsHarmonyConfig');
-var HelperFS = require('jsharmony/HelperFS');
 var path = require('path');
 
 function jsHarmonyCMSConfig(){
@@ -38,10 +37,10 @@ function jsHarmonyCMSConfig(){
     clientIp: ['0.0.0.0/0'],  /* '127.0.0.1', '192.168.1.0/24', ... */
 
     serverKey: undefined,     // path/to/key.pem
-                              //   If undefined, HTTPS Key from main CMS site will be used
+    //   If undefined, HTTPS Key from main CMS site will be used
 
     serverUrl: undefined,     // SFTP Server client-facing URL, ex. sftp://example.com:22
-                              //   If not set, hostname will be auto-detected from CMS site hostname
+    //   If not set, hostname will be auto-detected from CMS site hostname
   };
 
   this.preview_server = {
@@ -49,18 +48,18 @@ function jsHarmonyCMSConfig(){
     serverPort: 8088,
     serverIp: '0.0.0.0',
     serverUrl: undefined,       // Preview Server client-facing URL, ex. https://example.com:8088
-                                //   If not set, hostname will be auto-detected from CMS site hostname
+    //   If not set, hostname will be auto-detected from CMS site hostname
 
     serverHttpsKey: undefined,  // path/to/https-key.pem
-                                //   If undefined, HTTPS Key / Cert / CA from main CMS site will be used
-                                //   If set to false, HTTP will be used instead of HTTPS
+    //   If undefined, HTTPS Key / Cert / CA from main CMS site will be used
+    //   If set to false, HTTP will be used instead of HTTPS
     serverHttpsCert: undefined, // path/to/https-cert.pem
     serverHttpsCa: undefined,   // path/to/https-ca.pem
   };
 
   this.media_thumbnails = {  //Media thumbnail configuration.  See site_config.json for options
-    file_tile: { resize: [150, 150], format: "jpg" },
-    file_preview: { resize: [300, 300], format: "jpg" },
+    file_tile: { resize: [150, 150], format: 'jpg' },
+    file_preview: { resize: [300, 300], format: 'jpg' },
     small: { resize: [512, 384] },
     medium: { resize: [1024, 768] },
     large: { resize: [2048, 1538] },
@@ -71,7 +70,7 @@ function jsHarmonyCMSConfig(){
   };
 
   this.redirect_listing_path = null;  //Default path where redirects will be exported by a site component
-                                      //* Path should be relative to deployment target URL Prefix
+  //* Path should be relative to deployment target URL Prefix
 
   this.deployment_target_publish_config = { //Default deployment target publish config
     page_subfolder: '',   //Stores CMS page files in a subfolder of the publish directory, ex. 'pages/'
@@ -81,9 +80,9 @@ function jsHarmonyCMSConfig(){
     url_prefix_media_override: null, //Override URL prefix for CMS media URLs, ex. '/media/'
     published_url: null,  //(Optional) URL of published site, ex. https://example.com
     exec_pre_deployment: undefined,  //Execute shell command after populating publish folder, before deployment
-                                     //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
+    //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     exec_post_deployment: undefined, //Execute shell command after deployment
-                                     //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
+    //Ex. { cmd: 'cmd', params: ['/c', 'echo abc > c:\\a.a'] }
     git_branch: 'site_%%%SITE_ID%%%',    //Git branch used for deployment.  The %%%SITE_ID%%% parameter is replaced with the site id.
     copy_folders: [/* 'dir1','dir2' */], //Copy contents from the source folders into the publish folder
     publish_local_templates: false,      //Whether to include the site's "templates" folder in the published files
@@ -105,8 +104,8 @@ function jsHarmonyCMSConfig(){
 
     //Amazon S3 deployment settings
     s3_config: {
-      accessKeyId: "",
-      secretAccessKey: "",
+      accessKeyId: '',
+      secretAccessKey: '',
       upload_params: { //Add parameters to the S3.upload request
         //"ACL": "public-read",
         //More parameters can be found at:
@@ -118,7 +117,7 @@ function jsHarmonyCMSConfig(){
     //----------------
     generate: { //Items to generate on publish
       'onBeforeDeploy': true,      //true (all), false (none), or array of items, ex: ['page','media']
-      'onDeploy': true,            //true (all), false (none), or array of items, ex: ['page','media'] 
+      'onDeploy': true,            //true (all), false (none), or array of items, ex: ['page','media']
       'onDeploy_PostBuild': true,  //true (all), false (none), or array of items, ex: ['page','media']
     },
   };
@@ -135,7 +134,7 @@ function jsHarmonyCMSConfig(){
   this.defaultEditorConfig = {   //Default GUI page editor config
     webSnippetsPath: undefined,  //Web snippets listing path - defaults to PREVIEW_SERVER/templates/websnippets/
     materialIcons: false,        //Whether to enable Material Icons in the Editor
-                                 //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
+    //  If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
   };
 
   this.showLocalTemplatePaths = true;   //Display local template file system paths in Site Templates Administration
@@ -146,7 +145,7 @@ function jsHarmonyCMSConfig(){
   this.onDeploy_LoadData = null; //function(jsh, branchData, template_variables, callback){ return callback(err); }
   this.onValidate_LoadData = null; //function(jsh, branchData, template_variables, callback){ return callback(err); }
   this.onDeploy_GenerateRedirects = null; //function(jsh, branchData, template_variables, callback){ return callback(err, generated_redirect_files); }
-                                          //    generated_redirect_files = { 'path1': 'file content1', 'path2': 'file content2' }
+  //    generated_redirect_files = { 'path1': 'file content1', 'path2': 'file content2' }
   this.onDeploy_PostBuild = null; //function(jsh, branchData, template_variables, callback){ return callback(err); }
 }
 
@@ -154,6 +153,6 @@ jsHarmonyCMSConfig.prototype = new jsHarmonyConfig.Base();
 
 jsHarmonyCMSConfig.prototype.Init = function(cb, jsh){
   if(cb) return cb();
-}
+};
 
 exports = module.exports = jsHarmonyCMSConfig;

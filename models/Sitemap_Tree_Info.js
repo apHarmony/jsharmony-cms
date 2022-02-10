@@ -8,15 +8,15 @@ jsh.App[modelid] = new (function(){
   this.oninit = function(){
     jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
     _this.bindEvents();
-  }
+  };
 
   this.onload = function(){
     _this.page_info_key = null;
     _this.render();
-  }
+  };
 
   this.onmessage = function(data){
-    var data = (data || '').toString();
+    data = (data || '').toString();
     if(data.indexOf('cms_file_picker:')==0){
       data = data.substr(16);
       var jdata = JSON.parse(data);
@@ -30,7 +30,7 @@ jsh.App[modelid] = new (function(){
         _this.updatePageInfo();
       }
     }
-  }
+  };
 
   this.sitemap_item_link_type_onchange = function(obj, newval, undoChange){
     XExt.execif(xmodel.get('sitemap_item_link_dest'),
@@ -57,11 +57,11 @@ jsh.App[modelid] = new (function(){
         _this.prev_link_type = newval;
       }
     );
-  }
+  };
 
   this.sitemap_item_text_onchange = function(obj, newval){
     jsh.App[xmodel.parent].commitInfo();
-  }
+  };
 
   this.updatePageInfo = function(force){
     var sitemap_item_link_type = xmodel.get('sitemap_item_link_type');
@@ -95,9 +95,9 @@ jsh.App[modelid] = new (function(){
     XForm.Post(execModel, {}, pageQuery, function(rslt){
       if(_this.last_page_info_request_id != page_info_request_id) return;
       if(!rslt || !rslt[execModel] || !rslt[execModel].length || !rslt[execModel][0]){
-        jtitle.text("");
-        jtemplate.text("");
-        jpath.text("");
+        jtitle.text('');
+        jtemplate.text('');
+        jpath.text('');
       }
       else {
         var page = rslt[execModel][0];
@@ -108,7 +108,7 @@ jsh.App[modelid] = new (function(){
         jpath.text(page.page_path);
       }
     });
-  }
+  };
 
   this.render = function(){
     var sitemap_item_link_type = xmodel.get('sitemap_item_link_type');
@@ -155,7 +155,7 @@ jsh.App[modelid] = new (function(){
     jpage_options.toggle(sitemap_item_link_type=='PAGE');
 
     _this.updatePageInfo();
-  }
+  };
 
   this.bindEvents = function(){
     var jpage_options = $('.'+xmodel.class+'_page_options');
@@ -189,14 +189,14 @@ jsh.App[modelid] = new (function(){
         jobj.attr('href', '#');
       }
     });
-  }
+  };
 
   this.browsePage = function(page_folder){
     XExt.popupForm(xmodel.namespace+'Page_Browser', '', { init_page_key: xmodel.get('sitemap_item_link_dest') });
-  }
+  };
 
   this.browseMedia = function(){
     XExt.popupForm(xmodel.namespace+'Media_Browser', '', { init_media_key: xmodel.get('sitemap_item_link_dest') });
-  }
+  };
 
 })();

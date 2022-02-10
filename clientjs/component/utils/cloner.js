@@ -33,6 +33,6 @@ function Cloner() { }
  */
 Cloner.deepClone = function(obj) {
   return JSON.parse(JSON.stringify(obj || {}));
-}
+};
 
 exports = module.exports = Cloner;

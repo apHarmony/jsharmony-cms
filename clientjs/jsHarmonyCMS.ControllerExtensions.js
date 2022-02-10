@@ -18,12 +18,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 exports = module.exports = function(jsh, cms){
-  var _this = this;
   var _ = jsh._;
-  var $ = jsh.$;
   var XExt = jsh.XExt;
-  var async = jsh.async;
-  var ejs = jsh.ejs;
 
   this.createMenuTree = function(menu, page_key){
     var selected_item = null;
@@ -93,7 +89,7 @@ exports = module.exports = function(jsh, cms){
       menu_item.getSiblings = function(){
         var siblings = menu_item.parent ? menu_item.parent.children : menu_item_tree;
         return _.filter(siblings, function(sibling){ return sibling.id != menu_item.id; });
-      }
+      };
     });
 
     //Add properties to menu
@@ -105,7 +101,7 @@ exports = module.exports = function(jsh, cms){
     //Aliases
     menu.topItems = menu.tree;
     menu.allItems = menu.items;
-  }
+  };
 
   this.createSitemapTree = function(sitemap){
     //Input:
@@ -129,7 +125,7 @@ exports = module.exports = function(jsh, cms){
       //self.children
       sitemap.self.children = sitemap.children || [];
       //self.children.siblings
-      for(var i=0;i<sitemap.self.children.length;i++){
+      for(let i=0;i<sitemap.self.children.length;i++){
         var child = sitemap.self.children[i];
         child.siblings = sitemap.self.children;
         child.parent = sitemap.self;
@@ -137,7 +133,7 @@ exports = module.exports = function(jsh, cms){
 
       //self.siblings
       sitemap.self.siblings = sitemap.self.sitemap_item_siblings || [sitemap.self];
-      for(var i=0;i<sitemap.self.siblings.length;i++){
+      for(let i=0;i<sitemap.self.siblings.length;i++){
         var sibling = sitemap.self.siblings[i];
         //Replace self in sitemap.self.siblings
         if(sibling.sitemap_item_id == sitemap.self.sitemap_item_id) sitemap.self.siblings[i] = sitemap.self;
@@ -150,8 +146,8 @@ exports = module.exports = function(jsh, cms){
 
     //Replace self in each sitemap.parents.siblings
     if(sitemap.parents){
-      for(var i=0;i<sitemap.parents.length;i++){
-        var parent = sitemap.parents[i];
+      for(let i=0;i<sitemap.parents.length;i++){
+        let parent = sitemap.parents[i];
 
         //parent.parent
         if(i==0) parent.parent = null;
@@ -163,8 +159,8 @@ exports = module.exports = function(jsh, cms){
           if(parent.siblings[j].sitemap_item_id == parent.sitemap_item_id) parent.siblings[j] = parent;
         }
       }
-      for(var i=0;i<sitemap.parents.length;i++){
-        var parent = sitemap.parents[i];
+      for(let i=0;i<sitemap.parents.length;i++){
+        let parent = sitemap.parents[i];
         //parent.children
         if(i==(sitemap.parents.length-1)) parent.children = sitemap.self.siblings;
         else parent.children = sitemap.parents[i+1].siblings;
@@ -244,12 +240,12 @@ exports = module.exports = function(jsh, cms){
       sitemap_item.getSiblings = function(){
         var siblings = sitemap_item.parent ? sitemap_item.parent.children : sitemap.tree;
         return _.filter(siblings, function(sibling){ return sibling.id != sitemap_item.id; });
-      }
+      };
     });
 
     //Aliases
     sitemap.topItems = sitemap.tree;
     sitemap.currentItem = sitemap.self;
     sitemap.item = sitemap.self;
-  }
-}
+  };
+};

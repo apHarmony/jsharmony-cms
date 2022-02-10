@@ -22,7 +22,7 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   //Add old and new pages to branch_data.page_keys
   exports.conflicts_getPages = function(branch_data, callback){
@@ -36,17 +36,17 @@ module.exports = exports = function(module, funcs){
     var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
     var sql = "\
       select 'DST_NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-        from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id) \
+        from "+(module.schema?module.schema+'.':'')+'page page where page_is_folder = 0 and page.page_id in (select page_id from '+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id) \
       union all \
       select 'DST_PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-        from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id) \
+        from "+(module.schema?module.schema+'.':'')+'page page where page_is_folder = 0 and page.page_id in (select page_orig_id from '+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id) \
       union all \
       select 'SRC_NEW' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-        from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id) \
+        from "+(module.schema?module.schema+'.':'')+'page page where page_is_folder = 0 and page.page_id in (select page_id from '+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id) \
       union all \
       select 'SRC_PREV' branch_diff_type,page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-        from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id) \
-    ";
+        from "+(module.schema?module.schema+'.':'')+'page page where page_is_folder = 0 and page.page_id in (select page_orig_id from '+(module.schema?module.schema+'.':'')+'branch_page where branch_id=@src_branch_id) \
+    ';
     appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; return callback(err); }
       if(rslt && rslt[0]){
@@ -57,12 +57,12 @@ module.exports = exports = function(module, funcs){
             (page.branch_diff_type=='DST_PREV' && !(page.page_key in branch_data.page_keys)) ||
             (page.branch_diff_type=='SRC_NEW' && !(page.page_key in branch_data.page_keys)) ||
             (page.branch_diff_type=='SRC_PREV' && !(page.page_key in branch_data.page_keys))
-            ) branch_data.page_keys[page.page_key] = page;
+          ) branch_data.page_keys[page.page_key] = page;
         });
       }
       return callback();
     });
-  }
+  };
 
   //Add old and new media to branch_data.media_keys
   exports.conflicts_getMedia = function(branch_data, callback){
@@ -75,17 +75,17 @@ module.exports = exports = function(module, funcs){
     var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
     var sql = "\
       select 'DST_NEW' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
-        from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id)\
+        from "+(module.schema?module.schema+'.':'')+'media media where media_is_folder=0 and media.media_id in (select media_id from '+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id)\
       union all \
       select 'DST_PREV' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
-        from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id)\
+        from "+(module.schema?module.schema+'.':'')+'media media where media_is_folder=0 and media.media_id in (select media_orig_id from '+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id)\
       union all \
       select 'SRC_NEW' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
-        from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id)\
+        from "+(module.schema?module.schema+'.':'')+'media media where media_is_folder=0 and media.media_id in (select media_id from '+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id)\
       union all \
       select 'SRC_PREV' branch_diff_type,media_id,media_key,media_file_id,media_desc,media_path \
-        from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id)\
-    ";
+        from "+(module.schema?module.schema+'.':'')+'media media where media_is_folder=0 and media.media_id in (select media_orig_id from '+(module.schema?module.schema+'.':'')+'branch_media where branch_id=@src_branch_id)\
+    ';
     appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err) return callback(err);
       if(rslt && rslt[0]){
@@ -95,12 +95,12 @@ module.exports = exports = function(module, funcs){
             (media.branch_diff_type=='DST_PREV' && !(media.media_key in branch_data.media_keys)) ||
             (media.branch_diff_type=='SRC_NEW' && !(media.media_key in branch_data.media_keys)) ||
             (media.branch_diff_type=='DST_PRV' && !(media.media_key in branch_data.media_keys))
-            ) branch_data.media_keys[media.media_key] = media;
+          ) branch_data.media_keys[media.media_key] = media;
         });
       }
       return callback();
     });
-  }
+  };
 
   exports.conflicts_page = function(branch_pages, branch_data, callback){
     var jsh = module.jsh;
@@ -113,16 +113,16 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
         var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
-        var sql = "select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-          from "+(module.schema?module.schema+'.':'')+"page page \
+        var sql = 'select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
+          from '+(module.schema?module.schema+'.':'')+'page page \
           where page_is_folder = 0 and (\
-                  page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action is not null) or \
-                  page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action = 'UPDATE') or \
-                  page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and src_branch_page.page_key in (select page_key from "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and branch_page_action is not null)) or \
-                  page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id and branch_page_action is not null) or \
-                  page.page_id in (select page_orig_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id and branch_page_action = 'UPDATE') or \
-                  page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and dst_branch_page.page_key in (select page_key from "+(module.schema?module.schema+'.':'')+"branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and branch_page_action is not null)) \
-                )";
+                  page.page_id in (select page_id from '+(module.schema?module.schema+'.':'')+'branch_page where branch_id=@src_branch_id and branch_page_action is not null) or \
+                  page.page_id in (select page_orig_id from '+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@src_branch_id and branch_page_action = 'UPDATE') or \
+                  page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+'branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and src_branch_page.page_key in (select page_key from '+(module.schema?module.schema+'.':'')+'branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and branch_page_action is not null)) or \
+                  page.page_id in (select page_id from '+(module.schema?module.schema+'.':'')+'branch_page where branch_id=@dst_branch_id and branch_page_action is not null) or \
+                  page.page_id in (select page_orig_id from '+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@dst_branch_id and branch_page_action = 'UPDATE') or \
+                  page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+'branch_page dst_branch_page where dst_branch_page.branch_id=@dst_branch_id and dst_branch_page.page_key in (select page_key from '+(module.schema?module.schema+'.':'')+'branch_page src_branch_page where src_branch_page.branch_id=@src_branch_id and branch_page_action is not null)) \
+                )';
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
@@ -139,7 +139,7 @@ module.exports = exports = function(module, funcs){
         async.eachOfSeries(updated_pages, function(page, page_id, page_cb){
           funcs.getClientPage(branch_data._DBContext, page, null, branch_data.site_id, { includeExtraRemoteContent: true, pageTemplates: branch_data.page_templates, ignoreInvalidPageTemplate: true }, function(err, clientPage){
             if(err) return page_cb(err);
-            if(!clientPage) return page_cb(null); 
+            if(!clientPage) return page_cb(null);
             funcs.localizePageURLs(clientPage.page, branch_data.baseurl, !!clientPage.template.raw);
             page.compiled = clientPage.page;
             page.template = clientPage.template;
@@ -183,7 +183,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.conflicts_media = function(branch_media, branch_data, callback){
     var jsh = module.jsh;
@@ -196,15 +196,15 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
         var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
-        var sql = "select media_id,media_key,media_file_id,media_desc,media_tags,media_type,media_path \
-          from "+(module.schema?module.schema+'.':'')+"media media \
+        var sql = 'select media_id,media_key,media_file_id,media_desc,media_tags,media_type,media_path \
+          from '+(module.schema?module.schema+'.':'')+'media media \
           where\
-                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id and branch_media_action is not null) or \
-                media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id and branch_media_action = 'UPDATE') or\
-                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media src_branch_media where src_branch_media.branch_id=@src_branch_id and src_branch_media.media_key in (select media_key from "+(module.schema?module.schema+'.':'')+"branch_media dst_branch_media where dst_branch_media.branch_id=@dst_branch_id and branch_media_action is not null)) or \
-                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id and branch_media_action is not null) or \
-                media.media_id in (select media_orig_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id and branch_media_action = 'UPDATE') or\
-                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media dst_branch_media where dst_branch_media.branch_id=@dst_branch_id and dst_branch_media.media_key in (select media_key from "+(module.schema?module.schema+'.':'')+"branch_media src_branch_media where src_branch_media.branch_id=@src_branch_id and branch_media_action is not null))";
+                media.media_id in (select media_id from '+(module.schema?module.schema+'.':'')+'branch_media where branch_id=@src_branch_id and branch_media_action is not null) or \
+                media.media_id in (select media_orig_id from '+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@src_branch_id and branch_media_action = 'UPDATE') or\
+                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+'branch_media src_branch_media where src_branch_media.branch_id=@src_branch_id and src_branch_media.media_key in (select media_key from '+(module.schema?module.schema+'.':'')+'branch_media dst_branch_media where dst_branch_media.branch_id=@dst_branch_id and branch_media_action is not null)) or \
+                media.media_id in (select media_id from '+(module.schema?module.schema+'.':'')+'branch_media where branch_id=@dst_branch_id and branch_media_action is not null) or \
+                media.media_id in (select media_orig_id from '+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@dst_branch_id and branch_media_action = 'UPDATE') or\
+                media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+'branch_media dst_branch_media where dst_branch_media.branch_id=@dst_branch_id and dst_branch_media.media_key in (select media_key from '+(module.schema?module.schema+'.':'')+'branch_media src_branch_media where src_branch_media.branch_id=@src_branch_id and branch_media_action is not null))';
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
@@ -238,7 +238,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.conflicts_menu = function(branch_menus, branch_data, callback){
     var jsh = module.jsh;
@@ -251,15 +251,15 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
         var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
-          from "+(module.schema?module.schema+'.':'')+"menu menu \
+        var sql = 'select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
+          from '+(module.schema?module.schema+'.':'')+'menu menu \
           where\
-                menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@src_branch_id and branch_menu_action is not null) or \
-                menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@src_branch_id and branch_menu_action = 'UPDATE') or\
-                menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu src_branch_menu where src_branch_menu.branch_id=@src_branch_id and src_branch_menu.menu_key in (select menu_key from "+(module.schema?module.schema+'.':'')+"branch_menu dst_branch_menu where dst_branch_menu.branch_id=@dst_branch_id and branch_menu_action is not null)) or \
-                menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@dst_branch_id and branch_menu_action is not null) or \
-                menu.menu_id in (select menu_orig_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@dst_branch_id and branch_menu_action = 'UPDATE') or\
-                menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu dst_branch_menu where dst_branch_menu.branch_id=@dst_branch_id and dst_branch_menu.menu_key in (select menu_key from "+(module.schema?module.schema+'.':'')+"branch_menu src_branch_menu where src_branch_menu.branch_id=@src_branch_id and branch_menu_action is not null))";
+                menu.menu_id in (select menu_id from '+(module.schema?module.schema+'.':'')+'branch_menu where branch_id=@src_branch_id and branch_menu_action is not null) or \
+                menu.menu_id in (select menu_orig_id from '+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@src_branch_id and branch_menu_action = 'UPDATE') or\
+                menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+'branch_menu src_branch_menu where src_branch_menu.branch_id=@src_branch_id and src_branch_menu.menu_key in (select menu_key from '+(module.schema?module.schema+'.':'')+'branch_menu dst_branch_menu where dst_branch_menu.branch_id=@dst_branch_id and branch_menu_action is not null)) or \
+                menu.menu_id in (select menu_id from '+(module.schema?module.schema+'.':'')+'branch_menu where branch_id=@dst_branch_id and branch_menu_action is not null) or \
+                menu.menu_id in (select menu_orig_id from '+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@dst_branch_id and branch_menu_action = 'UPDATE') or\
+                menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+'branch_menu dst_branch_menu where dst_branch_menu.branch_id=@dst_branch_id and dst_branch_menu.menu_key in (select menu_key from '+(module.schema?module.schema+'.':'')+'branch_menu src_branch_menu where src_branch_menu.branch_id=@src_branch_id and branch_menu_action is not null))';
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
@@ -305,7 +305,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.conflicts_sitemap = function(branch_sitemaps, branch_data, callback){
     var jsh = module.jsh;
@@ -318,15 +318,15 @@ module.exports = exports = function(module, funcs){
       function(cb){
         var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
         var sql_params = { src_branch_id: branch_data.src_branch_id, dst_branch_id: branch_data.dst_branch_id };
-        var sql = "select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
-          from "+(module.schema?module.schema+'.':'')+"sitemap sitemap \
+        var sql = 'select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
+          from '+(module.schema?module.schema+'.':'')+'sitemap sitemap \
           where\
-                sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@src_branch_id and branch_sitemap_action is not null) or \
-                sitemap.sitemap_id in (select sitemap_orig_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@src_branch_id and branch_sitemap_action = 'UPDATE') or\
-                sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap src_branch_sitemap where src_branch_sitemap.branch_id=@src_branch_id and src_branch_sitemap.sitemap_key in (select sitemap_key from "+(module.schema?module.schema+'.':'')+"branch_sitemap dst_branch_sitemap where dst_branch_sitemap.branch_id=@dst_branch_id and branch_sitemap_action is not null)) or \
-                sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@dst_branch_id and branch_sitemap_action is not null) or \
-                sitemap.sitemap_id in (select sitemap_orig_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@dst_branch_id and branch_sitemap_action = 'UPDATE') or\
-                sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap dst_branch_sitemap where dst_branch_sitemap.branch_id=@dst_branch_id and dst_branch_sitemap.sitemap_key in (select sitemap_key from "+(module.schema?module.schema+'.':'')+"branch_sitemap src_branch_sitemap where src_branch_sitemap.branch_id=@src_branch_id and branch_sitemap_action is not null))";
+                sitemap.sitemap_id in (select sitemap_id from '+(module.schema?module.schema+'.':'')+'branch_sitemap where branch_id=@src_branch_id and branch_sitemap_action is not null) or \
+                sitemap.sitemap_id in (select sitemap_orig_id from '+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@src_branch_id and branch_sitemap_action = 'UPDATE') or\
+                sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+'branch_sitemap src_branch_sitemap where src_branch_sitemap.branch_id=@src_branch_id and src_branch_sitemap.sitemap_key in (select sitemap_key from '+(module.schema?module.schema+'.':'')+'branch_sitemap dst_branch_sitemap where dst_branch_sitemap.branch_id=@dst_branch_id and branch_sitemap_action is not null)) or \
+                sitemap.sitemap_id in (select sitemap_id from '+(module.schema?module.schema+'.':'')+'branch_sitemap where branch_id=@dst_branch_id and branch_sitemap_action is not null) or \
+                sitemap.sitemap_id in (select sitemap_orig_id from '+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@dst_branch_id and branch_sitemap_action = 'UPDATE') or\
+                sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+'branch_sitemap dst_branch_sitemap where dst_branch_sitemap.branch_id=@dst_branch_id and dst_branch_sitemap.sitemap_key in (select sitemap_key from '+(module.schema?module.schema+'.':'')+'branch_sitemap src_branch_sitemap where src_branch_sitemap.branch_id=@src_branch_id and branch_sitemap_action is not null))';
         appsrv.ExecRecordset(branch_data._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
@@ -372,7 +372,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   var CONFLICT_DETAIL_TABLES = [
     ['src_orig_', 'src_branch_{item}.{item}_orig_id'],
@@ -395,14 +395,14 @@ module.exports = exports = function(module, funcs){
   function selectConflictDetailTables() {
     return CONFLICT_DETAIL_TABLES.map(function(det) {
       var prefix = det[0];
-      var id = det[1]
+      var id = det[1];
       var table = prefix + '{item}';
       return 'left outer join {tbl_item} ' + table + ' on ' + table + '.{item}_id=' + id;
     }).join(' ');
   }
 
   function propertyPrefixToSubObject(obj, sub) {
-    var prefix = sub + '_'
+    var prefix = sub + '_';
     obj[sub] = {};
     var toDelete = [];
     _.forOwn(obj, function(value, key) {
@@ -476,7 +476,7 @@ module.exports = exports = function(module, funcs){
 
       //Get template variables
       function(cb){
-        var sql = "select site_editor deployment_target_id,v_my_branch_desc.site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc left outer join "+(module.schema?module.schema+'.':'')+"v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@dst_branch_id";
+        var sql = 'select site_editor deployment_target_id,v_my_branch_desc.site_id from '+(module.schema?module.schema+'.':'')+'v_my_branch_desc left outer join '+(module.schema?module.schema+'.':'')+'v_my_site on v_my_site.site_id = v_my_branch_desc.site_id where v_my_branch_desc.branch_id=@dst_branch_id';
         appsrv.ExecRow(context, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
@@ -484,7 +484,7 @@ module.exports = exports = function(module, funcs){
               branch_data.deployment_target_id = rslt[0].deployment_target_id;
               branch_data.site_id = rslt[0].site_id;
             }
-            catch(ex){}
+            catch(ex){ /* Do nothing */ }
           }
           return cb();
         });
@@ -492,7 +492,7 @@ module.exports = exports = function(module, funcs){
 
       //Get branch names
       function(cb){
-        var sql = "select branch_id, branch_desc from "+(module.schema?module.schema+'.':'')+"v_my_branch_desc where branch_id=@dst_branch_id or branch_id=@src_branch_id";
+        var sql = 'select branch_id, branch_desc from '+(module.schema?module.schema+'.':'')+'v_my_branch_desc where branch_id=@dst_branch_id or branch_id=@src_branch_id';
         appsrv.ExecRecordset(context, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql;return cb(err); }
           if(rslt && rslt[0]){
@@ -523,22 +523,22 @@ module.exports = exports = function(module, funcs){
         async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
           if(!branch_item.conflicts) return branch_item_cb();
 
-          var sql = "select src_branch_{item}.{item}_key,\
+          var sql = 'select src_branch_{item}.{item}_key,\
             src_branch_{item}.branch_{item}_action as src_branch_{item}_action,\
             dst_branch_{item}.branch_{item}_action as dst_branch_{item}_action,\
-            dst_branch_{item}.{item}_merge_id, dst_branch_{item}.branch_{item}_merge_action, ";
+            dst_branch_{item}.{item}_merge_id, dst_branch_{item}.branch_{item}_merge_action, ';
 
           sql += selectConflictDetailFields(branch_item.conflicts.columns || []);
 
-          sql += " from {tbl_branch_item} src_branch_{item} \
-            inner join {tbl_branch_item} dst_branch_{item} on dst_branch_{item}.{item}_key=src_branch_{item}.{item}_key and dst_branch_{item}.branch_id=@dst_branch_id ";
+          sql += ' from {tbl_branch_item} src_branch_{item} \
+            inner join {tbl_branch_item} dst_branch_{item} on dst_branch_{item}.{item}_key=src_branch_{item}.{item}_key and dst_branch_{item}.branch_id=@dst_branch_id ';
 
           sql += selectConflictDetailTables();
 
-          sql += " where src_branch_{item}.branch_id=@src_branch_id\
+          sql += ' where src_branch_{item}.branch_id=@src_branch_id\
             and jsharmony.nequal(dst_branch_{item}.{item}_id,src_branch_{item}.{item}_id)\
             and ((src_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(src_branch_{item}.{item}_orig_id,dst_branch_{item}.{item}_id))\
-            or  (dst_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(dst_branch_{item}.{item}_orig_id,src_branch_{item}.{item}_id))) ";
+            or  (dst_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(dst_branch_{item}.{item}_orig_id,src_branch_{item}.{item}_id))) ';
 
           if(branch_item.conflicts.sqlwhere) sql += ' and (' + branch_item.conflicts.sqlwhere + ')';
 
@@ -559,7 +559,7 @@ module.exports = exports = function(module, funcs){
         async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
           if(!branch_item.conflicts) return branch_item_cb();
 
-          var sql = "select {item}_key as \"key\", {item}_id id, {item}_orig_id orig_id\
+          var sql = 'select {item}_key as "key", {item}_id id, {item}_orig_id orig_id\
             from {tbl_item}\
             where {item}.{item}_key in \
                 (select {item}_key \
@@ -576,7 +576,7 @@ module.exports = exports = function(module, funcs){
                     from {tbl_branch_item} \
                     where {item}_id is not null and {item}_key = {tbl_item}.{item}_key and (branch_id = @src_branch_id or branch_id = @dst_branch_id) \
                   ) \
-            ;"
+            ;';
 
           appsrv.ExecRecordset(context, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; return cb(err); }
@@ -611,7 +611,7 @@ module.exports = exports = function(module, funcs){
       });
     });
     return;
-  }
+  };
 
   exports.req_conflicts = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -623,7 +623,6 @@ module.exports = exports = function(module, funcs){
     var appsrv = this;
     var jsh = module.jsh;
     var XValidate = jsh.XValidate;
-    var dbtypes = appsrv.DB.types;
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Conflicts');
     
@@ -638,7 +637,6 @@ module.exports = exports = function(module, funcs){
       var src_branch_id = req.query.src_branch_id;
 
       //Check if item is defined
-      var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
       var sql_params = { dst_branch_id: dst_branch_id, src_branch_id: src_branch_id };
       var validate = new XValidate();
       var verrors = {};
@@ -660,7 +658,7 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
-  }
+  };
 
   exports.req_conflicts_resolve = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -706,7 +704,7 @@ module.exports = exports = function(module, funcs){
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
       //Validate user has access to branch
-      var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+"v_my_branch_access access where access.branch_id=@branch_id));";
+      var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+'v_my_branch_access access where access.branch_id=@branch_id));';
       appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
         if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
         if(err) return Helper.GenError(req, res, -99999, err.toString());
@@ -716,7 +714,7 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
-  }
+  };
 
   return exports;
 };

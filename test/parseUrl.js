@@ -19,8 +19,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 var assert = require('assert');
 var jsHarmonyCMS = require('../jsHarmonyCMS.js');
-var async = require('async');
-var _ = require('lodash');
 
 var jsh = new jsHarmonyCMS.Application();
 var jshcms = jsh.Modules['jsHarmonyCMS'];

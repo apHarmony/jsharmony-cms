@@ -22,7 +22,7 @@ jsh.App[modelid] = new (function(){
     jsh.$root('.xform'+diffModel.class+' .actions_bar_caption').show();
     var buttonGroup = jsh.$root('.xactions_group.xelem'+xmodel.class+'[data-group="Actions"]');
     actionsBar.html(buttonGroup.html());
-  }
+  };
 
   this.renameBranch = function(branch_id){
     var old_branch_name = xmodel.get('branch_name');
@@ -36,7 +36,7 @@ jsh.App[modelid] = new (function(){
         XPage.Refresh();
       });
     });
-  }
+  };
 
   this.mergeFromBranch = function(xmodel){
     var xform = xmodel.controller.form;
@@ -45,13 +45,9 @@ jsh.App[modelid] = new (function(){
     if(!xmodel.get('dst_branch_id')) return XExt.Alert('Please clone or checkout the destination revision');
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$dialogBlock(sel);
-
       jsh.$dialogBlock(sel + ' .src_branch_desc').html(xform.Data.src_branch_desc);
       jsh.$dialogBlock(sel + ' .dst_branch_desc').html(xform.Data.dst_branch_desc);
     }, function (success) { //onAccept
-      var jprompt = jsh.$dialogBlock(sel);
-
       var mergeType = 'changes';
       var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
       if(checked_option.length) mergeType = checked_option.val().toLowerCase();
@@ -60,7 +56,7 @@ jsh.App[modelid] = new (function(){
 
       if (mergeType == 'overwrite') {
         // no conflicts possible
-        var params = {
+        let params = {
           src_branch_id: xmodel.get('branch_id'),
           dst_branch_id: xmodel.get('dst_branch_id'),
         };
@@ -69,7 +65,7 @@ jsh.App[modelid] = new (function(){
           XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Listing_Redirect');
         });
       } else {
-        var params = {
+        let params = {
           src_branch_id: xmodel.get('branch_id'),
           dst_branch_id: xmodel.get('dst_branch_id'),
           merge_type: mergeType,
@@ -83,5 +79,5 @@ jsh.App[modelid] = new (function(){
         });
       }
     });
-  }
+  };
 })();

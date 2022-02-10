@@ -1,8 +1,6 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
-var _ = require('lodash');
 var Helper = require('../Helper.js');
-var querystring = require('querystring');
 
 var model = jsh.getModelClone(req, modelid);
 
@@ -10,7 +8,7 @@ if (!Helper.hasModelAction(req, model, 'B')) return callback();
 
 if(routetype != 'model') return callback();
 
-jsh.AppSrv.ExecRecordset(req._DBContext, "select (select {schema}.my_current_branch_id()) branch_id", [], {  }, function (err, rslt) {
+jsh.AppSrv.ExecRecordset(req._DBContext, 'select (select {schema}.my_current_branch_id()) branch_id', [], {  }, function (err, rslt) {
   if(err) callback();
   if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length || !rslt[0][0]) return callback();
 

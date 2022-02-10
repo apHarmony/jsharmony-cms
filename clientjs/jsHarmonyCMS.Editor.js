@@ -33,7 +33,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.defaultConfig = {};
   this.toolbarContainer = null;
   this.defaultToolbarOptions = {
-    dock: "auto",
+    dock: 'auto',
     show_menu: true,
     show_toolbar: true,
     orig_dock: undefined,
@@ -112,9 +112,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           urlparts.href = url;
           urlparts_editor.href = document.location;
           if(urlparts.host == urlparts_editor.host){
-            url = url.replace(/^[^:]*\:\/{2}[^/]*\/(.*)/, '/$1');
+            url = url.replace(/^[^:]*:\/{2}[^/]*\/(.*)/, '/$1');
           }
-          url = url;
           return url;
         },
         fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
@@ -162,8 +161,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         mceEditor.on('blur', function(){
           $('[data-component="header"]').css('pointer-events', 'auto');
           _this.isEditing = false;
-          var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
-          var dockPosition = _this.getDockPosition(mceEditor);
+          var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); };
           if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
             _this.toolbarContainer.stop(true).css({ opacity:0 });
             clearClasses();
@@ -211,11 +209,11 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
       return cb();
     });
-  }
+  };
 
   this.getDefaultEditorConfig = function(){
     return _.extend({}, jsh.globalparams.defaultEditorConfig, cms.site_config.defaultEditorConfig);
-  }
+  };
 
   this.attach = function(config_id, elem_id, options, cb){
     if(!cb) cb = function(){};
@@ -227,7 +225,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
     config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, function(){ return cb(); });
     window.tinymce.init(config).catch(cb);
-  }
+  };
 
   this.detach = function(id){
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
@@ -235,9 +233,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       if(_this.isEditing == id) mceEditor.fire('blur');
       mceEditor.destroy();
     }
-  }
+  };
 
-  /** 
+  /**
    * @param {string} id
    * @param {'top' | 'bottom'} position
    */
@@ -246,7 +244,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(!mceEditor) throw new Error('Editor not found: '+id);
     mceEditor.fire('setToolbarOptions', {toolbarOptions:toolbarOptions});
-  }
+  };
 
   this.disableLinks = function(container, options){
     options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
@@ -265,7 +263,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       if(options.addFlag) jobj.data('disabled_links', '1');
       jobj.on('click', function(e){ e.preventDefault(); });
     });
-  }
+  };
 
   this.setContent = function(id, val, desc){
     if(!desc) desc = id;
@@ -287,14 +285,14 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       mceEditor.setContent(val, { jsHarmonyCmsSource: 'editor' });
       if(!_this.isInitialized) mceEditor.undoManager.add();
     }
-  }
+  };
 
   this.getContent = function(id, desc){
     if(!desc) desc = id;
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(!mceEditor) cms.fatalError('editor.getContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div cms-content-editor="'+desc+'"></div>');
     return mceEditor.getContent();
-  }
+  };
 
   this.initToolbarContainer = function(element) {
     this.toolbarContainer = $(element);
@@ -302,16 +300,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if (!id) {
       do {
         id = 'jsharmony_cms_editor_toolbar_' + Math.random().toString().replace('.', '');
-      } while($('#' + id).length > 0)
+      } while($('#' + id).length > 0);
       this.toolbarContainer.attr('id', id);
     }
-  }
+  };
 
   this.onEditorInitialized = function(){
     if(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()){
       window.tinymce.activeEditor.fire('focus');
     }
-  }
+  };
 
   this.getContentEditorTopOffset = function(mceEditor){
     var contentOffset = $(mceEditor.contentAreaContainer).offset();
@@ -321,7 +319,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     contentOffsetTop += parseInt(contentStyles.paddingTop);
     contentOffsetTop -= cms.toolbar.currentOffsetTop;
     return contentOffsetTop;
-  }
+  };
 
   this.getDockPosition = function(mceEditor){
     if(!mceEditor) throw new Error('Editor is required');
@@ -340,7 +338,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       return 'top';
     }
     return dockPosition;
-  }
+  };
 
   this.getOffsetTop = function(){
     if(!window.tinymce) return 0;
@@ -351,7 +349,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
     }
     return 0;
-  }
+  };
 
   this.renderContentEditorToolbar = function(mceEditor, options){
     if(!window.tinymce) return;
@@ -390,18 +388,18 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         .css('bottom', '');
     }
     cms.toolbar.refreshOffsets();
-  }
+  };
 
   this.endEdit = function(){
     jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
     $('#jsharmony_cms_virtual_focus_element a').focus();
     setTimeout(function(){
       jsh.XExt.waitUntil(
-        function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()) },
-        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); },
+        function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()); },
+        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); }
       );
     }, 100);
-  }
+  };
 
   this.getMaterialIcons = function(){
     var defaultEditorConfig = _this.getDefaultEditorConfig();
@@ -1340,5 +1338,5 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       [0xe900,'materialicon_zoom_out'],
       [0xe56b,'materialicon_zoom_out_map'],
     ];
-  }
-}
+  };
+};

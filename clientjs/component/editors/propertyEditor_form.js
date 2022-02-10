@@ -18,8 +18,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var _ = require('lodash');
-var ComponentTemplate = require('../componentModel/componentTemplate');
 var FormDialog = require('../dialogs/formDialog');
+
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /**
  * @class
@@ -74,7 +75,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
-  }
+  };
 
   dialog.onCancel = function(options, $dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
@@ -84,7 +85,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
       });
       return false;
     }
-  }
+  };
 
   dialog.onClose = function($dialog, xmodel) {
     //Destroy model
@@ -93,9 +94,9 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
     delete _this._jsh.XModels[xmodel.id];
     delete _this._jsh.App[xmodel.id];
-  }
+  };
 
   dialog.open(data);
-}
+};
 
 exports = module.exports = PropertyEditor_Form;

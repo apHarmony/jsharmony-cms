@@ -45,7 +45,7 @@ GridDataStore.prototype.addNewItem = function(item) {
     throw new Error('item already exists');
   }
   this._dataArray.push(item);
-}
+};
 
 /**
  * Remove the item with the given ID if it exists.
@@ -54,9 +54,9 @@ GridDataStore.prototype.addNewItem = function(item) {
 GridDataStore.prototype.deleteItem = function(id) {
   var index =  this.getItemIndexById(id);
   if (index > -1) {
-    this._dataArray.splice(index, 1)
+    this._dataArray.splice(index, 1);
   }
-}
+};
 
 /**
  * Get the item with the given ID if it exists.
@@ -66,7 +66,7 @@ GridDataStore.prototype.deleteItem = function(id) {
  */
 GridDataStore.prototype.getDataItem = function(id) {
   return this._dataArray[this.getItemIndexById(id)];
-}
+};
 
 /**
  * Gets a constant reference to the array of data.
@@ -75,7 +75,7 @@ GridDataStore.prototype.getDataItem = function(id) {
 GridDataStore.prototype.getDataArray = function() {
   // Must return same reference every time.
   return this._dataArray;
-}
+};
 
 /**
  * Get the index of the data with the given ID
@@ -86,7 +86,7 @@ GridDataStore.prototype.getDataArray = function() {
 GridDataStore.prototype.getItemIndexById = function(id) {
   var idKey = this._idKey;
   return this._dataArray.findIndex(function(item) { return id === item[idKey]; });
-}
+};
 
 /**
  * Return the count of data in the store.
@@ -95,7 +95,7 @@ GridDataStore.prototype.getItemIndexById = function(id) {
  */
 GridDataStore.prototype.count = function() {
   return this._dataArray.length;
-}
+};
 
 /**
  * Sort the data by sequence number in ascending order
@@ -106,7 +106,7 @@ GridDataStore.prototype.sortBySequence = function() {
   this._dataArray.sort(function(a, b) {
     return  Convert.toNumber(a.sequence) > Convert.toNumber(b.sequence) ? 1 : -1;
   });
-}
+};
 
 /**
  * Replace the item with the matching ID
@@ -122,6 +122,6 @@ GridDataStore.prototype.updateItem = function(item) {
     throw new Error('item does not exist');
   }
   this._dataArray[index] = item;
-}
+};
 
 exports = module.exports = GridDataStore;

@@ -26,7 +26,7 @@ function ModuleFunctions(module){
   _.extend(this, require('./_funcs.page.js')(module, this));
   _.extend(this, require('./_funcs.media.js')(module, this));
   _.extend(this, require('./_funcs.menu.js')(module, this));
-  _.extend(this, require('./_funcs.sitemap.js')(module, this));  
+  _.extend(this, require('./_funcs.sitemap.js')(module, this));
   _.extend(this, require('./_funcs.deploy.js')(module, this));
   _.extend(this, require('./_funcs.component.js')(module, this));
   _.extend(this, require('./_funcs.template.js')(module, this));

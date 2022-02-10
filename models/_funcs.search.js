@@ -17,15 +17,13 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 var Helper = require('jsharmony/Helper');
-var HelperFS = require('jsharmony/HelperFS');
 var _ = require('lodash');
 var path = require('path');
 var async = require('async');
-var fs = require('fs');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   function parseSearchQuery(str){
     str = (str || '').toString().trim().toLowerCase();
@@ -61,7 +59,7 @@ module.exports = exports = function(module, funcs){
     }
     if(!hasScore) return null;
     return score;
-  }
+  };
 
   exports.mergeSearchScore = function(scoreSrc, scoreDest, factor){
     if(typeof factor == 'undefined') factor = 1;
@@ -72,7 +70,7 @@ module.exports = exports = function(module, funcs){
       rslt[i] += scoreDest[i] * factor;
     }
     return rslt;
-  }
+  };
 
   exports.search = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -85,7 +83,6 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var cms = module;
     var dbtypes = appsrv.DB.types;
-    var XValidate = jsh.XValidate;
 
     var model = jsh.getModel(req, module.namespace + 'Page_Search');
 
@@ -101,7 +98,7 @@ module.exports = exports = function(module, funcs){
     var itemType = Q.itemType || null;
 
     if (verb == 'get') {
-      jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema("select {schema}.my_current_site_id() site_id, {schema}.my_current_branch_id() branch_id"), [], {}, function (err, rslt) {
+      jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema('select {schema}.my_current_site_id() site_id, {schema}.my_current_branch_id() branch_id'), [], {}, function (err, rslt) {
         if(err) return Helper.GenError(req, res, -99999, err.toString());
   
         if (!rslt || !rslt.length || !rslt[0] || !rslt[0].site_id) return Helper.GenError(req, res, -1, 'Please check out a site');
@@ -140,13 +137,13 @@ module.exports = exports = function(module, funcs){
                 if(!branch_item.search) return search_item_cb();
                 Helper.execif(branch_item.search.columns,
                   function(f){
-                    var sql = "select branch_{item}.{item}_key,branch_{item}.{item}_id,";
+                    var sql = 'select branch_{item}.{item}_key,branch_{item}.{item}_id,';
                     sql += _.map(branch_item.search.columns || [], function(colname){ return '{item}.'+colname; }).join(',');
 
-                    sql += " from {tbl_branch_item} branch_{item}"
+                    sql += ' from {tbl_branch_item} branch_{item}';
                     sql += ' left outer join {tbl_item} {item} on {item}.{item}_id = branch_{item}.{item}_id';
           
-                    sql += " where branch_{item}.branch_id=@branch_id and branch_{item}.{item}_id is not null";
+                    sql += ' where branch_{item}.branch_id=@branch_id and branch_{item}.{item}_id is not null';
                     
                     appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
                       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
@@ -197,19 +194,15 @@ module.exports = exports = function(module, funcs){
       return;
     }
     return Helper.GenError(req, res, -4, 'Invalid Operation');
-  }
+  };
 
   exports.search_getPages = function(searchItems, searchData, callback){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-
     var publish_params = {
       site_default_page_filename: '',
       page_subfolder: '',
       media_subfolder: '',
       url_prefix: '/',
-    }
+    };
 
     _.each(searchItems, function(page){
       var page_cmspath = '';
@@ -219,7 +212,7 @@ module.exports = exports = function(module, funcs){
         page_cmspath = publish_params.url_prefix + publish_params.page_subfolder + relativePath;
         if(!Helper.isNullUndefined(publish_params.url_prefix_page_override)){ page_cmspath = publish_params.url_prefix_page_override + relativePath; }
       }
-      catch(ex){ }
+      catch(ex){ /* Do nothing */ }
 
       if(page_cmspath){
         searchData.page_keys[page.page_key] = page_cmspath;
@@ -234,40 +227,33 @@ module.exports = exports = function(module, funcs){
     });
 
     return callback();
-  }
+  };
 
   exports.search_getMedia = function(searchItems, searchData, callback){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-
     var publish_params = {
       site_default_page_filename: '',
       media_subfolder: '',
       url_prefix: '/',
-    }
+    };
 
-    _.each(searchItems, function(media){
+    for(var media_id in searchItems){
+      var media = searchItems[media_id];
       var media_urlpath = '';
       try{
         var relativePath = funcs.getMediaRelativePath(media, publish_params);
-        if(!relativePath) return cb(new Error('Media has no path: '+media.media_key));
+        if(!relativePath) return callback(new Error('Media has no path: '+media.media_key));
         media_urlpath = publish_params.url_prefix + relativePath;
         if(!Helper.isNullUndefined(publish_params.url_prefix_media_override)){ media_urlpath = publish_params.url_prefix_media_override + relativePath; }
       }
-      catch(ex){ }
+      catch(ex){ /* Do nothing */ }
 
       if(media_urlpath) searchData.media_keys[media.media_key] = media_urlpath;
-    });
+    }
 
     return callback();
-  }
+  };
 
   exports.search_pages = function(searchItems, searchData, callback){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-
     async.eachOf(searchItems, function(page, page_id, page_cb){
       if(page.page_is_folder) return page_cb();
       //Calculate page metadata score
@@ -280,7 +266,7 @@ module.exports = exports = function(module, funcs){
         function(done){
           funcs.getClientPage(searchData._DBContext, page, null, searchData.site_id, { includeAllExtraContent: true, ignoreInvalidPageTemplate: true, pageTemplates: false }, function(err, clientPage){
             if(err) return page_cb(err);
-            if(!clientPage || !clientPage.page) return done(); 
+            if(!clientPage || !clientPage.page) return done();
 
             //Replace URLs
             function replaceURLs(content, scoreKey){
@@ -360,13 +346,13 @@ module.exports = exports = function(module, funcs){
           var weightedScore = [];
           for(var key in score){
             if(key=='content'){
-              for(var key in score.content){
-                exports.mergeSearchScore(weightedScore, score.content[key]);
+              for(var subkey in score.content){
+                exports.mergeSearchScore(weightedScore, score.content[subkey]);
               }
             }
             else if(key=='properties'){
-              for(var key in score.properties){
-                exports.mergeSearchScore(weightedScore, score.properties[key]);
+              for(let subkey in score.properties){
+                exports.mergeSearchScore(weightedScore, score.properties[subkey]);
               }
             }
             else if(_.includes(['header','footer','css'], key)){ exports.mergeSearchScore(weightedScore, score[key], 0.5); }
@@ -387,7 +373,7 @@ module.exports = exports = function(module, funcs){
         }
       );
     }, callback);
-  }
+  };
 
   exports.collapseSearchScore = function(query, mergedScore){
     var finalScore = 0;
@@ -398,13 +384,9 @@ module.exports = exports = function(module, funcs){
     }
     if(missingScore || (mergedScore.length < query.length)) return 0;
     return finalScore;
-  }
+  };
 
   exports.search_media = function(searchItems, searchData, callback){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-
     async.eachOf(searchItems, function(media, media_id, media_cb){
       if(media.media_is_folder) return media_cb();
       //Calculate media score
@@ -433,7 +415,7 @@ module.exports = exports = function(module, funcs){
       return media_cb(null);
     }, callback);
     
-  }
+  };
 
   return exports;
 };

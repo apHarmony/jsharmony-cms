@@ -20,10 +20,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var _ = require('lodash');
 var Convert  = require('../utils/convert');
 var GridDataStore = require('./gridDataStore');
-var DataEditor_Form = require('./dataEditor_form')
-var ComponentTemplate = require('../componentModel/componentTemplate');
+var DataEditor_Form = require('./dataEditor_form');
 var TemplateRenderer = require('../templateRenderer');
 
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
 /** @typedef {import('../templateRenderer').GridPreviewRenderContext} GridPreviewRenderContext */
@@ -149,7 +149,7 @@ DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
     $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
     this.renderRow(rowData);
   }
-}
+};
 
 /**
  * Change the position of the item in the item list.
@@ -194,16 +194,16 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
 
   if (moveDown && nextIndex > -1) {
     updateIndex = nextIndex;
-    newSequence = nextSequence
+    newSequence = nextSequence;
     doUpdate = true;
   } else if (!moveDown && prevIndex > - 1) {
     updateIndex = prevIndex;
-    newSequence = prevSequence
+    newSequence = prevSequence;
     doUpdate = true;
   }
 
   if (doUpdate) {
-    var adjData = items[updateIndex]
+    var adjData = items[updateIndex];
     adjData.sequence = item.sequence;
     this.updateModelDataFromDataStore(this.getRowIdFromItemId(adjData[this._idFieldName]));
 
@@ -222,7 +222,7 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
     // system to ensure rows are re-drawn in correct order.
     this.forceRefresh();
   }
-}
+};
 
 /**
  * Call anytime slide data is changed (and valid) in the view.
@@ -230,7 +230,7 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
  */
 DataEditor_GridPreviewController.prototype.dataUpdated = function() {
   this.updateParentController();
-}
+};
 
 /**
  * Commit the data in the grid.
@@ -241,7 +241,7 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
   var controller = this.xmodel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Commit();
-}
+};
 
 DataEditor_GridPreviewController.prototype.showOverlay = function() {
   var joverlay = this.$dialogWrapper.find('.refreshLoadingOverlay');
@@ -253,14 +253,14 @@ DataEditor_GridPreviewController.prototype.showOverlay = function() {
   else {
     this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="opacity:1;position:absolute;top:0px;left:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
   }
-}
+};
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
   var _this = this;
   this.$dialogWrapper.find('.refreshLoadingOverlay').stop().fadeOut(function(){
     _this.jsh.$(this).remove();
   });
-}
+};
 
 /**
  * Refresh the grid.
@@ -288,7 +288,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
     _this.$dialogWrapper.scrollTop(scrollTop);
 
   });
-}
+};
 
 /**
  * @private
@@ -302,7 +302,7 @@ DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = functio
     rowIndex: itemIndex
   };
   return retVal;
-}
+};
 
 /**
  * Get the item data for the corresponding rowId
@@ -314,7 +314,7 @@ DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId
   var slideId = this.jsh.$('.xrow.xrow_' + this.xmodel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
     .attr('data-item-id');
   return this._dataStore.getDataItem(slideId) || {};
-}
+};
 
 /**
  * Get the next item sequence which is equal to the
@@ -328,7 +328,7 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
   });
   if(!maxItem) return 1;
   return  _.isNumber(maxItem.sequence) ? maxItem.sequence + 1 : 0;
-}
+};
 
 /**
  * Get the row ID of the parent row for the given element.
@@ -338,7 +338,7 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
  */
 DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
   return this.jsh.XExt.XModel.GetRowID(this.xmodel.id, $element);
-}
+};
 
 /**
  * Find the topmost element defined in the row template for the row
@@ -350,7 +350,7 @@ DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
 DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(rowId) {
   var rowSelector = '.xrow[data-id="' + rowId + '"]';
   return this.$dialogWrapper.find(rowSelector + ' [data-component-template="gridRow"]');
-}
+};
 
 /**
  * Get the row ID for the item with the given ID.
@@ -361,7 +361,7 @@ DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(row
 DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId) {
   var $el = this.jsh.$(this.$dialogWrapper).find('[data-component-template="gridRow"][data-item-id="' + itemId + '"]');
   return this.getParentRowId($el);
-}
+};
 
 /**
  * Entry point for controller. Do not call until
@@ -392,11 +392,11 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
     dataStoreItem = _this._modelTemplate.populateDataInstance(dataStoreItem);
     _this._dataStore.addNewItem(dataStoreItem);
 
-    actionResult[_this.xmodel.id] = {}
+    actionResult[_this.xmodel.id] = {};
     actionResult[_this.xmodel.id][_this._idFieldName] = newRow[_this._idFieldName];
     _this.dataUpdated();
     _this.renderRow(_this._dataStore.getDataItem(newRow[_this._idFieldName]));
-  }
+  };
 
   formApi.onDelete  = function(action, actionResult, keys) {
     _this.showOverlay();
@@ -408,10 +408,10 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
 
     _this.dataUpdated();
     return false;
-  }
+  };
 
   this.forceRefresh();
-}
+};
 
 /**
  * Check to see if the component is readonly.
@@ -420,7 +420,7 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
  */
 DataEditor_GridPreviewController.prototype.isReadOnly = function() {
   return !!this.cms.readonly;
-}
+};
 
 /**
  * Create a random item id
@@ -429,7 +429,7 @@ DataEditor_GridPreviewController.prototype.isReadOnly = function() {
  */
 DataEditor_GridPreviewController.prototype.makeItemId = function() {
   return '_' + Math.random().toString().replace('.', '');
-}
+};
 
 /**
  * @private
@@ -440,14 +440,14 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
   if (_this.xmodel.controller.editablegrid.CurrentCell) if(!_this.xmodel.controller.form.CommitRow()) return;
   if (_this.jsh.XPage.GetChanges().length > 0) { _this.jsh.XExt.Alert('Please save all changes before adding a row.'); return; }
 
-  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(null), this.isReadOnly(), this.cms, this.jsh, _this.component)
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(null), this.isReadOnly(), this.cms, this.jsh, _this.component);
 
   //Create a new item
   var currentData = this.xmodel.controller.form.NewRow({ unbound: true });
 
   //Open the form to edit the item
   dataEditor.open(currentData, this._properties || {},  function(updatedData) {
-    _.assign(currentData, updatedData)
+    _.assign(currentData, updatedData);
     var rowId = _this.xmodel.controller.AddRow();
     for(var key in currentData){
       if(key in _this.xmodel.fields){
@@ -462,7 +462,7 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
     _this.forceCommit();
     _this.renderRow(currentData);
   });
-}
+};
 
 /**
  * @private
@@ -471,29 +471,29 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
 DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   var _this = this;
-  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, _this.component)
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, _this.component);
   var currentData = this._dataStore.getDataItem(itemId);
 
   dataEditor.open(currentData, this._properties || {},  function(updatedData) {
-      _.assign(currentData, updatedData)
-      var dataId = currentData[_this._idFieldName];
-      var rowId = _this.getRowIdFromItemId(dataId);
+    _.assign(currentData, updatedData);
+    var dataId = currentData[_this._idFieldName];
+    var rowId = _this.getRowIdFromItemId(dataId);
 
-      for(var key in currentData){
-        if(key in _this.xmodel.fields){
-          var oldval = _this.xmodel.get(key, rowId);
-          if(oldval !== currentData[key]){
-            _this.xmodel.set(key, updatedData[key], rowId);
-          }
+    for(var key in currentData){
+      if(key in _this.xmodel.fields){
+        var oldval = _this.xmodel.get(key, rowId);
+        if(oldval !== currentData[key]){
+          _this.xmodel.set(key, updatedData[key], rowId);
         }
       }
-      _this.updateModelDataFromDataStore(rowId);
-      _this.dataUpdated();
-      _this.renderRow(currentData);
+    }
+    _this.updateModelDataFromDataStore(rowId);
+    _this.dataUpdated();
+    _this.renderRow(currentData);
   }, function() {
     _this.scrollToItemRow(itemId);
   });
-}
+};
 
 /**
  * Prompt to delete the row with the given row ID
@@ -502,15 +502,15 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
  */
 DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   var _this = this;
-  _this.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
+  _this.jsh.XExt.Confirm('Are you sure you want to delete this item?', function(){
     //Perform Delete
     _this.xmodel.controller.DeleteRow(rowId, { force: true });
     setTimeout(function() {
       _this.forceCommit();
-      setTimeout(function() { _this.forceRefresh() });
+      setTimeout(function() { _this.forceRefresh(); });
     });
   });
-}
+};
 
 /**
  * Render the row defined by the data
@@ -548,7 +548,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
           '</span>' +
         '</div>' +
       '</div>' +
-      '<div class="jsharmony_cms_component_preview" data-component-part="preview"></div>'
+      '<div class="jsharmony_cms_component_preview" data-component-part="preview"></div>';
   $row.empty().append(template);
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
@@ -562,16 +562,16 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   $wrapper.empty().append(rendered);
 
-  if(this.cms && this.cms.editor) this.cms.editor.disableLinks($wrapper)
+  if(this.cms && this.cms.editor) this.cms.editor.disableLinks($wrapper);
 
   if (this.isReadOnly()) {
     $row.find('.component_toolbar_button:not([data-allowReadOnly])').attr('disabled', true);
   } else {
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
-        if (_this.isReadOnly()) return;
-        var moveDown = _this.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
-        _this.changeItemSequence(dataId, moveDown);
+      if (_this.isReadOnly()) return;
+      var moveDown = _this.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
+      _this.changeItemSequence(dataId, moveDown);
     });
 
     $row.find('[data-component-part="deleteItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
@@ -606,7 +606,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
       _this.cms.componentManager.renderContentComponent(el);
     });
   }, 100);
-}
+};
 
 /**
  * Set the modal scroll position to show the row for the
@@ -641,7 +641,7 @@ DataEditor_GridPreviewController.prototype.scrollToItemRow = function(itemId) {
   var rowBottomDistanceFromParentBottom = Math.abs(parentRelativeMaxY - rowRelativeEndY);
   var alignTop = rowTopDistanceFromParentTop <= rowBottomDistanceFromParentBottom;
   $row[0].scrollIntoView(alignTop);
-}
+};
 
 /**
  * Copy properties from data store item to controller data item.
@@ -661,7 +661,7 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
   // Don't share references!
   _.extend(item, data);
   this.xmodel.controller.form.ResetDirty();
-}
+};
 
 /**
  * Send updated data to the parent controller.
@@ -678,7 +678,7 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
   var data = { items: items };
 
   if (_.isFunction(this.onDataUpdated)) this.onDataUpdated(data);
-}
+};
 
 /**
  * Iterate through data and enable/disable sequence buttons as needed.
@@ -695,11 +695,11 @@ DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function(
     var isLast = index >= (_this._dataStore.count() - 1);
 
     $row.find('[data-component-part="moveItem"][data-dir="prev"]')
-        .attr('disabled', isFirst || _this.isReadOnly());
+      .attr('disabled', isFirst || _this.isReadOnly());
 
     $row.find('[data-component-part="moveItem"][data-dir="next"]')
       .attr('disabled', isLast || _this.isReadOnly());
   });
-}
+};
 
 exports = module.exports = DataEditor_GridPreviewController;

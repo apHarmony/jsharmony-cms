@@ -65,7 +65,7 @@ var jsHarmonyCMS = function(options){
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
   this.onRender = null;                  //function(page)
   this.onRendered = null;                //function(page)
-  this.onTemplateLoaded = function(f){ $(document).ready(f); }
+  this.onTemplateLoaded = function(f){ $(document).ready(f); };
 
   for(var key in options){
     if(key in _this) _this[key] = options[key];
@@ -86,13 +86,13 @@ var jsHarmonyCMS = function(options){
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
-      jsh = _this.jsh = window.jshInstance_CMS = new jsHarmony({
+      jsh = _this.jsh = window.jshInstance_CMS = new window.jsHarmony({
         _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},
         home_url: _this._baseurl,
-        uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
+        uimap: {'code_val':'code_val','code_txt':'code_txt','code_parent_id':'code_parent_id','code_icon':'code_icon','code_id':'code_id','code_parent':'code_parent','code_seq':'code_seq','code_type':'code_type'},
         _instance: 'jshInstance_CMS',
         _dialogBaseClass: 'jsharmony_cms_dialog',
         cookie_suffix: _this._cookie_suffix,
@@ -111,7 +111,7 @@ var jsHarmonyCMS = function(options){
 
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
-      _this.editor = _this.createCoreEditor()
+      _this.editor = _this.createCoreEditor();
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
@@ -155,10 +155,10 @@ var jsHarmonyCMS = function(options){
     });
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
-      WebFont.load({ google: { api: 'https://fonts.googleapis.com/css', families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
+      window.WebFont.load({ google: { api: 'https://fonts.googleapis.com/css', families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
     });
     window.addEventListener('message', this.onmessage);
-  }
+  };
 
   this.load = function(){
     _this.toolbar.saveOrigOffsets({ refreshExisting: true });
@@ -199,25 +199,18 @@ var jsHarmonyCMS = function(options){
         XExt.Alert('Branch ID not defined in querystring');
       }
     }
-  }
+  };
 
   this.refreshLayout = function(){
-    var ww = $(window).width();
     var wh = $(window).height();
-    var sleft = $(window).scrollLeft();
-    var stop = $(window).scrollTop();
-    var docw = $(document).width();
-    var doch = $(document).height();
-    var pw = ((docw > ww) ? docw : ww);
-    var ph = ((doch > wh) ? doch : wh);
     var barh = _this.toolbar.getHeight();
     $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').css('max-height', (wh-barh)+'px');
-  }
+  };
 
   this.onmessage = function(event){
     var data = (event.data || '').toString();
     if(_this.editor && _this.editor.picker && _this.editor.picker.onmessage(event, data)) return;
-  }
+  };
 
   this.fatalError = function(err){
     if(loader) loader.ClearLoading();
@@ -225,19 +218,19 @@ var jsHarmonyCMS = function(options){
     else if(XExt) XExt.Alert(err.toString());
     else alert(err.toString());
     throw new Error(err);
-  }
+  };
 
   this.createCoreEditor = function() {
     var el = $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
     return new jsHarmonyCMSEditor(jsh, _this, el[0]);
-  }
+  };
 
   this.createJsHarmonyCMSEditor = function(toolbarElement) {
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
-  }
+  };
 
   //Run Init
   _this.init();
-}
+};
 
 global.jsHarmonyCMS = jsHarmonyCMS;

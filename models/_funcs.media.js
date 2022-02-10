@@ -27,7 +27,7 @@ var fs = require('fs');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   exports.getMediaFilename = function(media_file_id, media_ext, thumbnail_id, thumbnail_config){
     var fname = media_file_id.toString();
@@ -38,7 +38,7 @@ module.exports = exports = function(module, funcs){
     else if(thumbnail_config) throw new Error('Unsupported media file name: '+JSON.stringify(thumbnail_config));
     fname += ((thumbnail_config && thumbnail_config.format) ? '.' + thumbnail_config.format : media_ext);
     return path.join(path.join(module.jsh.Config.datadir,'media'),fname);
-  }
+  };
 
   exports.getMediaFile = function(media_file_id, media_filename, media_ext, thumbnail_id, thumbnail_config, callback){
     var jsh = module.jsh;
@@ -57,7 +57,7 @@ module.exports = exports = function(module, funcs){
       else if('crop' in thumbnail_config) jsh.Extensions.image.crop(srcpath, fpath, thumbnail_config.crop, thumbnail_config.format, transform_callback);
       else if('format' in thumbnail_config) jsh.Extensions.image.resample(srcpath, fpath, thumbnail_config.format, transform_callback);
       else return transform_callback(new Error('Invalid thumbnail_config: '+JSON.stringify(thumbnail_config)));
-    }
+    };
 
     fs.stat(fpath, function (err, stat) {
       if(err){
@@ -76,7 +76,7 @@ module.exports = exports = function(module, funcs){
       }
       else return callback(null, fpath, fname, stat);
     });
-  }
+  };
 
   exports.appendThumbnail = function(fpath, thumbnail_id, thumbnail_config){
     if(!fpath) return fpath;
@@ -87,7 +87,7 @@ module.exports = exports = function(module, funcs){
       if(fext.length > 1) fpath = fpath.substr(0, fpath.length - fext.length) + '.' + thumbnail_config.format;
     }
     return fpath;
-  }
+  };
 
   exports.media = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -96,7 +96,6 @@ module.exports = exports = function(module, funcs){
     var P = req.body;
     var appsrv = this;
     var jsh = module.jsh;
-    var cms = module;
     var XValidate = jsh.XValidate;
     var sql = '';
     var sql_ptypes = [];
@@ -111,7 +110,7 @@ module.exports = exports = function(module, funcs){
     funcs.getSiteConfig(req._DBContext, null, { continueOnConfigError: true }, function(err, siteConfig){
       if(err) return Helper.GenError(req, res, -99999, err.toString());
     
-      if (verb == 'get'){
+      if (verb == 'get'){ (function(){
         if(!req.params || !req.params.media_key) return next();
         var media_key = req.params.media_key;
         var thumbnail_id = req.params.thumbnail;
@@ -196,8 +195,8 @@ module.exports = exports = function(module, funcs){
           });
           return;
         });
-      }
-      else if (verb == 'put'){
+      })(); }
+      else if (verb == 'put'){ (function(){
         if (!Helper.hasModelAction(req, model, 'I')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
         if(req.params && req.params.media_key) return next();
@@ -284,7 +283,7 @@ module.exports = exports = function(module, funcs){
                 if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length) return cb();
                 var conflicts = rslt[0];
                 var curattempt = 0;
-                while(true){
+                while(true){ // eslint-disable-line no-constant-condition
                   var found_conflict = false;
                   for(var i=0;i<conflicts.length;i++){
                     var conflict = conflicts[i];
@@ -370,8 +369,8 @@ module.exports = exports = function(module, funcs){
             res.end(JSON.stringify({ '_success': 1, 'media_key': media_key }));
           });
         });
-      }
-      else if (verb == 'post'){
+      })(); }
+      else if (verb == 'post'){ (function(){
         if (!Helper.hasModelAction(req, model, 'U')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
         if(!req.params || !req.params.media_key) return next();
@@ -527,15 +526,15 @@ module.exports = exports = function(module, funcs){
                   media_height: media_height,
                   media_size: media_size
                 }
-              }
+              };
               rslt_data.media = _.extend(rslt_data.media, media_data);
               res.end(JSON.stringify(rslt_data));
             });
           });
           return;
         });
-      }
-      else if (verb == 'delete'){
+      })(); }
+      else if (verb == 'delete'){ (function(){
         if (!Helper.hasModelAction(req, model, 'D')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
         if(!req.params || !req.params.media_key) return next();
@@ -560,7 +559,6 @@ module.exports = exports = function(module, funcs){
         appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
           if(!rslt || !rslt.length || !rslt[0] || (rslt[0].length != 1)){ return Helper.GenError(req, res, -4, 'Invalid Media ID'); }
-          var media = rslt[0][0];
         
           //Validate parameters
           if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
@@ -572,10 +570,10 @@ module.exports = exports = function(module, funcs){
           });
           return;
         });
-      }
+      })(); }
       else return next();
     });
-  }
+  };
 
   return exports;
 };

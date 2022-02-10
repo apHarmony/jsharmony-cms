@@ -38,7 +38,7 @@ exports = module.exports = function(jsh, cms){
 
   this.load = function(onError){
     _this.loadSystemComponentTemplates(onError);
-  }
+  };
 
   this.loadSystemComponentTemplates = function(onError){
     var url = '../_funcs/templates/components/'+(cms.branch_id||'');
@@ -52,7 +52,7 @@ exports = module.exports = function(jsh, cms){
           _this.downloadRemoteTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             _this.addTemplate(componentId, component);
-            cb(err)
+            cb(err);
           });
         }, function(error){
           _this.isInitialized = true;
@@ -72,7 +72,7 @@ exports = module.exports = function(jsh, cms){
     _this.componentTemplates[componentId] = componentTemplate;
     _this.parseTemplate(componentTemplate);
     _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
-  }
+  };
 
   this.downloadRemoteTemplate = function(componentTemplate, complete_cb) {
     var url = (componentTemplate.remote_templates || {}).editor;
@@ -94,7 +94,7 @@ exports = module.exports = function(jsh, cms){
         complete_cb(err);
       }
     });
-  }
+  };
 
   this.compileTemplates = function(componentTemplates, cb) {
     var url = '../_funcs/templates/compile_components';
@@ -113,11 +113,11 @@ exports = module.exports = function(jsh, cms){
       if(err.Message) return cb(new Error('Error Compiling Inline Components - ' + err.Message));
       return cb(new Error('Error Compiling Inline Components'));
     });
-  }
+  };
 
   this.formatComponentError = function(errmsg){
     return '<span style="color:red;font-weight:bold;font-size:25px;white-space: pre-wrap;">*** '+XExt.escapeHTML(errmsg)+' ***</span>';
-  }
+  };
 
   this.renderPageComponents = function(){
     $('.jsharmony_cms_component,[cms-component]').not('.initialized').each(function(){
@@ -130,7 +130,7 @@ exports = module.exports = function(jsh, cms){
         jobj.attr('cms-component', component_id);
       }
 
-      var removeContainer = (typeof jobj.attr('cms-component-remove-container') != 'undefined')
+      var removeContainer = (typeof jobj.attr('cms-component-remove-container') != 'undefined');
       var isContentComponent = !component_id && jobj.closest('[data-component]').length > 0;
       if (isContentComponent) return;
 
@@ -140,15 +140,14 @@ exports = module.exports = function(jsh, cms){
       else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
       else{
         var component = _this.componentTemplates[component_id];
-        var templates = component != undefined ? component.templates : undefined
+        var templates = component != undefined ? component.templates : undefined;
         var editorTemplate = (templates || {}).editor;
-        var renderOptions = {};
         //Parse component properties
         var props = {
           'cms-menu-tag': { renderOption: 'menu_tag', type: 'string'},
           'cms-component-properties': { renderOption: 'properties', type: 'json'},
           'cms-component-data': { renderOption: 'data', type: 'json'},
-        }
+        };
         var renderOptions = {};
         var hasError = false;
         for(var propName in props){
@@ -187,14 +186,14 @@ exports = module.exports = function(jsh, cms){
         jobj.html(component_content);
       }
     });
-  }
+  };
 
   this.getContainerlessComponentKey = function(obj){
     for(var key in _this.containerlessComponents){
       if(_this.containerlessComponents[key]==obj) return key;
     }
     return null;
-  }
+  };
 
   this.restoreContainerlessComponent = function(containerlessComponentId){
     if(!(containerlessComponentId in _this.containerlessComponents)) throw new Error('Containerless component not found');
@@ -217,11 +216,11 @@ exports = module.exports = function(jsh, cms){
     }
     _this.resetPageComponent(_this.containerlessComponents[containerlessComponentId]);
     delete _this.containerlessComponents[containerlessComponentId];
-  }
+  };
 
   this.resetPageComponent = function(obj){
     if($(obj).hasClass('initialized')) $(obj).removeClass('initialized mceNonEditable').empty();
-  }
+  };
 
   this.getDefaultValues = function(model){
     var rslt = {};
@@ -231,7 +230,7 @@ exports = module.exports = function(jsh, cms){
       }
     });
     return rslt;
-  }
+  };
 
   this.parseTemplate = function(componentTemplate) {
     componentTemplate.templates = componentTemplate.templates || {};
@@ -245,9 +244,9 @@ exports = module.exports = function(jsh, cms){
      * If the wrapper does not exist then the entire EJS string is the template
      **********/
 
-     //Preview template
+    //Preview template
     var hasComponentSubTemplate = false;
-     if(componentRawEjs.indexOf('componentTemplate')>=0){
+    if(componentRawEjs.indexOf('componentTemplate')>=0){
       var $componentTemplateWrapper = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentTemplate');
       hasComponentSubTemplate = !!$componentTemplateWrapper.length;
       if (hasComponentSubTemplate){
@@ -276,11 +275,11 @@ exports = module.exports = function(jsh, cms){
         }
       }
     }
-  }
+  };
 
   this.getNextComponentId = function() {
     return 'jsharmony_cms_component_' + this.lastComponentId++;
-  }
+  };
 
   this.renderContainerContentComponents = function(container, callback){
     var items = $(container).find('[data-component]').not('.initialized').addClass('initialized');
@@ -288,7 +287,7 @@ exports = module.exports = function(jsh, cms){
       $(item).attr('data-component-id', _this.getNextComponentId());
       _this.renderContentComponent(item, undefined, item_cb);
     }, callback);
-  }
+  };
 
   this.renderContentComponent = function(element, options, callback) {
     if(!callback) callback = function(){};
@@ -300,7 +299,10 @@ exports = module.exports = function(jsh, cms){
 
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
-    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return callback(); }
+    if (componentId.length < 1) {
+      console.error(new Error('Component is missing [data-component-id] attribute.')); // eslint-disable-line no-console
+      return callback();
+    }
 
     //Default component instance
     var component = {
@@ -330,7 +332,7 @@ exports = module.exports = function(jsh, cms){
         _this.components[componentId].openDefaultEditor();
       }
     }
-  }
+  };
 
   this.renderTemplateStyles = function(componentType, componentConfig) {
     this.renderedComponentTypeStyles = this.renderedComponentTypeStyles || {};
@@ -349,7 +351,7 @@ exports = module.exports = function(jsh, cms){
     var id = 'jsharmony_cms_component_' + (componentConfig.className || jsh.XExt.escapeCSSClass(componentConfig.id, { nodash: true }));
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
-  }
+  };
 
   this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
     additionalRenderParams = additionalRenderParams || {};
@@ -357,8 +359,8 @@ exports = module.exports = function(jsh, cms){
     var defaultProperties = {};
     var defaultData = {};
     if(component){
-      var defaultProperties = cms.componentManager.getDefaultValues(component.properties);
-      var defaultData = cms.componentManager.getDefaultValues(component.data);
+      defaultProperties = cms.componentManager.getDefaultValues(component.properties);
+      defaultData = cms.componentManager.getDefaultValues(component.data);
     }
     var properties = _.extend({}, defaultProperties, renderOptions.properties);
     var data = { items: [], item: _.extend({}, defaultData) };
@@ -404,9 +406,9 @@ exports = module.exports = function(jsh, cms){
       rslt.item = data.item;
     }
     return rslt;
-  }
+  };
 
-  this.getUniqueId = function(){ return ++maxUniqueId; }
+  this.getUniqueId = function(){ return ++maxUniqueId; };
 
   this.getMediaThumbnails = function(url){
     if(!cms.site_config || !cms.site_config.media_thumbnails) return {};
@@ -424,5 +426,5 @@ exports = module.exports = function(jsh, cms){
       }
     }
     return rslt;
-  }
-}
+  };
+};

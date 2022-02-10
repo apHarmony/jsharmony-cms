@@ -21,7 +21,7 @@ jsh.App[modelid] = new (function(){
         XExt.ShowContextMenu('.'+xmodel.class+'_file_container_context_menu', xmodel.get('page_folder'));
       });
     }
-  }
+  };
 
   this.onrowbind = function(xmodel,jobj,datarow){
     if(XExt.hasAction(xmodel.actions, 'IU')){
@@ -33,7 +33,7 @@ jsh.App[modelid] = new (function(){
       });
       XExt.bindDragSource(jobj.find('.page_filename a'));
     }
-  }
+  };
 
   this.page_template_selection_render = function(obj, data, enabled){
     $(obj).toggleClass('standalone', (data.page_template_id=='<Standalone>'));
@@ -42,7 +42,7 @@ jsh.App[modelid] = new (function(){
       obj: obj,
       editable: (enabled===true),
     });
-  }
+  };
 
   this.page_template_selection_id_onChange = function(obj){
     var page_template_id = $(obj).val();
@@ -68,7 +68,7 @@ jsh.App[modelid] = new (function(){
         jsh.$root('.xrow_'+xmodel.class+'[data-id='+rowid+'] .page_template_selection_id').addClass('updated');
       }
     );
-  }
+  };
 
   this.page_template_selection_path_popup = function(obj, val, onAccept, onCancel){
     var rowid = XExt.XModel.GetRowID(modelid, obj);
@@ -90,7 +90,7 @@ jsh.App[modelid] = new (function(){
       else if(!rslt) return onCancel();
       else return onAccept(rslt);
     });
-  }
+  };
 
   this.viewFileActions = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing page');
@@ -105,7 +105,7 @@ jsh.App[modelid] = new (function(){
     event.preventDefault();
     event.stopImmediatePropagation();
     XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key, undefined, { top: jpos.top + jobj.find('img').outerHeight() + 6, left: jpos.left - 1 });
-  }
+  };
 
   this.editFile = function(obj){ //obj || page_key
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing page');
@@ -115,7 +115,7 @@ jsh.App[modelid] = new (function(){
     if(_.isNumber(obj)){
       page_key = obj;
       if(xmodel.controller.form && xmodel.controller.form.DataSet){
-        var rowid = -1;
+        rowid = -1;
         for(var i=0;i<xmodel.controller.form.DataSet.length;i++){
           if(xmodel.controller.form.DataSet[i]['page_key']==page_key) rowid = i;
         }
@@ -133,7 +133,7 @@ jsh.App[modelid] = new (function(){
     var page_template_path = xmodel.get('page_template_path', rowid);
 
     jsh.System.OpenPageEditor(page_key, xmodel.get('page_filename', rowid), page_template_id, { source: 'page_tree', rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_template_path: page_template_path });
-  }
+  };
 
   this.page_filename_onclick = function(obj){
     if(xmodel.parent && jsh.App[xmodel.parent].isInEditor){
@@ -142,7 +142,7 @@ jsh.App[modelid] = new (function(){
     else {
       return _this.editFile(obj);
     }
-  }
+  };
 
   this.previewFile = function(page_file){
     var page_key = page_file.page_key;
@@ -154,7 +154,7 @@ jsh.App[modelid] = new (function(){
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
     jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { source: 'page_tree', rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, page_template_path: page_template_path });
-  }
+  };
 
   this.addFile = function(page_folder){
     var orig_page_folder = page_folder;
@@ -191,7 +191,7 @@ jsh.App[modelid] = new (function(){
       });
 
       var jTemplateId = jprompt.find('.page_template_id');
-      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); }
+      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); };
       jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
       toggleTemplatePath();
     }, function (success) { //onAccept
@@ -234,7 +234,7 @@ jsh.App[modelid] = new (function(){
         }
       });
     });
-  }
+  };
 
   this.sendToEditor = function(obj){
     var rowid = $(obj).closest('tr').data('id');
@@ -252,31 +252,29 @@ jsh.App[modelid] = new (function(){
       window.opener.postMessage('cms_file_picker:'+JSON.stringify({ page_key: page_key, page_title: page_title, page_path: page_path, page_folder: page_folder }), '*');
       window.close();
     }
-  }
+  };
 
   this.getPage = function(page_key){
     var page_index = _this.getPageIndex(page_key);
     if(typeof page_index !== 'undefined') return xmodel.controller.form.DataSet[page_index];
     return undefined;
-  }
+  };
 
   this.getPageIndex = function(page_key){
     if(xmodel.controller.form && xmodel.controller.form.DataSet){
-      var rowid = -1;
       for(var i=0;i<xmodel.controller.form.DataSet.length;i++){
         var page = xmodel.controller.form.DataSet[i];
         if(page.page_key==page_key) return i;
       }
     }
     return undefined;
-  }
+  };
 
   this.duplicateFile = function(page_key){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before duplicating a file');
 
     var page = _this.getPage(page_key);
     if(!page) return XExt.Alert('Invalid page');
-    var page_path = page.page_path;
     var page_filename = page.page_filename;
     var retry = function(){ _this.duplicateFile(page_key); };
     XExt.Prompt('Please enter the new file name', page_filename, function (rslt) {
@@ -294,7 +292,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.viewRevisions = function(page_key){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before viewing revisions');
@@ -313,11 +311,10 @@ jsh.App[modelid] = new (function(){
         }
       }
     });
-  }
+  };
 
   this.renameFile = function(page_key){
     var page = _this.getPage(page_key);
-    var page_path = page.page_path;
     var page_filename = page.page_filename;
     var retry = function(){ _this.renameFile(page_key); };
     XExt.Prompt('Please enter the new file name', page_filename, function (rslt) {
@@ -338,7 +335,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.moveFile = function(page_key, new_page_path){
     new_page_path = new_page_path||'';
@@ -378,12 +375,12 @@ jsh.App[modelid] = new (function(){
         });
       }
     );
-  }
+  };
 
   this.reloadParent = function(page_folder, cb){
     jsh.App[xmodel.parent].setFolderBeforeLoad(page_folder);
     jsh.XPage.Select({ modelid: xmodel.parent, onCancel: function(){} }, cb);
-  }
+  };
 
   this.deleteFile = function(page_key){
     var page = _this.getPage(page_key);
@@ -393,6 +390,6 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
       });
     });
-  }
+  };
 
 })();

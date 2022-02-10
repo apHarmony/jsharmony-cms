@@ -9,10 +9,10 @@ jsh.App[modelid] = new (function(){
   this.oninit = function(){
     if(_this.missing_menus.length){
       XExt.Confirm('The following Site Template menus are missing:\n\n'+(_.map(_this.missing_menus, function(val){ return (val.name||val.tag)+' (Tag: '+val.tag+')'; }).join('\n'))+'\n\nAdd these menus to the site?', function(){
-        XPage.Reload({ params: { add_missing_menus: 1 } });        
+        XPage.Reload({ params: { add_missing_menus: 1 } });
       });
     }
-  }
+  };
 
   this.openMenuEditor = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing menu');
@@ -23,11 +23,11 @@ jsh.App[modelid] = new (function(){
     if(!menu_key) return XExt.Alert('Please save menu before editing');
 
     XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Menu_Tree?action=update&menu_key='+menu_key);
-  }
+  };
 
   this.previewMenu = function(menu){
-    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu.menu_key, menu_id: menu.menu_id })
-  }
+    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu.menu_key, menu_id: menu.menu_id });
+  };
 
   this.viewRevisions = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing menu');
@@ -47,6 +47,6 @@ jsh.App[modelid] = new (function(){
         }
       }
     });
-  }
+  };
 
 })();

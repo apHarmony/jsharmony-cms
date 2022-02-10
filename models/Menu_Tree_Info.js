@@ -5,14 +5,14 @@ jsh.App[modelid] = new (function(){
 
   this.oninit = function(){
     jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
-  }
+  };
 
   this.onload = function(){
     _this.updateEnabledState();
-  }
+  };
 
   this.onmessage = function(data){
-    var data = (data || '').toString();
+    data = (data || '').toString();
     if(data.indexOf('cms_file_picker:')==0){
       data = data.substr(16);
       var jdata = JSON.parse(data);
@@ -25,7 +25,7 @@ jsh.App[modelid] = new (function(){
         xmodel.set('menu_item_link_page',jdata.page_path);
       }
     }
-  }
+  };
 
   this.menu_item_link_type_onchange = function(obj, newval, undoChange){
     XExt.execif(xmodel.get('menu_item_link_dest'),
@@ -52,11 +52,11 @@ jsh.App[modelid] = new (function(){
         _this.prev_link_type = newval;
       }
     );
-  }
+  };
 
   this.menu_item_text_onchange = function(obj, newval){
     jsh.App[xmodel.parent].commitInfo();
-  }
+  };
 
   this.updateEnabledState = function(){
     var menu_item_link_type = xmodel.get('menu_item_link_type');
@@ -97,14 +97,14 @@ jsh.App[modelid] = new (function(){
     jdest_page_group.toggle(enable_dest_page);
     jdest_media_group.toggle(enable_dest_media);
     jdestcaption.text(jdestcaptiontext);
-  }
+  };
 
   this.browsePage = function(){
     XExt.popupForm(xmodel.namespace+'Page_Browser', '', { init_page_key: xmodel.get('menu_item_link_dest') });
-  }
+  };
 
   this.browseMedia = function(){
     XExt.popupForm(xmodel.namespace+'Media_Browser', '', { init_media_key: xmodel.get('menu_item_link_dest') });
-  }
+  };
 
 })();

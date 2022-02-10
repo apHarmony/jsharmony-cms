@@ -13,11 +13,11 @@ jsh.App[modelid] = new (function(){
     if(!sitemap_key) return XExt.Alert('Please save sitemap before editing');
 
     XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Sitemap_Tree?action=update&sitemap_key='+sitemap_key);
-  }
+  };
 
   this.previewSitemap = function(sitemap){
-    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap.sitemap_key, sitemap_id: sitemap.sitemap_id })
-  }
+    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap.sitemap_key, sitemap_id: sitemap.sitemap_id });
+  };
 
   this.viewRevisions = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing sitemap');
@@ -37,6 +37,6 @@ jsh.App[modelid] = new (function(){
         }
       }
     });
-  }
+  };
 
 })();

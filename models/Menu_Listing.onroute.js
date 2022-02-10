@@ -22,7 +22,7 @@ var branch_id = null;
 async.waterfall([
   //Get site_id
   function(menu_cb){
-    jsh.AppSrv.ExecRecordset(req._DBContext, "select {schema}.my_current_branch_id() branch_id,{schema}.my_current_site_id() site_id", [], {  }, function (err, rslt) {
+    jsh.AppSrv.ExecRecordset(req._DBContext, 'select {schema}.my_current_branch_id() branch_id,{schema}.my_current_site_id() site_id', [], {  }, function (err, rslt) {
       if(err) callback();
       if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length) return callback();
 
@@ -35,7 +35,7 @@ async.waterfall([
       if(!branch_id) return callback();
 
       return menu_cb();
-    });    
+    });
   },
 
   function(menu_cb){
@@ -52,7 +52,7 @@ async.waterfall([
 
       //Get menus in current revision
       function(template_cb){
-        jsh.AppSrv.ExecRecordset(req._DBContext, "select menu_tag from {schema}.v_my_menu", [], {  }, function (err, rslt) {
+        jsh.AppSrv.ExecRecordset(req._DBContext, 'select menu_tag from {schema}.v_my_menu', [], {  }, function (err, rslt) {
           if(err) template_cb();
           if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length) return template_cb();
 
@@ -61,7 +61,7 @@ async.waterfall([
           });
 
           return template_cb();
-        });    
+        });
       },
     
     ], function(err){
@@ -89,20 +89,20 @@ async.waterfall([
     if(!missing_menus.length || !req.query || !req.query.add_missing_menus) return menu_cb();
 
     async.eachSeries(missing_menus, function(missing_menu, missing_menu_cb){
-      if(!missing_menu.tag) { var errmsg = "Site Menu missing tag: "+JSON.stringify(missing_menu); jsh.Log.error(errmsg); res.end(errmsg); return; }
+      if(!missing_menu.tag) { var errmsg = 'Site Menu missing tag: '+JSON.stringify(missing_menu); jsh.Log.error(errmsg); res.end(errmsg); return; }
       var menu_name = missing_menu.name || missing_menu.tag;
       var menu_tag = missing_menu.tag;
-      jsh.AppSrv.ExecCommand(req._DBContext, 
-        "insert into {schema}.v_my_menu(menu_name, menu_tag) values(@menu_name, @menu_tag)",
+      jsh.AppSrv.ExecCommand(req._DBContext,
+        'insert into {schema}.v_my_menu(menu_name, menu_tag) values(@menu_name, @menu_tag)',
         [dbtypes.NVarChar(256),dbtypes.NVarChar(256)],
         { menu_name: menu_name, menu_tag: menu_tag },
         function (err, rslt) {
-          if(err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, "An unexpected error has occurred"); return; }
+          if(err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, 'An unexpected error has occurred'); return; }
           return missing_menu_cb();
         }
       );
     }, function(err){
-      if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, "An unexpected error has occurred"); return; }
+      if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, 'An unexpected error has occurred'); return; }
     
       res.end('***JSHARMONY_REDIRECT***\n'+req.baseurl+modelid+'?tstmp='+(new Date()).getTime());
     });
@@ -110,7 +110,7 @@ async.waterfall([
 
   //Return missing menus to client
   function(menu_cb){
-    model.oninit = "_this.missing_menus = "+JSON.stringify(missing_menus)+";"+model.oninit||'';
+    model.oninit = '_this.missing_menus = '+JSON.stringify(missing_menus)+';'+model.oninit||'';
     return menu_cb();
   },
 

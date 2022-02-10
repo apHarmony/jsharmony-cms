@@ -32,7 +32,7 @@ jsh.App[modelid] = new (function(){
     sitemap_item_link_page: undefined,
     sitemap_item_link_media: undefined,
     sitemap_item_link_target: undefined, //NEWWIN
-  }
+  };
   this.orig_current_sitemap_item = null;
 
   this.oninit = function(){
@@ -46,24 +46,24 @@ jsh.App[modelid] = new (function(){
     this.sitemap_key = jsh._GET.sitemap_key;
     $(window).bind('resize', _this.onresize);
     _this.refreshLayout();
-    xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); }
+    xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); };
 
     var jtree = jsh.$root('.xelem'+xmodel.class+'.sitemap_item_id');
     jtree.data('ondoubleclick', jsh._instance+'.App['+JSON.stringify(xmodel.id)+'].sitemap_item_id_ondoubleclick(n);');
-  }
+  };
 
   this.ondestroy = function(xmodel){
     $(window).unbind('resize', _this.onresize);
-  }
+  };
 
   this.onload = function(){
     var bcrumbs = jsh.XPage.getBreadcrumbs();
     _this.refreshLayout();
     _this.getSitemap();
     jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.$root('.bcrumbs_branch_body'), containerClass: 'bcrumbs_editor_selection_container' });
-  }
+  };
 
-  this.onresize = function(){ _this.refreshLayout(); }
+  this.onresize = function(){ _this.refreshLayout(); };
 
   this.refreshLayout = function(){
     var jbrowser = $('.'+xmodel.class+'_browser');
@@ -75,17 +75,17 @@ jsh.App[modelid] = new (function(){
     var contentheight = wh - top - 20;
 
     $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
-  }
+  };
 
   this.hasUpdates = function(){
     _this.checkUpdatesInfo();
     return _this.has_changes;
-  }
+  };
 
   this.setDirty = function(isDirty){
     _this.has_changes = isDirty;
     jsh.$root('.xelem'+xmodel.class+'.xform_button_saveSitemap').toggleClass('hasChanges', isDirty);
-  }
+  };
 
   this.onmessage = function(data){
     data = (data || '').toString();
@@ -99,14 +99,14 @@ jsh.App[modelid] = new (function(){
         jsh.App[xmodelInfo.id].updatePageInfo(true);
       }
     }
-  }
+  };
 
   this.sitemap_item_id_onchange = function(obj, newval, undoChange, e) {
     if(_this.selected_sitemap_item_id && !_this.commitInfo()){
       return undoChange();
     }
     this.selectSitemapItem(newval);
-  }
+  };
 
   this.dragHoveringTop = 0;
   this.dragHoveringBottom = 0;
@@ -173,7 +173,7 @@ jsh.App[modelid] = new (function(){
       _this.renderSitemap();
       _this.selectSitemapItem(_this.selected_sitemap_item_id, { softSave: true });
     }
-  }
+  };
 
   this.sitemap_item_id_context_menu_onrender = function(sitemap_item_id, action, obj){
     if(action=='delete'){
@@ -208,7 +208,7 @@ jsh.App[modelid] = new (function(){
     else if(action=='add_home'){
       if(sitemap_item_id !== 'ROOT') return false;
     }
-  }
+  };
 
   this.sitemap_item_id_ondoubleclick = function(sitemap_item_id){
     sitemap_item_id = parseInt(sitemap_item_id);
@@ -219,7 +219,7 @@ jsh.App[modelid] = new (function(){
       var page_key = sitemap_item.sitemap_item_link_dest;
       if(page_key) _this.editPageContent(page_key);
     }
-  }
+  };
 
   this.getSitemap = function(){
     if(!_this.sitemap_key){ XExt.Alert('Missing sitemap key'); return; }
@@ -231,7 +231,6 @@ jsh.App[modelid] = new (function(){
     }
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        var sitemap = rslt.sitemap;
         _this.parseSitemap(rslt.sitemap);
         _this.renderSitemap();
         _this.selectSitemapItem(_this.getFirstSitemapItemID());
@@ -241,12 +240,12 @@ jsh.App[modelid] = new (function(){
       }
     }, function (err) {
     });
-  }
+  };
 
   this.getFirstSitemapItemID = function(){
     var rslt = jsh.$root('.sitemap_item_id.xelem'+xmodel.class).find('.tree_item').first().data('value');
     return rslt||null;
-  }
+  };
 
   this.getPrevSitemapItemID = function(sitemap_item_id){
     var sitemap_item_ids = _.map(jsh.$root('.sitemap_item_id.xelem'+xmodel.class).find('.tree_item'), function(obj){ return parseInt(obj.getAttribute('data-value')); });
@@ -257,7 +256,7 @@ jsh.App[modelid] = new (function(){
       }
     }
     return null;
-  }
+  };
 
   this.parseSitemap = function(sitemap){
     if(sitemap){
@@ -267,13 +266,13 @@ jsh.App[modelid] = new (function(){
     }
     _this.regenerateSitemap();
     _this.generateSitemapLOV();
-  }
+  };
 
   this.regenerateSitemap = function(){
     //Validate IDs
     var sitemap_item_ids = [];
-    for(var i=0;i<_this.sitemap_items.length;i++){
-      var sitemap_item = _this.sitemap_items[i];
+    for(let i=0;i<_this.sitemap_items.length;i++){
+      let sitemap_item = _this.sitemap_items[i];
       sitemap_item.sitemap_item_seq = i+1;
       if(!sitemap_item.sitemap_item_id) return XExt.Alert('Missing sitemap item ID');
       var prev_sitemap_item_id = sitemap_item.sitemap_item_id;
@@ -283,8 +282,8 @@ jsh.App[modelid] = new (function(){
       sitemap_item_ids[sitemap_item.sitemap_item_id] = sitemap_item;
     }
     //Validate Parent ID's, Reset Paths
-    for(var i=0;i<_this.sitemap_items.length;i++){
-      var sitemap_item = _this.sitemap_items[i];
+    for(let i=0;i<_this.sitemap_items.length;i++){
+      let sitemap_item = _this.sitemap_items[i];
       var prev_sitemap_item_parent_id = sitemap_item.sitemap_item_parent_id;
       if(!prev_sitemap_item_parent_id){
         sitemap_item.sitemap_item_parent_id = null;
@@ -302,12 +301,12 @@ jsh.App[modelid] = new (function(){
     var getSitemapItemPath = function(sitemap_item){
       if(!sitemap_item.sitemap_item_path){
         var sitemap_item_parent = sitemap_item_ids[sitemap_item.sitemap_item_parent_id];
-        sitemap_item.sitemap_item_path = getSitemapItemPath(sitemap_item_parent) + sitemap_item.sitemap_item_id.toString() + '/'
+        sitemap_item.sitemap_item_path = getSitemapItemPath(sitemap_item_parent) + sitemap_item.sitemap_item_id.toString() + '/';
         sitemap_item.sitemap_item_depth = sitemap_item_parent.sitemap_item_depth + 1;
       }
       return sitemap_item.sitemap_item_path;
-    }
-    for(var i=0;i<_this.sitemap_items.length;i++){
+    };
+    for(let i=0;i<_this.sitemap_items.length;i++){
       getSitemapItemPath(_this.sitemap_items[i]);
     }
     _this.sitemap_items.sort(function(a,b){
@@ -317,10 +316,10 @@ jsh.App[modelid] = new (function(){
       if(a.sitemap_item_seq < b.sitemap_item_seq) return -1;
       return 0;
     });
-    for(var i=0;i<_this.sitemap_items.length;i++){
-      sitemap_item.sitemap_item_seq = i+1;
+    for(let i=0;i<_this.sitemap_items.length;i++){
+      _this.sitemap_items[i].sitemap_item_seq = i+1;
     }
-  }
+  };
 
   this.generateSitemapLOV = function(){
     var lov = [];
@@ -348,7 +347,7 @@ jsh.App[modelid] = new (function(){
 
     if(!xmodel.controller.form.Data._LOVs) xmodel.controller.form.Data._LOVs = {};
     xmodel.controller.form.Data._LOVs.sitemap_item_id = lov;
-  }
+  };
 
   this.renderSitemap = function(){
     //Render Tree
@@ -361,7 +360,7 @@ jsh.App[modelid] = new (function(){
     if(_this.selected_sitemap_item_id){
       xmodel.set('sitemap_item_id', _this.selected_sitemap_item_id);
     }
-  }
+  };
 
   this.getSitemapItem = function(sitemap_item_id){
     if(!sitemap_item_id) return null;
@@ -370,7 +369,7 @@ jsh.App[modelid] = new (function(){
       if(_this.sitemap_items[i].sitemap_item_id===sitemap_item_id) return _this.sitemap_items[i];
     }
     return null;
-  }
+  };
 
   this.selectSitemapItem = function(sitemap_item_id, options){
     options = _.extend({ softSave: false }, options);
@@ -411,11 +410,11 @@ jsh.App[modelid] = new (function(){
 
     jsh.App[modelInfo.id].onload();
     _this.save({ softSave: true });
-  }
+  };
 
   this.getModelInfo = function(){
     return jsh.XModels[jsh.XBase[xmodel.namespace+'Sitemap_Tree_Info'][0]];
-  }
+  };
 
   this.checkUpdatesInfo = function(){
     if(!_this.selected_sitemap_item_id) return true;
@@ -448,7 +447,7 @@ jsh.App[modelid] = new (function(){
       }
     });
     
-  }
+  };
 
   this.commitInfo = function(){
     if(!_this.selected_sitemap_item_id) return true;
@@ -485,7 +484,7 @@ jsh.App[modelid] = new (function(){
       _this.renderSitemap();
     }
     return true;
-  }
+  };
 
   this.deleteSitemapItem = function(sitemap_item_id, force){
     sitemap_item_id = parseInt(sitemap_item_id);
@@ -493,7 +492,7 @@ jsh.App[modelid] = new (function(){
     if(!sitemap_item){ XExt.Alert('Invalid sitemap item ID'); return; }
     //Find children
     var sitemap_item_children = [];
-    for(var i=0;i<_this.sitemap_items.length;i++){
+    for(let i=0;i<_this.sitemap_items.length;i++){
       if(_this.sitemap_items[i].sitemap_item_parent_id==sitemap_item.sitemap_item_id){
         sitemap_item_children.push(_this.sitemap_items[i].sitemap_item_id);
       }
@@ -506,9 +505,9 @@ jsh.App[modelid] = new (function(){
         XExt.execif(deletedPages.length, function(f){
           //Confirm whether to delete the pages from the system
           var msg = "<div style='text-align:left;'>";
-          msg += "Permanently delete the following pages from the site?";
-          for(var i = 0; i < deletedPages.length; i++){ msg += "<br/>" + deletedPages[i].page_path; }
-          msg += "</div>";
+          msg += 'Permanently delete the following pages from the site?';
+          for(let i = 0; i < deletedPages.length; i++){ msg += '<br/>' + deletedPages[i].page_path; }
+          msg += '</div>';
           XExt.Confirm(msg, function(){
             //Delete the pages
             var deleteErrors = [];
@@ -527,7 +526,6 @@ jsh.App[modelid] = new (function(){
                 return false;
               } });
             }, function(err){
-              var errmsg = '';
               if(err) deleteErrors.push(err.toString());
               if(deleteErrors.length) XExt.Alert(deleteErrors.join('\n'), f);
               else f();
@@ -549,15 +547,15 @@ jsh.App[modelid] = new (function(){
       var page_key = sitemap_item.sitemap_item_link_dest;
       var page_path = sitemap_item.sitemap_item_link_page;
       if(!page_path) page_path = 'Page #' + page_key;
-      if(page_path == 'PAGE :: '+(page_key||'').toString()+' :: Not found'){ }
+      if(page_path == 'PAGE :: '+(page_key||'').toString()+' :: Not found'){ /* Do nothing */ }
       else deletedPages.push({ page_key: page_key, page_path: page_path });
     }
     _.each(sitemap_item_children, function(sitemap_item_id){
       var deletedChildPages = _this.deleteSitemapItem(sitemap_item_id, true);
-      for(var i=0; i < deletedChildPages.length; i++) deletedPages.push(deletedChildPages[i]);
+      for(let i=0; i < deletedChildPages.length; i++) deletedPages.push(deletedChildPages[i]);
     });
     //Delete item
-    for(var i=0;i<_this.sitemap_items.length;i++){
+    for(let i=0;i<_this.sitemap_items.length;i++){
       if(_this.sitemap_items[i]==sitemap_item){
         _this.sitemap_items.splice(i,1);
         i--;
@@ -565,7 +563,7 @@ jsh.App[modelid] = new (function(){
     }
     _this.setDirty(true);
     return deletedPages;
-  }
+  };
 
   this.getSitemapItemParentID = function(sitemap_item_id){
     if(!_this.commitInfo()) return;
@@ -574,7 +572,7 @@ jsh.App[modelid] = new (function(){
     var sitemap_item = _this.getSitemapItem(sitemap_item_id);
     if(!sitemap_item){ XExt.Alert('Invalid sitemap item ID'); return; }
     return sitemap_item.sitemap_item_parent_id;
-  }
+  };
 
   this.getSitemapItemPageKey = function(sitemap_item_id, f){
     if(!_this.commitInfo()) return;
@@ -588,11 +586,11 @@ jsh.App[modelid] = new (function(){
     if(!page_key){ XExt.Alert('Sitemap item does not link to a valid page'); return; }
     if(f) f(page_key);
     return page_key;
-  }
+  };
 
   this.getDefaultPage = function(){
     return jsh.XPage.getBreadcrumbs().site_default_page_filename;
-  }
+  };
 
   this.getDefaultPageFilename = function(page_type, page_folder, title, page_template_id, page_template_path){
     title = title || '';
@@ -617,7 +615,7 @@ jsh.App[modelid] = new (function(){
     }
     if(!title.trim()) return '';
     return page_folder + XExt.prettyURL(title.trim()) + '/' + _this.getDefaultPage();
-  }
+  };
 
   this.addSitemapPage = function(sitemap_item_parent_id, page_type){
     if(!_this.commitInfo()) return;
@@ -678,7 +676,7 @@ jsh.App[modelid] = new (function(){
       var toggleTemplatePath = function(){
         jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>');
         jsh.XWindowResize();
-      }
+      };
       jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); refreshDefaultValues(); });
       toggleTemplatePath();
 
@@ -761,7 +759,7 @@ jsh.App[modelid] = new (function(){
         }
       });
     });
-  }
+  };
 
   this.addSitemapItem = function(sitemap_item_parent_id, new_sitemap_item){
     if(!_this.commitInfo()) return;
@@ -796,7 +794,7 @@ jsh.App[modelid] = new (function(){
       var jselected = jtree.find('.tree_item.selected').first();
       if(jselected.length) XExt.scrollObjIntoView(jtree, jselected);
     },1);
-  }
+  };
 
   this.getEditorURL = function(page_key, cb){
     if(page_key) _this.getPageInfo(page_key, function(page){
@@ -808,7 +806,7 @@ jsh.App[modelid] = new (function(){
         }
       });
     }, { async: false });
-  }
+  };
 
   this.getPageInfo = function(page_key, cb, options){
     options = _.extend({ quiet: false, async: true }, options);
@@ -829,7 +827,7 @@ jsh.App[modelid] = new (function(){
       var page = rslt[execModel][0];
       return cb(page);
     }, undefined, { async: options.async });
-  }
+  };
 
   this.openPageEditor = function(page, options){
     options = _.extend({ readonly: false, getURL: false, onComplete: undefined, async: true }, options);
@@ -854,7 +852,7 @@ jsh.App[modelid] = new (function(){
     }
 
     jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, editorParams);
-  }
+  };
 
   this.editPageContent = function(page_key){
     if(!_this.commitInfo()) return;
@@ -866,7 +864,7 @@ jsh.App[modelid] = new (function(){
     _this.getPageInfo(page_key, function(page){
       _this.openPageEditor(page);
     });
-  }
+  };
 
   this.editPageSettings = function(page_key, focus_target){
     if(!_this.commitInfo()) return;
@@ -895,7 +893,7 @@ jsh.App[modelid] = new (function(){
         if(focus_target) jprompt.find('.'+focus_target).addClass('default_focus');
 
         var jTemplateId = jprompt.find('.page_template_id');
-        var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); }
+        var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); };
         jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
         toggleTemplatePath();
       }, function (success) { //onAccept
@@ -956,7 +954,7 @@ jsh.App[modelid] = new (function(){
         });
       });
     });
-  }
+  };
 
   this.viewPageRevisions = function(page_key){
     if(!_this.commitInfo()) return;
@@ -984,11 +982,11 @@ jsh.App[modelid] = new (function(){
         }
       });
     });
-  }
+  };
 
   this.previewPage = function(page_file){
     _this.openPageEditor(page_file, { readonly: true });
-  }
+  };
 
   this.duplicatePage = function(sitemap_item_parent_id, source_page_key){
     if(!_this.commitInfo()) return;
@@ -1016,7 +1014,6 @@ jsh.App[modelid] = new (function(){
       if(!page_folder) page_folder = '/';
       if(page_folder[page_folder.length-1] != '/') page_folder += '/';
   
-      var xform = xmodel.controller.form;
       var sel = '.'+xmodel.class+'_DuplicatePage';
   
       //Render Dialog for Page
@@ -1106,7 +1103,7 @@ jsh.App[modelid] = new (function(){
         });
       });
     });
-  }
+  };
 
   this.save = function(options){
     options = _.extend({ softSave: false }, options);
@@ -1145,7 +1142,7 @@ jsh.App[modelid] = new (function(){
         'sitemap_item_link_type',
         'sitemap_item_link_dest',
         'sitemap_item_link_target',
-      ])
+      ]);
       save_sitemap_items.push(save_sitemap_item);
     }
     if(!save_sitemap_items.length) save_sitemap_items = '';
@@ -1160,6 +1157,6 @@ jsh.App[modelid] = new (function(){
       }
     }, function (err) {
     });
-  }
+  };
 
 })();

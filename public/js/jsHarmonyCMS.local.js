@@ -1,7 +1,7 @@
 (function(){
-  var createCMS = function(){ window.jsHarmonyCMSInstance = new window.jsHarmonyCMS({ _instance: 'jsHarmonyCMSInstance' }); }
+  var createCMS = function(){ window.jsHarmonyCMSInstance = new window.jsHarmonyCMS({ _instance: 'jsHarmonyCMSInstance' }); };
   if(document.body) createCMS();
-  else document.addEventListener("DOMContentLoaded", createCMS);
+  else document.addEventListener('DOMContentLoaded', createCMS);
 
   //Fix window position, if necessary
   if (window.opener && window.opener !== window) {

@@ -25,12 +25,12 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   exports.getMenuFile = function(menu_file_id){
     if(!menu_file_id) throw new Error('Invalid menu_file_id');
     return path.join(path.join(module.jsh.Config.datadir,'menu'),menu_file_id.toString()+'.json');
-  }
+  };
 
   exports.getClientMenu = function(menu, cb){
     var menu_file_id = menu.menu_file_id;
@@ -41,7 +41,7 @@ module.exports = exports = function(module, funcs){
       menu_content = menu_content || { menu_items: [] };
       return cb(null,menu_content);
     }, { fatalError: false });
-  }
+  };
 
   exports.getMenuUrl = function(menu_item, branchData){
     if((menu_item.menu_item_link_type||'').toString()=='PAGE'){
@@ -57,7 +57,7 @@ module.exports = exports = function(module, funcs){
       return branchData.media_keys[media_key];
     }
     return menu_item.menu_item_link_dest;
-  }
+  };
 
   exports.createMenuTree = function(menu, branchData){
 
@@ -131,7 +131,7 @@ module.exports = exports = function(module, funcs){
       menu_item.getSiblings = function(){
         var siblings = menu_item.parent ? menu_item.parent.children : menu_item_tree;
         return _.filter(siblings, function(sibling){ return sibling.id != menu_item.id; });
-      }
+      };
     });
 
     //Add properties to menu
@@ -143,7 +143,7 @@ module.exports = exports = function(module, funcs){
     //Aliases
     menu.topItems = menu.tree;
     menu.allItems = menu.items;
-  }
+  };
   
   exports.menu = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -291,7 +291,7 @@ module.exports = exports = function(module, funcs){
             },
           ], function(err){
             if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-            res.end(JSON.stringify({ 
+            res.end(JSON.stringify({
               _success: 1,
               menu: clientMenu,
               menu_config: menu_config || {},
@@ -364,10 +364,10 @@ module.exports = exports = function(module, funcs){
       }
       else return next();
     });
-  }
+  };
 
   exports.prettyMenu = function(menu_items, page_keys, media_keys, options){
-    var options = _.extend({ text: true }, options);
+    options = _.extend({ text: true }, options);
     var rslt = '[\n';
     var rsltarr = [];
 
@@ -463,7 +463,7 @@ module.exports = exports = function(module, funcs){
     
     if(options.text) return rslt;
     return rsltarr;
-  }
+  };
 
   return exports;
 };

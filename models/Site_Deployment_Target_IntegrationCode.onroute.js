@@ -1,12 +1,7 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
-var _ = require('lodash');
 var Helper = require('../Helper.js');
-var async = require('async');
-var dbtypes = jsh.AppSrv.DB.types;
-var crypto = require('crypto');
 var cms = jsh.Modules['jsHarmonyCMS'];
-var urlparser = require('url');
 
 if((routetype != 'model') && (routetype != 'model_child')) return callback();
 
@@ -25,8 +20,8 @@ cms.funcs.getAccessKey(req._DBContext, deployment_target_id, cms_server_url, {},
   if(err) return Helper.GenError(req, res, -99999, err.toString());
 
   model.oninit = [
-    "_this.access_key = "+JSON.stringify(access_key)+";",
-    "_this.cms_server_url = "+JSON.stringify(cms_server_url)+";",
+    '_this.access_key = '+JSON.stringify(access_key)+';',
+    '_this.cms_server_url = '+JSON.stringify(cms_server_url)+';',
     model.oninit||'',
   ].join('');
 

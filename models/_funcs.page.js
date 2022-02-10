@@ -28,12 +28,12 @@ var querystring = require('querystring');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   exports.getPageFile = function(page_file_id){
     if(!page_file_id) throw new Error('Invalid page_file_id');
     return path.join(path.join(module.jsh.Config.datadir,'page'),page_file_id.toString()+'.json');
-  }
+  };
 
   exports.getClientPage = function(dbcontext, page, sitemaps, site_id, options, cb){
     options = _.extend({ includeAllExtraContent: false, includeExtraRemoteContent: false, pageTemplates: null, ignoreInvalidPageTemplate: false }, options);
@@ -64,18 +64,18 @@ module.exports = exports = function(module, funcs){
           //Add content elements if they do not exist
           var template_content_elements = template.content_elements;
           if(!template_content_elements){
-            if(!options.pageTemplates && (template.location == 'REMOTE')){ }
+            if(!options.pageTemplates && (template.location == 'REMOTE')){ /* Do nothing */ }
             else {
               template_content_elements = { body: { type: 'htmleditor', title: 'Body' } };
             }
           }
-          for(var key in template_content_elements){
+          for(let key in template_content_elements){
             template_content_elements[key] = _.extend({
               type: 'htmleditor',
             }, template_content_elements[key]);
             
             template_content_elements[key].editor_toolbar = _.extend({
-              dock: "auto",
+              dock: 'auto',
               show_menu: true,
               show_toolbar: true,
             }, template_content_elements[key].editor_toolbar);
@@ -89,10 +89,10 @@ module.exports = exports = function(module, funcs){
           catch(ex){
             module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_content);
           }
-          for(var key in template.content){ page_file_content[key] = template.content[key]; }
+          for(let key in template.content){ page_file_content[key] = template.content[key]; }
           page_file = page_file || { };
           if(!('content' in page_file)) page_file.content = {};
-          for(var key in template_content_elements){
+          for(let key in template_content_elements){
             if(key in page_file.content) page_file_content[key] = page_file.content[key];
           }
           var extraContent = !!options.includeAllExtraContent;
@@ -104,7 +104,7 @@ module.exports = exports = function(module, funcs){
             if(options.includeExtraRemoteContent) extraContent = true;
           }
           if(extraContent){
-            for(var key in page_file.content){
+            for(let key in page_file.content){
               if(!(key in page_file_content)) page_file_content[key] = page_file.content[key];
             }
           }
@@ -133,7 +133,7 @@ module.exports = exports = function(module, funcs){
           }, template.options);
 
           template.options.page_toolbar = _.extend({
-            dock: "top_offset"
+            dock: 'top_offset'
           }, template.options.page_toolbar);
           
 
@@ -179,7 +179,7 @@ module.exports = exports = function(module, funcs){
         }, { fatalError: false });
       }
     );
-  }
+  };
 
   exports.replaceBranchURLs = function(content, options){
     options = _.extend({
@@ -256,19 +256,11 @@ module.exports = exports = function(module, funcs){
       return url;
     }
 
-    function parseURLs(jobj,prop){
-      if(jobj.attr('data-cke-saved-'+prop)) jobj.attr('data-cke-saved-'+prop, null);
-      if(jobj.hasClass('cms-no-replace-url')) return;
-      var url = jobj.attr(prop);
-      var newURL = replaceURL(url, function(){ return jobj.html(); });
-      if(newURL && (newURL!=url)) jobj.attr(prop, newURL);
-    }
-
     var rtagidx = content.indexOf(rtag);
     while(rtagidx >= 0){
       var startofstr = rtagidx;
       var endofstr = rtagidx;
-      var urlchar = /[a-zA-Z0-9\/_#\-:=?@%&.~[\]!$*+,;]/;
+      var urlchar = /[a-zA-Z0-9/_#\-:=?@%&.~[\]!$*+,;]/;
       do{ if(!urlchar.test(content[startofstr])) break; } while(--startofstr >= 0);
       do{ if(!urlchar.test(content[endofstr])) break; } while(++endofstr < content.length);
       startofstr++;
@@ -363,11 +355,11 @@ module.exports = exports = function(module, funcs){
                 chr = content[idx];
                 if(isEscaped && (chr == '\\')) chr = content[++idx];
 
-                if(delim = '"'){
+                if(delim == '"'){
                   if(chr == '"') atEnd = true;
                   else endPos++;
                 }
-                else if(delim = "'"){
+                else if(delim == "'"){
                   if(chr == "'") atEnd = true;
                   else endPos++;
                 }
@@ -396,7 +388,7 @@ module.exports = exports = function(module, funcs){
         if(!val) return val;
         var strval = val;
         try{
-          strval = Buffer.from(strval,'base64').toString()
+          strval = Buffer.from(strval,'base64').toString();
         }
         catch(ex){
           throw new Error('Error parsing base 64 data: '+ex);
@@ -430,16 +422,16 @@ module.exports = exports = function(module, funcs){
     }
 
     return content;
-  }
+  };
 
   exports.parseDeploymentUrl = function(url, template_variables, baseUrl){
     var rslt = funcs.replaceTemplateVariables(template_variables, url || '');
     try{
       if(baseUrl) rslt = new urlparser.URL(rslt, baseUrl).toString();
     }
-    catch(ex){}
+    catch(ex){ /* Do nothing */ }
     return rslt;
-  }
+  };
 
   exports.localizePageURLs = function(page, baseurl, isRaw, branch_id, media_files){
 
@@ -468,7 +460,7 @@ module.exports = exports = function(module, funcs){
         if(page[key]) page[key] = replaceURLs(page[key]);
       });
     }
-  }
+  };
 
   exports.page = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -594,7 +586,7 @@ module.exports = exports = function(module, funcs){
                 sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id in (select sys_user_id from {schema}.v_sys_user_site_access where site_id=@site_id and sys_user_site_access in ('WEBMASTER','PUBLISHER','AUTHOR')) order by code_txt";
               }
               else {
-                sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+"page where page_id=@page_id) order by code_txt";
+                sql = "select sys_user_id code_val,concat(sys_user_fname,' ',sys_user_lname) code_txt from jsharmony.sys_user where sys_user_id = (select page_author from "+(module.schema?module.schema+'.':'')+'page where page_id=@page_id) order by code_txt';
               }
 
               appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt, dbtypes.BigInt], { page_id: page.page_id, site_id: site_id }, function (err, rslt) {
@@ -607,7 +599,7 @@ module.exports = exports = function(module, funcs){
 
             //Get media
             function(cb){
-              var sql = "select media.media_key, media.media_id, media_file_id from {schema}.media inner join {schema}.branch_media on branch_media.branch_id=@branch_id and branch_media.media_id=media.media_id where (media_file_id is not null) and (media_is_folder = 0)";
+              var sql = 'select media.media_key, media.media_id, media_file_id from {schema}.media inner join {schema}.branch_media on branch_media.branch_id=@branch_id and branch_media.media_id=media.media_id where (media_file_id is not null) and (media_is_folder = 0)';
               appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
                 if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
                 if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
@@ -620,7 +612,7 @@ module.exports = exports = function(module, funcs){
 
             //Get sitemaps
             function(cb){
-              var sql = "select sitemap.sitemap_key, sitemap_file_id, sitemap_type from {schema}.sitemap inner join {schema}.branch_sitemap on branch_sitemap.branch_id=@branch_id and branch_sitemap.sitemap_id=sitemap.sitemap_id where (sitemap_file_id is not null)";
+              var sql = 'select sitemap.sitemap_key, sitemap_file_id, sitemap_type from {schema}.sitemap inner join {schema}.branch_sitemap on branch_sitemap.branch_id=@branch_id and branch_sitemap.sitemap_id=sitemap.sitemap_id where (sitemap_file_id is not null)';
               appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
                 if (err != null) { err.sql = sql; err.model = model; return cb(err); }
                 if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
@@ -640,7 +632,7 @@ module.exports = exports = function(module, funcs){
 
             //Get menus
             function(cb){
-              var sql = "select menu.menu_key, menu_file_id, menu_name, menu_tag from {schema}.menu inner join {schema}.branch_menu on branch_menu.branch_id=@branch_id and branch_menu.menu_id=menu.menu_id where (menu_file_id is not null)";
+              var sql = 'select menu.menu_key, menu_file_id, menu_name, menu_tag from {schema}.menu inner join {schema}.branch_menu on branch_menu.branch_id=@branch_id and branch_menu.menu_id=menu.menu_id where (menu_file_id is not null)';
               appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], {branch_id: branch_id}, function (err, rslt) {
                 if (err != null) { err.sql = sql; err.model = model; return cb(err); }
                 if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
@@ -756,7 +748,7 @@ module.exports = exports = function(module, funcs){
             page_seo_keywords: client_page.seo.keywords,
             page_lang: client_page.lang
           };
-          sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_page set page_file_id=null,'+_.map(sql_params, function(val, key){ return key + '=@' + key }).join(',')+' where page_key=@page_key;';
+          sql = 'update '+(module.schema?module.schema+'.':'')+'v_my_page set page_file_id=null,'+_.map(sql_params, function(val, key){ return key + '=@' + key; }).join(',')+' where page_key=@page_key;';
           sql += 'select page_file_id, page_path, page_folder from '+(module.schema?module.schema+'.':'')+'v_my_page where page_key=@page_key;';
           sql_params.page_key = page_key;
 
@@ -783,7 +775,7 @@ module.exports = exports = function(module, funcs){
         else return Helper.GenError(req, res, -4, 'Invalid Operation');
       });
     });
-  }
+  };
 
   exports.pageDev = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -797,7 +789,6 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [];
     var sql_params = {};
     var verrors = {};
-    var dbtypes = appsrv.DB.types;
     var validate = null;
     var model = jsh.getModel(req, module.namespace + 'Page_Editor');
 
@@ -844,7 +835,7 @@ module.exports = exports = function(module, funcs){
 
             //Get menus
             function(cb){
-              appsrv.ExecRecordset(req._DBContext, "select menu_key, menu_file_id, menu_name, menu_tag from "+(module.schema?module.schema+'.':'')+"v_my_menu where (menu_file_id is not null)", [], {}, function (err, rslt) {
+              appsrv.ExecRecordset(req._DBContext, 'select menu_key, menu_file_id, menu_name, menu_tag from '+(module.schema?module.schema+'.':'')+'v_my_menu where (menu_file_id is not null)', [], {}, function (err, rslt) {
                 if (err != null) { err.sql = sql; err.model = model; return cb(err); }
                 if(!rslt || !rslt.length || !rslt[0]){ return cb(); }
                 _.each(rslt[0], function(menu){
@@ -894,7 +885,7 @@ module.exports = exports = function(module, funcs){
         else return Helper.GenError(req, res, -4, 'Invalid Operation');
       });
     });
-  }
+  };
 
   exports.getPageEditorUrl = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -917,8 +908,8 @@ module.exports = exports = function(module, funcs){
     if (!appsrv.ParamCheck('Q', Q, ['&page_template_id', '|page_key', '|page_id', '|branch_id', '|devMode', '|site_id', '|render', '|page_template_path'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
     if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-    validate = new XValidate();
-    verrors = {};
+    var validate = new XValidate();
+    var verrors = {};
     validate.AddValidator('_obj.page_template_id', 'Page Template ID', 'B', [ XValidate._v_Required(), XValidate._v_MaxLength(255) ]);
     validate.AddValidator('_obj.page_key', 'Page Key', 'B', [ XValidate._v_IsNumeric() ]);
     validate.AddValidator('_obj.page_id', 'Page ID', 'B', [ XValidate._v_IsNumeric() ]);
@@ -930,13 +921,13 @@ module.exports = exports = function(module, funcs){
     //Only dev mode uses devMode and site_id parameters
 
     if (verb == 'get') {
-      var sql = "select site_id current_site_id,site_id,deployment_target_template_variables,deployment_target_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
+      var sql = 'select site_id current_site_id,site_id,deployment_target_template_variables,deployment_target_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()';
       var sql_ptypes = [];
       var sql_params = {};
 
       if(Q.devMode){
         if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-        sql = "select {schema}.my_current_site_id() current_site_id,v_my_site.site_id,v_my_site.deployment_target_template_variables,deployment_target_publish_config,deployment_target.deployment_target_id from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
+        sql = 'select {schema}.my_current_site_id() current_site_id,v_my_site.site_id,v_my_site.deployment_target_template_variables,deployment_target_publish_config,deployment_target.deployment_target_id from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id';
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { site_id: Q.site_id };
       }
@@ -1090,13 +1081,13 @@ module.exports = exports = function(module, funcs){
                 }
               );
             });
-          });          
+          });
         });
       });
       return;
     }
     return next();
-  }
+  };
 
   exports.genClientToken = function(req, timestamp, keys, callback){
     var jsh = module.jsh;
@@ -1116,7 +1107,7 @@ module.exports = exports = function(module, funcs){
       jshcms_client_token = crypto.createHash('sha256').update(base_token + '-' + jsh.Config.frontsalt).digest('hex');
 
       //Write to database
-      var sql = "{schema}.insert_token(@sys_user_token_hash,@sys_user_token_ext,@sys_user_token_keys)";
+      var sql = '{schema}.insert_token(@sys_user_token_hash,@sys_user_token_ext,@sys_user_token_keys)';
       var sql_ptypes = [dbtypes.NVarChar(256),dbtypes.NVarChar(32),dbtypes.NVarChar(1024)];
       var sql_params = { sys_user_token_hash: jshcms_client_token, sys_user_token_ext: (sys_user_token_ext||'').toString(), sys_user_token_keys: sys_user_token_keys };
       appsrv.ExecMultiRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
@@ -1149,12 +1140,12 @@ module.exports = exports = function(module, funcs){
 
     var jshcms_client_token = Q.jshcms_token.toString();
 
-    var sql = "jsHarmonyCMS_validate_token";
+    var sql = 'jsHarmonyCMS_validate_token';
     var sql_ptypes = [dbtypes.NVarChar(256)];
     var sql_params = { sys_user_token_hash: jshcms_client_token };
     appsrv.ExecRow(req._DBContext||'token', funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if(err){ err.sql = sql; appsrv.AppDBError(req, res, err); return; }
-      if(!rslt || !rslt.length || !rslt[0] || !rslt[0].sys_user_token_hash) return Helper.GenError(req, res, -10, "Session timed out.  Any unsaved changes will be lost.");
+      if(!rslt || !rslt.length || !rslt[0] || !rslt[0].sys_user_token_hash) return Helper.GenError(req, res, -10, 'Session timed out.  Any unsaved changes will be lost.');
       var sys_user_token_keys = rslt[0].sys_user_token_keys;
       var token_keys = {};
       try{
@@ -1166,7 +1157,7 @@ module.exports = exports = function(module, funcs){
       //Validate keys
       for(var key in keys){
         if(typeof keys[key] != 'undefined'){
-          if(token_keys[key] !== keys[key]) return Helper.GenError(req, res, -11, "Session token not authorized to perform this operation.");
+          if(token_keys[key] !== keys[key]) return Helper.GenError(req, res, -11, 'Session token not authorized to perform this operation.');
         }
       }
 
@@ -1182,7 +1173,7 @@ module.exports = exports = function(module, funcs){
 
       return callback();
     });
-  }
+  };
 
   exports.getPageSiteConfig = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -1206,8 +1197,8 @@ module.exports = exports = function(module, funcs){
       if (!appsrv.ParamCheck('Q', Q, ['|site_id','|jshcms_token'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
       if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
-      validate = new XValidate();
-      verrors = {};
+      var validate = new XValidate();
+      var verrors = {};
       validate.AddValidator('_obj.site_id', 'Site ID', 'B', [ XValidate._v_IsNumeric() ]);
       verrors = _.merge(verrors, validate.Validate('B', Q));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
@@ -1215,13 +1206,13 @@ module.exports = exports = function(module, funcs){
       //Only dev mode uses devMode and site_id parameters
 
       if (verb == 'get') {
-        var sql = "select site_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()";
+        var sql = 'select site_id from {schema}.v_my_site where site_id={schema}.my_current_site_id()';
         var sql_ptypes = [];
         var sql_params = {};
 
         if(Q.devMode){
           if(!Q.site_id) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-          sql = "select site_id from {schema}.v_my_site where site_id=@site_id";
+          sql = 'select site_id from {schema}.v_my_site where site_id=@site_id';
           sql_ptypes = [dbtypes.BigInt];
           sql_params = { site_id: Q.site_id };
         }
@@ -1262,7 +1253,7 @@ module.exports = exports = function(module, funcs){
       }
       return Helper.GenError(req, res, -4, 'Invalid Operation');
     });
-  }
+  };
 
   return exports;
 };

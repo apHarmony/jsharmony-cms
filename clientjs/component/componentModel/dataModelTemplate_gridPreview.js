@@ -142,7 +142,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   this._rowTemplate = rowTemplate;
 
   return  model;
-}
+};
 
 /**
  * Ensure that an ID field exists.
@@ -162,7 +162,7 @@ DataModelTemplate_GridPreview.prototype.ensureIdField = function(fields) {
   }
 
   return idFields[0].name;
-}
+};
 
 /**
  * Ensure that a sequence field exists.
@@ -174,14 +174,14 @@ DataModelTemplate_GridPreview.prototype.ensureIdField = function(fields) {
 DataModelTemplate_GridPreview.prototype.ensureSequenceField = function(fields) {
 
   var seqFieldName = 'sequence'; //This is by convention!!!
-  var hasSeqField = _.some(fields, function(field) { return field.name === seqFieldName; })
+  var hasSeqField = _.some(fields, function(field) { return field.name === seqFieldName; });
   if (!hasSeqField) {
     var idField = { name: seqFieldName, type: 'int', control: 'hidden', caption: '', isAutoAddedField: true };
     fields.push(idField);
   }
 
-  return seqFieldName
-}
+  return seqFieldName;
+};
 
 /**
  * Get the name of the field used for the data item ID.
@@ -190,7 +190,7 @@ DataModelTemplate_GridPreview.prototype.ensureSequenceField = function(fields) {
  */
 DataModelTemplate_GridPreview.prototype.getIdFieldName = function() {
   return this._idFieldName;
-}
+};
 
 /**
  * @public
@@ -199,7 +199,9 @@ DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
   model.id = DataModelTemplate_GridPreview.getNextInstanceId(this._componentTemplate);
 
-  model.js =  function() {
+  //model.js is stringified and executed in the context of the model
+  /* globals modelid, jsh */
+  model.js = function() {
     var gridApi = new jsh.XAPI.Grid.Static(modelid);
     var formApi = new jsh.XAPI.Form.Static(modelid);
     return  {
@@ -207,11 +209,11 @@ DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
         if (apiType === 'grid') return gridApi;
         else if (apiType === 'form') return formApi;
       }
-    }
-  }
+    };
+  };
 
   return model;
-}
+};
 
 /**
  * Return the raw model JavaScript.
@@ -220,7 +222,7 @@ DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
  */
 DataModelTemplate_GridPreview.prototype.getModelJs = function() {
   return this._rawOriginalJs;
-}
+};
 
 /**
  * Get a unique ID for the model instance
@@ -231,7 +233,7 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_GridPreview._id == undefined) DataModelTemplate_GridPreview._id = 0;
   var id = DataModelTemplate_GridPreview._id++;
   return 'DataModel_GridPreview_' + componentTemplate.getClassName() + '_' + id;
-}
+};
 
 /**
  * Get the EJS string used to render the row item preview
@@ -240,7 +242,7 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentTemplate) {
  */
 DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
   return this._rowTemplate || '';
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -260,7 +262,7 @@ DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
 DataModelTemplate_GridPreview.prototype.makePristineCopy = function(dataInstance, removeAutoAddedFields) {
   var fields = removeAutoAddedFields ?  _.filter(this._modelTemplate.fields, function(field) { return !field.isAutoAddedField; }) : this._modelTemplate.fields;
   return FieldModel.makePristineCopy(dataInstance, fields);
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -288,7 +290,7 @@ DataModelTemplate_GridPreview.prototype.makePristineCopy = function(dataInstance
  */
 DataModelTemplate_GridPreview.prototype.populateDataInstance = function(dataInstance) {
   return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
-}
+};
 
 
 exports = module.exports = DataModelTemplate_GridPreview;

@@ -21,9 +21,9 @@ if((routetype == 'd')||(routetype == 'csv')){
     }
   }
 
-  var tablesql = "select NULL host_id where 1=0";
+  var tablesql = 'select NULL host_id where 1=0';
   if(host_ids.length){
-    tablesql = _.map(host_ids, function(host_id){ return 'select '+ escapeQuote(host_id) + ' host_id' }).join(' union all ');
+    tablesql = _.map(host_ids, function(host_id){ return 'select '+ escapeQuote(host_id) + ' host_id'; }).join(' union all ');
   }
 
   model.sqlselect = Helper.ReplaceAll(model.sqlselect, '%%%CMS_HOSTS%%%', '(' + tablesql + ') cms_hosts');

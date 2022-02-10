@@ -18,11 +18,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
-var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   var MERGE_TYPES = [
     'apply',
@@ -79,33 +78,31 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
-  }
+  };
 
   var expand = function(sqls) {
-    var cms = module;
-
     return sqls;
-  }
+  };
 
   var merge_sql_overwrite = expand([
-    "{schema}.merge_overwrite(@src_branch_id, @dst_branch_id);",
+    '{schema}.merge_overwrite(@src_branch_id, @dst_branch_id);',
   ]);
 
   var merge_sql_apply = expand([
-    "{schema}.merge_apply(@src_branch_id, @dst_branch_id);",
+    '{schema}.merge_apply(@src_branch_id, @dst_branch_id);',
   ]);
 
   var merge_sql_changes = expand([
-    "{schema}.merge_changes(@src_branch_id, @dst_branch_id);",
+    '{schema}.merge_changes(@src_branch_id, @dst_branch_id);',
   ]);
 
   var merge_sql_rebase = expand([
-    "{schema}.merge_rebase(@src_branch_id, @dst_branch_id);",
+    '{schema}.merge_rebase(@src_branch_id, @dst_branch_id);',
   ]);
 
   var merge_sql_cleanup = expand([
-    "{schema}.merge_clear_edit_on_public(@dst_branch_id);",
-    "update {schema}.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@dst_branch_id;",
+    '{schema}.merge_clear_edit_on_public(@dst_branch_id);',
+    'update {schema}.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@dst_branch_id;',
   ]);
 
   var merge = function(sql, context, sql_params, callback) {
@@ -114,34 +111,34 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
 
-    var sql = sql.join('\n');
+    sql = sql.join('\n');
     sql = sql + merge_sql_cleanup.join('\n');
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecCommand(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
       callback(null);
     });
-  }
+  };
 
   exports.merge_apply = function (context, sql_params, callback) {
     merge(merge_sql_apply, context, sql_params, callback);
-  }
+  };
 
   exports.merge_overwrite = function (context, sql_params, callback) {
     merge(merge_sql_overwrite, context, sql_params, callback);
-  }
+  };
 
   exports.merge_changes = function (context, sql_params, callback) {
     merge(merge_sql_changes, context, sql_params, callback);
-  }
+  };
 
   exports.merge_rebase = function (context, sql_params, callback) {
     merge(merge_sql_rebase, context, sql_params, callback);
-  }
+  };
 
   var merge_sql_clone = [
     "insert into {schema}.v_my_current_branch(branch_parent_id, branch_type, branch_name, new_branch_changes) values(@branch_parent_id, 'USER', @branch_name, @new_branch_changes);",
-    "select new_branch_id from {schema}.v_my_current_branch;"
+    'select new_branch_id from {schema}.v_my_current_branch;'
   ];
 
   exports.merge_clone = function(context, sql_params, callback) {
@@ -156,7 +153,7 @@ module.exports = exports = function(module, funcs){
       if (err != null) { err.sql = sql; callback(err); return; }
       callback(null, rslt);
     });
-  }
+  };
 
   exports.req_begin_merge = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -184,7 +181,7 @@ module.exports = exports = function(module, funcs){
       var verrors = {};
       validate.AddValidator('_obj.src_branch_id', 'Source Revision', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
       validate.AddValidator('_obj.dst_branch_id', 'Destination Revision', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-      validate.AddValidator('_obj.merge_type', 'Merge Type', 'B', [XValidate._v_InArray(MERGE_TYPES.map(function(s) {return s.toUpperCase()})), XValidate._v_Required()]);
+      validate.AddValidator('_obj.merge_type', 'Merge Type', 'B', [XValidate._v_InArray(MERGE_TYPES.map(function(s) {return s.toUpperCase();})), XValidate._v_Required()]);
 
       verrors = _.merge(verrors, validate.Validate('B', sql_begin_params));
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
@@ -202,10 +199,10 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
-  }
+  };
 
   var merge_sql_begin_merge = "update {schema}.branch set branch_merge_id=@src_branch_id, branch_merge_type=@merge_type where branch_id=@dst_branch_id and branch_merge_id is null and (branch_id in (select branch_id from {schema}.v_my_branch_access where branch_access='RW'));";
-  var merge_sql_check_merge = "select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id;";
+  var merge_sql_check_merge = 'select branch_merge_id from {schema}.branch where branch_id=@dst_branch_id;';
 
   exports.merge_begin_merge = function(context, sql_params, callback) {
     var jsh = module.jsh;
@@ -213,7 +210,7 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt, dbtypes.VarChar(9)];
 
-    sql = merge_sql_check_merge;
+    var sql = merge_sql_check_merge;
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecScalar(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
@@ -225,7 +222,7 @@ module.exports = exports = function(module, funcs){
         callback(null);
       });
     });
-  }
+  };
 
   exports.merge_check_permissions = function(context, sql_params, callback) {
     var jsh = module.jsh;
@@ -233,14 +230,14 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
     var sql_ptypes = [dbtypes.BigInt, dbtypes.BigInt];
 
-    var sql = "select branch_id from {schema}.v_my_branch_access where (branch_id=@dst_branch_id and branch_access='RW') or (branch_id=@src_branch_id and branch_access like 'R%');"
+    var sql = "select branch_id from {schema}.v_my_branch_access where (branch_id=@dst_branch_id and branch_access='RW') or (branch_id=@src_branch_id and branch_access like 'R%');";
     sql = Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
     appsrv.ExecRecordset(context, sql, sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; callback(err); return; }
       if (rslt[0].length!=2) { callback( Helper.NewError('You dont have access to those revisions (or they dont exist)',-11)); return; }
       callback(null);
     });
-  }
+  };
 
   return exports;
 };

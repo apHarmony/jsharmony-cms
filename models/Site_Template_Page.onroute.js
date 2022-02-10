@@ -2,14 +2,11 @@
 
 var _ = require('lodash');
 var path = require('path');
-var ftppath = require('path').posix;
 var async = require('async');
 var fs = require('fs');
 var Helper = require('../Helper.js');
 var HelperFS = require('../HelperFS.js');
-var ejsext = require('../lib/ejsext.js');
 var cms = jsh.Modules['jsHarmonyCMS'];
-var dbtypes = jsh.AppSrv.DB.types;
 
 function escapeQuote(txt){
   if(txt===null || (typeof txt == 'undefined')) return 'null';
@@ -31,7 +28,7 @@ if((routetype == 'd')||(routetype == 'csv')){
         site_id = parseInt(d.site_id);
       }
     }
-    catch(ex){}
+    catch(ex){ /* Do nothing */ }
   }
 
   var localTemplates = [
@@ -145,9 +142,9 @@ if((routetype == 'd')||(routetype == 'csv')){
     },
 
     //Generate SQL
-    function(data_cb){      
+    function(data_cb){
       //Remote Templates
-      var tablesql = "select site_template_id,site_id,site_template_type,site_template_name,site_template_title,'REMOTE' site_template_location,site_template_path,site_template_config from "+(cms.schema?cms.schema+'.':'')+"site_template";
+      var tablesql = "select site_template_id,site_id,site_template_type,site_template_name,site_template_title,'REMOTE' site_template_location,site_template_path,site_template_config from "+(cms.schema?cms.schema+'.':'')+'site_template';
 
       //Local Templates
       var addedTemplates = {};
@@ -155,14 +152,14 @@ if((routetype == 'd')||(routetype == 'csv')){
         if(localTemplate.site_template_name in addedTemplates) return;
         addedTemplates[localTemplate.site_template_name] = 1;
         
-        tablesql += " union all select null site_template_id,"+
-          jsh.DB['default'].sql.escape(site_id)+" site_id,"+
-          escapeQuote(localTemplate.site_template_type)+" site_template_type,"+
-          escapeQuote(localTemplate.site_template_name)+" site_template_name,"+
-          escapeQuote(localTemplate.site_template_title)+" site_template_title,"+
-          escapeQuote(localTemplate.site_template_location)+" site_template_location,"+
-          escapeQuote(localTemplate.site_template_path)+" site_template_path,"+
-          escapeQuote(localTemplate.site_template_config)+" site_template_config";
+        tablesql += ' union all select null site_template_id,'+
+          jsh.DB['default'].sql.escape(site_id)+' site_id,'+
+          escapeQuote(localTemplate.site_template_type)+' site_template_type,'+
+          escapeQuote(localTemplate.site_template_name)+' site_template_name,'+
+          escapeQuote(localTemplate.site_template_title)+' site_template_title,'+
+          escapeQuote(localTemplate.site_template_location)+' site_template_location,'+
+          escapeQuote(localTemplate.site_template_path)+' site_template_path,'+
+          escapeQuote(localTemplate.site_template_config)+' site_template_config';
       });
 
       model.sqlselect = Helper.ReplaceAll(model.sqlselect, '%%%SITE_TEMPLATE%%%', '(' + tablesql + ') site_template');

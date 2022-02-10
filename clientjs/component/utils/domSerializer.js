@@ -37,7 +37,7 @@ function DomSerializer(jsh) {
 DomSerializer.prototype.getAttr = function(element, attrName) {
   var rawAttr = this.jsh.$(element).attr(attrName) || '';
   return this.deserializeAttrValue(rawAttr);
-}
+};
 
 /**
  * Deserialize the serialized string
@@ -49,7 +49,7 @@ DomSerializer.prototype.getAttr = function(element, attrName) {
 DomSerializer.prototype.deserializeAttrValue = function(value) {
   value = value ? atob(value) : '{}';
   return JSON.parse(value);
-}
+};
 
 /**
  * Set the object (after serialization) as the attribute value.
@@ -62,7 +62,7 @@ DomSerializer.prototype.deserializeAttrValue = function(value) {
 DomSerializer.prototype.setAttr = function(element, attrName, data) {
   var attrVal = this.serializeAttrValue(data);
   return this.jsh.$(element).attr(attrName, attrVal);
-}
+};
 
 /**
  * Serialize the object for safe component usage
@@ -73,8 +73,8 @@ DomSerializer.prototype.setAttr = function(element, attrName, data) {
  */
 DomSerializer.prototype.serializeAttrValue = function(data) {
   // Need to keep undefined values so they don't get set to default values
-  var replacer = function(key, value) { return value == undefined ? null : value };
+  var replacer = function(key, value) { return value == undefined ? null : value; };
   return btoa(JSON.stringify(data || {}, replacer));
-}
+};
 
 exports = module.exports = DomSerializer;

@@ -20,7 +20,7 @@ jsh.App[modelid] = new (function(){
     $(window).bind('resize', _this.onresize);
     jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
     _this.refreshLayout();
-  }
+  };
 
   this.onmessage = function(data){
     data = (data || '').toString();
@@ -30,11 +30,11 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
       }
     }
-  }
+  };
 
   this.ondestroy = function(xmodel){
     $(window).unbind('resize', _this.onresize);
-  }
+  };
 
   this.onload = function(){
     var bcrumbs = jsh.XPage.getBreadcrumbs();
@@ -42,21 +42,21 @@ jsh.App[modelid] = new (function(){
     _this.state.page_folder = xmodel.get('page_folder');
     $('.' + xmodel.class + '_page_listing_header_path').text(_this.state.page_folder);
     jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.$root('.bcrumbs_branch_body'), containerClass: 'bcrumbs_editor_selection_container' });
-  }
+  };
 
-  this.ongetstate = function(){ return _this.state; }
+  this.ongetstate = function(){ return _this.state; };
 
   this.onloadstate = function(xmodel, state){
     _this.state = _.extend({}, _this.state_default, _this.state, state);
     if(_this.state.page_folder !== null) this.setFolderBeforeLoad(_this.state.page_folder);
-  }
+  };
 
   this.setFolderBeforeLoad = function(page_folder){
     xmodel.controller.form.Data['page_folder'] = page_folder;
     xmodel.saveUnboundFields(xmodel.controller.form.Data);
-  }
+  };
 
-  this.onresize = function(){ _this.refreshLayout(); }
+  this.onresize = function(){ _this.refreshLayout(); };
 
   this.refreshLayout = function(){
     var jbrowser = $('.'+xmodel.class+'_browser');
@@ -68,7 +68,7 @@ jsh.App[modelid] = new (function(){
     var contentheight = wh - top - 20;
 
     $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
-  }
+  };
 
   this.page_folder_onchange = function(obj, newval) {
     var historyParams = {};
@@ -77,11 +77,11 @@ jsh.App[modelid] = new (function(){
     $('.' + xmodel.class + '_page_listing_header_path').text(_this.state.page_folder);
     jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
     XPage.AddHistory(undefined, undefined, historyParams);
-  }
+  };
 
   this.previewPage = function(page_file){
     jsh.App[xmodel.namespace+'Page_Tree_Listing'].previewFile(page_file);
-  }
+  };
 
   this.addFolder = function(parent_page_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding a folder');
@@ -98,7 +98,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.renameFolder = function(page_folder){
     //Get new folder name
@@ -119,7 +119,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.moveFolder = function(old_page_folder, new_page_folder){
     new_page_folder = new_page_folder||'';
@@ -150,7 +150,7 @@ jsh.App[modelid] = new (function(){
         });
       }
     );
-  }
+  };
 
   this.deleteFolder = function(page_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before deleting a folder');
@@ -163,11 +163,11 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.getDefaultPage = function(){
     return jsh.XPage.getBreadcrumbs().site_default_page_filename;
-  }
+  };
 
   this.page_folder_onmove = function(dragval, dropval, anchor, e) {
     if(!XExt.hasAction(xmodel.actions,'U')) return;
@@ -196,6 +196,6 @@ jsh.App[modelid] = new (function(){
         _this.moveFolder(old_page_folder, new_page_folder);
       });
     }
-  }
+  };
 
 })();

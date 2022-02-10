@@ -14,13 +14,13 @@ jsh.App[modelid] = new (function(){
     setTimeout(function(){
       autoSelectOneDropdownItem('deployment_target_id', jsh.$root('.deployment_target_id.xelem'+xmodel.class));
     }, 1);
-  }
+  };
 
   this.setDeploymentTag = function(branch_id){
     XForm.Get('/_funcs/deployment_unique_tag', { prefix: xmodel.get('deployment_date'), branch_id: branch_id }, {}, function(rslt){
       xmodel.set('deployment_tag', rslt.deployment_tag);
     }, undefined, { async: false });
-  }
+  };
 
   this.publish = function(){
     if(!xmodel.controller.form.Data.Commit()) return;
@@ -45,7 +45,7 @@ jsh.App[modelid] = new (function(){
           emodelid = '../_funcs/deployment/trigger';
           XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
             if ('_success' in rslt) {
-              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id); 
+              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id);
             }
             else XExt.Alert('Error while trigering deployment');
           });
@@ -53,6 +53,6 @@ jsh.App[modelid] = new (function(){
         else XExt.Alert('Error while adding deployment');
       });
     });
-  }
+  };
 
 })();

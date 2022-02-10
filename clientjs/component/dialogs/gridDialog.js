@@ -127,7 +127,7 @@ GridDialog.prototype.open = function() {
         if(onComplete) onComplete();
       }
     );
-  }
+  };
 
   dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
@@ -135,7 +135,7 @@ GridDialog.prototype.open = function() {
     controller.Render(function() {
       if (_.isFunction(_this.onOpened)) _this.onOpened(_$dialog, xmodel);
     });
-  }
+  };
 
   dialog.onCancel = function(options) {
     if (!options.force && controller.HasUpdates()) {
@@ -145,14 +145,14 @@ GridDialog.prototype.open = function() {
       });
       return false;
     }
-  }
+  };
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
     if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
-  }
+  };
 
   dialog.open();
-}
+};
 
 exports = module.exports = GridDialog;

@@ -9,7 +9,7 @@
 
   jsh.System.OpenPageEditorUrl = function(url){
     return XExt.createWindow(url, '_blank', 'width=1195,height=800');
-  }
+  };
 
   jsh.System.OpenPageEditor = function(page_key, page_filename, page_template_id, options){
     options = _.extend({
@@ -34,7 +34,7 @@
         if(options.onComplete) options.onComplete(err);
         return;
       }
-      var params = { page_template_id: page_template_id }
+      var params = { page_template_id: page_template_id };
       if(page_key) params.page_key = page_key;
       if(options.page_template_path) params.page_template_path = options.page_template_path;
       if(jsh.bcrumbs && jsh.bcrumbs.branch_id) params.branch_id = jsh.bcrumbs.branch_id;
@@ -42,7 +42,7 @@
 
       XForm.Get('../_funcs/editor_url', params, {}, function(template){
         if(!template){
-          var errmsg = 'Template is not defined';
+          let errmsg = 'Template is not defined';
           if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
           return XExt.Alert(errmsg);
         }
@@ -96,25 +96,25 @@
         }
         else if(template.editor){
           //Open Editor
-          var url = template.editor;
+          url = template.editor;
           if(options.getURL && options.onComplete) return options.onComplete(null, url, template);
           jsh.System.OpenPageEditorUrl(url);
         }
         else{
-          var errmsg = 'Error generating editor URL';
+          let errmsg = 'Error generating editor URL';
           if(options.getURL && options.onComplete) return options.onComplete(new Error(errmsg));
           return XExt.Alert(errmsg);
         }
       }, undefined, { async: options.async });
     });
-  }
+  };
 
   jsh.System.PreviewMedia = function(media_key, media_file_id, media_id, media_ext, media_width, media_height){
     var qs = '';
     if(media_id) qs = 'media_id='+media_id;
     else if(media_file_id) qs = 'media_file_id='+media_file_id;
     if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.pdf','.svg'], media_ext.toLowerCase())){
-      var url = jsh._BASEURL+'_funcs/media/'+media_key+'/'+(qs?'?'+qs:'');
+      let url = jsh._BASEURL+'_funcs/media/'+media_key+'/'+(qs?'?'+qs:'');
       var ww = 800;
       var wh = 600;
       if(media_width && media_height){
@@ -129,32 +129,32 @@
       XExt.createWindow(url, '_blank', 'width='+ww+',height='+wh);
     }
     else {
-      var url = jsh._BASEURL+'_funcs/media/'+media_key+'/?download'+(qs?'&'+qs:'');
+      let url = jsh._BASEURL+'_funcs/media/'+media_key+'/?download'+(qs?'&'+qs:'');
       jsh.getFileProxy().prop('src', url);
     }
-  }
+  };
 
   jsh.System.viewPageTemplates = function(){
     var site_id = jsh.globalparams.site_id;
     if(!site_id) return XExt.Alert('No site currently checked out');
     var tabs = {};
-    tabs['{namespace}Site_Tabs'] = '{namespace}Site_Template_Page'
+    tabs['{namespace}Site_Tabs'] = '{namespace}Site_Template_Page';
     var qs = {
       site_id:site_id,
       tabs: JSON.stringify(tabs)
     };
     XExt.popupForm('{namespace}Site_Tabs', 'update', qs);
-  }
+  };
 
   jsh.System.applyRoles = function(){
     if(jsh.globalparams.isWebmaster) jsh.$root('.jsHarmonyCms_role_WEBMASTER').removeClass('jsHarmonyCms_role_WEBMASTER');
-  }
+  };
 
   jsh.System.renderEditorSelection = function(LOV_site_editor, site_id, sys_user_site_editor, options){
     if(!LOV_site_editor || (LOV_site_editor.length <= 2)) return;
     options = _.extend({ after: null, container: null, containerClass: '', }, options);
     var jcontainer = null;
-    if(options.container) jcontainer = jsh.$root(container);
+    if(options.container) jcontainer = jsh.$root(options.container);
     else if(options.containerClass && jsh.$root('.'+options.containerClass).length) jcontainer = jsh.$root('.'+options.containerClass);
     else if(options.after){
       jcontainer = $('<div></div>');
@@ -174,14 +174,14 @@
       var new_sys_user_site_editor = $(this).val();
       jsh.System.updateEditor(site_id, new_sys_user_site_editor);
     });
-  }
+  };
 
   jsh.System.updateEditor = function(site_id, sys_user_site_editor){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding a folder');
 
     XForm.Post('{namespace}Site_Editor',{},{ site_id: site_id, sys_user_site_editor: sys_user_site_editor }, function(){
     });
-  }
+  };
 
   jsh.System.renderCurrentSite = function(site_id, site_name){
     jsh.globalparams.site_id = site_id;
@@ -213,7 +213,7 @@
         }
       });
     });
-  }
+  };
 
   jsh.on('jsh_render_init', function(){
     jsh.System.renderCurrentSite(jsh.globalparams.site_id, jsh.globalparams.site_name);
@@ -224,7 +224,7 @@
     if(!source) source = window.location.href;
     var url = jsh._BASEURL + '_funcs/site/checkout?' + $.param({site_id:site_id, source: source});
     window.location.href = url;
-  }
+  };
 
   jsh.System.DownloadDeployment = function(deployment_id) {
     //Save Changes Before Executing
@@ -258,6 +258,6 @@
     };
 
     jsh.getFileProxy().prop('src', url);
-  }
+  };
 
-})(window.{req.jshsite.instance});
+})(window['{req.jshsite.instance}']);

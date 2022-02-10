@@ -106,7 +106,7 @@ module.exports = exports = function(module, funcs) {
       }
 
       return ftpDriver.connect();
-    }
+    };
 
     /**
      * @param {string} directory_paths
@@ -126,11 +126,11 @@ module.exports = exports = function(module, funcs) {
         return () => {
           next_cb(dir_path);
           return ftpDriver.deleteDirectoryRecursive(dir_path);
-        }
+        };
       });
 
       return delete_functions.reduce((prev, f) => prev.then(() => f()), Promise.resolve());
-    }
+    };
 
     /**
      * @param {string} file_paths
@@ -150,11 +150,11 @@ module.exports = exports = function(module, funcs) {
         return () => {
           next_cb(file_path);
           return ftpDriver.deleteFile(file_path);
-        }
+        };
       });
 
       return delete_functions.reduce((prev, f) => prev.then(() => f()), Promise.resolve());
-    }
+    };
 
     /**
      * @returns {void}
@@ -163,8 +163,8 @@ module.exports = exports = function(module, funcs) {
       try{
         ftpDriver.end();
       }
-      catch(ex){}
-    }
+      catch(ex){ /* Do nothing */ }
+    };
 
     /**
      * @param {string} directory_paths
@@ -184,11 +184,11 @@ module.exports = exports = function(module, funcs) {
         return () => {
           next_cb(dir_path);
           return ftpDriver.createDirectoryIfNotExists(dir_path);
-        }
+        };
       });
 
       return mk_dir_functions.reduce((prev, f) => prev.then(() => f()), Promise.resolve());
-    }
+    };
 
     /**
      * @param {string} abs_folder_path
@@ -205,40 +205,40 @@ module.exports = exports = function(module, funcs) {
 
       next_cb(abs_folder_path);
       return ftpDriver.getDirectoryList(abs_folder_path)
-      .then(items => {
-        var list = [];
-        var dirs = [];
-        (items || []).forEach(item => {
-          var normalized_path = path.join(abs_folder_path, item.name);
-          if (relative_to) {
-            normalized_path = path.relative(relative_to, normalized_path);
+        .then(items => {
+          var list = [];
+          var dirs = [];
+          (items || []).forEach(item => {
+            var normalized_path = path.join(abs_folder_path, item.name);
+            if (relative_to) {
+              normalized_path = path.relative(relative_to, normalized_path);
+            }
+            normalized_path = normalized_path.replace(/\\/g, '/');
+            item.path = normalized_path;
+            if (item.isDir) dirs.push(item);
+            list.push(item);
+          });
+
+          if (dirs.length < 1) {
+            return list;
           }
-          normalized_path = normalized_path.replace(/\\/g, '/');
-          item.path = normalized_path
-          if (item.isDir) dirs.push(item)
-          list.push(item);
+
+          // Create a function for each child directory
+          // in the current directory. When executed,
+          // each function will return a promise that resolves
+          // the contents (recursively) of the child directory
+          // and concats them with the input argument.
+          var list_getters = dirs.map(dir => {
+            return current_items => {
+              var full_path = path.join(abs_folder_path, dir.name).replace(/\\/g, '/');
+              return _this.getDirectoryListRecursive(full_path, relative_to, next_cb).then(items => [...current_items, ...items]);
+            };
+          });
+
+          return list_getters.reduce((prev, f) => prev.then(items => f(items)), Promise.resolve(list));
         });
 
-        if (dirs.length < 1) {
-          return list;
-        }
-
-        // Create a function for each child directory
-        // in the current directory. When executed,
-        // each function will return a promise that resolves
-        // the contents (recursively) of the child directory
-        // and concats them with the input argument.
-        var list_getters = dirs.map(dir => {
-          return current_items => {
-            var full_path = path.join(abs_folder_path, dir.name).replace(/\\/g, '/');
-            return _this.getDirectoryListRecursive(full_path, relative_to, next_cb).then(items => [...current_items, ...items])
-          }
-        });
-
-        return list_getters.reduce((prev, f) => prev.then(items => f(items)), Promise.resolve(list));
-      });
-
-    }
+    };
 
     /**
      * @param {string} file_path
@@ -246,7 +246,7 @@ module.exports = exports = function(module, funcs) {
      */
     this.readFile = function(file_path) {
       return ftpDriver.readFile(file_path);
-    }
+    };
 
     /**
      * @param {{dest_path: string, local_path: string}[]} paths
@@ -266,11 +266,11 @@ module.exports = exports = function(module, funcs) {
         return () => {
           next_cb(path_info.dest_path);
           return ftpDriver.writeFile(path_info.local_path, path_info.dest_path);
-        }
+        };
       });
 
       return put_functions.reduce((prev, f) => prev.then(() => f()), Promise.resolve());
-    }
+    };
 
     /**
      * @param {string} string_data
@@ -279,7 +279,7 @@ module.exports = exports = function(module, funcs) {
      */
     this.writeString = function(string_data, dest_path) {
       return ftpDriver.writeString(string_data, dest_path);
-    }
+    };
 
     this.buildFileTree = function(files) {
 
@@ -327,7 +327,7 @@ module.exports = exports = function(module, funcs) {
       });
 
       return root_nodes;
-    }
+    };
 
     /**
      * Given a list of file paths,
@@ -347,15 +347,15 @@ module.exports = exports = function(module, funcs) {
         var paths = [node.path];
         node.children.forEach(child_node => {
           if (child_node.is_file) return;
-          paths.push(...get_paths(child_node))
+          paths.push(...get_paths(child_node));
         });
 
         return paths;
-      }
+      };
 
       file_tree_root_nodes.forEach(node => dir_list.push(...get_paths(node)));
       return dir_list;
-    }
+    };
 
     this.createLocalManifest = function(publish_path, site_files) {
 
@@ -376,7 +376,7 @@ module.exports = exports = function(module, funcs) {
 
       manifest.dir_index = new Set(_this.buildOrderedDirectoryList(file_list));
       return Promise.all(stat_promises).then(function(){ return manifest; });
-    }
+    };
 
     this.getOperations = function(deployment, local_manifest, remote_file_info_cache, remote_files, ignore_files) {
 
@@ -390,7 +390,7 @@ module.exports = exports = function(module, funcs) {
         missing_file_in_remote_count: 0,
         missing_folder_in_local_count: 0,
         modified_file_count: 0,
-      }
+      };
 
       // Don't mutate the remote cache
       var remote_file_cache_index = remote_file_info_cache ? Object.assign({}, remote_file_info_cache.files || {}) : {};
@@ -404,7 +404,7 @@ module.exports = exports = function(module, funcs) {
         if (local_file_path in ignore_files) return;
 
         var remote_file = remote_file_index[local_file_path];
-        var remote_file_cache = remote_file_cache_index[local_file_path]
+        var remote_file_cache = remote_file_cache_index[local_file_path];
 
         // Whatever is remaining will be files
         // that exist on remote but not local.
@@ -419,20 +419,20 @@ module.exports = exports = function(module, funcs) {
           local_file_info.md5 === remote_file_cache.md5 &&
           local_file_info.size === remote_file_cache.size;
 
-          if (!remote_file_exists) {
-            operations.missing_file_in_remote_count++;
-            operations.files_to_upload.push(local_file_path);
-          } else if (!files_match) {
-            operations.modified_file_count++;
-            operations.files_to_upload.push(local_file_path)
-          } else {
-            operations.matching_file_count++;
-            if (deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.overwrite_all) operations.files_to_upload.push(local_file_path);
-          }
+        if (!remote_file_exists) {
+          operations.missing_file_in_remote_count++;
+          operations.files_to_upload.push(local_file_path);
+        } else if (!files_match) {
+          operations.modified_file_count++;
+          operations.files_to_upload.push(local_file_path);
+        } else {
+          operations.matching_file_count++;
+          if (deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.overwrite_all) operations.files_to_upload.push(local_file_path);
+        }
       });
 
       var remote_dirs = {};
-      for (file_path in remote_file_index) {
+      for (var file_path in remote_file_index) {
 
         if (file_path in ignore_files) continue;
 
@@ -446,12 +446,12 @@ module.exports = exports = function(module, funcs) {
             }
           }
           else {
-            remote_dirs[file_path] = file_path;;
+            remote_dirs[file_path] = file_path;
           }
         } else {
           if(!funcs.deploy_ignore_remote(deployment.publish_params, file_path)){
             operations.missing_file_in_local_count++;
-            if (deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files) operations.files_to_delete.push(file_path)
+            if (deployment.publish_params.ftp_config && deployment.publish_params.ftp_config.delete_excess_files) operations.files_to_delete.push(file_path);
           }
         }
       }
@@ -462,14 +462,14 @@ module.exports = exports = function(module, funcs) {
       });
 
       return operations;
-    }
+    };
 
     this.getFileSize = function(file_path) {
       return new Promise((resolve, reject) => {
         fs.stat(file_path, (err, stats) => err ? reject(err) : resolve(stats.size));
       });
-    }
-  }
+    };
+  };
 
   return exports;
-}
+};

@@ -38,7 +38,7 @@ jsh.App[modelid] = new (function(){
     for(var key in dtparams){
       if(key in deployment_target_publish_config) dtparams[key] = deployment_target_publish_config[key];
       else if(key in _this.default_deployment_target_publish_config){
-        if((key == 'url_prefix') && (_this.default_deployment_target_publish_config.url_prefix == '/')){ }
+        if((key == 'url_prefix') && (_this.default_deployment_target_publish_config.url_prefix == '/')){ /* Do nothing */ }
         else {
           dtparams[key] = _this.default_deployment_target_publish_config[key];
         }
@@ -56,10 +56,10 @@ jsh.App[modelid] = new (function(){
 
     _this.integration_params.access_keys = [_this.access_key];
     _this.integration_params.cms_server_urls = [_this.cms_server_url];
-  }
+  };
 
   this.regenerateAccessKey = function(){
-    if(!xmodel.controller.form.Data.Commit()) return; 
+    if(!xmodel.controller.form.Data.Commit()) return;
 
     XExt.Confirm('<div style="text-align:left;">Regenerating the key will cause any integrations that use an access key on this deployment target to stop working.<br/><br/>Existing integrations will need to be updated with a new access key.<br/><br/>Continue?</div>', function(){
 
@@ -74,7 +74,7 @@ jsh.App[modelid] = new (function(){
       button_ok_caption: 'Continue',
       button_no_caption: 'Cancel'
     });
-  }
+  };
 
   this.getIntegrationParamsString = function(platform, options){
     var STRMAP = {
@@ -110,7 +110,7 @@ jsh.App[modelid] = new (function(){
     }
     integrationParamsString += (firstParam ? '' : '\n') + _s.OBJ_END;
     return integrationParamsString;
-  }
+  };
 
   this.integration_target_onchange = function(obj, newval, undoChange){
     var tmpl = $('.'+xmodel.class+'_Integration_'+newval).html()||'';
@@ -148,8 +148,8 @@ jsh.App[modelid] = new (function(){
       var obj = $(this).prev()[0];
       obj.select();
       obj.setSelectionRange(0, 99999);
-      document.execCommand("copy");
+      document.execCommand('copy');
     });
-  }
+  };
 
 })();

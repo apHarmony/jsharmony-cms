@@ -20,10 +20,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var _ = require('lodash');
 var async = require('async');
 var fs = require('fs');
+var os = require('os');
 var ftppath = require('path').posix;
 var fspath = require('path');
 var ssh2 = require('ssh2-classic');
-var crypto = require('crypto');
 var moment = require('moment');
 var Helper = require('jsharmony/Helper');
 var HelperFS = require('jsharmony/HelperFS');
@@ -73,7 +73,7 @@ jsHarmonyCMSSFTPServer.prototype.Auth = function(req, user, password, clientIp, 
                     if (rslt[0][1].length > 0) user_roles = _.map(rslt[0][1], jsh.map.user_role);
                     var user_info = rslt[0][0][0];
                     if ((user_info[jsh.map.user_status]||'').toUpperCase() != 'ACTIVE'){
-                      if(jsh.Config.debug_params.auth_debug) jsh.Log('Auth: User status not ACTIVE', { source: 'authentication' }); 
+                      if(jsh.Config.debug_params.auth_debug) jsh.Log('Auth: User status not ACTIVE', { source: 'authentication' });
                       return auth_cb(false);
                     }
                     else {
@@ -90,7 +90,7 @@ jsHarmonyCMSSFTPServer.prototype.Auth = function(req, user, password, clientIp, 
                     }
                   }
                   else{
-                    if(jsh.Config.debug_params.auth_debug) jsh.Log('Auth: User not found', { source: 'authentication' }); 
+                    if(jsh.Config.debug_params.auth_debug) jsh.Log('Auth: User not found', { source: 'authentication' });
                     return auth_cb(false);
                   }
                 });
@@ -108,7 +108,7 @@ jsHarmonyCMSSFTPServer.prototype.Auth = function(req, user, password, clientIp, 
         });
       }
     }
-    else { 
+    else {
       if(jsh.Config.debug_params.auth_debug){
         jsh.Log('Login: User account not found', { source: 'authentication' });
         if(err) jsh.Log(err);
@@ -116,19 +116,19 @@ jsHarmonyCMSSFTPServer.prototype.Auth = function(req, user, password, clientIp, 
       return auth_cb(false);
     }
   });
-}
+};
 
 jsHarmonyCMSSFTPServer.prototype.Log = function(txt){
   var _this = this;
   if(!_this.cms || !_this.cms.Config.debug_params.sftp_log) return;
   _this.jsh.Log.info(txt);
-}
+};
 
 jsHarmonyCMSSFTPServer.prototype.DebugLog = function(txt){
   var _this = this;
   if(!_this.cms || !_this.cms.Config.debug_params.sftp_log) return;
   _this.jsh.Log.debug(txt);
-}
+};
 
 jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
   if(!run_cb) run_cb = function(){};
@@ -196,6 +196,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
         ctx.accept();
       }
       catch(ex){
+        /* Do nothing */
       }
     }
 
@@ -206,7 +207,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
           failedAuth[clientIndex] = {
             count: 0,
             lastLogin: new Date().getTime()
-          }
+          };
         }
         failedAuth[clientIndex].count++;
         failedAuth[clientIndex].lastLogin = new Date().getTime();
@@ -215,6 +216,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
         ctx.reject(authMethods);
       }
       catch(ex){
+        /* Do nothing */
       }
     }
 
@@ -410,7 +412,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                     size: 4096,
                     atimeMs: moment().valueOf(),
                     mtimeMs: moment().valueOf(),
-                    mode: 0777 + fs.constants.S_IFDIR,
+                    mode: 0777 + fs.constants.S_IFDIR, // eslint-disable-line no-octal
                     isFile: function(){ return false; },
                     isDirectory: function(){ return true; },
                     isSymbolicLink: function(){ return false; },
@@ -548,7 +550,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
             for(var handle in handles){
               closeHandle(handle);
             }
-          }
+          };
 
           function setStats(reqid, fpath, attrs){
             initPath(reqid, fpath, null, function(err, vpath, syspath, stats){
@@ -676,7 +678,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
             var handleInfo = getHandleInfo(handle);
             if(!handleInfo) return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Handle not found');
 
-            var startTime = new Date().getTime();
+            //var startTime = new Date().getTime(); //Diagnostic Logging
 
             waitForLock(handleInfo, function(){
               if(handleInfo.closing || handleInfo.closed){
@@ -710,7 +712,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                   },
                   function(){
                     handleInfo.lock = false;
-                    var endTime = new Date().getTime();
+                    //var endTime = new Date().getTime(); //Diagnostic Logging
                     //console.log(endTime - startTime); //Diagnostic Logging
                     sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.OK);
                     updateHandleAccess(handleInfo);
@@ -814,10 +816,9 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                 var filename = 'sites';
                 sftpStream.name(reqid, [{
                   filename: filename,
-                  longname: filename,
                   longname: 'drwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename,
                   attrs: {
-                    mode: 0777 + fs.constants.S_IFDIR,
+                    mode: 0777 + fs.constants.S_IFDIR, // eslint-disable-line no-octal
                     uid: 0,
                     gid: 0,
                     size: 4096,
@@ -833,7 +834,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                 fs.readdir(handleInfo.syspath, function(err, files){
                   if(err) return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving directory listing');
 
-                  Helper.execif((handleInfo.path=='/sites'), 
+                  Helper.execif((handleInfo.path=='/sites'),
                     function(f){
                       files = [];
                       jsh.AppSrv.ExecRecordset(req._DBContext, cms.funcs.replaceSchema("select site_id,site_name from {schema}.v_my_site where site_sts='ACTIVE' order by site_id"), [], { }, function (err, rslt) {
@@ -844,10 +845,9 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                           var filename_long = HelperFS.cleanFileName(site.site_id+'_'+site.site_name);
                           files.push({
                             filename: filename_short,
-                            longname: filename_short,
                             longname: 'drwxrwxrwx 0 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_short,
                             attrs: {
-                              mode: 0777,
+                              mode: 0777, // eslint-disable-line no-octal
                               uid: 0,
                               gid: 0,
                               size: 4096,
@@ -857,10 +857,9 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                           });
                           files.push({
                             filename: filename_long,
-                            longname: filename_long,
                             longname: 'lrwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_long,
                             attrs: {
-                              mode: 0777 + fs.constants.S_IFDIR,
+                              mode: 0777 + fs.constants.S_IFDIR, // eslint-disable-line no-octal
                               uid: 0,
                               gid: 0,
                               size: 4096,
@@ -915,7 +914,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                             dirPage[idx].longname = longname;
 
                             dirPage[idx].attrs = {
-                              mode: 0777 + (longname[0]=='d' ? fs.constants.S_IFDIR : longname[0]=='l' ? fs.constants.S_IFLNK : fs.constants.S_IFREG),
+                              mode: 0777 + (longname[0]=='d' ? fs.constants.S_IFDIR : longname[0]=='l' ? fs.constants.S_IFLNK : fs.constants.S_IFREG), // eslint-disable-line no-octal
                               uid: 0,
                               gid: 0,
                               size: (longname=='-' ? fstat.size : 4096),
@@ -1028,7 +1027,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
             //Resolve path
             sftpStream.name(reqid, {
               filename: vpath,
-              longname: vpath, 
+              longname: vpath,
               attrs: {}
             });
 
@@ -1047,7 +1046,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
 
             sftpStream.name(reqid, {
               filename: vpath,
-              longname: vpath, 
+              longname: vpath,
               attrs: {}
             });
 
@@ -1130,7 +1129,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
     jsh.Log.info('SFTP Server listening on port ' + this.address().port);
     run_cb();
   });
-}
+};
 
 jsHarmonyCMSSFTPServer.prototype.getURL = function(hostname){
   var _this = this;
@@ -1146,6 +1145,6 @@ jsHarmonyCMSSFTPServer.prototype.getURL = function(hostname){
   if(server_txt == '0.0.0.0') server_txt = os.hostname().toLowerCase();
   if(server_txt && server_port) return server_scheme+server_txt+':'+server_port;
   return '';
-}
+};
 
 module.exports = exports = jsHarmonyCMSSFTPServer;

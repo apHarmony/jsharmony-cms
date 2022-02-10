@@ -148,7 +148,7 @@ FormDialog.prototype.augmentModel = function(model, config) {
   model.fields = newFields.length > 0 ? (model.fields || []).concat(newFields) : model.fields;
   model.buttons = newButtons.length > 0 ? (model.buttons || []).concat(newButtons) : model.buttons;
   return model;
-}
+};
 
 /**
  * Open the form  dialog
@@ -190,7 +190,7 @@ FormDialog.prototype.open = function(data) {
         controller.Render(data, undefined, onComplete);
       }
     );
-  }
+  };
 
 
   dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
@@ -199,13 +199,13 @@ FormDialog.prototype.open = function(data) {
     $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc).on('click', function(e){ e.preventDefault(); });
     $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc).on('click', function(e){ e.preventDefault(); });
     if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
-  }
+  };
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
     var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept($dialog, xmodel);
     if (isSuccess) success();
-  }
+  };
 
   dialog.onCancel = function(options) {
     if (!options.force && xmodel.controller.HasUpdates()) {
@@ -221,18 +221,18 @@ FormDialog.prototype.open = function(data) {
       }
       return false;
     }
-  }
+  };
 
   // This is the final callback to be called and is
   // called anytime (whether accepted or canceled) the
   // dialog closes.
   dialog.onClose = function() {
-    controller.form.Prop.Enabled = false
+    controller.form.Prop.Enabled = false;
     if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
-  }
+  };
 
   dialog.open();
-}
+};
 
 
 exports = module.exports = FormDialog;

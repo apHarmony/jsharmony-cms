@@ -78,7 +78,7 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
  */
 HTMLPropertyEditor.prototype.destroy = function() {
   this._editor.detach(this._uid);
-}
+};
 
 /**
  * Get the hidden field JQuery obj that is bound to the editor.
@@ -87,7 +87,7 @@ HTMLPropertyEditor.prototype.destroy = function() {
  */
 HTMLPropertyEditor.prototype.getDataElement = function() {
   return this._$formElement.find('.xform_ctrl.' + this._hiddenFieldName);
-}
+};
 
 /**
  * Initialize the editor.
@@ -107,7 +107,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
   this._editor.onEndEdit = function() {
     var content = _this.processText(_this._editor.getContent(_this._uid));
     _this.getDataElement().attr('value', content);
-  }
+  };
   this._editor.init(function() {
 
     var config = {};
@@ -137,7 +137,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
       callback();
     });
   });
-}
+};
 
 /**
  * Process text from the editor
@@ -147,7 +147,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
  */
 HTMLPropertyEditor.prototype.processText = function(text) {
   return text;
-}
+};
 
 /**
  * Update the editor with the value from the field bound to the editor.
@@ -156,7 +156,7 @@ HTMLPropertyEditor.prototype.processText = function(text) {
 HTMLPropertyEditor.prototype.render = function() {
   var value = this.getDataElement().attr('value') || '';
   this._editor.setContent(this._uid, value);
-}
+};
 
 
 exports = module.exports = HTMLPropertyEditor;

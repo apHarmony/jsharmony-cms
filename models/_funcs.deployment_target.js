@@ -29,7 +29,7 @@ var wc = new wclib.WebConnect();
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   var pendingHostRequests = {};
 
@@ -55,7 +55,7 @@ module.exports = exports = function(module, funcs){
         return callback(null, template_variables);
       }
     );
-  }
+  };
 
   exports.mergeTemplateVariables = function(deploymentType, orig){
     if(!orig) orig = {};
@@ -73,7 +73,7 @@ module.exports = exports = function(module, funcs){
       }
     }
     return orig;
-  }
+  };
 
   exports.getTemplateVariables = function(target_site_id, dbcontext, deploymentType, default_variables, override_variables, options, callback){
     options = _.extend({ }, options);
@@ -87,9 +87,9 @@ module.exports = exports = function(module, funcs){
     var sql_params = {};
 
     if(target_site_id=='current')
-      sql = "select v_my_site.site_id, v_my_site.deployment_target_template_variables, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id={schema}.my_current_site_id()";
+      sql = 'select v_my_site.site_id, v_my_site.deployment_target_template_variables, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id={schema}.my_current_site_id()';
     else {
-      sql = "select site_id from {schema}.v_my_site where site_id=@site_id";
+      sql = 'select site_id from {schema}.v_my_site where site_id=@site_id';
       sql_ptypes = [dbtypes.BigInt];
       sql_params = { site_id: target_site_id };
     }
@@ -128,7 +128,7 @@ module.exports = exports = function(module, funcs){
         return callback(null, parsed_template_variables, deployment_target_publish_config);
       });
     });
-  }
+  };
 
   exports.parseDeploymentTargetPublishConfig = function(site_id, deployment_target_publish_config_str, deploymentType){
     var cms = module;
@@ -147,7 +147,7 @@ module.exports = exports = function(module, funcs){
     if(Helper.isNullUndefined(rslt.url_prefix)) rslt.url_prefix = '/';
     if(deploymentType=='editor') rslt.url_prefix = '/';
     return rslt;
-  }
+  };
 
   exports.replaceTemplateVariables = function(template_variables, content){
     if(!content) return content;
@@ -162,7 +162,7 @@ module.exports = exports = function(module, funcs){
     }
     if(orig_content != content) return funcs.replaceTemplateVariables(template_variables, content);
     return content;
-  }
+  };
 
   exports.getAccessKey = function(dbcontext, deployment_target_id, server_url, options, callback){
     options = _.extend({ timestamp: null }, options);
@@ -175,7 +175,7 @@ module.exports = exports = function(module, funcs){
 
     async.waterfall([
       function(key_cb){
-        var sql = "select deployment_target_client_salt from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+        var sql = 'select deployment_target_client_salt from {schema}.deployment_target where deployment_target_id=@deployment_target_id';
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { deployment_target_id: deployment_target_id };
 
@@ -192,7 +192,7 @@ module.exports = exports = function(module, funcs){
 
         //Generate salt if not defined
         deployment_target_client_salt = crypto.randomBytes(16).toString('hex');
-        var sql = "update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id";
+        var sql = 'update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id';
         var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256)];
         var sql_params = { deployment_target_id: deployment_target_id, deployment_target_client_salt: deployment_target_client_salt };
 
@@ -216,7 +216,7 @@ module.exports = exports = function(module, funcs){
         return callback(null, access_key);
       },
     ], callback);
-  }
+  };
 
   exports.req_deployment_target_regenerate_access_key = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -236,7 +236,7 @@ module.exports = exports = function(module, funcs){
     if(!deployment_target_id) return next();
     if(deployment_target_id.toString() != parseInt(deployment_target_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
-    var sql = "select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+    var sql = 'select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id';
     var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { deployment_target_id: deployment_target_id };
     appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
@@ -251,7 +251,7 @@ module.exports = exports = function(module, funcs){
         if (!appsrv.ParamCheck('Q', Q, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
         var deployment_target_client_salt = crypto.randomBytes(16).toString('hex');
-        sql = "update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id";
+        sql = 'update {schema}.deployment_target set deployment_target_client_salt=@deployment_target_client_salt where deployment_target_id=@deployment_target_id';
         sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(256)];
         sql_params = { deployment_target_id: deployment_target_id, deployment_target_client_salt: deployment_target_client_salt };
         appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
@@ -263,7 +263,7 @@ module.exports = exports = function(module, funcs){
         return next();
       }
     });
-  }
+  };
  
   exports.req_deployment_target_public_key = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -285,7 +285,7 @@ module.exports = exports = function(module, funcs){
     if(!deployment_target_id) return next();
     if(deployment_target_id.toString() != parseInt(deployment_target_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
-    var sql = "select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+    var sql = 'select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id';
     appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { deployment_target_id: deployment_target_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment Target ID');
@@ -321,7 +321,7 @@ module.exports = exports = function(module, funcs){
         return next();
       }
     });
-  }
+  };
 
   exports.req_deployment_target_private_key = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -343,7 +343,7 @@ module.exports = exports = function(module, funcs){
     if(!deployment_target_id) return next();
     if(deployment_target_id.toString() != parseInt(deployment_target_id).toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
-    var sql = "select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id";
+    var sql = 'select deployment_target_id from {schema}.deployment_target where deployment_target_id=@deployment_target_id';
     appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { deployment_target_id: deployment_target_id }, function (err, rslt) {
       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
       if(!rslt || !rslt[0]) return Helper.GenError(req, res, -99999, 'Invalid Deployment Target ID');
@@ -442,7 +442,7 @@ module.exports = exports = function(module, funcs){
         return next();
       }
     });
-  }
+  };
 
   function createPrivateKey(cb){
     crypto.generateKeyPair('rsa', {
@@ -466,7 +466,7 @@ module.exports = exports = function(module, funcs){
 
   function createPublicKey(privateKey, cb){
     var forge = require('node-forge');
-    forge.options.usePureJavaScript = true; 
+    forge.options.usePureJavaScript = true;
 
     var newPublicKey = null;
     try{
@@ -497,7 +497,7 @@ module.exports = exports = function(module, funcs){
 
   function validatePrivateKey(privateKey, cb){
     var forge = require('node-forge');
-    forge.options.usePureJavaScript = true; 
+    forge.options.usePureJavaScript = true;
 
     var newPrivateKey = null;
     try{
@@ -598,7 +598,7 @@ module.exports = exports = function(module, funcs){
         });
       },
     ], callback);
-  }
+  };
 
   exports.req_parse_deployment_target_url = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -625,7 +625,7 @@ module.exports = exports = function(module, funcs){
       return;
     }
     else return next();
-  }
+  };
 
   exports.parse_deployment_target_url = function(url){
     url = url || '';
@@ -637,6 +637,7 @@ module.exports = exports = function(module, funcs){
       parsed_url = urlparser.parse(url);
     }
     catch(ex){
+      /* Do nothing */
     }
 
     var username = null;
@@ -674,7 +675,7 @@ module.exports = exports = function(module, funcs){
       username: username,
       password: password,
     } : null);
-  }
+  };
 
   exports.req_deployment_target_defaults = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -726,7 +727,7 @@ module.exports = exports = function(module, funcs){
       return;
     }
     else return next();
-  }
+  };
 
   exports.deployment_target_queue_onSubscribe = function(cb, req, res, queueid){
     var jsh = module.jsh;
@@ -738,8 +739,8 @@ module.exports = exports = function(module, funcs){
       //Add queue
       jsh.Log.info('Adding deployment host publish queue: '+queueid);
       jsh.Config.queues[queueid] = {
-        actions: "BIUD",
-        roles: { "CMSHOST": "*" }
+        actions: 'BIUD',
+        roles: { 'CMSHOST': '*' }
       };
       return cb();
     }
@@ -747,13 +748,13 @@ module.exports = exports = function(module, funcs){
       //Add queue
       jsh.Log.info('Adding deployment host request queue: '+queueid);
       jsh.Config.queues[queueid] = {
-        actions: "BIUD",
-        roles: { "CMSHOST": "*" }
+        actions: 'BIUD',
+        roles: { 'CMSHOST': '*' }
       };
       return cb();
     }
     else return cb();
-  }
+  };
 
   exports.deployment_target_downloadTemplates = function(host_id, deployment_id, urls, requestOptions, cb){
     var request_message = {
@@ -766,7 +767,7 @@ module.exports = exports = function(module, funcs){
       return cb(err, body && body.urls);
     });
 
-  }
+  };
 
   exports.deployment_target_host_sendQueue = function(queue_name, host_id, msg, callback, retry){
     var MAX_RETRIES = 15;
@@ -785,7 +786,7 @@ module.exports = exports = function(module, funcs){
     setTimeout(function(){
       funcs.deployment_target_host_sendQueue(queue_name, host_id, msg, callback, retry+1);
     }, RETRY_SLEEP);
-  }
+  };
 
   exports.deployment_target_host_requestSend = function(host_id, request_message, options, cb){
     options = _.extend({ timeout: 60 }, options);
@@ -797,7 +798,7 @@ module.exports = exports = function(module, funcs){
     var msg = {
       id: requestId,
       body: request_message,
-    }
+    };
     jsh.Log.info('CMSHOST: Sending request '+requestId+' to '+host_id);
     funcs.deployment_target_host_sendQueue(queue_name, host_id, msg, function(err){
       if(err) return cb(err);
@@ -815,10 +816,9 @@ module.exports = exports = function(module, funcs){
         }
       }, (options.timeout||0) * 1000);
     });
-  }
+  };
 
   exports.deployment_host_response = function (req, res, next) {
-    var cms = module;
     var verb = req.method.toLowerCase();
     
     var Q = req.query;
@@ -868,7 +868,7 @@ module.exports = exports = function(module, funcs){
       return;
     }
     else return next();
-  }
+  };
 
   exports.webRequestGate = function(publish_path, publish_config, f){  // f(addWebRequest, performWebRequests, gate, downloadTemplates)
     var host_id = '';
@@ -898,7 +898,7 @@ module.exports = exports = function(module, funcs){
           }
         });
         return op;
-      }
+      };
       var performWebRequests = function(callback){
         gate.waitForOps(function(){
           Helper.execif(downloadTemplates && webRequestURLs.length,
@@ -923,7 +923,7 @@ module.exports = exports = function(module, funcs){
       open: !downloadTemplates,
       //log: function(txt){ console.log(txt); },
     });
-  }
+  };
 
   return exports;
 };

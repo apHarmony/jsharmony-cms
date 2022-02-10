@@ -1,8 +1,6 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
-var _ = require('lodash');
 var Helper = require('../Helper.js');
-var ejsext = require('../lib/ejsext.js');
 var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
 
@@ -22,13 +20,13 @@ if(routetype == 'model'){
       var sql_params = undefined;
 
       if (req.query.init_page_key) {
-        sql = "select page_folder from {schema}.v_my_page where page_key=@page_key";
+        sql = 'select page_folder from {schema}.v_my_page where page_key=@page_key';
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { page_key: req.query.init_page_key };
       }
       else if (req.query.init_page_path) {
         if (!req.query.init_page_path.endsWith('/')) req.query.init_page_path = req.query.init_page_path + '/';
-        sql = "select page_folder from {schema}.v_my_page where substr(page_folder, 1, length(@page_folder)) = @page_folder";
+        sql = 'select page_folder from {schema}.v_my_page where substr(page_folder, 1, length(@page_folder)) = @page_folder';
         sql_ptypes = [dbtypes.NVarChar(dbtypes.MAX)];
         sql_params = { page_folder: req.query.init_page_path };
       }
@@ -50,12 +48,12 @@ if(routetype == 'model'){
       }
 
       if (req.query.init_media_key) {
-        sql = "select media_folder from {schema}.v_my_media where media_key=@media_key";
+        sql = 'select media_folder from {schema}.v_my_media where media_key=@media_key';
         sql_ptypes = [dbtypes.BigInt];
         sql_params = { media_key: req.query.init_media_key };
       }
       else if (req.query.init_media_path) {
-        sql = "select media_folder from {schema}.v_my_media where substr(media_folder, 1, length(@media_folder))=@media_folder";
+        sql = 'select media_folder from {schema}.v_my_media where substr(media_folder, 1, length(@media_folder))=@media_folder';
         sql_ptypes = [dbtypes.NVarChar(dbtypes.MAX)];
         sql_params = { media_folder: req.query.init_media_path };
       }

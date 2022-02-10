@@ -38,7 +38,7 @@ var fs = require('fs');
 
 var notExist = function(s, d) {
   return null;
-}
+};
 
 // all properties same as source
 var src = function(s, d) {
@@ -48,7 +48,7 @@ var src = function(s, d) {
     orig_id: s.orig_id,
     action: s.action,
   };
-}
+};
 
 // all properties same as destiation
 var dst = function(s, d) {
@@ -58,7 +58,7 @@ var dst = function(s, d) {
     orig_id: d.orig_id,
     action: d.action,
   };
-}
+};
 
 // update id with value from source
 var srcId = function(s, d) {
@@ -67,7 +67,7 @@ var srcId = function(s, d) {
     orig_id: d.orig_id,
     action: d.action,
   };
-}
+};
 
 // no action, with source id
 var noneS = function(s, d) {
@@ -76,7 +76,7 @@ var noneS = function(s, d) {
     orig_id: s.id,
     action: null,
   };
-}
+};
 
 var addS = function(s, d) {
   return {
@@ -84,7 +84,7 @@ var addS = function(s, d) {
     orig_id: null,
     action: 'ADD',
   };
-}
+};
 
 var addD = function(s, d) {
   return {
@@ -92,7 +92,7 @@ var addD = function(s, d) {
     orig_id: null,
     action: 'ADD',
   };
-}
+};
 
 var updateSD = function(s, d) {
   return {
@@ -100,7 +100,7 @@ var updateSD = function(s, d) {
     orig_id: d.orig_id,
     action: 'UPDATE',
   };
-}
+};
 
 var updateSS = function(s, d) {
   return {
@@ -108,7 +108,7 @@ var updateSS = function(s, d) {
     orig_id: s.orig_id,
     action: 'UPDATE',
   };
-}
+};
 
 var updateDS = function(s, d) {
   return {
@@ -116,7 +116,7 @@ var updateDS = function(s, d) {
     orig_id: s.id,
     action: 'UPDATE',
   };
-}
+};
 
 var deleteD = function(s, d) {
   return {
@@ -124,7 +124,7 @@ var deleteD = function(s, d) {
     orig_id: d.orig_id,
     action: 'DELETE',
   };
-}
+};
 
 var deleteSi = function(s, d) {
   return {
@@ -132,7 +132,7 @@ var deleteSi = function(s, d) {
     orig_id: s.id,
     action: 'DELETE',
   };
-}
+};
 
 var deleteSo = function(s, d) {
   return {
@@ -140,11 +140,11 @@ var deleteSo = function(s, d) {
     orig_id: s.orig_id,
     action: 'DELETE',
   };
-}
+};
 
 var setupMissing = function(id, orig_id) {
   return null;
-}
+};
 setupMissing.label = 'missing';
 
 var setupUnchanged = function(id, orig_id) {
@@ -152,8 +152,8 @@ var setupUnchanged = function(id, orig_id) {
     id: orig_id,
     orig_id: orig_id,
     action: null,
-  }
-}
+  };
+};
 setupUnchanged.label = 'unchanged';
 
 var setupAdd = function(id, orig_id) {
@@ -161,8 +161,8 @@ var setupAdd = function(id, orig_id) {
     id: id,
     orig_id: null,
     action: 'ADD',
-  }
-}
+  };
+};
 setupAdd.label = 'ADD';
 
 var setupUpdate = function(id, orig_id) {
@@ -170,8 +170,8 @@ var setupUpdate = function(id, orig_id) {
     id: id,
     orig_id: orig_id,
     action: 'UPDATE',
-  }
-}
+  };
+};
 setupUpdate.label = 'UPDATE';
 
 var setupDelete = function(id, orig_id) {
@@ -179,8 +179,8 @@ var setupDelete = function(id, orig_id) {
     id: null,
     orig_id: orig_id,
     action: 'DELETE',
-  }
-}
+  };
+};
 setupDelete.label = 'DELETE';
 
 var mergeCases = [
@@ -195,34 +195,34 @@ var operations = {
   overwrite: [
   //              missing,  unchanged, ADD,       UPDATE,    DELETE  (src)
   /*missing  */ [ notExist, src,       src,       src,       src ],
-  /*unchanged*/ [ notExist, src,       src,       src,       src ],
-  /*ADD      */ [ notExist, src,       src,       src,       src ],
-  /*UPDATE   */ [ notExist, src,       src,       src,       src ],
-  /*DELETE   */ [ notExist, src,       src,       src,       src ],
+    /*unchanged*/ [ notExist, src,       src,       src,       src ],
+    /*ADD      */ [ notExist, src,       src,       src,       src ],
+    /*UPDATE   */ [ notExist, src,       src,       src,       src ],
+    /*DELETE   */ [ notExist, src,       src,       src,       src ],
   ],
   apply: [
   //              missing,  unchanged, ADD,       UPDATE,    DELETE  (src)
   /*missing  */ [ dst,      dst,       noneS,     noneS,     notExist ],
-  /*unchanged*/ [ dst,      dst,       srcId,     srcId,     notExist ],
-  /*ADD      */ [ dst,      dst,       srcId,     srcId,     notExist ],
-  /*UPDATE   */ [ dst,      dst,       srcId,     srcId,     notExist ],
-  /*DELETE   */ [ dst,      dst,       updateSD,  updateSD,  notExist ],
+    /*unchanged*/ [ dst,      dst,       srcId,     srcId,     notExist ],
+    /*ADD      */ [ dst,      dst,       srcId,     srcId,     notExist ],
+    /*UPDATE   */ [ dst,      dst,       srcId,     srcId,     notExist ],
+    /*DELETE   */ [ dst,      dst,       updateSD,  updateSD,  notExist ],
   ],
   changes: [
   //              missing,  unchanged, ADD,       UPDATE,    DELETE  (src)
   /*missing  */ [ dst,      dst,       src,       src,       src ],
-  /*unchanged*/ [ dst,      dst,       updateSD,  updateSD,  deleteD ],
-  /*ADD      */ [ dst,      dst,       addS,      updateSS,  deleteSo ],
-  /*UPDATE   */ [ dst,      dst,       updateSD,  updateSD,  deleteD ],
-  /*DELETE   */ [ dst,      dst,       updateSD,  updateSD,  deleteD ],
+    /*unchanged*/ [ dst,      dst,       updateSD,  updateSD,  deleteD ],
+    /*ADD      */ [ dst,      dst,       addS,      updateSS,  deleteSo ],
+    /*UPDATE   */ [ dst,      dst,       updateSD,  updateSD,  deleteD ],
+    /*DELETE   */ [ dst,      dst,       updateSD,  updateSD,  deleteD ],
   ],
   rebase: [
   //              missing,  unchanged, ADD,       UPDATE,    DELETE  (src)
   /*missing  */ [ dst,      noneS,     noneS,     noneS,     dst ],
-  /*unchanged*/ [ notExist, noneS,     noneS,     noneS,     notExist ],
-  /*ADD      */ [ dst,      updateDS,  updateDS,  updateDS,  dst ],
-  /*UPDATE   */ [ addD,     updateDS,  updateDS,  updateDS,  addD ],
-  /*DELETE   */ [ notExist, deleteSi,  deleteSi,  deleteSi,  notExist ],
+    /*unchanged*/ [ notExist, noneS,     noneS,     noneS,     notExist ],
+    /*ADD      */ [ dst,      updateDS,  updateDS,  updateDS,  dst ],
+    /*UPDATE   */ [ addD,     updateDS,  updateDS,  updateDS,  addD ],
+    /*DELETE   */ [ notExist, deleteSi,  deleteSi,  deleteSi,  notExist ],
   ],
 };
 
@@ -235,8 +235,8 @@ var setupNoneA = function(a, b) {
     id: a,
     orig_id: a,
     action: null,
-  }
-}
+  };
+};
 setupNoneA.label = 'noneA';
 
 var setupNoneB = function(a, b) {
@@ -244,8 +244,8 @@ var setupNoneB = function(a, b) {
     id: b,
     orig_id: b,
     action: null,
-  }
-}
+  };
+};
 setupNoneB.label = 'noneB';
 
 var setupAddA = function(a, b) {
@@ -253,8 +253,8 @@ var setupAddA = function(a, b) {
     id: a,
     orig_id: null,
     action: 'ADD',
-  }
-}
+  };
+};
 setupAddA.label = 'addA';
 
 var setupAddB = function(a, b) {
@@ -262,8 +262,8 @@ var setupAddB = function(a, b) {
     id: b,
     orig_id: null,
     action: 'ADD',
-  }
-}
+  };
+};
 setupAddB.label = 'addB';
 
 var setupUpdateAA = function(a, b) {
@@ -271,8 +271,8 @@ var setupUpdateAA = function(a, b) {
     id: a,
     orig_id: a,
     action: 'UPDATE',
-  }
-}
+  };
+};
 setupUpdateAA.label = 'updateAA';
 
 var setupUpdateAB = function(a, b) {
@@ -280,8 +280,8 @@ var setupUpdateAB = function(a, b) {
     id: a,
     orig_id: b,
     action: 'UPDATE',
-  }
-}
+  };
+};
 setupUpdateAB.label = 'updateAB';
 
 var setupUpdateBA = function(a, b) {
@@ -289,8 +289,8 @@ var setupUpdateBA = function(a, b) {
     id: b,
     orig_id: a,
     action: 'UPDATE',
-  }
-}
+  };
+};
 setupUpdateBA.label = 'updateBA';
 
 var setupUpdateBB = function(a, b) {
@@ -298,8 +298,8 @@ var setupUpdateBB = function(a, b) {
     id: b,
     orig_id: b,
     action: 'UPDATE',
-  }
-}
+  };
+};
 setupUpdateBB.label = 'updateBB';
 
 var setupDeleteA = function(a, b) {
@@ -307,8 +307,8 @@ var setupDeleteA = function(a, b) {
     id: null,
     orig_id: a,
     action: 'DELETE',
-  }
-}
+  };
+};
 setupDeleteA.label = 'deleteA';
 
 var setupDeleteB = function(a, b) {
@@ -316,8 +316,8 @@ var setupDeleteB = function(a, b) {
     id: null,
     orig_id: b,
     action: 'DELETE',
-  }
-}
+  };
+};
 setupDeleteB.label = 'deleteB';
 
 var conflictCases = [
@@ -365,25 +365,25 @@ sameNothing.label = 'same nothing';
 
 var sameId = function(srcPage, dstPage) {
   srcPage.id = dstPage.id;
-}
+};
 sameId.label = 'same id';
 
 var sameOrig = function(srcPage, dstPage) {
   srcPage.orig_id = dstPage.orig_id;
-}
+};
 sameOrig.label = 'same orig_id';
 
 var srcEditsDst = function(srcPage, dstPage) {
   srcPage.orig_id = dstPage.id;
-}
+};
 srcEditsDst.label = 'src edits dst';
 
 var dstEditsSrc = function(srcPage, dstPage) {
   dstPage.orig_id = srcPage.id;
-}
+};
 dstEditsSrc.label = 'dst edits src';
 
-manualConflicts = [
+var manualConflicts = [
   // four pages
   [CONFLICT, sameNothing],
 
@@ -401,7 +401,7 @@ Update A-B on no-change C will happen given any two concurrent edits.
 So, lead Developer David recently got a departure notice from Developer Danny, and makes a branch to add a job description to the careers page.
 Meanwhile, HR Henry makes a branch to update all the job descriptions with new work-from-home policies.
 David merges the change, taking the careers page from 1->2. After merge to master and clearing orig, all we see is 2.
-Henry submits his changes, with update 1->3. During the conflict check, we see 1->3 : 2.  No matching ids.
+Henry submits his changes, with update 1->3. During the conflict check, we see 1->3 : 2.  No matching ids.
 If there is no conflict notice, the job posting gets lost.
 */
 
@@ -432,7 +432,7 @@ describe('Merges - Matrix', function() {
   var testDstPageId = -1;
   var testDstOrigPageId = -1;
   var testPageIdA = -1;
-  var testPateIdB = -1;
+  var testPageIdB = -1;
   var testPageIdGrandparent = -1;
   var testPageIdParent = -1;
   var testPageIdChild = -1;
@@ -440,19 +440,19 @@ describe('Merges - Matrix', function() {
 
   var setupBranchPage = function(branchId, key, page){
     return function(cb) {
-      var sql;
+      var sql, sql_params, sql_ptypes;
       if (page) {
         // if the page should exist, ensure it exists, and update with the correct values.
-        sql = "update cms.branch_page set page_id = @page_id, page_orig_id = @page_orig_id, branch_page_action = @branch_page_action where page_key = @page_key and branch_id = @branch_id;\
-        insert into cms.branch_page(branch_id, page_key, page_id, page_orig_id, branch_page_action) select @branch_id, @page_key, @page_id, @page_orig_id, @branch_page_action from cms.branch where branch_id = @branch_id and @page_key not in (select page_key from cms.branch_page where branch_id = @branch_id);";
-        var sql_params = {
+        sql = 'update cms.branch_page set page_id = @page_id, page_orig_id = @page_orig_id, branch_page_action = @branch_page_action where page_key = @page_key and branch_id = @branch_id;\
+        insert into cms.branch_page(branch_id, page_key, page_id, page_orig_id, branch_page_action) select @branch_id, @page_key, @page_id, @page_orig_id, @branch_page_action from cms.branch where branch_id = @branch_id and @page_key not in (select page_key from cms.branch_page where branch_id = @branch_id);';
+        sql_params = {
           'branch_id': branchId,
           'page_key': key,
           'page_id': page.id,
           'page_orig_id': page.orig_id,
           'branch_page_action': page.action,
         };
-        var sql_ptypes = [
+        sql_ptypes = [
           dbtypes.BigInt,
           dbtypes.BigInt,
           dbtypes.BigInt,
@@ -461,12 +461,12 @@ describe('Merges - Matrix', function() {
         ];
       } else {
         // page shouldn't exist for this test, get rid if it present.
-        sql = "delete from cms.branch_page where page_key = @page_key and branch_id = @branch_id;";
-        var sql_params = {
+        sql = 'delete from cms.branch_page where page_key = @page_key and branch_id = @branch_id;';
+        sql_params = {
           'branch_id': branchId,
           'page_key': key,
         };
-        var sql_ptypes = [
+        sql_ptypes = [
           dbtypes.BigInt,
           dbtypes.BigInt,
         ];
@@ -475,13 +475,13 @@ describe('Merges - Matrix', function() {
         assert.ifError(err);
         cb(err);
       });
-    }
-  }
+    };
+  };
 
   // clear flags from last test to ensure branch is updatable
   var resetBranch = function(branchId) {
     return function(cb) {
-      var sql = "update cms.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@dst_branch_id;";
+      var sql = 'update cms.branch set branch_merge_id=null, branch_merge_type=null where branch_id=@dst_branch_id;';
       var sql_params = {
         'dst_branch_id': branchId,
       };
@@ -492,13 +492,13 @@ describe('Merges - Matrix', function() {
         assert.ifError(err);
         cb(err);
       });
-    }
-  }
+    };
+  };
 
   // pull page state as JS object and compare values
   // can compare multiple entries, but we only use one here
   function assertBranchState(branch_id, state, label, done) {
-    var sql = "select branch_page_action as action, page_id id, page_orig_id orig_id from cms.branch_page where branch_id="+branch_id+"";
+    var sql = 'select branch_page_action as action, page_id id, page_orig_id orig_id from cms.branch_page where branch_id='+branch_id+'';
     db.Recordset('', sql, [], {}, function (err, dbrslt, stats) {
       // log: async test exceptions don't appear under the right test heading
       // providing a message to deepStrictEqual doesn't print the diff.
@@ -516,7 +516,7 @@ describe('Merges - Matrix', function() {
         console.log(JSON.stringify(state,null,4));
         throw(ex);
       }
-      done(err); 
+      done(err);
     });
   }
 
@@ -528,7 +528,7 @@ describe('Merges - Matrix', function() {
     delete from cms.branch_media where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
     delete from cms.branch_menu where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
     delete from cms.branch_redirect where branch_id in (select branch_id from cms.branch where branch_name like 'Merge Test Data:%');\
-    delete from cms.branch where branch_name like 'Merge Test Data:%';"
+    delete from cms.branch where branch_name like 'Merge Test Data:%';";
     db.Command('S1', sql, [], {}, function(err, dbrslt, stats) {
       assert.ifError(err);
       cb();
@@ -562,7 +562,7 @@ describe('Merges - Matrix', function() {
         function(cb){
           // create source branch
           var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Source Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
-          select branch_id from cms.v_my_current_branch;"
+          select branch_id from cms.v_my_current_branch;";
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testSrcBranchId = dbrslt;
@@ -572,26 +572,26 @@ describe('Merges - Matrix', function() {
         function(cb){
           // create destination branch
           var sql = "insert into cms.v_my_current_branch(branch_type, branch_name, site_id) values('USER', 'Merge Test Data: Destination Branch', (select site_id from cms.site where site_name='Merge Test Data'));\
-          select branch_id from cms.v_my_current_branch;"
+          select branch_id from cms.v_my_current_branch;";
           db.Scalar('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testDstBranchId = dbrslt;
             cb();
           });
         },
-      function(cb){
+        function(cb){
           // create test pages
-          var sql = 
+          var sql =
           "insert into cms.page(site_id,page_path) values((select site_id from cms.site where site_name='Merge Test Data'), 'Merge Test Data: src orig');\
           insert into cms.page(site_id,page_key, page_path) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: dst orig' from cms.page where page_path = 'Merge Test Data: src orig';\
           insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: src current', page_id from cms.page where page_path = 'Merge Test Data: src orig';\
           insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: dst current', page_id from cms.page where page_path = 'Merge Test Data: dst orig';\
           insert into cms.page(site_id,page_key, page_path, page_orig_id) select (select site_id from cms.site where site_name='Merge Test Data'), page_key, 'Merge Test Data: child', page_id from cms.page where page_path = 'Merge Test Data: src current';\
-          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%' order by page_id;"
+          select page_key, page_id, page_orig_id from cms.page where page_path like 'Merge Test Data:%' order by page_id;";
           db.Recordset('S1', sql, [], {}, function(err, dbrslt, stats) {
             assert.ifError(err);
             testPageKey = dbrslt[0].page_key;
-            testPages = dbrslt.map(function(rec) {return rec.page_id});
+            testPages = dbrslt.map(function(rec) {return rec.page_id;});
             testSrcOrigPageId = testPages[0];
             testDstOrigPageId = testPages[1];
             testSrcPageId = testPages[2];
@@ -628,7 +628,7 @@ describe('Merges - Matrix', function() {
     describe(operation, function() {
       operations[operation].forEach(function(row, dstIndex) {
         row.forEach(function(test, srcIndex) {
-          var label = 'dst ' + mergeCases[dstIndex].label + ' + src ' + mergeCases[srcIndex].label
+          var label = 'dst ' + mergeCases[dstIndex].label + ' + src ' + mergeCases[srcIndex].label;
           it(label, function(done) {
             var srcPage = mergeCases[srcIndex](testSrcPageId, testSrcOrigPageId);
             var dstPage = mergeCases[dstIndex](testDstPageId, testDstOrigPageId);
@@ -683,18 +683,18 @@ describe('Merges - Matrix', function() {
       if(err) console.log(err);
       done(err);
     });
-  }
+  };
 
-  describe("Conflicts", function() {
+  describe('Conflicts', function() {
 
     before(function(done) {
       resetBranch(testDstBranchId)(done);
     });
 
-    describe("Matrix", function() {
+    describe('Matrix', function() {
       conflicts.forEach(function(row, dstIndex) {
         row.forEach(function(status, srcIndex) {
-          var label = 'dst ' + conflictCases[dstIndex].label + ' + src ' + conflictCases[srcIndex].label
+          var label = 'dst ' + conflictCases[dstIndex].label + ' + src ' + conflictCases[srcIndex].label;
 
           // can't include the "it" in the function because testPageId isn't defined until `before` runs.
           it(label, function(done) {
@@ -706,7 +706,7 @@ describe('Merges - Matrix', function() {
       });
     });
 
-    describe("Manual", function() {
+    describe('Manual', function() {
       manualConflicts.forEach(function(row) {
         var status = row.shift();
         var label = row.map(function(f) {return f.label;}).join(' ');
@@ -715,29 +715,29 @@ describe('Merges - Matrix', function() {
         it(label, function(done) {
           var srcPage = setupUpdate(testSrcPageId, testSrcOrigPageId);
           var dstPage = setupUpdate(testDstPageId, testDstOrigPageId);
-          row.forEach(function(f) {f(srcPage, dstPage)});
+          row.forEach(function(f) {f(srcPage, dstPage);});
           conflictTest(label, srcPage, dstPage, status, done);
         });
       });
     });
 
-    describe("Direct Descedant", function() {
-      it("Unrelated pages", function(done) {
+    describe('Direct Descedant', function() {
+      it('Unrelated pages', function(done) {
         var srcPage = setupUpdate(testSrcPageId, testSrcOrigPageId);
         var dstPage = setupUnchanged(testDstPageId, testDstPageId);
-        conflictTest("Unrelated pages", srcPage, dstPage, CONFLICT, done);
+        conflictTest('Unrelated pages', srcPage, dstPage, CONFLICT, done);
       });
 
-      it("Source Descendant of Destination", function(done) {
+      it('Source Descendant of Destination', function(done) {
         var srcPage = setupUpdate(testPageIdChild, testPageIdParent);
         var dstPage = setupUnchanged(testPageIdGrandparent, testPageIdGrandparent);
-        conflictTest("Source Descendant of Destination", srcPage, dstPage, nc, done);
+        conflictTest('Source Descendant of Destination', srcPage, dstPage, nc, done);
       });
 
-      it("Destination Descendant of Source", function(done) {
+      it('Destination Descendant of Source', function(done) {
         var srcPage = setupUpdate(testPageIdParent, testPageIdGrandparent);
         var dstPage = setupUpdate(testPageIdChild, testPageIdParent);
-        conflictTest("Destination Descendant of Source", srcPage, dstPage, CONFLICT, done);
+        conflictTest('Destination Descendant of Source', srcPage, dstPage, CONFLICT, done);
       });
     });
 

@@ -72,7 +72,7 @@ DialogResizer.addIntervalCallback = function(cb) {
     this._intervalId = setInterval(function() {
       _.forEach(DialogResizer._intervalCallbacks, function(item) { item.cb(); });
     }, 100);
-  };
+  }
 
   return function() {
     var index = DialogResizer._intervalCallbacks.findIndex(function(item) { return item.id === id; });
@@ -83,8 +83,8 @@ DialogResizer.addIntervalCallback = function(cb) {
       clearInterval(DialogResizer._intervalId);
       DialogResizer._intervalId = undefined;
     }
-  }
-}
+  };
+};
 
 /**
  * This must be called when the dialog is closed
@@ -95,7 +95,7 @@ DialogResizer.prototype.closeDialog = function() {
   if (this._execCleanUp) {
     this._execCleanUp();
   }
-}
+};
 
 /**
  * Perform the resize on the given element.
@@ -104,7 +104,7 @@ DialogResizer.prototype.closeDialog = function() {
  */
 DialogResizer.prototype.resize = function(wrapper) {
   this._jsh.XWindowResize();
-}
+};
 
 /**
  * Use a interval resize strategy to resize the dialog.
@@ -118,7 +118,7 @@ DialogResizer.prototype.startIntervalResize = function(wrapper) {
   this._execCleanUp = DialogResizer.addIntervalCallback(function() {
     _this.resize(wrapper);
   });
-}
+};
 
 /**
  * Use a MutationObserver resize strategy to resize the dialog.
@@ -135,8 +135,8 @@ DialogResizer.prototype.startMutationObserver = function(wrapper) {
   observer.observe(wrapper, { childList: true, subtree: true });
   this._execCleanUp = function() {
     observer.disconnect();
-  }
-}
+  };
+};
 
 /**
  * Use a ResizeObserver resize strategy to resize the dialog.
@@ -147,12 +147,12 @@ DialogResizer.prototype.startMutationObserver = function(wrapper) {
 DialogResizer.prototype.startResizeObserver = function(wrapper) {
   var _this = this;
   var observer = new ResizeObserver(function() {
-      _this.resize(wrapper);
+    _this.resize(wrapper);
   });
   observer.observe(wrapper);
   this._execCleanUp = function() {
     observer.unobserve(wrapper);
-  }
-}
+  };
+};
 
 exports = module.exports = DialogResizer;

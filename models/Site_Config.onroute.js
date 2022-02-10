@@ -1,6 +1,5 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
-var _ = require('lodash');
 var path = require('path');
 var Helper = require('../Helper.js');
 var cms = jsh.Modules['jsHarmonyCMS'];

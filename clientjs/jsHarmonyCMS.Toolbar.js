@@ -37,11 +37,11 @@ exports = module.exports = function(jsh, cms){
     jsh.root.append(cms.views['jsh_cms_editor']);
     jsh.InitControls();
     this.renderErrors();
-  }
+  };
 
   this.getHeight = function(){
     return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
-  }
+  };
 
   this.isAnchored = function(elem, computedStyles){
     if(elem.tagName && (elem.tagName.toUpperCase()=='BODY')) return true;
@@ -57,22 +57,22 @@ exports = module.exports = function(jsh, cms){
       if(!offsetParent) return true;
     }
     return false;
-  }
+  };
 
   this.excludeMarginOffset = function(jobj){
     var obj = jobj[0];
-    for(var i=0;i<_this.excludeMarginOffsetId.length;i++){
+    for(let i=0;i<_this.excludeMarginOffsetId.length;i++){
       var excludeId = _this.excludeMarginOffsetId[i];
       if(obj.id == excludeId) return true;
       if(jobj.closest('#'+excludeId).length) return true;
     }
-    for(var i=0;i<_this.excludeMarginOffsetClass.length;i++){
+    for(let i=0;i<_this.excludeMarginOffsetClass.length;i++){
       var excludeClass = _this.excludeMarginOffsetClass[i];
       if(_.includes(obj.classList, excludeClass)) return true;
       if(jobj.closest('.'+excludeClass).length) return true;
     }
     return false;
-  }
+  };
 
   this.saveOrigOffsets = function(options){
     options = _.extend({ preload: false, refreshExisting: false }, options);
@@ -99,7 +99,7 @@ exports = module.exports = function(jsh, cms){
       }
     });
     if(!options.preload) _this.origMarginTopLoaded = true;
-  }
+  };
 
   this.getOffsetTop = function(){
     var offsetTop = 0;
@@ -108,12 +108,12 @@ exports = module.exports = function(jsh, cms){
     }
     if(cms.editor) offsetTop += cms.editor.getOffsetTop();
     return offsetTop;
-  }
+  };
 
   this.getComputedOffsetTop = function(elem){
     var computedStyles = window.getComputedStyle(elem);
     return computedStyles.marginTop;
-  }
+  };
 
   this.refreshOffsets = function(options){
     options = _.extend({ addNewOffsets: false }, options);
@@ -125,11 +125,11 @@ exports = module.exports = function(jsh, cms){
 
     //Save starting offsets
     var startingOffsets = [];
-    for(var i=0;i<_this.origMarginTop.length;i++){
+    for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      let jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
       if(jelem.length){
-        var elemIsBody = (jelem[0].tagName=='BODY');
+        let elemIsBody = (jelem[0].tagName=='BODY');
         //Fixed elements need to subtract scrollTop from offset().top
         startingOffsets[i] = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
         if(elemIsBody){
@@ -139,11 +139,11 @@ exports = module.exports = function(jsh, cms){
     }
 
     //Apply offsets
-    for(var i=0;i<_this.origMarginTop.length;i++){
+    for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      let jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
       if(jelem.length){
-        var elemIsBody = (jelem[0].tagName=='BODY');
+        let elemIsBody = (jelem[0].tagName=='BODY');
         if(offsetTop){
           //Fixed elements need to subtract scrollTop from offset().top
           var curTop = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
@@ -172,7 +172,7 @@ exports = module.exports = function(jsh, cms){
       }
     }
     this.currentOffsetTop = offsetTop;
-  }
+  };
 
   this.renderErrors = function(){
     var jcontainer = $('#jsharmony_cms_editor_errors');
@@ -189,14 +189,14 @@ exports = module.exports = function(jsh, cms){
       }
       jcontainer.find('.jsharmony_cms_editor_errors_close').on('click', function(){ $('#jsharmony_cms_editor_errors').hide(); });
     }
-  }
+  };
 
   this.toggleAutoHide = function(val){
     if(typeof val =='undefined') val = !this.editorBarDocked;
     this.editorBarDocked = !!val;
     this.refreshOffsets();
     $('#jsharmony_cms_page_toolbar .autoHideEditorBar').toggleClass('enabled',!val);
-  }
+  };
   
   this.toggleSlideoutButton = function(button, display, noSlide){
     var jbutton;
@@ -230,18 +230,18 @@ exports = module.exports = function(jsh, cms){
         else jslideout.slideUp();
       }
     }
-  }
+  };
 
-  this.showSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, true, noSlide); }
+  this.showSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, true, noSlide); };
 
-  this.hideSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, false, noSlide); }
+  this.hideSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, false, noSlide); };
   
   this.showError = function(err) {
     if(_.isString(err)) err = { message: err, type: 'text' };
     err.type = (err.type=='html' ? 'html' : 'text');
     _this.errors.push(err);
     _this.renderErrors();
-  }
+  };
 
   this.setDockPosition = function(dockPosition){
     _this.dockPosition = dockPosition || 'top_offset';
@@ -253,13 +253,13 @@ exports = module.exports = function(jsh, cms){
       $('#jsharmony_cms_page_toolbar').css('opacity', 0);
       var dockAnimation = function(){
         var barHeight = _this.getHeight();
-        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' })
+        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' });
         $('#jsharmony_cms_page_toolbar').animate({ bottom: '0px' }, function(){ this.style.bottom = null; });
       };
       if(cms.isInitialized) dockAnimation();
       else cms.loader.onLoadingComplete.push(dockAnimation);
     }
     cms.editor.renderContentEditorToolbar();
-  }
+  };
 
-}
+};

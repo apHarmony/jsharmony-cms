@@ -24,7 +24,7 @@ jsh.App[modelid] = new (function(){
     menu_item_link_page: undefined,
     menu_item_link_media: undefined,
     menu_item_link_target: undefined, //NEWWIN
-  }
+  };
   this.orig_current_menu_item = null;
 
   this.oninit = function(){
@@ -36,19 +36,19 @@ jsh.App[modelid] = new (function(){
     this.menu_key = jsh._GET.menu_key;
     $(window).bind('resize', _this.onresize);
     _this.refreshLayout();
-    xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); }
-  }
+    xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); };
+  };
 
   this.ondestroy = function(xmodel){
     $(window).unbind('resize', _this.onresize);
-  }
+  };
 
   this.onload = function(){
     _this.refreshLayout();
     _this.getMenu();
-  }
+  };
 
-  this.onresize = function(){ _this.refreshLayout(); }
+  this.onresize = function(){ _this.refreshLayout(); };
 
   this.refreshLayout = function(){
     var jbrowser = $('.'+xmodel.class+'_browser');
@@ -60,24 +60,24 @@ jsh.App[modelid] = new (function(){
     var contentheight = wh - top - 20;
 
     $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
-  }
+  };
 
   this.hasUpdates = function(){
     _this.checkUpdatesInfo();
     return _this.has_changes;
-  }
+  };
 
   this.setDirty = function(isDirty){
     _this.has_changes = isDirty;
     jsh.$root('.xelem'+xmodel.class+'.xform_button_saveMenu').toggleClass('hasChanges', isDirty);
-  }
+  };
 
   this.menu_item_id_onchange = function(obj, newval, undoChange, e) {
     if(_this.selected_menu_item_id && !_this.commitInfo()){
       return undoChange();
     }
     this.selectMenuItem(newval);
-  }
+  };
 
   this.menu_item_id_onmove = function(dragval, dropval, anchor, e) {
     if(!XExt.hasAction(xmodel.actions,'U')) return;
@@ -120,7 +120,7 @@ jsh.App[modelid] = new (function(){
       _this.renderMenu();
       _this.selectMenuItem(_this.selected_menu_item_id);
     }
-  }
+  };
 
   this.getMenu = function(){
     if(!_this.menu_key){ XExt.Alert('Missing menu key'); return; }
@@ -132,7 +132,6 @@ jsh.App[modelid] = new (function(){
     }
     XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
       if ('_success' in rslt) {
-        var menu = rslt.menu;
         _this.menu_config = rslt.menu_config || {};
         _this.parseMenu(rslt.menu);
         _this.renderMenu();
@@ -143,12 +142,12 @@ jsh.App[modelid] = new (function(){
       }
     }, function (err) {
     });
-  }
+  };
 
   this.getFirstMenuItemID = function(){
     var rslt = jsh.$root('.menu_item_id.xelem'+xmodel.class).find('.tree_item').first().data('value');
     return rslt||null;
-  }
+  };
 
   this.getPrevMenuItemID = function(menu_item_id){
     var menu_item_ids = _.map(jsh.$root('.menu_item_id.xelem'+xmodel.class).find('.tree_item'), function(obj){ return parseInt(obj.getAttribute('data-value')); });
@@ -159,7 +158,7 @@ jsh.App[modelid] = new (function(){
       }
     }
     return null;
-  }
+  };
 
   this.parseMenu = function(menu){
     if(menu){
@@ -169,13 +168,13 @@ jsh.App[modelid] = new (function(){
     }
     _this.regenerateMenu();
     _this.generateMenuLOV();
-  }
+  };
 
   this.regenerateMenu = function(){
     //Validate IDs
     var menu_item_ids = [];
-    for(var i=0;i<_this.menu_items.length;i++){
-      var menu_item = _this.menu_items[i];
+    for(let i=0;i<_this.menu_items.length;i++){
+      let menu_item = _this.menu_items[i];
       menu_item.menu_item_seq = i+1;
       if(!menu_item.menu_item_id) return XExt.Alert('Missing menu item ID');
       var prev_menu_item_id = menu_item.menu_item_id;
@@ -185,8 +184,8 @@ jsh.App[modelid] = new (function(){
       menu_item_ids[menu_item.menu_item_id] = menu_item;
     }
     //Validate Parent ID's, Reset Paths
-    for(var i=0;i<_this.menu_items.length;i++){
-      var menu_item = _this.menu_items[i];
+    for(let i=0;i<_this.menu_items.length;i++){
+      let menu_item = _this.menu_items[i];
       var prev_menu_item_parent_id = menu_item.menu_item_parent_id;
       if(!prev_menu_item_parent_id){
         menu_item.menu_item_parent_id = null;
@@ -204,12 +203,12 @@ jsh.App[modelid] = new (function(){
     var getMenuItemPath = function(menu_item){
       if(!menu_item.menu_item_path){
         var menu_item_parent = menu_item_ids[menu_item.menu_item_parent_id];
-        menu_item.menu_item_path = getMenuItemPath(menu_item_parent) + menu_item.menu_item_id.toString() + '/'
+        menu_item.menu_item_path = getMenuItemPath(menu_item_parent) + menu_item.menu_item_id.toString() + '/';
         menu_item.menu_item_depth = menu_item_parent.menu_item_depth + 1;
       }
       return menu_item.menu_item_path;
-    }
-    for(var i=0;i<_this.menu_items.length;i++){
+    };
+    for(let i=0;i<_this.menu_items.length;i++){
       getMenuItemPath(_this.menu_items[i]);
     }
     _this.menu_items.sort(function(a,b){
@@ -219,10 +218,10 @@ jsh.App[modelid] = new (function(){
       if(a.menu_item_seq < b.menu_item_seq) return -1;
       return 0;
     });
-    for(var i=0;i<_this.menu_items.length;i++){
-      menu_item.menu_item_seq = i+1;
+    for(let i=0;i<_this.menu_items.length;i++){
+      _this.menu_items[i].menu_item_seq = i+1;
     }
-  }
+  };
 
   this.generateMenuLOV = function(){
     var lov = [];
@@ -238,7 +237,7 @@ jsh.App[modelid] = new (function(){
 
     if(!xmodel.controller.form.Data._LOVs) xmodel.controller.form.Data._LOVs = {};
     xmodel.controller.form.Data._LOVs.menu_item_id = lov;
-  }
+  };
 
   this.renderMenu = function(){
     xmodel.controller.form.Render();
@@ -255,7 +254,7 @@ jsh.App[modelid] = new (function(){
       max_depth_desc = ' :: This menu supports items nested up to '+(_this.menu_config.max_depth).toString()+' levels';
     }
     jsh.$root('.'+xmodel.class+'_max_depth_desc').text(max_depth_desc);
-  }
+  };
 
   this.getMenuItem = function(menu_item_id){
     if(!menu_item_id) return null;
@@ -264,7 +263,7 @@ jsh.App[modelid] = new (function(){
       if(_this.menu_items[i].menu_item_id===menu_item_id) return _this.menu_items[i];
     }
     return null;
-  }
+  };
 
   this.menu_item_id_context_menu_onrender = function(menu_item_id, action, obj){
     if(action=='addSubmenuItem'){
@@ -274,7 +273,7 @@ jsh.App[modelid] = new (function(){
         if(menu_item && (menu_item.menu_item_depth >= _this.menu_config.max_depth)) return false;
       }
     }
-  }
+  };
 
   this.selectMenuItem = function(menu_item_id){
     if(!menu_item_id){
@@ -309,11 +308,11 @@ jsh.App[modelid] = new (function(){
     _this.orig_current_menu_item = _.extend({}, xdataInfo);
 
     jsh.App[modelInfo.id].onload();
-  }
+  };
 
   this.getModelInfo = function(){
     return jsh.XModels[jsh.XBase[xmodel.namespace+'Menu_Tree_Info'][0]];
-  }
+  };
 
   this.checkUpdatesInfo = function(){
     if(!_this.selected_menu_item_id) return true;
@@ -343,7 +342,7 @@ jsh.App[modelid] = new (function(){
       }
     });
     
-  }
+  };
 
   this.commitInfo = function(){
     if(!_this.selected_menu_item_id) return true;
@@ -375,7 +374,7 @@ jsh.App[modelid] = new (function(){
       _this.renderMenu();
     }
     return true;
-  }
+  };
 
   this.deleteMenuItem = function(menu_item_id, force){
     menu_item_id = parseInt(menu_item_id);
@@ -383,7 +382,7 @@ jsh.App[modelid] = new (function(){
     if(!menu_item) return XExt.Alert('Invalid menu item ID');
     //Find children
     var menu_item_children = [];
-    for(var i=0;i<_this.menu_items.length;i++){
+    for(let i=0;i<_this.menu_items.length;i++){
       if(_this.menu_items[i].menu_item_parent_id==menu_item.menu_item_id){
         menu_item_children.push(_this.menu_items[i].menu_item_id);
       }
@@ -403,21 +402,21 @@ jsh.App[modelid] = new (function(){
     }
     _.each(menu_item_children, function(menu_item_id){ _this.deleteMenuItem(menu_item_id, true); });
     //Delete item
-    for(var i=0;i<_this.menu_items.length;i++){
+    for(let i=0;i<_this.menu_items.length;i++){
       if(_this.menu_items[i]==menu_item){
         _this.menu_items.splice(i,1);
         i--;
       }
     }
     _this.setDirty(true);
-  }
+  };
 
   this.addMenuItem = function(menu_item_parent_id){
     if(!_this.commitInfo()) return;
 
     menu_item_parent_id = parseInt(menu_item_parent_id);
-    var menu_item_parent_id = _this.getMenuItem(menu_item_parent_id);
-    if(!menu_item_parent_id) menu_item_parent_id = null;
+    var menu_item_parent = _this.getMenuItem(menu_item_parent_id);
+    if(!menu_item_parent) menu_item_parent_id = null;
 
     var max_menu_item_id = 0;
     _.each(_this.menu_items, function(menu_item){ if(menu_item.menu_item_id >= max_menu_item_id) max_menu_item_id = menu_item.menu_item_id; });
@@ -425,9 +424,9 @@ jsh.App[modelid] = new (function(){
 
     var new_menu_item = _.extend({}, _this.menu_item_base);
     new_menu_item.menu_item_id = new_menu_item_id;
-    if(menu_item_parent_id){
-      new_menu_item.menu_item_parent_id = menu_item_parent_id.menu_item_id;
-      new_menu_item.menu_item_path = menu_item_parent_id.menu_item_path+new_menu_item_id.toString()+'/';
+    if(menu_item_parent){
+      new_menu_item.menu_item_parent_id = menu_item_parent.menu_item_id;
+      new_menu_item.menu_item_path = menu_item_parent.menu_item_path+new_menu_item_id.toString()+'/';
     }
     else {
       new_menu_item.menu_item_path = '/'+new_menu_item_id.toString()+'/';
@@ -445,7 +444,7 @@ jsh.App[modelid] = new (function(){
       var jselected = jtree.find('.tree_item.selected').first();
       if(jselected.length) XExt.scrollObjIntoView(jtree, jselected);
     },1);
-  }
+  };
 
   this.save = function(){
     if(_this.menu_id){ XExt.Alert('Cannot save when previewing a revision'); return; }
@@ -467,7 +466,7 @@ jsh.App[modelid] = new (function(){
         'menu_item_link_type',
         'menu_item_link_dest',
         'menu_item_link_target',
-      ])
+      ]);
       save_menu_items.push(save_menu_item);
     }
     if(!save_menu_items.length) save_menu_items = '';
@@ -482,6 +481,6 @@ jsh.App[modelid] = new (function(){
       }
     }, function (err) {
     });
-  }
+  };
 
 })();

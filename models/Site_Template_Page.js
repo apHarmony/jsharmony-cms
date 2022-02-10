@@ -1,7 +1,7 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.onload = function(xmodel) {
+  _this.onload = function(xmodel) {
     var bcrumbs = jsh.XPage.getBreadcrumbs();
 
     jsh.$root('.'+xmodel.class+'_Templates_Location .label_fs_page_template_path').toggle(!!bcrumbs.fs_page_template_path);
@@ -11,14 +11,12 @@ jsh.App[modelid] = new (function(){
     if(bcrumbs.sftp_url) sftp_page_template_path = bcrumbs.sftp_url + '/sites/' + XExt.cleanFileName((bcrumbs.site_id||'').toString()+'_'+(bcrumbs.site_name||'')) + '/templates/pages';
     jsh.$root('.'+xmodel.class+'_Templates_Location .label_sftp_page_template_path').toggle(!!sftp_page_template_path);
     jsh.$root('.'+xmodel.class+'_Templates_Location .sftp_page_template_path').text(sftp_page_template_path);
-  }
+  };
 
-  this.previewTemplate = function(obj){
+  _this.previewTemplate = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before previewing template');
 
     var rowid = $(obj).closest('tr').data('id');
-    var site_template_location = xmodel.get('site_template_location', rowid);
-    var site_template_path = xmodel.get('site_template_path', rowid);
     var site_template_name = xmodel.get('site_template_name', rowid);
     
     //Get editor url
@@ -34,6 +32,6 @@ jsh.App[modelid] = new (function(){
         jsh.System.OpenPageEditorUrl(url);
       }
     });
-  }
+  };
 
 })();

@@ -31,7 +31,6 @@ var webpath = require('path').posix;
 var fspath = require('path');
 var Helper = require('jsharmony/Helper');
 var HelperFS = require('jsharmony/HelperFS');
-var URL = require('url').URL;
 
 function jsHarmonyCMSPreviewServer(cms){
   this.cms = cms;
@@ -44,7 +43,6 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
   var jsh = _this.jsh;
   var config = jsh.Config;
   var cms = _this.cms;
-  var dbtypes = jsh.AppSrv.DB.types;
 
   var port = cms.Config.preview_server.serverPort;
   var siteConfig = jsh.Sites['main'];
@@ -122,7 +120,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
 
   //Get the current site ID
   app.all('*', function (req, res, next) {
-    jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema("select site_id, site_name from {schema}.v_my_site where site_id={schema}.my_current_site_id()"), [], {}, function (err, rslt) {
+    jsh.AppSrv.ExecRow(req._DBContext, cms.funcs.replaceSchema('select site_id, site_name from {schema}.v_my_site where site_id={schema}.my_current_site_id()'), [], {}, function (err, rslt) {
       if(err) return Helper.GenError(req, res, -99999, err.toString());
 
       if (!rslt || !rslt.length || !rslt[0] || !rslt[0].site_id){
@@ -168,7 +166,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
                 title: filerelativepath,
                 description: '',
                 content: templateParts.content
-              }
+              };
               if(templateParts.config.url) delete templateConfig.content;
               _.extend(templateConfig, templateParts.config);
               rslt.push(templateConfig);
@@ -300,7 +298,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
     return run_cb();
   });
   server.listen(port, cms.Config.preview_server.serverIp);
-}
+};
 
 jsHarmonyCMSPreviewServer.prototype.getURL = function(hostname){
   var _this = this;
@@ -319,6 +317,6 @@ jsHarmonyCMSPreviewServer.prototype.getURL = function(hostname){
   if(server_txt == '0.0.0.0') server_txt = os.hostname().toLowerCase();
   if(server_txt && server_port) return server_scheme+server_txt+':'+server_port;
   return '';
-}
+};
 
 module.exports = exports = jsHarmonyCMSPreviewServer;

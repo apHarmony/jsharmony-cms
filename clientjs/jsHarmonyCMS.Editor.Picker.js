@@ -47,30 +47,30 @@ exports = module.exports = function(jsh, cms){
     else if((filePickerType === 'link') && _this.lastLinkPath) {
       if(_this.lastLinkPath.init_media_path) return { init_media_path: _this.lastLinkPath.init_media_path };
       else if(_this.lastLinkPath.init_page_path) return { init_page_path: _this.lastLinkPath.init_page_path };
-    } 
+    }
     else if ((filePickerType === 'media') && _this.lastMediaPath) return { init_media_path: _this.lastMediaPath.init_media_path };
 
     return {};
-  }
+  };
 
   this.openLink = function(cb, value, meta){
     cms.filePickerCallback = cb;
     var qs = _this.getParameters('link', value);
     XExt.popupForm('jsHarmonyCMS/Link_Browser', 'update', qs, { width: 1100, height: 600 });
-  }
+  };
 
   this.openMedia = function(cb, value, meta){
     cms.filePickerCallback = cb;
     var qs = _this.getParameters('media', value);
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
-  }
+  };
 
   this.onmessage = function(event, data){
     if(data.indexOf('cms_file_picker:')==0){
       if(!cms.filePickerCallback) return true;
       data = data.substr(16);
       var jdata = JSON.parse(data);
-      if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){}
+      if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){ /* Do nothing */ }
       else if(jdata.media_key){
         _this.lastMediaPath = { init_media_path: jdata.media_folder };
         _this.lastLinkPath = { init_media_path: jdata.media_folder };
@@ -87,11 +87,11 @@ exports = module.exports = function(jsh, cms){
       return true;
     }
     return false;
-  }
+  };
 
   this.fileSelector_onGetValue = function(val, field, xmodel, jctrl, parentobj){
     return jctrl.find('input.jsharmony_cms_fileselector').val();
-  }
+  };
 
   this.fileSelector_render = function(fileSelectorType, xmodel, field, val){  //fileSelectorType = link_browser or media_browser
     return XExt.renderEJS(jsh.$('.jsharmony_cms_fileselector_template').html(), xmodel.id, {
@@ -99,29 +99,29 @@ exports = module.exports = function(jsh, cms){
       field: field,
       val: val,
     });
-  }
+  };
 
   this.fileSelector_onChange = function(obj){
     var jobj = $(obj);
-    var jctrl = $(obj).closest('.xform_ctrl');
+    var jctrl = jobj.closest('.xform_ctrl');
     var xform = XExt.getFormFromObject(obj);
     if(jctrl.length && xform){
       if(!jctrl.hasClass('editable')) return;
       xform.Data.OnControlUpdate(jctrl[0]);
     }
-  }
+  };
 
   this.fileSelector_reset = function(obj){
     var jobj = $(obj);
-    var jparent = $(obj).closest('.jsharmony_cms_fileselector_container');
+    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
     var jtext = jparent.find('input.jsharmony_cms_fileselector');
     jtext.val('');
     _this.fileSelector_onChange(obj);
-  }
+  };
 
   this.fileSelector_browse = function(obj){
     var jobj = $(obj);
-    var jparent = $(obj).closest('.jsharmony_cms_fileselector_container');
+    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
     var jtext = jparent.find('input.jsharmony_cms_fileselector');
     var fileSelectorType = jparent.data('fileselectortype');
     var val = jtext.val();
@@ -138,5 +138,5 @@ exports = module.exports = function(jsh, cms){
       }, val);
     }
     else XExt.Alert('Invalid File Selector Type: '+fileSelectorType);
-  }
-}
+  };
+};

@@ -47,7 +47,7 @@ module.exports = exports = function(module, funcs) {
 
     try {
       ftpSession = new Helper.requireAnywhere(baseModule, 'ftp')();
-    } catch (error) { }
+    } catch (error) { /* Do nothing */ }
 
     if(!ftpSession){
       throw new Error('"ftp" module is required for FTP publish. Use `npm i ftp` to install.');
@@ -55,7 +55,7 @@ module.exports = exports = function(module, funcs) {
 
     this.log = function(msg){
       if(connectionOptions.logger) connectionOptions.logger(msg);
-    }
+    };
 
     /**
      * @public
@@ -64,8 +64,8 @@ module.exports = exports = function(module, funcs) {
     this.connect = function() {
       return new Promise((resolve, reject) => {
 
-        var onConnectError = function(err){ return reject(err); }
-        var onOperationError = function(err){ }
+        var onConnectError = function(err){ return reject(err); };
+        var onOperationError = function(err){ };
         var onClose = function(){
           this.connected = false;
           if(_this.pendingRetry){
@@ -88,7 +88,7 @@ module.exports = exports = function(module, funcs) {
               _this.pendingRetryFail = null;
             }
           }
-        }
+        };
         var onReady = function(){
           ftpSession.off('ready', onReady);
           ftpSession.off('error', onConnectError);
@@ -102,13 +102,13 @@ module.exports = exports = function(module, funcs) {
           ftpSession.off('error', onOperationError);
           ftpSession.off('close', onClose);
           return _this.connect();
-        }
+        };
 
         ftpSession.on('error', onConnectError);
         ftpSession.on('ready', onReady);
         ftpSession.connect(connectionOptions);
       });
-    }
+    };
 
     this.retryOnDisconnect = function(f, reject, isRetry){
       if(!isRetry){
@@ -121,7 +121,7 @@ module.exports = exports = function(module, funcs) {
         _this.pendingRetry = null;
         _this.pendingRetryFail = null;
       });
-    }
+    };
 
     /**
      * @public
@@ -134,14 +134,14 @@ module.exports = exports = function(module, funcs) {
           ftpSession.rmdir(directory_path, true, err => {
             stopRetry();
             if (err && err.code !== 550) {
-                reject(error);
+              reject(err);
             } else {
               resolve();
             }
           });
         }, reject);
       });
-    }
+    };
 
     /**
      * @public
@@ -154,11 +154,11 @@ module.exports = exports = function(module, funcs) {
           ftpSession.delete(file_path,  function(err){
             stopRetry();
             if(err) return reject(err);
-            return resolve()
+            return resolve();
           });
         }, reject);
       });
-    }
+    };
 
     /**
      * @public
@@ -166,7 +166,7 @@ module.exports = exports = function(module, funcs) {
      */
     this.end = function() {
       ftpSession.end();
-    }
+    };
 
     /**
      * @public
@@ -183,7 +183,7 @@ module.exports = exports = function(module, funcs) {
           });
         }, reject);
       });
-    }
+    };
 
     /**
      * @public
@@ -216,7 +216,7 @@ module.exports = exports = function(module, funcs) {
           });
         }, reject);
       });
-    }
+    };
 
     /**
      * @public
@@ -261,7 +261,7 @@ module.exports = exports = function(module, funcs) {
           }
         }, reject);
       });
-    }
+    };
 
     /**
      * @public
@@ -280,7 +280,7 @@ module.exports = exports = function(module, funcs) {
           });
         }, reject);
       });
-    }
+    };
 
     /**
      * @public
@@ -298,8 +298,8 @@ module.exports = exports = function(module, funcs) {
           });
         }, reject);
       });
-    }
-  }
+    };
+  };
 
   return exports;
-}
+};

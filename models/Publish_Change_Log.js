@@ -1,12 +1,12 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  this.onload = function(){
+  _this.onload = function(){
     //Load API Data
     this.loadData();
   };
 
-  this.loadData = function(){
+  _this.loadData = function(){
     var emodelid = '../_funcs/deployment_change_log/'+xmodel.get('deployment_id');
     XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
@@ -20,6 +20,6 @@ jsh.App[modelid] = new (function(){
       }
       else XExt.Alert('Error while loading data');
     });
-  }
+  };
 
 })();

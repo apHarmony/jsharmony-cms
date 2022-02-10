@@ -85,8 +85,8 @@ ComponentTemplate.prototype.getCaptions = function() {
     captions.push(this._componentConfig.caption);
     captions.push(this._componentConfig.caption);
   }
-  return captions
-}
+  return captions;
+};
 
 /**
  * Get the component configuration as defined by the component JSON.
@@ -95,7 +95,7 @@ ComponentTemplate.prototype.getCaptions = function() {
  */
 ComponentTemplate.prototype.getComponentConfig = function() {
   return this._componentConfig;
-}
+};
 
 /**
  * Return the editor type
@@ -107,7 +107,7 @@ ComponentTemplate.prototype.getDataEditorType = function() {
     return this._componentConfig.data.layout;
   }
   return undefined;
-}
+};
 
 /**
  * @public
@@ -115,7 +115,7 @@ ComponentTemplate.prototype.getDataEditorType = function() {
  */
 ComponentTemplate.prototype.getDataModelTemplate_FormPreview = function() {
   return this._dataModelTemplate_FormPreview;
-}
+};
 
 /**
  * @public
@@ -123,7 +123,7 @@ ComponentTemplate.prototype.getDataModelTemplate_FormPreview = function() {
  */
 ComponentTemplate.prototype.getDataModelTemplate_GridPreview = function() {
   return this._dataModelTemplate_GridPreview;
-}
+};
 
 /**
  * @public
@@ -131,7 +131,7 @@ ComponentTemplate.prototype.getDataModelTemplate_GridPreview = function() {
  */
 ComponentTemplate.prototype.getPropertiesModelTemplate_Form = function() {
   return this._propertiesModelTemplate_Form;
-}
+};
 
 /**
  * Get the ID specified for the component configuration.
@@ -141,7 +141,7 @@ ComponentTemplate.prototype.getPropertiesModelTemplate_Form = function() {
  */
 ComponentTemplate.prototype.getTemplateId = function() {
   return this._componentConfig.id;
-}
+};
 
 /**
  * Gets the base class name for this component
@@ -150,7 +150,7 @@ ComponentTemplate.prototype.getTemplateId = function() {
  */
 ComponentTemplate.prototype.getClassName = function() {
   return this._componentConfig.className || this._jsh.XExt.escapeCSSClass(this._componentConfig.id, { nodash: true });
-}
+};
 
 /**
  * @private
@@ -175,7 +175,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
       titleFieldName: field.name + '_jsh_browserDataTitle',
       browserType: browserType,
       validate: field.validate,
-    }
+    };
 
     field.mediaBrowserControlInfo = info;
     field.name = info.titleFieldName;
@@ -218,7 +218,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
   });
 
   return retVal;
-}
+};
 
 
 exports = module.exports = ComponentTemplate;

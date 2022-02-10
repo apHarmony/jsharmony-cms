@@ -66,11 +66,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
   /** @public @type {Object} */
   this.template = undefined;
-  Object.defineProperty(this, 'template', { get: function() { return componentTemplate.getComponentConfig() }});
+  Object.defineProperty(this, 'template', { get: function() { return componentTemplate.getComponentConfig(); }});
 
   /** @public @type {string} */
   this.id = undefined;
-  Object.defineProperty(this, 'id', { get: function() { return componentId }});
+  Object.defineProperty(this, 'id', { get: function() { return componentId; }});
 
   /** @public @type {Object} */
   this.domSerializer = new DomSerializer(jsh);
@@ -82,7 +82,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.getData = function() {
     return this.domSerializer.getAttr($element, 'data-component-data');
-  }
+  };
 
   /**
    * Get the properties from the element's serialized property attribute value
@@ -94,7 +94,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     var model = componentTemplate.getPropertiesModelTemplate_Form();
     var properties = this.domSerializer.getAttr($element, 'data-component-properties');
     return model.populateDataInstance(properties);
-  }
+  };
 
   /**
    * Setup the default properties object
@@ -103,7 +103,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.initProperties = function() {
     this.saveProperties(this.getProperties());
-  }
+  };
 
   /**
    * Check to see if the component is readonly.
@@ -112,7 +112,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.isReadOnly = function() {
     return !!cms.readonly;
-  }
+  };
 
   /**
    * Open the data editor form.
@@ -129,7 +129,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     } else if (editorType != undefined) {
       throw new  Error('Unknown editor type "' + editorType  + '"');
     }
-  }
+  };
 
   /**
    * @private
@@ -145,7 +145,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       _this.saveData(data);
       _this.render();
     });
-  }
+  };
 
   /**
    * @private
@@ -158,7 +158,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       _this.saveData(updatedData);
       _this.render();
     });
-  }
+  };
 
   /**
    * Open the property editor form.
@@ -173,7 +173,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       _this.saveProperties(data);
       _this.render();
     });
-  }
+  };
 
   this.openDefaultEditor = function(){
     var _this = this;
@@ -182,7 +182,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     var hasProperties = ((config.properties || {}).fields || []).length > 0;
     if(hasData) _this.openDataEditor();
     else if(hasProperties) _this.openPropertiesEditor();
-  }
+  };
 
   /**
    * Render the component
@@ -219,14 +219,14 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     setTimeout(function() {
       jsh.async.each(
-        $element.find('[data-component]'), 
+        $element.find('[data-component]'),
         function(el, el_cb) {
           cms.componentManager.renderContentComponent(el, undefined, el_cb);
         },
         callback
       );
     });
-  }
+  };
 
   /**
    * Call anytime the data is changed in the view (i.e.,
@@ -237,7 +237,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.saveData = function(data) {
     this.domSerializer.setAttr($element, 'data-component-data', data);
-  }
+  };
 
   /**
    * Call anytime the properties are changed in the view (i.e.,
@@ -247,11 +247,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.saveProperties = function(props) {
     this.domSerializer.setAttr($element, 'data-component-properties', props);
-  }
+  };
 
 
 
   this.initProperties();
 
 
-}
+};

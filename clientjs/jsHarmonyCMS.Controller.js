@@ -24,32 +24,32 @@ exports = module.exports = function(jsh, cms){
   this.hasChanges = false;
 
   this.init = function(cb){
-  }
+  };
 
   this.initDevMode = function(cb){
-  }
+  };
 
   this.load = function(cb){
-  }
+  };
 
   this.createWorkspace = function(cb){
-  }
+  };
 
   this.render = function(){
-  }
+  };
 
   this.getValues = function(){
     _this.hasChanges = false;
-  }
+  };
 
   this.validate = function(){
     return true;
-  }
+  };
 
   this.save = function(){
-  }
+  };
 
   this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
     return cms.componentManager.getComponentRenderParameters(component, renderOptions, additionalRenderParams);
-  }
-}
+  };
+};

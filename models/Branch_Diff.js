@@ -33,7 +33,7 @@ jsh.App[modelid] = new (function(){
     jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), xmodel.get('site_id'), xmodel.get('sys_user_site_editor'), { containerClass: 'diff_editor_selection_container' });
     //Load API Data
     this.loadData();
-  }
+  };
 
   this.loadData = function(onComplete){
     var emodelid = '../_funcs/diff';
@@ -49,7 +49,7 @@ jsh.App[modelid] = new (function(){
     }, function (err) {
       //Optionally, handle errors
     });
-  }
+  };
 
   this.processData = function(){
     for(var item_type in _this.branch_diff){
@@ -57,7 +57,7 @@ jsh.App[modelid] = new (function(){
         item['branch_'+item_type+'_action'] = (item['branch_'+item_type+'_action']||'').toString().toUpperCase();
       });
     }
-  }
+  };
 
   this.render = function(){
     var jdiff = jsh.$('.diff_display');
@@ -65,7 +65,7 @@ jsh.App[modelid] = new (function(){
     var map = function(key, dict){
       if(_this.field_mapping[dict] && (key in _this.field_mapping[dict])) return _this.field_mapping[dict][key];
       return key;
-    }
+    };
 
     var tmpl = jsh.$root('.'+xmodel.class+'_template_diff_listing').html();
     var item_tmpl = {};
@@ -84,12 +84,12 @@ jsh.App[modelid] = new (function(){
       var item_params = { branch_item: branch_item };
       item_params['branch_' + item_type] = branch_item;
       return XExt.renderClientEJS(item_tmpl[item_type], _.extend(item_params, renderParams));
-    }
+    };
 
     jdiff.html(XExt.renderClientEJS(tmpl, renderParams));
 
     XExt.trigger(_this.onRenderedDiff, jdiff);
-  }
+  };
 
   this.previewPage = function(obj){
     var jobj = $(obj);
@@ -102,7 +102,7 @@ jsh.App[modelid] = new (function(){
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
     jsh.System.OpenPageEditor(page_key, page_filename, page_template_id, { source: 'branch_diff', branch_id: xmodel.get('branch_id'), rawEditorDialog: '.'+xmodel.class+'_RawTextEditor', page_id: page_id, page_template_path: page_template_path  });
-  }
+  };
 
   this.previewMedia = function(obj){
     var jobj = $(obj);
@@ -112,20 +112,20 @@ jsh.App[modelid] = new (function(){
     var media_width = jobj.data('media_width');
     var media_height = jobj.data('media_height');
     jsh.System.PreviewMedia(media_key, undefined, media_id, media_ext, media_width, media_height);
-  }
+  };
 
   this.previewMenu = function(obj){
     var jobj = $(obj);
     var menu_key = jobj.data('menu_key');
     var menu_id = jobj.data('menu_id');
-    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id, branch_id: xmodel.get('branch_id') })
-  }
+    XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id, branch_id: xmodel.get('branch_id') });
+  };
 
   this.previewSitemap = function(obj){
     var jobj = $(obj);
     var sitemap_key = jobj.data('sitemap_key');
     var sitemap_id = jobj.data('sitemap_id');
-    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id, branch_id: xmodel.get('branch_id') })
-  }
+    XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id, branch_id: xmodel.get('branch_id') });
+  };
 
 })();

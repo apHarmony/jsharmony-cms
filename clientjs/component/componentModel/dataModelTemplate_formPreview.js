@@ -77,10 +77,10 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
 
   var fields = modelConfig.fields || [];
-  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">', captionclass:"hidden"});
-  fields.push({ control:'html', value:'</div>', captionclass:"hidden"});
+  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">', captionclass:'hidden'});
+  fields.push({ control:'html', value:'</div>', captionclass:'hidden'});
   fields.push({
-    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true, captionclass:"hidden"
+    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true, captionclass:'hidden'
   });
 
   var model = _.extend({}, modelConfig);
@@ -116,7 +116,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
     itemTemplate = templateHtml;
   }
   this._itemTemplate = itemTemplate;
-}
+};
 
 /**
  * Get the link browser field info (if exists) for the link field with
@@ -130,7 +130,7 @@ DataModelTemplate_FormPreview.prototype.getBrowserFieldInfo = function(fieldName
     return field.mediaBrowserControlInfo && field.mediaBrowserControlInfo.dataFieldName === fieldName;
   });
   return field ? field.mediaBrowserControlInfo : undefined;
-}
+};
 
 /**
  * Get the link browser field infos
@@ -145,7 +145,7 @@ DataModelTemplate_FormPreview.prototype.getBrowserFieldInfos = function() {
     }
   });
   return retVal;
-}
+};
 
 /**
  * Get the EJS string used to render the item preview
@@ -154,7 +154,7 @@ DataModelTemplate_FormPreview.prototype.getBrowserFieldInfos = function() {
  */
 DataModelTemplate_FormPreview.prototype.getItemTemplate = function() {
   return this._itemTemplate || '';
-}
+};
 
 /**
  * @public
@@ -164,7 +164,7 @@ DataModelTemplate_FormPreview.prototype.getModelInstance = function() {
   model.id = DataModelTemplate_FormPreview.getNextInstanceId(this._componentTemplate);
 
   return model;
-}
+};
 
 /**
  * Return the raw model JavaScript.
@@ -173,7 +173,7 @@ DataModelTemplate_FormPreview.prototype.getModelInstance = function() {
  */
 DataModelTemplate_FormPreview.prototype.getModelJs = function() {
   return this._rawOriginalJs;
-}
+};
 
 /**
  * Get a unique ID for the model instance
@@ -184,7 +184,7 @@ DataModelTemplate_FormPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_FormPreview._id == undefined) DataModelTemplate_FormPreview._id = 0;
   var id = DataModelTemplate_FormPreview._id++;
   return 'DataModel_FormPreview_' + componentTemplate.getClassName() + '_' + id;
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -202,7 +202,7 @@ DataModelTemplate_FormPreview.getNextInstanceId = function(componentTemplate) {
  */
 DataModelTemplate_FormPreview.prototype.makePristineCopy = function(dataInstance) {
   return FieldModel.makePristineCopy(dataInstance, this._modelTemplate.fields);
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -230,6 +230,6 @@ DataModelTemplate_FormPreview.prototype.makePristineCopy = function(dataInstance
  */
 DataModelTemplate_FormPreview.prototype.populateDataInstance = function(dataInstance) {
   return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
-}
+};
 
 exports = module.exports = DataModelTemplate_FormPreview;

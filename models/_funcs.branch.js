@@ -21,15 +21,15 @@ var HelperFS = require('jsharmony/HelperFS');
 var _ = require('lodash');
 var path = require('path');
 var async = require('async');
-var yazl = require("yazl");
-var yauzl = require("yauzl");
+var yazl = require('yazl');
+var yauzl = require('yauzl');
 var moment = require('moment');
 var crypto = require('crypto');
 var fs = require('fs');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   exports.branch_download = function (req, res, next) {
     var cms = module;
@@ -68,7 +68,7 @@ module.exports = exports = function(module, funcs){
         validate = new XValidate();
         verrors = {};
         validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
-        sql = "select branch_id,branch_name,site_id from "+(module.schema?module.schema+'.':'')+"v_my_branch_access where branch_id=@branch_id and branch_access like 'R%'";
+        sql = 'select branch_id,branch_name,site_id from '+(module.schema?module.schema+'.':'')+"v_my_branch_access where branch_id=@branch_id and branch_access like 'R%'";
 
         var fields = [];
         var datalockstr = '';
@@ -93,13 +93,13 @@ module.exports = exports = function(module, funcs){
                 if(!branch_item.download) return branch_item_cb();
                 Helper.execif(branch_item.download.columns,
                   function(f){
-                    var sql = "select branch_{item}.{item}_key,branch_{item}.{item}_id,";
+                    var sql = 'select branch_{item}.{item}_key,branch_{item}.{item}_id,';
                     sql += _.map(branch_item.download.columns || [], function(colname){ return '{item}.'+colname; }).join(',');
 
-                    sql += " from {tbl_branch_item} branch_{item}"
+                    sql += ' from {tbl_branch_item} branch_{item}';
                     sql += ' left outer join {tbl_item} {item} on {item}.{item}_id = branch_{item}.{item}_id';
           
-                    sql += " where branch_{item}.branch_id=@branch_id and branch_{item}.{item}_id is not null";
+                    sql += ' where branch_{item}.branch_id=@branch_id and branch_{item}.{item}_id is not null';
                     
                     appsrv.ExecRecordset(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
                       if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
@@ -158,11 +158,11 @@ module.exports = exports = function(module, funcs){
                 jsh.Log.error('Error generating backup: '+err.toString());
                 return res.end();
               });
-              zipfile.addBuffer(Buffer.from(JSON.stringify(branchData,null,4)), "items.json");
+              zipfile.addBuffer(Buffer.from(JSON.stringify(branchData,null,4)), 'items.json');
               _.each(branchData.data_files, function(data_file){
-                zipfile.addFile(path.join(module.jsh.Config.datadir,data_file), "data/"+data_file);
+                zipfile.addFile(path.join(module.jsh.Config.datadir,data_file), 'data/'+data_file);
               });
-              zipfile.outputStream.pipe(res).on("close", function() {
+              zipfile.outputStream.pipe(res).on('close', function() {
                 //Done
                 zipClosed = true;
               });
@@ -175,7 +175,7 @@ module.exports = exports = function(module, funcs){
       });
     }
     else return next();
-  }
+  };
 
   exports.branch_upload = function (req, res, next) {
     var cms = module;
@@ -228,7 +228,6 @@ module.exports = exports = function(module, funcs){
         var branchData = {
           _DBContext: req._DBContext,
           _baseurl: baseurl,
-          site_id: null,
           LOVs: {},
           branchItems: {},
           contentFiles: {},
@@ -250,7 +249,7 @@ module.exports = exports = function(module, funcs){
           function(upload_cb){
             //Validate file contents
             var items_text = '';
-            funcs.unzip(zip_file, '', 
+            funcs.unzip(zip_file, '',
               { onEntry: function(entry, zipFile){
                 branchData.contentFiles[entry.fileName] = { size: entry.uncompressedSize };
                 return function(entry_cb){
@@ -271,7 +270,7 @@ module.exports = exports = function(module, funcs){
                       return entry_cb();
                     });
                   });
-                }
+                };
               } },
               function(err){
                 if(err) return upload_cb(err);
@@ -306,12 +305,12 @@ module.exports = exports = function(module, funcs){
 
             //Create new branch (test error on duplicate, etc)
             dbtasks['branch_create'] = function (dbtrans, callback, transtbl) {
-              var sql = "insert into {schema}.v_my_current_branch(branch_type, branch_name, site_id) values(@branch_type, @branch_name, @site_id);";
+              var sql = 'insert into {schema}.v_my_current_branch(branch_type, branch_name, site_id) values(@branch_type, @branch_name, @site_id);';
               db.Command(branchData._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, dbtrans, function (err, rslt) {
                 if (err != null) { err.sql = sql; }
                 callback(err, rslt);
               });
-            }
+            };
 
             //Import branch items
             async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
@@ -324,11 +323,11 @@ module.exports = exports = function(module, funcs){
               if(DEBUG_BRANCH_UPLOAD){
                 //For testing - fail so that transaction doesn't go through
                 dbtasks['fail'] = function (dbtrans, callback, transtbl) {
-                  db.Command(branchData._DBContext, "select 1 fail testerr", [], {}, dbtrans, function (err, rslt) {
+                  db.Command(branchData._DBContext, 'select 1 fail testerr', [], {}, dbtrans, function (err, rslt) {
                     if (err != null) { err.sql = sql; }
                     callback(err, rslt);
                   });
-                }
+                };
               }
 
               //Execute transactions
@@ -340,7 +339,7 @@ module.exports = exports = function(module, funcs){
             });
           },
           function(upload_cb){
-            funcs.unzip(zip_file, '', 
+            funcs.unzip(zip_file, '',
               { onEntry: function(entry, zipFile){
                 if(!branchData.contentFiles[entry.fileName]) return false;
                 if(!branchData.contentFiles[entry.fileName].onExtract) return false;
@@ -352,7 +351,7 @@ module.exports = exports = function(module, funcs){
                       return entry_cb();
                     }
                   });
-                }
+                };
               } },
               function(err){
                 //For testing
@@ -371,7 +370,7 @@ module.exports = exports = function(module, funcs){
       });
     }
     else return next();
-  }
+  };
 
   exports.unzip = function(zipPath, dest, options, cb){
     options = _.extend({
@@ -401,7 +400,7 @@ module.exports = exports = function(module, funcs){
         async.waterfall([
           function(entry_cb){
             if(dest){
-              targetPath = path.join(dest, targetPath)
+              targetPath = path.join(dest, targetPath);
               var targetFolder = path.dirname(targetPath);
               fs.realpath(targetFolder, function(err, realPath){
                 if(err) return entry_cb(err);
@@ -442,7 +441,7 @@ module.exports = exports = function(module, funcs){
       
                   //Save file contents
                   var writeStream = fs.createWriteStream(targetPath);
-                  writeStream.on("close", function(){ return entry_cb(); });
+                  writeStream.on('close', function(){ return entry_cb(); });
                   readStream.pipe(writeStream);
                 });
               });
@@ -455,11 +454,11 @@ module.exports = exports = function(module, funcs){
       });
       zipFile.readEntry();
     });
-  }
+  };
 
   exports.replaceSchema = function(sql){
     return Helper.ReplaceAll(sql,'{schema}.', module.schema?module.schema+'.':'');
-  }
+  };
 
   exports.getLOV = function(branchData, key, tableName, options, callback){
     options = _.extend({}, options);
@@ -475,7 +474,7 @@ module.exports = exports = function(module, funcs){
       });
       return callback();
     });
-  }
+  };
 
   exports.branch_upload_validatePage = function(errors, branchItems, branchData, callback){
     async.waterfall([
@@ -495,7 +494,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.branch_upload_validateMedia = function(errors, branchItems, branchData, callback){
     async.waterfall([
@@ -509,7 +508,7 @@ module.exports = exports = function(module, funcs){
         }, cb);
       },
     ], callback);
-  }
+  };
 
   exports.branch_upload_validateRedirect = function(errors, branchItems, branchData, callback){
     async.waterfall([
@@ -523,7 +522,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.branch_upload_validateSitemap = function(errors, branchItems, branchData, callback){
     async.waterfall([
@@ -535,7 +534,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.branch_upload_importPage = function(dbtasks, branchItems, branchData, callback){
     var dbtaskid = 1;
@@ -682,7 +681,7 @@ module.exports = exports = function(module, funcs){
       };
     });
     return callback();
-  }
+  };
 
   exports.branch_upload_importMedia = function(dbtasks, branchItems, branchData, callback){
     var dbtaskid = 1;
@@ -745,7 +744,7 @@ module.exports = exports = function(module, funcs){
                       if(hasError) return;
                       sizeMatch.hash = fhash.digest('hex');
                       return f();
-                    })
+                    });
                     fstream.on('error', function(err){
                       if(hasError) return;
                       hasError = true;
@@ -834,17 +833,15 @@ module.exports = exports = function(module, funcs){
           if(branchData.contentFiles[contentFileName]) branchData.contentFiles[contentFileName].onExtract = function(readStream, extract_cb){
             if(item.new_media_file_id) return false;
 
-            var hasError = false;
-            
             //Save file contents
             var writeStream = fs.createWriteStream(path.join(module.jsh.Config.datadir, 'media', item.new_media_id + item.media_ext));
             var hasError = false;
-            writeStream.on("error", function(err){
+            writeStream.on('error', function(err){
               if(hasError) return;
               hasError = true;
               return extract_cb(err);
             });
-            writeStream.on("close", function(){
+            writeStream.on('close', function(){
               if(hasError) return;
               return extract_cb();
             });
@@ -854,7 +851,7 @@ module.exports = exports = function(module, funcs){
         return cb();
       },
     ], callback);
-  }
+  };
 
   exports.branch_upload_importMenu = function(dbtasks, branchItems, branchData, callback){
     var dbtaskid = 1;
@@ -940,7 +937,7 @@ module.exports = exports = function(module, funcs){
       };
     });
     return callback();
-  }
+  };
 
   exports.branch_upload_importRedirect = function(dbtasks, branchItems, branchData, callback){
     var dbtaskid = 1;
@@ -980,10 +977,10 @@ module.exports = exports = function(module, funcs){
           item.new_redirect_id = rslt;
           callback(err, rslt);
         });
-      }
+      };
     });
     return callback();
-  }
+  };
 
   exports.branch_upload_importSitemap = function(dbtasks, branchItems, branchData, callback){
     var dbtaskid = 1;
@@ -1070,10 +1067,9 @@ module.exports = exports = function(module, funcs){
       };
     });
     return callback();
-  }
+  };
 
   exports.site_checkout = function (req, res, next) {
-    var cms = module;
     var verb = req.method.toLowerCase();
     
     var Q = req.query;
@@ -1097,7 +1093,7 @@ module.exports = exports = function(module, funcs){
       if (!appsrv.ParamCheck('Q', Q, ['&site_id','|source'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
 
       //Update user site
-      sql = "update {schema}.v_my_session set site_id=@site_id";
+      sql = 'update {schema}.v_my_session set site_id=@site_id';
       sql_ptypes = [dbtypes.BigInt];
       sql_params = { 'site_id': Q.site_id };
       validate = new XValidate();
@@ -1108,7 +1104,7 @@ module.exports = exports = function(module, funcs){
       if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
       var site_id = parseInt(Q.site_id);
-      if(site_id.toString() !== Q.site_id.toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters'); 
+      if(site_id.toString() !== Q.site_id.toString()) return Helper.GenError(req, res, -4, 'Invalid Parameters');
 
       appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
         if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
@@ -1133,7 +1129,7 @@ module.exports = exports = function(module, funcs){
       return;
     }
     else return next();
-  }
+  };
 
   exports.validateBranchAccess = function(req, res, branch_id, branch_access, site_access, callback){
     var jsh = module.jsh;
@@ -1142,21 +1138,21 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt, dbtypes.VarChar(32)];
     var sql_params = { branch_id: branch_id, branch_access: branch_access };
 
-    var sql = "select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access like @branch_access"
+    var sql = 'select branch_id from {schema}.v_my_branch_access where branch_id=@branch_id and branch_access like @branch_access';
     if(site_access && site_access.length){
       if(!_.isArray(site_access)) site_access = [site_access];
       for(var i=0;i<site_access.length;i++){
         sql_ptypes.push(dbtypes.VarChar(32));
         sql_params['site_access'+i.toString()] = site_access[i];
       }
-      sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_branch_access.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
+      sql += ' and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_branch_access.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ('+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+'))';
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
       if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No access to target revision');
       callback(null);
     });
-  }
+  };
 
   exports.validateSiteAccess = function(req, res, site_id, site_access, callback){
     var jsh = module.jsh;
@@ -1165,21 +1161,21 @@ module.exports = exports = function(module, funcs){
     var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { site_id: site_id };
 
-    var sql = "select site_id from {schema}.v_my_site where site_id=@site_id"
+    var sql = 'select site_id from {schema}.v_my_site where site_id=@site_id';
     if(site_access && site_access.length){
       if(!_.isArray(site_access)) site_access = [site_access];
       for(var i=0;i<site_access.length;i++){
         sql_ptypes.push(dbtypes.VarChar(32));
         sql_params['site_access'+i.toString()] = site_access[i];
       }
-      sql += " and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_site.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ("+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+"))";
+      sql += ' and site_id in (select v_sys_user_site_access.site_id from {schema}.v_sys_user_site_access where v_sys_user_site_access.site_id=v_my_site.site_id and sys_user_id=jsharmony.my_sys_user_id() and sys_user_site_access in ('+_.map(site_access, function(perm, idx){ return '@site_access'+idx.toString(); }).join(',')+'))';
     }
     appsrv.ExecRecordset(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
       if (err != null) { err.sql = sql; appsrv.AppDBError(req, res, err); return; }
       if (rslt[0].length!=1) return Helper.GenError(req, res, -11, 'No '+(site_access&&site_access.length?site_access.join(' / ')+' ':'')+'access to target site');
       callback(null);
     });
-  }
+  };
 
   return exports;
 };

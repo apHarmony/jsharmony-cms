@@ -17,6 +17,6 @@ jsh.App[modelid] = new (function(){
         '<b>Password:</b> ' + XExt.escapeHTML('<Your CMS Login Password>') + '<br/>',
       ].join(''));
     }
-  }
+  };
 
 })();

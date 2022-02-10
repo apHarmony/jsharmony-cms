@@ -4,13 +4,13 @@ jsh.App[modelid] = new (function(){
   var lastAutoDeploymentTag = '';
 
   this.onload = function(){
-    var firstSite = _.find(xmodel.controller.getLOV('site_id'),function(item){ return !!(item&&item.code_val) });
+    var firstSite = _.find(xmodel.controller.getLOV('site_id'),function(item){ return !!(item&&item.code_val); });
     if(firstSite){
       xmodel.set('site_id', firstSite.code_val);
     }
     else{
       XExt.Alert('Please checkout an active site to publish', function(){
-        XExt.navTo(jsh._BASEURL+'{namespace}Site_Listing', { force: true })
+        XExt.navTo(jsh._BASEURL+'{namespace}Site_Listing', { force: true });
       });
       return false;
     }
@@ -24,12 +24,12 @@ jsh.App[modelid] = new (function(){
     setTimeout(function(){
       autoSelectOneDropdownItem('deployment_target_id', jsh.$root('.deployment_target_id.xelem'+xmodel.class));
     }, 1);
-  }
+  };
 
   this.branch_id_onchange = function(obj, newval, undoChange){
     var deployment_tag = xmodel.get('deployment_tag');
     if(!deployment_tag || (deployment_tag==lastAutoDeploymentTag)) _this.setDeploymentTag(newval);
-  }
+  };
 
   this.setDeploymentTag = function(branch_id){
     if(!branch_id){
@@ -42,7 +42,7 @@ jsh.App[modelid] = new (function(){
         xmodel.set('deployment_tag', rslt.deployment_tag);
       }, undefined, { async: false });
     }
-  }
+  };
 
   this.publish = function(){
     if(!xmodel.controller.form.Data.Commit()) return;
@@ -67,7 +67,7 @@ jsh.App[modelid] = new (function(){
           emodelid = '../_funcs/deployment/trigger';
           XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
             if ('_success' in rslt) {
-              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id); 
+              XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Publish_Log?action=update&deployment_id='+deployment_id);
             }
             else XExt.Alert('Error while trigering deployment');
           });
@@ -75,6 +75,6 @@ jsh.App[modelid] = new (function(){
         else XExt.Alert('Error while adding deployment');
       });
     });
-  }
+  };
 
 })();

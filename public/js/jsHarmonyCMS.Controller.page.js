@@ -17,6 +17,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* global jsHarmonyCMSInstance */
+
 (new (function(cms){
   var _this = this;
   var jsh = cms.jsh;
@@ -62,7 +64,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       XExt.Alert('Page Key not defined in querystring');
       if(onComplete) onComplete(new Error('Page Key not defined in querystring'));
     }
-  }
+  };
 
   this.initDevMode = function(onComplete){
     onComplete = onComplete || function(err){};
@@ -151,7 +153,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     }, function (err) {
       if(onComplete) onComplete(err);
     });
-  }
+  };
 
   this.load = function(onComplete){
     var url = '../_funcs/page/'+_this.page_key;
@@ -259,7 +261,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var jobj = $(this);
       var componentContent = this.innerHTML;
       if(this.nodeName.toLowerCase() != 'script'){
-        errors.push('Component Template "'+componentId+'" should be defined using a "script" tag instead of a '+this.nodeName.toLowerCase()+' tag, ex: <script cms-component-template="componentId"></script>');
+        errors.push('Component Template should be defined using a "script" tag instead of a '+this.nodeName.toLowerCase()+' tag, ex: <script cms-component-template="componentId"></script>');
       }
       _this.localComponents.push(componentContent.trim());
       jobj.remove();
@@ -290,7 +292,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             message: 'Inline Web Snippet Template should have a title defined, by adding a config section to the script tag, ex: <br/>' +
             '<pre>'+XExt.escapeHTML([
               '<script type="text/cms-websnippet-template">',
-               '<cms-websnippet-config>',
+              '<cms-websnippet-config>',
               '  {',
               '    "title": "Web Snippet Title",',
               '    "description": "Web Snippet Description"',
@@ -316,7 +318,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
     if(!('content_elements' in _this.template)){
       _this.template.content_elements = {
-        body: { type: "htmleditor", title: "Body" }
+        body: { type: 'htmleditor', title: 'Body' }
       };
     }
 
@@ -357,7 +359,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var contentId = jobj.attr('cms-content-editor');
       if(!contentId){ errors.push('HTML element with "cms-content-editor" attribute missing value.  The value is required to define the name of the content area, ex: <div cms-content-editor="page.content.body"></div>'); return; }
       var fullContentId = _this.getFullPageContentId(contentId);
-      if(fullContentId in foundContent){ errors.push('Duplicate "cms-content-editor" element with same editable area: "'+contentId+'"'); return }
+      if(fullContentId in foundContent){ errors.push('Duplicate "cms-content-editor" element with same editable area: "'+contentId+'"'); return; }
       foundContent[fullContentId] = jobj;
       if(jobj.parent().closest('[cms-content-editor]').length){ errors.push('The "'+contentId+'" cms-content-editor element cannot be inside of another Content Element (attr:cms-content-editor)'); }
       var pageContentId = _this.getPageContentId(fullContentId);
@@ -390,27 +392,27 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       },
       cb
     );
-  }
+  };
 
   this.loadProperties = function(){
     if(_this.template.properties && _this.template.properties.onecolumn){
       XPage.LayoutOneColumn($('.jsharmony_cms_page_settings_properties'), { reset: true });
     }
-  }
+  };
 
   this.hasProperties = function(){
     return !_.isEmpty(_this.template.properties && _this.template.properties.fields);
-  }
+  };
 
   this.getPageContentId = function(contentId){
     return (XExt.beginsWith(contentId, 'page.content.') ? contentId.substr(('page.content.').length) : contentId);
-  }
+  };
 
   this.getFullPageContentId = function(contentId){
     if(!contentId) return '';
     if(contentId.indexOf('page.content.')!=0) return 'page.content.'+contentId;
     return contentId;
-  }
+  };
 
   this.evalBoolAttr = function(expr, f){
     expr = _.map(expr.split('||'), function(val){ return val.split('&&'); });
@@ -425,7 +427,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       rsltOr = rsltOr || rsltAnd;
     }
     return rsltOr;
-  }
+  };
 
   this.createWorkspace = function(cb){
     if(!_this.page && !cms.devMode) return;
@@ -466,14 +468,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       function(f){
         //Properties Button
         var jtabbutton = $('.jsharmony_cms_page_settings_properties_button');
-        jtabbutton.show()
-        jtabbutton.data('ontabselected', cms._instance + ".controller.loadProperties();");
+        jtabbutton.show();
+        jtabbutton.data('ontabselected', cms._instance + '.controller.loadProperties();');
 
         //Initialize Properties Model
         _this.template.properties = _.extend({
-          "id": "PageProperties",
-          "layout": "form",
-          "unbound": true,
+          'id': 'PageProperties',
+          'layout': 'form',
+          'unbound': true,
         }, _this.template.properties);
         _this.template.properties.id = 'jsharmony_cms_page_properties';
         if(cms.readonly) _this.template.properties.actions = 'B';
@@ -542,7 +544,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           });
     
           $('[cms-content-editor]').on('focus input keyup',function(){
-            var checkForUpdate = function(){ if(!_this.hasChanges) _this.getValues(); }
+            var checkForUpdate = function(){ if(!_this.hasChanges) _this.getValues(); };
             checkForUpdate();
             setTimeout(checkForUpdate, 100);
           });
@@ -557,7 +559,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         }
       }
     );
-  }
+  };
 
   this.processModelFields = function(model, data){
     _.each(model.fields, function(field){
@@ -576,7 +578,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         field.value = '<#-_this._sys_fileSelector_render('+JSON.stringify(fileSelectorType)+', xmodel, xmodel.fields['+JSON.stringify(field.name)+'], val)#>';
       }
     });
-  }
+  };
 
   this.render = function(){
     if(!_this.page) return;
@@ -586,7 +588,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     var contentComponents = [];
     var componentContentAreas = {};
     $('[cms-component-content]').each(function(){ contentComponents.push(this); });
-    for(var key in cms.componentManager.containerlessComponents) contentComponents.push(cms.componentManager.containerlessComponents[key]);
+    for(let key in cms.componentManager.containerlessComponents) contentComponents.push(cms.componentManager.containerlessComponents[key]);
     _.each(contentComponents, function(component){
       var contentArea = (component.getAttribute('cms-component-content')||'').toString();
       if(contentArea.indexOf('page.content.')==0) contentArea = contentArea.substr(('page.content.').length);
@@ -596,7 +598,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     //Delete extra content areas
     _.each(_.keys(_this.page.content), function(contentId){
       if(!(contentId in _this.template.content_elements) && !(contentId in componentContentAreas) && (!_this.template.content || !(contentId in _this.template.content))){
-        console.log('Deleting excess content area: '+contentId);
+        console.log('Deleting excess content area: '+contentId); // eslint-disable-line no-console
         delete _this.page.content[contentId];
       }
     });
@@ -621,7 +623,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     _this.renderTitle();
 
     //Content
-    for(var key in _this.template.content_elements){
+    for(let key in _this.template.content_elements){
       cms.editor.setContent('page.content.'+key, _this.page.content[key] || '');
 
       if(!cms.readonly){
@@ -669,7 +671,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         $('#jsharmony_cms_footer_start').after(footerHtml);
       }
       catch(ex){
-        console.log(ex);
+        console.log(ex); // eslint-disable-line no-console
       }
     }
 
@@ -678,7 +680,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       jeditorbar.find('.readonly').show();
       jeditorbar.find('.page_settings_ctrl,textarea,select').each(function(){ cms.util.disableControl($(this)); });
     }
-  }
+  };
 
   //showIf, toggle
   this.renderFunctions.showIf = function(show){
@@ -709,10 +711,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   //addClass, setClass
   this.renderFunctions.addClass = function(strClass){
     var jobj = $(this);
-    var strClass = strClass||'';
+    strClass = strClass||'';
 
     jobj.removeClass(jobj.data('jsharmony_cms_properties_lastClass')).addClass(strClass);
-    jobj.data('jsharmony_cms_properties_lastClass', strClass)
+    jobj.data('jsharmony_cms_properties_lastClass', strClass);
   };
   this.renderFunctions.setClass = this.renderFunctions.addClass;
 
@@ -724,9 +726,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     try{
       lastStyle = JSON.parse(jobj.data('jsharmony_cms_properties_lastStyle')||'{}');
     }
-    catch(ex){}
+    catch(ex){ /* Do nothing */ }
 
-    for(var key in lastStyle){
+    for(let key in lastStyle){
       this.style[key] = lastStyle[key];
     }
 
@@ -734,32 +736,32 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     origStyleText += (XExt.endsWith(origStyleText.trim(),';')?'':';');
 
     var origStyle = {};
-    for(var i=0;i<this.style.length;i++){
-      var key = this.style[i];
-      var val = this.style[key];
+    for(let i=0;i<this.style.length;i++){
+      let key = this.style[i];
+      let val = this.style[key];
       origStyle[key] = val;
     }
 
     jobj.attr('style', origStyleText + (strStyle||''));
     jobj.attr('style', this.style.cssText);
 
-    var lastStyle = {};
-    for(var i=0;i<this.style.length;i++){
-      var key = this.style[i];
-      var val = this.style[key];
+    lastStyle = {};
+    for(let i=0;i<this.style.length;i++){
+      let key = this.style[i];
+      let val = this.style[key];
       if(!(key in origStyle)) lastStyle[key] = null;
       else if(val != origStyle[key]){
         lastStyle[key] = origStyle[key];
       }
     }
 
-    jobj.data('jsharmony_cms_properties_lastStyle', JSON.stringify(lastStyle))
+    jobj.data('jsharmony_cms_properties_lastStyle', JSON.stringify(lastStyle));
   };
   this.renderFunctions.setStyle = this.renderFunctions.addStyle;
 
   this.renderHooks = function(){
-    var renderElements = []
-    $("[cms-onRender]").each(function(){ renderElements.push(this); });
+    var renderElements = [];
+    $('[cms-onRender]').each(function(){ renderElements.push(this); });
     _.each(_.keys(cms.componentManager.containerlessComponents), function(key){
       if(cms.componentManager.containerlessComponents[key].hasAttribute('cms-onrender')){
         renderElements.push(cms.componentManager.containerlessComponents[key]);
@@ -776,7 +778,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       XExt.JSEval(jobj.attr('cms-onRender'), obj, renderParams);
     });
     if(cms.onRender) cms.onRender(_this.page);
-  }
+  };
 
   this.renderTitle = function(src){
     var jsrc = $(src);
@@ -798,7 +800,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
         else if(!titleIsVisible && _this.page.title) $('[cms-title]').show();
       }
     }
-  }
+  };
 
   this.onTitleUpdate = function(src, val){
     if(cms.readonly) return;
@@ -815,7 +817,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(new_seo_title != _this.page.seo.title){ _this.page.seo.title = new_seo_title; _this.hasChanges = true; }
     _this.renderTitle(src);
     if(_this.hasChanges && !prev_hasChanges) _this.getValues();
-  }
+  };
 
   this.getValues = function(){
     if(cms.readonly) return;
@@ -835,7 +837,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       var val = $('#jsharmony_cms_page_toolbar .page_settings').find('.page_settings_seo_'+key).val();
       if(val != (_this.page.seo[key]||'')){ _this.page.seo[key] = val; _this.hasChanges = true; }
     });
-    _this.hasChanges = _this.hasChanges;
     _this.hasPropertiesError = false;
     if(_this.hasProperties()){
       _this.hasChanges = _this.hasChanges || (!!XPage.GetChanges('jsharmony_cms_page_properties').length);
@@ -849,7 +850,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       _this.renderHooks();
       cms.componentManager.renderPageComponents();
     }
-  }
+  };
 
   this.validate = function(){
     //Get updated page data
@@ -881,7 +882,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       return false;
     }
     return true;
-  }
+  };
 
   this.getSaveData = function(){
     if(_this.page_template_id != '<Standalone>') return _this.page;
@@ -903,7 +904,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       }
     });
     return pageData;
-  }
+  };
 
   this.save = function(){
     //Validate
@@ -940,7 +941,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       cms.loader.StopLoading();
       //Optionally, handle errors
     });
-  }
+  };
 
   this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
     additionalRenderParams = _.extend({}, additionalRenderParams, {
@@ -979,7 +980,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     if(!('renderType' in renderOptions)) renderOptions.renderType = 'page';
     
     return cms.componentManager.getComponentRenderParameters(component, renderOptions, additionalRenderParams);
-  }
+  };
 
   cms.controller = this;
 

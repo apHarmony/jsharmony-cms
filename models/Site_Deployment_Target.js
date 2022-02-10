@@ -11,7 +11,7 @@ jsh.App[modelid] = new (function(){
   _this.oninit = function(){
     _this.configurator_render();
     $('.src_deployment_target_publish_config_view_previous').toggle(!jsh.is_insert);
-  }
+  };
 
   _this.onload = function(){
     XForm.Get('/_funcs/deployment_target/defaults', { site_id: xmodel.get('site_id') }, {}, function(rslt){
@@ -21,7 +21,7 @@ jsh.App[modelid] = new (function(){
     var orig_path = xdata['deployment_target_publish_path'] || '<Not set>';
     var orig_config = xdata['deployment_target_publish_config'] || '{}';
     try{ orig_config = JSON.stringify(JSON.parse(orig_config),null,2); }
-    catch(ex){}
+    catch(ex){ /* Do nothing */ }
     if(orig_config=='{}') orig_config = '{\n}';
     previous_config = [
       '<div style="text-decoration:underline;padding:0 0 5px 0;font-weight:bold;">Previous Publish Path</div>',
@@ -31,11 +31,11 @@ jsh.App[modelid] = new (function(){
     ].join('\n');
 
     _this.configurator_setvalue(xdata['deployment_target_publish_path'], xdata['deployment_target_publish_config']);
-  }
+  };
 
-  _this.configurator_getContainer = function(){ return jsh.$root('.xform'+xmodel.class+' .deployment_target_publish_configurator'); }
+  _this.configurator_getContainer = function(){ return jsh.$root('.xform'+xmodel.class+' .deployment_target_publish_configurator'); };
 
-  _this.getDeploymentType = function(){ return _this.configurator_getContainer().find('.deployment_type').val(); }
+  _this.getDeploymentType = function(){ return _this.configurator_getContainer().find('.deployment_type').val(); };
 
   _this.configurator_render = function(){
     var jcontainer = _this.configurator_getContainer();
@@ -59,8 +59,8 @@ jsh.App[modelid] = new (function(){
       e.preventDefault();
       e.stopImmediatePropagation();
       var tabs = {};
-      tabs[xmodel.namespace+'Site_Deployment_Target_Tabs'] = xmodel.namespace+'Site_Deployment_Target_Key'
-      XExt.navTo(jsh._BASEURL+xmodel.namespace+"Site_Deployment_Target_Tabs?"+$.param({action:'update',deployment_target_id:xmodel.get('deployment_target_id'), tabs: JSON.stringify(tabs)}));
+      tabs[xmodel.namespace+'Site_Deployment_Target_Tabs'] = xmodel.namespace+'Site_Deployment_Target_Key';
+      XExt.navTo(jsh._BASEURL+xmodel.namespace+'Site_Deployment_Target_Tabs?'+$.param({action:'update',deployment_target_id:xmodel.get('deployment_target_id'), tabs: JSON.stringify(tabs)}));
     });
 
     jcontainer.find('.edit_button').on('click', function(e){
@@ -113,21 +113,21 @@ jsh.App[modelid] = new (function(){
       e.stopImmediatePropagation();
       XExt.Alert(previous_config,null, { escapeHTML: false });
     });
-  }
+  };
 
   _this.host_id_onSelected = function(popupData){
     var jcontainer = _this.configurator_getContainer();
     if(!popupData.result) return;
     jcontainer.find('.deployment_type_container_cmshost [data-path-elem="hostid"]').val(popupData.result);
-  }
+  };
 
   _this.configurator_updateDeploymentType = function(val){
     var jcontainer = _this.configurator_getContainer();
-    if(val) jcontainer.find('.deployment_type').val(val)
+    if(val) jcontainer.find('.deployment_type').val(val);
     else val = jcontainer.find('.deployment_type').val();
     jcontainer.find('.deployment_type_container').not('.deployment_type_container_'+val).hide();
     jcontainer.find('.deployment_type_container_'+val).show();
-  }
+  };
 
   _this.configurator_setvalue = function(publish_path, publish_config){
     publish_path = publish_path || '';
@@ -139,7 +139,7 @@ jsh.App[modelid] = new (function(){
       parsed_config = JSON.parse(publish_config);
       publish_config = _.isEmpty(parsed_config)?'{\n}':JSON.stringify(parsed_config,null,2);
     }
-    catch(ex){}
+    catch(ex){ /* Do nothing */ }
     jcontainer.find('.src_deployment_target_publish_config').val(publish_config);
 
 
@@ -221,14 +221,14 @@ jsh.App[modelid] = new (function(){
     var ext_config = JSON.parse(JSON.stringify(parsed_config));
     _.each(['url_prefix','published_url','url_prefix_page_override','url_prefix_media_override','page_subfolder','media_subfolder','publish_local_templates','ignore_remote_template_certificate'], function(key){ delete ext_config[key]; });
     jcontainer.find('[data-elem="ext_config"]').val(_.isEmpty(ext_config)?'{\n}':JSON.stringify(ext_config,null,2));
-  }
+  };
 
   _this.enableEditing = function(jctrl){
     var jcontainer = _this.configurator_getContainer();
     var target = jctrl.attr('data-target');
     jctrl.addClass('editing');
     jcontainer.find('[data-elem="'+target+'"]').attr('readonly', false).removeClass('uneditable');
-  }
+  };
 
   _this.disableEditing = function(jctrl){
     var jcontainer = _this.configurator_getContainer();
@@ -236,7 +236,7 @@ jsh.App[modelid] = new (function(){
     jctrl.removeClass('editing');
     var jinput = jcontainer.find('[data-elem="'+target+'"]');
     jinput.attr('readonly', true).addClass('uneditable');
-  }
+  };
 
   _this.updateUrl = function(url, options){
     options = _.extend({ override: false }, options);
@@ -286,13 +286,13 @@ jsh.App[modelid] = new (function(){
         if(parsed_url.username || options.override) jDeploymentType.find('[data-path-elem="username"]').val(parsed_url.username||'');
         if(parsed_url.password || options.override) jDeploymentType.find('[data-path-elem="password"]').val(parsed_url.password||'');
         if(parsed_url.path || options.override){
-          if(!options.override && (parsed_url.path =='/') && jDeploymentType.find('[data-path-elem="path"]').val()){ }
+          if(!options.override && (parsed_url.path =='/') && jDeploymentType.find('[data-path-elem="path"]').val()){ /* Do nothing */ }
           else jDeploymentType.find('[data-path-elem="path"]').val(parsed_url.path||'');
         }
       }
       if(deployment_type_url != url) _this.parse_url(deployment_type_url);
     }
-  }
+  };
 
   _this.parse_url = function(url, depth){
     var parsed_url = null;
@@ -308,7 +308,7 @@ jsh.App[modelid] = new (function(){
       if(parsed_url) parse_url_cache[url] = parsed_url;
     }, undefined, { async: false });
     return parsed_url;
-  }
+  };
 
   _this.generateJSON = function(){
     if(!jsh.$root('.xctrl_deployment_target_publish_configurator .xtab.selected[for="xctrl_deployment_target_publish_configurator_wizard"]').length) return;
@@ -503,7 +503,7 @@ jsh.App[modelid] = new (function(){
       jcontainer.find('.src_deployment_target_publish_path').val(generated_url);
       jcontainer.find('.src_deployment_target_publish_config').val(_.isEmpty(generated_config)?'{\n}':JSON.stringify(generated_config,null,2));
     }
-  }
+  };
 
   _this.configurator_getvalue = function(){
     _this.generateJSON();
@@ -516,25 +516,24 @@ jsh.App[modelid] = new (function(){
       if(!publish_config_obj || _.isEmpty(publish_config_obj)) publish_config = null;
       else publish_config = JSON.stringify(publish_config_obj);
     }
-    catch(ex){}
+    catch(ex){ /* Do nothing */ }
     return {
       publish_path: publish_path,
       publish_config: publish_config,
     };
-  }
+  };
 
   _this.validate_json = function(errors, caption, val){
     var str = (val||'').trim();
-    var rslt = {};
     try{
-      if(str) rslt = JSON.stringify(JSON.parse(str));
+      if(str) JSON.stringify(JSON.parse(str));
     }
     catch(ex){
       errors.push('Invalid '+(caption||'JSON')+': '+ex.toString());
       return false;
     }
     return true;
-  }
+  };
 
   _this.configurator_validate = function(){
     var errors = [];
@@ -584,14 +583,14 @@ jsh.App[modelid] = new (function(){
       if(!_this.validate_json(errors, 'Publish Config', jcontainer.find('.src_deployment_target_publish_config').val())) return errors;
     }
     return errors;
-  }
+  };
 
   _this.deployment_target_publish_path_getvalue = function(val, field, xmodel){
     return _this.configurator_getvalue().publish_path;
-  }
+  };
 
   _this.deployment_target_publish_config_getvalue = function(val, field, xmodel){
     return _this.configurator_getvalue().publish_config;
-  }
+  };
 
 })();

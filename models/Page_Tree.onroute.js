@@ -1,14 +1,12 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
-var _ = require('lodash');
 var Helper = require('../Helper.js');
-var ejsext = require('../lib/ejsext.js');
 var cms = jsh.Modules['jsHarmonyCMS'];
 var dbtypes = jsh.AppSrv.DB.types;
 
 if(routetype == 'd'){
-  jsh.AppSrv.ExecRow(req._DBContext, "select v_my_site.site_id, (select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = v_my_site.deployment_target_id) deployment_target_publish_config from {schema}.v_my_site where site_id={schema}.my_current_site_id()", [], { }, function (err, rslt) {
-    if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, "An unexpected error has occurred"); return; }
+  jsh.AppSrv.ExecRow(req._DBContext, 'select v_my_site.site_id, (select deployment_target_publish_config from {schema}.deployment_target where deployment_target.deployment_target_id = v_my_site.deployment_target_id) deployment_target_publish_config from {schema}.v_my_site where site_id={schema}.my_current_site_id()', [], { }, function (err, rslt) {
+    if (err) { jsh.Log.error(err); Helper.GenError(req, res, -99999, 'An unexpected error has occurred'); return; }
 
     var root_txt = '(Root)';
     if (rslt && rslt.length && rslt[0]) {

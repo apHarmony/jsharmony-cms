@@ -18,7 +18,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var _ = require('lodash');
-var Cloner = require('../utils/cloner');
 var Convert = require('../utils/convert');
 
 /**
@@ -54,7 +53,7 @@ FieldModel.convertTypes = function(dataInstance, fields) {
     tinyint: true,
     decimal: true,
     float: true
-  }
+  };
 
   dataInstance = dataInstance || {};
   _.forEach(fields || [], function(field) {
@@ -67,7 +66,7 @@ FieldModel.convertTypes = function(dataInstance, fields) {
       dataInstance[fieldName] = Convert.toNumber(dataInstance[fieldName]);
     }
   });
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -98,7 +97,7 @@ FieldModel.makePristineCopy = function(dataInstance, fields) {
 
   FieldModel.convertTypes(pristineCopy);
   return pristineCopy;
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -172,6 +171,6 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
   FieldModel.convertTypes(dataInstance);
   // Must return in case original instance was null/undefined
   return dataInstance;
-}
+};
 
 exports = module.exports = FieldModel;

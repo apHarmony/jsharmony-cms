@@ -63,8 +63,8 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   var model = _.extend({}, modelConfig);
 
   if(modelConfig.fields && modelConfig.fields.length){
-    modelConfig.fields.unshift({ control:'html', value:'<div class="jsharmony_cms">',captionclass:"hidden"});
-    modelConfig.fields.push({ control:'html', value:'</div>',captionclass:"hidden"});
+    modelConfig.fields.unshift({ control:'html', value:'<div class="jsharmony_cms">',captionclass:'hidden'});
+    modelConfig.fields.push({ control:'html', value:'</div>',captionclass:'hidden'});
   }
 
   this._modelTemplate = model;
@@ -74,7 +74,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   model.onecolumn = true;
   if(model.js && _.isString(model.js) && model.js.trim()) model.js = '(function(){ var cms = '+this._cms._instance+';' + model.js + ' })();';
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
-}
+};
 
 /**
  * @public
@@ -84,7 +84,7 @@ PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
   model.id = PropertiesModelTemplate_Form.getNextInstanceId(this._componentTemplate);
 
   return model;
-}
+};
 
 /**
  * Get a unique ID for the model instance
@@ -95,7 +95,7 @@ PropertiesModelTemplate_Form.getNextInstanceId = function(componentTemplate) {
   if (PropertiesModelTemplate_Form._id == undefined) PropertiesModelTemplate_Form._id = 0;
   var id = PropertiesModelTemplate_Form._id++;
   return 'PropertiesModel_Form_' + componentTemplate.getClassName() + '_' + id;
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -113,7 +113,7 @@ PropertiesModelTemplate_Form.getNextInstanceId = function(componentTemplate) {
  */
 PropertiesModelTemplate_Form.prototype.makePristineCopy = function(dataInstance) {
   return FieldModel.makePristineCopy(dataInstance, this._modelTemplate.fields);
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -141,6 +141,6 @@ PropertiesModelTemplate_Form.prototype.makePristineCopy = function(dataInstance)
  */
 PropertiesModelTemplate_Form.prototype.populateDataInstance = function(dataInstance) {
   return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
-}
+};
 
 exports = module.exports = PropertiesModelTemplate_Form;

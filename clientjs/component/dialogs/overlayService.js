@@ -53,7 +53,7 @@ OverlayService.prototype.popDialog = function() {
   var zIndex = this.getZIndex($dialog);
   $overlay.css('z-index', zIndex);
   $dialog.before($overlay);
-}
+};
 
 /**
  * Add a dialog element to the overlay stack.
@@ -67,7 +67,7 @@ OverlayService.prototype.pushDialog = function(dialog) {
   $overlay.css('z-index', zIndex);
   OverlayService._dialogStack.push(this.jsh.$(dialog));
   this.jsh.$(dialog).before($overlay);
-}
+};
 
 /**
  * Get the overlay. Creates and adds to DOM if it doesn't already
@@ -91,7 +91,7 @@ OverlayService.prototype.getOverlay = function() {
   });
 
   return $childOverlay;
-}
+};
 
 /**
  * Get the z-index for the element.
@@ -103,6 +103,6 @@ OverlayService.prototype.getOverlay = function() {
 OverlayService.prototype.getZIndex = function(element) {
   var zIndex = parseInt(this.jsh.$(element).css('zIndex'));
   return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
-}
+};
 
 exports = module.exports = OverlayService;

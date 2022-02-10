@@ -33,11 +33,11 @@ jsh.App[modelid] = new (function(){
     jFileListing.on('dragleave', _this.file_listing_onDragLeave);
     jFileListing.on('dragover', _this.file_listing_onDragOver);
     jFileListing.on('drop', _this.file_listing_onDrop.bind(jFileListing[0], null));
-  }
+  };
 
   this.ondestroy = function(xmodel){
     $(window).unbind('resize', _this.onresize);
-  }
+  };
 
   this.file_listing_dragCounter = 0;
 
@@ -47,7 +47,7 @@ jsh.App[modelid] = new (function(){
     if(!jobj.hasClass('dragOver')) jobj.addClass('dragOver');
     e.preventDefault();
     e.stopPropagation();
-  }
+  };
 
   this.file_listing_onDragLeave = function(e){
     var jobj = $(this);
@@ -58,12 +58,12 @@ jsh.App[modelid] = new (function(){
     }
     e.preventDefault();
     e.stopPropagation();
-  }
+  };
 
   this.file_listing_onDragOver = function(e){
     e.preventDefault();
     e.stopPropagation();
-  }
+  };
 
   this.file_listing_onDrop = function(replace_media_key, e){
     var jobj = $(this);
@@ -84,7 +84,7 @@ jsh.App[modelid] = new (function(){
         _this.uploadFiles(_this._current_media_folder, srcevent.dataTransfer.files);
       }
     }
-  }
+  };
 
   this.uploadFiles = function(media_folder, files, cb){
     XExt.clearDialogs();
@@ -103,7 +103,7 @@ jsh.App[modelid] = new (function(){
       }
       else if(cb) return cb(err, media_keys);
     });
-  }
+  };
 
   this.uploadFile = function(media_folder, file, cb){
     var fd = new FormData();
@@ -124,7 +124,7 @@ jsh.App[modelid] = new (function(){
       success: function(jdata){
         jsh.xLoader.StopLoading(_this.loadobj);
         if ((jdata instanceof Object) && ('_error' in jdata)) {
-          if (jsh.DefaultErrorHandler(jdata._error.Number, jdata._error.Message)) { }
+          if (jsh.DefaultErrorHandler(jdata._error.Number, jdata._error.Message)) { /* Do nothing */ }
           else if ((jdata._error.Number == -9) || (jdata._error.Number == -5)) { jsh.XExt.Alert(jdata._error.Message); }
           else { jsh.XExt.Alert('Error #' + jdata._error.Number + ': ' + jdata._error.Message); }
           return;
@@ -148,7 +148,7 @@ jsh.App[modelid] = new (function(){
         XExt.Alert('Error uploading file: '+XExt.stringify(err));
       }
     });
-  }
+  };
 
   this.uploadReplacementFile = function(media_key, files, cb){
     if(files.length==0) return XExt.Alert('Please select a file for upload');
@@ -173,7 +173,7 @@ jsh.App[modelid] = new (function(){
       success: function(jdata){
         jsh.xLoader.StopLoading(_this.loadobj);
         if ((jdata instanceof Object) && ('_error' in jdata)) {
-          if (jsh.DefaultErrorHandler(jdata._error.Number, jdata._error.Message)) { }
+          if (jsh.DefaultErrorHandler(jdata._error.Number, jdata._error.Message)) { /* Do nothing */ }
           else if ((jdata._error.Number == -9) || (jdata._error.Number == -5)) { jsh.XExt.Alert(jdata._error.Message); }
           else { jsh.XExt.Alert('Error #' + jdata._error.Number + ': ' + jdata._error.Message); }
           return;
@@ -203,26 +203,26 @@ jsh.App[modelid] = new (function(){
         XExt.Alert('Error uploading file: '+XExt.stringify(err));
       }
     });
-  }
+  };
 
   this.onload = function(){
     _this.refreshLayout();
     _this.getMediaFileListing();
-  }
+  };
 
-  this.onresize = function(){ _this.refreshLayout(); }
+  this.onresize = function(){ _this.refreshLayout(); };
 
-  this.ongetstate = function(){ return _this.state; }
+  this.ongetstate = function(){ return _this.state; };
 
   this.onloadstate = function(xmodel, state){
     _this.state = _.extend({}, _this.state_default, _this.state, state);
     if(_this.state.media_folder !== null) this.setFolderBeforeLoad(_this.state.media_folder);
-  }
+  };
 
   this.setFolderBeforeLoad = function(media_folder){
     xmodel.controller.form.Data['media_folder'] = media_folder;
     xmodel.saveUnboundFields(xmodel.controller.form.Data);
-  }
+  };
 
   this.refreshLayout = function(){
     var jbrowser = $('.'+xmodel.class+'_browser');
@@ -234,14 +234,14 @@ jsh.App[modelid] = new (function(){
     var contentheight = wh - top - 20;
 
     $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
-  }
+  };
 
   this.media_folder_onchange = function(obj, newval) {
     var historyParams = {};
     if(_this.state.media_folder===null) historyParams = { replaceHistory: true };
     _this.getMediaFileListing();
     XPage.AddHistory(undefined, undefined, historyParams);
-  }
+  };
 
   this.setView = function(view){
     if(!_.includes(_.keys(_this.VIEW),view)) return XExt.Alert('Invalid View: '+view);
@@ -249,7 +249,7 @@ jsh.App[modelid] = new (function(){
     _this.state.file_view = view;
     _this.renderListing();
     XPage.AddHistory();
-  }
+  };
 
   this.setSort = function(sort){
     if(!_.includes(_.keys(_this.SORT),sort)) return XExt.Alert('Invalid Sort: '+sort);
@@ -258,7 +258,7 @@ jsh.App[modelid] = new (function(){
     else _this.state.file_sort = new_sort;
     _this.renderListing();
     XPage.AddHistory();
-  }
+  };
 
   this.getMediaFileListing = function(options, onComplete){
     options = _.extend({ force: false, media_folder: undefined }, options);
@@ -294,7 +294,7 @@ jsh.App[modelid] = new (function(){
       }
       else XExt.Alert('Error while loading data');
     }, function (err) { });
-  }
+  };
 
   this.renderListing = function(options){
     options = _.extend({ refresh_sidebar: true }, options);
@@ -323,13 +323,13 @@ jsh.App[modelid] = new (function(){
     //Update group buttons
     jsh.$root('.xform_button_group_SortBy .xform_button_caption').text('Sort By: '+_this.SORT[_this.state.file_sort.substr(1)]);
     jsh.$root('.xform_button_group_View .xform_button_caption').text('View: '+_this.VIEW[_this.state.file_view]);
-  }
+  };
 
   this.bindEventsListing = function(){
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
     if(_this.state.file_view=='tiles'){
-      var jfiles = jcontainer.find('.'+xmodel.class+'_file_tile');
-      jfiles.on('click', function(e){ 
+      let jfiles = jcontainer.find('.'+xmodel.class+'_file_tile');
+      jfiles.on('click', function(e){
         XExt.HideContextMenu();
         _this.selectFile($(this).data('key'));
         $(this).focus();
@@ -369,8 +369,8 @@ jsh.App[modelid] = new (function(){
       XExt.bindDragSource(jfiles);
     }
     else if(_this.state.file_view=='details'){
-      var jfiles = jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr');
-      jfiles.on('click', function(e){ 
+      let jfiles = jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr');
+      jfiles.on('click', function(e){
         _this.selectFile($(this).data('key'));
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -390,7 +390,7 @@ jsh.App[modelid] = new (function(){
         e.stopPropagation();
         XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', $(this).data('key'));
       });
-      jcontainer.find('.'+xmodel.class+'_file_listing_tbl thead th[data-sort]').on('click', function(e){ 
+      jcontainer.find('.'+xmodel.class+'_file_listing_tbl thead th[data-sort]').on('click', function(e){
         _this.setSort($(this).data('sort'));
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -410,14 +410,14 @@ jsh.App[modelid] = new (function(){
       e.stopPropagation();
       XExt.ShowContextMenu('.'+xmodel.class+'_file_container_context_menu', _this._current_media_folder);
     });
-  }
+  };
 
   this.getMediaFile = function(media_key){
     for(var i=0;i<_this.media_files.length;i++){
       if(_this.media_files[i].media_key == media_key) return _this.media_files[i];
     }
     return undefined;
-  }
+  };
 
   this.selectFile = function(media_key, options){
     options = _.extend({ scrollIntoView: undefined, force: false }, options);
@@ -448,24 +448,24 @@ jsh.App[modelid] = new (function(){
       var jselected = jcontainer.find('.selected');
       if(jselected.length) jselected[0].scrollIntoView();
     }
-  }
+  };
 
   this.selectPrevFile = function(media_key){
     var curIndex = _.findIndex(_this.sorted_media_files, { media_key: media_key });
     if(curIndex <= 0) return;
     _this.selectFile(_this.sorted_media_files[curIndex - 1].media_key, { scrollIntoView: true });
-  }
+  };
 
   this.selectNextFile = function(media_key){
     var curIndex = _.findIndex(_this.sorted_media_files, { media_key: media_key });
     if((curIndex < 0) || ((curIndex+1) >= _this.sorted_media_files.length)) return;
     _this.selectFile(_this.sorted_media_files[curIndex + 1].media_key, { scrollIntoView: true });
-  }
+  };
 
   this.viewFileDetails = function(media_key){
     _this.toggleSidebar(true);
     _this.selectFile(media_key, { scrollIntoView: true });
-  }
+  };
 
   this.renderInfo = function(media_file){
     //Render Files
@@ -490,18 +490,18 @@ jsh.App[modelid] = new (function(){
       }
     }
     _this.bindEventsInfo();
-  }
+  };
 
   this.toggleSidebar = function(show){
     var jinfo = jsh.$root('.'+xmodel.class+'_file_info');
     if(typeof show == 'undefined') show = !_this.isSidebarVisible();
     if(!show) jinfo.css('display','none');
     else jinfo.css('display','flex');
-  }
+  };
 
   this.isSidebarVisible = function(){
     return jsh.$root('.'+xmodel.class+'_file_info').is(':visible');
-  }
+  };
 
   this.bindEventsInfo = function(){
     var jcontainer = jsh.$root('.'+xmodel.class+'_file_info');
@@ -558,7 +558,7 @@ jsh.App[modelid] = new (function(){
       _this.saveMediaFileInfo();
       e.preventDefault();
     });
-  }
+  };
 
   var saveMediaFileInfo_lock = false;
   this.saveMediaFileInfo = function(media_file, onComplete){
@@ -583,19 +583,19 @@ jsh.App[modelid] = new (function(){
     }, function(err){
       saveMediaFileInfo_lock = false;
     });
-  }
+  };
 
   this.loadInfo = function(media_key, onComplete){
     var infoModel = xmodel.namespace+'Media_Tree_Info';
     XForm.Get(infoModel, { media_key: media_key }, {}, function(rslt){
       if(rslt && rslt[infoModel]){
         var existing_media_file = _this.getMediaFile(media_key);
-        existing_media_file = _.extend(existing_media_file, rslt[infoModel]);
+        _.extend(existing_media_file, rslt[infoModel]);
       }
       _this.renderListing();
       if(onComplete) onComplete(rslt);
     });
-  }
+  };
 
   this.setInfoDirty = function(media_file, isDirty, cb){
     if(!cb) cb = function(){};
@@ -612,27 +612,27 @@ jsh.App[modelid] = new (function(){
       }
     }
     return cb();
-  }
+  };
 
   this.setMediaProp = function(key, val){
     if(!_this.selected_media_file) return;
     if(_this.selected_media_file[key] == val) return;
     _this.selected_media_file[key] = val;
     _this.setInfoDirty(_this.selected_media_file, true);
-  }
+  };
 
   this.previewFile = function(media_file){ /* { media_ext, media_id, media_width, media_height, media_key } */
     jsh.System.PreviewMedia(media_file.media_key, undefined, media_file.media_id, media_file.media_ext, media_file.media_width, media_file.media_height);
-  }
+  };
 
   this.downloadFile = function(media_key){
     var media_file = _this.getMediaFile(media_key);
     var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
     jsh.getFileProxy().prop('src', url);
-  }
+  };
 
   this.viewRevisions = function(media_key){
-    if(!_this.checkChangesInfo(media_key, function(){ _this.viewRevisions(media_key) })) return;
+    if(!_this.checkChangesInfo(media_key, function(){ _this.viewRevisions(media_key); })) return;
     var media_file = _this.getMediaFile(media_key);
 
     xmodel.set('revision_media_key', media_key);
@@ -647,7 +647,7 @@ jsh.App[modelid] = new (function(){
         }
       }
     });
-  }
+  };
 
   this.checkChangesInfo = function(new_media_key, retry){
     if((new_media_key == _this.selected_media_key) && _this.selected_media_file){
@@ -665,14 +665,12 @@ jsh.App[modelid] = new (function(){
       }
     }
     return true;
-  }
+  };
 
   this.replaceFile = function(media_key){
     //Save any pending changes to a media file before replacing
-    if(!_this.checkChangesInfo(media_key, function(){ _this.replaceFile(media_key) })) return;
+    if(!_this.checkChangesInfo(media_key, function(){ _this.replaceFile(media_key); })) return;
 
-    var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
-    var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_ReplaceMedia';
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
@@ -690,11 +688,10 @@ jsh.App[modelid] = new (function(){
       });
     }, function (success) { //onAccept
     }, undefined, undefined, { backgroundClose: true });
-  }
+  };
 
   this.renameFile = function(media_key){
     var media_file = (media_key == _this.selected_media_key) ? _this.selected_media_file : _this.getMediaFile(media_key);
-    var media_path = media_file.media_path;
     var media_ext = media_file.media_ext || '.';
     var base_filename = media_file.media_filename;
     base_filename = base_filename.substr(0, base_filename.length - media_ext.length).trim();
@@ -713,7 +710,7 @@ jsh.App[modelid] = new (function(){
         });
       });
     });
-  }
+  };
 
   this.moveFile = function(media_key, new_media_path){
     new_media_path = new_media_path||'';
@@ -749,7 +746,7 @@ jsh.App[modelid] = new (function(){
         });
       }
     );
-  }
+  };
 
   this.deleteFile = function(media_key){
     var media_file = _this.getMediaFile(media_key);
@@ -759,7 +756,7 @@ jsh.App[modelid] = new (function(){
         _this.getMediaFileListing({ force: true });
       });
     });
-  }
+  };
 
   this.folderIsRoot = function(media_folder){
     if(!XExt.endsWith(media_folder,'/')) media_folder += '/';
@@ -775,13 +772,12 @@ jsh.App[modelid] = new (function(){
       }
     }
     return false;
-  }
+  };
 
   this.addFile = function(media_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding media');
 
     if(typeof media_folder == 'undefined') media_folder = xmodel.get('media_folder');
-    var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_AddMedia';
 
     XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
@@ -803,7 +799,7 @@ jsh.App[modelid] = new (function(){
       });
     }, function (success) { //onAccept
     }, undefined, undefined, { backgroundClose: true });
-  }
+  };
 
   this.addFolder = function(parent_media_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before adding a folder');
@@ -820,7 +816,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.renameFolder = function(media_folder){
     //Get new folder name
@@ -841,7 +837,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.moveFolder = function(old_media_folder, new_media_folder){
     new_media_folder = new_media_folder||'';
@@ -872,7 +868,7 @@ jsh.App[modelid] = new (function(){
         });
       }
     );
-  }
+  };
 
   this.deleteFolder = function(media_folder){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before deleting a folder');
@@ -885,7 +881,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     });
-  }
+  };
 
   this.sendToEditor = function(media_key){
     var media_file = _this.getMediaFile(media_key);
@@ -899,7 +895,7 @@ jsh.App[modelid] = new (function(){
       window.opener.postMessage('cms_file_picker:'+JSON.stringify({ media_key: media_key, media_file_id: media_file.media_file_id, media_desc: media_file.media_desc, media_path: media_file.media_path, media_folder: media_file.media_folder }), '*');
       window.close();
     }
-  }
+  };
 
   this.media_folder_ondrop = function(dropval, anchor, e) {
     if(!XExt.hasAction(xmodel.actions,'U')) return;
@@ -914,7 +910,7 @@ jsh.App[modelid] = new (function(){
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
     }
-  }
+  };
   
   this.media_folder_onmove = function(dragval, dropval, anchor, e) {
     if(!XExt.hasAction(xmodel.actions,'U')) return;
@@ -942,6 +938,6 @@ jsh.App[modelid] = new (function(){
         _this.moveFolder(old_media_folder, new_media_folder);
       });
     }
-  }
+  };
 
 })();

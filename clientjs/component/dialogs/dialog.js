@@ -38,7 +38,7 @@ var OverlayService = require('./overlayService');
 
 
 
-  /**
+/**
   * Called when the dialog wants to accept/save the changes
   * @callback Dialog~acceptCallback
   * @param {Function} successFunc - Call this function if successfully accepted (e.g., no data errors; valid save).
@@ -73,7 +73,7 @@ var OverlayService = require('./overlayService');
  * @param {Function} cancelFunc - Call this function to trigger cancel logic
  */
 
- /**
+/**
   * @class
   * @param {Object} jsh
   * @param {Object} cms
@@ -92,7 +92,7 @@ function Dialog(jsh, cms, model, config) {
 
   this.overlayService = new OverlayService(this);
 
-  this._jsh.$(this._jsh.root).append(this._$wrapper)
+  this._jsh.$(this._jsh.root).append(this._$wrapper);
 
   /**
    * @public
@@ -142,7 +142,7 @@ Dialog.prototype.destroy = function() {
   if (this._$overlay) this._$overlay.remove();
   delete Dialog._idLookup[this._id];
   this._destroyed = true;
-}
+};
 
 /**
  * Get a CSS selector that can be used to find
@@ -152,7 +152,7 @@ Dialog.prototype.destroy = function() {
  */
 Dialog.prototype.getFormSelector = function() {
   return  '.xdialogbox.' + this._id;
-}
+};
 
 /**
  * Get a globally unique (W.R.T this dialog class)
@@ -170,7 +170,7 @@ Dialog.prototype.getNextId = function() {
   } while (!id);
   Dialog._idLookup[id] = true;
   return id;
-}
+};
 
 /**
  * Get the scroll top position for the page.
@@ -180,7 +180,7 @@ Dialog.prototype.getNextId = function() {
  */
 Dialog.prototype.getScrollTop = function($wrapper) {
   return $wrapper.scrollParent().scrollTop();
-}
+};
 
 /**
  * @private
@@ -190,7 +190,7 @@ Dialog.prototype.load = function(callback) {
   this._jsh.XPage.LoadVirtualModel(_this._jsh.$(_this.getFormSelector()), this._model, function(xmodel) {
     callback(xmodel);
   });
-}
+};
 
 /**
  * Create the dialog elements and append to the body DOM.
@@ -216,7 +216,7 @@ Dialog.prototype.makeDialog = function(id, config) {
     .append($form);
 
   return $wrapper;
-}
+};
 
 /**
  * @public
@@ -230,14 +230,12 @@ Dialog.prototype.open = function() {
   var _this = this;
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
-  var hasToolbarOffset = !!_this._cms.editor.getOffsetTop();
-  var wasAtTop = !_this._jsh.$(document).scrollTop();
 
   this.load(function(xmodel) {
 
     var $wrapper = _this._jsh.$(formSelector);
     _this.registerLovs(xmodel);
-    var lastScrollTop = 0
+    var lastScrollTop = 0;
     _this._jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, f);
@@ -280,7 +278,7 @@ Dialog.prototype.open = function() {
       }
     );
   });
-}
+};
 
 /**
  * Register the LOVs defined in the model.
@@ -304,7 +302,7 @@ Dialog.prototype.registerLovs = function(xmodel) {
       xmodel.controller.setLOV(field.name, lovs);
     }
   });
-}
+};
 
 /**
  * Set the scroll top position for the page.
@@ -314,6 +312,6 @@ Dialog.prototype.registerLovs = function(xmodel) {
  */
 Dialog.prototype.setScrollTop = function(position, $wrapper) {
   $wrapper.scrollParent().scrollTop(position);
-}
+};
 
 exports = module.exports = Dialog;

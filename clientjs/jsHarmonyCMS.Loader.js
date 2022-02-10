@@ -38,7 +38,7 @@ exports = module.exports = function(cms){
     if(this.isLoading) return;
     this.isLoading = true;
 
-    var loader_obj = document.getElementById('jsHarmonyCMSLoading')
+    var loader_obj = document.getElementById('jsHarmonyCMSLoading');
 
     if(loader_obj){
       if(cms.isInitialized) loader_obj.style.backgroundColor = 'rgba(0,0,0,0.2)';
@@ -74,7 +74,7 @@ exports = module.exports = function(cms){
       loader_img.style.left = '-50px';
       loader_img_container.appendChild(loader_img);
     }
-  }
+  };
 
   this.StopLoading = function(obj){
     if(!obj) obj = _this.defaultLoadObj;
@@ -83,7 +83,7 @@ exports = module.exports = function(cms){
     if(this.loadQueue.length) return;
 
     this.isLoading = false;
-    var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); }
+    var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); };
     if(cms.jsh){
       cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut('normal', function(){ triggerLoadingComplete(); });
     }
@@ -91,10 +91,10 @@ exports = module.exports = function(cms){
       document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
       triggerLoadingComplete();
     }
-  }
+  };
 
   this.ClearLoading = function(){
     this.loadQueue = [];
     this.StopLoading();
-  }
-}
+  };
+};

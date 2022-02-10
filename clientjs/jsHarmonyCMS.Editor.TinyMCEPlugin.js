@@ -17,6 +17,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* globals tinymce */
+
 exports = module.exports = function(jsh, cms, editor){
   var _ = jsh._;
   var $ = jsh.$;
@@ -89,7 +91,7 @@ exports = module.exports = function(jsh, cms, editor){
     tinymce.PluginManager.add('jsHarmonyCms', function(editor, url) {
       return new JsHarmonyComponentPlugin(editor);
     });
-  }
+  };
 
   /**
    * @class
@@ -175,9 +177,9 @@ exports = module.exports = function(jsh, cms, editor){
         return 0;
       });
       return rslt;
-    }
+    };
     return getMenuItems(menuHierarchy.root);
-  }
+  };
 
   /**
    * Create the nested menu for picking components to insert.
@@ -195,7 +197,7 @@ exports = module.exports = function(jsh, cms, editor){
         return _this.createComponentMenuItems(editorComponents);
       }
     });
-  }
+  };
 
   /**
    * Create the toolbar menu button for picking components to insert.
@@ -213,7 +215,7 @@ exports = module.exports = function(jsh, cms, editor){
         cb(_this.createComponentMenuItems(editorComponents));
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createComponentContextMenu = function(editorComponents) {
     if(!editorComponents || !editorComponents.length) return;
@@ -239,7 +241,7 @@ exports = module.exports = function(jsh, cms, editor){
       update: function (element) {
         var componentType = getComponentType(element);
         if(componentType){
-          var info = _.find(editorComponents, function(info) { return info.componentType === componentType });
+          var info = _.find(editorComponents, function(info) { return info.componentType === componentType; });
           if (!info) return '';
           var menuItems = [];
           if(info.hasData) menuItems.push('jsHarmonyCmsComponent_Edit');
@@ -261,7 +263,7 @@ exports = module.exports = function(jsh, cms, editor){
       icon: ICONS.settings.name,
       onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createElementPathMenuButton = function() {
     var _this = this;
@@ -331,36 +333,36 @@ exports = module.exports = function(jsh, cms, editor){
                 }
               ];
             }
-          }
+          };
         });
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.checkForUpdate = function(){
     if(!cms.controller) return;
-    var checkForUpdate = function(){ if(!cms.controller.hasChanges) cms.controller.getValues(); }
+    var checkForUpdate = function(){ if(!cms.controller.hasChanges) cms.controller.getValues(); };
     checkForUpdate();
     setTimeout(checkForUpdate, 100);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
     var _this = this;
     _this.toolbarOptions.show_menu = !!visible;
     cms.editor.renderContentEditorToolbar(_this._editor);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setToolbarVisibility = function(visible){
     var _this = this;
     _this.toolbarOptions.show_toolbar = !!visible;
     cms.editor.renderContentEditorToolbar(_this._editor);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setToolbarDock = function(dockPosition){
     var _this = this;
     _this.toolbarOptions.dock = dockPosition || 'auto';
     cms.editor.renderContentEditorToolbar(_this._editor);
-  }
+  };
 
   /**
    * Create the "View" toolbar menu button, for hiding the menu and viewing source code.
@@ -397,7 +399,7 @@ exports = module.exports = function(jsh, cms, editor){
                 $(document.body).toggleClass('jsHarmonyCMS_hideEditorOutlines', hasOutlines);
                 $(document.body).toggleClass('jsHarmonyCMS_showEditorOutlines', !hasOutlines);
                 if(!jsh.xDialog.length){
-                  var editorManager = tinymce.util.Tools.resolve("tinymce.EditorManager");
+                  var editorManager = tinymce.util.Tools.resolve('tinymce.EditorManager');
                   editorManager.activeEditor.focus();
                 }
               }
@@ -414,19 +416,18 @@ exports = module.exports = function(jsh, cms, editor){
         ]);
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createEndEditToolbarButton = function() {
-    var _this = this;
     this._editor.ui.registry.addButton('jsHarmonyCmsEndEdit', {
       text: 'End Edit',
       icon: 'checkmark',
       onAction: function () { cms.editor.endEdit(); }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
-    //if(!this._editor.settings.isjsHarmonyCmsComponent) 
+    //if(!this._editor.settings.isjsHarmonyCmsComponent)
     var _this = this;
 
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleMenu', {
@@ -470,10 +471,10 @@ exports = module.exports = function(jsh, cms, editor){
               return function() {};
             }
           }
-        ]
+        ];
       }
     });
-  }
+  };
 
   /**
    * Create menu button for Spell Check
@@ -481,7 +482,6 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {EditorComponent[]} editorComponents
    */
   JsHarmonyComponentPlugin.prototype.createSpellCheckMessageMenuButton = function() {
-    var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsSpellCheckMessage', {
       text: 'Spell Check',
       icon: 'spell-check',
@@ -489,16 +489,15 @@ exports = module.exports = function(jsh, cms, editor){
         jsh.XExt.Alert('The editor uses your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createEndEditMenuButton = function() {
-    var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsEndEdit', {
       text: 'End Edit',
       icon: 'checkmark',
       onAction: function () { cms.editor.endEdit(); }
     });
-  }
+  };
   
   JsHarmonyComponentPlugin.prototype.createContextToolbar = function(editorComponents) {
 
@@ -531,13 +530,13 @@ exports = module.exports = function(jsh, cms, editor){
           return false;
         }
         var componentType = _this._editor.dom.getAttrib(node, 'data-component');
-        var editorComponent = _.find(editorComponents, function(info) { return info.componentType === componentType });
+        var editorComponent = _.find(editorComponents, function(info) { return info.componentType === componentType; });
         if (!editorComponent) {
           return false;
-        };
+        }
         return enableData === editorComponent.hasData && enableProps === editorComponent.hasProperties;
-      }
-    }
+      };
+    };
 
     var addToolbar = function(toolBarConfig, predicate) {
       var contextId = 'jsharmonyComponentContextToolbar_' + toolBarConfig;
@@ -547,11 +546,11 @@ exports = module.exports = function(jsh, cms, editor){
         scope: 'node',
         position: 'node'
       });
-    }
+    };
     addToolbar(dataAndPropsToolbar, toolbarPredicate(true, true));
     addToolbar(dataToolBar, toolbarPredicate(true, false));
     addToolbar(propsToolBar, toolbarPredicate(false, true));
-  }
+  };
 
   /**
    * Find the component instance if it exits
@@ -569,7 +568,7 @@ exports = module.exports = function(jsh, cms, editor){
     }
 
     return cms.componentManager.components[id];
-  }
+  };
 
   /**
    * When an undo or redo event occurs in the editor
@@ -593,7 +592,7 @@ exports = module.exports = function(jsh, cms, editor){
       }
     });
     parser.parse(content);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setToolbarOptions = function(toolbarOptions){
     var _this = this;
@@ -601,7 +600,7 @@ exports = module.exports = function(jsh, cms, editor){
     _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
     if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
     if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = !!toolbarOptions.show_menu || toolbarOptions.show_toolbar;
-  }
+  };
 
   /**
    * Initialize the plugin.
@@ -634,7 +633,7 @@ exports = module.exports = function(jsh, cms, editor){
           } else if (iconType === 'svg' || iconType === 'html') {
             icon = iconValue;
           } else {
-            console.error('Unknown icon family "' + iconType + '"');
+            console.error('Unknown icon family "' + iconType + '"'); // eslint-disable-line no-console
           }
         } else {
           icon = component.icon;
@@ -686,7 +685,7 @@ exports = module.exports = function(jsh, cms, editor){
       var el = _this._editor.selection.getStart();
       _this.openPropertiesEditor(el);
     });
-    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) { 
+    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) {
       _this.setToolbarOptions(toolbarOptions);
     });
     this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
@@ -697,7 +696,7 @@ exports = module.exports = function(jsh, cms, editor){
       _this._editor.parser.addAttributeFilter('data-component', function(nodes) { _this.renderContentComponents(nodes); });
       _this._editor.parser.addAttributeFilter('cms-component', function(nodes) { _this.replacePageComponentsWithContentComponents(nodes); });
     });
-  }
+  };
 
   /**
    * Insert the component into the editor.
@@ -738,7 +737,7 @@ exports = module.exports = function(jsh, cms, editor){
       _this._editor.insertContent('<p></p>');
       domUtil.remove(domUtil.select('#' + placeholderId));
     }
-  }
+  };
 
   /**
    * Create the component container HTML string for
@@ -750,7 +749,7 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
     var componentTemplate = cms.componentManager.componentTemplates[componentType];
     var isInline = (componentTemplate && componentTemplate.options && componentTemplate.options.editor_container) == 'inline';
-    var componentCode = 
+    var componentCode =
       '<'+(isInline?'span':'div')+
         ' class="mceNonEditable"'+
         ' data-component="' + jsh.XExt.escapeHTML(componentType) + '"'+
@@ -758,10 +757,10 @@ exports = module.exports = function(jsh, cms, editor){
         ' data-component-content=""'+
         ' data-is-insert="true"'+
       '>'+
-      (isInline?'&nbsp;':'') + 
+      (isInline?'&nbsp;':'') +
       '</'+(isInline?'span':'div')+'>';
     return componentCode;
-  }
+  };
 
   /**
    * Open the data editor for the component.
@@ -774,7 +773,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (component && _.isFunction(component.openDataEditor)) {
       component.openDataEditor();
     }
-  }
+  };
 
   /**
    * Open the property editor for the component.
@@ -787,7 +786,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (component && _.isFunction(component.openPropertiesEditor)) {
       component.openPropertiesEditor();
     }
-  }
+  };
 
   /**
    * Filter the TinyMce content parsed nodes.
@@ -817,7 +816,7 @@ exports = module.exports = function(jsh, cms, editor){
         });
       });
     });
-  }
+  };
 
   /**
    * Replace cms-component elements with data-component
@@ -838,7 +837,7 @@ exports = module.exports = function(jsh, cms, editor){
         if(nodeClass) nodeClass += ' ';
         nodeClass += 'mceNonEditable';
         node.attr('class', nodeClass);
-        node.attr('contenteditable', "false");
+        node.attr('contenteditable', 'false');
 
         var defaultProperties = {};
         var defaultData = {};
@@ -862,6 +861,7 @@ exports = module.exports = function(jsh, cms, editor){
             cmsComponentData = JSON.stringify(cmsComponentData);
           }
           catch(ex){
+            /* Do nothing */
           }
           node.attr('data-component-data', btoa(cmsComponentData));
           node.attr('cms-component-data', null);
@@ -873,6 +873,7 @@ exports = module.exports = function(jsh, cms, editor){
             cmsComponentProperties = JSON.stringify(cmsComponentProperties);
           }
           catch(ex){
+            /* Do nothing */
           }
           node.attr('data-component-properties', btoa(cmsComponentProperties));
           node.attr('cms-component-properties', null);
@@ -880,7 +881,7 @@ exports = module.exports = function(jsh, cms, editor){
       }
     });
     _this.renderContentComponents(nodes);
-  }
+  };
 
   /**
    * Filter the TinyMce content to find relevant components
@@ -900,8 +901,8 @@ exports = module.exports = function(jsh, cms, editor){
       var newNode = tinymce.html.Node.create('#text');
       newNode.value = String.fromCharCode(0x00A0);
       node.append(newNode);
-      _this._editor.dom.setHTML(node, '&nbsp;')
+      _this._editor.dom.setHTML(node, '&nbsp;');
       
     }
-  }
-}
+  };
+};

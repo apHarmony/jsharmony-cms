@@ -14,13 +14,13 @@ jsh.App[modelid] = new (function(){
 
   this.ondestroy = function(){
     isActive = false;
-  }
+  };
 
   this.updateButtons = function(deployment_sts){
     if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.$root('.xform_button_viewChangeLog.xelem'+xmodel.class).show();
     if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.$root('.xform_button_downloadZip.xelem'+xmodel.class).show();
     if(_.includes(['COMPLETE'], deployment_sts)) jsh.$root('.xform_button_redeploy.xelem'+xmodel.class).show();
-  }
+  };
 
   this.getSleepTime = function(){
     sleepsWithoutUpdate++;
@@ -31,11 +31,11 @@ jsh.App[modelid] = new (function(){
       maxSleepTime
     );
     return sleepTime;
-  }
+  };
 
   this.loadData = function(){
     if(!isActive) return;
-    if(jsh._debug) console.log('Loading deployment log '+xmodel.get('deployment_id'));
+    if(jsh._debug) console.log('Loading deployment log '+xmodel.get('deployment_id')); // eslint-disable-line no-console
     var emodelid = '../_funcs/deployment_log/'+xmodel.get('deployment_id');
     XForm.Get(emodelid, { }, { }, function (rslt) { //On Success
       if ('_success' in rslt) {
@@ -71,7 +71,7 @@ jsh.App[modelid] = new (function(){
         }
         //Auto-scroll
         if(auto_scroll && initialized){
-          var curDocumentHeight = jsh.XGrid.prototype._getDocumentHeight();
+          curDocumentHeight = jsh.XGrid.prototype._getDocumentHeight();
           if(curDocumentHeight-$(window).height() > 0) $(window).scrollTop(curDocumentHeight-$(window).height());
         }
         //Auto-refresh
@@ -81,6 +81,6 @@ jsh.App[modelid] = new (function(){
       }
       else XExt.Alert('Error while loading data');
     });
-  }
+  };
 
 })();

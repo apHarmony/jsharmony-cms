@@ -22,7 +22,7 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   exports.validate_req = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -37,17 +37,18 @@ module.exports = exports = function(module, funcs){
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var XValidate = jsh.XValidate;
-    var dbtypes = appsrv.DB.types;
 
     var model = jsh.getModel(req, module.namespace + 'Branch_Validate');
     
     if (!Helper.hasModelAction(req, model, 'B')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
     if (verb == 'get') {
-      var branch_id = req.query.branch_id;
+      if (!appsrv.ParamCheck('Q', Q, ['&branch_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+      if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+      var branch_id = Q.branch_id;
       
       //Check if item is defined
-      var sql_ptypes = [dbtypes.BigInt];
       var sql_params = { 'branch_id': branch_id };
       var validate = new XValidate();
       var verrors = {};
@@ -73,7 +74,7 @@ module.exports = exports = function(module, funcs){
                       errors: [err.toString()]
                     }
                   }
-                } 
+                }
               };
             }
           }
@@ -85,7 +86,7 @@ module.exports = exports = function(module, funcs){
     else {
       return next();
     }
-  }
+  };
 
   exports.validate_logError = function(item_errors, branch_item_type, item, errtxt){
     var key = item[branch_item_type+'_key'];
@@ -93,14 +94,14 @@ module.exports = exports = function(module, funcs){
     if(module.BranchItems[branch_item_type] && module.BranchItems[branch_item_type].validate && module.BranchItems[branch_item_type].validate.error_columns) error_columns = module.BranchItems[branch_item_type].validate.error_columns;
     if(!(key in item_errors)) item_errors[key] = _.extend(_.pick(item, error_columns), { errors: [] });
     item_errors[key].errors.push(errtxt);
-  }
+  };
 
   exports.validate_logSystemError = function(branchData, errtxt){
     if(!branchData.branch_validate.system) branchData.branch_validate.system = {
       system: { errors: [] }
     };
     branchData.branch_validate.system.system.errors.push(errtxt);
-  }
+  };
 
   
   exports.validate = function (dbcontext, branch_id, callback) {
@@ -132,7 +133,7 @@ module.exports = exports = function(module, funcs){
 
       //Get template_variables for branch
       function(cb){
-        var sql = "select site_editor deployment_target_id, v_my_site.deployment_target_template_variables, v_my_branch_desc.site_id, deployment_target_publish_config, deployment_target_publish_path from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_branch_desc.branch_id=@branch_id";
+        var sql = 'select site_editor deployment_target_id, v_my_site.deployment_target_template_variables, v_my_branch_desc.site_id, deployment_target_publish_config, deployment_target_publish_path from {schema}.v_my_branch_desc left outer join {schema}.v_my_site on v_my_site.site_id = v_my_branch_desc.site_id left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_branch_desc.branch_id=@branch_id';
         appsrv.ExecRow(dbcontext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
           if (err != null) { err.sql = sql; return cb(err); }
           if(!rslt || !rslt.length || !rslt[0]) return cb(Helper.NewError('No access to target revision', -11));
@@ -147,7 +148,7 @@ module.exports = exports = function(module, funcs){
             if(rslt[0].deployment_target_template_variables) template_variables = _.extend(template_variables, JSON.parse(rslt[0].deployment_target_template_variables));
           }
           catch(ex){
-            return deploy_cb('Publish Target has invalid deployment_target_template_variables: '+rslt[0].deployment_target_template_variables);
+            return cb('Publish Target has invalid deployment_target_template_variables: '+rslt[0].deployment_target_template_variables);
           }
 
           var deployment_target_publish_config = {};
@@ -155,7 +156,7 @@ module.exports = exports = function(module, funcs){
             deployment_target_publish_config = funcs.parseDeploymentTargetPublishConfig(branchData.site_id, rslt[0].deployment_target_publish_config, 'publish');
           }
           catch(ex){
-            return deploy_cb('Error parsing deployment_target_publish_config: '+ex.toString());
+            return cb('Error parsing deployment_target_publish_config: '+ex.toString());
           }
 
           //Get site config
@@ -218,11 +219,11 @@ module.exports = exports = function(module, funcs){
     ], function(err){
       if(err) return callback(err);
       var error_count = 0;
-      _.map(branch_validate, function(item_errors){ error_count += _.keys(item_errors).length });
+      _.map(branch_validate, function(item_errors){ error_count += _.keys(item_errors).length; });
       var rslt = { _success: 1, error_count: error_count, branch_validate: _.pickBy(branch_validate, function(branch_items){ return !_.isEmpty(branch_items); }) };
       return callback(null, rslt);
     });
-  }
+  };
 
   exports.validate_getPages = function(item_errors, branchData, callback){
     var jsh = module.jsh;
@@ -230,10 +231,10 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     //Get all pages
-    var sql = "\
+    var sql = '\
       select page_id,page_key,page_file_id,page_title,page_path,page_tags,page_author,page_template_id,page_template_path,page_filename,page_seo_title,page_seo_canonical_url,page_seo_metadesc,page_seo_keywords,page_review_sts,page_lang \
-        from "+(module.schema?module.schema+'.':'')+"page page where page_is_folder = 0 and page.page_id in (select page_id from "+(module.schema?module.schema+'.':'')+"branch_page where branch_id=@branch_id)\
-    ";
+        from '+(module.schema?module.schema+'.':'')+'page page where page_is_folder = 0 and page.page_id in (select page_id from '+(module.schema?module.schema+'.':'')+'branch_page where branch_id=@branch_id)\
+    ';
     var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { 'branch_id': branchData.branch_id };
     appsrv.ExecRecordset(branchData._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -252,7 +253,7 @@ module.exports = exports = function(module, funcs){
       }
       return callback();
     });
-  }
+  };
 
   exports.validate_getMedia = function(item_errors, branchData, callback){
     var jsh = module.jsh;
@@ -260,10 +261,10 @@ module.exports = exports = function(module, funcs){
     var dbtypes = appsrv.DB.types;
 
     //Get all media
-    var sql = "\
+    var sql = '\
     select media_id,media_key,media_file_id,media_desc,media_path,media_ext,media_width,media_height \
-      from "+(module.schema?module.schema+'.':'')+"media media where media_is_folder=0 and media.media_id in (select media_id from "+(module.schema?module.schema+'.':'')+"branch_media where branch_id=@branch_id)\
-    ";
+      from '+(module.schema?module.schema+'.':'')+'media media where media_is_folder=0 and media.media_id in (select media_id from '+(module.schema?module.schema+'.':'')+'branch_media where branch_id=@branch_id)\
+    ';
     var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { 'branch_id': branchData.branch_id };
     appsrv.ExecRecordset(branchData._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -282,13 +283,9 @@ module.exports = exports = function(module, funcs){
       }
       return callback();
     });
-  }
+  };
 
   exports.validate_page = function(item_errors, branchData, callback){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-
     //Validate templates
     _.each(branchData.page_templates, function(page_template, page_template_id){
       _.each(page_template.components, function(component, componentId){
@@ -300,7 +297,7 @@ module.exports = exports = function(module, funcs){
     async.eachOfSeries(branchData.page_keys, function(page, page_id, page_cb){
       funcs.getClientPage(branchData._DBContext, page, null, branchData.site_id, { pageTemplates: branchData.page_templates }, function(err, clientPage){
         if(err){ funcs.validate_logError(item_errors, 'page', page, err.toString()); return page_cb(); }
-        if(!clientPage) return page_cb(null); 
+        if(!clientPage) return page_cb(null);
         page.compiled = clientPage.page;
         page.template = clientPage.template;
 
@@ -316,8 +313,8 @@ module.exports = exports = function(module, funcs){
         var allContent = [];
         _.each(['css','header','footer','js'], function(key){ if(!page.template[key]) return; allContent['template '+key] = page.template[key]; });
         _.each(['css','header','footer'], function(key){ if(!page.compiled[key]) return; allContent[key] = page.template[key]; });
-        if(page.compiled.content) for(var key in page.compiled.content) allContent[key + ' content'] = page.compiled.content[key];
-        for(var key in allContent){
+        if(page.compiled.content) for(let key in page.compiled.content) allContent[key + ' content'] = page.compiled.content[key];
+        for(let key in allContent){
           funcs.replaceBranchURLs(allContent[key], {
             getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent){
               if(!(media_key in branchData.media_keys)) throw new Error('<' + key + '>: Link to missing Media ID #'+media_key.toString()+': ...'+getLinkContent()+'...');
@@ -341,13 +338,9 @@ module.exports = exports = function(module, funcs){
         return page_cb(null);
       });
     }, callback);
-  }
+  };
 
   exports.validate_media = function(item_errors, branchData, callback){
-    var jsh = module.jsh;
-    var appsrv = jsh.AppSrv;
-    var dbtypes = appsrv.DB.types;
-
     //Validate Media Paths
     async.eachOfSeries(branchData.media_keys, function(media, media_id, media_cb){
       var media_path = null;
@@ -361,7 +354,7 @@ module.exports = exports = function(module, funcs){
 
       return media_cb(null);
     }, callback);
-  }
+  };
 
   exports.validate_menu = function(item_errors, branchData, callback){
     var jsh = module.jsh;
@@ -374,9 +367,9 @@ module.exports = exports = function(module, funcs){
     async.waterfall([
       //Get all menus
       function(cb){
-        var sql = "select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
-          from "+(module.schema?module.schema+'.':'')+"menu menu \
-          where menu.menu_id in (select menu_id from "+(module.schema?module.schema+'.':'')+"branch_menu where branch_id=@branch_id)";
+        var sql = 'select menu_id,menu_key,menu_file_id,menu_name,menu_tag \
+          from '+(module.schema?module.schema+'.':'')+'menu menu \
+          where menu.menu_id in (select menu_id from '+(module.schema?module.schema+'.':'')+'branch_menu where branch_id=@branch_id)';
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branchData.branch_id };
         appsrv.ExecRecordset(branchData._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -457,7 +450,7 @@ module.exports = exports = function(module, funcs){
         }, cb);
       },
     ], callback);
-  }
+  };
 
   exports.validate_sitemap = function(item_errors, branchData, callback){
     var jsh = module.jsh;
@@ -470,9 +463,9 @@ module.exports = exports = function(module, funcs){
 
       //Get all sitemaps
       function(cb){
-        var sql = "select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
-          from "+(module.schema?module.schema+'.':'')+"sitemap sitemap \
-          where sitemap.sitemap_id in (select sitemap_id from "+(module.schema?module.schema+'.':'')+"branch_sitemap where branch_id=@branch_id)";
+        var sql = 'select sitemap_id,sitemap_key,sitemap_file_id,sitemap_name,sitemap_type \
+          from '+(module.schema?module.schema+'.':'')+'sitemap sitemap \
+          where sitemap.sitemap_id in (select sitemap_id from '+(module.schema?module.schema+'.':'')+'branch_sitemap where branch_id=@branch_id)';
         var sql_ptypes = [dbtypes.BigInt];
         var sql_params = { 'branch_id': branchData.branch_id };
         appsrv.ExecRecordset(branchData._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
@@ -526,7 +519,7 @@ module.exports = exports = function(module, funcs){
         }, cb);
       },
     ], callback);
-  }
+  };
 
   return exports;
 };

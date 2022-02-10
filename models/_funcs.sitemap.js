@@ -25,16 +25,14 @@ var async = require('async');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   exports.getSitemapFile = function(sitemap_file_id){
     if(!sitemap_file_id) throw new Error('Invalid sitemap_file_id');
     return path.join(path.join(module.jsh.Config.datadir,'sitemap'),sitemap_file_id.toString()+'.json');
-  }
+  };
 
   exports.getClientSitemap = function(sitemap, cb){
-    var appsrv = this;
-
     var sitemap_file_id = sitemap.sitemap_file_id;
 
     //Load Sitemap Content from disk
@@ -44,24 +42,24 @@ module.exports = exports = function(module, funcs){
       sitemap_content = sitemap_content || { sitemap_items: [] };
       return cb(null,sitemap_content);
     }, { fatalError: false });
-  }
+  };
 
   exports.getSampleSitemap = function(){
     var rslt = {
-      "sitemap_items":[
-        {sitemap_item_id:"1",sitemap_item_parent_id:"",sitemap_item_path:"/1/",sitemap_item_text:"Sample Sitemap",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"1"},
-        {sitemap_item_id:"2",sitemap_item_parent_id:"1",sitemap_item_path:"/1/2/",sitemap_item_text:"Page A",sitemap_item_hide_menu_parents:"1",sitemap_item_hide_menu_siblings:"1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"2"},
-        {sitemap_item_id:"11",sitemap_item_parent_id:"2",sitemap_item_path:"/1/2/11/",sitemap_item_text:"Subpage A-1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"10"},
-        {sitemap_item_id:"3",sitemap_item_parent_id:"1",sitemap_item_path:"/1/3/",sitemap_item_text:"Page B",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"3"},
-        {sitemap_item_id:"4",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/4/",sitemap_item_text:"Subpage B-1",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"4"},
-        {sitemap_item_id:"5",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/5/",sitemap_item_text:"Subpage B-2",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"5"},
-        {sitemap_item_id:"12",sitemap_item_parent_id:"5",sitemap_item_path:"/1/3/5/12",sitemap_item_text:"Leaf Page B-2.a",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"21"},
-        {sitemap_item_id:"13",sitemap_item_parent_id:"5",sitemap_item_path:"/1/3/5/13",sitemap_item_text:"Leaf Page B-2.b",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"22"},
-        {sitemap_item_id:"6",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/6/",sitemap_item_text:"Subpage B-3",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"6"},
-        {sitemap_item_id:"7",sitemap_item_parent_id:"3",sitemap_item_path:"/1/3/7/",sitemap_item_text:"Subpage B-4",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"7"},
-        {sitemap_item_id:"8",sitemap_item_parent_id:"1",sitemap_item_path:"/1/8/",sitemap_item_text:"Page C",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"8"},
-        {sitemap_item_id:"9",sitemap_item_parent_id:"",sitemap_item_path:"/9/",sitemap_item_text:"Hidden Area",sitemap_item_exclude_from_breadcrumbs:"1",sitemap_item_exclude_from_parent_menu:"1",sitemap_item_link_type:"",sitemap_item_link_dest:""},
-        {sitemap_item_id:"10",sitemap_item_parent_id:"9",sitemap_item_path:"/9/10/",sitemap_item_text:"Hidden Page",sitemap_item_link_type:"PAGE",sitemap_item_link_dest:"9"}
+      'sitemap_items':[
+        {sitemap_item_id:'1',sitemap_item_parent_id:'',sitemap_item_path:'/1/',sitemap_item_text:'Sample Sitemap',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'1'},
+        {sitemap_item_id:'2',sitemap_item_parent_id:'1',sitemap_item_path:'/1/2/',sitemap_item_text:'Page A',sitemap_item_hide_menu_parents:'1',sitemap_item_hide_menu_siblings:'1',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'2'},
+        {sitemap_item_id:'11',sitemap_item_parent_id:'2',sitemap_item_path:'/1/2/11/',sitemap_item_text:'Subpage A-1',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'10'},
+        {sitemap_item_id:'3',sitemap_item_parent_id:'1',sitemap_item_path:'/1/3/',sitemap_item_text:'Page B',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'3'},
+        {sitemap_item_id:'4',sitemap_item_parent_id:'3',sitemap_item_path:'/1/3/4/',sitemap_item_text:'Subpage B-1',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'4'},
+        {sitemap_item_id:'5',sitemap_item_parent_id:'3',sitemap_item_path:'/1/3/5/',sitemap_item_text:'Subpage B-2',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'5'},
+        {sitemap_item_id:'12',sitemap_item_parent_id:'5',sitemap_item_path:'/1/3/5/12',sitemap_item_text:'Leaf Page B-2.a',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'21'},
+        {sitemap_item_id:'13',sitemap_item_parent_id:'5',sitemap_item_path:'/1/3/5/13',sitemap_item_text:'Leaf Page B-2.b',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'22'},
+        {sitemap_item_id:'6',sitemap_item_parent_id:'3',sitemap_item_path:'/1/3/6/',sitemap_item_text:'Subpage B-3',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'6'},
+        {sitemap_item_id:'7',sitemap_item_parent_id:'3',sitemap_item_path:'/1/3/7/',sitemap_item_text:'Subpage B-4',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'7'},
+        {sitemap_item_id:'8',sitemap_item_parent_id:'1',sitemap_item_path:'/1/8/',sitemap_item_text:'Page C',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'8'},
+        {sitemap_item_id:'9',sitemap_item_parent_id:'',sitemap_item_path:'/9/',sitemap_item_text:'Hidden Area',sitemap_item_exclude_from_breadcrumbs:'1',sitemap_item_exclude_from_parent_menu:'1',sitemap_item_link_type:'',sitemap_item_link_dest:''},
+        {sitemap_item_id:'10',sitemap_item_parent_id:'9',sitemap_item_path:'/9/10/',sitemap_item_text:'Hidden Page',sitemap_item_link_type:'PAGE',sitemap_item_link_dest:'9'}
       ]
     };
     _.each(rslt.sitemap_items, function(sitemap_item){
@@ -80,7 +78,7 @@ module.exports = exports = function(module, funcs){
       for(var key in defaults) if(!(key in sitemap_item)) sitemap_item[key] = defaults[key];
     });
     return funcs.getPageSitemapRelatives(rslt, 4);
-  }
+  };
   
   exports.sitemap = function (req, res, next) {
     var verb = req.method.toLowerCase();
@@ -213,7 +211,7 @@ module.exports = exports = function(module, funcs){
             },
           ], function(err){
             if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
-            res.end(JSON.stringify({ 
+            res.end(JSON.stringify({
               '_success': 1,
               'sitemap': clientSitemap
             }));
@@ -290,16 +288,16 @@ module.exports = exports = function(module, funcs){
       }
       else return next();
     });
-  }
+  };
 
   exports.prettySitemap = function(sitemap_items, page_keys, media_keys, options){
-    var options = _.extend({ text: true }, options);
+    options = _.extend({ text: true }, options);
     var rslt = '[\n';
     var rsltarr = [];
 
     //Generate indexed list of sitemap items by ID
     var sitemap_items_by_id = {};
-    for(var i=0;i<sitemap_items.length;i++){
+    for(let i=0;i<sitemap_items.length;i++){
       var sitemap_item = sitemap_items[i];
       sitemap_item.collection_index = i;
       sitemap_items_by_id[sitemap_item.sitemap_item_id] = sitemap_item;
@@ -334,7 +332,7 @@ module.exports = exports = function(module, funcs){
     if(options.text){
       //Sort sitemap items
       sitemap_items.sort(function(a,b){
-        for(var i=0;i<a.sitemap_item_collection_index_array.length;i++){
+        for(let i=0;i<a.sitemap_item_collection_index_array.length;i++){
           if(b.sitemap_item_collection_index_array.length <= i) return 1;
           if(a.sitemap_item_collection_index_array[i] > b.sitemap_item_collection_index_array[i]) return 1;
           if(a.sitemap_item_collection_index_array[i] < b.sitemap_item_collection_index_array[i]) return -1;
@@ -395,7 +393,7 @@ module.exports = exports = function(module, funcs){
 
     if(options.text) return rslt;
     return rsltarr;
-  }
+  };
 
   exports.getPageSitemapRelatives = function(sitemap, page_key){
     /*
@@ -422,8 +420,8 @@ module.exports = exports = function(module, funcs){
     }
 
     var sitemap_items_by_id = {};
-    for(var i=0;i<sitemap_items.length;i++){
-      var sitemap_item = sitemap_items[i];
+    for(let i=0;i<sitemap_items.length;i++){
+      let sitemap_item = sitemap_items[i];
       sitemap_item.sitemap_item_id = (sitemap_item.sitemap_item_id||'').toString();
       sitemap_item.sitemap_item_link_dest = (sitemap_item.sitemap_item_link_dest||'').toString();
       sitemap_item.sitemap_item_parent_id = (sitemap_item.sitemap_item_parent_id||'').toString();
@@ -450,8 +448,8 @@ module.exports = exports = function(module, funcs){
     //Get sitemap item
     var current_item = null;
     var matching_items = [];
-    for(var i=0;i<sitemap_items.length;i++){
-      var sitemap_item = sitemap_items[i];
+    for(let i=0;i<sitemap_items.length;i++){
+      let sitemap_item = sitemap_items[i];
       if((sitemap_item.sitemap_item_link_type=='PAGE') && (sitemap_item.sitemap_item_link_dest==page_key)){ matching_items.push(sitemap_item); }
     }
     if(matching_items.length == 1){
@@ -463,17 +461,17 @@ module.exports = exports = function(module, funcs){
       //  -- ex. If 1st match = "About Us", and 2nd match = "About Us -> Overview", return "Overview"
       //  -- ex. If 1st match = "About Us", and 2nd match = "Services -> Overview", return "About Us" (since Services is not a child of About Us)
       var matching_items_hierarchy = [];
-      for(var i=0;i<matching_items.length;i++){
+      for(let i=0;i<matching_items.length;i++){
         var sitemap_item_parents = getParents(matching_items[i]);
         var sitemap_item_hierarchy = [matching_items[i].sitemap_item_id];
         _.each(sitemap_item_parents, function(parent){ sitemap_item_hierarchy.push(parent.sitemap_item_id); });
         matching_items_hierarchy.push(sitemap_item_hierarchy);
       }
       while(
-          (matching_items.length > 1) &&
+        (matching_items.length > 1) &&
           (matching_items[1].sitemap_item_parent_id && _.includes(matching_items_hierarchy[0], matching_items[1].sitemap_item_parent_id))
-        ){ matching_items.shift(); matching_items_hierarchy.shift(); }
-        current_item = matching_items[0];
+      ){ matching_items.shift(); matching_items_hierarchy.shift(); }
+      current_item = matching_items[0];
     }
 
     var parents = null;
@@ -483,18 +481,18 @@ module.exports = exports = function(module, funcs){
     if(current_item){
       current_item.sitemap_item_siblings = [];
 
-      function removeSiblings(sitemap_item){
+      var removeSiblings = function(sitemap_item){
         sitemap_item = _.clone(sitemap_item);
         delete sitemap_item.sitemap_item_siblings;
         return sitemap_item;
-      }
+      };
 
       //Get parents of current item
       parents = getParents(current_item);
 
       children = [];
-      for(var i=0;i<sitemap_items.length;i++){
-        var sitemap_item = sitemap_items[i];
+      for(let i=0;i<sitemap_items.length;i++){
+        let sitemap_item = sitemap_items[i];
 
         if(!sitemap_item.sitemap_item_exclude_from_parent_menu){
           //Children of current item
@@ -515,8 +513,8 @@ module.exports = exports = function(module, funcs){
 
       //Process hide_menu_siblings
       if(current_item.sitemap_item_hide_menu_siblings || !current_item.sitemap_item_siblings.length) current_item.sitemap_item_siblings = [removeSiblings(current_item)];
-      for(var i=0;i<parents.length;i++){
-        var parent = parents[i];
+      for(let i=0;i<parents.length;i++){
+        let parent = parents[i];
         if(parent.sitemap_item_hide_menu_siblings || !parent.sitemap_item_siblings.length) parent.sitemap_item_siblings = [removeSiblings(parent)];
       }
 
@@ -527,8 +525,8 @@ module.exports = exports = function(module, funcs){
       });
       breadcrumbs.push(current_item);
       if(current_item.sitemap_item_hide_menu_parents) parents = [];
-      for(var i=parents.length-1;i>=0;i--){
-        var parent = parents[i];
+      for(let i=parents.length-1;i>=0;i--){
+        let parent = parents[i];
         if(parent.sitemap_item_hide_menu_parents){
           parents.splice(0, i);
           break;
@@ -552,7 +550,7 @@ module.exports = exports = function(module, funcs){
       children: children,
     };
     return JSON.parse(JSON.stringify(rslt));
-  }
+  };
 
   exports.getSitemapUrl = function(sitemap_item, branchData){
 
@@ -569,7 +567,7 @@ module.exports = exports = function(module, funcs){
       return branchData.media_keys[media_key];
     }
     return sitemap_item.sitemap_item_link_dest;
-  }
+  };
 
   exports.createSitemapTree = function(sitemap, branchData){
     //Input:
@@ -593,7 +591,7 @@ module.exports = exports = function(module, funcs){
       //self.children
       sitemap.self.children = sitemap.children || [];
       //self.children.siblings
-      for(var i=0;i<sitemap.self.children.length;i++){
+      for(let i=0;i<sitemap.self.children.length;i++){
         var child = sitemap.self.children[i];
         child.siblings = sitemap.self.children;
         child.parent = sitemap.self;
@@ -601,7 +599,7 @@ module.exports = exports = function(module, funcs){
 
       //self.siblings
       sitemap.self.siblings = sitemap.self.sitemap_item_siblings || [sitemap.self];
-      for(var i=0;i<sitemap.self.siblings.length;i++){
+      for(let i=0;i<sitemap.self.siblings.length;i++){
         var sibling = sitemap.self.siblings[i];
         //Replace self in sitemap.self.siblings
         if(sibling.sitemap_item_id == sitemap.self.sitemap_item_id) sitemap.self.siblings[i] = sitemap.self;
@@ -619,7 +617,7 @@ module.exports = exports = function(module, funcs){
         sitemap_item.children = [];
       });
       _.each(sitemap.sitemap_items, function(sitemap_item){
-        var parent_id = (sitemap_item.sitemap_item_parent_id||'').toString()
+        var parent_id = (sitemap_item.sitemap_item_parent_id||'').toString();
         if(parent_id){
           sitemap_item.parent = sitemap_item_parents[parent_id];
           sitemap_item.siblings = [];
@@ -636,8 +634,8 @@ module.exports = exports = function(module, funcs){
 
     //Replace self in each sitemap.parents.siblings
     if(sitemap.parents){
-      for(var i=0;i<sitemap.parents.length;i++){
-        var parent = sitemap.parents[i];
+      for(let i=0;i<sitemap.parents.length;i++){
+        let parent = sitemap.parents[i];
 
         //parent.parent
         if(i==0) parent.parent = null;
@@ -649,8 +647,8 @@ module.exports = exports = function(module, funcs){
           if(parent.siblings[j].sitemap_item_id == parent.sitemap_item_id) parent.siblings[j] = parent;
         }
       }
-      for(var i=0;i<sitemap.parents.length;i++){
-        var parent = sitemap.parents[i];
+      for(let i=0;i<sitemap.parents.length;i++){
+        let parent = sitemap.parents[i];
         //parent.children
         if(i==(sitemap.parents.length-1)) parent.children = sitemap.self.siblings;
         else parent.children = sitemap.parents[i+1].siblings;
@@ -677,7 +675,7 @@ module.exports = exports = function(module, funcs){
       var addToAllItems = function(sitemap_item){
         sitemap.allItems.push(sitemap_item);
         _.each(sitemap_item.children, function(child_item){ addToAllItems(child_item); });
-      }
+      };
       _.each(sitemap.tree, function(sitemap_item){ addToAllItems(sitemap_item); });
     }
     else {
@@ -746,7 +744,7 @@ module.exports = exports = function(module, funcs){
       sitemap_item.getSiblings = function(){
         var siblings = sitemap_item.parent ? sitemap_item.parent.children : sitemap.tree;
         return _.filter(siblings, function(sibling){ return sibling.id != sitemap_item.id; });
-      }
+      };
     });
 
     
@@ -765,7 +763,7 @@ module.exports = exports = function(module, funcs){
     sitemap.topItems = sitemap.tree;
     sitemap.currentItem = sitemap.self;
     sitemap.item = sitemap.self;
-  }
+  };
 
   return exports;
 };

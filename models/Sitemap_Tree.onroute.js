@@ -1,6 +1,5 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
-var _ = require('lodash');
 var Helper = require('../Helper.js');
 var querystring = require('querystring');
 
@@ -11,7 +10,7 @@ if (!Helper.hasModelAction(req, model, 'B')) return callback();
 if(routetype != 'model') return callback();
 if(req.query.sitemap_id) return callback();
 
-jsh.AppSrv.ExecRecordset(req._DBContext, "select sitemap_key from {schema}.v_my_sitemap", [], {  }, function (err, rslt) {
+jsh.AppSrv.ExecRecordset(req._DBContext, 'select sitemap_key from {schema}.v_my_sitemap', [], {  }, function (err, rslt) {
   if(err) callback();
   if(!rslt || !rslt.length || !rslt[0]) return callback();
 

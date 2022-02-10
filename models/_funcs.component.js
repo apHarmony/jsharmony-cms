@@ -22,9 +22,6 @@ var _ = require('lodash');
 var async = require('async');
 var Helper = require('jsharmony/Helper');
 var ejsext = require('jsharmony/lib/ejsext.js');
-var urlparser = require('url');
-var wclib = require('jsharmony/WebConnect');
-var wc = new wclib.WebConnect();
 
 /** Set the chars used to render new lines for the output **/
 var NEW_LINE_OUTPUT = '\r\n';
@@ -33,7 +30,7 @@ var INDENT_STRING = '  ';
 
 module.exports = exports = function(module, funcs){
   var exports = {};
-  var _t = module._t, _tN = module._tN;
+  var _t = module._t;
 
   exports.templates_components = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -42,7 +39,6 @@ module.exports = exports = function(module, funcs){
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
     var XValidate = jsh.XValidate;
-    var cms = module;
 
     var branch_id = null;
     if(req.params && req.params.branch_id) branch_id = req.params.branch_id;
@@ -52,11 +48,15 @@ module.exports = exports = function(module, funcs){
       if (!Helper.hasModelAction(req, model, 'BU')) { Helper.GenError(req, res, -11, _t('Invalid Model Access')); return; }
 
       //Get page
+      var sql = '';
       var sql_ptypes = [dbtypes.BigInt];
       var sql_params = { 'branch_id': branch_id };
       var validate = new XValidate();
       var verrors = {};
       validate.AddValidator('_obj.branch_id', 'Branch ID', 'B', [XValidate._v_IsNumeric(), XValidate._v_Required()]);
+
+      verrors = _.merge(verrors, validate.Validate('B', sql_params));
+      if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
       var deployment_target_template_variables_str = '';
       var deployment_target_publish_config = {};
@@ -73,7 +73,7 @@ module.exports = exports = function(module, funcs){
           //Check if branch exists
           function(cb){
             if(branch_id){
-              var sql = "select branch_desc,site_id from {schema}.v_my_branch_desc where branch_id=@branch_id";
+              sql = 'select branch_desc,site_id from {schema}.v_my_branch_desc where branch_id=@branch_id';
               appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
                 if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
                 if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'No access to this revision'); }
@@ -83,7 +83,7 @@ module.exports = exports = function(module, funcs){
               });
             }
             else {
-              var sql = "select {schema}.my_current_site_id() site_id";
+              sql = 'select {schema}.my_current_site_id() site_id';
               appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), sql_ptypes, sql_params, function (err, rslt) {
                 if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
                 if(!rslt || !rslt[0]){ return Helper.GenError(req, res, -4, 'Error loading site data'); }
@@ -105,7 +105,7 @@ module.exports = exports = function(module, funcs){
 
           //Get deployment_target_template_variables
           function(cb){
-            var sql = "select v_my_site.deployment_target_template_variables, deployment_target_publish_path, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id";
+            sql = 'select v_my_site.deployment_target_template_variables, deployment_target_publish_path, deployment_target_publish_config from {schema}.v_my_site left outer join {schema}.deployment_target on deployment_target.deployment_target_id = v_my_site.deployment_target_id where v_my_site.site_id=@site_id';
             appsrv.ExecRow(req._DBContext, funcs.replaceSchema(sql), [dbtypes.BigInt], { 'site_id': site_id }, function (err, rslt) {
               if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
               if(rslt && rslt[0]){
@@ -145,7 +145,7 @@ module.exports = exports = function(module, funcs){
               });
 
               return cb();
-            });          
+            });
           },
           
           //Download remote templates
@@ -229,7 +229,7 @@ module.exports = exports = function(module, funcs){
       }
       else return Helper.GenError(req, res, -4, 'Invalid Operation');
     });
-  }
+  };
 
   exports.templates_compile_components = function(req, res, next){
     var verb = req.method.toLowerCase();
@@ -258,6 +258,7 @@ module.exports = exports = function(module, funcs){
         funcs.getTemplateVariables('current', req._DBContext, 'editor', {}, {}, {}, function(err, template_variables){
           if(err) return Helper.GenError(req, res, -99999, err.toString());
 
+          var components = null;
           try{
             components = funcs.compileInlineComponents(componentContent, template_variables);
           }
@@ -275,7 +276,7 @@ module.exports = exports = function(module, funcs){
       }
       else return Helper.GenError(req, res, -4, 'Invalid Operation');
     });
-  }
+  };
 
   exports.compileInlineComponents = function(componentContent, template_variables){
     if(!_.isArray(componentContent)) componentContent = [];
@@ -286,7 +287,7 @@ module.exports = exports = function(module, funcs){
       var templateContent = componentContent[i];
       var componentDesc = '';
       try{
-        var component = null;
+        let component = null;
         component = funcs.readComponentTemplateConfig(templateContent, 'inline component template "' + templateContent.substr(0,200) + ((templateContent.length>200)?'...':'') + '"');
 
         if(!component.id) throw new Error('Each inline component must have an "id" defined in the cms-component-config.  Missing id in "' + templateContent.substr(0,200) + ((templateContent.length>200)?'...':'') + '"');
@@ -314,8 +315,8 @@ module.exports = exports = function(module, funcs){
     }
 
     //Parse template config
-    for(var componentId in components){
-      var component = components[componentId];
+    for(let componentId in components){
+      let component = components[componentId];
       if(!(component.templates && component.templates.editor)) continue;
       try{
         funcs.parseComponentTemplateConfigExtensions(component);
@@ -326,8 +327,8 @@ module.exports = exports = function(module, funcs){
     }
 
     //Parse template content
-    for(var componentId in components){
-      var component = components[componentId];
+    for(let componentId in components){
+      let component = components[componentId];
       if(!(component.templates && component.templates.editor)) continue;
       if(component.optimization && component.optimization.bare_ejs_templates) continue;
       try{
@@ -339,7 +340,7 @@ module.exports = exports = function(module, funcs){
     }
 
     return components;
-  }
+  };
 
   exports.generateComponentDeploymentTemplates = function(branchData, callback){
     async.eachOfSeries(branchData.component_templates, function(template, template_name, generate_cb){
@@ -369,7 +370,7 @@ module.exports = exports = function(module, funcs){
       });
       return generate_cb();
     }, callback);
-  }
+  };
 
   /**
    * Create an XML-like node from an object where
@@ -538,7 +539,7 @@ module.exports = exports = function(module, funcs){
     htdoc.trimRemoved();
 
     return htdoc.content;
-  }
+  };
 
   function replaceComponents(pageContent, branchData, pageComponents, renderFunc){
     if(!pageContent) pageContent = '';
@@ -601,19 +602,19 @@ module.exports = exports = function(module, funcs){
     return replaceComponents(pageContent, null, null, function(componentType, componentProperties, componentData){
       return renderComponentPretty(componentType, componentProperties, componentData);
     });
-  }
+  };
 
   exports.renderComponents = function(pageContent, branchData, pageComponents, additionalRenderParams) {
     return replaceComponents(pageContent, branchData, pageComponents, function(componentType, componentProperties, componentData, template, component){
       return funcs.renderComponent(template, branchData, {
-        data: componentData, 
-        properties: componentProperties, 
-        templateName: componentType, 
-        pageComponents: pageComponents, 
+        data: componentData,
+        properties: componentProperties,
+        templateName: componentType,
+        pageComponents: pageComponents,
         component: component
       }, additionalRenderParams);
     });
-  }
+  };
 
   exports.getComponentDefaultValues = function(model){
     var rslt = {};
@@ -623,15 +624,15 @@ module.exports = exports = function(module, funcs){
       }
     });
     return rslt;
-  }
+  };
 
   exports.renderComponent = function(template, branchData, renderOptions, additionalRenderParams) {
     additionalRenderParams = additionalRenderParams || {};
     renderOptions = _.extend({
-      data: null, 
-      properties: null, 
-      renderType: 'component', 
-      templateName: null, 
+      data: null,
+      properties: null,
+      renderType: 'component',
+      templateName: null,
       pageComponents: {},
       component: undefined,
     }, renderOptions);
@@ -639,8 +640,8 @@ module.exports = exports = function(module, funcs){
     var defaultProperties = {};
     var defaultData = {};
     if(renderOptions.component){
-      var defaultProperties = funcs.getComponentDefaultValues(renderOptions.component.properties);
-      var defaultData = funcs.getComponentDefaultValues(renderOptions.component.data);
+      defaultProperties = funcs.getComponentDefaultValues(renderOptions.component.properties);
+      defaultData = funcs.getComponentDefaultValues(renderOptions.component.data);
     }
     var properties = _.extend({}, defaultProperties, renderOptions.properties);
 
@@ -698,7 +699,7 @@ module.exports = exports = function(module, funcs){
     if(branchData) rslt = funcs.renderComponents(rslt, branchData, renderOptions.pageComponents, additionalRenderParams);
 
     return rslt;
-  }
+  };
 
   function renderComponentPretty(componentType, componentProperties, componentData) {
 
@@ -753,7 +754,7 @@ module.exports = exports = function(module, funcs){
   }
 
   return exports;
-}
+};
 
 
 /**
