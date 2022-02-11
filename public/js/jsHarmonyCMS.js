@@ -86,8 +86,8 @@ ComponentTemplate.prototype.getCaptions = function() {
     captions.push(this._componentConfig.caption);
     captions.push(this._componentConfig.caption);
   }
-  return captions
-}
+  return captions;
+};
 
 /**
  * Get the component configuration as defined by the component JSON.
@@ -96,7 +96,7 @@ ComponentTemplate.prototype.getCaptions = function() {
  */
 ComponentTemplate.prototype.getComponentConfig = function() {
   return this._componentConfig;
-}
+};
 
 /**
  * Return the editor type
@@ -108,7 +108,7 @@ ComponentTemplate.prototype.getDataEditorType = function() {
     return this._componentConfig.data.layout;
   }
   return undefined;
-}
+};
 
 /**
  * @public
@@ -116,7 +116,7 @@ ComponentTemplate.prototype.getDataEditorType = function() {
  */
 ComponentTemplate.prototype.getDataModelTemplate_FormPreview = function() {
   return this._dataModelTemplate_FormPreview;
-}
+};
 
 /**
  * @public
@@ -124,7 +124,7 @@ ComponentTemplate.prototype.getDataModelTemplate_FormPreview = function() {
  */
 ComponentTemplate.prototype.getDataModelTemplate_GridPreview = function() {
   return this._dataModelTemplate_GridPreview;
-}
+};
 
 /**
  * @public
@@ -132,7 +132,7 @@ ComponentTemplate.prototype.getDataModelTemplate_GridPreview = function() {
  */
 ComponentTemplate.prototype.getPropertiesModelTemplate_Form = function() {
   return this._propertiesModelTemplate_Form;
-}
+};
 
 /**
  * Get the ID specified for the component configuration.
@@ -142,7 +142,7 @@ ComponentTemplate.prototype.getPropertiesModelTemplate_Form = function() {
  */
 ComponentTemplate.prototype.getTemplateId = function() {
   return this._componentConfig.id;
-}
+};
 
 /**
  * Gets the base class name for this component
@@ -151,7 +151,7 @@ ComponentTemplate.prototype.getTemplateId = function() {
  */
 ComponentTemplate.prototype.getClassName = function() {
   return this._componentConfig.className || this._jsh.XExt.escapeCSSClass(this._componentConfig.id, { nodash: true });
-}
+};
 
 /**
  * @private
@@ -176,7 +176,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
       titleFieldName: field.name + '_jsh_browserDataTitle',
       browserType: browserType,
       validate: field.validate,
-    }
+    };
 
     field.mediaBrowserControlInfo = info;
     field.name = info.titleFieldName;
@@ -219,7 +219,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
   });
 
   return retVal;
-}
+};
 
 
 exports = module.exports = ComponentTemplate;
@@ -304,10 +304,10 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var popup = _.isArray(modelConfig.popup) ? modelConfig.popup : [];
 
   var fields = modelConfig.fields || [];
-  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">', captionclass:"hidden"});
-  fields.push({ control:'html', value:'</div>', captionclass:"hidden"});
+  fields.unshift({ control:'html', value:'<div class="jsharmony_cms">', captionclass:'hidden'});
+  fields.push({ control:'html', value:'</div>', captionclass:'hidden'});
   fields.push({
-    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true, captionclass:"hidden"
+    caption: '', control:'html', value:'<div class="jsharmony_cms_preview_editor jsharmony_cms_component_preview" data-id="previewWrapper"></div>', 'block':true, captionclass:'hidden'
   });
 
   var model = _.extend({}, modelConfig);
@@ -343,7 +343,7 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
     itemTemplate = templateHtml;
   }
   this._itemTemplate = itemTemplate;
-}
+};
 
 /**
  * Get the link browser field info (if exists) for the link field with
@@ -357,7 +357,7 @@ DataModelTemplate_FormPreview.prototype.getBrowserFieldInfo = function(fieldName
     return field.mediaBrowserControlInfo && field.mediaBrowserControlInfo.dataFieldName === fieldName;
   });
   return field ? field.mediaBrowserControlInfo : undefined;
-}
+};
 
 /**
  * Get the link browser field infos
@@ -372,7 +372,7 @@ DataModelTemplate_FormPreview.prototype.getBrowserFieldInfos = function() {
     }
   });
   return retVal;
-}
+};
 
 /**
  * Get the EJS string used to render the item preview
@@ -381,7 +381,7 @@ DataModelTemplate_FormPreview.prototype.getBrowserFieldInfos = function() {
  */
 DataModelTemplate_FormPreview.prototype.getItemTemplate = function() {
   return this._itemTemplate || '';
-}
+};
 
 /**
  * @public
@@ -391,7 +391,7 @@ DataModelTemplate_FormPreview.prototype.getModelInstance = function() {
   model.id = DataModelTemplate_FormPreview.getNextInstanceId(this._componentTemplate);
 
   return model;
-}
+};
 
 /**
  * Return the raw model JavaScript.
@@ -400,7 +400,7 @@ DataModelTemplate_FormPreview.prototype.getModelInstance = function() {
  */
 DataModelTemplate_FormPreview.prototype.getModelJs = function() {
   return this._rawOriginalJs;
-}
+};
 
 /**
  * Get a unique ID for the model instance
@@ -411,7 +411,7 @@ DataModelTemplate_FormPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_FormPreview._id == undefined) DataModelTemplate_FormPreview._id = 0;
   var id = DataModelTemplate_FormPreview._id++;
   return 'DataModel_FormPreview_' + componentTemplate.getClassName() + '_' + id;
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -429,7 +429,7 @@ DataModelTemplate_FormPreview.getNextInstanceId = function(componentTemplate) {
  */
 DataModelTemplate_FormPreview.prototype.makePristineCopy = function(dataInstance) {
   return FieldModel.makePristineCopy(dataInstance, this._modelTemplate.fields);
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -457,7 +457,7 @@ DataModelTemplate_FormPreview.prototype.makePristineCopy = function(dataInstance
  */
 DataModelTemplate_FormPreview.prototype.populateDataInstance = function(dataInstance) {
   return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
-}
+};
 
 exports = module.exports = DataModelTemplate_FormPreview;
 
@@ -606,7 +606,7 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   this._rowTemplate = rowTemplate;
 
   return  model;
-}
+};
 
 /**
  * Ensure that an ID field exists.
@@ -626,7 +626,7 @@ DataModelTemplate_GridPreview.prototype.ensureIdField = function(fields) {
   }
 
   return idFields[0].name;
-}
+};
 
 /**
  * Ensure that a sequence field exists.
@@ -638,14 +638,14 @@ DataModelTemplate_GridPreview.prototype.ensureIdField = function(fields) {
 DataModelTemplate_GridPreview.prototype.ensureSequenceField = function(fields) {
 
   var seqFieldName = 'sequence'; //This is by convention!!!
-  var hasSeqField = _.some(fields, function(field) { return field.name === seqFieldName; })
+  var hasSeqField = _.some(fields, function(field) { return field.name === seqFieldName; });
   if (!hasSeqField) {
     var idField = { name: seqFieldName, type: 'int', control: 'hidden', caption: '', isAutoAddedField: true };
     fields.push(idField);
   }
 
-  return seqFieldName
-}
+  return seqFieldName;
+};
 
 /**
  * Get the name of the field used for the data item ID.
@@ -654,7 +654,7 @@ DataModelTemplate_GridPreview.prototype.ensureSequenceField = function(fields) {
  */
 DataModelTemplate_GridPreview.prototype.getIdFieldName = function() {
   return this._idFieldName;
-}
+};
 
 /**
  * @public
@@ -663,7 +663,9 @@ DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
   var model = Cloner.deepClone(this._modelTemplate);
   model.id = DataModelTemplate_GridPreview.getNextInstanceId(this._componentTemplate);
 
-  model.js =  function() {
+  //model.js is stringified and executed in the context of the model
+  /* globals modelid, jsh */
+  model.js = function() {
     var gridApi = new jsh.XAPI.Grid.Static(modelid);
     var formApi = new jsh.XAPI.Form.Static(modelid);
     return  {
@@ -671,11 +673,11 @@ DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
         if (apiType === 'grid') return gridApi;
         else if (apiType === 'form') return formApi;
       }
-    }
-  }
+    };
+  };
 
   return model;
-}
+};
 
 /**
  * Return the raw model JavaScript.
@@ -684,7 +686,7 @@ DataModelTemplate_GridPreview.prototype.getModelInstance = function() {
  */
 DataModelTemplate_GridPreview.prototype.getModelJs = function() {
   return this._rawOriginalJs;
-}
+};
 
 /**
  * Get a unique ID for the model instance
@@ -695,7 +697,7 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentTemplate) {
   if (DataModelTemplate_GridPreview._id == undefined) DataModelTemplate_GridPreview._id = 0;
   var id = DataModelTemplate_GridPreview._id++;
   return 'DataModel_GridPreview_' + componentTemplate.getClassName() + '_' + id;
-}
+};
 
 /**
  * Get the EJS string used to render the row item preview
@@ -704,7 +706,7 @@ DataModelTemplate_GridPreview.getNextInstanceId = function(componentTemplate) {
  */
 DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
   return this._rowTemplate || '';
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -724,7 +726,7 @@ DataModelTemplate_GridPreview.prototype.getRowTemplate = function() {
 DataModelTemplate_GridPreview.prototype.makePristineCopy = function(dataInstance, removeAutoAddedFields) {
   var fields = removeAutoAddedFields ?  _.filter(this._modelTemplate.fields, function(field) { return !field.isAutoAddedField; }) : this._modelTemplate.fields;
   return FieldModel.makePristineCopy(dataInstance, fields);
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -752,7 +754,7 @@ DataModelTemplate_GridPreview.prototype.makePristineCopy = function(dataInstance
  */
 DataModelTemplate_GridPreview.prototype.populateDataInstance = function(dataInstance) {
   return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
-}
+};
 
 
 exports = module.exports = DataModelTemplate_GridPreview;
@@ -777,7 +779,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var _ = require('lodash');
-var Cloner = require('../utils/cloner');
 var Convert = require('../utils/convert');
 
 /**
@@ -813,7 +814,7 @@ FieldModel.convertTypes = function(dataInstance, fields) {
     tinyint: true,
     decimal: true,
     float: true
-  }
+  };
 
   dataInstance = dataInstance || {};
   _.forEach(fields || [], function(field) {
@@ -826,7 +827,7 @@ FieldModel.convertTypes = function(dataInstance, fields) {
       dataInstance[fieldName] = Convert.toNumber(dataInstance[fieldName]);
     }
   });
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -857,7 +858,7 @@ FieldModel.makePristineCopy = function(dataInstance, fields) {
 
   FieldModel.convertTypes(pristineCopy);
   return pristineCopy;
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -931,11 +932,11 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
   FieldModel.convertTypes(dataInstance);
   // Must return in case original instance was null/undefined
   return dataInstance;
-}
+};
 
 exports = module.exports = FieldModel;
 
-},{"../utils/cloner":18,"../utils/convert":19,"lodash":32}],5:[function(require,module,exports){
+},{"../utils/convert":19,"lodash":32}],5:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -1001,8 +1002,8 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   var model = _.extend({}, modelConfig);
 
   if(modelConfig.fields && modelConfig.fields.length){
-    modelConfig.fields.unshift({ control:'html', value:'<div class="jsharmony_cms">',captionclass:"hidden"});
-    modelConfig.fields.push({ control:'html', value:'</div>',captionclass:"hidden"});
+    modelConfig.fields.unshift({ control:'html', value:'<div class="jsharmony_cms">',captionclass:'hidden'});
+    modelConfig.fields.push({ control:'html', value:'</div>',captionclass:'hidden'});
   }
 
   this._modelTemplate = model;
@@ -1012,7 +1013,7 @@ PropertiesModelTemplate_Form.prototype.buildTemplate = function(componentTemplat
   model.onecolumn = true;
   if(model.js && _.isString(model.js) && model.js.trim()) model.js = '(function(){ var cms = '+this._cms._instance+';' + model.js + ' })();';
   this._jsh.XPage.ParseModelDefinition(model, null, null, { ignoreErrors: true });
-}
+};
 
 /**
  * @public
@@ -1022,7 +1023,7 @@ PropertiesModelTemplate_Form.prototype.getModelInstance = function() {
   model.id = PropertiesModelTemplate_Form.getNextInstanceId(this._componentTemplate);
 
   return model;
-}
+};
 
 /**
  * Get a unique ID for the model instance
@@ -1033,7 +1034,7 @@ PropertiesModelTemplate_Form.getNextInstanceId = function(componentTemplate) {
   if (PropertiesModelTemplate_Form._id == undefined) PropertiesModelTemplate_Form._id = 0;
   var id = PropertiesModelTemplate_Form._id++;
   return 'PropertiesModel_Form_' + componentTemplate.getClassName() + '_' + id;
-}
+};
 
 /**
  * Create a pristine copy of the data.
@@ -1051,7 +1052,7 @@ PropertiesModelTemplate_Form.getNextInstanceId = function(componentTemplate) {
  */
 PropertiesModelTemplate_Form.prototype.makePristineCopy = function(dataInstance) {
   return FieldModel.makePristineCopy(dataInstance, this._modelTemplate.fields);
-}
+};
 
 /**
  * Iterates through the fieldModels
@@ -1079,7 +1080,7 @@ PropertiesModelTemplate_Form.prototype.makePristineCopy = function(dataInstance)
  */
 PropertiesModelTemplate_Form.prototype.populateDataInstance = function(dataInstance) {
   return FieldModel.populateDataInstance(dataInstance, this._modelTemplate.fields || []);
-}
+};
 
 exports = module.exports = PropertiesModelTemplate_Form;
 
@@ -1124,7 +1125,7 @@ var OverlayService = require('./overlayService');
 
 
 
-  /**
+/**
   * Called when the dialog wants to accept/save the changes
   * @callback Dialog~acceptCallback
   * @param {Function} successFunc - Call this function if successfully accepted (e.g., no data errors; valid save).
@@ -1159,7 +1160,7 @@ var OverlayService = require('./overlayService');
  * @param {Function} cancelFunc - Call this function to trigger cancel logic
  */
 
- /**
+/**
   * @class
   * @param {Object} jsh
   * @param {Object} cms
@@ -1178,7 +1179,7 @@ function Dialog(jsh, cms, model, config) {
 
   this.overlayService = new OverlayService(this);
 
-  this._jsh.$(this._jsh.root).append(this._$wrapper)
+  this._jsh.$(this._jsh.root).append(this._$wrapper);
 
   /**
    * @public
@@ -1228,7 +1229,7 @@ Dialog.prototype.destroy = function() {
   if (this._$overlay) this._$overlay.remove();
   delete Dialog._idLookup[this._id];
   this._destroyed = true;
-}
+};
 
 /**
  * Get a CSS selector that can be used to find
@@ -1238,7 +1239,7 @@ Dialog.prototype.destroy = function() {
  */
 Dialog.prototype.getFormSelector = function() {
   return  '.xdialogbox.' + this._id;
-}
+};
 
 /**
  * Get a globally unique (W.R.T this dialog class)
@@ -1256,7 +1257,7 @@ Dialog.prototype.getNextId = function() {
   } while (!id);
   Dialog._idLookup[id] = true;
   return id;
-}
+};
 
 /**
  * Get the scroll top position for the page.
@@ -1266,7 +1267,7 @@ Dialog.prototype.getNextId = function() {
  */
 Dialog.prototype.getScrollTop = function($wrapper) {
   return $wrapper.scrollParent().scrollTop();
-}
+};
 
 /**
  * @private
@@ -1276,7 +1277,7 @@ Dialog.prototype.load = function(callback) {
   this._jsh.XPage.LoadVirtualModel(_this._jsh.$(_this.getFormSelector()), this._model, function(xmodel) {
     callback(xmodel);
   });
-}
+};
 
 /**
  * Create the dialog elements and append to the body DOM.
@@ -1302,7 +1303,7 @@ Dialog.prototype.makeDialog = function(id, config) {
     .append($form);
 
   return $wrapper;
-}
+};
 
 /**
  * @public
@@ -1316,14 +1317,12 @@ Dialog.prototype.open = function() {
   var _this = this;
   var formSelector = this.getFormSelector();
   var oldActive = document.activeElement;
-  var hasToolbarOffset = !!_this._cms.editor.getOffsetTop();
-  var wasAtTop = !_this._jsh.$(document).scrollTop();
 
   this.load(function(xmodel) {
 
     var $wrapper = _this._jsh.$(formSelector);
     _this.registerLovs(xmodel);
-    var lastScrollTop = 0
+    var lastScrollTop = 0;
     _this._jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, f);
@@ -1366,7 +1365,7 @@ Dialog.prototype.open = function() {
       }
     );
   });
-}
+};
 
 /**
  * Register the LOVs defined in the model.
@@ -1390,7 +1389,7 @@ Dialog.prototype.registerLovs = function(xmodel) {
       xmodel.controller.setLOV(field.name, lovs);
     }
   });
-}
+};
 
 /**
  * Set the scroll top position for the page.
@@ -1400,7 +1399,7 @@ Dialog.prototype.registerLovs = function(xmodel) {
  */
 Dialog.prototype.setScrollTop = function(position, $wrapper) {
   $wrapper.scrollParent().scrollTop(position);
-}
+};
 
 exports = module.exports = Dialog;
 
@@ -1479,7 +1478,7 @@ DialogResizer.addIntervalCallback = function(cb) {
     this._intervalId = setInterval(function() {
       _.forEach(DialogResizer._intervalCallbacks, function(item) { item.cb(); });
     }, 100);
-  };
+  }
 
   return function() {
     var index = DialogResizer._intervalCallbacks.findIndex(function(item) { return item.id === id; });
@@ -1490,8 +1489,8 @@ DialogResizer.addIntervalCallback = function(cb) {
       clearInterval(DialogResizer._intervalId);
       DialogResizer._intervalId = undefined;
     }
-  }
-}
+  };
+};
 
 /**
  * This must be called when the dialog is closed
@@ -1502,7 +1501,7 @@ DialogResizer.prototype.closeDialog = function() {
   if (this._execCleanUp) {
     this._execCleanUp();
   }
-}
+};
 
 /**
  * Perform the resize on the given element.
@@ -1511,7 +1510,7 @@ DialogResizer.prototype.closeDialog = function() {
  */
 DialogResizer.prototype.resize = function(wrapper) {
   this._jsh.XWindowResize();
-}
+};
 
 /**
  * Use a interval resize strategy to resize the dialog.
@@ -1525,7 +1524,7 @@ DialogResizer.prototype.startIntervalResize = function(wrapper) {
   this._execCleanUp = DialogResizer.addIntervalCallback(function() {
     _this.resize(wrapper);
   });
-}
+};
 
 /**
  * Use a MutationObserver resize strategy to resize the dialog.
@@ -1542,8 +1541,8 @@ DialogResizer.prototype.startMutationObserver = function(wrapper) {
   observer.observe(wrapper, { childList: true, subtree: true });
   this._execCleanUp = function() {
     observer.disconnect();
-  }
-}
+  };
+};
 
 /**
  * Use a ResizeObserver resize strategy to resize the dialog.
@@ -1554,13 +1553,13 @@ DialogResizer.prototype.startMutationObserver = function(wrapper) {
 DialogResizer.prototype.startResizeObserver = function(wrapper) {
   var _this = this;
   var observer = new ResizeObserver(function() {
-      _this.resize(wrapper);
+    _this.resize(wrapper);
   });
   observer.observe(wrapper);
   this._execCleanUp = function() {
     observer.unobserve(wrapper);
-  }
-}
+  };
+};
 
 exports = module.exports = DialogResizer;
 },{"lodash":32}],8:[function(require,module,exports){
@@ -1714,7 +1713,7 @@ FormDialog.prototype.augmentModel = function(model, config) {
   model.fields = newFields.length > 0 ? (model.fields || []).concat(newFields) : model.fields;
   model.buttons = newButtons.length > 0 ? (model.buttons || []).concat(newButtons) : model.buttons;
   return model;
-}
+};
 
 /**
  * Open the form  dialog
@@ -1756,7 +1755,7 @@ FormDialog.prototype.open = function(data) {
         controller.Render(data, undefined, onComplete);
       }
     );
-  }
+  };
 
 
   dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
@@ -1765,13 +1764,13 @@ FormDialog.prototype.open = function(data) {
     $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc).on('click', function(e){ e.preventDefault(); });
     $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc).on('click', function(e){ e.preventDefault(); });
     if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
-  }
+  };
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
     var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept($dialog, xmodel);
     if (isSuccess) success();
-  }
+  };
 
   dialog.onCancel = function(options) {
     if (!options.force && xmodel.controller.HasUpdates()) {
@@ -1787,18 +1786,18 @@ FormDialog.prototype.open = function(data) {
       }
       return false;
     }
-  }
+  };
 
   // This is the final callback to be called and is
   // called anytime (whether accepted or canceled) the
   // dialog closes.
   dialog.onClose = function() {
-    controller.form.Prop.Enabled = false
+    controller.form.Prop.Enabled = false;
     if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
-  }
+  };
 
   dialog.open();
-}
+};
 
 
 exports = module.exports = FormDialog;
@@ -1932,7 +1931,7 @@ GridDialog.prototype.open = function() {
         if(onComplete) onComplete();
       }
     );
-  }
+  };
 
   dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
@@ -1940,7 +1939,7 @@ GridDialog.prototype.open = function() {
     controller.Render(function() {
       if (_.isFunction(_this.onOpened)) _this.onOpened(_$dialog, xmodel);
     });
-  }
+  };
 
   dialog.onCancel = function(options) {
     if (!options.force && controller.HasUpdates()) {
@@ -1950,15 +1949,15 @@ GridDialog.prototype.open = function() {
       });
       return false;
     }
-  }
+  };
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
     if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
-  }
+  };
 
   dialog.open();
-}
+};
 
 exports = module.exports = GridDialog;
 
@@ -2018,7 +2017,7 @@ OverlayService.prototype.popDialog = function() {
   var zIndex = this.getZIndex($dialog);
   $overlay.css('z-index', zIndex);
   $dialog.before($overlay);
-}
+};
 
 /**
  * Add a dialog element to the overlay stack.
@@ -2032,7 +2031,7 @@ OverlayService.prototype.pushDialog = function(dialog) {
   $overlay.css('z-index', zIndex);
   OverlayService._dialogStack.push(this.jsh.$(dialog));
   this.jsh.$(dialog).before($overlay);
-}
+};
 
 /**
  * Get the overlay. Creates and adds to DOM if it doesn't already
@@ -2056,7 +2055,7 @@ OverlayService.prototype.getOverlay = function() {
   });
 
   return $childOverlay;
-}
+};
 
 /**
  * Get the z-index for the element.
@@ -2068,7 +2067,7 @@ OverlayService.prototype.getOverlay = function() {
 OverlayService.prototype.getZIndex = function(element) {
   var zIndex = parseInt(this.jsh.$(element).css('zIndex'));
   return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
-}
+};
 
 exports = module.exports = OverlayService;
 },{}],11:[function(require,module,exports){
@@ -2093,13 +2092,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 var _ = require('lodash');
 var FormDialog = require('../dialogs/formDialog');
-var ComponentTemplate = require('../componentModel/componentTemplate');
 var HTMLPropertyEditorController = require('./htmlPropertyEditorController');
 var TemplateRenderer = require('../templateRenderer');
 
 /** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
 
 /** @typedef {import('../componentModel/componentTemplate').MediaBrowserControlInfo} MediaBrowserControlInfo */
+
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /**
  * @callback DataEditor_Form~beforeRenderDataItemPreview
@@ -2181,7 +2181,7 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
     editor.initialize(function() {});
     _this._htmlEditors.push(editor);
   });
-}
+};
 
 /**
  * @private
@@ -2194,7 +2194,7 @@ DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable)
   if(jctrl.hasClass('editable')){
     $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
   }
-}
+};
 
 /**
  * Open the editor
@@ -2215,7 +2215,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     modelConfig.actions = 'B';
   }
 
-  var itemData = modelTemplate.populateDataInstance(itemData || {});
+  itemData = modelTemplate.populateDataInstance(itemData || {});
 
   var dialog = new FormDialog(this._jsh, this._cms, modelConfig, {
     acceptButtonLabel: 'OK',
@@ -2268,7 +2268,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       // Don't attach any events until after the onRenderGridItemPreview hook is called.
       // Otherwise, the events might be attached to elements that get replaced or removed.
       _this.attachEditors($dialog, $wrapper, $toolbar);
-    }
+    };
 
     // This function NEEDS to be debounced.
     // It SHOULD be anyway so it doesn't re-render the preview on every
@@ -2313,9 +2313,9 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         }, xmodel.get(browserControlName));
       }
       else {
-        console.warn(new Error('Unknown browser type ' + info.browserType));
+        console.warn(new Error('Unknown editor browser type ' + info.browserType)); // eslint-disable-line no-console
       }
-    }
+    };
 
     editor.onChangeBrowserTitleControl = function(browserControlName) {
       // When the user manually changes the link title,
@@ -2324,7 +2324,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       if (info == undefined) return;
       xmodel.set(browserControlName, xmodel.get(info.titleFieldName));
       editor.onChangeData();
-    }
+    };
 
     editor.resetEditorBrowser = function(linkControlName) {
       var info = modelTemplate.getBrowserFieldInfo(linkControlName);
@@ -2333,13 +2333,13 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       xmodel.set(linkControlName, '');
       xmodel.set(info.titleFieldName, '');
       editor.onChangeData();
-    }
+    };
 
     _this._onBeforeRenderDataItemPreview = editor.onBeforeRenderDataItemPreview;
     _this._onRenderDataItemPreview = editor.onRenderDataItemPreview;
 
     if(onComplete) onComplete();
-  }
+  };
 
   dialog.onOpened = function($dialog, xmodel) {
     var editor = _this._jsh.App[xmodel.id];
@@ -2350,14 +2350,14 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         $dialog.css('opacity', '1');
       }, 50);
     });
-  }
+  };
 
   dialog.onAccept = function($dialog, xmodel) {
     if(!xmodel.controller.Commit(itemData, 'U')) return false;
     itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
-  }
+  };
 
   dialog.onCancel = function(options, $dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
@@ -2367,7 +2367,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       });
       return false;
     }
-  }
+  };
 
   dialog.onClose = function($dialog, xmodel) {
     //Destroy model
@@ -2378,10 +2378,10 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     delete _this._jsh.App[xmodel.id];
     _.forEach(_this._htmlEditors, function(editor) { editor.destroy(); });
     if (_.isFunction(onCloseCb)) onCloseCb();
-  }
+  };
 
   dialog.open(itemData);
-}
+};
 
 /**
  * @private
@@ -2410,7 +2410,7 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   $wrapper.empty().append(rendered);
 
-  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper)
+  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
 
   if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
 
@@ -2419,10 +2419,10 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
       _this._cms.componentManager.renderContentComponent(el);
     });
   }, 50);
-}
+};
 
 exports = module.exports = DataEditor_Form;
-},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8,"../templateRenderer":17,"./htmlPropertyEditorController":15,"lodash":32}],12:[function(require,module,exports){
+},{"../dialogs/formDialog":8,"../templateRenderer":17,"./htmlPropertyEditorController":15,"lodash":32}],12:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -2443,11 +2443,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var _ = require('lodash');
-var ComponentTemplate = require('../componentModel/componentTemplate');
 var GridDialog = require('../dialogs/gridDialog');
 var DataEditor_GridPreviewController = require('./dataEditor_gridPreviewController');
 
-
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /**
  * @class
@@ -2511,41 +2510,41 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
     dataController.onDataUpdated = function(updatedData) {
       if (_.isFunction(dataUpdatedCb)) dataUpdatedCb(updatedData);
-    }
+    };
 
     dataController.onBeforeRenderGridRow = function(renderOptions) {
       if (_.isFunction(componentInstance.onBeforeRenderGridRow)) componentInstance.onBeforeRenderGridRow(renderOptions);
-    }
+    };
 
     dataController.onRenderGridRow = function(element, data, properties, cms, component) {
       if (_.isFunction(componentInstance.onRenderGridRow)) componentInstance.onRenderGridRow(element, data, properties, cms, component);
-    }
+    };
 
     var modelInterface = _this._jsh.App[xmodel.id];
 
     modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
       if (!dataController) return;
       dataController.addRow(jobj, dataRow);
-    }
+    };
 
     modelInterface.onCommit = function(xmodel, rowId, callback) {
       callback();
-    }
+    };
 
     modelInterface.close = function() {
       _this._jsh.XExt.CancelDialog();
-    }
+    };
 
     modelInterface.addItem = function() {
       dataController.addItem();
-    }
+    };
 
     if(onComplete) onComplete();
-  }
+  };
 
   dialog.onOpened = function($dialog, xmodel) {
     dataController.initialize();
-  }
+  };
 
   dialog.onClose = function($dialog, xmodel) {
     //Destroy model
@@ -2555,11 +2554,11 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     delete _this._jsh.XModels[xmodel.id];
     delete _this._jsh.App[xmodel.id];
     delete _this._jsh.App[componentInstanceId];
-  }
+  };
 
   dialog.open();
 
-}
+};
 
 DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captions) {
 
@@ -2568,11 +2567,11 @@ DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captio
   var $el = this._jsh.$(selector);
   var $img = $el.find('img');
   $el.empty().append($img).append(text);
-}
+};
 
 
 exports = module.exports = DataEditor_GridPreview;
-},{"../componentModel/componentTemplate":1,"../dialogs/gridDialog":9,"./dataEditor_gridPreviewController":13,"lodash":32}],13:[function(require,module,exports){
+},{"../dialogs/gridDialog":9,"./dataEditor_gridPreviewController":13,"lodash":32}],13:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -2595,10 +2594,10 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var _ = require('lodash');
 var Convert  = require('../utils/convert');
 var GridDataStore = require('./gridDataStore');
-var DataEditor_Form = require('./dataEditor_form')
-var ComponentTemplate = require('../componentModel/componentTemplate');
+var DataEditor_Form = require('./dataEditor_form');
 var TemplateRenderer = require('../templateRenderer');
 
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /** @typedef {import('../templateRenderer').RenderConfig} RenderConfig */
 /** @typedef {import('../templateRenderer').GridPreviewRenderContext} GridPreviewRenderContext */
@@ -2724,7 +2723,7 @@ DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
     $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
     this.renderRow(rowData);
   }
-}
+};
 
 /**
  * Change the position of the item in the item list.
@@ -2769,16 +2768,16 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
 
   if (moveDown && nextIndex > -1) {
     updateIndex = nextIndex;
-    newSequence = nextSequence
+    newSequence = nextSequence;
     doUpdate = true;
   } else if (!moveDown && prevIndex > - 1) {
     updateIndex = prevIndex;
-    newSequence = prevSequence
+    newSequence = prevSequence;
     doUpdate = true;
   }
 
   if (doUpdate) {
-    var adjData = items[updateIndex]
+    var adjData = items[updateIndex];
     adjData.sequence = item.sequence;
     this.updateModelDataFromDataStore(this.getRowIdFromItemId(adjData[this._idFieldName]));
 
@@ -2797,7 +2796,7 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
     // system to ensure rows are re-drawn in correct order.
     this.forceRefresh();
   }
-}
+};
 
 /**
  * Call anytime slide data is changed (and valid) in the view.
@@ -2805,7 +2804,7 @@ DataEditor_GridPreviewController.prototype.changeItemSequence = function(itemId,
  */
 DataEditor_GridPreviewController.prototype.dataUpdated = function() {
   this.updateParentController();
-}
+};
 
 /**
  * Commit the data in the grid.
@@ -2816,7 +2815,7 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
   var controller = this.xmodel.controller;
   controller.editablegrid.CurrentCell = undefined;
   controller.Commit();
-}
+};
 
 DataEditor_GridPreviewController.prototype.showOverlay = function() {
   var joverlay = this.$dialogWrapper.find('.refreshLoadingOverlay');
@@ -2828,14 +2827,14 @@ DataEditor_GridPreviewController.prototype.showOverlay = function() {
   else {
     this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="opacity:1;position:absolute;top:0px;left:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
   }
-}
+};
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
   var _this = this;
   this.$dialogWrapper.find('.refreshLoadingOverlay').stop().fadeOut(function(){
     _this.jsh.$(this).remove();
   });
-}
+};
 
 /**
  * Refresh the grid.
@@ -2863,7 +2862,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
     _this.$dialogWrapper.scrollTop(scrollTop);
 
   });
-}
+};
 
 /**
  * @private
@@ -2877,7 +2876,7 @@ DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = functio
     rowIndex: itemIndex
   };
   return retVal;
-}
+};
 
 /**
  * Get the item data for the corresponding rowId
@@ -2889,7 +2888,7 @@ DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId
   var slideId = this.jsh.$('.xrow.xrow_' + this.xmodel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
     .attr('data-item-id');
   return this._dataStore.getDataItem(slideId) || {};
-}
+};
 
 /**
  * Get the next item sequence which is equal to the
@@ -2903,7 +2902,7 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
   });
   if(!maxItem) return 1;
   return  _.isNumber(maxItem.sequence) ? maxItem.sequence + 1 : 0;
-}
+};
 
 /**
  * Get the row ID of the parent row for the given element.
@@ -2913,7 +2912,7 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
  */
 DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
   return this.jsh.XExt.XModel.GetRowID(this.xmodel.id, $element);
-}
+};
 
 /**
  * Find the topmost element defined in the row template for the row
@@ -2925,7 +2924,7 @@ DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
 DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(rowId) {
   var rowSelector = '.xrow[data-id="' + rowId + '"]';
   return this.$dialogWrapper.find(rowSelector + ' [data-component-template="gridRow"]');
-}
+};
 
 /**
  * Get the row ID for the item with the given ID.
@@ -2936,7 +2935,7 @@ DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(row
 DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId) {
   var $el = this.jsh.$(this.$dialogWrapper).find('[data-component-template="gridRow"][data-item-id="' + itemId + '"]');
   return this.getParentRowId($el);
-}
+};
 
 /**
  * Entry point for controller. Do not call until
@@ -2967,11 +2966,11 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
     dataStoreItem = _this._modelTemplate.populateDataInstance(dataStoreItem);
     _this._dataStore.addNewItem(dataStoreItem);
 
-    actionResult[_this.xmodel.id] = {}
+    actionResult[_this.xmodel.id] = {};
     actionResult[_this.xmodel.id][_this._idFieldName] = newRow[_this._idFieldName];
     _this.dataUpdated();
     _this.renderRow(_this._dataStore.getDataItem(newRow[_this._idFieldName]));
-  }
+  };
 
   formApi.onDelete  = function(action, actionResult, keys) {
     _this.showOverlay();
@@ -2983,10 +2982,10 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
 
     _this.dataUpdated();
     return false;
-  }
+  };
 
   this.forceRefresh();
-}
+};
 
 /**
  * Check to see if the component is readonly.
@@ -2995,7 +2994,7 @@ DataEditor_GridPreviewController.prototype.initialize = function() {
  */
 DataEditor_GridPreviewController.prototype.isReadOnly = function() {
   return !!this.cms.readonly;
-}
+};
 
 /**
  * Create a random item id
@@ -3004,7 +3003,7 @@ DataEditor_GridPreviewController.prototype.isReadOnly = function() {
  */
 DataEditor_GridPreviewController.prototype.makeItemId = function() {
   return '_' + Math.random().toString().replace('.', '');
-}
+};
 
 /**
  * @private
@@ -3015,14 +3014,14 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
   if (_this.xmodel.controller.editablegrid.CurrentCell) if(!_this.xmodel.controller.form.CommitRow()) return;
   if (_this.jsh.XPage.GetChanges().length > 0) { _this.jsh.XExt.Alert('Please save all changes before adding a row.'); return; }
 
-  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(null), this.isReadOnly(), this.cms, this.jsh, _this.component)
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(null), this.isReadOnly(), this.cms, this.jsh, _this.component);
 
   //Create a new item
   var currentData = this.xmodel.controller.form.NewRow({ unbound: true });
 
   //Open the form to edit the item
   dataEditor.open(currentData, this._properties || {},  function(updatedData) {
-    _.assign(currentData, updatedData)
+    _.assign(currentData, updatedData);
     var rowId = _this.xmodel.controller.AddRow();
     for(var key in currentData){
       if(key in _this.xmodel.fields){
@@ -3037,7 +3036,7 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
     _this.forceCommit();
     _this.renderRow(currentData);
   });
-}
+};
 
 /**
  * @private
@@ -3046,29 +3045,29 @@ DataEditor_GridPreviewController.prototype.addItem = function() {
 DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
 
   var _this = this;
-  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, _this.component)
+  var dataEditor =  new DataEditor_Form(this._componentTemplate, this.getGridPreviewRenderContext(itemId), this.isReadOnly(), this.cms, this.jsh, _this.component);
   var currentData = this._dataStore.getDataItem(itemId);
 
   dataEditor.open(currentData, this._properties || {},  function(updatedData) {
-      _.assign(currentData, updatedData)
-      var dataId = currentData[_this._idFieldName];
-      var rowId = _this.getRowIdFromItemId(dataId);
+    _.assign(currentData, updatedData);
+    var dataId = currentData[_this._idFieldName];
+    var rowId = _this.getRowIdFromItemId(dataId);
 
-      for(var key in currentData){
-        if(key in _this.xmodel.fields){
-          var oldval = _this.xmodel.get(key, rowId);
-          if(oldval !== currentData[key]){
-            _this.xmodel.set(key, updatedData[key], rowId);
-          }
+    for(var key in currentData){
+      if(key in _this.xmodel.fields){
+        var oldval = _this.xmodel.get(key, rowId);
+        if(oldval !== currentData[key]){
+          _this.xmodel.set(key, updatedData[key], rowId);
         }
       }
-      _this.updateModelDataFromDataStore(rowId);
-      _this.dataUpdated();
-      _this.renderRow(currentData);
+    }
+    _this.updateModelDataFromDataStore(rowId);
+    _this.dataUpdated();
+    _this.renderRow(currentData);
   }, function() {
     _this.scrollToItemRow(itemId);
   });
-}
+};
 
 /**
  * Prompt to delete the row with the given row ID
@@ -3077,15 +3076,15 @@ DataEditor_GridPreviewController.prototype.openItemEditor = function(itemId) {
  */
 DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   var _this = this;
-  _this.jsh.XExt.Confirm("Are you sure you want to delete this item?", function(){
+  _this.jsh.XExt.Confirm('Are you sure you want to delete this item?', function(){
     //Perform Delete
     _this.xmodel.controller.DeleteRow(rowId, { force: true });
     setTimeout(function() {
       _this.forceCommit();
-      setTimeout(function() { _this.forceRefresh() });
+      setTimeout(function() { _this.forceRefresh(); });
     });
   });
-}
+};
 
 /**
  * Render the row defined by the data
@@ -3123,7 +3122,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
           '</span>' +
         '</div>' +
       '</div>' +
-      '<div class="jsharmony_cms_component_preview" data-component-part="preview"></div>'
+      '<div class="jsharmony_cms_component_preview" data-component-part="preview"></div>';
   $row.empty().append(template);
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
@@ -3137,16 +3136,16 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   $wrapper.empty().append(rendered);
 
-  if(this.cms && this.cms.editor) this.cms.editor.disableLinks($wrapper)
+  if(this.cms && this.cms.editor) this.cms.editor.disableLinks($wrapper);
 
   if (this.isReadOnly()) {
     $row.find('.component_toolbar_button:not([data-allowReadOnly])').attr('disabled', true);
   } else {
 
     $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
-        if (_this.isReadOnly()) return;
-        var moveDown = _this.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
-        _this.changeItemSequence(dataId, moveDown);
+      if (_this.isReadOnly()) return;
+      var moveDown = _this.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
+      _this.changeItemSequence(dataId, moveDown);
     });
 
     $row.find('[data-component-part="deleteItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
@@ -3181,7 +3180,7 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
       _this.cms.componentManager.renderContentComponent(el);
     });
   }, 100);
-}
+};
 
 /**
  * Set the modal scroll position to show the row for the
@@ -3216,7 +3215,7 @@ DataEditor_GridPreviewController.prototype.scrollToItemRow = function(itemId) {
   var rowBottomDistanceFromParentBottom = Math.abs(parentRelativeMaxY - rowRelativeEndY);
   var alignTop = rowTopDistanceFromParentTop <= rowBottomDistanceFromParentBottom;
   $row[0].scrollIntoView(alignTop);
-}
+};
 
 /**
  * Copy properties from data store item to controller data item.
@@ -3236,7 +3235,7 @@ DataEditor_GridPreviewController.prototype.updateModelDataFromDataStore = functi
   // Don't share references!
   _.extend(item, data);
   this.xmodel.controller.form.ResetDirty();
-}
+};
 
 /**
  * Send updated data to the parent controller.
@@ -3253,7 +3252,7 @@ DataEditor_GridPreviewController.prototype.updateParentController = function() {
   var data = { items: items };
 
   if (_.isFunction(this.onDataUpdated)) this.onDataUpdated(data);
-}
+};
 
 /**
  * Iterate through data and enable/disable sequence buttons as needed.
@@ -3270,16 +3269,16 @@ DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function(
     var isLast = index >= (_this._dataStore.count() - 1);
 
     $row.find('[data-component-part="moveItem"][data-dir="prev"]')
-        .attr('disabled', isFirst || _this.isReadOnly());
+      .attr('disabled', isFirst || _this.isReadOnly());
 
     $row.find('[data-component-part="moveItem"][data-dir="next"]')
       .attr('disabled', isLast || _this.isReadOnly());
   });
-}
+};
 
 exports = module.exports = DataEditor_GridPreviewController;
 
-},{"../componentModel/componentTemplate":1,"../templateRenderer":17,"../utils/convert":19,"./dataEditor_form":11,"./gridDataStore":14,"lodash":32}],14:[function(require,module,exports){
+},{"../templateRenderer":17,"../utils/convert":19,"./dataEditor_form":11,"./gridDataStore":14,"lodash":32}],14:[function(require,module,exports){
 
 /*
 Copyright 2020 apHarmony
@@ -3327,7 +3326,7 @@ GridDataStore.prototype.addNewItem = function(item) {
     throw new Error('item already exists');
   }
   this._dataArray.push(item);
-}
+};
 
 /**
  * Remove the item with the given ID if it exists.
@@ -3336,9 +3335,9 @@ GridDataStore.prototype.addNewItem = function(item) {
 GridDataStore.prototype.deleteItem = function(id) {
   var index =  this.getItemIndexById(id);
   if (index > -1) {
-    this._dataArray.splice(index, 1)
+    this._dataArray.splice(index, 1);
   }
-}
+};
 
 /**
  * Get the item with the given ID if it exists.
@@ -3348,7 +3347,7 @@ GridDataStore.prototype.deleteItem = function(id) {
  */
 GridDataStore.prototype.getDataItem = function(id) {
   return this._dataArray[this.getItemIndexById(id)];
-}
+};
 
 /**
  * Gets a constant reference to the array of data.
@@ -3357,7 +3356,7 @@ GridDataStore.prototype.getDataItem = function(id) {
 GridDataStore.prototype.getDataArray = function() {
   // Must return same reference every time.
   return this._dataArray;
-}
+};
 
 /**
  * Get the index of the data with the given ID
@@ -3368,7 +3367,7 @@ GridDataStore.prototype.getDataArray = function() {
 GridDataStore.prototype.getItemIndexById = function(id) {
   var idKey = this._idKey;
   return this._dataArray.findIndex(function(item) { return id === item[idKey]; });
-}
+};
 
 /**
  * Return the count of data in the store.
@@ -3377,7 +3376,7 @@ GridDataStore.prototype.getItemIndexById = function(id) {
  */
 GridDataStore.prototype.count = function() {
   return this._dataArray.length;
-}
+};
 
 /**
  * Sort the data by sequence number in ascending order
@@ -3388,7 +3387,7 @@ GridDataStore.prototype.sortBySequence = function() {
   this._dataArray.sort(function(a, b) {
     return  Convert.toNumber(a.sequence) > Convert.toNumber(b.sequence) ? 1 : -1;
   });
-}
+};
 
 /**
  * Replace the item with the matching ID
@@ -3404,7 +3403,7 @@ GridDataStore.prototype.updateItem = function(item) {
     throw new Error('item does not exist');
   }
   this._dataArray[index] = item;
-}
+};
 
 exports = module.exports = GridDataStore;
 
@@ -3489,7 +3488,7 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
  */
 HTMLPropertyEditor.prototype.destroy = function() {
   this._editor.detach(this._uid);
-}
+};
 
 /**
  * Get the hidden field JQuery obj that is bound to the editor.
@@ -3498,7 +3497,7 @@ HTMLPropertyEditor.prototype.destroy = function() {
  */
 HTMLPropertyEditor.prototype.getDataElement = function() {
   return this._$formElement.find('.xform_ctrl.' + this._hiddenFieldName);
-}
+};
 
 /**
  * Initialize the editor.
@@ -3518,7 +3517,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
   this._editor.onEndEdit = function() {
     var content = _this.processText(_this._editor.getContent(_this._uid));
     _this.getDataElement().attr('value', content);
-  }
+  };
   this._editor.init(function() {
 
     var config = {};
@@ -3548,7 +3547,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
       callback();
     });
   });
-}
+};
 
 /**
  * Process text from the editor
@@ -3558,7 +3557,7 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
  */
 HTMLPropertyEditor.prototype.processText = function(text) {
   return text;
-}
+};
 
 /**
  * Update the editor with the value from the field bound to the editor.
@@ -3567,7 +3566,7 @@ HTMLPropertyEditor.prototype.processText = function(text) {
 HTMLPropertyEditor.prototype.render = function() {
   var value = this.getDataElement().attr('value') || '';
   this._editor.setContent(this._uid, value);
-}
+};
 
 
 exports = module.exports = HTMLPropertyEditor;
@@ -3592,8 +3591,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 var _ = require('lodash');
-var ComponentTemplate = require('../componentModel/componentTemplate');
 var FormDialog = require('../dialogs/formDialog');
+
+/** @typedef {import('../componentModel/componentTemplate').ComponentTemplate} ComponentTemplate */
 
 /**
  * @class
@@ -3648,7 +3648,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
-  }
+  };
 
   dialog.onCancel = function(options, $dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
@@ -3658,7 +3658,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
       });
       return false;
     }
-  }
+  };
 
   dialog.onClose = function($dialog, xmodel) {
     //Destroy model
@@ -3667,14 +3667,14 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
     delete _this._jsh.XModels[xmodel.id];
     delete _this._jsh.App[xmodel.id];
-  }
+  };
 
   dialog.open(data);
-}
+};
 
 exports = module.exports = PropertyEditor_Form;
 
-},{"../componentModel/componentTemplate":1,"../dialogs/formDialog":8,"lodash":32}],17:[function(require,module,exports){
+},{"../dialogs/formDialog":8,"lodash":32}],17:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -3747,7 +3747,7 @@ TemplateRenderer.createRenderConfig = function(template, data, properties, cms) 
   };
 
   return config;
-}
+};
 
 /**
  * @public
@@ -3767,7 +3767,7 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
       componentConfig: componentConfig,
       XExt: jsh.XExt,
       errors: '',
-    }, params))
+    }, params));
   };
 
   var renderOptions = {
@@ -3795,7 +3795,7 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
   
   if(componentConfig){
 
-    function generateValidators(model){
+    var generateValidators = function(model){
       var xvalidate = new XValidate(jsh);
       if(model){
         _.each(model.fields, function(field){
@@ -3811,13 +3811,13 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
         });
       }
       return xvalidate;
-    }
+    };
 
-    function validate(xvalidate, data, desc){
+    var validate = function(xvalidate, data, desc){
       var verrors = xvalidate.Validate('B', data||{});
       if (!_.isEmpty(verrors)) return 'Error: ' + desc + '\n' + verrors[''].join('\n');
       return '';
-    }
+    };
 
     //Generate missing validators
     var dataValidators = generateValidators(componentConfig.data);
@@ -3834,21 +3834,21 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
     if(componentConfig.editor_placeholder && componentConfig.editor_placeholder.invalid_fields){
       //Single item, validation error in data or properties
       if(!componentConfig.multiple_items){
-        var dataErrors = validate(dataValidators, renderContext.item, 'Component Data');
+        let dataErrors = validate(dataValidators, renderContext.item, 'Component Data');
         if(dataErrors) return renderPlaceholder({ errors: dataErrors });
 
-        var propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
+        let propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
         if(propertyErrors) return renderPlaceholder({ errors: propertyErrors });
       }
       else if(componentConfig.multiple_items){
-        var propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
+        let propertyErrors = validate(propertyValidators, renderContext.properties, 'Component Configuration');
         if(propertyErrors) return renderPlaceholder({ errors: propertyErrors });
       }
     }
 
     if(componentConfig.multiple_items){
       for(var i=0;i<renderContext.items.length;i++){
-        var dataErrors = validate(dataValidators, renderContext.items[i], 'Component Data');  
+        let dataErrors = validate(dataValidators, renderContext.items[i], 'Component Data');
         if(dataErrors) renderContext.items[i].jsh_validation_errors = dataErrors;
       }
     }
@@ -3860,12 +3860,12 @@ TemplateRenderer.render = function(config, type, jsh, cms, componentConfig, addi
     rendered = jsh.ejs.render(config.template || '', renderContext);
   } catch (error) {
     rendered = cms.componentManager.formatComponentError('Component Rendering Error: '+error.toString());
-    console.log('Render Context:');
-    console.log(renderContext);
-    console.error(error);
+    console.log('Render Context:'); // eslint-disable-line no-console
+    console.log(renderContext); // eslint-disable-line no-console
+    console.error(error); // eslint-disable-line no-console
   }
   return rendered;
-}
+};
 
 exports = module.exports = TemplateRenderer;
 },{}],18:[function(require,module,exports){
@@ -3904,7 +3904,7 @@ function Cloner() { }
  */
 Cloner.deepClone = function(obj) {
   return JSON.parse(JSON.stringify(obj || {}));
-}
+};
 
 exports = module.exports = Cloner;
 
@@ -3952,7 +3952,7 @@ Convert.toNumber = function(input, allowNan) {
   } else {
     return undefined;
   }
-}
+};
 
 exports = module.exports = Convert;
 
@@ -3996,7 +3996,7 @@ function DomSerializer(jsh) {
 DomSerializer.prototype.getAttr = function(element, attrName) {
   var rawAttr = this.jsh.$(element).attr(attrName) || '';
   return this.deserializeAttrValue(rawAttr);
-}
+};
 
 /**
  * Deserialize the serialized string
@@ -4008,7 +4008,7 @@ DomSerializer.prototype.getAttr = function(element, attrName) {
 DomSerializer.prototype.deserializeAttrValue = function(value) {
   value = value ? atob(value) : '{}';
   return JSON.parse(value);
-}
+};
 
 /**
  * Set the object (after serialization) as the attribute value.
@@ -4021,7 +4021,7 @@ DomSerializer.prototype.deserializeAttrValue = function(value) {
 DomSerializer.prototype.setAttr = function(element, attrName, data) {
   var attrVal = this.serializeAttrValue(data);
   return this.jsh.$(element).attr(attrName, attrVal);
-}
+};
 
 /**
  * Serialize the object for safe component usage
@@ -4032,9 +4032,9 @@ DomSerializer.prototype.setAttr = function(element, attrName, data) {
  */
 DomSerializer.prototype.serializeAttrValue = function(data) {
   // Need to keep undefined values so they don't get set to default values
-  var replacer = function(key, value) { return value == undefined ? null : value };
+  var replacer = function(key, value) { return value == undefined ? null : value; };
   return btoa(JSON.stringify(data || {}, replacer));
-}
+};
 
 exports = module.exports = DomSerializer;
 
@@ -4107,11 +4107,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
   /** @public @type {Object} */
   this.template = undefined;
-  Object.defineProperty(this, 'template', { get: function() { return componentTemplate.getComponentConfig() }});
+  Object.defineProperty(this, 'template', { get: function() { return componentTemplate.getComponentConfig(); }});
 
   /** @public @type {string} */
   this.id = undefined;
-  Object.defineProperty(this, 'id', { get: function() { return componentId }});
+  Object.defineProperty(this, 'id', { get: function() { return componentId; }});
 
   /** @public @type {Object} */
   this.domSerializer = new DomSerializer(jsh);
@@ -4123,7 +4123,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.getData = function() {
     return this.domSerializer.getAttr($element, 'data-component-data');
-  }
+  };
 
   /**
    * Get the properties from the element's serialized property attribute value
@@ -4135,7 +4135,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     var model = componentTemplate.getPropertiesModelTemplate_Form();
     var properties = this.domSerializer.getAttr($element, 'data-component-properties');
     return model.populateDataInstance(properties);
-  }
+  };
 
   /**
    * Setup the default properties object
@@ -4144,7 +4144,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.initProperties = function() {
     this.saveProperties(this.getProperties());
-  }
+  };
 
   /**
    * Check to see if the component is readonly.
@@ -4153,7 +4153,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.isReadOnly = function() {
     return !!cms.readonly;
-  }
+  };
 
   /**
    * Open the data editor form.
@@ -4170,7 +4170,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     } else if (editorType != undefined) {
       throw new  Error('Unknown editor type "' + editorType  + '"');
     }
-  }
+  };
 
   /**
    * @private
@@ -4186,7 +4186,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       _this.saveData(data);
       _this.render();
     });
-  }
+  };
 
   /**
    * @private
@@ -4199,7 +4199,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       _this.saveData(updatedData);
       _this.render();
     });
-  }
+  };
 
   /**
    * Open the property editor form.
@@ -4214,7 +4214,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       _this.saveProperties(data);
       _this.render();
     });
-  }
+  };
 
   this.openDefaultEditor = function(){
     var _this = this;
@@ -4223,7 +4223,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     var hasProperties = ((config.properties || {}).fields || []).length > 0;
     if(hasData) _this.openDataEditor();
     else if(hasProperties) _this.openPropertiesEditor();
-  }
+  };
 
   /**
    * Render the component
@@ -4260,14 +4260,14 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     setTimeout(function() {
       jsh.async.each(
-        $element.find('[data-component]'), 
+        $element.find('[data-component]'),
         function(el, el_cb) {
           cms.componentManager.renderContentComponent(el, undefined, el_cb);
         },
         callback
       );
     });
-  }
+  };
 
   /**
    * Call anytime the data is changed in the view (i.e.,
@@ -4278,7 +4278,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.saveData = function(data) {
     this.domSerializer.setAttr($element, 'data-component-data', data);
-  }
+  };
 
   /**
    * Call anytime the properties are changed in the view (i.e.,
@@ -4288,14 +4288,14 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.saveProperties = function(props) {
     this.domSerializer.setAttr($element, 'data-component-properties', props);
-  }
+  };
 
 
 
   this.initProperties();
 
 
-}
+};
 },{"./component/componentModel/componentTemplate":1,"./component/editors/dataEditor_form":11,"./component/editors/dataEditor_gridPreview":12,"./component/editors/propertyEditor_form":16,"./component/templateRenderer":17,"./component/utils/domSerializer":20,"lodash":32}],22:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
@@ -4337,7 +4337,7 @@ exports = module.exports = function(jsh, cms){
 
   this.load = function(onError){
     _this.loadSystemComponentTemplates(onError);
-  }
+  };
 
   this.loadSystemComponentTemplates = function(onError){
     var url = '../_funcs/templates/components/'+(cms.branch_id||'');
@@ -4351,7 +4351,7 @@ exports = module.exports = function(jsh, cms){
           _this.downloadRemoteTemplate(component, function(err){
             cms.loader.StopLoading(loadObj);
             _this.addTemplate(componentId, component);
-            cb(err)
+            cb(err);
           });
         }, function(error){
           _this.isInitialized = true;
@@ -4371,7 +4371,7 @@ exports = module.exports = function(jsh, cms){
     _this.componentTemplates[componentId] = componentTemplate;
     _this.parseTemplate(componentTemplate);
     _this.renderTemplateStyles(componentTemplate.id, componentTemplate);
-  }
+  };
 
   this.downloadRemoteTemplate = function(componentTemplate, complete_cb) {
     var url = (componentTemplate.remote_templates || {}).editor;
@@ -4393,7 +4393,7 @@ exports = module.exports = function(jsh, cms){
         complete_cb(err);
       }
     });
-  }
+  };
 
   this.compileTemplates = function(componentTemplates, cb) {
     var url = '../_funcs/templates/compile_components';
@@ -4412,11 +4412,11 @@ exports = module.exports = function(jsh, cms){
       if(err.Message) return cb(new Error('Error Compiling Inline Components - ' + err.Message));
       return cb(new Error('Error Compiling Inline Components'));
     });
-  }
+  };
 
   this.formatComponentError = function(errmsg){
     return '<span style="color:red;font-weight:bold;font-size:25px;white-space: pre-wrap;">*** '+XExt.escapeHTML(errmsg)+' ***</span>';
-  }
+  };
 
   this.renderPageComponents = function(){
     $('.jsharmony_cms_component,[cms-component]').not('.initialized').each(function(){
@@ -4429,7 +4429,7 @@ exports = module.exports = function(jsh, cms){
         jobj.attr('cms-component', component_id);
       }
 
-      var removeContainer = (typeof jobj.attr('cms-component-remove-container') != 'undefined')
+      var removeContainer = (typeof jobj.attr('cms-component-remove-container') != 'undefined');
       var isContentComponent = !component_id && jobj.closest('[data-component]').length > 0;
       if (isContentComponent) return;
 
@@ -4439,15 +4439,14 @@ exports = module.exports = function(jsh, cms){
       else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
       else{
         var component = _this.componentTemplates[component_id];
-        var templates = component != undefined ? component.templates : undefined
+        var templates = component != undefined ? component.templates : undefined;
         var editorTemplate = (templates || {}).editor;
-        var renderOptions = {};
         //Parse component properties
         var props = {
           'cms-menu-tag': { renderOption: 'menu_tag', type: 'string'},
           'cms-component-properties': { renderOption: 'properties', type: 'json'},
           'cms-component-data': { renderOption: 'data', type: 'json'},
-        }
+        };
         var renderOptions = {};
         var hasError = false;
         for(var propName in props){
@@ -4486,14 +4485,14 @@ exports = module.exports = function(jsh, cms){
         jobj.html(component_content);
       }
     });
-  }
+  };
 
   this.getContainerlessComponentKey = function(obj){
     for(var key in _this.containerlessComponents){
       if(_this.containerlessComponents[key]==obj) return key;
     }
     return null;
-  }
+  };
 
   this.restoreContainerlessComponent = function(containerlessComponentId){
     if(!(containerlessComponentId in _this.containerlessComponents)) throw new Error('Containerless component not found');
@@ -4516,11 +4515,11 @@ exports = module.exports = function(jsh, cms){
     }
     _this.resetPageComponent(_this.containerlessComponents[containerlessComponentId]);
     delete _this.containerlessComponents[containerlessComponentId];
-  }
+  };
 
   this.resetPageComponent = function(obj){
     if($(obj).hasClass('initialized')) $(obj).removeClass('initialized mceNonEditable').empty();
-  }
+  };
 
   this.getDefaultValues = function(model){
     var rslt = {};
@@ -4530,7 +4529,7 @@ exports = module.exports = function(jsh, cms){
       }
     });
     return rslt;
-  }
+  };
 
   this.parseTemplate = function(componentTemplate) {
     componentTemplate.templates = componentTemplate.templates || {};
@@ -4544,9 +4543,9 @@ exports = module.exports = function(jsh, cms){
      * If the wrapper does not exist then the entire EJS string is the template
      **********/
 
-     //Preview template
+    //Preview template
     var hasComponentSubTemplate = false;
-     if(componentRawEjs.indexOf('componentTemplate')>=0){
+    if(componentRawEjs.indexOf('componentTemplate')>=0){
       var $componentTemplateWrapper = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentTemplate');
       hasComponentSubTemplate = !!$componentTemplateWrapper.length;
       if (hasComponentSubTemplate){
@@ -4575,11 +4574,11 @@ exports = module.exports = function(jsh, cms){
         }
       }
     }
-  }
+  };
 
   this.getNextComponentId = function() {
     return 'jsharmony_cms_component_' + this.lastComponentId++;
-  }
+  };
 
   this.renderContainerContentComponents = function(container, callback){
     var items = $(container).find('[data-component]').not('.initialized').addClass('initialized');
@@ -4587,7 +4586,7 @@ exports = module.exports = function(jsh, cms){
       $(item).attr('data-component-id', _this.getNextComponentId());
       _this.renderContentComponent(item, undefined, item_cb);
     }, callback);
-  }
+  };
 
   this.renderContentComponent = function(element, options, callback) {
     if(!callback) callback = function(){};
@@ -4599,7 +4598,10 @@ exports = module.exports = function(jsh, cms){
 
     componentTemplate.id = componentTemplate.id || componentType;
     var componentId = $(element).attr('data-component-id') || '';
-    if (componentId.length < 1) { console.error(new Error('Component is missing [data-component-id] attribute.')); return callback(); }
+    if (componentId.length < 1) {
+      console.error(new Error('Component is missing [data-component-id] attribute.')); // eslint-disable-line no-console
+      return callback();
+    }
 
     //Default component instance
     var component = {
@@ -4629,7 +4631,7 @@ exports = module.exports = function(jsh, cms){
         _this.components[componentId].openDefaultEditor();
       }
     }
-  }
+  };
 
   this.renderTemplateStyles = function(componentType, componentConfig) {
     this.renderedComponentTypeStyles = this.renderedComponentTypeStyles || {};
@@ -4648,7 +4650,7 @@ exports = module.exports = function(jsh, cms){
     var id = 'jsharmony_cms_component_' + (componentConfig.className || jsh.XExt.escapeCSSClass(componentConfig.id, { nodash: true }));
     cms.util.removeStyle(id);
     cms.util.addStyle(id, cssParts.join('\n'));
-  }
+  };
 
   this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
     additionalRenderParams = additionalRenderParams || {};
@@ -4656,8 +4658,8 @@ exports = module.exports = function(jsh, cms){
     var defaultProperties = {};
     var defaultData = {};
     if(component){
-      var defaultProperties = cms.componentManager.getDefaultValues(component.properties);
-      var defaultData = cms.componentManager.getDefaultValues(component.data);
+      defaultProperties = cms.componentManager.getDefaultValues(component.properties);
+      defaultData = cms.componentManager.getDefaultValues(component.data);
     }
     var properties = _.extend({}, defaultProperties, renderOptions.properties);
     var data = { items: [], item: _.extend({}, defaultData) };
@@ -4703,9 +4705,9 @@ exports = module.exports = function(jsh, cms){
       rslt.item = data.item;
     }
     return rslt;
-  }
+  };
 
-  this.getUniqueId = function(){ return ++maxUniqueId; }
+  this.getUniqueId = function(){ return ++maxUniqueId; };
 
   this.getMediaThumbnails = function(url){
     if(!cms.site_config || !cms.site_config.media_thumbnails) return {};
@@ -4723,8 +4725,8 @@ exports = module.exports = function(jsh, cms){
       }
     }
     return rslt;
-  }
-}
+  };
+};
 },{"./jsHarmonyCMS.Component":21}],23:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
@@ -4752,35 +4754,35 @@ exports = module.exports = function(jsh, cms){
   this.hasChanges = false;
 
   this.init = function(cb){
-  }
+  };
 
   this.initDevMode = function(cb){
-  }
+  };
 
   this.load = function(cb){
-  }
+  };
 
   this.createWorkspace = function(cb){
-  }
+  };
 
   this.render = function(){
-  }
+  };
 
   this.getValues = function(){
     _this.hasChanges = false;
-  }
+  };
 
   this.validate = function(){
     return true;
-  }
+  };
 
   this.save = function(){
-  }
+  };
 
   this.getComponentRenderParameters = function(component, renderOptions, additionalRenderParams){
     return cms.componentManager.getComponentRenderParameters(component, renderOptions, additionalRenderParams);
-  }
-}
+  };
+};
 },{}],24:[function(require,module,exports){
 /*
 Copyright 2021 apHarmony
@@ -4802,12 +4804,8 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 exports = module.exports = function(jsh, cms){
-  var _this = this;
   var _ = jsh._;
-  var $ = jsh.$;
   var XExt = jsh.XExt;
-  var async = jsh.async;
-  var ejs = jsh.ejs;
 
   this.createMenuTree = function(menu, page_key){
     var selected_item = null;
@@ -4877,7 +4875,7 @@ exports = module.exports = function(jsh, cms){
       menu_item.getSiblings = function(){
         var siblings = menu_item.parent ? menu_item.parent.children : menu_item_tree;
         return _.filter(siblings, function(sibling){ return sibling.id != menu_item.id; });
-      }
+      };
     });
 
     //Add properties to menu
@@ -4889,7 +4887,7 @@ exports = module.exports = function(jsh, cms){
     //Aliases
     menu.topItems = menu.tree;
     menu.allItems = menu.items;
-  }
+  };
 
   this.createSitemapTree = function(sitemap){
     //Input:
@@ -4913,7 +4911,7 @@ exports = module.exports = function(jsh, cms){
       //self.children
       sitemap.self.children = sitemap.children || [];
       //self.children.siblings
-      for(var i=0;i<sitemap.self.children.length;i++){
+      for(let i=0;i<sitemap.self.children.length;i++){
         var child = sitemap.self.children[i];
         child.siblings = sitemap.self.children;
         child.parent = sitemap.self;
@@ -4921,7 +4919,7 @@ exports = module.exports = function(jsh, cms){
 
       //self.siblings
       sitemap.self.siblings = sitemap.self.sitemap_item_siblings || [sitemap.self];
-      for(var i=0;i<sitemap.self.siblings.length;i++){
+      for(let i=0;i<sitemap.self.siblings.length;i++){
         var sibling = sitemap.self.siblings[i];
         //Replace self in sitemap.self.siblings
         if(sibling.sitemap_item_id == sitemap.self.sitemap_item_id) sitemap.self.siblings[i] = sitemap.self;
@@ -4934,8 +4932,8 @@ exports = module.exports = function(jsh, cms){
 
     //Replace self in each sitemap.parents.siblings
     if(sitemap.parents){
-      for(var i=0;i<sitemap.parents.length;i++){
-        var parent = sitemap.parents[i];
+      for(let i=0;i<sitemap.parents.length;i++){
+        let parent = sitemap.parents[i];
 
         //parent.parent
         if(i==0) parent.parent = null;
@@ -4947,8 +4945,8 @@ exports = module.exports = function(jsh, cms){
           if(parent.siblings[j].sitemap_item_id == parent.sitemap_item_id) parent.siblings[j] = parent;
         }
       }
-      for(var i=0;i<sitemap.parents.length;i++){
-        var parent = sitemap.parents[i];
+      for(let i=0;i<sitemap.parents.length;i++){
+        let parent = sitemap.parents[i];
         //parent.children
         if(i==(sitemap.parents.length-1)) parent.children = sitemap.self.siblings;
         else parent.children = sitemap.parents[i+1].siblings;
@@ -5028,15 +5026,15 @@ exports = module.exports = function(jsh, cms){
       sitemap_item.getSiblings = function(){
         var siblings = sitemap_item.parent ? sitemap_item.parent.children : sitemap.tree;
         return _.filter(siblings, function(sibling){ return sibling.id != sitemap_item.id; });
-      }
+      };
     });
 
     //Aliases
     sitemap.topItems = sitemap.tree;
     sitemap.currentItem = sitemap.self;
     sitemap.item = sitemap.self;
-  }
-}
+  };
+};
 },{}],25:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
@@ -5087,30 +5085,30 @@ exports = module.exports = function(jsh, cms){
     else if((filePickerType === 'link') && _this.lastLinkPath) {
       if(_this.lastLinkPath.init_media_path) return { init_media_path: _this.lastLinkPath.init_media_path };
       else if(_this.lastLinkPath.init_page_path) return { init_page_path: _this.lastLinkPath.init_page_path };
-    } 
+    }
     else if ((filePickerType === 'media') && _this.lastMediaPath) return { init_media_path: _this.lastMediaPath.init_media_path };
 
     return {};
-  }
+  };
 
   this.openLink = function(cb, value, meta){
     cms.filePickerCallback = cb;
     var qs = _this.getParameters('link', value);
     XExt.popupForm('jsHarmonyCMS/Link_Browser', 'update', qs, { width: 1100, height: 600 });
-  }
+  };
 
   this.openMedia = function(cb, value, meta){
     cms.filePickerCallback = cb;
     var qs = _this.getParameters('media', value);
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
-  }
+  };
 
   this.onmessage = function(event, data){
     if(data.indexOf('cms_file_picker:')==0){
       if(!cms.filePickerCallback) return true;
       data = data.substr(16);
       var jdata = JSON.parse(data);
-      if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){}
+      if(cms.onFilePickerCallback && (cms.onFilePickerCallback(jdata))){ /* Do nothing */ }
       else if(jdata.media_key){
         _this.lastMediaPath = { init_media_path: jdata.media_folder };
         _this.lastLinkPath = { init_media_path: jdata.media_folder };
@@ -5127,11 +5125,11 @@ exports = module.exports = function(jsh, cms){
       return true;
     }
     return false;
-  }
+  };
 
   this.fileSelector_onGetValue = function(val, field, xmodel, jctrl, parentobj){
     return jctrl.find('input.jsharmony_cms_fileselector').val();
-  }
+  };
 
   this.fileSelector_render = function(fileSelectorType, xmodel, field, val){  //fileSelectorType = link_browser or media_browser
     return XExt.renderEJS(jsh.$('.jsharmony_cms_fileselector_template').html(), xmodel.id, {
@@ -5139,29 +5137,29 @@ exports = module.exports = function(jsh, cms){
       field: field,
       val: val,
     });
-  }
+  };
 
   this.fileSelector_onChange = function(obj){
     var jobj = $(obj);
-    var jctrl = $(obj).closest('.xform_ctrl');
+    var jctrl = jobj.closest('.xform_ctrl');
     var xform = XExt.getFormFromObject(obj);
     if(jctrl.length && xform){
       if(!jctrl.hasClass('editable')) return;
       xform.Data.OnControlUpdate(jctrl[0]);
     }
-  }
+  };
 
   this.fileSelector_reset = function(obj){
     var jobj = $(obj);
-    var jparent = $(obj).closest('.jsharmony_cms_fileselector_container');
+    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
     var jtext = jparent.find('input.jsharmony_cms_fileselector');
     jtext.val('');
     _this.fileSelector_onChange(obj);
-  }
+  };
 
   this.fileSelector_browse = function(obj){
     var jobj = $(obj);
-    var jparent = $(obj).closest('.jsharmony_cms_fileselector_container');
+    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
     var jtext = jparent.find('input.jsharmony_cms_fileselector');
     var fileSelectorType = jparent.data('fileselectortype');
     var val = jtext.val();
@@ -5178,8 +5176,8 @@ exports = module.exports = function(jsh, cms){
       }, val);
     }
     else XExt.Alert('Invalid File Selector Type: '+fileSelectorType);
-  }
-}
+  };
+};
 },{}],26:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
@@ -5199,6 +5197,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/* globals tinymce */
 
 exports = module.exports = function(jsh, cms, editor){
   var _ = jsh._;
@@ -5272,7 +5272,7 @@ exports = module.exports = function(jsh, cms, editor){
     tinymce.PluginManager.add('jsHarmonyCms', function(editor, url) {
       return new JsHarmonyComponentPlugin(editor);
     });
-  }
+  };
 
   /**
    * @class
@@ -5358,9 +5358,9 @@ exports = module.exports = function(jsh, cms, editor){
         return 0;
       });
       return rslt;
-    }
+    };
     return getMenuItems(menuHierarchy.root);
-  }
+  };
 
   /**
    * Create the nested menu for picking components to insert.
@@ -5378,7 +5378,7 @@ exports = module.exports = function(jsh, cms, editor){
         return _this.createComponentMenuItems(editorComponents);
       }
     });
-  }
+  };
 
   /**
    * Create the toolbar menu button for picking components to insert.
@@ -5396,7 +5396,7 @@ exports = module.exports = function(jsh, cms, editor){
         cb(_this.createComponentMenuItems(editorComponents));
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createComponentContextMenu = function(editorComponents) {
     if(!editorComponents || !editorComponents.length) return;
@@ -5422,7 +5422,7 @@ exports = module.exports = function(jsh, cms, editor){
       update: function (element) {
         var componentType = getComponentType(element);
         if(componentType){
-          var info = _.find(editorComponents, function(info) { return info.componentType === componentType });
+          var info = _.find(editorComponents, function(info) { return info.componentType === componentType; });
           if (!info) return '';
           var menuItems = [];
           if(info.hasData) menuItems.push('jsHarmonyCmsComponent_Edit');
@@ -5444,7 +5444,7 @@ exports = module.exports = function(jsh, cms, editor){
       icon: ICONS.settings.name,
       onAction: function() { _this._editor.execCommand(COMMAND_NAMES.editComponentProperties); }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createElementPathMenuButton = function() {
     var _this = this;
@@ -5514,36 +5514,36 @@ exports = module.exports = function(jsh, cms, editor){
                 }
               ];
             }
-          }
+          };
         });
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.checkForUpdate = function(){
     if(!cms.controller) return;
-    var checkForUpdate = function(){ if(!cms.controller.hasChanges) cms.controller.getValues(); }
+    var checkForUpdate = function(){ if(!cms.controller.hasChanges) cms.controller.getValues(); };
     checkForUpdate();
     setTimeout(checkForUpdate, 100);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setMenuVisibility = function(visible){
     var _this = this;
     _this.toolbarOptions.show_menu = !!visible;
     cms.editor.renderContentEditorToolbar(_this._editor);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setToolbarVisibility = function(visible){
     var _this = this;
     _this.toolbarOptions.show_toolbar = !!visible;
     cms.editor.renderContentEditorToolbar(_this._editor);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setToolbarDock = function(dockPosition){
     var _this = this;
     _this.toolbarOptions.dock = dockPosition || 'auto';
     cms.editor.renderContentEditorToolbar(_this._editor);
-  }
+  };
 
   /**
    * Create the "View" toolbar menu button, for hiding the menu and viewing source code.
@@ -5580,7 +5580,7 @@ exports = module.exports = function(jsh, cms, editor){
                 $(document.body).toggleClass('jsHarmonyCMS_hideEditorOutlines', hasOutlines);
                 $(document.body).toggleClass('jsHarmonyCMS_showEditorOutlines', !hasOutlines);
                 if(!jsh.xDialog.length){
-                  var editorManager = tinymce.util.Tools.resolve("tinymce.EditorManager");
+                  var editorManager = tinymce.util.Tools.resolve('tinymce.EditorManager');
                   editorManager.activeEditor.focus();
                 }
               }
@@ -5597,19 +5597,18 @@ exports = module.exports = function(jsh, cms, editor){
         ]);
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createEndEditToolbarButton = function() {
-    var _this = this;
     this._editor.ui.registry.addButton('jsHarmonyCmsEndEdit', {
       text: 'End Edit',
       icon: 'checkmark',
       onAction: function () { cms.editor.endEdit(); }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createMenuViewOptions = function() {
-    //if(!this._editor.settings.isjsHarmonyCmsComponent) 
+    //if(!this._editor.settings.isjsHarmonyCmsComponent)
     var _this = this;
 
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsToggleMenu', {
@@ -5653,10 +5652,10 @@ exports = module.exports = function(jsh, cms, editor){
               return function() {};
             }
           }
-        ]
+        ];
       }
     });
-  }
+  };
 
   /**
    * Create menu button for Spell Check
@@ -5664,7 +5663,6 @@ exports = module.exports = function(jsh, cms, editor){
    * @param {EditorComponent[]} editorComponents
    */
   JsHarmonyComponentPlugin.prototype.createSpellCheckMessageMenuButton = function() {
-    var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsSpellCheckMessage', {
       text: 'Spell Check',
       icon: 'spell-check',
@@ -5672,16 +5670,15 @@ exports = module.exports = function(jsh, cms, editor){
         jsh.XExt.Alert('The editor uses your browser\'s spellcheck.\n\nPress and hold the CTRL key while right-clicking on the misspelled words to see suggestions.\n\n');
       }
     });
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.createEndEditMenuButton = function() {
-    var _this = this;
     this._editor.ui.registry.addMenuItem('jsHarmonyCmsEndEdit', {
       text: 'End Edit',
       icon: 'checkmark',
       onAction: function () { cms.editor.endEdit(); }
     });
-  }
+  };
   
   JsHarmonyComponentPlugin.prototype.createContextToolbar = function(editorComponents) {
 
@@ -5714,13 +5711,13 @@ exports = module.exports = function(jsh, cms, editor){
           return false;
         }
         var componentType = _this._editor.dom.getAttrib(node, 'data-component');
-        var editorComponent = _.find(editorComponents, function(info) { return info.componentType === componentType });
+        var editorComponent = _.find(editorComponents, function(info) { return info.componentType === componentType; });
         if (!editorComponent) {
           return false;
-        };
+        }
         return enableData === editorComponent.hasData && enableProps === editorComponent.hasProperties;
-      }
-    }
+      };
+    };
 
     var addToolbar = function(toolBarConfig, predicate) {
       var contextId = 'jsharmonyComponentContextToolbar_' + toolBarConfig;
@@ -5730,11 +5727,11 @@ exports = module.exports = function(jsh, cms, editor){
         scope: 'node',
         position: 'node'
       });
-    }
+    };
     addToolbar(dataAndPropsToolbar, toolbarPredicate(true, true));
     addToolbar(dataToolBar, toolbarPredicate(true, false));
     addToolbar(propsToolBar, toolbarPredicate(false, true));
-  }
+  };
 
   /**
    * Find the component instance if it exits
@@ -5752,7 +5749,7 @@ exports = module.exports = function(jsh, cms, editor){
     }
 
     return cms.componentManager.components[id];
-  }
+  };
 
   /**
    * When an undo or redo event occurs in the editor
@@ -5776,7 +5773,7 @@ exports = module.exports = function(jsh, cms, editor){
       }
     });
     parser.parse(content);
-  }
+  };
 
   JsHarmonyComponentPlugin.prototype.setToolbarOptions = function(toolbarOptions){
     var _this = this;
@@ -5784,7 +5781,7 @@ exports = module.exports = function(jsh, cms, editor){
     _this.toolbarOptions = _.extend({}, cms.editor.defaultToolbarOptions, toolbarOptions);
     if(!('orig_dock' in toolbarOptions)) _this.toolbarOptions.orig_dock = toolbarOptions.dock;
     if(!('orig_toolbar_or_menu' in toolbarOptions)) _this.toolbarOptions.orig_toolbar_or_menu = !!toolbarOptions.show_menu || toolbarOptions.show_toolbar;
-  }
+  };
 
   /**
    * Initialize the plugin.
@@ -5817,7 +5814,7 @@ exports = module.exports = function(jsh, cms, editor){
           } else if (iconType === 'svg' || iconType === 'html') {
             icon = iconValue;
           } else {
-            console.error('Unknown icon family "' + iconType + '"');
+            console.error('Unknown icon family "' + iconType + '"'); // eslint-disable-line no-console
           }
         } else {
           icon = component.icon;
@@ -5869,7 +5866,7 @@ exports = module.exports = function(jsh, cms, editor){
       var el = _this._editor.selection.getStart();
       _this.openPropertiesEditor(el);
     });
-    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) { 
+    this._editor.addCommand('jsHarmonyCmsSetToolbarOptions', function(toolbarOptions) {
       _this.setToolbarOptions(toolbarOptions);
     });
     this._editor.addQueryValueHandler('jsHarmonyCmsGetToolbarOptions', function() { return _this.toolbarOptions; });
@@ -5880,7 +5877,7 @@ exports = module.exports = function(jsh, cms, editor){
       _this._editor.parser.addAttributeFilter('data-component', function(nodes) { _this.renderContentComponents(nodes); });
       _this._editor.parser.addAttributeFilter('cms-component', function(nodes) { _this.replacePageComponentsWithContentComponents(nodes); });
     });
-  }
+  };
 
   /**
    * Insert the component into the editor.
@@ -5921,7 +5918,7 @@ exports = module.exports = function(jsh, cms, editor){
       _this._editor.insertContent('<p></p>');
       domUtil.remove(domUtil.select('#' + placeholderId));
     }
-  }
+  };
 
   /**
    * Create the component container HTML string for
@@ -5933,7 +5930,7 @@ exports = module.exports = function(jsh, cms, editor){
   JsHarmonyComponentPlugin.prototype.createComponentContainer = function(componentType) {
     var componentTemplate = cms.componentManager.componentTemplates[componentType];
     var isInline = (componentTemplate && componentTemplate.options && componentTemplate.options.editor_container) == 'inline';
-    var componentCode = 
+    var componentCode =
       '<'+(isInline?'span':'div')+
         ' class="mceNonEditable"'+
         ' data-component="' + jsh.XExt.escapeHTML(componentType) + '"'+
@@ -5941,10 +5938,10 @@ exports = module.exports = function(jsh, cms, editor){
         ' data-component-content=""'+
         ' data-is-insert="true"'+
       '>'+
-      (isInline?'&nbsp;':'') + 
+      (isInline?'&nbsp;':'') +
       '</'+(isInline?'span':'div')+'>';
     return componentCode;
-  }
+  };
 
   /**
    * Open the data editor for the component.
@@ -5957,7 +5954,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (component && _.isFunction(component.openDataEditor)) {
       component.openDataEditor();
     }
-  }
+  };
 
   /**
    * Open the property editor for the component.
@@ -5970,7 +5967,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (component && _.isFunction(component.openPropertiesEditor)) {
       component.openPropertiesEditor();
     }
-  }
+  };
 
   /**
    * Filter the TinyMce content parsed nodes.
@@ -6000,7 +5997,7 @@ exports = module.exports = function(jsh, cms, editor){
         });
       });
     });
-  }
+  };
 
   /**
    * Replace cms-component elements with data-component
@@ -6021,7 +6018,7 @@ exports = module.exports = function(jsh, cms, editor){
         if(nodeClass) nodeClass += ' ';
         nodeClass += 'mceNonEditable';
         node.attr('class', nodeClass);
-        node.attr('contenteditable', "false");
+        node.attr('contenteditable', 'false');
 
         var defaultProperties = {};
         var defaultData = {};
@@ -6045,6 +6042,7 @@ exports = module.exports = function(jsh, cms, editor){
             cmsComponentData = JSON.stringify(cmsComponentData);
           }
           catch(ex){
+            /* Do nothing */
           }
           node.attr('data-component-data', btoa(cmsComponentData));
           node.attr('cms-component-data', null);
@@ -6056,6 +6054,7 @@ exports = module.exports = function(jsh, cms, editor){
             cmsComponentProperties = JSON.stringify(cmsComponentProperties);
           }
           catch(ex){
+            /* Do nothing */
           }
           node.attr('data-component-properties', btoa(cmsComponentProperties));
           node.attr('cms-component-properties', null);
@@ -6063,7 +6062,7 @@ exports = module.exports = function(jsh, cms, editor){
       }
     });
     _this.renderContentComponents(nodes);
-  }
+  };
 
   /**
    * Filter the TinyMce content to find relevant components
@@ -6083,11 +6082,11 @@ exports = module.exports = function(jsh, cms, editor){
       var newNode = tinymce.html.Node.create('#text');
       newNode.value = String.fromCharCode(0x00A0);
       node.append(newNode);
-      _this._editor.dom.setHTML(node, '&nbsp;')
+      _this._editor.dom.setHTML(node, '&nbsp;');
       
     }
-  }
-}
+  };
+};
 },{}],27:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
@@ -6124,7 +6123,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.defaultConfig = {};
   this.toolbarContainer = null;
   this.defaultToolbarOptions = {
-    dock: "auto",
+    dock: 'auto',
     show_menu: true,
     show_toolbar: true,
     orig_dock: undefined,
@@ -6203,9 +6202,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           urlparts.href = url;
           urlparts_editor.href = document.location;
           if(urlparts.host == urlparts_editor.host){
-            url = url.replace(/^[^:]*\:\/{2}[^/]*\/(.*)/, '/$1');
+            url = url.replace(/^[^:]*:\/{2}[^/]*\/(.*)/, '/$1');
           }
-          url = url;
           return url;
         },
         fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
@@ -6253,8 +6251,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         mceEditor.on('blur', function(){
           $('[data-component="header"]').css('pointer-events', 'auto');
           _this.isEditing = false;
-          var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); }
-          var dockPosition = _this.getDockPosition(mceEditor);
+          var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); };
           if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
             _this.toolbarContainer.stop(true).css({ opacity:0 });
             clearClasses();
@@ -6302,11 +6299,11 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
       return cb();
     });
-  }
+  };
 
   this.getDefaultEditorConfig = function(){
     return _.extend({}, jsh.globalparams.defaultEditorConfig, cms.site_config.defaultEditorConfig);
-  }
+  };
 
   this.attach = function(config_id, elem_id, options, cb){
     if(!cb) cb = function(){};
@@ -6318,7 +6315,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
     config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, function(){ return cb(); });
     window.tinymce.init(config).catch(cb);
-  }
+  };
 
   this.detach = function(id){
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
@@ -6326,9 +6323,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       if(_this.isEditing == id) mceEditor.fire('blur');
       mceEditor.destroy();
     }
-  }
+  };
 
-  /** 
+  /**
    * @param {string} id
    * @param {'top' | 'bottom'} position
    */
@@ -6337,7 +6334,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(!mceEditor) throw new Error('Editor not found: '+id);
     mceEditor.fire('setToolbarOptions', {toolbarOptions:toolbarOptions});
-  }
+  };
 
   this.disableLinks = function(container, options){
     options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
@@ -6356,7 +6353,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       if(options.addFlag) jobj.data('disabled_links', '1');
       jobj.on('click', function(e){ e.preventDefault(); });
     });
-  }
+  };
 
   this.setContent = function(id, val, desc){
     if(!desc) desc = id;
@@ -6378,14 +6375,14 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       mceEditor.setContent(val, { jsHarmonyCmsSource: 'editor' });
       if(!_this.isInitialized) mceEditor.undoManager.add();
     }
-  }
+  };
 
   this.getContent = function(id, desc){
     if(!desc) desc = id;
     var mceEditor = window.tinymce.get('jsharmony_cms_content_'+XExt.escapeCSSClass(id, { nodash: true }));
     if(!mceEditor) cms.fatalError('editor.getContent: Missing editor for "'+desc+'".  Please add a cms-content-editor element for that field, ex: <div cms-content-editor="'+desc+'"></div>');
     return mceEditor.getContent();
-  }
+  };
 
   this.initToolbarContainer = function(element) {
     this.toolbarContainer = $(element);
@@ -6393,16 +6390,16 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if (!id) {
       do {
         id = 'jsharmony_cms_editor_toolbar_' + Math.random().toString().replace('.', '');
-      } while($('#' + id).length > 0)
+      } while($('#' + id).length > 0);
       this.toolbarContainer.attr('id', id);
     }
-  }
+  };
 
   this.onEditorInitialized = function(){
     if(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()){
       window.tinymce.activeEditor.fire('focus');
     }
-  }
+  };
 
   this.getContentEditorTopOffset = function(mceEditor){
     var contentOffset = $(mceEditor.contentAreaContainer).offset();
@@ -6412,7 +6409,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     contentOffsetTop += parseInt(contentStyles.paddingTop);
     contentOffsetTop -= cms.toolbar.currentOffsetTop;
     return contentOffsetTop;
-  }
+  };
 
   this.getDockPosition = function(mceEditor){
     if(!mceEditor) throw new Error('Editor is required');
@@ -6431,7 +6428,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       return 'top';
     }
     return dockPosition;
-  }
+  };
 
   this.getOffsetTop = function(){
     if(!window.tinymce) return 0;
@@ -6442,7 +6439,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
     }
     return 0;
-  }
+  };
 
   this.renderContentEditorToolbar = function(mceEditor, options){
     if(!window.tinymce) return;
@@ -6481,18 +6478,18 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         .css('bottom', '');
     }
     cms.toolbar.refreshOffsets();
-  }
+  };
 
   this.endEdit = function(){
     jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
     $('#jsharmony_cms_virtual_focus_element a').focus();
     setTimeout(function(){
       jsh.XExt.waitUntil(
-        function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()) },
-        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); },
+        function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()); },
+        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); }
       );
     }, 100);
-  }
+  };
 
   this.getMaterialIcons = function(){
     var defaultEditorConfig = _this.getDefaultEditorConfig();
@@ -7431,8 +7428,8 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       [0xe900,'materialicon_zoom_out'],
       [0xe56b,'materialicon_zoom_out_map'],
     ];
-  }
-}
+  };
+};
 },{"./jsHarmonyCMS.Editor.Picker.js":25,"./jsHarmonyCMS.Editor.TinyMCEPlugin.js":26}],28:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
@@ -7474,7 +7471,7 @@ exports = module.exports = function(cms){
     if(this.isLoading) return;
     this.isLoading = true;
 
-    var loader_obj = document.getElementById('jsHarmonyCMSLoading')
+    var loader_obj = document.getElementById('jsHarmonyCMSLoading');
 
     if(loader_obj){
       if(cms.isInitialized) loader_obj.style.backgroundColor = 'rgba(0,0,0,0.2)';
@@ -7510,7 +7507,7 @@ exports = module.exports = function(cms){
       loader_img.style.left = '-50px';
       loader_img_container.appendChild(loader_img);
     }
-  }
+  };
 
   this.StopLoading = function(obj){
     if(!obj) obj = _this.defaultLoadObj;
@@ -7519,7 +7516,7 @@ exports = module.exports = function(cms){
     if(this.loadQueue.length) return;
 
     this.isLoading = false;
-    var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); }
+    var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); };
     if(cms.jsh){
       cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut('normal', function(){ triggerLoadingComplete(); });
     }
@@ -7527,13 +7524,13 @@ exports = module.exports = function(cms){
       document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
       triggerLoadingComplete();
     }
-  }
+  };
 
   this.ClearLoading = function(){
     this.loadQueue = [];
     this.StopLoading();
-  }
-}
+  };
+};
 },{}],29:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
@@ -7574,11 +7571,11 @@ exports = module.exports = function(jsh, cms){
     jsh.root.append(cms.views['jsh_cms_editor']);
     jsh.InitControls();
     this.renderErrors();
-  }
+  };
 
   this.getHeight = function(){
     return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
-  }
+  };
 
   this.isAnchored = function(elem, computedStyles){
     if(elem.tagName && (elem.tagName.toUpperCase()=='BODY')) return true;
@@ -7594,22 +7591,22 @@ exports = module.exports = function(jsh, cms){
       if(!offsetParent) return true;
     }
     return false;
-  }
+  };
 
   this.excludeMarginOffset = function(jobj){
     var obj = jobj[0];
-    for(var i=0;i<_this.excludeMarginOffsetId.length;i++){
+    for(let i=0;i<_this.excludeMarginOffsetId.length;i++){
       var excludeId = _this.excludeMarginOffsetId[i];
       if(obj.id == excludeId) return true;
       if(jobj.closest('#'+excludeId).length) return true;
     }
-    for(var i=0;i<_this.excludeMarginOffsetClass.length;i++){
+    for(let i=0;i<_this.excludeMarginOffsetClass.length;i++){
       var excludeClass = _this.excludeMarginOffsetClass[i];
       if(_.includes(obj.classList, excludeClass)) return true;
       if(jobj.closest('.'+excludeClass).length) return true;
     }
     return false;
-  }
+  };
 
   this.saveOrigOffsets = function(options){
     options = _.extend({ preload: false, refreshExisting: false }, options);
@@ -7636,7 +7633,7 @@ exports = module.exports = function(jsh, cms){
       }
     });
     if(!options.preload) _this.origMarginTopLoaded = true;
-  }
+  };
 
   this.getOffsetTop = function(){
     var offsetTop = 0;
@@ -7645,12 +7642,12 @@ exports = module.exports = function(jsh, cms){
     }
     if(cms.editor) offsetTop += cms.editor.getOffsetTop();
     return offsetTop;
-  }
+  };
 
   this.getComputedOffsetTop = function(elem){
     var computedStyles = window.getComputedStyle(elem);
     return computedStyles.marginTop;
-  }
+  };
 
   this.refreshOffsets = function(options){
     options = _.extend({ addNewOffsets: false }, options);
@@ -7662,11 +7659,11 @@ exports = module.exports = function(jsh, cms){
 
     //Save starting offsets
     var startingOffsets = [];
-    for(var i=0;i<_this.origMarginTop.length;i++){
+    for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      let jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
       if(jelem.length){
-        var elemIsBody = (jelem[0].tagName=='BODY');
+        let elemIsBody = (jelem[0].tagName=='BODY');
         //Fixed elements need to subtract scrollTop from offset().top
         startingOffsets[i] = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
         if(elemIsBody){
@@ -7676,11 +7673,11 @@ exports = module.exports = function(jsh, cms){
     }
 
     //Apply offsets
-    for(var i=0;i<_this.origMarginTop.length;i++){
+    for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      var jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      let jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
       if(jelem.length){
-        var elemIsBody = (jelem[0].tagName=='BODY');
+        let elemIsBody = (jelem[0].tagName=='BODY');
         if(offsetTop){
           //Fixed elements need to subtract scrollTop from offset().top
           var curTop = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
@@ -7709,7 +7706,7 @@ exports = module.exports = function(jsh, cms){
       }
     }
     this.currentOffsetTop = offsetTop;
-  }
+  };
 
   this.renderErrors = function(){
     var jcontainer = $('#jsharmony_cms_editor_errors');
@@ -7726,14 +7723,14 @@ exports = module.exports = function(jsh, cms){
       }
       jcontainer.find('.jsharmony_cms_editor_errors_close').on('click', function(){ $('#jsharmony_cms_editor_errors').hide(); });
     }
-  }
+  };
 
   this.toggleAutoHide = function(val){
     if(typeof val =='undefined') val = !this.editorBarDocked;
     this.editorBarDocked = !!val;
     this.refreshOffsets();
     $('#jsharmony_cms_page_toolbar .autoHideEditorBar').toggleClass('enabled',!val);
-  }
+  };
   
   this.toggleSlideoutButton = function(button, display, noSlide){
     var jbutton;
@@ -7767,18 +7764,18 @@ exports = module.exports = function(jsh, cms){
         else jslideout.slideUp();
       }
     }
-  }
+  };
 
-  this.showSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, true, noSlide); }
+  this.showSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, true, noSlide); };
 
-  this.hideSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, false, noSlide); }
+  this.hideSlideoutButton = function(buttonName, noSlide){ this.toggleSlideoutButton(buttonName, false, noSlide); };
   
   this.showError = function(err) {
     if(_.isString(err)) err = { message: err, type: 'text' };
     err.type = (err.type=='html' ? 'html' : 'text');
     _this.errors.push(err);
     _this.renderErrors();
-  }
+  };
 
   this.setDockPosition = function(dockPosition){
     _this.dockPosition = dockPosition || 'top_offset';
@@ -7790,16 +7787,16 @@ exports = module.exports = function(jsh, cms){
       $('#jsharmony_cms_page_toolbar').css('opacity', 0);
       var dockAnimation = function(){
         var barHeight = _this.getHeight();
-        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' })
+        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' });
         $('#jsharmony_cms_page_toolbar').animate({ bottom: '0px' }, function(){ this.style.bottom = null; });
       };
       if(cms.isInitialized) dockAnimation();
       else cms.loader.onLoadingComplete.push(dockAnimation);
     }
     cms.editor.renderContentEditorToolbar();
-  }
+  };
 
-}
+};
 },{}],30:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
@@ -7827,25 +7824,25 @@ exports = module.exports = function(){
       jobj.html(html);
     }
     catch(ex){
-      console.log(ex);
+      console.log(ex); // eslint-disable-line no-console
     }
-  }
+  };
 
   this.appendHTML = function(jobj, html){
     try{
       jobj.append(html);
     }
     catch(ex){
-      console.log(ex);
+      console.log(ex); // eslint-disable-line no-console
     }
-  }
+  };
 
   this.refreshParentPageTree = function(page_folder, page_key){
     if(window.opener){
       window.opener.postMessage('jsharmony-cms:refresh_page_folder:'+page_folder, '*');
       if(page_key) window.opener.postMessage('jsharmony-cms:refresh_page_key:'+page_key, '*');
     }
-  }
+  };
 
   this.disableControl = function(jctrl){
     jctrl.removeClass('editable');
@@ -7858,14 +7855,14 @@ exports = module.exports = function(){
       jctrl.prev().find('input').prop('disabled', true);
     }
     else jctrl.prop('readonly', true);
-  }
+  };
 
   this.loadScript = function(url, cb){
     var script = document.createElement('script');
     if(cb) script.onload = cb;
     script.src = url;
     document.head.appendChild(script);
-  }
+  };
 
   this.loadCSS = function(url, cb){
     var link = document.createElement('link');
@@ -7874,7 +7871,7 @@ exports = module.exports = function(){
     link.href = url;
     link.media = 'all';
     document.head.appendChild(link);
-  }
+  };
 
   this.addStyle = function(id, css){
     var style = document.createElement('style');
@@ -7883,13 +7880,13 @@ exports = module.exports = function(){
     style.id = id;
     style.appendChild(document.createTextNode(css));
     document.head.appendChild(style);
-  }
+  };
 
   this.removeStyle = function(id){
     var elem = document.getElementById(id);
     if(elem) elem.parentNode.removeChild(elem);
-  }
-}
+  };
+};
 },{}],31:[function(require,module,exports){
 (function (global){
 /*
@@ -7959,7 +7956,7 @@ var jsHarmonyCMS = function(options){
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
   this.onRender = null;                  //function(page)
   this.onRendered = null;                //function(page)
-  this.onTemplateLoaded = function(f){ $(document).ready(f); }
+  this.onTemplateLoaded = function(f){ $(document).ready(f); };
 
   for(var key in options){
     if(key in _this) _this[key] = options[key];
@@ -7980,13 +7977,13 @@ var jsHarmonyCMS = function(options){
     //Load jsHarmony
     util.loadScript(_this._baseurl+'js/jsHarmony.js', function(){
       var jshInit = false;
-      jsh = _this.jsh = window.jshInstance_CMS = new jsHarmony({
+      jsh = _this.jsh = window.jshInstance_CMS = new window.jsHarmony({
         _show_system_errors: true,
         _BASEURL: _this._baseurl,
         _PUBLICURL: _this._baseurl,
         forcequery: {},
         home_url: _this._baseurl,
-        uimap: {"code_val":"code_val","code_txt":"code_txt","code_parent_id":"code_parent_id","code_icon":"code_icon","code_id":"code_id","code_parent":"code_parent","code_seq":"code_seq","code_type":"code_type"},
+        uimap: {'code_val':'code_val','code_txt':'code_txt','code_parent_id':'code_parent_id','code_icon':'code_icon','code_id':'code_id','code_parent':'code_parent','code_seq':'code_seq','code_type':'code_type'},
         _instance: 'jshInstance_CMS',
         _dialogBaseClass: 'jsharmony_cms_dialog',
         cookie_suffix: _this._cookie_suffix,
@@ -8005,7 +8002,7 @@ var jsHarmonyCMS = function(options){
 
       _this.toolbar = new jsHarmonyCMSToolbar(jsh, _this);
       _this.controller = new jsHarmonyCMSController(jsh, _this);
-      _this.editor = _this.createCoreEditor()
+      _this.editor = _this.createCoreEditor();
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
@@ -8049,10 +8046,10 @@ var jsHarmonyCMS = function(options){
     });
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){
-      WebFont.load({ google: { api: 'https://fonts.googleapis.com/css', families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
+      window.WebFont.load({ google: { api: 'https://fonts.googleapis.com/css', families: ['PT Sans', 'Roboto', 'Roboto:bold', 'Material Icons'] } });
     });
     window.addEventListener('message', this.onmessage);
-  }
+  };
 
   this.load = function(){
     _this.toolbar.saveOrigOffsets({ refreshExisting: true });
@@ -8093,25 +8090,18 @@ var jsHarmonyCMS = function(options){
         XExt.Alert('Branch ID not defined in querystring');
       }
     }
-  }
+  };
 
   this.refreshLayout = function(){
-    var ww = $(window).width();
     var wh = $(window).height();
-    var sleft = $(window).scrollLeft();
-    var stop = $(window).scrollTop();
-    var docw = $(document).width();
-    var doch = $(document).height();
-    var pw = ((docw > ww) ? docw : ww);
-    var ph = ((doch > wh) ? doch : wh);
     var barh = _this.toolbar.getHeight();
     $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').css('max-height', (wh-barh)+'px');
-  }
+  };
 
   this.onmessage = function(event){
     var data = (event.data || '').toString();
     if(_this.editor && _this.editor.picker && _this.editor.picker.onmessage(event, data)) return;
-  }
+  };
 
   this.fatalError = function(err){
     if(loader) loader.ClearLoading();
@@ -8119,20 +8109,20 @@ var jsHarmonyCMS = function(options){
     else if(XExt) XExt.Alert(err.toString());
     else alert(err.toString());
     throw new Error(err);
-  }
+  };
 
   this.createCoreEditor = function() {
     var el = $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
     return new jsHarmonyCMSEditor(jsh, _this, el[0]);
-  }
+  };
 
   this.createJsHarmonyCMSEditor = function(toolbarElement) {
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
-  }
+  };
 
   //Run Init
   _this.init();
-}
+};
 
 global.jsHarmonyCMS = jsHarmonyCMS;
 
