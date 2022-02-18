@@ -23,7 +23,8 @@
       "    (foreach(%%%cms.branch_items%%%, union all , \"",
       "      select {item}_euser euser, count(*) cnt from {tbl_item} where site_id={schema}.my_current_site_id() and {item}_etstmp > $addDays(jsharmony.my_now(),-30) group by {item}_euser",
       "    \")) items",
-      "   group by euser) user_activity where euser <> 'USystem'"
+      "   group by euser) user_activity where euser <> 'USystem'",
+      "order by cnt",
     ],
     "fields": [
     ]
