@@ -4,7 +4,8 @@
     "caption": "Deployment Target Role Type",
     "init_data": [
       { "code_val": "PUBLISH", "code_txt": "Publish", "code_seq": 1 },
-      { "code_val": "EDITOR", "code_txt": "Preview / Editor", "code_seq": 2 }
+      { "code_val": "PUBLISH_RELEASE", "code_txt": "Publish Release", "code_seq": 2 },
+      { "code_val": "EDITOR", "code_txt": "Preview / Editor", "code_seq": 3 }
     ]
   },
 
@@ -153,6 +154,16 @@
               "  when exists(select * from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id and dtr.deployment_target_role_type='PUBLISH' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
               "  else 0 end"
             ]
+          },
+          {
+            "name":"deployment_target_can_publish_release", "type": "int", 
+            "sqlselect": [
+              "case ",
+              "  when {schema}.my_user_is_publisher(deployment_target.site_id) = 0 then 0",
+              "  when exists(select * from deployment_target_role dtr inner join jsharmony.sys_user_role r on r.sys_role_name = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and dtr.deployment_target_role_type='PUBLISH_RELEASE' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  when exists(select * from deployment_target_role dtr inner join {schema}.sys_user_site r on r.sys_user_site_access = dtr.sys_role_name and r.sys_user_id = jsharmony.my_sys_user_id() and r.site_id = deployment_target.site_id and dtr.deployment_target_role_type='PUBLISH_RELEASE' and dtr.deployment_target_id = deployment_target.deployment_target_id) then 1",
+              "  else 0 end"
+            ]
           }
         ]
       }
@@ -181,7 +192,7 @@
           "deployment_etstmp",
           "deployment_euser",
           "deployment_mtstmp",
-          "deployment_muser"
+          "deployment_muser",
         ]
       },
       "v_my_deployment_target": {
@@ -191,14 +202,14 @@
         "join_type": "inner",
         "join_columns": {
           "deployment.deployment_target_id": "v_my_deployment_target.deployment_target_id",
-          "deployment_target_can_publish": "1"
+          "{schema}.could_have_published(deployment.branch_id, deployment.deployment_target_id)": "1"
         }
       }
     },
     "triggers": [
       {"on": ["insert"], "exec": [
           //Verify access
-          "errorif(not exists(select 1 from {schema}.v_my_deployment_target where v_my_deployment_target.deployment_target_id=inserted(deployment_target_id) and deployment_target_can_publish=1),'No access to publish to this deployment target.');",
+          "errorif($ifnull({schema}.can_publish(inserted(branch_id), inserted(deployment_target_id)),0)<>1,'No access to publish to this deployment target.');",
           //Verify non-duplicate tag name
           "errorif(exists(select 1 from {schema}.deployment inner join {schema}.branch on {schema}.branch.branch_id={schema}.deployment.branch_id where deployment_tag=inserted(deployment_tag) and site_id=inserted(site_id)),'Deployment Tag must be unique for the site.');",
           "errorif(exists(select 1 from {schema}.deployment inner join {schema}.deployment_target on {schema}.deployment_target.deployment_target_id={schema}.deployment.deployment_target_id where deployment_tag=inserted(deployment_tag) and site_id=(select site_id from deployment_target where deployment_target_id=inserted(deployment_target_id))),'Deployment Tag must be unique for the site.');",
@@ -218,7 +229,7 @@
       },
       {"on": ["update"], "exec": [
           //Verify access
-          "errorif(not exists(select 1 from {schema}.v_my_deployment_target where v_my_deployment_target.deployment_target_id=(select deployment_target_id from {schema}.deployment where deployment_id = deleted(deployment_id)) and deployment_target_can_publish=1),'No access to cancel to this deployment.');",
+          "errorif($ifnull({schema}.could_have_published((select branch_id from {schema}.deployment where deployment_id = deleted(deployment_id)), (select deployment_target_id from {schema}.deployment where deployment_id = deleted(deployment_id))),0)<>1,'No access to cancel this deployment.');",
           "update {schema}.deployment set deployment_sts = 'CANCEL' where deployment_id = deleted(deployment_id)"
         ]
       }

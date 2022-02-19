@@ -21,7 +21,7 @@
       {"name":"site_id","control":"dropdown","caption":"Site","validate":["Required"],"readonly":true,
         "lov":{"sql":"select site_id code_val, site_name code_txt from {schema}.site where site_sts='ACTIVE' and site_id={schema}.my_current_site_id()"}},
       {"name":"deployment_target_id","control":"dropdown","caption":"Deployment Target","validate":["Required"],
-        "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_publish = 1 and deployment_target_sts='ACTIVE' and site_id={schema}.my_current_site_id() order by site_id,deployment_target_name"}},
+        "lov":{"parent":"site_id" ,"sql2":"select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where ((deployment_target_can_publish = 1) or (deployment_target_can_publish_release = 1)) and deployment_target_sts='ACTIVE' and site_id={schema}.my_current_site_id() order by site_id,deployment_target_name"}},
       {"control":"html","value":[
         "<% if(jsh.globalparams.isWebmaster){ %>",
         "<a href='#' onclick='<%=jsh._instance%>.XExt.popupForm(\"{namespace}Site_Tabs\",\"update\",{site_id:<%=jsh._instance%>.globalparams.site_id}); return false;'>Configure Deployment Targets</a>",
