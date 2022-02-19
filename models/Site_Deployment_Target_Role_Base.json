@@ -23,4 +23,7 @@
   "Site_Deployment_Target_Role_Publish": {
     "inherits": "Site_Deployment_Target_Role_Base"
   },
+  "Site_Deployment_Target_Role_Publish_Release": {
+    "inherits": "Site_Deployment_Target_Role_Base"
+  },
 }

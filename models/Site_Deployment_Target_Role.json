@@ -11,7 +11,10 @@
       {"control":"subform","caption":"Preview / Editor","target":"Site_Deployment_Target_Role_Editor","bindings":{"deployment_target_id":"deployment_target_id","deployment_target_role_type":"'EDITOR'"},
         "controlstyle":"display:inline-block; margin-right:15px;"
       },
-      {"control":"subform","caption":"Publish","target":"Site_Deployment_Target_Role_Publish","bindings":{"deployment_target_id":"deployment_target_id","deployment_target_role_type":"'PUBLISH'"},
+      {"control":"subform","caption":"Publish (Any Branch)","target":"Site_Deployment_Target_Role_Publish","bindings":{"deployment_target_id":"deployment_target_id","deployment_target_role_type":"'PUBLISH'"},
+        "controlstyle":"display:inline-block;"
+      },
+      {"control":"subform","caption":"Publish Release","target":"Site_Deployment_Target_Role_Publish_Release","bindings":{"deployment_target_id":"deployment_target_id","deployment_target_role_type":"'PUBLISH_RELEASE'"},
         "controlstyle":"display:inline-block;"
       },
     ]

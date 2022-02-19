@@ -199,6 +199,28 @@
       "\")",
     ]
   },
+  "{schema}.can_publish":{
+    "params": ["BRANCH_ID","DEPLOYMENT_TARGET_ID"],
+    "sql": [
+      "(case when exists(",
+      "  select * from {schema}.v_my_deployment_target where deployment_target_id=%%%DEPLOYMENT_TARGET_ID%%% and (",
+      "    (deployment_target_can_publish=1) or",
+      "    (deployment_target_can_publish_release=1 and exists(select branch_child.branch_id from {schema}.branch branch_child where branch_child.branch_id=%%%BRANCH_ID%%% and branch_child.branch_type='PUBLIC'))",
+      "  )",
+      ") then 1 else 0 end)"
+    ]
+  },
+  "{schema}.could_have_published":{
+    "params": ["BRANCH_ID","DEPLOYMENT_TARGET_ID"],
+    "sql": [
+      "(case when exists(",
+      "  select * from {schema}.v_my_deployment_target where deployment_target_id=%%%DEPLOYMENT_TARGET_ID%%% and (",
+      "    (deployment_target_can_publish=1) or",
+      "    (deployment_target_can_publish_release=1 and exists(select branch_child.branch_id from {schema}.branch branch_child inner join {schema}.branch branch_parent on branch_parent.branch_id = branch_child.branch_parent_id where branch_child.branch_id=%%%BRANCH_ID%%% and branch_parent.branch_type='PUBLIC'))",
+      "  )",
+      ") then 1 else 0 end)"
+    ]
+  },
   "{schema}.insert_token": {
     "params": ["sys_user_token_hash","sys_user_token_ext","sys_user_token_keys"],
     "sql": [
