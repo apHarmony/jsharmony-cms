@@ -1028,7 +1028,7 @@ module.exports = exports = function(module, funcs){
               //Read URL and querystring
               var parsedUrl = null;
               try{
-                parsedUrl = new urlparser.URL(url);
+                parsedUrl = new urlparser.URL(url, req.protocol + '://' + req.get('host'));
                 template_variables._ = template_variables.timestamp;
                 if(Q.devMode) template_variables.page_template_location = page_template.location;
                 var changedUrl = false;

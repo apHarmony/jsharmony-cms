@@ -32,6 +32,7 @@
     ]
   },
 
+  //:if:{create_sys_roles}:
   "jsharmony.sys_role": {
     "init_data": [
       { "sys_role_name": "VIEWER", "sys_role_desc": "All Sites - Viewer", "sys_role_seq": 1 },
@@ -43,6 +44,7 @@
       { "sql": "delete from jsharmony.sys_role where sys_role_name in ('DADMIN','X_B','X_X')" }
     ],
   },
+  //:endif:
 
   "jsharmony.sys_user_role": {
     "type":"table",
@@ -55,11 +57,13 @@
       { "name": "sys_user_role_snotes", "type": "varchar", "length": 255 },
     ],
     "init_data": [
+      //:if:{create_sys_roles}:
       { "sys_user_id": 1, "sys_role_name": "VIEWER" },
       { "sys_user_id": 1, "sys_role_name": "AUTHOR" },
       { "sys_user_id": 1, "sys_role_name": "PUBLISHER" },
       { "sys_user_id": 1, "sys_role_name": "WEBMASTER" },
       { "sys_user_id": 1, "sys_role_name": "CMSHOST" }
+      //:endif:
     ],
     "triggers": [
       { "prefix": "{schema}_", "on": ["update"], "exec": [
@@ -94,6 +98,8 @@
       }
     ],
   },
+  
+  //:if:{is_submodule}::else:
 
   "jsharmony.txt": {
     "init_data": [
@@ -177,4 +183,6 @@
       { "help_target_code": "*", "help_title": "jsHarmony CMS", "help_text": "<p><span style=\"font-size:16px\">Explore the full jsHarmony CMS Reference at <a href=\"https://www.jsharmonycms.com/resources/\" target=\"_blank\">jsHarmonyCMS.com</a>, including:</span></p><table border=\"0\" cellpadding=\"7\" cellspacing=\"1\"><tbody><tr><td><span style=\"font-size:16px\">:: Getting Started Video Tutorials</span></td></tr><tr><td><span style=\"font-size:16px\">:: Starter Templates</span></td></tr><tr><td><span style=\"font-size:16px\">:: Documentation</span></td></tr><tr><td><span style=\"font-size:16px\">:: Source Code</span></td></tr></tbody></table>" }
     ]
   }
+  
+  //:endif:
 }

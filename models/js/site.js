@@ -187,6 +187,8 @@
     jsh.globalparams.site_id = site_id;
     jsh.globalparams.site_name = site_name;
 
+    if({is_submodule}) return;
+
     //Render site dropdown in header
     jsh.$root('.xlogo .xsublogo').html(XExt.renderEJS(jsh.GetEJS('jsHarmonyCMS.SiteSelection')));
     jsh.$root('.xlogo .xsublogo').attr('onclick','return false;').off('click').on('click', function(e){

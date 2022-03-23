@@ -22,6 +22,13 @@ var jsHarmonyModuleTransform = require('jsharmony/jsHarmonyModuleTransform');
 function jsHarmonyCMSTransform(module){
   this.sql = {
     '{deployment_env}': 'default',
+    '{create_sys_roles}': (module.createRoles ? '1' : '0'),
+    '{is_submodule}': (module.isSubmodule ? '1' : '0'),
+  };
+
+  this.ignore_errors = {
+    '0': true,
+    '1': true,
   };
 
   jsHarmonyModuleTransform.call(this, module);

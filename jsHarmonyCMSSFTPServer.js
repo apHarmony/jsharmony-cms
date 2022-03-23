@@ -896,7 +896,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
                             dirPage.push(file);
                           }
                         }
-                        async.eachOf(pageFiles, function(pageFile, idx, file_cb){
+                        async.eachOfLimit(pageFiles, 50, function(pageFile, idx, file_cb){
                           if(!pageFile) return file_cb();
                           fs.stat(fspath.join(handleInfo.syspath, pageFile), function(err, fstat){
                             if(err) return file_cb();

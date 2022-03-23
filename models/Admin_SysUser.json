@@ -1,4 +1,5 @@
 {
+    //:if:{create_sys_roles}:
   "/jsHarmonyFactory/Admin/SysUser": {
     "inherits":"/jsHarmonyFactory/Admin/SysUser",
     "fields": [
@@ -26,6 +27,7 @@
       },
     ],
   },
+  //:endif:
   "SysUser_Site": {
     "layout":"grid",
     "table":"{schema}.v_sys_user_site_access",

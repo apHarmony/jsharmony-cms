@@ -1030,7 +1030,7 @@ module.exports = exports = function(module, funcs){
                       async.waterfall([
                         //Perform file delete operations
                         function(file_cb){
-                          async.eachOf(branchData.fsOps.deletedFilesUpper, function(fpath, fpathUpper, delete_cb){
+                          async.eachOfLimit(branchData.fsOps.deletedFilesUpper, 50, function(fpath, fpathUpper, delete_cb){
                             if(!(fpath in branchData.site_files)) return delete_cb(new Error('Could not delete "' + fpath + '" - file not found in site_files'));
                             delete branchData.site_files[fpath];
                             fpath = path.join(publish_params.publish_path, fpath);
@@ -1040,7 +1040,7 @@ module.exports = exports = function(module, funcs){
                 
                         //Perform file add operations
                         function(file_cb){
-                          async.eachOf(branchData.fsOps.addedFiles, function(fcontent, fpath, add_cb){
+                          async.eachOfLimit(branchData.fsOps.addedFiles, 50, function(fcontent, fpath, add_cb){
                             branchData.site_files[fpath] = {
                               md5: crypto.createHash('md5').update(fcontent).digest('hex')
                             };

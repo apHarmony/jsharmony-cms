@@ -37,7 +37,10 @@ var jsHarmonyCMSTransform = require('./jsHarmonyCMSTransform.js');
 
 function jsHarmonyCMS(name, options){
   options = _.extend({
-    schema: 'cms'
+    schema: 'cms',
+    factory: null,
+    createRoles: true,
+    isSubmodule: false,
   }, options);
 
   var _this = this;
@@ -46,6 +49,9 @@ function jsHarmonyCMS(name, options){
   _this.typename = 'jsHarmonyCMS';
   _this.basepath = path.dirname(module.filename);
   _this.schema = options.schema;
+
+  _this.createRoles = options.createRoles;
+  _this.isSubmodule = options.isSubmodule;
 
   _this.SystemPageTemplates = {};
   _this.SystemComponentTemplates = {};
@@ -61,6 +67,8 @@ function jsHarmonyCMS(name, options){
 
   _this.funcs = new funcs(_this);
   _this.transform = new jsHarmonyCMSTransform(_this);
+
+  _this._factoryOptions = options.factory;
 }
 
 jsHarmonyCMS.prototype = new jsHarmonyModule();
@@ -68,7 +76,7 @@ jsHarmonyCMS.prototype = new jsHarmonyModule();
 jsHarmonyCMS.prototype.Application = function(){
   var _this = this;
   var jsh = new jsHarmony();
-  var factory = new jsHarmonyFactory();
+  var factory = new jsHarmonyFactory(null, _this._factoryOptions);
   jsh.AddModule(factory);
   jsh.AddModule(this);
   jsh.Sites[factory.mainSiteID] = _.extend(this.getFactoryConfig(),jsh.Sites[factory.mainSiteID]);
@@ -89,7 +97,7 @@ jsHarmonyCMS.prototype.Application = function(){
   return jsh;
 };
 
-jsHarmonyCMS.Application = function(){ return (new jsHarmonyCMS()).Application(); };
+jsHarmonyCMS.Application = function(options){ return (new jsHarmonyCMS(null, options)).Application(); };
 
 jsHarmonyCMS.prototype.Init = function(cb){
   var _this = this;
