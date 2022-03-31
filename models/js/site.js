@@ -187,7 +187,7 @@
     jsh.globalparams.site_id = site_id;
     jsh.globalparams.site_name = site_name;
 
-    if({is_submodule}) return;
+    if({is_submodule}) return; // eslint-disable-line no-undef, no-constant-condition
 
     //Render site dropdown in header
     jsh.$root('.xlogo .xsublogo').html(XExt.renderEJS(jsh.GetEJS('jsHarmonyCMS.SiteSelection')));

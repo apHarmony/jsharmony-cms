@@ -1,6 +1,7 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
 var Helper = require('../Helper.js');
+var querystring = require('querystring');
 
 var model = jsh.getModelClone(req, modelid);
 
@@ -15,6 +16,9 @@ jsh.AppSrv.ExecRecordset(req._DBContext, 'select (select {schema}.my_current_bra
   //Redirect to listing on invalid key
   if(!rslt[0][0].branch_id){
     return res.end('***JSHARMONY_REDIRECT***\n'+req.baseurl+model.namespace+'Publish_Add_Release');
+  }
+  else if(req.query.target=='branch'){
+    return res.end('***JSHARMONY_REDIRECT***\n'+req.baseurl+model.namespace+'Publish_Add_Branch?'+querystring.stringify({ action: 'update', branch_id: rslt[0][0].branch_id }));
   }
   else return callback();
 });
