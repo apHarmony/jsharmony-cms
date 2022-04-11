@@ -2026,6 +2026,7 @@ module.exports = exports = function(module, funcs){
   };
 
   exports.deploy_fs = function(deployment, publish_path, deploy_path, site_files, cb){
+    var jsh = module.jsh;
     var deployment_id = deployment.deployment_id;
     var deployment_target_publish_path = (deployment.deployment_target_publish_path||'').toString();
 
@@ -2043,6 +2044,8 @@ module.exports = exports = function(module, funcs){
         if((foldername=='.')||(foldername=='..')) break;
       }
     }
+
+    if(!path.isAbsolute(deploy_path)) deploy_path = path.join(jsh.Config.datadir, deploy_path);
 
     var found_files = {};
     var found_folders = {};

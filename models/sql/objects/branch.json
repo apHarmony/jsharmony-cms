@@ -380,6 +380,7 @@
   "v_my_branch_access": {
     "type": "view",
     "caption": ["Branch", "Branches"],
+    "dependencies": ["{schema}.v_sys_user_site_access"],
     "tables": {
       "branch": {
         "columns": [

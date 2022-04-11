@@ -127,6 +127,7 @@
   "v_my_deployment_target": {
     "type": "view",
     "caption": ["Deployment Target", "Deployment Targets"],
+    "dependencies": ["{schema}.v_sys_user_site_access"],
     "tables": {
       "deployment_target": {
         "columns": [
