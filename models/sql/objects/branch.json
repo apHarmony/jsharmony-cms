@@ -90,7 +90,7 @@
         ]
       },
       { "on": ["validate_update"], "exec": [
-        "errorif(update(branch_name) and exists(select * from {schema}.branch b2 where b2.branch_name=inserted(branch_name) and $ifnull(b2.branch_user_id,0)=$ifnull(inserted(branch_user_id),0) and b2.site_id=inserted(site_id)),'Another revision with the same name already exists');"
+        "errorif(update(branch_name) and exists(select * from {schema}.branch b2 where b2.branch_name=inserted(branch_name) and (b2.branch_id<>inserted(branch_id)) and $ifnull(b2.branch_user_id,0)=$ifnull(inserted(branch_user_id),0) and b2.site_id=inserted(site_id)),'Another revision with the same name already exists');"
         ]
       },
       { "on": ["update", "insert"], "exec": [
