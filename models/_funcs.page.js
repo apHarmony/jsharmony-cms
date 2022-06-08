@@ -310,7 +310,7 @@ module.exports = exports = function(module, funcs){
 
       if(newURL!=url){
         content = content.substr(0, startofstr) + newURL + content.substr(endofstr + 1);
-        rtagidx = endofstr;
+        rtagidx = endofstr + (newURL.length - url.length);
       }
       rtagidx = content.indexOf(rtag, rtagidx + 1);
     }

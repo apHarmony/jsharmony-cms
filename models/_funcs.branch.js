@@ -364,8 +364,10 @@ module.exports = exports = function(module, funcs){
           },
         ], function(err){
           if(err) return Helper.GenError(req, res, -99999, err.toString());
-          //Return success
-          return res.send(JSON.stringify({ _success: 1 }));
+          HelperFS.tryUnlink(zip_file, function(){
+            //Return success
+            return res.send(JSON.stringify({ _success: 1 }));
+          });
         });
       });
     }
