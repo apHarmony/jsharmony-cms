@@ -23,6 +23,7 @@ exports = module.exports = function(jsh, cms){
   var _ = jsh._;
 
   this.editorBarDocked = true;
+  this.pageElements = [];
   this.origMarginTop = [];
   this.origMarginTopLoaded = false;
   this.currentOffsetTop = 0;
@@ -83,6 +84,7 @@ exports = module.exports = function(jsh, cms){
         var jelem = $(elem);
         var offsetId = jelem.attr('cms-toolbar-offsetid');
         if(typeof offsetId != 'undefined'){
+          _this.pageElements[offsetId] = elem;
           if(!options.refreshExisting) return;
         }
         else if(jelem.parent().closest('[cms-content-editor]').length) return;
@@ -96,6 +98,7 @@ exports = module.exports = function(jsh, cms){
           jelem.attr('cms-toolbar-offsetid', offsetId);
         }
         _this.origMarginTop[offsetId] = computedStyles.marginTop;
+        _this.pageElements[offsetId] = elem;
       }
     });
     if(!options.preload) _this.origMarginTopLoaded = true;
@@ -115,6 +118,30 @@ exports = module.exports = function(jsh, cms){
     return computedStyles.marginTop;
   };
 
+  function elementIsValid(obj){
+    var parentNode = obj;
+    var lastNode = null;
+    while(parentNode){
+      if(_.includes(['BODY','HTML'], (parentNode.nodeName||'').toUpperCase())) return true;
+      lastNode = parentNode;
+      parentNode = parentNode.parentNode;
+      if(lastNode == parentNode) return false;
+    }
+    return true;
+  }
+
+  this.getPageElement = function(offsetId){
+    let jelem = null;
+    if(elementIsValid(_this.pageElements[offsetId])){
+      jelem = $(_this.pageElements[offsetId]);
+    }
+    else{
+      jelem = $('[cms-toolbar-offsetid='+offsetId.toString()+']');
+      if(jelem.length) _this.pageElements[offsetId] = jelem[0];
+    }
+    return jelem;
+  };
+
   this.refreshOffsets = function(options){
     options = _.extend({ addNewOffsets: false }, options);
     if(!_this.origMarginTopLoaded) return;
@@ -127,7 +154,7 @@ exports = module.exports = function(jsh, cms){
     var startingOffsets = [];
     for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      let jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      let jelem = _this.getPageElement(i);
       if(jelem.length){
         let elemIsBody = (jelem[0].tagName=='BODY');
         //Fixed elements need to subtract scrollTop from offset().top
@@ -141,7 +168,7 @@ exports = module.exports = function(jsh, cms){
     //Apply offsets
     for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      let jelem = $('[cms-toolbar-offsetid='+i.toString()+']');
+      let jelem = _this.getPageElement(i);
       if(jelem.length){
         let elemIsBody = (jelem[0].tagName=='BODY');
         if(offsetTop){
@@ -154,11 +181,11 @@ exports = module.exports = function(jsh, cms){
           }
           else {
             var newMarginTop = _this.origMarginTop[i] ? 'calc(' + _this.origMarginTop[i] + ' + ' + offsetTop + 'px)' : offsetTop+'px';
-            $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', newMarginTop);
+            jelem.css('marginTop', newMarginTop);
           }
         }
         else {
-          $('[cms-toolbar-offsetid='+i.toString()+']').css('marginTop', _this.origMarginTop[i]);
+          jelem.css('marginTop', _this.origMarginTop[i]);
         }
         //If changing body offset
         if(scrollTop && elemIsBody){
