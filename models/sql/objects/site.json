@@ -173,7 +173,7 @@
     "unique": [
       ["sys_user_id", "site_id"]
     ],
-    "dependencies": ["{schema}.branch"],
+    "dependencies": ["{schema}.branch","{schema}.site"],
     "triggers": [
       { "on": ["validate_update", "validate_insert"], "exec": [
           "errorif((inserted(sys_user_site_editor) is not null and inserted(sys_user_site_editor) not in (select deployment_target_id from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and site_id = inserted(site_id))),'Target Editor not available for this site')",
