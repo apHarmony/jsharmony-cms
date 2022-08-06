@@ -1,0 +1,1 @@
+jsharmony.version_increment('jsHarmonyCMS',1,7,0,0);
