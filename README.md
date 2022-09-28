@@ -1,7 +1,9 @@
 # jsharmony-cms
 Source code for the jsHarmony CMS core project.
 
-The jsHarmony CMS is designed to simplify adding content management to existing web applications.
+The jsHarmony CMS is an enterprise-grade static CMS with in-page editing.
+
+It is designed to simplify adding content management to existing web applications.
 
 Features include:
 
