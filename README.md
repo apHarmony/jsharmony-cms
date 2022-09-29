@@ -1,4 +1,7 @@
 # jsharmony-cms
+
+## Modern Static CMS with In-Page Editing
+
 Source code for the jsHarmony CMS core project.
 
 The jsHarmony CMS is an enterprise-grade static CMS with in-page editing.
