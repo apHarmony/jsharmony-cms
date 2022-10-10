@@ -797,154 +797,172 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
 
 
           }).on('READDIR', function(reqid, handle) {
-            _this.DebugLog(clientDesc + 'READDIR');
+            _this.DebugLog(clientDesc + 'READDIR '+reqid);
             //.name(reqid, names)  names = array of { filename, longname, attrs }
             //.status(reqid, statusCode, [message])
 
             var handleInfo = getHandleInfo(handle);
             if(!handleInfo) return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Handle not found');
 
-            handleInfo.page++;
+            waitForLock(handleInfo, function(){
+              handleInfo.lock = true;
 
-            if(!handleInfo.syspath){
-              //Root folder
-              if(handleInfo.page > 1){
-                sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
-                closeHandle(handle);
+              handleInfo.page++;
+
+              if(!handleInfo.syspath){
+                //Root folder
+                if(handleInfo.page > 1){
+                  handleInfo.lock = false;
+                  sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
+                  closeHandle(handle);
+                }
+                else {
+                  var filename = 'sites';
+                  handleInfo.lock = false;
+                  sftpStream.name(reqid, [{
+                    filename: filename,
+                    longname: 'drwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename,
+                    attrs: {
+                      mode: 0777 + fs.constants.S_IFDIR, // eslint-disable-line no-octal
+                      uid: 0,
+                      gid: 0,
+                      size: 4096,
+                      atime: moment().unix(),
+                      mtime: moment().unix(),
+                    }
+                  }]);
+                }
               }
               else {
-                var filename = 'sites';
-                sftpStream.name(reqid, [{
-                  filename: filename,
-                  longname: 'drwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename,
-                  attrs: {
-                    mode: 0777 + fs.constants.S_IFDIR, // eslint-disable-line no-octal
-                    uid: 0,
-                    gid: 0,
-                    size: 4096,
-                    atime: moment().unix(),
-                    mtime: moment().unix(),
+                fs.exists(handleInfo.syspath, function(exists){
+                  if(!exists){
+                    handleInfo.lock = false;
+                    return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.NO_SUCH_FILE);
                   }
-                }]);
-              }
-            }
-            else {
-              fs.exists(handleInfo.syspath, function(exists){
-                if(!exists) return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.NO_SUCH_FILE);
-                fs.readdir(handleInfo.syspath, function(err, files){
-                  if(err) return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving directory listing');
-
-                  Helper.execif((handleInfo.path=='/sites'),
-                    function(f){
-                      files = [];
-                      jsh.AppSrv.ExecRecordset(req._DBContext, cms.funcs.replaceSchema("select site_id,site_name from {schema}.v_my_site where site_sts='ACTIVE' order by site_id"), [], { }, function (err, rslt) {
-                        if (err) { jsh.Log.error(err); return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving site listing'); }
-
-                        if(rslt && rslt[0]) _.each(rslt[0], function(site){
-                          var filename_short = HelperFS.cleanFileName(site.site_id);
-                          var filename_long = HelperFS.cleanFileName(site.site_id+'_'+site.site_name);
-                          files.push({
-                            filename: filename_short,
-                            longname: 'drwxrwxrwx 0 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_short,
-                            attrs: {
-                              mode: 0777, // eslint-disable-line no-octal
-                              uid: 0,
-                              gid: 0,
-                              size: 4096,
-                              atime: moment().unix(),
-                              mtime: moment().unix(),
-                            }
-                          });
-                          files.push({
-                            filename: filename_long,
-                            longname: 'lrwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_long,
-                            attrs: {
-                              mode: 0777 + fs.constants.S_IFDIR, // eslint-disable-line no-octal
-                              uid: 0,
-                              gid: 0,
-                              size: 4096,
-                              atime: moment().unix(),
-                              mtime: moment().unix(),
-                            }
-                          });
-                        });
-                    
-                        return f();
-                      });
-                    },
-                    function(){
-                      var filesPerPage = 1000;
-                      var pageFiles = [];
-                      var dirPage = [];
-                      if((handleInfo.page-1)*filesPerPage >= files.length){
-                        sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
-                        closeHandle(handle);
-                      }
-                      else{
-                        for(var i=filesPerPage*(handleInfo.page-1);i<filesPerPage*handleInfo.page&&i<files.length;i++){
-                          var file = files[i];
-                          if(_.isString(file)){
-                            pageFiles.push(file);
-                            dirPage.push({
-                              filename: file,
-                              longname: file,
-                              attrs: {}
-                            });
-                          }
-                          else {
-                            pageFiles.push('');
-                            dirPage.push(file);
-                          }
-                        }
-                        async.eachOfLimit(pageFiles, 50, function(pageFile, idx, file_cb){
-                          if(!pageFile) return file_cb();
-                          fs.stat(fspath.join(handleInfo.syspath, pageFile), function(err, fstat){
-                            if(err) return file_cb();
-
-                            var longname = '';
-                            if(fstat.isDirectory()) longname += 'd';
-                            //else if(fstat.isSymbolicLink()) longname += 'l';
-                            else if(fstat.isFile()) longname += '-';
-                            else{
-                              dirPage[idx] = undefined;
-                              return file_cb();
-                            }
-                            
-                            longname += 'rwxrwxrwx 0 sys sys '+(longname=='-' ? fstat.size : 4096)+' '+moment(fstat.mtime).format('MMM D YYYY')+' '+pageFile;
-                            dirPage[idx].longname = longname;
-
-                            dirPage[idx].attrs = {
-                              mode: 0777 + (longname[0]=='d' ? fs.constants.S_IFDIR : longname[0]=='l' ? fs.constants.S_IFLNK : fs.constants.S_IFREG), // eslint-disable-line no-octal
-                              uid: 0,
-                              gid: 0,
-                              size: (longname=='-' ? fstat.size : 4096),
-                              atime: Math.floor(fstat.atime/1000),
-                              mtime: Math.floor(fstat.mtime/1000),
-                            };
-
-                            return file_cb();
-                          });
-                        }, function(err){
-                          if(err){
-                            jsh.Log.error(err);
-                            return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving directory listing');
-                          }
-                          //Remove undefined entries from dirPage
-                          for(var i=0;i<dirPage.length;i++){
-                            if(typeof dirPage[i]=='undefined'){
-                              dirPage.splice(i, 1);
-                              i--;
-                            }
-                          }
-                          sftpStream.name(reqid, dirPage);
-                        });
-                      }
+                  fs.readdir(handleInfo.syspath, function(err, files){
+                    if(err){
+                      handleInfo.lock = false;
+                      return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving directory listing');
                     }
-                  );
-                });
-              });
-            }
 
+                    Helper.execif((handleInfo.path=='/sites'),
+                      function(f){
+                        files = [];
+                        jsh.AppSrv.ExecRecordset(req._DBContext, cms.funcs.replaceSchema("select site_id,site_name from {schema}.v_my_site where site_sts='ACTIVE' order by site_id"), [], { }, function (err, rslt) {
+                          if (err) {
+                            jsh.Log.error(err);
+                            handleInfo.lock = false;
+                            return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving site listing');
+                          }
+
+                          if(rslt && rslt[0]) _.each(rslt[0], function(site){
+                            var filename_short = HelperFS.cleanFileName(site.site_id);
+                            var filename_long = HelperFS.cleanFileName(site.site_id+'_'+site.site_name);
+                            files.push({
+                              filename: filename_short,
+                              longname: 'drwxrwxrwx 0 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_short,
+                              attrs: {
+                                mode: 0777, // eslint-disable-line no-octal
+                                uid: 0,
+                                gid: 0,
+                                size: 4096,
+                                atime: moment().unix(),
+                                mtime: moment().unix(),
+                              }
+                            });
+                            files.push({
+                              filename: filename_long,
+                              longname: 'lrwxrwxrwx 1 sys sys 4096 '+moment().format('MMM D YYYY')+' ' + filename_long,
+                              attrs: {
+                                mode: 0777 + fs.constants.S_IFDIR, // eslint-disable-line no-octal
+                                uid: 0,
+                                gid: 0,
+                                size: 4096,
+                                atime: moment().unix(),
+                                mtime: moment().unix(),
+                              }
+                            });
+                          });
+                      
+                          return f();
+                        });
+                      },
+                      function(){
+                        var filesPerPage = 1000;
+                        var pageFiles = [];
+                        var dirPage = [];
+                        if((handleInfo.page-1)*filesPerPage >= files.length){
+                          handleInfo.lock = false;
+                          sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
+                          closeHandle(handle);
+                        }
+                        else{
+                          for(var i=filesPerPage*(handleInfo.page-1);i<filesPerPage*handleInfo.page&&i<files.length;i++){
+                            var file = files[i];
+                            if(_.isString(file)){
+                              pageFiles.push(file);
+                              dirPage.push({
+                                filename: file,
+                                longname: file,
+                                attrs: {}
+                              });
+                            }
+                            else {
+                              pageFiles.push('');
+                              dirPage.push(file);
+                            }
+                          }
+                          async.eachOfLimit(pageFiles, 50, function(pageFile, idx, file_cb){
+                            if(!pageFile) return file_cb();
+                            fs.stat(fspath.join(handleInfo.syspath, pageFile), function(err, fstat){
+                              if(err) return file_cb();
+
+                              var longname = '';
+                              if(fstat.isDirectory()) longname += 'd';
+                              //else if(fstat.isSymbolicLink()) longname += 'l';
+                              else if(fstat.isFile()) longname += '-';
+                              else{
+                                dirPage[idx] = undefined;
+                                return file_cb();
+                              }
+                              
+                              longname += 'rwxrwxrwx 0 sys sys '+(longname=='-' ? fstat.size : 4096)+' '+moment(fstat.mtime).format('MMM D YYYY')+' '+pageFile;
+                              dirPage[idx].longname = longname;
+
+                              dirPage[idx].attrs = {
+                                mode: 0777 + (longname[0]=='d' ? fs.constants.S_IFDIR : longname[0]=='l' ? fs.constants.S_IFLNK : fs.constants.S_IFREG), // eslint-disable-line no-octal
+                                uid: 0,
+                                gid: 0,
+                                size: (longname=='-' ? fstat.size : 4096),
+                                atime: Math.floor(fstat.atime/1000),
+                                mtime: Math.floor(fstat.mtime/1000),
+                              };
+
+                              return file_cb();
+                            });
+                          }, function(err){
+                            if(err){
+                              jsh.Log.error(err);
+                              handleInfo.lock = false;
+                              return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE, 'Error retrieving directory listing');
+                            }
+                            //Remove undefined entries from dirPage
+                            for(var i=0;i<dirPage.length;i++){
+                              if(typeof dirPage[i]=='undefined'){
+                                dirPage.splice(i, 1);
+                                i--;
+                              }
+                            }
+                            handleInfo.lock = false;
+                            sftpStream.name(reqid, dirPage);
+                          });
+                        }
+                      }
+                    );
+                  });
+                });
+              }
+            });
 
           }).on('LSTAT', function(reqid, fpath) {
             _this.DebugLog(clientDesc + 'LSTAT '+fpath);
