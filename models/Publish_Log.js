@@ -52,12 +52,7 @@ jsh.App[modelid] = new (function(){
 
         var isRunning = false;
         if(deployment_sts=='RUNNING') isRunning = true;
-        else if(deployment_sts=='PENDING'){
-          var deployment_date = jsh.moment(rslt.deployment.deployment_date);
-          if(deployment_date.isValid()){
-            if(deployment_date.toDate() <= (new Date())) isRunning = true;
-          }
-        }
+        else if(deployment_sts=='PENDING') isRunning = true;
 
         //Render Log
         $('#'+xmodel.class+'_deployment_log').html(XExt.escapeHTMLBR(rslt.log));
