@@ -19,6 +19,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSEditorTinyMCEPlugin = require('./jsHarmonyCMS.Editor.TinyMCEPlugin.js');
+var jsHarmonyCMSEditorImageToolsPlugin = require('./jaHarmonyCMS.Editor.ImageToolsPlugin.js');
 
 exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
@@ -28,8 +29,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   var XExt = jsh.XExt;
 
   this.isEditing = false;
-  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
+  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
+  this.imageToolsPlugin = new jsHarmonyCMSEditorImageToolsPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
   this.defaultToolbarOptions = {
@@ -58,6 +60,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     XExt.TinyMCE('', undefined, function(){
 
       _this.tinyMCEPlugin.register();
+      _this.imageToolsPlugin.register();
 
       //Change text labels
       window.tinymce.addI18n('en', {
@@ -79,7 +82,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
-          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms',
+          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms jsHarmonyCmsImageTools',
           'insertdatetime media table paste code noneditable'
         ],
         contextmenu: 'jsharmonycmscomponentcontextmenu link linkchecker image imagetools table spellchecker configurepermanentpen',

@@ -652,6 +652,7 @@ module.exports = exports = function(module, funcs){
 
             media_keys: {},
             media_items: {},
+            media_transforms: [],
 
             menus: {},
             menu_template_html: {},
@@ -1510,13 +1511,25 @@ module.exports = exports = function(module, funcs){
               renderedContent = funcs.applyRenderTags(renderedContent, { page: ejsparams.page });
               renderedContent = funcs.applyResponsiveImg(renderedContent, branchData.site_config.media_thumbnails, branchData.media_items);
               var replaceBranchURLsParams = {
-                getMediaURL: function(media_key, thumbnail_id){
+                getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent, urlParts){
                   if(!(media_key in branchData.media_keys)) throw new Error('Page '+page.page_path+' links to missing Media ID # '+media_key.toString());
                   if(thumbnail_id){
                     if(!(branchData.site_config.media_thumbnails && branchData.site_config.media_thumbnails[thumbnail_id])) throw new Error('Page '+page.page_path+', Media #'+media_key.toString()+' links to invalid Thumbnail ID: '+thumbnail_id);
                     return funcs.appendThumbnail(branchData.media_keys[media_key], thumbnail_id, branchData.site_config.media_thumbnails && branchData.site_config.media_thumbnails[thumbnail_id]);
                   }
-                  return branchData.media_keys[media_key];
+
+                  let media_url = branchData.media_keys[media_key];
+                  const transform = funcs.getMediaTransformParameters(urlParts.query);
+                  if (!transform) return media_url;
+
+                  const path_parts = path.parse(media_url);
+                  const ext = (path_parts.ext || '').replace(/^\./, '');
+                  const dest_filename = funcs.getMediaTransformFileName(path_parts.name, ext, transform);
+                  const src_filename = funcs.getMediaTransformFileName(media_key, ext, transform);
+                  media_url =  (path_parts.dir + '/' + dest_filename).replace(/\/{2,}/g, '/');
+                  branchData.media_transforms.push({ media_key, dest_filename, src_filename });
+                  
+                  return media_url;
                 },
                 getPageURL: function(page_key){
                   if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
@@ -1800,26 +1813,59 @@ module.exports = exports = function(module, funcs){
       ;
     var sql_ptypes = [dbtypes.BigInt];
     var sql_params = { deployment_id: publish_params.deployment_id };
-    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, function (err, rslt) {
+    appsrv.ExecRecordset('deployment', sql, sql_ptypes, sql_params, async function (err, rslt) {
       if (err != null) { err.sql = sql; return cb(err); }
       if(!rslt || !rslt.length || !rslt[0]){ return cb(new Error('Error loading deployment media')); }
-      async.eachLimit(rslt[0], 10, function(media, item_cb){
-        var srcpath = funcs.getMediaFilename(media.media_file_id, media.media_ext);
-        var media_fpath = '';
-        async.waterfall([
-          //Export primary media file
-          function(generate_cb){
-            fs.readFile(srcpath, null, function(err, media_content){
-              if(err) return generate_cb(err);
 
-              try{
-                media_fpath = funcs.getMediaRelativePath(media, publish_params);
-              }
-              catch(ex){
-                return generate_cb(ex);
-              }
-              if(!media_fpath) return generate_cb(new Error('Media has no path: '+media.media_key));
+      const files_to_copy = [];
+      const existing_files = new Set();
+      const media_map = new Map();
 
+      for (let i = 0; i < rslt[0].length; i++) {
+        const media = rslt[0][i];
+        media_map.set(media.media_key.toString(), media);
+        
+        const src_path = funcs.getMediaFilename(media.media_file_id, media.media_ext);
+        let media_fpath = undefined; 
+        try {
+          media_fpath = funcs.getMediaRelativePath(media, publish_params);
+        } catch(ex) {
+          return cb(ex);
+        }
+        if(!media_fpath) return cb(new Error(`Media has no path: ${media.media_key}`));
+        files_to_copy.push({ dest: media_fpath, src: src_path });
+        existing_files.add(path.normalize(media_fpath.toLowerCase()));
+      }
+
+      for (let i = 0; i < branchData.media_transforms.length; i++) {
+        const {media_key, dest_filename,  src_filename} = branchData.media_transforms[i];
+        const media = media_map.get(media_key)
+
+        if (!media) return cb(new Error(`Media not found: ${media_key}`));
+
+        const src_path = path.join(funcs.getMediaFileFolder(), src_filename);
+        let media_fpath = undefined;
+        try {
+          media_fpath = funcs.getMediaRelativePath(media, publish_params);
+        } catch(ex) {
+          return cb(ex);
+        }
+        if(!media_fpath) return cb(new Error(`Media has no path: ${dest_filename}`));
+        media_fpath = path.join(path.dirname(media_fpath), dest_filename);
+
+        if (existing_files.has(path.normalize(media_fpath.toLowerCase()))) return cb(new Error(`Cannot add transformed media. Media already exists: "${media_fpath}"`));
+
+        files_to_copy.push({ dest: media_fpath, src: src_path });
+      }
+
+      try {
+        await new Promise((resolve, reject) => {
+          async.eachLimit(files_to_copy, 10, (to_copy, item_cb) => {
+            const srcpath =  to_copy.src;
+            let media_fpath = to_copy.dest;
+            fs.readFile(srcpath, null, (err, media_content) => {
+              if(err) return item_cb(err);
+      
               branchData.site_files[media_fpath] = {
                 md5: crypto.createHash('md5').update(media_content).digest('hex')
               };
@@ -1827,14 +1873,34 @@ module.exports = exports = function(module, funcs){
 
               //Create folders for path
               HelperFS.createFolderRecursive(path.dirname(media_fpath), function(err){
-                if(err) return generate_cb(err);
+                if(err) return item_cb(err);
                 //Save media to publish folder
-                HelperFS.copyFile(srcpath, media_fpath, generate_cb);
+                HelperFS.copyFile(srcpath, media_fpath, item_cb);
               });
             });
-          },
+          }, err => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      } catch (err) {
+        return cb(err);
+      }
+      
+      async.eachLimit(rslt[0], 10, function(media, item_cb){
+        async.waterfall([
           //Export thumbnails
           function(generate_cb){
+            var media_fpath = '';
+            try{
+              media_fpath = funcs.getMediaRelativePath(media, publish_params);
+            }
+            catch(ex){
+              return generate_cb(ex);
+            }
+            if(!media_fpath) return generate_cb(new Error('Media has no path: '+media.media_key));
+            media_fpath = path.join(publish_params.publish_path, media_fpath);
+
             async.eachOf(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_id, thumbnail_cb){
               if(!thumbnail_config || !thumbnail_config.export) return thumbnail_cb();
               if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return thumbnail_cb();

@@ -197,6 +197,7 @@ module.exports = exports = function(module, funcs){
 
     function replaceURL(url, getLinkContent){
       if(!url) return url;
+      url = url.replace(/&amp;/g, '&');
       var orig_url = url;
 
       function addUrlSuffix(url){
@@ -441,7 +442,28 @@ module.exports = exports = function(module, funcs){
           if(!media_files){
             return baseurl + urlparts.pathname.substr(1) + '#@JSHCMS';
           }
-          return baseurl+'_funcs/media/'+media_key+(thumbnail_id?'/'+thumbnail_id:'')+'/?media_id='+media_files[media_key].media_id+'#@JSHCMS';
+
+          const validQueryParams = new Set([
+            'brightness',
+            'contrast',
+            'crop',
+            'flip_horizontal',
+            'flip_vertical',
+            'gamma',
+            'invert',
+            'levels',
+            'resize',
+            'rotate',
+            'sharpen',
+          ]);
+
+          const filteredQuery = { media_id: (media_files[media_key] || {}).media_id };
+          _.forEach(_.entries(urlparts.query), kvp => {
+            if (validQueryParams.has(kvp[0])) filteredQuery[kvp[0]] = kvp[1];
+          });
+         
+          const queryString = new URLSearchParams(filteredQuery).toString();
+          return `${baseurl}_funcs/media/${media_key}${thumbnail_id ? `/${thumbnail_id}` : ''}/?${queryString}#@JSHCMS`;
         },
         getPageURL: function(page_key, branchData, getLinkContent, urlparts){
           if(branch_id) return baseurl+'_funcs/page/'+page_key+'/?branch_id='+branch_id+'&view=1#@JSHCMS';

@@ -1,0 +1,25 @@
+{
+  "Media_Editor": {
+    "layout": "form",
+    "title": "Media Editor",
+    "caption": "Media Editor",
+    "actions": "B",
+    "unbound": true,
+    "hide_system_buttons" : ["print","export","help","delete"],
+    "oninit": "_this.oninit(xmodel);",
+    "js": [
+      @importstr("Media_Editor.bottomToolbar.js"),
+      @importstr("Media_Editor.brightnessEditor.js"),
+      @importstr("Media_Editor.colorEditor.js"),
+      @importstr("Media_Editor.contrastEditor.js"),
+      @importstr("Media_Editor.cropEditor.js"),
+      @importstr("Media_Editor.gammaEditor.js"),
+      @importstr("Media_Editor.image.js"),
+      @importstr("Media_Editor.imageEditorController.js"),
+      @importstr("Media_Editor.resizeEditor.js"),
+      @importstr("Media_Editor.rotateEditor.js"),
+      @importstr("Media_Editor.sharpnessEditor.js"),
+      @importstr("Media_Editor.topToolbar.js")
+    ] 
+  }
+}
