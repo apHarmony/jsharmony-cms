@@ -2618,11 +2618,11 @@ module.exports = exports = function(module, funcs){
           var fstream = fs.createReadStream(page_fpath);
           funcs.deploy_log_info(deployment_id, 'Uploading: '+page_path);
           funcs.deploy_log_change(deployment_id, 'Copying file: '+page_path);
-          var uploadParams = {
+          var uploadParams = _.extend({}, deployment.publish_params.s3_config.upload_params || {}, {
             Bucket: bucket,
             Key: page_bpath,
             Body: fstream,
-          };
+          });
           var contentType = HelperFS.getMimeType(page_bpath);
           if(contentType) uploadParams.ContentType = contentType;
           s3.upload(uploadParams, function(err, data){

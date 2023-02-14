@@ -303,6 +303,8 @@ module.exports = exports = function(module, funcs){
         return content.substr(startOfLine, endOfLine - startOfLine + 1);
       });
 
+      newURL = Helper.replaceAll(newURL, ' ', '%20');
+
       //Re-encode HTML entities
       if(escapeHtmlEntities){
         newURL = Helper.escapeHTML(newURL);
