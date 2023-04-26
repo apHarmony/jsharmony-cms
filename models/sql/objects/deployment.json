@@ -223,7 +223,7 @@
           "  insert into {schema}.deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_sts, deployment_git_revision) values(inserted(deployment_tag), @@INSERT_ID, inserted(deployment_date), inserted(deployment_target_id), 'PENDING', inserted(deployment_git_revision))",
           "  return_insert_key(deployment, deployment_id, (deployment_target_id=inserted(deployment_target_id) and deployment_tag=inserted(deployment_tag)));",
           ////Add all menu / pages / media / redirect / sitemap from other branch
-          "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select (select branch_id from {schema}.deployment where deployment_tag=inserted(deployment_tag) and site_id=inserted(site_id)), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_id) and {item}_id is not null\")",
+          "  foreach(%%%{schema}.branch_items%%%, %%%TRIGGER_EOL%%%, \"insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select (select deployment.branch_id from {schema}.deployment inner join {schema}.branch on {schema}.branch.branch_id={schema}.deployment.branch_id where deployment_tag=inserted(deployment_tag) and site_id=inserted(site_id)), {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=inserted(branch_id) and {item}_id is not null\")",
           "  increment_changes()",
           ")"
         ]

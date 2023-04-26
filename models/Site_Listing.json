@@ -26,7 +26,7 @@
       {"name":"sys_user_site_editor","caption":"My Preview / Editor","control":"dropdown","lov":{ "blank": "(Default)", "parent":"site_id", "sql2": "select site_id code_parent, deployment_target_id code_val, deployment_target_name code_txt from {schema}.v_my_deployment_target where deployment_target_can_editor = 1 and deployment_target_sts='ACTIVE' order by deployment_target_name" }},
       {"control":"html","caption":"Configure Site","link":"update:Site_Tabs","value":"<img src='/images/icon_edit.png' class='xicon' />","roles":{ "WEBMASTER":"B" }},
       {"control":"label","caption":"Checkout Site","cellstyle":"vertical-align:middle;text-align:center;","controlstyle":"position:relative;top:-1px;cursor:pointer;","controlclass":"site_checkout_button","captionstyle":"text-align:center;",
-        "onclick":"if(xmodel.get('site_id', this) == jsh.globalparams.site_id) return XExt.Alert('Site is currently checked out.'); jsh.System.setCurrentSite(xmodel.get('site_id',this),jsh._BASEURL+xmodel.namespace+'Branch_Active_Listing')",
+        "onclick":"if(xmodel.get('site_id', this) == jsh.globalparams.site_id) return XExt.Alert('Site is currently checked out.'); jsh.System.setCurrentSite(xmodel.get('site_id',this))",
         "value":"<a class='jsHarmonyCms_action_button'><span class='text_not_checked_out'>Checkout</span><span class='text_checked_out'>(Checked Out)</span></a>"},
     ]
   }

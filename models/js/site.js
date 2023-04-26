@@ -223,7 +223,6 @@
 
   jsh.System.setCurrentSite = function(site_id, source){
     if(site_id == jsh.globalparams.site_id) return;
-    if(!source) source = window.location.href;
     var url = jsh._BASEURL + '_funcs/site/checkout?' + $.param({site_id:site_id, source: source});
     window.location.href = url;
   };
