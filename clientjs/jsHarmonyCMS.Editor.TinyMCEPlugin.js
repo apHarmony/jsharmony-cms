@@ -897,6 +897,7 @@ exports = module.exports = function(jsh, cms, editor){
       if (componentAttr == undefined || componentAttr.length < 1) {
         continue;
       }
+      node.attr('data-component-id', null);
       node.empty();
       var newNode = tinymce.html.Node.create('#text');
       newNode.value = String.fromCharCode(0x00A0);
