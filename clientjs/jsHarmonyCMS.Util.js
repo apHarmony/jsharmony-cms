@@ -48,13 +48,17 @@ exports = module.exports = function(){
     jctrl.removeClass('editable');
     jctrl.addClass('uneditable');
 
-    if (jctrl.hasClass('dropdown')) jctrl.prop('disabled', true);
-    else if (jctrl.hasClass('checkbox')) jctrl.prop('disabled', true);
-    else if(jctrl.hasClass('xtagbox_base')){
-      jctrl.prev().addClass('uneditable');
-      jctrl.prev().find('input').prop('disabled', true);
-    }
-    else jctrl.prop('readonly', true);
+    jctrl.each(function(){
+      var obj = this;
+      var jobj = $(this);
+      if (jobj.hasClass('dropdown') || ((obj.nodeName||'').toUpperCase() =='SELECT')) jobj.prop('disabled', true);
+      else if (jobj.hasClass('checkbox') || (obj.type=='checkbox')) jobj.prop('disabled', true);
+      else if(jobj.hasClass('xtagbox_base')){
+        jobj.prev().addClass('uneditable');
+        jobj.prev().find('input').prop('disabled', true);
+      }
+      else jobj.prop('readonly', true);
+    });
   };
 
   this.loadScript = function(url, cb){
