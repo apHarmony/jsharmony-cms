@@ -19,6 +19,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var Helper = require('jsharmony/Helper');
 var _ = require('lodash');
 var async = require('async');
+var path = require('path');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -121,6 +122,7 @@ module.exports = exports = function(module, funcs){
       page_templates: null,
       component_templates: null,
       media_keys: {},
+      media_transforms: [],
       branch_id: branch_id,
       site_id: null,
       site_config: {},
@@ -316,11 +318,21 @@ module.exports = exports = function(module, funcs){
         if(page.compiled.content) for(let key in page.compiled.content) allContent[key + ' content'] = page.compiled.content[key];
         for(let key in allContent){
           funcs.replaceBranchURLs(allContent[key], {
-            getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent){
+            getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent, urlParts){
               if(!(media_key in branchData.media_keys)) throw new Error('<' + key + '>: Link to missing Media ID #'+media_key.toString()+': ...'+getLinkContent()+'...');
               if(thumbnail_id){
                 if(!(branchData.site_config.media_thumbnails && branchData.site_config.media_thumbnails[thumbnail_id])) throw new Error('<' + key + '>: Media #'+media_key.toString()+' links to invalid Thumbnail ID: '+thumbnail_id+' ...'+getLinkContent()+'...');
               }
+
+              const transform = funcs.getMediaTransformParameters(urlParts.query);
+              if (!transform) return '';
+
+              const media = branchData.media_keys[media_key];
+              const path_parts = path.parse(media.media_path);
+              const ext = (path_parts.ext || '').replace(/^\./, '');
+              const dest_filename = funcs.getMediaTransformFileName(path_parts.name, ext, transform);
+              const dest_path = path.join(path.dirname(media.media_path), dest_filename).replace(/\\{2,}/g, '');
+              branchData.media_transforms.push({media_key, dest_filename, dest_path});
               return '';
             },
             getPageURL: function(page_key, branchData, getLinkContent){
@@ -341,6 +353,17 @@ module.exports = exports = function(module, funcs){
   };
 
   exports.validate_media = function(item_errors, branchData, callback){
+    // Ensure transformed images do not overwrite
+    // media files
+    const media_paths = new Set();
+    Object.values(branchData.media_keys || {}).forEach(media => media_paths.add(path.normalize(media.media_path.toLowerCase())));
+    (branchData.media_transforms || []).forEach(info => {
+      const dest = path.normalize(info.dest_path.toLowerCase());
+      if (media_paths.has(dest)) {
+        funcs.validate_logError(item_errors, '', {}, `Media transform overwrites media file. Path "${info.dest_path}`);
+      }
+    });
+
     //Validate Media Paths
     async.eachOfSeries(branchData.media_keys, function(media, media_id, media_cb){
       var media_path = null;

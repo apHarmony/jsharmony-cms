@@ -224,7 +224,7 @@ ComponentTemplate.prototype.processBrowserFields = function(fields) {
 
 exports = module.exports = ComponentTemplate;
 
-},{"./dataModelTemplate_formPreview":2,"./dataModelTemplate_gridPreview":3,"./propertiesModelTemplate_form":5,"lodash":32}],2:[function(require,module,exports){
+},{"./dataModelTemplate_formPreview":2,"./dataModelTemplate_gridPreview":3,"./propertiesModelTemplate_form":5,"lodash":33}],2:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -461,7 +461,7 @@ DataModelTemplate_FormPreview.prototype.populateDataInstance = function(dataInst
 
 exports = module.exports = DataModelTemplate_FormPreview;
 
-},{"../utils/cloner":18,"./fieldModel":4,"lodash":32}],3:[function(require,module,exports){
+},{"../utils/cloner":18,"./fieldModel":4,"lodash":33}],3:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -758,7 +758,7 @@ DataModelTemplate_GridPreview.prototype.populateDataInstance = function(dataInst
 
 
 exports = module.exports = DataModelTemplate_GridPreview;
-},{"../utils/cloner":18,"./fieldModel":4,"lodash":32}],4:[function(require,module,exports){
+},{"../utils/cloner":18,"./fieldModel":4,"lodash":33}],4:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -936,7 +936,7 @@ FieldModel.populateDataInstance = function(dataInstance, fields) {
 
 exports = module.exports = FieldModel;
 
-},{"../utils/convert":19,"lodash":32}],5:[function(require,module,exports){
+},{"../utils/convert":19,"lodash":33}],5:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -1084,7 +1084,7 @@ PropertiesModelTemplate_Form.prototype.populateDataInstance = function(dataInsta
 
 exports = module.exports = PropertiesModelTemplate_Form;
 
-},{"../utils/cloner":18,"./fieldModel":4,"lodash":32}],6:[function(require,module,exports){
+},{"../utils/cloner":18,"./fieldModel":4,"lodash":33}],6:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -1403,7 +1403,7 @@ Dialog.prototype.setScrollTop = function(position, $wrapper) {
 
 exports = module.exports = Dialog;
 
-},{"./dialogResizer":7,"./overlayService":10,"lodash":32}],7:[function(require,module,exports){
+},{"./dialogResizer":7,"./overlayService":10,"lodash":33}],7:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -1562,7 +1562,7 @@ DialogResizer.prototype.startResizeObserver = function(wrapper) {
 };
 
 exports = module.exports = DialogResizer;
-},{"lodash":32}],8:[function(require,module,exports){
+},{"lodash":33}],8:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -1801,7 +1801,7 @@ FormDialog.prototype.open = function(data) {
 
 
 exports = module.exports = FormDialog;
-},{"./dialog":6,"lodash":32}],9:[function(require,module,exports){
+},{"./dialog":6,"lodash":33}],9:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -1961,7 +1961,7 @@ GridDialog.prototype.open = function() {
 
 exports = module.exports = GridDialog;
 
-},{"./dialog":6,"lodash":32}],10:[function(require,module,exports){
+},{"./dialog":6,"lodash":33}],10:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -2422,7 +2422,7 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 };
 
 exports = module.exports = DataEditor_Form;
-},{"../dialogs/formDialog":8,"../templateRenderer":17,"./htmlPropertyEditorController":15,"lodash":32}],12:[function(require,module,exports){
+},{"../dialogs/formDialog":8,"../templateRenderer":17,"./htmlPropertyEditorController":15,"lodash":33}],12:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -2571,7 +2571,7 @@ DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captio
 
 
 exports = module.exports = DataEditor_GridPreview;
-},{"../dialogs/gridDialog":9,"./dataEditor_gridPreviewController":13,"lodash":32}],13:[function(require,module,exports){
+},{"../dialogs/gridDialog":9,"./dataEditor_gridPreviewController":13,"lodash":33}],13:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -3278,7 +3278,7 @@ DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function(
 
 exports = module.exports = DataEditor_GridPreviewController;
 
-},{"../templateRenderer":17,"../utils/convert":19,"./dataEditor_form":11,"./gridDataStore":14,"lodash":32}],14:[function(require,module,exports){
+},{"../templateRenderer":17,"../utils/convert":19,"./dataEditor_form":11,"./gridDataStore":14,"lodash":33}],14:[function(require,module,exports){
 
 /*
 Copyright 2020 apHarmony
@@ -3674,7 +3674,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
 exports = module.exports = PropertyEditor_Form;
 
-},{"../dialogs/formDialog":8,"lodash":32}],17:[function(require,module,exports){
+},{"../dialogs/formDialog":8,"lodash":33}],17:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -4039,6 +4039,171 @@ DomSerializer.prototype.serializeAttrValue = function(data) {
 exports = module.exports = DomSerializer;
 
 },{}],21:[function(require,module,exports){
+const  jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
+
+/**
+  * @typedef {Object} IconDefinition
+  * @property {string} name - the name the icon is registered as
+  * @property {string} html - the html for the icon
+  */
+
+/**
+ * Each icon definition will be registered with the editor
+ * and available for use within the editor by name property.
+ * @type {Object.<string, IconDefinition>}
+ **/
+const PLUGIN_NAME = 'jsHarmonyCmsImageTools'
+
+const ICONS = {
+  edit: {
+    name: 'material_edit',
+    html: '<span class="material-icons" style="font-family: \'Material Icons\' !important;font-size:18px;">edit</span>'
+  }
+}
+
+exports = module.exports = function(jsh, cms, editor) {
+
+  var _ = jsh._;
+  var $ = jsh.$;
+  var XExt = jsh.XExt;
+
+  /**
+   * @public
+   * @returns {string}
+   */
+  this.pluginName = function() {
+    return PLUGIN_NAME;
+  }
+
+  /**
+   * Register the JSH image tools plugin
+   * @public
+   * @returns {void}
+   */
+  this.register = function() {
+    if (tinymce.PluginManager.get(this.pluginName()) != undefined) return;
+
+    tinymce.PluginManager.add(this.pluginName(), function(editor, url) {
+      new ImageToolsPlugin(editor);
+    });
+  }
+
+  /**
+   * @class
+   * @private
+   * @param {object} editor - the TinyMce editor instance
+   * @returns {void}
+   */
+  function ImageToolsPlugin(editor) {
+    this._editor = editor;
+    this.createContextToolbar();
+    this._editor.ui.registry.addIcon(ICONS.edit.name, ICONS.edit.html);
+  }
+
+  /**
+   * Create and register the context toolbar for editing
+   * the component properties and data.
+   * @private
+   * @returns {void}
+   */
+  ImageToolsPlugin.prototype.createContextToolbar = function() {
+
+    const self = this;
+    const editButtonId = 'jsharmonyImageToolPluginContextToolbar_editButton';
+
+    this._editor.ui.registry.addButton(editButtonId, {
+      tooltip: 'Edit',
+      text: 'Edit',
+      icon: 'edit-image',
+      onAction: function(a, b) {
+
+        /** @type {HTMLImageElement} */
+        const element =  self._editor.selection.getNode();
+        const isCmsImage = self.isCmsImage(element)
+        if (!isCmsImage) return;
+
+        const preEditWidth = element.naturalWidth;
+        const preEditHeight = element.naturalHeight
+
+        self.openImageEditor(element.src, function(data) {
+          const newSource = data.image_source;
+
+          $(element).one('load', function() {
+            const postEditWidth = element.naturalWidth;
+            const postEditHeight = element.naturalHeight;
+
+            const dimensionsChanged =
+              postEditHeight !== preEditHeight ||
+              postEditWidth !== preEditWidth;
+
+            if (dimensionsChanged) {
+              $(element)
+                .attr('width', postEditWidth + 'px')
+                .attr('height', postEditHeight + 'px');
+            }
+          });
+
+          element.src = newSource
+          $(element)
+            .attr('data-mce-src', data.image_source)
+            .attr('width', null);
+        })
+      }
+    });
+
+    this._editor.ui.registry.addContextToolbar('jsharmonyImageToolPluginContextToolbar', {
+      predicate: function(node) { return self.isCmsImage(node); },
+      items: editButtonId,
+      scope: 'node',
+      position: 'node'
+    })
+  }
+
+  /**
+   * @private
+   * @param {string} url
+   * @returns {object}
+  */
+  ImageToolsPlugin.prototype.getQueryObjectFromUrl = function(url) {
+
+    const queryStartIndex = url.indexOf('?');
+    if (queryStartIndex < 0) return {};
+
+    const queryAndHash = url.slice(queryStartIndex + 1).split('#');
+
+    const params = queryAndHash[0].split('&').reduce(function(obj, kvp) {
+      const split = kvp.split('=');
+      obj[split[0].toLowerCase()] = split[1];
+      return obj;
+    }, {});
+
+    return params;
+  }
+
+  /**
+   * @private
+   * @param {HTMLImageElement} imgElement
+   * @return {boolean}
+  */
+  ImageToolsPlugin.prototype.isCmsImage = function(imgElement) {
+    const isImage = this._editor.dom.is(imgElement, 'img');
+    if (!isImage) return false;
+
+    const query = this.getQueryObjectFromUrl(imgElement.src);
+
+    return query.media_id != undefined || query.media_file_id != undefined;
+  }
+
+  /**
+   * @private
+   * @param {string | number} mediaFileId
+   * @param {(data) => void} callback
+   */
+  ImageToolsPlugin.prototype.openImageEditor = function(imageSource, callback) {
+    cms.createJsHarmonyCMSEditorPicker(this._editor).openMediaEditor(callback, imageSource);
+  }
+}
+},{"./jsHarmonyCMS.Editor.Picker.js":26}],22:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -4296,7 +4461,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
 
 };
-},{"./component/componentModel/componentTemplate":1,"./component/editors/dataEditor_form":11,"./component/editors/dataEditor_gridPreview":12,"./component/editors/propertyEditor_form":16,"./component/templateRenderer":17,"./component/utils/domSerializer":20,"lodash":32}],22:[function(require,module,exports){
+},{"./component/componentModel/componentTemplate":1,"./component/editors/dataEditor_form":11,"./component/editors/dataEditor_gridPreview":12,"./component/editors/propertyEditor_form":16,"./component/templateRenderer":17,"./component/utils/domSerializer":20,"lodash":33}],23:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -4727,7 +4892,7 @@ exports = module.exports = function(jsh, cms){
     return rslt;
   };
 };
-},{"./jsHarmonyCMS.Component":21}],23:[function(require,module,exports){
+},{"./jsHarmonyCMS.Component":22}],24:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -4783,7 +4948,7 @@ exports = module.exports = function(jsh, cms){
     return cms.componentManager.getComponentRenderParameters(component, renderOptions, additionalRenderParams);
   };
 };
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*
 Copyright 2021 apHarmony
 
@@ -5035,7 +5200,7 @@ exports = module.exports = function(jsh, cms){
     sitemap.item = sitemap.self;
   };
 };
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -5103,6 +5268,11 @@ exports = module.exports = function(jsh, cms){
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
   };
 
+  this.openMediaEditor = function(cb, imageSource) {
+    cms.mediaEditorCallback = cb;
+    XExt.popupForm('jsHarmonyCMS/Media_Editor', 'update', { image_source: imageSource }, { width: 1100, height: 750 });
+  }
+
   this.onmessage = function(event, data){
     if(data.indexOf('cms_file_picker:')==0){
       if(!cms.filePickerCallback) return true;
@@ -5123,6 +5293,11 @@ exports = module.exports = function(jsh, cms){
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
       cms.filePickerCallback = null;
       return true;
+    }
+    else if (data.indexOf('cms_media_editor:')==0){
+      var jdata = JSON.parse(data.slice('cms_media_editor:'.length));
+      if (cms.mediaEditorCallback) cms.mediaEditorCallback(jdata);
+      cms.mediaEditorCallback = null;
     }
     return false;
   };
@@ -5178,7 +5353,7 @@ exports = module.exports = function(jsh, cms){
     else XExt.Alert('Invalid File Selector Type: '+fileSelectorType);
   };
 };
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /*
 Copyright 2020 apHarmony
 
@@ -6088,7 +6263,7 @@ exports = module.exports = function(jsh, cms, editor){
     }
   };
 };
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -6110,6 +6285,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSEditorTinyMCEPlugin = require('./jsHarmonyCMS.Editor.TinyMCEPlugin.js');
+var jsHarmonyCMSEditorImageToolsPlugin = require('./jaHarmonyCMS.Editor.ImageToolsPlugin.js');
 
 exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
@@ -6119,8 +6295,9 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   var XExt = jsh.XExt;
 
   this.isEditing = false;
-  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
+  this.picker = new jsHarmonyCMSEditorPicker(jsh, cms, this);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
+  this.imageToolsPlugin = new jsHarmonyCMSEditorImageToolsPlugin(jsh, cms, this);
   this.defaultConfig = {};
   this.toolbarContainer = null;
   this.defaultToolbarOptions = {
@@ -6149,6 +6326,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     XExt.TinyMCE('', undefined, function(){
 
       _this.tinyMCEPlugin.register();
+      _this.imageToolsPlugin.register();
 
       //Change text labels
       window.tinymce.addI18n('en', {
@@ -6170,7 +6348,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         entity_encoding: 'numeric',
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
-          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms',
+          'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms jsHarmonyCmsImageTools',
           'insertdatetime media table paste code noneditable'
         ],
         contextmenu: 'jsharmonycmscomponentcontextmenu link linkchecker image imagetools table spellchecker configurepermanentpen',
@@ -7432,7 +7610,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     ];
   };
 };
-},{"./jsHarmonyCMS.Editor.Picker.js":25,"./jsHarmonyCMS.Editor.TinyMCEPlugin.js":26}],28:[function(require,module,exports){
+},{"./jaHarmonyCMS.Editor.ImageToolsPlugin.js":21,"./jsHarmonyCMS.Editor.Picker.js":26,"./jsHarmonyCMS.Editor.TinyMCEPlugin.js":27}],29:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -7533,7 +7711,7 @@ exports = module.exports = function(cms){
     this.StopLoading();
   };
 };
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -7826,7 +8004,7 @@ exports = module.exports = function(jsh, cms){
   };
 
 };
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /*
 Copyright 2019 apHarmony
 
@@ -7920,8 +8098,8 @@ exports = module.exports = function(){
     if(elem) elem.parentNode.removeChild(elem);
   };
 };
-},{}],31:[function(require,module,exports){
-(function (global){
+},{}],32:[function(require,module,exports){
+(function (global){(function (){
 /*
 Copyright 2019 apHarmony
 
@@ -7945,6 +8123,7 @@ var jsHarmonyCMSUtil = require('./jsHarmonyCMS.Util.js');
 var jsHarmonyCMSLoader = require('./jsHarmonyCMS.Loader.js');
 var jsHarmonyCMSToolbar = require('./jsHarmonyCMS.Toolbar.js');
 var jsHarmonyCMSController = require('./jsHarmonyCMS.Controller.js');
+var jsHarmonyCMSEditorPicker = require('./jsHarmonyCMS.Editor.Picker.js');
 var jsHarmonyCMSEditor = require('./jsHarmonyCMS.Editor.js');
 var jsHarmonyCMSComponentManager = require('./jsHarmonyCMS.ComponentManager.js');
 var jsHarmonyCMSControllerExtensions = require('./jsHarmonyCMS.ControllerExtensions.js');
@@ -8153,15 +8332,19 @@ var jsHarmonyCMS = function(options){
     return new jsHarmonyCMSEditor(jsh, _this, toolbarElement);
   };
 
+  this.createJsHarmonyCMSEditorPicker = function(editor) {
+    return new jsHarmonyCMSEditorPicker(jsh, _this, editor);
+  }
+
   //Run Init
   _this.init();
 };
 
 global.jsHarmonyCMS = jsHarmonyCMS;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jsHarmonyCMS.ComponentManager.js":22,"./jsHarmonyCMS.Controller.js":23,"./jsHarmonyCMS.ControllerExtensions.js":24,"./jsHarmonyCMS.Editor.js":27,"./jsHarmonyCMS.Loader.js":28,"./jsHarmonyCMS.Toolbar.js":29,"./jsHarmonyCMS.Util.js":30}],32:[function(require,module,exports){
-(function (global){
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./jsHarmonyCMS.ComponentManager.js":23,"./jsHarmonyCMS.Controller.js":24,"./jsHarmonyCMS.ControllerExtensions.js":25,"./jsHarmonyCMS.Editor.Picker.js":26,"./jsHarmonyCMS.Editor.js":28,"./jsHarmonyCMS.Loader.js":29,"./jsHarmonyCMS.Toolbar.js":30,"./jsHarmonyCMS.Util.js":31}],33:[function(require,module,exports){
+(function (global){(function (){
 /**
  * @license
  * Lodash <https://lodash.com/>
@@ -25372,5 +25555,5 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   }
 }.call(this));
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[31]);
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}]},{},[32]);

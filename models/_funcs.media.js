@@ -37,8 +37,12 @@ module.exports = exports = function(module, funcs){
     }
     else if(thumbnail_config) throw new Error('Unsupported media file name: '+JSON.stringify(thumbnail_config));
     fname += ((thumbnail_config && thumbnail_config.format) ? '.' + thumbnail_config.format : media_ext);
-    return path.join(path.join(module.jsh.Config.datadir,'media'),fname);
+    return path.join(exports.getMediaFileFolder(), fname);
   };
+
+  exports.getMediaFileFolder = function() {
+    return path.join(module.jsh.Config.datadir,'media');
+  }
 
   exports.getMediaFile = function(media_file_id, media_filename, media_ext, thumbnail_id, thumbnail_config, callback){
     var jsh = module.jsh;
@@ -159,8 +163,14 @@ module.exports = exports = function(module, funcs){
           }
         
           //Validate parameters
+          var validQueryParams = [
+            '|width','|height','|download','|media_file_id','|media_id', '|crop', '|resize','|flip_horizontal',
+            '|flip_vertical', '|rotate', '|invert', '|levels', '|sharpen', '|brightness', '|contrast', '|gamma', '|nocache'
+          ];
           if (!appsrv.ParamCheck('P', P, [])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
-          if (!appsrv.ParamCheck('Q', Q, ['|width','|height','|download','|media_file_id','|media_id'])) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+          if (!appsrv.ParamCheck('Q', Q, validQueryParams)) { Helper.GenError(req, res, -4, 'Invalid Parameters'); return; }
+
+          var transform = exports.getMediaTransformParameters(Q);
 
           //XValidate
           if(!thumbnail_config && (Q.width || Q.height)){
@@ -176,6 +186,9 @@ module.exports = exports = function(module, funcs){
             thumbnail_config = { resize: [ parseInt(Q.width), parseInt(Q.height) ] };
           }
 
+          verrors = validateTransformQuery(Q);
+          if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
+
           var serveoptions = { attachment: !!('download' in Q), mime_override: media.media_ext };
 
           if(thumbnail_config && thumbnail_config.format) serveoptions.mime_override = '.' + thumbnail_config.format;
@@ -186,12 +199,39 @@ module.exports = exports = function(module, funcs){
               jsh.Log.error(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
               return Helper.GenError(req, res, -99999, 'Error occurred during media processing operation (' + err.toString() + ')');
             }
-            res.writeHead(200, {
-              'Content-Type': HelperFS.getMimeType(serveoptions.mime_override||fpath),
-              'Content-Length': stat.size,
-              'Content-Disposition': 'attachment; filename=' + encodeURIComponent(fname)
-            });
-            fs.createReadStream(fpath).pipe(res);
+
+            if (transform) {
+              const transformFilename = exports.getMediaTransformFileName(media.media_file_id, path.extname(fpath).slice(1), transform);
+              const transformFilePath = path.join(path.dirname(fpath), transformFilename);
+              fs.readFile(transformFilePath, (error, buffer) => {
+                if (error && error.code === 'ENOENT') {
+                  jsh.Extensions.image.transform(fpath, undefined, undefined, transform, (tfError, tfBuffer) => {
+                    if (tfError) {
+                      return Helper.GenError(req, res, -99999, 'Error occurred during file operation (' + tfError.toString() + ')');
+                    } else {
+                      if (Q.nocache !== '1') {
+                        // No need to wait for this.
+                        // If cache fails  we will just have to try again next time.
+                        fs.writeFile(transformFilePath, tfBuffer, () => {});
+                      }
+                      HelperFS.outputContent(req, res, tfBuffer, HelperFS.getMimeType(fpath), undefined);
+                    }
+                  });
+                } else if (error) {
+                  return Helper.GenError(req, res, -99999, 'Error occurred during file operation (' + error.toString() + ')');
+
+                } else {
+                  HelperFS.outputContent(req, res, buffer, HelperFS.getMimeType(fpath), undefined);
+                }
+              });
+            } else {
+              res.writeHead(200, {
+                'Content-Type': HelperFS.getMimeType(serveoptions.mime_override||fpath),
+                'Content-Length': stat.size,
+                'Content-Disposition': 'attachment; filename=' + encodeURIComponent(fname)
+              });
+              fs.createReadStream(fpath).pipe(res);
+            }
           });
           return;
         });
@@ -575,5 +615,275 @@ module.exports = exports = function(module, funcs){
     });
   };
 
+  /**
+   * @param {string} mediaId
+   * @param {string} ext - filename extension to use.
+   * @param {TransformOptions} transform
+   * @returns {string | undefined}
+   */
+  exports.getMediaTransformFileName = function(mediaId, ext, transform) {
+
+    /**************************************************
+     * File Name Format
+     * 
+     * <media id>._.<transform>.<ext>
+     * 
+     * <transform> is a string created by
+     * combining each transform part ID with a "dot".
+     * 
+     * Transform part IDs are given (with order maintained) as:
+     *    crop :: c_<x>_<y>_<w>_<h>
+     *    resize :: rs_<w>_<h>
+     *    flip_horizontal :: fh
+     *    flip_vertical :: fv
+     *    rotate :: ro_<degrees>
+     *    invert :: pi
+     *    levels :: pl_<r>_<g>_<b>
+     *    sharpen :: ps_<amount>
+     *    brightness :: pb_<amount>
+     *    contrast :: pc_<amount>
+     *    gamma :: pg_<amount>
+     * 
+     * Round any floats to a max of 5 digits
+     * 
+     * Example:
+     *    21._.c_0_0_100_100.re_500_500.fh.fv.ro_90.pi.pl_-1_0_-1.ps_-1.pb_1.pc_0.12345.pg_0.001.jpg
+     * 
+     *************************************************/
+
+    const round = n => n == undefined ? 0 : Math.round(n * 100000) / 100000;
+
+    const parts = [];
+
+    if (transform.crop) {
+      const c = transform.crop;
+      parts.push(`c_${round(c.x)}_${round(c.y)}_${round(c.width)}_${round(c.height)}`);
+    }
+    if (transform.resize) {
+      const r = transform.resize;
+      parts.push(`rs_${round(r.width)}_${round(r.height)}`);
+    }
+    if (transform.flip_horizontal) {
+      parts.push('fh');
+    }
+    if (transform.flip_vertical) {
+      parts.push('fv');
+    }
+    if (transform.rotate) {
+      parts.push(`ro_${round(transform.rotate)}`);
+    }
+    if (transform.invert) {
+      parts.push('pi');
+    }
+    if (transform.levels && (transform.levels.r || transform.levels.g || transform.levels.b)) {
+      const l = transform.levels;
+      parts.push(`pl_${round(l.r)}_${round(l.g)}_${round(l.b)}`);
+    }
+    if (transform.sharpen) {
+      parts.push(`ps_${round(transform.sharpen)}`);
+    }
+    if (transform.brightness) {
+      parts.push(`pb_${round(transform.brightness)}`);
+    }
+    if (transform.contrast) {
+      parts.push(`pc_${round(transform.contrast)}`);
+    }
+    if (transform.gamma) {
+      parts.push(`pg_${round(transform.gamma)}`);
+    }
+
+    if (parts.length < 1) return undefined;
+
+    return `${mediaId}._.${parts.join('.')}.${ext}`;
+  }
+
+  exports.getMediaTransformParameters = function(query) {
+
+    const convertNum = (value, asFloat) => {
+      const numValue = asFloat ? parseFloat(value) : parseInt(value);
+      return isNaN(numValue) ? undefined : numValue;
+    }
+
+    let hasTransform = false;
+    const transform = {};
+
+    if (query.brightness != undefined) {
+      hasTransform = true;
+      transform.brightness = convertNum(query.brightness, true);
+    }
+
+    if (query.contrast != undefined) {
+      hasTransform = true;
+      transform.contrast = convertNum(query.contrast, true);
+    }
+
+    if (query.crop != undefined) {
+      hasTransform = true;
+      const cropValues = query.crop.split(',');
+      transform.crop = {
+        x: convertNum(cropValues[0], true),
+        y: convertNum(cropValues[1], true),
+        width: convertNum(cropValues[2], true),
+        height: convertNum(cropValues[3], true),
+      }
+    }
+
+    if (query.flip_horizontal === '1') {
+      hasTransform = true;
+      transform.flip_horizontal = true;
+    }
+
+    if (query.flip_vertical === '1') {
+      hasTransform = true;
+      transform.flip_vertical = true;
+    }
+
+    if (query.gamma != undefined) {
+      hasTransform = true;
+      transform.gamma = convertNum(query.gamma, true);
+    }
+
+    if (query.invert === '1') {
+      hasTransform = true;
+      transform.invert = true;
+    }
+
+    if (query.levels != undefined) {
+      hasTransform = true;
+      const levelValues = query.levels.split(',');
+      transform.levels = {
+        r: convertNum(levelValues[0], true),
+        g: convertNum(levelValues[1], true),
+        b: convertNum(levelValues[2], true)
+      }
+    }
+
+    if (query.resize != undefined) {
+      hasTransform = true;
+      const resizeValues = query.resize.split(',');
+      transform.resize = {
+        width: convertNum(resizeValues[0]),
+        height: convertNum(resizeValues[1])
+      }
+    }
+
+    if (query.rotate != undefined) {
+      hasTransform = true;
+      transform.rotate = convertNum(query.rotate);
+    }
+
+    if (query.sharpen != undefined) {
+      hasTransform = true;
+      transform.sharpen = convertNum(query.sharpen, true);
+    }
+
+    return hasTransform ? transform : undefined;
+  }
+
+  function validateTransformQuery(query) {
+
+    const XValidate = module.jsh.XValidate;
+    const validate = new XValidate();
+    
+    validate.AddValidator('_obj.brightness', 'Brightness', 'B', [XValidate._v_IsFloat(), XValidate._v_MaxValue(1), XValidate._v_MinValue(-1)]);
+    validate.AddValidator('_obj.contrast', 'Contrast', 'B', [XValidate._v_IsFloat(), XValidate._v_MaxValue(1), XValidate._v_MinValue(-1)]);
+    validate.AddValidator('_obj.crop', 'Crop', 'B', [(caption, value, obj) => {
+      if (!value) return '';
+      const parts = value
+        .split(',')
+        .map(a => parseFloat(a.trim()))
+        .filter(a => a != undefined && !isNaN(a));
+
+      if (parts.length < 4) return `${caption} is missing values. Format: <x>,<y>,<width>,<height>`;
+
+      const [x, y, width, height] = parts;
+      if (x < 0 || x >= 1) return `${caption} x value must be equal to or greater than 0 and less than 1. Given ${x}.`;
+      if (y < 0 || y >= 1) return `${caption} y value must be equal to or greater than 0 and less than 1. Given ${y}.`;
+      if (width <= 0) return `${caption} width value must be greater than 0. Given ${width}.`;
+      if (height <= 0) return `${caption} height value must be greater than 0. Given ${height}.`;
+      if ((x + width) > 1) return `${caption} width exceeds image width.`
+      if ((y + height) > 1) return `${caption} width exceeds image width.`
+      
+      return '';
+    }]);
+    validate.AddValidator('_obj.flip_horizontal', 'Flip Horizontal', 'B', [XValidate._v_InArray(['1', '0'])]);
+    validate.AddValidator('_obj.flip_vertical', 'Flip Vertical', 'B', [XValidate._v_InArray(['1', '0'])]);
+    validate.AddValidator('_obj.gamma', 'Gamma', 'B', [XValidate._v_IsFloat(), XValidate._v_MaxValue(1), XValidate._v_MinValue(-1)]);
+    validate.AddValidator('_obj.invert', 'Invert', 'B', [XValidate._v_InArray(['1', '0'])]);
+    validate.AddValidator('_obj.levels', 'Levels', 'B', [(caption, value, obj) => {
+      if (!value) return '';
+      const parts = value
+        .split(',')
+        .map(a => parseFloat(a.trim()))
+        .filter(a => a != undefined && !isNaN(a));
+
+      if (parts.length < 3) return `${caption} is missing values. Format: <red>,<green>,<blue>`;
+
+      const [red, green, blue] = parts;
+      if (red < -1 || red > 1) return `${caption} red value must be between -1 and 1 (inclusive). Given ${red}.`;
+      if (green < -1 || green > 1) return `${caption} green value must be between -1 and 1 (inclusive). Given ${green}.`;
+      if (blue < -1 || blue > 1) return `${caption} blue value must be between -1 and 1 (inclusive). Given ${blue}.`;
+
+      return '';
+    }]);
+    validate.AddValidator('_obj.resize', 'Resize', 'B', [(caption, value, obj) => {
+      if (!value) return '';
+      const parts = value
+        .split(',')
+        .map(a => parseFloat(a.trim()))
+        .filter(a => a != undefined && !isNaN(a));
+
+      if (parts.length < 2) return `${caption} is missing values. Format: <width>,<height>`;
+
+      const [width, height] = parts;
+      if (width < 0) return `${caption} width value must be equal to or greater than 0. Given ${width}.`;
+      if (height < 0) return `${caption} height value must be equal to or greater than 0. Given ${height}.`;
+
+      return  '';
+    }]);
+    validate.AddValidator('_obj.rotate', 'Rotate', 'B', [XValidate._v_InArray(['0', '90', '180', '270'])]);
+    validate.AddValidator('_obj.sharpen', 'Sharpen', 'B', [XValidate._v_IsFloat(), XValidate._v_MaxValue(1), XValidate._v_MinValue(-1)]);
+    
+    return validate.Validate('B', query);
+  }
+
   return exports;
 };
+
+
+
+/**
+ * @typedef {object} TransformOptions
+ * @property {(TransformCropOptions | undefined)} crop
+ * @property {(TransformResizeOptions | undefined)} resize
+ * @property {(TransformLevelsOptions | undefined)} levels
+ * @property {(boolean | undefined)} flip_horizontal
+ * @property {(boolean | undefined)} flip_vertical
+ * @property {(number | undefined)} rotate - 0, 90, 180, 270
+ * @property {(number | undefined)} sharpen - -1...1
+ * @property {(number | undefined)} brightness - -1...1
+ * @property {(number | undefined)} contrast - -1...1
+ * @property {(number | undefined)} gamma - -1...1
+ * @property {(boolean | undefined)} invert
+ */
+
+/**
+ * @typedef {object} TransformCropOptions
+ * @property {number} x - proportional to image width [0, 1]
+ * @property {number} y - proportional to image height [0, 1]
+ * @property {number} width - proportional to image width [0, 1]
+ * @property {number} height - proportional to image height [0, 1]
+ */
+
+/**
+ * @typedef {object} TransformResizeOptions
+ * @property {(number | undefined)} height
+ * @property {(number | undefined)} width
+ */
+
+/**
+ * @typedef {object} TransformLevelsOptions
+ * @property {(number | undefined)} r - -1...1
+ * @property {(number | undefined)} g - -1...1
+ * @property {(number | undefined)} b - -1...1
+ */

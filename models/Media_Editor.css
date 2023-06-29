@@ -1,0 +1,356 @@
+.xbody.xbody_jsHarmonyCMS_Media_Editor {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px 0;
+}
+
+
+.xbody.xbody_jsHarmonyCMS_Media_Editor .xform_title {
+  display: none !important;
+}
+
+.xbody.xbody_jsHarmonyCMS_Media_Editor [data-template] {
+  display: none;
+}
+
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper {
+  position: relative;
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  /* width: 100vw; */
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .topWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 100px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .bottomToolbar,
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .topToolbar {
+  position: relative;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  width: 100%;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .bottomToolbar .iconButton,
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .topToolbar .iconButton {
+  margin: 0 5px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .iconButton {
+  background-color: inherit;
+  outline: none;
+  padding: 5px;
+  border: 0;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 3px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .iconButton:hover {
+  background-color: #dadada;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .imageWrapper {
+  position: relative;
+  height: 400px;
+  background-color: #666;
+  overflow: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .imageWrapper img {
+  position: absolute;
+  margin: auto;
+  /* top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); */
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .secondaryButton {
+  outline: none;
+  background-color: #f0f0f0;
+  background-image: none;
+  border-color: #f0f0f0;
+  box-shadow: none;
+  color: #222f3e;
+  font-size: 14px;
+  padding: 9px 13px;
+  font-weight: 700;
+  border-radius: 3px;
+  border-radius: 3px;
+  border-style: solid;
+  border-width: 1px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .secondaryButton:hover {
+  background-color: #e3e3e3;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper {
+  position: relative;
+  display: flex;
+  flex-flow: column;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper .editorToolsWrapper {
+  position: relative;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper .editorToolsWrapper .rightWrapper {
+  flex-grow: 1;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .flexCenter {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/**************************************************
+  BRIGHTNESS EDITOR
+**************************************************/
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="brightness"] [data-control-id="brightnessRange"] {
+  width: 95%;
+  max-width: 900px;
+}
+
+/**************************************************
+  COLOR EDITOR
+**************************************************/
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="color"] .rangeGroup {
+  position: relative;
+  display: flex;
+  flex-flow: row wrap;
+  width: 100%
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="color"] .labeledRange {
+  position: relative;
+  display: flex;
+  flex-flow: row nowrap;
+  flex-grow: 1;
+  align-items: center;
+  margin: 0 10px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="color"] .labeledRange .label {
+  display: block;
+  margin-right: 5px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="color"] .labeledRange input[type="range"] {
+  flex-grow: 1;
+}
+
+/**************************************************
+  CONTRAST EDITOR
+**************************************************/
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="contrast"] [data-control-id="contrastRange"] {
+  width: 95%;
+  max-width: 900px;
+}
+
+/**************************************************
+  CROPPING WINDOW
+**************************************************/
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropWindowContainer {
+  position: absolute;
+  overflow: visible;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropWindowContainer .cropShadow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropWindowContainer .cropWindow {
+  position: absolute;
+  cursor: move;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropResizeHandle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #ffaf0b;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropWindowContainer .cropResizeHandle[data-crop-handle="topLeft"] {
+  top: -5px;
+  left: -5px;
+  cursor: nw-resize;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropWindowContainer .cropResizeHandle[data-crop-handle="topRight"] {
+  top: -5px;
+  right: -5px;
+  cursor: ne-resize;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropWindowContainer .cropResizeHandle[data-crop-handle="bottomLeft"] {
+  bottom: -5px;
+  left: -5px;
+  cursor: sw-resize;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .cropWindowContainer .cropResizeHandle[data-crop-handle="bottomRight"] {
+  bottom: -5px;
+  right: -5px;
+  cursor: se-resize;
+}
+
+/**************************************************
+  GAMMA EDITOR
+**************************************************/
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="gamma"] [data-control-id="gammaRange"] {
+  width: 95%;
+  max-width: 900px;
+}
+
+/**************************************************
+  SHARPNESS EDITOR
+**************************************************/
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor .editorWrapper .editorAreaWrapper [data-editor="sharpness"] [data-control-id="sharpnessRange"] {
+  width: 95%;
+  max-width: 900px;
+}
+
+
+/**************************************************
+  SLIDER
+**************************************************/
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range] {
+  -webkit-appearance: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  height: 37px;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]:focus {
+  outline: none;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-ms-track {
+  width: 100%;
+  cursor: pointer;
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border: 1px solid #000000;
+  height: 36px;
+  width: 16px;
+  border-radius: 3px;
+  background: #3071a9;
+  cursor: pointer;
+  margin-top: -14px;
+  /* box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; */
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-moz-range-thumb {
+  /* box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; */
+  border: 1px solid #000000;
+  height: 36px;
+  width: 16px;
+  border-radius: 3px;
+  background: #3071a9;
+  cursor: pointer;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-ms-thumb {
+  /* box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; */
+  border: 1px solid #000000;
+  height: 36px;
+  width: 16px;
+  border-radius: 3px;
+  background: #3071a9;
+  cursor: pointer;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  /* box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; */
+  background: #fff;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]:focus::-webkit-slider-runnable-track {
+  background: #fff;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  /* box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; */
+  background: #fff;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-ms-track {
+  width: 100%;
+  height: 8.4px;
+  cursor: pointer;
+  background: transparent;
+  border-color: transparent;
+  border-width: 16px 0;
+  color: transparent;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-ms-fill-lower {
+  background: #2a6495;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  /* box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; */
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]:focus::-ms-fill-lower {
+  background: #fff;
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]::-ms-fill-upper {
+  background: #fff;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  /* box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; */
+}
+
+.xformcontainer.xelemjsHarmonyCMS_Media_Editor input[type=range]:focus::-ms-fill-upper {
+  background: #367ebd;
+}

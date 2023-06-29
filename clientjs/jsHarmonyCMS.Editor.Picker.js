@@ -65,6 +65,11 @@ exports = module.exports = function(jsh, cms){
     XExt.popupForm('jsHarmonyCMS/Media_Browser', 'update', qs, { width: 1100, height: 600 });
   };
 
+  this.openMediaEditor = function(cb, imageSource) {
+    cms.mediaEditorCallback = cb;
+    XExt.popupForm('jsHarmonyCMS/Media_Editor', 'update', { image_source: imageSource }, { width: 1100, height: 750 });
+  }
+
   this.onmessage = function(event, data){
     if(data.indexOf('cms_file_picker:')==0){
       if(!cms.filePickerCallback) return true;
@@ -85,6 +90,11 @@ exports = module.exports = function(jsh, cms){
       else XExt.Alert('Invalid response from File Browser: '+JSON.stringify(jdata));
       cms.filePickerCallback = null;
       return true;
+    }
+    else if (data.indexOf('cms_media_editor:')==0){
+      var jdata = JSON.parse(data.slice('cms_media_editor:'.length));
+      if (cms.mediaEditorCallback) cms.mediaEditorCallback(jdata);
+      cms.mediaEditorCallback = null;
     }
     return false;
   };
