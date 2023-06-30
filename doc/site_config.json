@@ -10,6 +10,7 @@
     "materialIcons": false                          // Whether to enable Material Icons in the Editor
                                                     //   If enabled, Material Icons Font CSS Link must be added to the Page Template HTML
   },
+  "savePastedImagesToMediaPath": "/_var/",          //If defined, save any images pasted into content areas as media in the target path
   "template_variables": {                           // Default values for Template Variables
     "key": "value"
   },
@@ -43,6 +44,6 @@
     "large": { "resize": [2048, 1538] },
 
     //(Optional) Set a maximum image size for uploaded media
-    "maximum": { "resize": [2048, 1538] }
+    "maximum": { "resize": [2048, 1538] },
   }
 }

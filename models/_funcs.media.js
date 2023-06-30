@@ -18,12 +18,14 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 var Helper = require('jsharmony/Helper');
 var HelperFS = require('jsharmony/HelperFS');
+var mime = require('jsharmony/lib/mime');
 var multiparty = require('jsharmony/lib/multiparty');
 var _ = require('lodash');
 var path = require('path');
 var async = require('async');
 var querystring = require('querystring');
 var fs = require('fs');
+var crypto = require('crypto');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -572,6 +574,158 @@ module.exports = exports = function(module, funcs){
         });
       })(); }
       else return next();
+    });
+  };
+
+  exports.replacePasteImages = function(dbcontext, db, dbtasks, dbtaskidFunc, baseurl, siteConfig, itemData, replaceContentFunc /* function(itemData, options, replaceFunc){ } */){
+    var jsh = module.jsh;
+    var appsrv = jsh.AppSrv;
+    var dbtypes = appsrv.DB.types;
+
+    var inlineImages = [];
+    replaceContentFunc(itemData, { replaceHeaderFooterCSS: false }, function(content){
+      funcs.parsePasteImages(content, function(imageInfo){
+        var foundImage = false;
+        for(var i=0;i<inlineImages.length;i++){
+          if(inlineImages[i].url==imageInfo.url) foundImage = true;
+        }
+        if(!foundImage) inlineImages.push(imageInfo);
+        return imageInfo.url;
+      });
+      return content;
+    });
+
+    _.each(inlineImages, function(inlineImage){
+
+      dbtasks[dbtaskidFunc()] = function (dbtrans, db_callback, transtbl) {
+        var media_ext = mime.extension(inlineImage.type||'');
+        if(!media_ext) return db_callback(new Error('Media type "'+(inlineImage.type||'')+'" not supported'));
+        media_ext = '.' + media_ext;
+        if (!_.includes(jsh.Config.valid_extensions, media_ext)) { return db_callback(new Error('File extension "'+media_ext+'" is not supported.')); }
+        var media_data = Buffer.from(inlineImage.data||'', 'base64');
+        var media_size = media_data.length;
+        var media_path = siteConfig.savePastedImagesToMediaPath;
+        while(media_path && (media_path[0]=='/')) media_path = media_path.substr(1);
+        while(media_path[media_path.length-1]=='/') media_path = media_path.substr(0,media_path.length-1);
+        if(media_path) media_path = '/' + media_path;
+        var media_file_name = crypto.randomBytes(16).toString('hex')+'_'+(new Date().getTime()).toString(16)+media_ext;
+        media_path += '/'+media_file_name;
+        var media_key = null;
+        var tmp_file_path = path.join(jsh.Config.datadir, 'temp', dbcontext, media_file_name);
+        var media_width = null;
+        var media_height = null;
+
+        async.waterfall([
+          
+          //Write image to disk
+          function(media_cb){
+            fs.writeFile(tmp_file_path, media_data, media_cb);
+          },
+
+          //Get image width / height
+          function(media_cb){
+            if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media_ext)) return media_cb();
+            jsh.Extensions.image.size(tmp_file_path, function(err, size){
+              if(err || !size || !size.width || !size.height) return media_cb();
+              media_width = size.width;
+              media_height = size.height;
+              return media_cb();
+            });
+          },
+
+          //Apply maximum image size, if applicable
+          function(media_cb){
+            if(!media_width || !media_height) return media_cb();
+            if(siteConfig.media_thumbnails && siteConfig.media_thumbnails.maximum && siteConfig.media_thumbnails.maximum.resize){
+              jsh.Extensions.image.resize(tmp_file_path, tmp_file_path, siteConfig.media_thumbnails.maximum.resize, undefined, function(err){
+                if(err) return media_cb(err);
+                media_height = null;
+                media_width = null;
+                jsh.Extensions.image.size(tmp_file_path, function(err, size){
+                  if(err || !size || !size.width || !size.height) return media_cb();
+                  media_width = size.width;
+                  media_height = size.height;
+                  return media_cb();
+                });
+              });
+            }
+            else return media_cb();
+          },
+
+          //Save inline images to branch
+          function(media_cb){
+            var image_sql = (module.schema?module.schema+'.':'')+'insert_media(null, @media_path, null, null, @media_ext, @media_size, @media_width, @media_height);';
+            var image_sql_ptypes = [
+              dbtypes.VarChar(2048),
+              dbtypes.VarChar(16),
+              dbtypes.Int,
+              dbtypes.Int,
+              dbtypes.Int
+            ];
+            var image_sql_params = {
+              media_path: media_path,
+              media_ext: media_ext,
+              media_size: media_size,
+              media_width: media_width,
+              media_height: media_height,
+            };
+            db.Recordset(dbcontext, image_sql, image_sql_ptypes, image_sql_params, dbtrans, function (err, rslt) {
+              if (err != null) { err.sql = image_sql; return media_cb(err); }
+              if(!rslt || !rslt.length || !rslt[0] || !rslt[0].media_key) return media_cb(new Error('Invalid database result'));
+
+              media_key = rslt[0].media_key;
+              return media_cb();
+            });
+          },
+
+          //Move file to target location
+          function (media_cb) {
+            HelperFS.rename(tmp_file_path, funcs.getMediaFilename(media_key, media_ext), media_cb);
+          },
+          
+          function(media_cb){
+            inlineImage.mediaUrl = baseurl + '_funcs/media/'+media_key+'/#@JSHCMS';
+            
+            replaceContentFunc(itemData, { replaceHeaderFooterCSS: false }, function(content){
+              return funcs.parsePasteImages(content, function(imageInfo){
+                if(inlineImage.url==imageInfo.url){
+                  if(inlineImage.mediaUrl){
+                    return inlineImage.mediaUrl;
+                  }
+                }
+                return imageInfo.url;
+              });
+            });
+
+            return media_cb();
+          },
+        ], db_callback);
+      };
+    });
+  };
+
+  exports.parsePasteImages = function (content, replaceFunc){
+    //Extract all inline images from the content
+    //<img src=\"data:image/png;jshcms=paste;base64,...
+    //Expand components
+    return funcs.replaceURLs(';jshcms=paste;', content, { replaceComponents: true }, function(rtag, url, getLinkContent){
+      var origUrl = url;
+      if(!Helper.beginsWith(url, 'data:')) return origUrl;
+      url = url.substr(5);
+      var idx = url.indexOf(';base64,');
+      if(idx<0) return origUrl;
+      var imageType = url.substr(0, idx);
+      var token = ';jshcms=paste';
+      if(imageType.indexOf(token)<0) token = token.substr(1);
+      imageType = Helper.ReplaceAll(imageType, token, '');
+      var base64data = url.substr(idx+8);
+      var imageInfo = {
+        url: origUrl,
+        type: imageType,
+        data: base64data,
+      };
+      if(replaceFunc) return replaceFunc(imageInfo);
+      return origUrl;
     });
   };
 

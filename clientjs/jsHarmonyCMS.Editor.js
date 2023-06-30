@@ -80,7 +80,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         plugins: [
           'advlist autolink autoresize lists link image charmapmaterialicons anchor',
           'searchreplace visualblocks code fullscreen wordcount jsHarmonyCmsWebSnippet jsHarmonyCms',
-          'insertdatetime media table paste code noneditable'
+          'insertdatetime media table jsHarmonyCmsPaste code noneditable'
         ],
         contextmenu: 'jsharmonycmscomponentcontextmenu link linkchecker image imagetools table spellchecker configurepermanentpen',
         toolbar: 'formatselect | backcolor forecolor | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link  image charmapmaterialicons table fullscreen | jsHarmonyCmsWebSnippet | jsHarmonyCmsComponent | jsHarmonyCmsView | jsHarmonyCmsEndEdit',
@@ -121,6 +121,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         statusbar: true,
         charmap_append: materialIcons,
         charmap_append_title: (materialIcons.length ? 'Material Icons' : 'Other'),
+        paste_data_images: true,
       }, _this.getDefaultEditorConfig(), _this.defaultConfig);
 
       _this.editorConfig.full = _.extend({}, _this.editorConfig.base);

@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this package.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-exports = module.exports = function(){
+exports = module.exports = function(cms){
   
   this.setHTML = function(jobj, html){
     try{
@@ -50,7 +50,7 @@ exports = module.exports = function(){
 
     jctrl.each(function(){
       var obj = this;
-      var jobj = $(this);
+      var jobj = cms.jsh.$(this);
       if (jobj.hasClass('dropdown') || ((obj.nodeName||'').toUpperCase() =='SELECT')) jobj.prop('disabled', true);
       else if (jobj.hasClass('checkbox') || (obj.type=='checkbox')) jobj.prop('disabled', true);
       else if(jobj.hasClass('xtagbox_base')){

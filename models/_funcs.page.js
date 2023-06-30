@@ -182,20 +182,7 @@ module.exports = exports = function(module, funcs){
   };
 
   exports.replaceBranchURLs = function(content, options){
-    options = _.extend({
-      getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent, thumbnail, urlparts){ return ''; },
-      getPageURL: function(page_key, branchData, getLinkContent, urlparts){ return ''; },
-      onError: function(err){ },
-      onComponentData: null, //function(content){ return content; },
-      onComponentProperties: null, //function(content){ return content; },
-      removeClass: false,
-      replaceComponents: false,
-      branchData: {}
-    }, options);
-
-    var rtag = '#@JSHCMS';
-
-    function replaceURL(url, getLinkContent){
+    return funcs.replaceURLs('#@JSHCMS', content, options, function(rtag, url, getLinkContent){
       if(!url) return url;
       var orig_url = url;
 
@@ -254,7 +241,20 @@ module.exports = exports = function(module, funcs){
       }
 
       return url;
-    }
+    });
+  };
+
+  exports.replaceURLs = function(rtag, content, options, replaceURL /* function(rtag, url, getLinkContent){ return url; } */){
+    options = _.extend({
+      getMediaURL: function(media_key, thumbnail_id, branchData, getLinkContent, thumbnail, urlparts){ return ''; },
+      getPageURL: function(page_key, branchData, getLinkContent, urlparts){ return ''; },
+      onError: function(err){ },
+      onComponentData: null, //function(content){ return content; },
+      onComponentProperties: null, //function(content){ return content; },
+      removeClass: false,
+      replaceComponents: false,
+      branchData: {}
+    }, options);
 
     var rtagidx = content.indexOf(rtag);
     while(rtagidx >= 0){
@@ -289,7 +289,7 @@ module.exports = exports = function(module, funcs){
         newURL = Helper.unescapeHTMLEntity(newURL);
       }
 
-      newURL = replaceURL(newURL, function(){
+      newURL = replaceURL(rtag, newURL, function(){
         //Get start of link
         var startOfLine = startofstr - 1;
         var startchar = /[\n<]/;
@@ -395,7 +395,7 @@ module.exports = exports = function(module, funcs){
         catch(ex){
           throw new Error('Error parsing base 64 data: '+ex);
         }
-        strval = funcs.replaceBranchURLs(strval, options);
+        strval = funcs.replaceURLs(rtag, strval, options, replaceURL);
         if(onReplace) strval = onReplace(strval);
         return Buffer.from(strval).toString('base64');
       });
@@ -435,6 +435,21 @@ module.exports = exports = function(module, funcs){
     return rslt;
   };
 
+  exports.replacePageContent = function(page, options, replaceFunc){ /* replaceFunc: function(content){ return newContent; } */
+    options = _.extend({ isRaw: false, replaceHeaderFooterCSS: true }, options);
+    if(options.isRaw) {
+      if(page.content && page.content.body) page.content.body = replaceFunc(page.content.body);
+    }
+    else {
+      if(page.content) for(var key in page.content){ page.content[key] = replaceFunc(page.content[key]); }
+      if(options.replaceHeaderFooterCSS){
+        _.each(['css','header','footer'], function(key){
+          if(page[key]) page[key] = replaceFunc(page[key]);
+        });
+      }
+    }
+  };
+
   exports.localizePageURLs = function(page, baseurl, isRaw, branch_id, media_files){
 
     function replaceURLs(content, options){
@@ -453,15 +468,9 @@ module.exports = exports = function(module, funcs){
       return rslt;
     }
 
-    if(isRaw) {
-      if(page.content && page.content.body) page.content.body = replaceURLs(page.content.body);
-    }
-    else {
-      if(page.content) for(var key in page.content){ page.content[key] = replaceURLs(page.content[key]); }
-      _.each(['css','header','footer'], function(key){
-        if(page[key]) page[key] = replaceURLs(page[key]);
-      });
-    }
+    funcs.replacePageContent(page, { isRaw: isRaw }, function(content){
+      return replaceURLs(content);
+    });
   };
 
   exports.page = function (req, res, next) {
@@ -761,17 +770,37 @@ module.exports = exports = function(module, funcs){
           sql = Helper.ReplaceAll(sql, '%%%DATALOCKS%%%', datalockstr);
           if (!_.isEmpty(verrors)) { Helper.GenError(req, res, -2, verrors[''].join('\n')); return; }
 
-          appsrv.ExecRecordset(req._DBContext, sql, sql_ptypes, sql_params, function (err, rslt) {
-            if (err != null) { err.sql = sql; err.model = model; appsrv.AppDBError(req, res, err); return; }
-            if(!rslt || !rslt.length || !rslt[0] || !rslt[0].length || !rslt[0][0]) return Helper.GenError(req, res, -99999, 'Invalid database result');
-            page.page_file_id = rslt[0][0].page_file_id;
-            page.page_folder = rslt[0][0].page_folder;
-            //Save to disk
-            fs.writeFile(funcs.getPageFile(page.page_file_id), JSON.stringify(client_page), 'utf8', function(err){
-              res.end(JSON.stringify({ '_success': 1, page_folder: page.page_folder }));
+          //Run updates in a transaction
+          var db = jsh.getDB('default');
+          var dbtasks = {};
+
+          //Create new branch (test error on duplicate, etc)
+          dbtasks['page_create'] = function (dbtrans, db_callback, transtbl) {
+            db.Recordset(req._DBContext, sql, sql_ptypes, sql_params, dbtrans, function (err, rslt) {
+              if (err != null) { err.sql = sql; return db_callback(err); }
+              if(!rslt || !rslt.length || !rslt[0]) return db_callback(new Error('Invalid database result'));
+
+              page.page_file_id = rslt[0].page_file_id;
+              page.page_folder = rslt[0].page_folder;
+              
+              return db_callback();
+            });
+          };
+
+          funcs.getSiteConfig(req._DBContext, null, { continueOnConfigError: true }, function(err, siteConfig){
+            var mediaId = 1;
+            funcs.replacePasteImages(req._DBContext, db, dbtasks, function(){ return 'page_media_'+(mediaId++); }, baseurl, siteConfig, client_page, funcs.replacePageContent);
+
+            db.ExecTransTasks(dbtasks, function (err, rslt) {
+              if (err != null) { return appsrv.AppDBError(req, res, err); }
+
+              //Write file
+              fs.writeFile(funcs.getPageFile(page.page_file_id), JSON.stringify(client_page), 'utf8', function(err){
+                if(err) return Helper.GenError(req, res, -99999, err.toString());
+                res.end(JSON.stringify({ '_success': 1, page_folder: page.page_folder }));
+              });
             });
           });
-
           return;
         }
         else return Helper.GenError(req, res, -4, 'Invalid Operation');
