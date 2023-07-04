@@ -577,7 +577,10 @@ module.exports = exports = function(module, funcs){
     });
   };
 
-  exports.replacePasteImages = function(dbcontext, db, dbtasks, dbtaskidFunc, baseurl, siteConfig, itemData, replaceContentFunc /* function(itemData, options, replaceFunc){ } */){
+  exports.replacePasteImages = function(dbcontext, db, dbtasks, dbtaskidFunc, baseurl, siteConfig, itemData, replaceContentFunc /* function(itemData, options, replaceFunc){ } */, options){
+    options = _.extend({
+      mediaFileNameFunc: function(media_ext){ return crypto.randomBytes(16).toString('hex')+'_'+(new Date().getTime()).toString(16)+media_ext; }
+    }, options);
     var jsh = module.jsh;
     var appsrv = jsh.AppSrv;
     var dbtypes = appsrv.DB.types;
@@ -608,7 +611,7 @@ module.exports = exports = function(module, funcs){
         while(media_path && (media_path[0]=='/')) media_path = media_path.substr(1);
         while(media_path[media_path.length-1]=='/') media_path = media_path.substr(0,media_path.length-1);
         if(media_path) media_path = '/' + media_path;
-        var media_file_name = crypto.randomBytes(16).toString('hex')+'_'+(new Date().getTime()).toString(16)+media_ext;
+        var media_file_name = options.mediaFileNameFunc(media_ext);
         media_path += '/'+media_file_name;
         var media_key = null;
         var tmp_file_path = path.join(jsh.Config.datadir, 'temp', dbcontext, media_file_name);
@@ -616,7 +619,14 @@ module.exports = exports = function(module, funcs){
         var media_height = null;
 
         async.waterfall([
-          
+
+          //Clear temp files
+          function(cb){
+            HelperFS.clearFiles(path.join(jsh.Config.datadir, 'temp', dbcontext), jsh.Config.user_temp_expiration, -1, function(err){
+              return cb();
+            });
+          },
+
           //Write image to disk
           function(media_cb){
             fs.writeFile(tmp_file_path, media_data, media_cb);
