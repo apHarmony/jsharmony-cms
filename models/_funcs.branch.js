@@ -26,6 +26,7 @@ var yauzl = require('yauzl');
 var moment = require('moment');
 var crypto = require('crypto');
 var fs = require('fs');
+var stream = require('stream');
 
 module.exports = exports = function(module, funcs){
   var exports = {};
@@ -343,12 +344,27 @@ module.exports = exports = function(module, funcs){
               { onEntry: function(entry, zipFile){
                 if(!branchData.contentFiles[entry.fileName]) return false;
                 if(!branchData.contentFiles[entry.fileName].onExtract) return false;
+                jsh.Log.info('Extracting '+entry.fileName);
                 return function(entry_cb){
                   zipFile.openReadStream(entry, function(err, readStream) {
                     if (err) return entry_cb(err);
                     if(branchData.contentFiles[entry.fileName].onExtract(readStream, entry_cb)===false){
-                      readStream.destroy();
-                      return entry_cb();
+                      var hasError = false;
+                      var nullWriter = new stream.Writable({
+                        write: function(chunk, encoding, callback){
+                          return callback();
+                        },
+                        final: function(){
+                          if(hasError) return;
+                          return entry_cb();
+                        },
+                      });
+                      readStream.on('error', function(err){
+                        if(hasError) return;
+                        hasError = true;
+                        return entry_cb(err);
+                      });
+                      readStream.pipe(nullWriter);
                     }
                   });
                 };
@@ -392,7 +408,7 @@ module.exports = exports = function(module, funcs){
   
         var targetPath = entry.fileName;
         if(options.onEntry) targetPath = options.onEntry(entry, zipFile);
-        if(targetPath===false) return next();
+        if(targetPath===false){ return next(); }
         if((targetPath===true) || !targetPath) targetPath = entry.fileName;
         if(_.isFunction(targetPath)) return targetPath(function(err){
           if(err) return cb(err);
@@ -675,6 +691,9 @@ module.exports = exports = function(module, funcs){
             _.each(['css','header','footer'], function(key){
               if(pageContent[key]) pageContent[key] = replaceURLs(pageContent[key]);
             });
+            if(pageContent.properties) for(var propKey in pageContent.properties){
+              pageContent.properties[propKey] = replaceURLs(pageContent.properties[propKey]);
+            }
           }
 
           //Save new file to disk
@@ -750,11 +769,12 @@ module.exports = exports = function(module, funcs){
                     fstream.on('error', function(err){
                       if(hasError) return;
                       hasError = true;
-                      return sizeMatch_cb(err);
+                      sizeMatch.hash = null;
+                      return f();
                     });
                   },
                   function(){
-                    if(sizeMatch.hash == hash){
+                    if((sizeMatch.hash !== null) && (sizeMatch.hash == hash)){
                       foundMatch = true;
                       item.new_media_file_id = sizeMatch.media_file_id;
                     }
