@@ -614,18 +614,18 @@ module.exports = exports = function(module, funcs){
         var media_file_name = options.mediaFileNameFunc(media_ext);
         media_path += '/'+media_file_name;
         var media_key = null;
-        var tmp_file_path = path.join(jsh.Config.datadir, 'temp', dbcontext, media_file_name);
+        var user_folder = path.join(jsh.Config.datadir, 'temp', dbcontext);
+        var tmp_file_path = path.join(user_folder, media_file_name);
         var media_width = null;
         var media_height = null;
 
         async.waterfall([
 
+          //Create temp folder if it does not exist
+          async.apply(HelperFS.createFolderIfNotExists, user_folder),
+
           //Clear temp files
-          function(cb){
-            HelperFS.clearFiles(path.join(jsh.Config.datadir, 'temp', dbcontext), jsh.Config.user_temp_expiration, -1, function(err){
-              return cb();
-            });
-          },
+          async.apply(HelperFS.clearFiles, user_folder, jsh.Config.user_temp_expiration, -1),
 
           //Write image to disk
           function(media_cb){
