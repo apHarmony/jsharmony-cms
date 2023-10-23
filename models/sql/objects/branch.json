@@ -123,7 +123,7 @@
     "columns": [
       { "name": "branch_menu_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
-      { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "menu_key", "type": "bigint", "foreignkey": { "menu": "menu_id" }, "null": false },
       { "name": "menu_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
       { "name": "branch_menu_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "menu_orig_id", "type": "bigint", "foreignkey": { "menu": "menu_id" } },
@@ -183,7 +183,7 @@
     "columns": [
       { "name": "branch_page_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
-      { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "page_key", "type": "bigint", "foreignkey": { "page": "page_id" }, "null": false },
       { "name": "page_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
       { "name": "branch_page_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "page_orig_id", "type": "bigint", "foreignkey": { "page": "page_id" } },
@@ -234,7 +234,7 @@
     "columns": [
       { "name": "branch_media_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
-      { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" }, "null": false , "actions": ["prevent_update"]},
+      { "name": "media_key", "type": "bigint", "foreignkey": { "media": "media_id" }, "null": false },
       { "name": "media_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
       { "name": "branch_media_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "media_orig_id", "type": "bigint", "foreignkey": { "media": "media_id" } },
@@ -281,7 +281,7 @@
     "columns": [
       { "name": "branch_redirect_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
-      { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" }, "null": false , "actions": ["prevent_update"]},
+      { "name": "redirect_key", "type": "bigint", "foreignkey": { "redirect": "redirect_id" }, "null": false },
       { "name": "redirect_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
       { "name": "branch_redirect_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "redirect_orig_id", "type": "bigint", "foreignkey": { "redirect": "redirect_id" } },
@@ -328,7 +328,7 @@
     "columns": [
       { "name": "branch_sitemap_id", "type": "bigint", "key": true, "identity": true, "null": false },
       { "name": "branch_id", "type": "bigint", "foreignkey": { "branch": { "column": "branch_id", "on_delete": "cascade" } }, "null": false, "actions": ["prevent_update"] },
-      { "name": "sitemap_key", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" }, "null": false, "actions": ["prevent_update"] },
+      { "name": "sitemap_key", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" }, "null": false },
       { "name": "sitemap_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },
       { "name": "branch_sitemap_action", "type": "varchar", "length": 32, "foreignkey": { "code_branch_item_action": "code_val" } },
       { "name": "sitemap_orig_id", "type": "bigint", "foreignkey": { "sitemap": "sitemap_id" } },

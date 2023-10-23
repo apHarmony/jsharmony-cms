@@ -85,11 +85,24 @@
 
         "delete from {tbl_branch_item} where branch_id=%%%dst_branch_id%%% and branch_{item}_merge_action='DELETE';",
 
-        "update {tbl_branch_item} set {item}_id={item}_merge_id,branch_{item}_action='UPDATE' where branch_id=%%%dst_branch_id%%% and (branch_{item}_merge_action='ADD' or branch_{item}_merge_action='UPDATE') and branch_{item}_action='DELETE';",
+        "update {tbl_branch_item} set {item}_id={item}_merge_id,{item}_key=$ifnull((select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_merge_id),{item}_key),branch_{item}_action='UPDATE' where branch_id=%%%dst_branch_id%%% and (branch_{item}_merge_action='ADD' or branch_{item}_merge_action='UPDATE') and branch_{item}_action='DELETE';",
 
-        "update {tbl_branch_item} set {item}_id={item}_merge_id where branch_id=%%%dst_branch_id%%% and (branch_{item}_merge_action='ADD' or branch_{item}_merge_action='UPDATE');",
+        "update {tbl_branch_item} set {item}_id={item}_merge_id,{item}_key=$ifnull((select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_merge_id),{item}_key) where branch_id=%%%dst_branch_id%%% and (branch_{item}_merge_action='ADD' or branch_{item}_merge_action='UPDATE');",
 
-        "insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id) select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=%%%src_branch_id%%% and (branch_{item}_action='ADD' or branch_{item}_action='UPDATE') and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id=%%%dst_branch_id%%%);",
+        "update {tbl_branch_item} set {item}_orig_id={item}_id",
+        "where branch_id= %%%dst_branch_id%%% ",
+        "  and {item}_key <> (select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_orig_id);",
+
+        "insert into {tbl_branch_item}(branch_id, {item}_key, {item}_id, {item}_orig_id)",
+        "  select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id=%%%src_branch_id%%% and (branch_{item}_action='ADD' or branch_{item}_action='UPDATE')",
+        "    and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id=%%%dst_branch_id%%%)",
+        "    and {item}_key not in (",
+        "      select src_{item}.{item}_key from {tbl_branch_item} src_branch_{item}",
+        "      inner join {tbl_branch_item} dst_branch_{item} on dst_branch_{item}.{item}_key <> src_branch_{item}.{item}_key and dst_branch_{item}.branch_id=%%%dst_branch_id%%%",
+        "      inner join {tbl_item} src_{item} on src_{item}.{item}_id = src_branch_{item}.{item}_id",
+        "      inner join {tbl_item} dst_{item} on dst_{item}.{item}_id = dst_branch_{item}.{item}_id and ({conflicts_unique})",
+        "      where src_branch_{item}.branch_id=%%%src_branch_id%%%",
+        "    );",
       "\")",
     ]
   },
@@ -103,6 +116,7 @@
         // ADD on UPDATE/DELETE/unchanged: UPDATE with dst orig
         "update {tbl_branch_item} set ",
           "{item}_id={item}_merge_id, ",
+          "{item}_key=$ifnull((select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_merge_id),{item}_key), ",
           "branch_{item}_action='UPDATE', ",
           "{item}_merge_id=null, ",
           "branch_{item}_merge_action=null ",
@@ -113,6 +127,7 @@
         // UPDATE/DELETE on ADD: use src orig
         "update {tbl_branch_item} set ",
           "{item}_id={item}_merge_id, ",
+          "{item}_key=$ifnull((select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_merge_id),{item}_key), ",
           "branch_{item}_action=branch_{item}_merge_action, ",
           "{item}_orig_id=( ",
             "select {item}_orig_id ",
@@ -134,11 +149,16 @@
         // Otherwise, use updated merge columns
         "update {tbl_branch_item} set ",
           "{item}_id={item}_merge_id, ",
+          "{item}_key=$ifnull((select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_merge_id),{item}_key), ",
           "branch_{item}_action=branch_{item}_merge_action, ",
           "{item}_merge_id=null, ",
           "branch_{item}_merge_action=null ",
         "where branch_id= %%%dst_branch_id%%% ",
           "and (branch_{item}_merge_action is not null or {item}_merge_id is not null);",
+
+        "update {tbl_branch_item} set {item}_orig_id={item}_id",
+        "where branch_id= %%%dst_branch_id%%% ",
+        "  and {item}_key <> (select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_orig_id);",
 
         // exists in src but not dst
         "insert into {tbl_branch_item}( ",
@@ -161,7 +181,14 @@
           "and {item}_key not in ",
             "(select {item}_key ",
             "from {tbl_branch_item} ",
-            "where branch_id= %%%dst_branch_id%%%);",
+            "where branch_id= %%%dst_branch_id%%%)",
+          "and {item}_key not in (",
+          "  select src_{item}.{item}_key from {tbl_branch_item} src_branch_{item}",
+          "    inner join {tbl_branch_item} dst_branch_{item} on dst_branch_{item}.{item}_key <> src_branch_{item}.{item}_key and dst_branch_{item}.branch_id=%%%dst_branch_id%%%",
+          "    inner join {tbl_item} src_{item} on src_{item}.{item}_id = src_branch_{item}.{item}_id",
+          "    inner join {tbl_item} dst_{item} on dst_{item}.{item}_id = dst_branch_{item}.{item}_id and ({conflicts_unique})",
+          "    where src_branch_{item}.branch_id=%%%src_branch_id%%%",
+          ");",
       "\")",
     ]
   },
@@ -173,10 +200,15 @@
         "update {tbl_branch_item} ",
         "set ",
           "{item}_id={item}_merge_id, ",
+          "{item}_key=$ifnull((select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_merge_id),{item}_key), ",
           "branch_{item}_action=branch_{item}_merge_action ",
         "where branch_id= %%%dst_branch_id%%% ",
           "and ({item}_merge_id is not null ",
             "or branch_{item}_merge_action is not null);",
+
+        "update {tbl_branch_item} set {item}_orig_id={item}_id",
+        "where branch_id= %%%dst_branch_id%%% ",
+        "  and {item}_key <> (select {item}_key from {tbl_item} tbl_item where tbl_item.{item}_id={item}_orig_id);",
 
         // unmodified/deleted items missing (or DELETE) in new base
         "delete from {tbl_branch_item} where branch_id= %%%dst_branch_id%%% and (branch_{item}_action is null or branch_{item}_action='DELETE') and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null);",
@@ -195,7 +227,14 @@
         "update {tbl_branch_item} set {item}_orig_id=(select {item}_id from (select {item}_id,{item}_key src_{item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%%) tbl where src_{item}_key={item}_key) where branch_id= %%%dst_branch_id%%% and (branch_{item}_action='DELETE' or branch_{item}_action='UPDATE') and {item}_key in (select {item}_key from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null);",
 
         // new items from base (except DELETE)
-        "insert into {tbl_branch_item} (branch_id, {item}_key, {item}_id, {item}_orig_id) select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id= %%%dst_branch_id%%%);",
+        "insert into {tbl_branch_item} (branch_id, {item}_key, {item}_id, {item}_orig_id) select %%%dst_branch_id%%%, {item}_key, {item}_id, {item}_id from {tbl_branch_item} where branch_id= %%%src_branch_id%%% and {item}_id is not null and {item}_key not in (select {item}_key from {tbl_branch_item} where branch_id= %%%dst_branch_id%%%)",
+        "  and {item}_key not in (",
+        "    select src_{item}.{item}_key from {tbl_branch_item} src_branch_{item}",
+        "    inner join {tbl_branch_item} dst_branch_{item} on dst_branch_{item}.{item}_key <> src_branch_{item}.{item}_key and dst_branch_{item}.branch_id=%%%dst_branch_id%%%",
+        "    inner join {tbl_item} src_{item} on src_{item}.{item}_id = src_branch_{item}.{item}_id",
+        "    inner join {tbl_item} dst_{item} on dst_{item}.{item}_id = dst_branch_{item}.{item}_id and ({conflicts_unique})",
+        "    where src_branch_{item}.branch_id=%%%src_branch_id%%%",
+        "  );",
       "\")",
     ]
   },

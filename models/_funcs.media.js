@@ -188,11 +188,13 @@ module.exports = exports = function(module, funcs){
               jsh.Log.error(err.toString() + '\n' + (err.stack?err.stack:(new Error()).stack));
               return Helper.GenError(req, res, -99999, 'Error occurred during media processing operation (' + err.toString() + ')');
             }
-            res.writeHead(200, {
+            var headers = {
               'Content-Type': HelperFS.getMimeType(serveoptions.mime_override||fpath),
               'Content-Length': stat.size,
               'Content-Disposition': 'attachment; filename=' + encodeURIComponent(fname)
-            });
+            };
+            if(!serveoptions.attachment) delete headers['Content-Disposition'];
+            res.writeHead(200, headers);
             fs.createReadStream(fpath).pipe(res);
           });
           return;

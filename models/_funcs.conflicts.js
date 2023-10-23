@@ -375,30 +375,21 @@ module.exports = exports = function(module, funcs){
   };
 
   var CONFLICT_DETAIL_TABLES = [
-    ['src_orig_', 'src_branch_{item}.{item}_orig_id'],
-    ['dst_orig_', 'dst_branch_{item}.{item}_orig_id'],
-    ['src_', 'src_branch_{item}.{item}_id'],
-    ['dst_', 'dst_branch_{item}.{item}_id'],
-    ['merge_', 'dst_branch_{item}.{item}_merge_id'],
+    ['src_orig_'],
+    ['dst_orig_'],
+    ['src_'],
+    ['dst_'],
+    ['merge_'],
   ];
 
   function selectConflictDetailFields(detailFields) {
     return _.flatMap(CONFLICT_DETAIL_TABLES, function(det) {
       var prefix = det[0];
       var table = prefix + '{item}';
-      return (['{item}_id']).concat(detailFields).map(function(field) {
+      return (['{item}_id','{item}_key']).concat(detailFields).map(function(field) {
         return table + '.' + field + ' ' + prefix + field;
       });
     }).join(',');
-  }
-
-  function selectConflictDetailTables() {
-    return CONFLICT_DETAIL_TABLES.map(function(det) {
-      var prefix = det[0];
-      var id = det[1];
-      var table = prefix + '{item}';
-      return 'left outer join {tbl_item} ' + table + ' on ' + table + '.{item}_id=' + id;
-    }).join(' ');
   }
 
   function propertyPrefixToSubObject(obj, sub) {
@@ -523,17 +514,22 @@ module.exports = exports = function(module, funcs){
         async.eachOfSeries(cms.BranchItems, function(branch_item, branch_item_type, branch_item_cb){
           if(!branch_item.conflicts) return branch_item_cb();
 
-          var sql = 'select src_branch_{item}.{item}_key,\
+          var sql = "select 'same_key' conflict_type, src_branch_{item}.{item}_key,\
             src_branch_{item}.branch_{item}_action as src_branch_{item}_action,\
             dst_branch_{item}.branch_{item}_action as dst_branch_{item}_action,\
-            dst_branch_{item}.{item}_merge_id, dst_branch_{item}.branch_{item}_merge_action, ';
+            dst_branch_{item}.{item}_merge_id, dst_branch_{item}.branch_{item}_merge_action, ";
 
           sql += selectConflictDetailFields(branch_item.conflicts.columns || []);
 
           sql += ' from {tbl_branch_item} src_branch_{item} \
             inner join {tbl_branch_item} dst_branch_{item} on dst_branch_{item}.{item}_key=src_branch_{item}.{item}_key and dst_branch_{item}.branch_id=@dst_branch_id ';
 
-          sql += selectConflictDetailTables();
+          sql += '\
+            left outer join {tbl_item} src_{item} on src_{item}.{item}_id=src_branch_{item}.{item}_id \
+            left outer join {tbl_item} dst_{item} on dst_{item}.{item}_id=dst_branch_{item}.{item}_id \
+            left outer join {tbl_item} src_orig_{item} on src_orig_{item}.{item}_id=src_branch_{item}.{item}_orig_id \
+            left outer join {tbl_item} dst_orig_{item} on dst_orig_{item}.{item}_id=dst_branch_{item}.{item}_orig_id \
+            left outer join {tbl_item} merge_{item} on merge_{item}.{item}_id=dst_branch_{item}.{item}_merge_id ';
 
           sql += ' where src_branch_{item}.branch_id=@src_branch_id\
             and jsharmony.nequal(dst_branch_{item}.{item}_id,src_branch_{item}.{item}_id)\
@@ -541,6 +537,33 @@ module.exports = exports = function(module, funcs){
             or  (dst_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(dst_branch_{item}.{item}_orig_id,src_branch_{item}.{item}_id))) ';
 
           if(branch_item.conflicts.sqlwhere) sql += ' and (' + branch_item.conflicts.sqlwhere + ')';
+
+          if(branch_item.conflicts.unique){
+            sql += ' union all ';
+            sql += sql = "select 'diff_key' conflict_type, src_branch_{item}.{item}_key,\
+              src_branch_{item}.branch_{item}_action as src_branch_{item}_action,\
+              dst_branch_{item}.branch_{item}_action as dst_branch_{item}_action,\
+              dst_branch_{item}.{item}_merge_id, dst_branch_{item}.branch_{item}_merge_action, ";
+
+            sql += selectConflictDetailFields(branch_item.conflicts.columns || []);
+
+            sql += ' from {tbl_branch_item} src_branch_{item} \
+              inner join {tbl_branch_item} dst_branch_{item} on dst_branch_{item}.{item}_key<>src_branch_{item}.{item}_key and dst_branch_{item}.branch_id=@dst_branch_id \
+              inner join {tbl_item} src_{item} on src_{item}.{item}_id=src_branch_{item}.{item}_id \
+              inner join {tbl_item} dst_{item} on dst_{item}.{item}_id=dst_branch_{item}.{item}_id and (' + branch_item.conflicts.unique + ')';
+
+            sql += '\
+              left outer join {tbl_item} src_orig_{item} on src_orig_{item}.{item}_id=src_branch_{item}.{item}_orig_id \
+              left outer join {tbl_item} dst_orig_{item} on dst_orig_{item}.{item}_id=dst_branch_{item}.{item}_orig_id \
+              left outer join {tbl_item} merge_{item} on merge_{item}.{item}_id=dst_branch_{item}.{item}_merge_id ';
+
+            sql += ' where src_branch_{item}.branch_id=@src_branch_id\
+              and jsharmony.nequal(dst_branch_{item}.{item}_id,src_branch_{item}.{item}_id)\
+              and ((src_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(src_branch_{item}.{item}_orig_id,dst_branch_{item}.{item}_id))\
+              or  (dst_branch_{item}.branch_{item}_action is not null and jsharmony.nequal(dst_branch_{item}.{item}_orig_id,src_branch_{item}.{item}_id))) ';
+
+            if(branch_item.conflicts.sqlwhere) sql += ' and (' + branch_item.conflicts.sqlwhere + ')';
+          }
 
           appsrv.ExecRecordset(context, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
             if (err != null) { err.sql = sql; return cb(err); }
@@ -706,7 +729,7 @@ module.exports = exports = function(module, funcs){
       //Validate user has access to branch
       var sql = "update {tbl_branch_item} set {item}_merge_id=@merge_id, branch_{item}_merge_action=@branch_merge_action where branch_id=@branch_id and {item}_key=@key and ('RW' = (select branch_access from "+(module.schema?module.schema+'.':'')+'v_my_branch_access access where access.branch_id=@branch_id));';
       appsrv.ExecCommand(req._DBContext, cms.applyBranchItemSQL(branch_item_type, sql), sql_ptypes, sql_params, function (err, rslt) {
-        if (err != null && err.sql) { appsrv.AppDBError(req, res, err); return; }
+        if (err && err.sql) { appsrv.AppDBError(req, res, err); return; }
         if(err) return Helper.GenError(req, res, -99999, err.toString());
         res.end(JSON.stringify({ '_success': 1 }));
       });

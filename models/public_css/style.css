@@ -89,6 +89,7 @@
 <%-(rootcss)%> .branch_diff_item_header .branch_action_icon.add { color:#00aa00; }
 <%-(rootcss)%> .branch_diff_item_header .branch_action_icon.update { color:#0014ff; }
 <%-(rootcss)%> .branch_diff_item_header .branch_action_icon.rename { color:#0014ff; }
+<%-(rootcss)%> .branch_diff_item_error { color: #ff0000; }
 <%-(rootcss)%> .spacer_diff {
   width:800px;
 }

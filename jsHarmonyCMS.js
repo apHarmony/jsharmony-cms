@@ -353,6 +353,7 @@ jsHarmonyCMS.prototype.initBranchItems = function(cb){
       tbl_item: branchItem.tbl_item,
       item_caption_1: branchItem.caption[1],
       item_caption_2: branchItem.caption[2],
+      conflicts_unique: (branchItem.conflicts.unique || '0=1')
     });
   }
   _this.jsh.DB['default'].SQLExt.Funcs[_this.schema+'.branch_items'] = JSON.stringify(sql_branch_items);
@@ -405,6 +406,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       },
       conflicts: {
         columns: ['page_path','page_title','page_tags','page_file_id','page_filename','page_template_id','page_template_path'],
+        unique: 'dst_page.page_path = src_page.page_path',
         sqlwhere: '(src_orig_{item}.{item}_is_folder=0 or dst_orig_{item}.{item}_is_folder=0 or src_{item}.{item}_is_folder=0 or dst_{item}.{item}_is_folder=0)',
         onBeforeConflicts: function(branch_data, callback){
           async.parallel([
@@ -611,6 +613,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       },
       conflicts: {
         columns: ['media_path','media_file_id','media_ext','media_width','media_height','media_desc','media_tags','media_type'],
+        unique: 'dst_media.media_path = src_media.media_path',
         sqlwhere: '(src_orig_{item}.{item}_is_folder=0 or dst_orig_{item}.{item}_is_folder=0 or src_{item}.{item}_is_folder=0 or dst_{item}.{item}_is_folder=0)',
         onBeforeConflicts: function(branch_data, callback){ return _this.funcs.conflicts_getMedia(branch_data, callback); },
         onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_media(branch_items, branch_data, callback); },
@@ -659,6 +662,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       },
       conflicts: {
         columns: ['menu_name','menu_tag','menu_file_id'],
+        unique: 'dst_menu.menu_tag = src_menu.menu_tag',
         onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_menu(branch_items, branch_data, callback); },
       },
       validate: {
@@ -721,6 +725,7 @@ jsHarmonyCMS.prototype.getDefaultBranchItems = function(){
       },
       conflicts: {
         columns: ['sitemap_name','sitemap_type','sitemap_file_id'],
+        unique: 'dst_sitemap.sitemap_type = src_sitemap.sitemap_type',
         onConflicts: function(branch_items, branch_data, callback){ return _this.funcs.conflicts_sitemap(branch_items, branch_data, callback); },
       },
       validate: {
