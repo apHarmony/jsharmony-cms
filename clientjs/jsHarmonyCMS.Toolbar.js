@@ -55,6 +55,8 @@ exports = module.exports = function(jsh, cms){
         if(offsetParent.tagName && _.includes(['HTML','BODY'], offsetParent.tagName.toUpperCase())) offsetParent = null;
       }
       else offsetParent = null;
+      //Element is hidden
+      if(!offsetParent && elem && (elem.offsetParent===null)) return false;
       if(!offsetParent) return true;
     }
     return false;

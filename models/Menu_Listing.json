@@ -13,7 +13,7 @@
     "oninit": "jsh.System.RequireBranch(xmodel);_this.oninit();",
     "fields": [
       {"name":"menu_key","caption":"Key","control":"hidden","key":true},
-      {"name":"menu_id","caption":"ID","control":"hidden"},
+      {"name":"menu_id","caption":"ID","control":"hidden","actions":"B"},
       {"name":"menu_name","caption":"Menu Name","control":"textbox_M","validate":["Required"]},
       {"control":"html","caption":"Menu Items","link":"js:_this.openMenuEditor(this)","value":"<img src='/images/icon_edit.png' class='xicon' />"},
       {"name":"menu_tag","caption":"Tag","control":"textbox_M","validate":["Required"]},
