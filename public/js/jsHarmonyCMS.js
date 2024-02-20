@@ -7884,7 +7884,8 @@ exports = module.exports = function(cms){
       var obj = this;
       var jobj = cms.jsh.$(this);
       if (jobj.hasClass('dropdown') || ((obj.nodeName||'').toUpperCase() =='SELECT')) jobj.prop('disabled', true);
-      else if (jobj.hasClass('checkbox') || (obj.type=='checkbox')) jobj.prop('disabled', true);
+      else if (jobj.hasClass('checkbox') || ((obj.type||'').toUpperCase()=='CHECKBOX')) jobj.prop('disabled', true);
+      else if (jobj.hasClass('radio') || ((obj.type||'').toUpperCase()=='RADIO')) jobj.prop('disabled', true);
       else if(jobj.hasClass('xtagbox_base')){
         jobj.prev().addClass('uneditable');
         jobj.prev().find('input').prop('disabled', true);
