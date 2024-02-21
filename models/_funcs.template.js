@@ -1627,6 +1627,8 @@ module.exports = exports = function(module, funcs){
             //Render Functions
             renderParams.showIf = function(cond){ if(!cond) htdoc.removeNode(node, 'showIf Target Node'); };
             renderParams.toggle = renderParams.showIf;
+            renderParams.setText = function(val){ htdoc.replaceNodeContent(node, Helper.escapeHTML((val||'').toString()), 'setText Target Node'); };
+            renderParams.setHTML = function(val){ htdoc.replaceNodeContent(node, (val||'').toString(), 'setHTML Target Node'); };
             renderParams.addClass = function(classTxt){ throw new Error('addClass not supported on containerless components'); };
             renderParams.setClass = renderParams.addClass;
             renderParams.addStyle = function(styleTxt){ throw new Error('addStyle not supported on containerless components'); };
@@ -1657,6 +1659,8 @@ module.exports = exports = function(module, funcs){
           //Render Functions
           renderParams.showIf = function(cond){ if(!cond) htdoc.removeNode(node, 'showIf Target Node'); };
           renderParams.toggle = renderParams.showIf;
+          renderParams.setText = function(val){ htdoc.replaceNodeContent(node, Helper.escapeHTML((val||'').toString()), 'setText Target Node'); };
+          renderParams.setHTML = function(val){ htdoc.replaceNodeContent(node, (val||'').toString(), 'setHTML Target Node'); };
           renderParams.addClass = function(classTxt){ htdoc.addClass(node, classTxt, 'addClass Target Node'); };
           renderParams.setClass = renderParams.addClass;
           renderParams.addStyle = function(styleTxt){ styleTxt = (styleTxt||'').toString(); if(styleTxt.trim()) htdoc.appendAttr(node, 'style', styleTxt, ';', 'addStyle Target Node'); };

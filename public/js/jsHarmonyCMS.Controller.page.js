@@ -708,6 +708,20 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
   };
   this.renderFunctions.toggle = this.renderFunctions.showIf;
 
+  //setText
+  this.renderFunctions.setText = function(val){
+    var jobj = $(this);
+    val = (val||'').toString();
+    jobj.text(val);
+  };
+
+  //setHTML
+  this.renderFunctions.setHTML = function(val){
+    var jobj = $(this);
+    val = (val||'').toString();
+    jobj.html(val);
+  };
+
   //addClass, setClass
   this.renderFunctions.addClass = function(strClass){
     var jobj = $(this);
