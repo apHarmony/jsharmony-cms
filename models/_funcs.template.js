@@ -1751,6 +1751,7 @@ module.exports = exports = function(module, funcs){
             }
           }
 
+          var added_srcset = false;
           if(!htdoc.hasAttr(node, 'srcset')){
             var srcsets = [];
             var max_width = media_width;
@@ -1781,14 +1782,15 @@ module.exports = exports = function(module, funcs){
             if(srcsets.length){
               srcsets.unshift(src + ' ' + max_width + 'w');
               htdoc.appendAttr(node, 'srcset', srcsets.join(', '), 'srcset');
+              added_srcset = true;
             }
           }
 
-          if(media_width && media_height && htdoc.hasAttr(node, 'cms-image-dimensions')){
+          if(media_width && media_height && (htdoc.hasAttr(node, 'cms-image-dimensions') || added_srcset)){
             if(!htdoc.hasAttr(node, 'width') && !htdoc.hasAttr(node, 'height')){
               htdoc.appendAttr(node, 'width', media_width.toString());
               htdoc.appendAttr(node, 'height', media_height.toString());
-              htdoc.removeAttr(node, 'cms-image-dimensions');
+              if(htdoc.hasAttr(node, 'cms-image-dimensions')) htdoc.removeAttr(node, 'cms-image-dimensions');
             }
           }
         }
