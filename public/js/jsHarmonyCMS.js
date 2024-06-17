@@ -1761,8 +1761,8 @@ FormDialog.prototype.open = function(data) {
   dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
     $dialog = _$dialog;
     controller.form.Prop.Enabled = true;
-    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', acceptFunc).on('click', function(e){ e.preventDefault(); });
-    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', cancelFunc).on('click', function(e){ e.preventDefault(); });
+    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', function(){ if(acceptFunc) acceptFunc(); }).on('click', function(e){ e.preventDefault(); });
+    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', function(){ if(cancelFunc) cancelFunc(); }).on('click', function(e){ e.preventDefault(); });
     if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
   };
 
