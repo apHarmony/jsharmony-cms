@@ -898,6 +898,17 @@ exports = module.exports = function(jsh, cms, editor){
         continue;
       }
       node.attr('data-component-id', null);
+      if(node.attr('class')){
+        var cls = node.attr('class').toString().trim().split(' ');
+        var newcls = '';
+        if(cls.indexOf('initialized')>=0){
+          for(var j=0;j<cls.length;j++){
+            if(!cls[j] || (cls[j]=='initialized')) continue;
+            newcls += cls[j] + ' ';
+          }
+          node.attr('class', newcls.trim() || null);
+        }
+      }
       node.empty();
       var newNode = tinymce.html.Node.create('#text');
       newNode.value = String.fromCharCode(0x00A0);

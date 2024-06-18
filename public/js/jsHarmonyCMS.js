@@ -4262,6 +4262,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       jsh.async.each(
         $element.find('[data-component]'),
         function(el, el_cb) {
+          var $el = jsh.$(el);
+          if(!$el.hasClass('initialized')){
+            $el.addClass('initialized');
+            $el.attr('data-component-id', cms.componentManager.getNextComponentId());
+          }
           cms.componentManager.renderContentComponent(el, undefined, el_cb);
         },
         callback
@@ -6079,6 +6084,17 @@ exports = module.exports = function(jsh, cms, editor){
         continue;
       }
       node.attr('data-component-id', null);
+      if(node.attr('class')){
+        var cls = node.attr('class').toString().trim().split(' ');
+        var newcls = '';
+        if(cls.indexOf('initialized')>=0){
+          for(var j=0;j<cls.length;j++){
+            if(!cls[j] || (cls[j]=='initialized')) continue;
+            newcls += cls[j] + ' ';
+          }
+          node.attr('class', newcls.trim() || null);
+        }
+      }
       node.empty();
       var newNode = tinymce.html.Node.create('#text');
       newNode.value = String.fromCharCode(0x00A0);

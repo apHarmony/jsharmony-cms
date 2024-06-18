@@ -221,6 +221,11 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       jsh.async.each(
         $element.find('[data-component]'),
         function(el, el_cb) {
+          var $el = jsh.$(el);
+          if(!$el.hasClass('initialized')){
+            $el.addClass('initialized');
+            $el.attr('data-component-id', cms.componentManager.getNextComponentId());
+          }
           cms.componentManager.renderContentComponent(el, undefined, el_cb);
         },
         callback
