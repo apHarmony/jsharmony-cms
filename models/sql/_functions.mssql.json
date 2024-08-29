@@ -60,15 +60,15 @@
     ]
   },
   "{schema}.insert_deployment":{
-    "params": ["site_id", "deployment_target_id", "branch_id", "deployment_date", "deployment_tag"],
+    "params": ["site_id", "deployment_target_id", "branch_id", "deployment_date", "deployment_tag", { "name": "deployment_params", "default": null }],
     "sql": [
-      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag) values(%%%site_id%%%, %%%deployment_target_id%%%, %%%branch_id%%%, %%%deployment_date%%%, %%%deployment_tag%%%);"
+      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_params) values(%%%site_id%%%, %%%deployment_target_id%%%, %%%branch_id%%%, %%%deployment_date%%%, %%%deployment_tag%%%, %%%deployment_params%%%);"
     ]
   },
   "{schema}.insert_redeployment":{
-    "params": ["src_deployment_id", "deployment_target_id", "deployment_date", "deployment_tag"],
+    "params": ["src_deployment_id", "deployment_target_id", "deployment_date", "deployment_tag", { "name": "deployment_params", "default": null }],
     "sql": [
-      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_git_revision) select site_id, %%%deployment_target_id%%%, branch_id, %%%deployment_date%%%, %%%deployment_tag%%%, deployment_git_revision from {schema}.v_my_deployment where deployment_id=%%%src_deployment_id%%%;"
+      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_params, deployment_git_revision) select site_id, %%%deployment_target_id%%%, branch_id, %%%deployment_date%%%, %%%deployment_tag%%%, %%%deployment_params%%%, deployment_git_revision from {schema}.v_my_deployment where deployment_id=%%%src_deployment_id%%%;"
     ]
   },
   "jsHarmonyCMS_Upload": "insert into {tgtschema}.v_my_{item}({columns}) values ({values});",

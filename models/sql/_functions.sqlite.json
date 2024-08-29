@@ -60,15 +60,15 @@
     ]
   },
   "{schema}.insert_deployment":{
-    "params": ["site_id", "deployment_target_id", "branch_id", "deployment_date", "deployment_tag"],
+    "params": ["site_id", "deployment_target_id", "branch_id", "deployment_date", "deployment_tag", { "name": "deployment_params", "default": null }],
     "sql": [
-      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag) values(%%%site_id%%%, %%%deployment_target_id%%%, %%%branch_id%%%, %%%deployment_date%%%, %%%deployment_tag%%%);select last_insert_rowid_override deployment_id from jsharmony_meta;"
+      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_params) values(%%%site_id%%%, %%%deployment_target_id%%%, %%%branch_id%%%, %%%deployment_date%%%, %%%deployment_tag%%%, %%%deployment_params%%%);select last_insert_rowid_override deployment_id from jsharmony_meta;"
     ]
   },
   "{schema}.insert_redeployment":{
-    "params": ["src_deployment_id", "deployment_target_id", "deployment_date", "deployment_tag"],
+    "params": ["src_deployment_id", "deployment_target_id", "deployment_date", "deployment_tag", { "name": "deployment_params", "default": null }],
     "sql": [
-      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_git_revision) select site_id, %%%deployment_target_id%%%, branch_id, %%%deployment_date%%%, %%%deployment_tag%%%, deployment_git_revision from {schema}.v_my_deployment where deployment_id=%%%src_deployment_id%%%;select last_insert_rowid_override deployment_id from jsharmony_meta;"
+      "insert into {schema}.v_my_deployment(site_id, deployment_target_id, branch_id, deployment_date, deployment_tag, deployment_params, deployment_git_revision) select site_id, %%%deployment_target_id%%%, branch_id, %%%deployment_date%%%, %%%deployment_tag%%%, %%%deployment_params%%%, deployment_git_revision from {schema}.v_my_deployment where deployment_id=%%%src_deployment_id%%%;select last_insert_rowid_override deployment_id from jsharmony_meta;"
     ]
   },
   "jsHarmonyCMS_Upload": "insert into {tgtschema}.v_my_{item}({columns}) values ({values}); select last_insert_rowid_override {item}_key from jsharmony_meta;",

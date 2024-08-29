@@ -6,6 +6,8 @@ jsh.App[modelid] = new (function(){
   var sleepsWithoutUpdate = 0;
   var lastLog = '';
 
+  this.onPublishComplete = null;
+
   this.onload = function(){
     this.updateButtons(xmodel.get('deployment_sts'));
     //Load API Data
@@ -71,6 +73,9 @@ jsh.App[modelid] = new (function(){
         }
         //Auto-refresh
         if(_.includes(['PENDING','RUNNING'], deployment_sts)) setTimeout(function(){ _this.loadData(); }, _this.getSleepTime());
+        else{
+          if(_this.onPublishComplete) _this.onPublishComplete();
+        }
 
         initialized = true;
       }

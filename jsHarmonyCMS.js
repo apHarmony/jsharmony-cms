@@ -126,7 +126,7 @@ jsHarmonyCMS.prototype.Init = function(cb){
       function(ready_cb){
         var sql = 'update '+(_this.schema?_this.schema+'.':'')+"deployment set deployment_sts='FAILED' where deployment_sts='RUNNING';";
         if(_this.Config.debug_params.auto_restart_failed_publish){
-          sql = 'insert into '+(_this.schema?_this.schema+'.':'')+"deployment(deployment_tag, branch_id, deployment_date, deployment_target_id) select concat(deployment_tag,'#'), branch_id, deployment_date, deployment_target_id from "+(_this.schema?_this.schema+'.':'')+"deployment where deployment_sts='RUNNING';" + sql;
+          sql = 'insert into '+(_this.schema?_this.schema+'.':'')+"deployment(deployment_tag, branch_id, deployment_date, deployment_target_id, deployment_params) select concat(deployment_tag,'#'), branch_id, deployment_date, deployment_target_id, deployment_params from "+(_this.schema?_this.schema+'.':'')+"deployment where deployment_sts='RUNNING';" + sql;
         }
         jsh.AppSrv.ExecCommand('system', sql, [], { }, function (err, rslt) {
           if (err) { jsh.Log.error(err); }
@@ -797,10 +797,9 @@ jsHarmonyCMS.prototype.getFactoryConfig = function(){
   configFactory.scheduled_tasks['deploy'] = {
     action: configFactory.Helper.JobProc.ExecuteSQL('jsHarmonyCMS_GetNextDeployment', function(rslt){
       if(_this.funcs.deploymentQueue.length()) return;
-      if(rslt && rslt.length && rslt[0] && rslt[0].length){
-        var deployment = rslt[0][0];
+      _.each(rslt && rslt.length && rslt[0], function(deployment){
         _this.funcs.deploy.call(_this.jsh.AppSrv, deployment.deployment_id);
-      }
+      });
     }),
     options: {
       quiet: true

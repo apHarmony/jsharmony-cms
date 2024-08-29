@@ -535,7 +535,7 @@ module.exports = exports = function(module, funcs){
 
     //Update deployment to running status
     var sql = "select \
-        deployment_id, dt.site_id, deployment_tag, deployment_target_name, deployment_target_publish_path, deployment_target_template_variables, deployment_target_publish_config, deployment_target_sts, deployment_git_revision, \
+        deployment_id, dt.site_id, deployment_tag, deployment_params, deployment_target_name, deployment_target_publish_path, deployment_target_template_variables, deployment_target_publish_config, deployment_target_sts, deployment_git_revision, \
         d.deployment_target_id, \
         (select param_cur_val from jsharmony.v_param_cur where param_cur_process='CMS' and param_cur_attrib='PUBLISH_TGT') publish_tgt, \
         site.site_default_page_filename site_default_page_filename \
@@ -554,6 +554,15 @@ module.exports = exports = function(module, funcs){
       if(!deployment) { let err = 'Invalid Deployment ID'; funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
 
       async.waterfall([
+        
+        function(deploy_cb){
+          if(!module.Config.onDeploy_Init) return deploy_cb();
+          module.Config.onDeploy_Init(jsh, deployment_id, deployment, function(err, stopDeployment){
+            if(err){ funcs.deploy_log_error(deployment_id, err); return onComplete(err); }
+            if(stopDeployment) return onComplete();
+            return deploy_cb();
+          });
+        },
 
         //Change status to RUNNING
         function(deploy_cb){
