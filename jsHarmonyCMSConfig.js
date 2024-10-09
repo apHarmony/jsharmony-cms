@@ -91,7 +91,7 @@ function jsHarmonyCMSConfig(){
     //List of remote paths to ignore
     //* Future - Not implemented
     //ignore_remote: [],
-    //ex. ["path/to/file1","path/to/folder2",{ "regex": "/regex1/"},{ "regex": "/regex_with_flags/i"}]
+    //ex. ["path/to/file1","path/to/folder2",{ "regex": "/regex1/"},{ "regex": "/regex_with_flags/i"}, function(fpath){ return true; /* Ignore when true */ }]
 
     //FTP/FTPS/SFTP publish settings
     ftp_config: {

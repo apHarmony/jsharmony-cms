@@ -2027,7 +2027,10 @@ module.exports = exports = function(module, funcs){
     for(var i=0;i<publish_params.ignore_remote.length;i++){
       var ignore_expr = publish_params.ignore_remote[i];
       if(!ignore_expr) continue;
-      if(ignore_expr=='*') return true;
+      if(_.isFunction(ignore_expr)){
+        if(ignore_expr(fpath)) return true;
+        continue;
+      }
       var ignore_path = HelperFS.convertWindowsToPosix(ignore_expr.toString());
       if(ignore_path == fpath) return true;
       if(fpath.indexOf(ignore_path+'/')==0) return true;

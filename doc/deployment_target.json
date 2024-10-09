@@ -105,8 +105,7 @@
   //Use with FTP, FTPS, SFTP, S3, and Local File System deployments
   "ignore_remote": [
     "path/to/folder",
-    "path/to/file",
-    "*" //Ignore all
+    "path/to/file"
   ]
 }
 
