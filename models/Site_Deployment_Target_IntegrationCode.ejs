@@ -100,6 +100,42 @@ app.get('/standalone_page', async function(req, res, next){
 
   </div>
 
+  <!-- React -->
+  <div class="<%=model.class%>_Integration_REACT">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/react/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>React Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+import { JshCms } from &quot;jsharmony-cms-sdk-react&quot;;
+import React from &quot;react&quot;;
+import { createRoot } from &quot;react-dom/client&quot;;
+
+// CMS Config
+const jshCmsConfig = %%%INTEGRATION_PARAMS_ACCESS_KEYS%%%;
+
+const root = createRoot(document.getElementById(&quot;root&quot;)!);
+
+root.render(
+    &lt;JshCms {...jshCmsConfig} &gt;
+        &lt;App /&gt;
+    &lt;/JshCms&gt;
+);</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+
+    <h3>Editor Launcher for Remote Page Templates</h3>
+    <textarea readonly='readonly' class='integration_code'>
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish" src=&quot;/.jsHarmonyCms/jsHarmonyCmsEditor.js&quot;&gt;&lt;&#x2F;script&gt;
+&lt;script type=&quot;text&#x2F;javascript&quot; class="removeOnPublish"&gt;
+jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%});
+&lt;&#x2F;script&gt;</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+    <div style="margin: 10px 0 15px 0;" >* Be sure to include the "removeOnPublish" class to the Launcher script tags, so that the Editor Launcher will not be added to published pages.</div>
+
+  </div>
+
   <!-- PHP - Router -->
   <div class="<%=model.class%>_Integration_PHP_ROUTER">
     <div style="margin-top:15px;">

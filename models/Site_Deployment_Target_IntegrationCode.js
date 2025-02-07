@@ -93,8 +93,17 @@ jsh.App[modelid] = new (function(){
         OBJ_END: ']',
       }
     };
+    var KEYMAP = {
+      REACT: {
+        access_keys: 'accessKeys',
+        page_files_path: 'pageFilesPath',
+        redirect_listing_path: 'redirectListingPath',
+      },
+    };
     var _s = STRMAP['JS'];
     if(platform=='PHP') _s = STRMAP['PHP'];
+    var _k = {};
+    if(platform=='REACT') _k = KEYMAP['REACT'];
     options = _.extend({
       access_keys: false,
       cms_server_urls: false,
@@ -105,7 +114,7 @@ jsh.App[modelid] = new (function(){
     for(var key in options.params){
       if((key=='access_keys')&&!options.access_keys) continue;
       if((key=='cms_server_urls')&&!options.cms_server_urls) continue;
-      integrationParamsString += (firstParam ? '' : ',')+'\n    '+_s.OBJ_KEY_PRE+key+_s.OBJ_KEY_POST+_s.OBJ_EQ+JSON.stringify(options.params[key]);
+      integrationParamsString += (firstParam ? '' : ',')+'\n    '+_s.OBJ_KEY_PRE+(_k[key]||key)+_s.OBJ_KEY_POST+_s.OBJ_EQ+JSON.stringify(options.params[key]);
       firstParam = false;
     }
     integrationParamsString += (firstParam ? '' : '\n') + _s.OBJ_END;

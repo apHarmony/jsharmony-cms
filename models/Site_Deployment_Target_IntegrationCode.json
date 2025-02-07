@@ -29,6 +29,7 @@
           "CLIENTJS_STANDALONE": "Client-side JavaScript - Standalone",
           "EXPRESSJS_ROUTER": "Node.js / Express.js - Router",
           "EXPRESSJS_STANDALONE": "Node.js / Express.js - Standalone",
+          "REACT": "React",
           "PHP_ROUTER": "PHP - Router",
           "PHP_STANDALONE": "PHP - Standalone",
         } }, "onchange":"_this.integration_target_onchange(obj, newval, undoChange);"},
