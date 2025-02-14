@@ -99,11 +99,17 @@ jsh.App[modelid] = new (function(){
         page_files_path: 'pageFilesPath',
         redirect_listing_path: 'redirectListingPath',
       },
+      NEXTJS: {
+        cms_server_urls: 'cmsServerUrls',
+        content_url: 'contentUrl',
+        redirect_listing_path: 'redirectListingPath',
+      },
     };
     var _s = STRMAP['JS'];
     if(platform=='PHP') _s = STRMAP['PHP'];
     var _k = {};
     if(platform=='REACT') _k = KEYMAP['REACT'];
+    else if(platform=='NEXTJS') _k = KEYMAP['NEXTJS'];
     options = _.extend({
       access_keys: false,
       cms_server_urls: false,
@@ -125,12 +131,17 @@ jsh.App[modelid] = new (function(){
     var tmpl = $('.'+xmodel.class+'_Integration_'+newval).html()||'';
     var platform = newval;
     if((platform=='EXPRESSJS_ROUTER')||(platform=='EXPRESSJS_STANDALONE')) platform = 'EXPRESSJS';
+    else if((platform=='NEXTJS_ROUTER')||(platform=='NEXTJS_STANDALONE')) platform = 'NEXTJS';
     else if((platform=='PHP_ROUTER')||(platform=='PHP_STANDALONE')) platform = 'PHP';
 
     var params = _.extend({}, _this.integration_params);
     if(platform=='EXPRESSJS'){
       delete params.page_files_path;
       params['content_path'] = 'path/to/published_files';
+    }
+    else if(platform=='NEXTJS'){
+      params['content_url'] = params.page_files_path;
+      delete params.page_files_path;
     }
     else if(platform=='PHP'){
       delete params.page_files_path;

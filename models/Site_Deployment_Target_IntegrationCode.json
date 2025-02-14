@@ -30,6 +30,8 @@
           "EXPRESSJS_ROUTER": "Node.js / Express.js - Router",
           "EXPRESSJS_STANDALONE": "Node.js / Express.js - Standalone",
           "REACT": "React",
+          "NEXTJS_ROUTER": "Next.js - Router",
+          "NEXTJS_STANDALONE": "Next.js - Standalone",
           "PHP_ROUTER": "PHP - Router",
           "PHP_STANDALONE": "PHP - Standalone",
         } }, "onchange":"_this.integration_target_onchange(obj, newval, undoChange);"},

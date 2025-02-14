@@ -313,9 +313,13 @@ module.exports = exports = function(module, funcs){
           }
           else return template_action_cb();
 
-          //Add cache-busting timestamp to URL
+          //Add cache-busting timestamp and page_template_id to URL
           try{
             var parsedUrl = new urlparser.URL(url);
+            if((options.templateType=='PAGE') && !parsedUrl.searchParams.has('page_template_id')){
+              parsedUrl.searchParams.set('page_template_id', template_name);
+              url = parsedUrl.toString();
+            }
             if(!parsedUrl.searchParams.has('_')){
               parsedUrl.searchParams.set('_', (Date.now()).toString());
               url = parsedUrl.toString();
@@ -401,7 +405,7 @@ module.exports = exports = function(module, funcs){
               if(template_name in template_html) return template_action_cb(); //Already downloaded
               if(!template.remote_templates || !template.remote_templates.publish) return template_action_cb();
 
-              var url = funcs.parseDeploymentUrl(template.remote_templates.publish, branchData.template_variables);
+              var url = funcs.parseDeploymentUrl(template.remote_templates.publish, _.extend({ page_template_id: template_name }, branchData.template_variables));
               funcs.deploy_log_info(branchData.publish_params.deployment_id, 'Downloading template: '+url);
               options.addWebRequest(url, function(err, res, rslt, req_cb){
                 if(err) return req_cb(err);

@@ -136,6 +136,70 @@ jsHarmonyCmsEditor({"access_keys":%%%ACCESS_KEYS%%%});
 
   </div>
 
+  <!-- Next.js - Router -->
+  <div class="<%=model.class%>_Integration_NEXTJS_ROUTER">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/next-js/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Router Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+import type { GetServerSideProps } from 'next';
+import { JshCms, JshCmsRouter, JshCmsPage, JshCmsContentArea } from 'jsharmony-cms-sdk-next'
+
+const jshCmsConfig = %%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%;
+
+const jshCmsRouter = new JshCmsRouter(jshCmsConfig);
+
+export const getServerSideProps: GetServerSideProps = async(context) => {
+  return await jshCmsRouter.serve(context.query.path, context.query);
+};
+
+export default function Page({ jshCmsPage }: { jshCmsPage: JshCmsPage }) {
+  return (
+    &lt;JshCms jshCmsPage={jshCmsPage} jshCmsConfig={jshCmsConfig}&gt;
+      &lt;h1 cms-title="true"&gt;{jshCmsPage?.title||'Title'}&lt;/h1&gt;
+      &lt;JshCmsContentArea cms-content="body"&gt;Page Content&lt;/JshCmsContentArea&gt;
+    &lt;/JshCms&gt;
+  );
+};
+</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+  </div>
+
+  <!-- Next.js - Standalone -->
+  <div class="<%=model.class%>_Integration_NEXTJS_STANDALONE">
+    <div style="margin-top:15px;">
+      Integration instructions are available at <a href="https://www.jsharmonycms.com/resources/integrations/next-js/" target="_blank">jsHarmonyCMS.com</a>.
+    </div>
+
+    <h3>Standalone Sample Code</h3>
+    <textarea readonly='readonly' class='integration_code'>
+import type { GetServerSideProps } from 'next';
+import { JshCms, JshCmsRouter, JshCmsPage, JshCmsContentArea } from 'jsharmony-cms-sdk-next'
+
+const jshCmsConfig = %%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%;
+
+const jshCmsRouter = new JshCmsRouter(jshCmsConfig);
+
+export const getServerSideProps: GetServerSideProps = async(context) => {
+  const jshCmsPage = await jshCmsRouter.getStandalonePage(context.resolvedUrl, context.query); // or ('/cms_page_path', context.query);
+  return { props: { jshCmsPage } };
+};
+
+export default function Page({ jshCmsPage }: { jshCmsPage: JshCmsPage }) {
+  return (
+    &lt;JshCms jshCmsPage={jshCmsPage} jshCmsConfig={jshCmsConfig}&gt;
+      &lt;h1 cms-title="true"&gt;{jshCmsPage?.title||'Title'}&lt;/h1&gt;
+      &lt;JshCmsContentArea cms-content="body"&gt;Page Content&lt;/JshCmsContentArea&gt;
+    &lt;/JshCms&gt;
+  );
+};
+</textarea>
+    <a href='#' class='integration_code_copy'>&#x1F4CB; Copy Code</a>
+
+  </div>
+
   <!-- PHP - Router -->
   <div class="<%=model.class%>_Integration_PHP_ROUTER">
     <div style="margin-top:15px;">
