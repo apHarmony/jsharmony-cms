@@ -242,7 +242,7 @@ module.exports = exports = function(module, funcs){
       try{
         var relativePath = funcs.getMediaRelativePath(media, publish_params);
         if(!relativePath) return callback(new Error('Media has no path: '+media.media_key));
-        media_urlpath = publish_params.url_prefix + relativePath;
+        media_urlpath = publish_params.url_prefix + publish_params.media_subfolder + relativePath;
         if(!Helper.isNullUndefined(publish_params.url_prefix_media_override)){ media_urlpath = publish_params.url_prefix_media_override + relativePath; }
       }
       catch(ex){ /* Do nothing */ }

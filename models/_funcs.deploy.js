@@ -139,7 +139,6 @@ module.exports = exports = function(module, funcs){
     if(path.isAbsolute(media_fpath)) throw new Error('Media path:'+media.media_path+' cannot be absolute');
     if(media_fpath.indexOf('..') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
     if(media_fpath.indexOf('./') >= 0) throw new Error('Media path:'+media.media_path+' cannot contain directory traversals');
-    if(publish_params) media_fpath = publish_params.media_subfolder + media_fpath;
     return media_fpath;
   };
 
@@ -1357,7 +1356,8 @@ module.exports = exports = function(module, funcs){
         try{
           var relativePath = funcs.getMediaRelativePath(media, publish_params);
           if(!relativePath) return cb(new Error('Media has no path: '+media.media_key));
-          media_urlpath = publish_params.url_prefix + relativePath;
+
+          media_urlpath = publish_params.url_prefix + publish_params.media_subfolder + relativePath;
           if(!Helper.isNullUndefined(publish_params.url_prefix_media_override)){ media_urlpath = publish_params.url_prefix_media_override + relativePath; }
         }
         catch(ex){ /* Do nothing */ }
@@ -1826,7 +1826,7 @@ module.exports = exports = function(module, funcs){
               if(err) return generate_cb(err);
 
               try{
-                media_fpath = funcs.getMediaRelativePath(media, publish_params);
+                media_fpath = publish_params.media_subfolder + funcs.getMediaRelativePath(media, publish_params);
               }
               catch(ex){
                 return generate_cb(ex);
@@ -1860,7 +1860,7 @@ module.exports = exports = function(module, funcs){
     
                   var thumbnail_fpath = '';
                   try{
-                    thumbnail_fpath = funcs.getMediaRelativePath(media, publish_params, thumbnail_id, thumbnail_config);
+                    thumbnail_fpath = publish_params.media_subfolder + funcs.getMediaRelativePath(media, publish_params, thumbnail_id, thumbnail_config);
                   }
                   catch(ex){
                     return thumbnail_cb(ex);
