@@ -33,6 +33,7 @@ exports = module.exports = function(jsh, cms){
   this.lastComponentId = 0;
   this.containerlessComponents = {};
   this.cntContainerlessComponents = 0;
+  this.onNotifyUpdate = [];
 
   var maxUniqueId = 0;
 
@@ -169,7 +170,11 @@ exports = module.exports = function(jsh, cms){
         }
         //Render component
         try{
-          if(!hasError) component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component, renderOptions));
+          if(!hasError){
+            var renderConfig = cms.controller.getComponentRenderParameters(component, renderOptions);
+            if(component.onBeforeRender) component.onBeforeRender(renderConfig);
+            component_content = ejs.render(editorTemplate || '', renderConfig);
+          }
         }
         catch(ex){
           cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
@@ -185,6 +190,7 @@ exports = module.exports = function(jsh, cms){
       else {
         jobj.html(component_content);
       }
+      if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
     });
   };
 

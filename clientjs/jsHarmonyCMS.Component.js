@@ -254,6 +254,19 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     this.domSerializer.setAttr($element, 'data-component-properties', props);
   };
 
+  /**
+   * Trigger jsHarmonyCmsUpdate event on content editor container for external libraries
+   * @private
+   * @param {(Object | undefined)} props
+   */
+  this.notifyUpdate = function(element, props) {
+    if(!element) element = $element[0];
+    if(!props) props = {};
+    var componentId = this.id;
+    props.element = element;
+    props.componentId = componentId;
+    jsh.XExt.trigger(cms.componentManager.onNotifyUpdate, props);
+  };
 
 
   this.initProperties();

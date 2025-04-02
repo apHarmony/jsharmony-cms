@@ -4295,6 +4295,19 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     this.domSerializer.setAttr($element, 'data-component-properties', props);
   };
 
+  /**
+   * Trigger jsHarmonyCmsUpdate event on content editor container for external libraries
+   * @private
+   * @param {(Object | undefined)} props
+   */
+  this.notifyUpdate = function(element, props) {
+    if(!element) element = $element[0];
+    if(!props) props = {};
+    var componentId = this.id;
+    props.element = element;
+    props.componentId = componentId;
+    jsh.XExt.trigger(cms.componentManager.onNotifyUpdate, props);
+  };
 
 
   this.initProperties();
@@ -4337,6 +4350,7 @@ exports = module.exports = function(jsh, cms){
   this.lastComponentId = 0;
   this.containerlessComponents = {};
   this.cntContainerlessComponents = 0;
+  this.onNotifyUpdate = [];
 
   var maxUniqueId = 0;
 
@@ -4473,7 +4487,11 @@ exports = module.exports = function(jsh, cms){
         }
         //Render component
         try{
-          if(!hasError) component_content = ejs.render(editorTemplate || '', cms.controller.getComponentRenderParameters(component, renderOptions));
+          if(!hasError){
+            var renderConfig = cms.controller.getComponentRenderParameters(component, renderOptions);
+            if(component.onBeforeRender) component.onBeforeRender(renderConfig);
+            component_content = ejs.render(editorTemplate || '', renderConfig);
+          }
         }
         catch(ex){
           cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
@@ -4489,6 +4507,7 @@ exports = module.exports = function(jsh, cms){
       else {
         jobj.html(component_content);
       }
+      if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
     });
   };
 
