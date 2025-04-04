@@ -148,7 +148,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: (this._cms.componentManager.dialogClass||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: modelConfig.id,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -191,10 +191,11 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       });
 
       var $wrapper =  $dialog.find('[data-id="previewWrapper"]').first();
-      _this.renderPreview($wrapper, template, updatedData, properties);
-      // Don't attach any events until after the onRenderGridItemPreview hook is called.
-      // Otherwise, the events might be attached to elements that get replaced or removed.
-      _this.attachEditors($dialog, $wrapper, $toolbar);
+      _this.renderPreview($wrapper, template, updatedData, properties, function(){
+        // Don't attach any events until after the onRenderGridItemPreview hook is called.
+        // Otherwise, the events might be attached to elements that get replaced or removed.
+        _this.attachEditors($dialog, $wrapper, $toolbar);
+      });
     };
 
     // This function NEEDS to be debounced.
@@ -317,7 +318,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
  * @param {Object} data
  * @param {Object} properties
  */
-DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties) {
+DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties, callback) {
 
   var _this = this;
 
@@ -339,12 +340,24 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
 
-  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
+  var renderPromise = null;
+  if (_.isFunction(this._onRenderDataItemPreview)){
+    var renderRslt = this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
+    if(renderRslt && renderRslt.then) renderPromise = renderRslt;
+  }
 
   setTimeout(function() {
     _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
       _this._cms.componentManager.renderContentComponent(el);
     });
+    if(callback){
+      if(renderPromise){
+        renderPromise.then(function(){
+          callback();
+        });
+      }
+      else callback();
+    }
   }, 50);
 };
 

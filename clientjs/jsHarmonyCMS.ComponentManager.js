@@ -34,6 +34,7 @@ exports = module.exports = function(jsh, cms){
   this.containerlessComponents = {};
   this.cntContainerlessComponents = 0;
   this.onNotifyUpdate = [];
+  this.dialogClass = '';
 
   var maxUniqueId = 0;
 
@@ -140,8 +141,25 @@ exports = module.exports = function(jsh, cms){
       if(!component_id) component_content = _this.formatComponentError('*** COMPONENT MISSING data-id ATTRIBUTE ***');
       else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
       else{
-        var component = _this.componentTemplates[component_id];
-        var templates = component != undefined ? component.templates : undefined;
+        var componentTemplate = _this.componentTemplates[component_id];
+        var templates = componentTemplate != undefined ? componentTemplate.templates : undefined;
+
+        if(componentTemplate){
+          //Default component instance
+          var component = {
+            onBeforeRender: undefined,
+            onRender: undefined,
+          };
+
+          //Execute componentTemplate.js to set additional properties on component
+          XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', component, {
+            _this: component,
+            cms: cms,
+            jsh: jsh,
+            component: component
+          });
+        }
+
         var editorTemplate = (templates || {}).editor;
         //Parse component properties
         var props = {
@@ -171,7 +189,7 @@ exports = module.exports = function(jsh, cms){
         //Render component
         try{
           if(!hasError){
-            var renderConfig = cms.controller.getComponentRenderParameters(component, renderOptions);
+            var renderConfig = cms.controller.getComponentRenderParameters(componentTemplate, renderOptions);
             if(component.onBeforeRender) component.onBeforeRender(renderConfig);
             component_content = ejs.render(editorTemplate || '', renderConfig);
           }

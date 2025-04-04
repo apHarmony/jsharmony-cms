@@ -2221,7 +2221,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: (this._cms.componentManager.dialogClass||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: modelConfig.id,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -2264,10 +2264,11 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       });
 
       var $wrapper =  $dialog.find('[data-id="previewWrapper"]').first();
-      _this.renderPreview($wrapper, template, updatedData, properties);
-      // Don't attach any events until after the onRenderGridItemPreview hook is called.
-      // Otherwise, the events might be attached to elements that get replaced or removed.
-      _this.attachEditors($dialog, $wrapper, $toolbar);
+      _this.renderPreview($wrapper, template, updatedData, properties, function(){
+        // Don't attach any events until after the onRenderGridItemPreview hook is called.
+        // Otherwise, the events might be attached to elements that get replaced or removed.
+        _this.attachEditors($dialog, $wrapper, $toolbar);
+      });
     };
 
     // This function NEEDS to be debounced.
@@ -2390,7 +2391,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
  * @param {Object} data
  * @param {Object} properties
  */
-DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties) {
+DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties, callback) {
 
   var _this = this;
 
@@ -2412,12 +2413,24 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
 
-  if (_.isFunction(this._onRenderDataItemPreview)) this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
+  var renderPromise = null;
+  if (_.isFunction(this._onRenderDataItemPreview)){
+    var renderRslt = this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
+    if(renderRslt && renderRslt.then) renderPromise = renderRslt;
+  }
 
   setTimeout(function() {
     _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
       _this._cms.componentManager.renderContentComponent(el);
     });
+    if(callback){
+      if(renderPromise){
+        renderPromise.then(function(){
+          callback();
+        });
+      }
+      else callback();
+    }
   }, 50);
 };
 
@@ -2493,7 +2506,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dialog = new GridDialog(this._jsh, this._cms, modelConfig, {
     closeOnBackdropClick: true,
-    cssClass: 'l-content jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: (this._cms.componentManager.dialogClass||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -4351,6 +4364,7 @@ exports = module.exports = function(jsh, cms){
   this.containerlessComponents = {};
   this.cntContainerlessComponents = 0;
   this.onNotifyUpdate = [];
+  this.dialogClass = '';
 
   var maxUniqueId = 0;
 
@@ -4457,8 +4471,25 @@ exports = module.exports = function(jsh, cms){
       if(!component_id) component_content = _this.formatComponentError('*** COMPONENT MISSING data-id ATTRIBUTE ***');
       else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
       else{
-        var component = _this.componentTemplates[component_id];
-        var templates = component != undefined ? component.templates : undefined;
+        var componentTemplate = _this.componentTemplates[component_id];
+        var templates = componentTemplate != undefined ? componentTemplate.templates : undefined;
+
+        if(componentTemplate){
+          //Default component instance
+          var component = {
+            onBeforeRender: undefined,
+            onRender: undefined,
+          };
+
+          //Execute componentTemplate.js to set additional properties on component
+          XExt.JSEval('\r\n' + (componentTemplate.js || '') + '\r\n', component, {
+            _this: component,
+            cms: cms,
+            jsh: jsh,
+            component: component
+          });
+        }
+
         var editorTemplate = (templates || {}).editor;
         //Parse component properties
         var props = {
@@ -4488,7 +4519,7 @@ exports = module.exports = function(jsh, cms){
         //Render component
         try{
           if(!hasError){
-            var renderConfig = cms.controller.getComponentRenderParameters(component, renderOptions);
+            var renderConfig = cms.controller.getComponentRenderParameters(componentTemplate, renderOptions);
             if(component.onBeforeRender) component.onBeforeRender(renderConfig);
             component_content = ejs.render(editorTemplate || '', renderConfig);
           }
