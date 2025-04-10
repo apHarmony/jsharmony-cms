@@ -2221,7 +2221,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: (this._cms.componentManager.dialogClass||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: (this._component.getDialogClass()||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: modelConfig.id,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -2412,12 +2412,14 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
   $wrapper.empty().append(rendered);
 
   if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
-
+  
   var renderPromise = null;
   if (_.isFunction(this._onRenderDataItemPreview)){
     var renderRslt = this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
     if(renderRslt && renderRslt.then) renderPromise = renderRslt;
   }
+  
+  _this._component.notifyUpdate($wrapper.children()[0]);
 
   setTimeout(function() {
     _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
@@ -2506,7 +2508,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
   var dialog = new GridDialog(this._jsh, this._cms, modelConfig, {
     closeOnBackdropClick: true,
-    cssClass: (this._cms.componentManager.dialogClass||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: (this._component.getDialogClass()||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dataGridEditor jsharmony_cms_component_dataGridEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: componentInstanceId,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -3187,6 +3189,8 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   this.updateSequenceButtonViews();
 
   if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, _this.cms, _this.component);
+  
+  _this.component.notifyUpdate($row.find('[data-component-part="preview"]')[0]);
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
@@ -4271,6 +4275,8 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
+    this.notifyUpdate($element[0]);
+
     setTimeout(function() {
       jsh.async.each(
         $element.find('[data-component]'),
@@ -4316,12 +4322,25 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   this.notifyUpdate = function(element, props) {
     if(!element) element = $element[0];
     if(!props) props = {};
+    //Get content area name from element
+    var contentAreaName = $element.closest('[cms-content-editor]').attr('cms-content-editor');
     var componentId = this.id;
     props.element = element;
     props.componentId = componentId;
+    props.contentAreaName = contentAreaName;
     jsh.XExt.trigger(cms.componentManager.onNotifyUpdate, props);
   };
 
+  /**
+   * Get the data from the element's serialized data attribute value.
+   * @private
+   * @return {Object}
+   */
+  this.getDialogClass = function() {
+    var rslt = (cms.componentManager.dialogClass||'');
+    rslt += ' '+($element.closest('[cms-content-editor]').attr('cms-dialog-class')||'');
+    return rslt.trim();
+  };
 
   this.initProperties();
 
@@ -4479,6 +4498,14 @@ exports = module.exports = function(jsh, cms){
           var component = {
             onBeforeRender: undefined,
             onRender: undefined,
+            notifyUpdate: function(element, props){
+              if(!element) element = jobj[0];
+              if(!props) props = {};
+              props.element = element;
+              props.componentId = component_id;
+              props.contentAreaName = null;
+              jsh.XExt.trigger(_this.onNotifyUpdate, props);
+            },
           };
 
           //Execute componentTemplate.js to set additional properties on component
@@ -4538,7 +4565,13 @@ exports = module.exports = function(jsh, cms){
       else {
         jobj.html(component_content);
       }
-      if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
+      try{
+        if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
+        if(component && component.notifyUpdate) component.notifyUpdate(jobj[0]);
+      }
+      catch(ex){
+        cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
+      }
     });
   };
 

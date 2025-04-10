@@ -217,6 +217,8 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
+    this.notifyUpdate($element[0]);
+
     setTimeout(function() {
       jsh.async.each(
         $element.find('[data-component]'),
@@ -262,12 +264,25 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
   this.notifyUpdate = function(element, props) {
     if(!element) element = $element[0];
     if(!props) props = {};
+    //Get content area name from element
+    var contentAreaName = $element.closest('[cms-content-editor]').attr('cms-content-editor');
     var componentId = this.id;
     props.element = element;
     props.componentId = componentId;
+    props.contentAreaName = contentAreaName;
     jsh.XExt.trigger(cms.componentManager.onNotifyUpdate, props);
   };
 
+  /**
+   * Get the data from the element's serialized data attribute value.
+   * @private
+   * @return {Object}
+   */
+  this.getDialogClass = function() {
+    var rslt = (cms.componentManager.dialogClass||'');
+    rslt += ' '+($element.closest('[cms-content-editor]').attr('cms-dialog-class')||'');
+    return rslt.trim();
+  };
 
   this.initProperties();
 

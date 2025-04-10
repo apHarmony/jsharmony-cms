@@ -148,7 +148,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     acceptButtonLabel: 'OK',
     cancelButtonLabel:  'Cancel',
     closeOnBackdropClick: true,
-    cssClass: (this._cms.componentManager.dialogClass||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
+    cssClass: (this._component.getDialogClass()||'')+' jsharmony_cms_component_dialog jsharmony_cms_component_dialog_form jsharmony_cms_component_dataFormItemEditor jsharmony_cms_component_dataFormItemEditor_' + this._componentTemplate.getTemplateId(),
     dialogId: modelConfig.id,
     minHeight: modelConfig.popup[1],
     minWidth: modelConfig.popup[0]
@@ -339,12 +339,14 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
   $wrapper.empty().append(rendered);
 
   if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
-
+  
   var renderPromise = null;
   if (_.isFunction(this._onRenderDataItemPreview)){
     var renderRslt = this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
     if(renderRslt && renderRslt.then) renderPromise = renderRslt;
   }
+  
+  _this._component.notifyUpdate($wrapper.children()[0]);
 
   setTimeout(function() {
     _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {

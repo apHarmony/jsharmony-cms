@@ -149,6 +149,14 @@ exports = module.exports = function(jsh, cms){
           var component = {
             onBeforeRender: undefined,
             onRender: undefined,
+            notifyUpdate: function(element, props){
+              if(!element) element = jobj[0];
+              if(!props) props = {};
+              props.element = element;
+              props.componentId = component_id;
+              props.contentAreaName = null;
+              jsh.XExt.trigger(_this.onNotifyUpdate, props);
+            },
           };
 
           //Execute componentTemplate.js to set additional properties on component
@@ -208,7 +216,13 @@ exports = module.exports = function(jsh, cms){
       else {
         jobj.html(component_content);
       }
-      if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
+      try{
+        if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
+        if(component && component.notifyUpdate) component.notifyUpdate(jobj[0]);
+      }
+      catch(ex){
+        cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
+      }
     });
   };
 
