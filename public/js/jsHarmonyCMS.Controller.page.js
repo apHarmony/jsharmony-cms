@@ -600,7 +600,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
     //Delete extra content areas
     _.each(_.keys(_this.page.content), function(contentId){
       if(!(contentId in _this.template.content_elements) && !(contentId in componentContentAreas) && (!_this.template.content || !(contentId in _this.template.content))){
-        console.log('Deleting excess content area: '+contentId); // eslint-disable-line no-console
+        var ignoreExcessContentArea = false;
+        if(_this.template.sys_options && _this.template.sys_options.component_content_elements && (contentId in  _this.template.sys_options.component_content_elements)) ignoreExcessContentArea = true;
+        if(!ignoreExcessContentArea) console.log('Deleting excess content area: '+contentId); // eslint-disable-line no-console
         delete _this.page.content[contentId];
       }
     });

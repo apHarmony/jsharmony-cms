@@ -60,6 +60,19 @@ module.exports = exports = function(module, funcs){
         //Load Page Content from disk
         module.jsh.ParseJSON(funcs.getPageFile(page_file_id), module.name, 'Page File ID#'+page_file_id, function(err, page_file){
           if(err && !HelperFS.fileNotFound(err)) return cb(err);
+        
+          //Template options
+          template.options = _.extend({
+            title_element_required: true,
+          }, template.options);
+  
+          template.options.page_toolbar = _.extend({
+            dock: 'top_offset'
+          }, template.options.page_toolbar);
+
+          template.sys_options = {
+            component_content_elements: {},
+          };
 
           //Add content elements if they do not exist
           var template_content_elements = template.content_elements;
@@ -92,6 +105,7 @@ module.exports = exports = function(module, funcs){
           for(let key in template.content){
             if(template.content[key] && template.content[key].component){
               page_file_content[key] = '<div cms-component-remove-container cms-component='+JSON.stringify(template.content[key].component)+'></div>';
+              template.sys_options.component_content_elements[key] = template.content[key].component;
             }
             else{
               page_file_content[key] = template.content[key];
@@ -134,14 +148,6 @@ module.exports = exports = function(module, funcs){
               }
             });
           }
-
-          template.options = _.extend({
-            title_element_required: true,
-          }, template.options);
-
-          template.options.page_toolbar = _.extend({
-            dock: 'top_offset'
-          }, template.options.page_toolbar);
           
           if(!page_file.seo) page_file.seo = {};
           var client_page = {
@@ -175,6 +181,7 @@ module.exports = exports = function(module, funcs){
             standalone: template.standalone||false,
             options: template.options||{},
             components: template.components||{},
+            sys_options: template.sys_options||{},
           };
 
 
