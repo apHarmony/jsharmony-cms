@@ -66,6 +66,7 @@ var jsHarmonyCMS = function(options){
   this.onRender = null;                  //function(page)
   this.onRendered = null;                //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); };
+  this.onBeforeTemplateInit = function(f){ $(document).ready(f); };
 
   for(var key in options){
     if(key in _this) _this[key] = options[key];

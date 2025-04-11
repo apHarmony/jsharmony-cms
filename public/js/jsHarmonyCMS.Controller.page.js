@@ -134,6 +134,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
           if(_this.sitemap) cms.controllerExtensions.createSitemapTree(_this.sitemap);
           XExt.execif(!cms.isInitialized, function(f){
             async.waterfall([
+              function(init_cb){ XExt.execif(cms.onBeforeTemplateInit, function(f){ cms.onBeforeTemplateInit(f); }, init_cb); },
               function(init_cb){ _this.initTemplate(init_cb); },
               function(init_cb){ _this.createWorkspace(init_cb); },
             ], f);
@@ -186,6 +187,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
             if(_this.sitemap) cms.controllerExtensions.createSitemapTree(_this.sitemap);
             XExt.execif(!cms.isInitialized, function(f){
               async.waterfall([
+                function(init_cb){ XExt.execif(cms.onBeforeTemplateInit, function(f){ cms.onBeforeTemplateInit(f); }, init_cb); },
                 function(init_cb){ _this.initTemplate(init_cb); },
                 function(init_cb){ _this.createWorkspace(init_cb); },
               ], f);

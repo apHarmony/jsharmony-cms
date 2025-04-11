@@ -89,7 +89,14 @@ module.exports = exports = function(module, funcs){
           catch(ex){
             module.jsh.Log.error('Error parsing JSON: '+ex.toString()+' :: '+template.default_content);
           }
-          for(let key in template.content){ page_file_content[key] = template.content[key]; }
+          for(let key in template.content){
+            if(template.content[key] && template.content[key].component){
+              page_file_content[key] = '<div cms-component-remove-container cms-component='+JSON.stringify(template.content[key].component)+'></div>';
+            }
+            else{
+              page_file_content[key] = template.content[key];
+            }
+          }
           page_file = page_file || { };
           if(!('content' in page_file)) page_file.content = {};
           for(let key in template_content_elements){
@@ -136,7 +143,6 @@ module.exports = exports = function(module, funcs){
             dock: 'top_offset'
           }, template.options.page_toolbar);
           
-
           if(!page_file.seo) page_file.seo = {};
           var client_page = {
             title: page.page_title||'',
@@ -170,6 +176,7 @@ module.exports = exports = function(module, funcs){
             options: template.options||{},
             components: template.components||{},
           };
+
 
           return cb(null,{
             page: client_page,
@@ -676,6 +683,7 @@ module.exports = exports = function(module, funcs){
           ], function(err){
             if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
 
+            res.type('json');
             res.end(JSON.stringify({
               _success: 1,
               page: clientPage.page,
@@ -797,6 +805,7 @@ module.exports = exports = function(module, funcs){
               //Write file
               fs.writeFile(funcs.getPageFile(page.page_file_id), JSON.stringify(client_page), 'utf8', function(err){
                 if(err) return Helper.GenError(req, res, -99999, err.toString());
+                res.type('json');
                 res.end(JSON.stringify({ '_success': 1, page_folder: page.page_folder }));
               });
             });
@@ -898,6 +907,7 @@ module.exports = exports = function(module, funcs){
           ], function(err){
             if(err){ Helper.GenError(req, res, -9, err.toString()); return; }
 
+            res.type('json');
             res.end(JSON.stringify({
               '_success': 1,
               'branch_id': devInfo.branch_id,
@@ -989,6 +999,7 @@ module.exports = exports = function(module, funcs){
           if (!page_template) { Helper.GenError(req, res, -9, 'Page Template not found'); return; }
 
           if(page_template.raw){
+            res.type('json');
             return res.end(JSON.stringify({ '_success': 1, raw: true }));
           }
 
@@ -1046,6 +1057,7 @@ module.exports = exports = function(module, funcs){
                 }
                 //Append render=1 to current URL
                 url = req.protocol + '://' + req.get('host') + req.originalUrl + '&render=1';
+                res.type('json');
                 return res.end(JSON.stringify({ '_success': 1, editor: url }));
               }
               else return Helper.GenError(req, res, -9, 'Page Template does not have an editor defined');
@@ -1108,6 +1120,7 @@ module.exports = exports = function(module, funcs){
                   });
                 },
                 function(){
+                  res.type('json');
                   res.end(JSON.stringify({ '_success': 1, editor: url }));
                 }
               );
@@ -1277,6 +1290,7 @@ module.exports = exports = function(module, funcs){
               if(!thumbnail_config || !thumbnail_config.export) return;
               pageSiteConfig.media_thumbnails[thumbnail_id] = true;
             });
+            res.type('json');
             res.end(JSON.stringify({ '_success': 1, siteConfig: pageSiteConfig }));
           });
         });
