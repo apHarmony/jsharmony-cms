@@ -2419,7 +2419,11 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
     if(renderRslt && renderRslt.then) renderPromise = renderRslt;
   }
   
-  _this._component.notifyUpdate($wrapper.children()[0]);
+  _this._component.notifyUpdate($wrapper.children()[0], {
+    data: renderConfig.data,
+    properties: renderConfig.properties,
+    isItemPreview: true,
+  });
 
   setTimeout(function() {
     _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
@@ -3190,7 +3194,11 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, _this.cms, _this.component);
   
-  _this.component.notifyUpdate($row.find('[data-component-part="preview"]')[0]);
+  _this.component.notifyUpdate($row.find('[data-component-part="preview"]')[0], {
+    data: renderConfig.data,
+    properties: renderConfig.properties,
+    isGridRowPreview: true,
+  });
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
@@ -4275,7 +4283,10 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
-    this.notifyUpdate($element[0]);
+    this.notifyUpdate($element[0], {
+      data: data,
+      properties: props,
+    });
 
     setTimeout(function() {
       jsh.async.each(
@@ -8098,6 +8109,7 @@ var jsHarmonyCMS = function(options){
   this.onRendered = null;                //function(page)
   this.onTemplateLoaded = function(f){ $(document).ready(f); };
   this.onBeforeTemplateInit = function(f){ return f(); };
+  this.onBeforeInit = function(f){ return f(); };
 
   for(var key in options){
     if(key in _this) _this[key] = options[key];
@@ -8147,43 +8159,55 @@ var jsHarmonyCMS = function(options){
       _this.componentManager = new jsHarmonyCMSComponentManager(jsh, _this);
       _this.controllerExtensions = new jsHarmonyCMSControllerExtensions(jsh, _this);
 
-      _this.toolbar.saveOrigOffsets({ preload: true });
-      if(_this.onInit) _this.onInit(jsh);
+      
+      async.waterfall([
+        function(init_cb){
+          XExt.waitUntil(
+            function(){ return !($('.jshCmsInitializing').length); },
+            init_cb
+          );
+        },
+        function(init_cb){ XExt.execif(_this.onBeforeInit, function(){ _this.onBeforeInit(init_cb); }, init_cb); },
+        function(){
+          _this.toolbar.saveOrigOffsets({ preload: true });
+          if(_this.onInit) _this.onInit(jsh);
 
-      var controllerUrl = '';
-      if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
-      if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
+          var controllerUrl = '';
+          if(_this.onGetControllerUrl) controllerUrl = _this.onGetControllerUrl();
+          if(!controllerUrl) controllerUrl = _this._baseurl + _this.defaultControllerUrl;
 
-      jsh.DefaultErrorHandler = XExt.chain(jsh.DefaultErrorHandler, function(num, txt){
-        if(num==-10){
-          XExt.Alert('Session token expired');
-          return true;
-        }
-      });
+          jsh.DefaultErrorHandler = XExt.chain(jsh.DefaultErrorHandler, function(num, txt){
+            if(num==-10){
+              XExt.Alert('Session token expired');
+              return true;
+            }
+          });
 
-      jsh.xLoader = loader;
-      async.parallel([
-        function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){
-          jsh.Config.debug_params.monitor_globals = false;
-          cb();
-        }); },
-        function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
-        function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
-        function(cb){
-          var qs = {};
-          if(_this.token) qs.jshcms_token = _this.token;
-          jsh.XForm.Get(_this._baseurl+'_funcs/site_config', qs, {}, function(rslt){
-            if(rslt) _this.site_config = rslt.siteConfig || {};
-            return cb();
-          }, function(err){
-            if(err && (err.Number==-10)) loadErrors.push('Session token expired.  Please re-open the page');
-            else loadErrors.push(err);
-            return cb();
+          jsh.xLoader = loader;
+          async.parallel([
+            function(cb){ util.loadScript(_this._baseurl+'js/jsHarmony.render.js', function(){
+              jsh.Config.debug_params.monitor_globals = false;
+              cb();
+            }); },
+            function(cb){ util.loadScript(controllerUrl, function(){ return cb(); }); },
+            function(cb){ XExt.waitUntil(function(){ return jshInit; }, function(){ cb(); }, undefined, 50); },
+            function(cb){
+              var qs = {};
+              if(_this.token) qs.jshcms_token = _this.token;
+              jsh.XForm.Get(_this._baseurl+'_funcs/site_config', qs, {}, function(rslt){
+                if(rslt) _this.site_config = rslt.siteConfig || {};
+                return cb();
+              }, function(err){
+                if(err && (err.Number==-10)) loadErrors.push('Session token expired.  Please re-open the page');
+                else loadErrors.push(err);
+                return cb();
+              });
+            },
+          ], function(err){
+            setTimeout(function(){ _this.load(); }, 1);
           });
         },
-      ], function(err){
-        setTimeout(function(){ _this.load(); }, 1);
-      });
+      ]);
     });
     util.loadCSS(_this._baseurl+'application.css?rootcss=.jsharmony_cms');
     util.loadScript('https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js', function(){

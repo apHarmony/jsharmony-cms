@@ -601,7 +601,11 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, _this.cms, _this.component);
   
-  _this.component.notifyUpdate($row.find('[data-component-part="preview"]')[0]);
+  _this.component.notifyUpdate($row.find('[data-component-part="preview"]')[0], {
+    data: renderConfig.data,
+    properties: renderConfig.properties,
+    isGridRowPreview: true,
+  });
 
   setTimeout(function() {
     _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {

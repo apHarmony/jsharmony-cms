@@ -217,7 +217,10 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
 
-    this.notifyUpdate($element[0]);
+    this.notifyUpdate($element[0], {
+      data: data,
+      properties: props,
+    });
 
     setTimeout(function() {
       jsh.async.each(

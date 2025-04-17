@@ -346,7 +346,11 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
     if(renderRslt && renderRslt.then) renderPromise = renderRslt;
   }
   
-  _this._component.notifyUpdate($wrapper.children()[0]);
+  _this._component.notifyUpdate($wrapper.children()[0], {
+    data: renderConfig.data,
+    properties: renderConfig.properties,
+    isItemPreview: true,
+  });
 
   setTimeout(function() {
     _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {

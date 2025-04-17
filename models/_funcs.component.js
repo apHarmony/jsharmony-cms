@@ -541,7 +541,7 @@ module.exports = exports = function(module, funcs){
     return htdoc.content;
   };
 
-  function replaceComponents(pageContent, branchData, pageComponents, renderFunc){
+  function replaceComponents(pageContent, branchData, pageComponents, parentComponentParams, renderFunc){
     if(!pageContent) pageContent = '';
 
     //Render data-component tags
@@ -589,6 +589,17 @@ module.exports = exports = function(module, funcs){
           htdoc.replaceNode(node, renderedContent);
         }
       },
+      { //Apply virtual properties
+        pred: function(node){ return htdoc.hasAttr(node, 'cms-component-virtual') && !htdoc.hasAttr(node, 'data-component'); },
+        exec: function(node){
+          if(!htdoc.hasAttr(node, 'data-component-data')){
+            htdoc.appendAttr(node, 'data-component-data', Buffer.from(JSON.stringify(parentComponentParams.data)).toString('base64'));
+          }
+          if(!htdoc.hasAttr(node, 'data-component-properties')){
+            htdoc.appendAttr(node, 'data-component-properties', Buffer.from(JSON.stringify(parentComponentParams.properties)).toString('base64'));
+          }
+        }
+      },
     ]);
 
     return htdoc.content;
@@ -599,13 +610,13 @@ module.exports = exports = function(module, funcs){
    * @param {string} pageContent - the page HTML containing the components to prettify
    */
   exports.renderComponentsPretty = function(pageContent) {
-    return replaceComponents(pageContent, null, null, function(componentType, componentProperties, componentData){
+    return replaceComponents(pageContent, null, null, null, function(componentType, componentProperties, componentData){
       return renderComponentPretty(componentType, componentProperties, componentData);
     });
   };
 
-  exports.renderComponents = function(pageContent, branchData, pageComponents, additionalRenderParams) {
-    return replaceComponents(pageContent, branchData, pageComponents, function(componentType, componentProperties, componentData, template, component){
+  exports.renderComponents = function(pageContent, branchData, pageComponents, additionalRenderParams, parentComponentParams) {
+    return replaceComponents(pageContent, branchData, pageComponents, parentComponentParams, function(componentType, componentProperties, componentData, template, component){
       return funcs.renderComponent(template, branchData, {
         data: componentData,
         properties: componentProperties,
@@ -695,8 +706,12 @@ module.exports = exports = function(module, funcs){
       errmsg += '\nTemplate:\n'+template;
       throw new Error(errmsg);
     }
+    var componentParams = {
+      data: renderParams.data,
+      properties: renderParams.properties,
+    };
 
-    if(branchData) rslt = funcs.renderComponents(rslt, branchData, renderOptions.pageComponents, additionalRenderParams);
+    if(branchData) rslt = funcs.renderComponents(rslt, branchData, renderOptions.pageComponents, additionalRenderParams, componentParams);
 
     return rslt;
   };
@@ -733,7 +748,7 @@ module.exports = exports = function(module, funcs){
 
     let text = node.text || '';
 
-    text = replaceComponents(text, null, null, function(componentType, componentProperties, componentData){
+    text = replaceComponents(text, null, null, null, function(componentType, componentProperties, componentData){
       return renderComponentPretty(componentType, componentProperties, componentData);
     });
 
