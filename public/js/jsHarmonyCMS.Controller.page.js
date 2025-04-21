@@ -970,6 +970,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
       getSitemapURL: function(sitemap_item){ return '#'; },
       menu: null,
       getMenuURL: function(menu_item){ return '#'; },
+      getMenuImageURL: function(menu_item){ return '#'; },
     }, additionalRenderParams);
 
     if(!renderOptions) renderOptions = {};

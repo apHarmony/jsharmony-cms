@@ -45,7 +45,12 @@
       {"name":"menu_item_type","control":"dropdown","caption":"Render As","default":"TEXT","lov":{ "blank": false, "values": { "TEXT": "Text", "HTML": "HTML" } }, "captionstyle":"width:130px;"},
       {"name":"menu_item_class","control":"textbox_M","caption":"Menu Link CSS Class","nl":true, "captionstyle":"width:130px;"},
       {"name":"menu_item_style","control":"textbox_M","caption":"Menu Link CSS Style","nl":true, "captionstyle":"width:130px;"},
-      {"name":"menu_item_tag","control":"textbox_M","caption":"Tag","nl":true, "captionstyle":"width:130px;"}
+      {"name":"menu_item_tag","control":"textbox_M","caption":"Tag","nl":true, "captionstyle":"width:130px;"},
+
+      {"name":"menu_item_image","control":"hidden"},
+      {"name":"menu_item_image_path","control":"textbox_M","caption":"Image","captionstyle":"width:130px;","controlstyle":"margin-right:4px;width:145px","readonly":true,"nl":true},
+      {"name":"menu_item_image_browse","control":"button","value":"Browse","controlstyle":"margin-right:4px;","onclick":"js:_this.browseImage();","actions":"IU"},
+      {"name":"menu_item_image_clear","control":"button","value":"✖","onclick":"js:_this.clearImage();"}
 	  ]
   }
 }
