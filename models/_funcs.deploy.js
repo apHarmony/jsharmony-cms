@@ -792,7 +792,7 @@ module.exports = exports = function(module, funcs){
                 funcs.shellExec(
                   publish_params.exec_post_deployment.cmd,
                   publish_path,
-                  publish_params.exec_post_deployment.params, function(err, rslt){
+                  _.extend({ shell: true }, publish_params.exec_post_deployment.params), function(err, rslt){
                     if(err) return cb(err);
                     if(rslt) rslt = rslt.trim();
                     funcs.deploy_log_info(deployment_id, rslt);
@@ -1079,7 +1079,7 @@ module.exports = exports = function(module, funcs){
                 funcs.shellExec(
                   publish_params.exec_pre_deployment.cmd,
                   publish_path,
-                  publish_params.exec_pre_deployment.params, function(err, rslt){
+                  _.extend({ shell: true }, publish_params.exec_pre_deployment.params), function(err, rslt){
                     if(err) return cb(err);
                     if(rslt) rslt = rslt.trim();
                     funcs.deploy_log_info(deployment_id, rslt);
@@ -1152,7 +1152,7 @@ module.exports = exports = function(module, funcs){
                 funcs.shellExec(
                   publish_params.exec_post_deployment.cmd,
                   publish_path,
-                  publish_params.exec_post_deployment.params, function(err, rslt){
+                  _.extend({ shell: true }, publish_params.exec_post_deployment.params), function(err, rslt){
                     if(rslt) rslt = rslt.trim();
                     funcs.deploy_log_info(deployment_id, rslt);
                     if(err) return cb(err);
