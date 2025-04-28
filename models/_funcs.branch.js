@@ -951,6 +951,13 @@ module.exports = exports = function(module, funcs){
                 }
               }
             }
+            //menu item image
+            var orig_image_key = menuItem.menu_item_image;
+            if(orig_image_key){
+              if(branchData.media_mapping[orig_image_key]){
+                menuItem.menu_item_image = branchData.media_mapping[orig_image_key].new_media_id;
+              }
+            }
           });
           
           //Save new file to disk

@@ -1475,6 +1475,7 @@ module.exports = exports = function(module, funcs){
                 getSitemapURL: function(sitemap_item){ return funcs.getSitemapUrl(sitemap_item, branchData); },
                 menu: null,
                 getMenuURL: function(menu_item){ return funcs.getMenuUrl(menu_item, branchData); },
+                getMenuImageURL: function(menu_item){ return funcs.getMenuImageUrl(menu_item, branchData); },
 
                 include: includePage,
               };
@@ -1629,6 +1630,8 @@ module.exports = exports = function(module, funcs){
       menus: branchData.menus,
       menu: null,
       getMenuURL: function(menu_item){ return funcs.getMenuUrl(menu_item, branchData); },
+      getMenuImageURL: function(menu_item){ return funcs.getMenuImageUrl(menu_item, branchData); },
+
 
       page_paths: branchData.page_redirects,
       site_redirects: branchData.site_redirects,

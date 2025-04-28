@@ -24,6 +24,8 @@ jsh.App[modelid] = new (function(){
     menu_item_link_page: undefined,
     menu_item_link_media: undefined,
     menu_item_link_target: undefined, //NEWWIN
+    menu_item_image: undefined,
+    menu_item_image_path: undefined,
   };
   this.orig_current_menu_item = null;
 
@@ -327,7 +329,9 @@ jsh.App[modelid] = new (function(){
       'menu_item_link_media',
       'menu_item_class',
       'menu_item_style',
-      'menu_item_tag'
+      'menu_item_tag',
+      'menu_item_image',
+      'menu_item_image_path',
     ], function(key){
       var oldval = _this.orig_current_menu_item[key];
       if(XExt.isNullUndefined(oldval)) oldval = '';
@@ -362,7 +366,9 @@ jsh.App[modelid] = new (function(){
       'menu_item_link_media',
       'menu_item_class',
       'menu_item_style',
-      'menu_item_tag'
+      'menu_item_tag',
+      'menu_item_image',
+      'menu_item_image_path',
     ], function(key){
       if(key in xdataInfo){
         menu_item[key] = xdataInfo[key];
@@ -466,6 +472,8 @@ jsh.App[modelid] = new (function(){
         'menu_item_link_type',
         'menu_item_link_dest',
         'menu_item_link_target',
+        'menu_item_image',
+        'menu_item_image_path',
       ]);
       save_menu_items.push(save_menu_item);
     }

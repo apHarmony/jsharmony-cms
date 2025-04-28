@@ -59,6 +59,16 @@ module.exports = exports = function(module, funcs){
     return menu_item.menu_item_link_dest;
   };
 
+  exports.getMenuImageUrl = function(menu_item, branchData){
+    if (menu_item.menu_item_image) {
+      var media_key = parseInt(menu_item.menu_item_image);
+      if(!branchData) return '#';
+      if(!(media_key in branchData.media_keys)) throw new Error('Menu '+(menu_item.menu_tag||'')+' item '+menu_item.menu_item_path+' :: '+menu_item.menu_item_text+' image links to missing Media ID # '+media_key.toString());
+      return branchData.media_keys[media_key];
+    }
+    return menu_item.menu_item_image;
+  };
+
   exports.createMenuTree = function(menu, branchData){
 
     menu.menu_items = JSON.parse(JSON.stringify(menu.menu_items||[]));
@@ -289,6 +299,26 @@ module.exports = exports = function(module, funcs){
               }
               return menu_cb(null);
             },
+            //Set menu_item_image_path
+            function(menu_cb){
+              for(var i=0;i<clientMenu.menu_items.length;i++){
+                var menu_item = clientMenu.menu_items[i];                
+                var media_key = parseInt(menu_item.menu_item_image);
+                if (!isNaN(media_key)) {
+                  if(media_key in media_keys){
+                    menu_item.menu_item_image_path = media_keys[media_key];
+                  }
+                  else {
+                    menu_item.menu_item_image_path = 'MEDIA :: '+media_key+' :: Not found';
+                  }
+                }
+                else {
+                  menu_item.menu_item_image = '';
+                  menu_item.menu_item_image_path = '';
+                }
+              }
+              return menu_cb(null);
+            },
           ], function(err){
             if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
             res.end(JSON.stringify({
@@ -437,6 +467,10 @@ module.exports = exports = function(module, funcs){
           var media_key = parseInt(menu_item.menu_item_link_dest);
           if(media_key in media_keys) link_text = 'MEDIA :: ' + media_keys[media_key].media_path;
         }
+      }
+      if (menu_item.menu_item_image) {
+        var media_key = parseInt(menu_item.menu_item_image);
+        if(media_key in media_keys) print_item.image = 'MEDIA :: ' + media_keys[media_key].media_path;
       }
       if(link_text){
         print_item.link = link_text;
