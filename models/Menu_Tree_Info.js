@@ -17,10 +17,15 @@ jsh.App[modelid] = new (function(){
       data = data.substr(16);
       var jdata = JSON.parse(data);
       if(jdata.media_key){
-        xmodel.set('menu_item_link_dest',jdata.media_key);
-        xmodel.set('menu_item_link_media',jdata.media_path);
-      }
-      else if(jdata.page_key){
+        if(jdata.media_target_field == 'menu_item_link_dest'){
+          xmodel.set('menu_item_link_dest',jdata.media_key);
+          xmodel.set('menu_item_link_media',jdata.media_path);
+        }
+        else if(jdata.media_target_field == 'menu_item_image_path'){
+          xmodel.set('menu_item_image',jdata.media_key);
+          xmodel.set('menu_item_image_path',jdata.media_path);
+        }
+      } else if(jdata.page_key){
         xmodel.set('menu_item_link_dest',jdata.page_key);
         xmodel.set('menu_item_link_page',jdata.page_path);
       }
@@ -104,7 +109,13 @@ jsh.App[modelid] = new (function(){
   };
 
   this.browseMedia = function(){
-    XExt.popupForm(xmodel.namespace+'Media_Browser', '', { init_media_key: xmodel.get('menu_item_link_dest') });
+    XExt.popupForm(xmodel.namespace+'Media_Browser', '', { init_media_key: xmodel.get('menu_item_link_dest'), media_target_field: 'menu_item_link_dest' });
   };
 
+  this.browseImage = function(){
+    XExt.popupForm(xmodel.namespace+'Media_Browser', '', { init_media_key: xmodel.get('menu_item_image'), media_target_field: 'menu_item_image_path' });
+  };
+
+  this.clearImage = function(){ xmodel.set('menu_item_image', ''); xmodel.set('menu_item_image_path', '');
+  };
 })();
