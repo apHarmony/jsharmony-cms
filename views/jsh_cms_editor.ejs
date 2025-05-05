@@ -307,6 +307,7 @@ getEJSOutput(f)
   var str = getEJSOutput(function(){ -%&gt;HTML&lt;% })
 getSitemapURL(sitemap_item)
 getMenuURL(menu_item)
+getMenuImageURL(menu_item)
 renderPlaceholder({ errors: '' })
 getMediaThumbnails(url)
 
@@ -394,6 +395,8 @@ menu_item
   menu_item_link_type: 'PAGE','MEDIA','URL','JS'
   menu_item_link_dest
   menu_item_link_target 'NEWWIN',''
+  menu_item_image
+  menu_item_image_path
   menu_item_children =&gt; children
 
 ==================

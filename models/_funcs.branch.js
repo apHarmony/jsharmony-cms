@@ -951,7 +951,7 @@ module.exports = exports = function(module, funcs){
                 }
               }
             }
-            //menu item image
+            //Menu item image
             var orig_image_key = menuItem.menu_item_image;
             if(orig_image_key){
               if(branchData.media_mapping[orig_image_key]){

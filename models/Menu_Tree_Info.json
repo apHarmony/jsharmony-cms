@@ -50,7 +50,8 @@
       {"name":"menu_item_image","control":"hidden"},
       {"name":"menu_item_image_path","control":"textbox_M","caption":"Image","captionstyle":"width:130px;","controlstyle":"margin-right:4px;width:145px","readonly":true,"nl":true},
       {"name":"menu_item_image_browse","control":"button","value":"Browse","controlstyle":"margin-right:4px;","onclick":"js:_this.browseImage();","actions":"IU"},
-      {"name":"menu_item_image_clear","control":"button","value":"✖","onclick":"js:_this.clearImage();"}
+      {"name":"menu_item_image_clear","control":"button","value":"✖","onclick":"js:_this.clearImage();"},
+      {"control":"html", "value":"<div class='<%=model.class%>_menu_image_preview'></div>", "nl": true}
 	  ]
   }
 }

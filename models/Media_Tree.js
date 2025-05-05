@@ -892,8 +892,15 @@ jsh.App[modelid] = new (function(){
     }
     else{
       if(!window.opener) return XExt.Alert('Parent editor not found');
-      var media_target_field = new URLSearchParams(window.location.search).get('media_target_field');
-      window.opener.postMessage('cms_file_picker:'+JSON.stringify({ media_key: media_key, media_file_id: media_file.media_file_id, media_desc: media_file.media_desc, media_path: media_file.media_path, media_folder: media_file.media_folder, media_target_field: media_target_field }), '*');
+      var editorParams = {
+        media_key: media_key,
+        media_file_id: media_file.media_file_id,
+        media_desc: media_file.media_desc,
+        media_path: media_file.media_path,
+        media_folder: media_file.media_folder,
+      };
+      if(jsh._GET.media_target) editorParams.media_target = jsh._GET.media_target;
+      window.opener.postMessage('cms_file_picker:'+JSON.stringify(editorParams), '*');
       window.close();
     }
   };

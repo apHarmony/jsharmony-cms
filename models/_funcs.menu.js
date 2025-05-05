@@ -107,6 +107,10 @@ module.exports = exports = function(module, funcs){
           menu_item.href = funcs.getMenuUrl(menu_item, branchData);
         }
       }
+
+      if(menu_item.menu_item_image){
+        menu_item.menu_item_image_path = funcs.getMenuImageUrl(menu_item, branchData);
+      }
         
       menu_item.target = ((menu_item.menu_item_link_type != 'JS') && (menu_item.menu_item_link_target == 'NEWWIN')) ? '_blank' : '';
       menu_item.selected = false;
@@ -299,28 +303,26 @@ module.exports = exports = function(module, funcs){
               }
               return menu_cb(null);
             },
-            //Set menu_item_image_path
+            //Set menu_item_image
             function(menu_cb){
               for(var i=0;i<clientMenu.menu_items.length;i++){
-                var menu_item = clientMenu.menu_items[i];                
+                var menu_item = clientMenu.menu_items[i];
                 var media_key = parseInt(menu_item.menu_item_image);
-                if (!isNaN(media_key)) {
-                  if(media_key in media_keys){
-                    menu_item.menu_item_image_path = media_keys[media_key];
-                  }
-                  else {
-                    menu_item.menu_item_image_path = 'MEDIA :: '+media_key+' :: Not found';
-                  }
+                if(!media_key){
+                  menu_item.menu_item_image_path = '';
+                }
+                else if(media_key in media_keys){
+                  menu_item.menu_item_image_path = media_keys[media_key];
                 }
                 else {
-                  menu_item.menu_item_image = '';
-                  menu_item.menu_item_image_path = '';
+                  menu_item.menu_item_image_path = 'MEDIA :: '+media_key+' :: Not found';
                 }
               }
               return menu_cb(null);
             },
           ], function(err){
             if(err) { Helper.GenError(req, res, -99999, err.toString()); return; }
+            res.type('json');
             res.end(JSON.stringify({
               _success: 1,
               menu: clientMenu,
@@ -361,6 +363,8 @@ module.exports = exports = function(module, funcs){
         validate.AddValidator('_obj.menu_item_link_type', 'Link Type', 'B', [XValidate._v_InArray(['PAGE','MEDIA','URL','JS'])]);
         validate.AddValidator('_obj.menu_item_link_dest', 'Link Destination', 'B', [XValidate._v_MaxLength(2048)]);
         validate.AddValidator('_obj.menu_item_link_target', 'Link Target', 'B', [XValidate._v_InArray(['NEWWIN'])]);
+        validate.AddValidator('_obj.menu_item_image', 'Image', 'B', [XValidate._v_MaxLength(2048)]);
+        validate.AddValidator('_obj.menu_item_image_path', 'Image Path', 'B', [XValidate._v_MaxLength(2048)]);
         for(var i=0;i<menu_content.menu_items.length;i++){
           var menu_item = menu_content.menu_items[i];
           verrors = _.merge(verrors, validate.Validate('B', menu_item));
@@ -386,6 +390,7 @@ module.exports = exports = function(module, funcs){
           menu.menu_file_id = rslt[0][0].menu_file_id;
           //Save to disk
           fs.writeFile(funcs.getMenuFile(menu.menu_file_id), JSON.stringify(menu_content), 'utf8', function(err){
+            res.type('json');
             res.end(JSON.stringify({ '_success': 1 }));
           });
         });
@@ -464,12 +469,12 @@ module.exports = exports = function(module, funcs){
           if(page_key in page_keys) link_text = 'PAGE :: ' + page_keys[page_key].page_path;
         }
         else if(link_type=='MEDIA'){
-          var media_key = parseInt(menu_item.menu_item_link_dest);
+          let media_key = parseInt(menu_item.menu_item_link_dest);
           if(media_key in media_keys) link_text = 'MEDIA :: ' + media_keys[media_key].media_path;
         }
       }
       if (menu_item.menu_item_image) {
-        var media_key = parseInt(menu_item.menu_item_image);
+        let media_key = parseInt(menu_item.menu_item_image);
         if(media_key in media_keys) print_item.image = 'MEDIA :: ' + media_keys[media_key].media_path;
       }
       if(link_text){

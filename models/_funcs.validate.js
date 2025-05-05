@@ -432,13 +432,13 @@ module.exports = exports = function(module, funcs){
                 else menu_item.menu_item_link_dest = branchData.page_keys[page_key];
               }
               else if((menu_item.menu_item_link_type||'').toString()=='MEDIA'){
-                var media_key = parseInt(menu_item.menu_item_link_dest);
+                let media_key = parseInt(menu_item.menu_item_link_dest);
                 if(!(media_key in branchData.media_keys)) funcs.validate_logError(item_errors, 'menu', menu, 'Menu item "' + pretty_menu_item.menu_item + '" links to missing Media ID #'+media_key.toString());
                 else menu_item.menu_item_link_dest = branchData.media_keys[media_key];
               }
               //Validate Image URLs
               if (menu_item.menu_item_image) {
-                var media_key = parseInt(menu_item.menu_item_image);
+                let media_key = parseInt(menu_item.menu_item_image);
                 if(!(media_key in branchData.media_keys)) funcs.validate_logError(item_errors, 'menu', menu, 'Menu item "' + pretty_menu_item.menu_item + '" image links to missing Media ID #'+media_key.toString());
                 else menu_item.menu_item_image = branchData.media_keys[media_key];
               }
