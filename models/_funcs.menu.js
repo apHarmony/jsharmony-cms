@@ -441,16 +441,18 @@ module.exports = exports = function(module, funcs){
       getTextPath(menu_item);
     });
 
-    //Sort menu items
-    menu_items.sort(function(a,b){
-      for(var i=0;i<a.menu_item_collection_index_array.length;i++){
-        if(b.menu_item_collection_index_array.length <= i) return 1;
-        if(a.menu_item_collection_index_array[i] > b.menu_item_collection_index_array[i]) return 1;
-        if(a.menu_item_collection_index_array[i] < b.menu_item_collection_index_array[i]) return -1;
-      }
-      if(a.menu_item_collection_index_array.length < b.menu_item_collection_index_array.length) return -1;
-      return 0;
-    });
+    if(options.text){
+      //Sort menu items
+      menu_items.sort(function(a,b){
+        for(var i=0;i<a.menu_item_collection_index_array.length;i++){
+          if(b.menu_item_collection_index_array.length <= i) return 1;
+          if(a.menu_item_collection_index_array[i] > b.menu_item_collection_index_array[i]) return 1;
+          if(a.menu_item_collection_index_array[i] < b.menu_item_collection_index_array[i]) return -1;
+        }
+        if(a.menu_item_collection_index_array.length < b.menu_item_collection_index_array.length) return -1;
+        return 0;
+      });
+    }
 
     _.each(menu_items, function(menu_item){
       //Delete non-essential info

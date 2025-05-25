@@ -472,7 +472,8 @@ module.exports = exports = function(module, funcs){
           if(!media_files){
             return baseurl + urlparts.pathname.substr(1) + '#@JSHCMS';
           }
-          return baseurl+'_funcs/media/'+media_key+(thumbnail_id?'/'+thumbnail_id:'')+'/?media_id='+media_files[media_key].media_id+'#@JSHCMS';
+          var media_id = media_files[media_key] ? media_files[media_key].media_id : media_key;
+          return baseurl+'_funcs/media/'+media_key+(thumbnail_id?'/'+thumbnail_id:'')+'/?media_id='+media_id+'#@JSHCMS';
         },
         getPageURL: function(page_key, branchData, getLinkContent, urlparts){
           if(branch_id) return baseurl+'_funcs/page/'+page_key+'/?branch_id='+branch_id+'&view=1#@JSHCMS';

@@ -4058,7 +4058,15 @@ DomSerializer.prototype.setAttr = function(element, attrName, data) {
 DomSerializer.prototype.serializeAttrValue = function(data) {
   // Need to keep undefined values so they don't get set to default values
   var replacer = function(key, value) { return value == undefined ? null : value; };
-  return btoa(JSON.stringify(data || {}, replacer));
+  try {
+    var jsonStr = JSON.stringify(data || {}, replacer);
+    if(jsonStr) jsonStr = jsonStr.replace(/[\u00A0-\u9999]/g, function(i) { return '&#' + i.charCodeAt(0) + ';'; });
+    return btoa(jsonStr);
+  }
+  catch(ex){
+    alert(ex);
+    throw ex;
+  }
 };
 
 exports = module.exports = DomSerializer;
