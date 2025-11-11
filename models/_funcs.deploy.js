@@ -1016,7 +1016,7 @@ module.exports = exports = function(module, funcs){
                 funcs.deploy_log_info(deployment_id, 'Running post-build operations');
 
                 //File system operations for PostBuild functions
-                branchData.fsOps = funcs.deploy_getFS(branchData.site_files);
+                branchData.fsOps = funcs.deploy_getFS(branchData.site_files, publish_params.publish_path);
 
                 //Run onDeploy_PostBuild operations
                 var branchItemTypes = funcs.getDeploymentSortedBranchItemTypes();
@@ -1198,7 +1198,7 @@ module.exports = exports = function(module, funcs){
     });
   };
 
-  exports.deploy_getFS = function(site_files){
+  exports.deploy_getFS = function(site_files, publish_path){
     var fsOps = {
       siteFiles: {},
       addedFiles: {},
@@ -1230,6 +1230,13 @@ module.exports = exports = function(module, funcs){
       if(fsOps.hasFile(filePath)) throw new Error('Cannot add file "' + filePath + '" - file already exists');
       fsOps.addedFiles[filePath] = fileContent||'';
       fsOps.addedFilesUpper[filePath.toUpperCase()] = filePath;
+    };
+    fsOps.getFile = function(filePath){
+      filePath = fsOps.getValidFilePath(filePath);
+      if(!(filePath||'').toString().trim()) throw new Error('Cannot get "'+filePath+'" - invalid file name');
+      if(!fsOps.hasFile(filePath)) throw new Error('Cannot get file "' + filePath + '" - file not found');
+      var publishPath = path.join(publish_path, filePath);
+      return fs.readFileSync(publishPath);
     };
     fsOps.deleteFile = function(filePath){
       if(!(filePath||'').toString().trim()) throw new Error('Cannot delete "'+filePath+'" - invalid file name');
@@ -1640,6 +1647,7 @@ module.exports = exports = function(module, funcs){
       publish_params: publish_params,
 
       addFile: branchData.fsOps.addFile,
+      getFile: branchData.fsOps.getFile,
       deleteFile: branchData.fsOps.deleteFile,
       hasFile: branchData.fsOps.hasFile,
 
