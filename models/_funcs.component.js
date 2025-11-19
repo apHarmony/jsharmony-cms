@@ -637,7 +637,7 @@ module.exports = exports = function(module, funcs){
     return rslt;
   };
 
-  exports.renderComponent = function(template, branchData, renderOptions, additionalRenderParams) {
+  exports.renderComponent = function(template, branchData, renderOptions, additionalRenderParams, cb) {
     additionalRenderParams = additionalRenderParams || {};
     renderOptions = _.extend({
       data: null,
@@ -674,6 +674,7 @@ module.exports = exports = function(module, funcs){
       componentRenderClass: 'jsharmony_cms_componentRender_'+Helper.escapeCSSClass((renderOptions.templateName)||'')+'_'+((branchData && branchData.component_getUniqueId && branchData.component_getUniqueId())||'').toString(),
       items: [],
       item: {},
+      fileData: {},
       component: properties,
       getMediaThumbnails: function(url){ return funcs.getMediaThumbnails(url, branchData); },
       renderPlaceholder: function(){ return ''; },

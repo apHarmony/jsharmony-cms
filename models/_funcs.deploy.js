@@ -1231,13 +1231,6 @@ module.exports = exports = function(module, funcs){
       fsOps.addedFiles[filePath] = fileContent||'';
       fsOps.addedFilesUpper[filePath.toUpperCase()] = filePath;
     };
-    fsOps.getFile = function(filePath){
-      filePath = fsOps.getValidFilePath(filePath);
-      if(!(filePath||'').toString().trim()) throw new Error('Cannot get "'+filePath+'" - invalid file name');
-      if(!fsOps.hasFile(filePath)) throw new Error('Cannot get file "' + filePath + '" - file not found');
-      var publishPath = path.join(publish_path, filePath);
-      return fs.readFileSync(publishPath);
-    };
     fsOps.deleteFile = function(filePath){
       if(!(filePath||'').toString().trim()) throw new Error('Cannot delete "'+filePath+'" - invalid file name');
       var filePathUpper = filePath.toUpperCase();
@@ -1612,7 +1605,7 @@ module.exports = exports = function(module, funcs){
     });
   };
 
-  exports.deploy_exportComponentRender = function(jsh, branchData, publish_params, template_name, exportItem, exportIndex){
+  exports.deploy_exportComponentRender = function(jsh, branchData, publish_params, template_name, exportItem, exportIndex, additionalRenderParams){
 
     if(!(template_name in branchData.component_export_template_html) || !(exportIndex in branchData.component_export_template_html[template_name])){
       return '<!-- Export Component '+Helper.escapeHTML(template_name + ' - Export #' + (exportIndex+1))+' not found -->';
@@ -1629,7 +1622,7 @@ module.exports = exports = function(module, funcs){
     var sitemap = funcs.getPageSitemapRelatives((branchData.sitemaps||{}).PRIMARY||{});
     funcs.createSitemapTree(sitemap, branchData);
 
-    var renderParams = {
+    var renderParams = _.extend({
       //Additional parameters for static render
       sitemaps: branchData.sitemaps,
       sitemap: sitemap,
@@ -1647,12 +1640,11 @@ module.exports = exports = function(module, funcs){
       publish_params: publish_params,
 
       addFile: branchData.fsOps.addFile,
-      getFile: branchData.fsOps.getFile,
       deleteFile: branchData.fsOps.deleteFile,
       hasFile: branchData.fsOps.hasFile,
 
       include: function(path){ throw new Error('"include" function not supported in component.export'); },
-    };
+    }, additionalRenderParams);
     
     if(renderOptions.menu_tag){
       if(!branchData.menus[renderOptions.menu_tag]) throw new Error('Menu with menu tag "'+Helper.escapeHTML(renderOptions.menu_tag)+'" is not defined in this site');
@@ -1672,14 +1664,25 @@ module.exports = exports = function(module, funcs){
     async.eachOfSeries(branchData.component_templates, function(template, template_name, generate_cb){
       async.eachOfSeries(template.export, function(exportItem, exportIndex, export_cb){
 
-        try{
-          funcs.deploy_exportComponentRender(jsh, branchData, publish_params, template_name, exportItem, exportIndex);
-        }
-        catch(ex){
-          return export_cb('Error exporting component "'+template_name+'": '+ex.message);
-        }
-
-        return export_cb();
+        var additionalRenderParams = {};
+        async.waterfall([
+          function (render_cb) {
+            const onBeforeRender = eval(exportItem.onBeforeRender);
+            if (typeof onBeforeRender === 'function') {
+              return onBeforeRender(render_cb, { path, fs, publish_params, additionalRenderParams });
+            }
+            return render_cb();
+          },
+          function (render_cb) {
+            try{
+              funcs.deploy_exportComponentRender(jsh, branchData, publish_params, template_name, exportItem, exportIndex, additionalRenderParams);
+              return render_cb();
+            }
+            catch(ex){
+              return export_cb('Error exporting component "'+template_name+'": '+ex.message);
+            }
+          }
+        ], export_cb);
       }, generate_cb);
     }, cb);
   };
