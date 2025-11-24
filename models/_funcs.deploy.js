@@ -671,6 +671,7 @@ module.exports = exports = function(module, funcs){
             sitemaps: {},
 
             pageIncludes: {},
+            locals: {}, //Local variables for custom deployments
           };
 
           var git_branch = Helper.ReplaceAll(publish_params.git_branch, '%%%SITE_ID%%%', deployment.site_id);
@@ -1664,14 +1665,36 @@ module.exports = exports = function(module, funcs){
     async.eachOfSeries(branchData.component_templates, function(template, template_name, generate_cb){
       async.eachOfSeries(template.export, function(exportItem, exportIndex, export_cb){
 
-        try{
-          funcs.deploy_exportComponentRender(jsh, branchData, publish_params, template_name, exportItem, exportIndex);
-        }
-        catch(ex){
-          return export_cb('Error exporting component "'+template_name+'": '+ex.message);
-        }
-
-        return export_cb();
+        async.waterfall([
+          function (render_cb) {
+            if(!exportItem.onBeforeRender) return render_cb();
+            var code = '(function(){'+Helper.ParseMultiLine(exportItem.onBeforeRender)+'})()';
+            try{
+              Helper.JSEval(code, {}, {
+                path,
+                fs,
+                publish_params,
+                branchData,
+                template_name,
+                exportItem,
+                exportIndex,
+                callback: render_cb
+              });
+            }
+            catch(ex){
+              return render_cb(new Error('Error evaluating ' + code + ': ' + ex.toString()));
+            }
+          },
+          function (render_cb) {
+            try{
+              funcs.deploy_exportComponentRender(jsh, branchData, publish_params, template_name, exportItem, exportIndex);
+              return render_cb();
+            }
+            catch(ex){
+              return export_cb('Error exporting component "'+template_name+'": '+ex.message);
+            }
+          }
+        ], export_cb);
       }, generate_cb);
     }, cb);
   };
