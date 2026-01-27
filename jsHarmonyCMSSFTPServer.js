@@ -250,7 +250,7 @@ jsHarmonyCMSSFTPServer.prototype.Run = function(run_cb){
             var password = Buffer.from(ctx.password).toString();
             _this.Auth(req, username, password, clientIp, function(success){
               if(success){
-                if(!_.intersection(['SYSADMIN','WEBMASTER'], _.keys(req._roles)).length) return onAuthReject(ctx, username);
+                if(!_.intersection(['SYSADMIN','WEBMASTER','SFTP'], _.keys(req._roles)).length) return onAuthReject(ctx, username);
                 return onAuthSuccess(ctx, username);
               }
               else {

@@ -40,6 +40,7 @@
       { "sys_role_name": "PUBLISHER", "sys_role_desc": "All Sites - Publisher", "sys_role_seq": 3 },
       { "sys_role_name": "WEBMASTER", "sys_role_desc": "Webmaster", "sys_role_seq": 4 },
       { "sys_role_name": "CMSHOST", "sys_role_desc": "CMS Deployment Host", "sys_role_seq": 5 },
+      { "sys_role_name": "SFTP", "sys_role_desc": "SFTP", "sys_role_seq": 6 },
       { "sql": "delete from jsharmony.sys_user_role where sys_role_name in ('DADMIN','X_B','X_X')" },
       { "sql": "delete from jsharmony.sys_role where sys_role_name in ('DADMIN','X_B','X_X')" }
     ],
@@ -62,7 +63,7 @@
       { "sys_user_id": 1, "sys_role_name": "AUTHOR" },
       { "sys_user_id": 1, "sys_role_name": "PUBLISHER" },
       { "sys_user_id": 1, "sys_role_name": "WEBMASTER" },
-      { "sys_user_id": 1, "sys_role_name": "CMSHOST" }
+      { "sys_user_id": 1, "sys_role_name": "CMSHOST" },
       //:endif:
     ],
     "triggers": [
