@@ -638,8 +638,6 @@ module.exports = exports = function(module, funcs){
           deployment.publish_params = publish_params;
 
           //Branch Data
-          var component_maxUniqueId = 0;
-          var component_maxUniqueIdSalt = crypto.randomBytes(16).toString('hex');
           var branchData = {
             publish_params: publish_params,
             template_variables: template_variables,
@@ -655,12 +653,15 @@ module.exports = exports = function(module, funcs){
             page_redirects: {},
             page_base_paths: {},
             page_files: {},
-            page_data: {},
+            page_data: { /* format, output, vars, cmspath, urlpath, basepath, getMaxUniqueId, uniqueIdSalt */ },
 
             component_templates: null,
             component_template_html: {},
             component_export_template_html: {},
-            component_getUniqueId: function(){ return crypto.createHash('md5').update(component_maxUniqueIdSalt+'.'+(++component_maxUniqueId).toString()).digest('hex'); },
+            component_getUniqueId: function(salt, getMaxUniqueId){
+              if(!salt || !getMaxUniqueId) return crypto.randomBytes(16).toString('hex');
+              return crypto.createHash('md5').update(salt+'.'+(getMaxUniqueId()).toString()).digest('hex');
+            },
 
             media_keys: {},
             media_items: {},
@@ -1314,7 +1315,14 @@ module.exports = exports = function(module, funcs){
           branchData.page_keys[page.page_key] = page_cmspath;
           branchData.page_redirects[page_cmspath] = page_urlpath;
           branchData.page_base_paths[page.page_key] = page_basepath;
-          branchData.page_data[page.page_key] = {};
+          branchData.page_data[page.page_key] = {
+            cmspath: page_cmspath,
+            urlpath: page_urlpath,
+            basepath: page_basepath,
+            getMaxUniqueId: (function(){ var id = 0; return function(){ return ++id; }; })(),
+            uniqueIdSalt: page_basepath,
+            vars: {},
+          };
           if(path.basename(page_cmspath)==publish_params.site_default_page_filename){
             var base_page_dir = publish_params.url_prefix + publish_params.page_subfolder;
             if(!Helper.isNullUndefined(publish_params.url_prefix_page_override)){ base_page_dir = publish_params.url_prefix_page_override; }
@@ -1430,6 +1438,9 @@ module.exports = exports = function(module, funcs){
             var includeCode = '<!--#jsharmony_cms_include('+JSON.stringify(path)+')-->';
             return includeCode;
           };
+          
+          if(!(page.page_key in branchData.page_data)) throw new Error('Page '+page.page_path+' not defined in page_data');
+          var pageData = branchData.page_data[page.page_key];
 
           //Merge content with template
           var ejsparams = {
@@ -1479,6 +1490,7 @@ module.exports = exports = function(module, funcs){
                 getMenuImageURL: function(menu_item){ return funcs.getMenuImageUrl(menu_item, branchData); },
 
                 include: includePage,
+                pageData: pageData,
               };
               if(renderOptions.menu_tag){
                 if(!branchData.menus[renderOptions.menu_tag]) throw new Error('Menu with menu tag "'+Helper.escapeHTML(renderOptions.menu_tag)+'" is not defined in this site');
@@ -1521,6 +1533,7 @@ module.exports = exports = function(module, funcs){
               }
               renderedContent = funcs.renderComponents(renderedContent, branchData, clientPage.template.components, {
                 include: includePage,
+                pageData: pageData,
               });
               renderedContent = funcs.applyRenderTags(renderedContent, { page: ejsparams.page });
               renderedContent = funcs.applyResponsiveImg(renderedContent, branchData.site_config.media_thumbnails, branchData.media_items);
@@ -1541,6 +1554,7 @@ module.exports = exports = function(module, funcs){
                 removeClass: true
               };
               renderedContent = funcs.replaceBranchURLs(renderedContent, replaceBranchURLsParams);
+              pageData.vars = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageData.vars), replaceBranchURLsParams));
               pageIncludes = JSON.parse(funcs.replaceBranchURLs(JSON.stringify(pageIncludes), _.extend(replaceBranchURLsParams, {
                 getPageURL: function(page_key){
                   if(!(page_key in branchData.page_keys)) throw new Error('Page '+page.page_path+' links to missing Page ID # '+page_key.toString());
@@ -1552,8 +1566,7 @@ module.exports = exports = function(module, funcs){
 
             try{
               if(exportJSON){
-                if(!(page.page_key in branchData.page_data)) throw new Error('Page '+page.page_path+' not defined in page_data');
-                branchData.page_data[page.page_key].format = 'json';
+                pageData.format = 'json';
                 //Flatten Page
                 var flatPage = funcs.flattenObject(ejsparams.page);
                 //Render Page
@@ -1589,18 +1602,24 @@ module.exports = exports = function(module, funcs){
             branchData.pageIncludes[abskey] = branchData.pageIncludes[abskey].concat(pageIncludes[key]);
           }
 
-          branchData.site_files[page_fpath] = {
-            md5: crypto.createHash('md5').update(page_content).digest('hex')
-          };
-          branchData.page_files[page.page_key] = page_fpath;
-          page_fpath = path.join(publish_params.publish_path, page_fpath);
+          if(clientPage.template.options.virtual_render){
+            pageData.output = page_content;
+            return cb();
+          }
+          else {
+            branchData.site_files[page_fpath] = {
+              md5: crypto.createHash('md5').update(page_content).digest('hex')
+            };
+            branchData.page_files[page.page_key] = page_fpath;
+            page_fpath = path.join(publish_params.publish_path, page_fpath);
 
-          //Create folders for path
-          HelperFS.createFolderRecursive(path.dirname(page_fpath), function(err){
-            if(err) return cb(err);
-            //Save page to publish folder
-            fs.writeFile(page_fpath, page_content, 'utf8', cb);
-          });
+            //Create folders for path
+            HelperFS.createFolderRecursive(path.dirname(page_fpath), function(err){
+              if(err) return cb(err);
+              //Save page to publish folder
+              fs.writeFile(page_fpath, page_content, 'utf8', cb);
+            });
+          }
         });
       }, cb);
     });
@@ -1632,7 +1651,6 @@ module.exports = exports = function(module, funcs){
       menu: null,
       getMenuURL: function(menu_item){ return funcs.getMenuUrl(menu_item, branchData); },
       getMenuImageURL: function(menu_item){ return funcs.getMenuImageUrl(menu_item, branchData); },
-
 
       page_paths: branchData.page_redirects,
       site_redirects: branchData.site_redirects,

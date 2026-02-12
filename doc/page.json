@@ -51,6 +51,7 @@
                            //  jsharmony_cms_editing                      - Added when currently editing a content element
                            //  jsharmony_cms_editing_<content_element_id> - Added when currently editing a content element
     },
+    "virtual_render": false, // If set to true, page does not export to file system on publish
   },
 
   //System Properties

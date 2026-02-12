@@ -64,6 +64,7 @@ module.exports = exports = function(module, funcs){
           //Template options
           template.options = _.extend({
             title_element_required: true,
+            virtual_render: false,
           }, template.options);
   
           template.options.page_toolbar = _.extend({

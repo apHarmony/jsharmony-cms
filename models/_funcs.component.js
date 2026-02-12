@@ -20,6 +20,7 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 var ejs = require('ejs');
 var _ = require('lodash');
 var async = require('async');
+var crypto = require('crypto');
 var Helper = require('jsharmony/Helper');
 var ejsext = require('jsharmony/lib/ejsext.js');
 
@@ -646,6 +647,7 @@ module.exports = exports = function(module, funcs){
       templateName: null,
       pageComponents: {},
       component: undefined,
+      pageData: undefined,
     }, renderOptions);
 
     var defaultProperties = {};
@@ -655,6 +657,7 @@ module.exports = exports = function(module, funcs){
       defaultData = funcs.getComponentDefaultValues(renderOptions.component.data);
     }
     var properties = _.extend({}, defaultProperties, renderOptions.properties);
+    var pageData = additionalRenderParams.pageData || {};
 
     var renderParams = _.extend({
       baseUrl: '',
@@ -671,11 +674,14 @@ module.exports = exports = function(module, funcs){
       isInEditor: false,
       isInPageEditor: false,
       isInComponentEditor: false,
-      componentRenderClass: 'jsharmony_cms_componentRender_'+Helper.escapeCSSClass((renderOptions.templateName)||'')+'_'+((branchData && branchData.component_getUniqueId && branchData.component_getUniqueId())||'').toString(),
+      componentRenderClass: 'jsharmony_cms_componentRender_'+Helper.escapeCSSClass((renderOptions.templateName)||'')+'_'+((branchData && branchData.component_getUniqueId && branchData.component_getUniqueId(pageData.uniqueIdSalt, pageData.getMaxUniqueId))||'').toString(),
       items: [],
       item: {},
       component: properties,
       getMediaThumbnails: function(url){ return funcs.getMediaThumbnails(url, branchData); },
+      getPageVar: function(key){ if(key=='cmspath') return pageData.cmspath; return pageData.vars && pageData.vars[key]; },
+      setPageVar: function(key, val){ if(!pageData.vars) return; pageData.vars[key] = val; },
+      hash: function(val){ return crypto.createHash('md5').update(val).digest('hex'); },
       renderPlaceholder: function(){ return ''; },
       renderTemplate: function(locals, templateName, items){
         if(!items || (_.isArray(items) && !items.length)) return '';
