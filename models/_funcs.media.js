@@ -303,7 +303,7 @@ module.exports = exports = function(module, funcs){
 
             //Get image width / height
             function(cb){
-              if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media_ext)) return cb();
+              if(!_.includes(['.jpg','.jpeg','.webp','.tif','.tiff','.png','.gif','.svg'], media_ext)) return cb();
               jsh.Extensions.image.size(tmp_file_path, function(err, size){
                 if(err || !size || !size.width || !size.height) return cb();
                 media_width = size.width;
@@ -636,7 +636,7 @@ module.exports = exports = function(module, funcs){
 
           //Get image width / height
           function(media_cb){
-            if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media_ext)) return media_cb();
+            if(!_.includes(['.jpg','.jpeg','.webp','.tif','.tiff','.png','.gif','.svg'], media_ext)) return media_cb();
             jsh.Extensions.image.size(tmp_file_path, function(err, size){
               if(err || !size || !size.width || !size.height) return media_cb();
               media_width = size.width;
