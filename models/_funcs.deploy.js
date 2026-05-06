@@ -163,7 +163,7 @@ module.exports = exports = function(module, funcs){
       for(var thumbnail_id in branchData.site_config.media_thumbnails){
         var thumbnail_config = branchData.site_config.media_thumbnails[thumbnail_id];
         if(!thumbnail_config || !thumbnail_config.export) continue;
-        if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) continue;
+        if(!_.includes(['.jpg','.jpeg','.webp','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) continue;
         if((patharr.length >= 5) && patharr[4]) patharr[4] = thumbnail_id;
         else patharr.splice(4,0,thumbnail_id);
         rslt[thumbnail_id] = urlparts.protocol + '//' + urlparts.host + patharr.join('/') + (urlparts.search||'') + (urlparts.hash||'');
@@ -1894,7 +1894,7 @@ module.exports = exports = function(module, funcs){
           function(generate_cb){
             async.eachOf(branchData.site_config.media_thumbnails, function(thumbnail_config, thumbnail_id, thumbnail_cb){
               if(!thumbnail_config || !thumbnail_config.export) return thumbnail_cb();
-              if(!_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return thumbnail_cb();
+              if(!_.includes(['.jpg','.jpeg','.webp','.tif','.tiff','.png','.gif','.svg'], media.media_ext)) return thumbnail_cb();
 
               funcs.getMediaFile(media.media_file_id, media.media_filename, media.media_ext, thumbnail_id, thumbnail_config, function(err, thumbnail_srcpath, thumbnail_fname, stat){
                 if(err) return thumbnail_cb('Error getting thumbnail for '+media_fpath+':'+thumbnail_id+' - '+err.toString());

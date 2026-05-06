@@ -113,7 +113,7 @@
     var qs = '';
     if(media_id) qs = 'media_id='+media_id;
     else if(media_file_id) qs = 'media_file_id='+media_file_id;
-    if(_.includes(['.jpg','.jpeg','.tif','.tiff','.png','.gif','.pdf','.svg'], media_ext.toLowerCase())){
+    if(_.includes(['.jpg','.jpeg','.webp','.tif','.tiff','.png','.gif','.pdf','.svg'], media_ext.toLowerCase())){
       let url = jsh._BASEURL+'_funcs/media/'+media_key+'/'+(qs?'?'+qs:'');
       var ww = 800;
       var wh = 600;
