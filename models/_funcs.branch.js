@@ -448,10 +448,10 @@ module.exports = exports = function(module, funcs){
   
             if(isFolder) {
               //Create directory
-              exports.createFolderRecursive(targetPath, entry_cb);
+              HelperFS.createFolderRecursive(targetPath, entry_cb);
             } else {
               //Create parent directory
-              exports.createFolderRecursive(path.dirname(targetPath), function(err) {
+              HelperFS.createFolderRecursive(path.dirname(targetPath), function(err) {
                 if (err) return entry_cb(err);
       
                 zipFile.openReadStream(entry, function(err, readStream) {
