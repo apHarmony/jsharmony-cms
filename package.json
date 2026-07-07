@@ -1,6 +1,6 @@
 {
   "name": "jsharmony-cms",
-  "version": "1.15.3",
+  "version": "1.15.4",
   "description": "jsHarmony CMS",
   "main": "index.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "lodash": "^4.17.19",
     "node-forge": "^0.10.0",
     "parse5": "^6.0.1",
-    "ssh2-classic": "0.8.12",
+    "ssh2-classic": "0.8.14",
     "yauzl": "^2.10.0",
     "yazl": "^2.5.1"
   }
