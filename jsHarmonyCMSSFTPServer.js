@@ -24,7 +24,7 @@ var os = require('os');
 var ftppath = require('path').posix;
 var fspath = require('path');
 var ssh2 = require('ssh2-classic');
-var moment = require('moment');
+var moment = require('jsharmony/lib/moment');
 var Helper = require('jsharmony/Helper');
 var HelperFS = require('jsharmony/HelperFS');
 

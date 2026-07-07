@@ -1,7 +1,7 @@
 //(routetype, req, res, callback, require, jsh, modelid, params)
 
 var Helper = require('../Helper.js');
-var moment = require('moment');
+var moment = require('../lib/moment');
 
 if(routetype == 'model'){
   var model = jsh.getModel(req, modelid);
