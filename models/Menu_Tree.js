@@ -36,13 +36,13 @@ jsh.App[modelid] = new (function(){
       jsh.System.RequireBranch(xmodel);
     }
     this.menu_key = jsh._GET.menu_key;
-    $(window).bind('resize', _this.onresize);
+    jsh.XDom.on(window, 'resize', _this.onresize);
     _this.refreshLayout();
     xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); };
   };
 
   this.ondestroy = function(xmodel){
-    $(window).unbind('resize', _this.onresize);
+    jsh.XDom.off(window, 'resize', _this.onresize);
   };
 
   this.onload = function(){
@@ -53,15 +53,15 @@ jsh.App[modelid] = new (function(){
   this.onresize = function(){ _this.refreshLayout(); };
 
   this.refreshLayout = function(){
-    var jbrowser = $('.'+xmodel.class+'_browser');
+    var xdbrowser = jsh.XDom('.'+xmodel.class+'_browser');
 
-    if(!jbrowser.length) return;
+    if(!xdbrowser.length) return;
 
-    var wh = $(window).height();
-    var top = jbrowser.offset().top;
+    var wh = window.innerHeight;
+    var top = xdbrowser.calc.top();
     var contentheight = wh - top - 20;
 
-    $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
+    xdbrowser.style.height = contentheight+'px';
   };
 
   this.hasUpdates = function(){
@@ -71,7 +71,12 @@ jsh.App[modelid] = new (function(){
 
   this.setDirty = function(isDirty){
     _this.has_changes = isDirty;
-    jsh.$root('.xelem'+xmodel.class+'.xform_button_saveMenu').toggleClass('hasChanges', isDirty);
+    var xdSaveMenu = jsh.xd('.xelem'+xmodel.class+'.xform_button_saveMenu')
+    if (isDirty) {
+      xdSaveMenu.class.add('hasChanges');
+    } else {
+      xdSaveMenu.class.remove('hasChanges');
+    }
   };
 
   this.menu_item_id_onchange = function(obj, newval, undoChange, e) {
@@ -147,12 +152,12 @@ jsh.App[modelid] = new (function(){
   };
 
   this.getFirstMenuItemID = function(){
-    var rslt = jsh.$root('.menu_item_id.xelem'+xmodel.class).find('.tree_item').first().data('value');
+    var rslt = jsh.xd('.menu_item_id.xelem'+xmodel.class).get('.tree_item').first().data.value;
     return rslt||null;
   };
 
   this.getPrevMenuItemID = function(menu_item_id){
-    var menu_item_ids = _.map(jsh.$root('.menu_item_id.xelem'+xmodel.class).find('.tree_item'), function(obj){ return parseInt(obj.getAttribute('data-value')); });
+    var menu_item_ids = _.map(jsh.xd('.menu_item_id.xelem'+xmodel.class).get('.tree_item').elements, function(obj){ return parseInt(obj.getAttribute('data-value')); });
     for(var i=0;i<menu_item_ids.length;i++){
       if(menu_item_ids[i]==menu_item_id){
         if(i==0) return null;
@@ -246,8 +251,8 @@ jsh.App[modelid] = new (function(){
     if(_this.selected_menu_item_id){
       xmodel.set('menu_item_id', _this.selected_menu_item_id);
     }
-    jsh.$root('.'+xmodel.class+'_empty').toggle(!_this.menu_items.length);
-    jsh.$root('.xelem'+xmodel.class+'.menu_item_id').toggle(!!_this.menu_items.length);
+    jsh.xd('.'+xmodel.class+'_empty').style.display = !_this.menu_items.length;
+    jsh.xd('.xelem'+xmodel.class+'.menu_item_id').style.display = !!_this.menu_items.length;
     var max_depth_desc = '';
     if(_this.menu_config.max_depth==1){
       max_depth_desc = ' :: This menu supports only top-level items';
@@ -255,7 +260,7 @@ jsh.App[modelid] = new (function(){
     else if(_this.menu_config.max_depth>1){
       max_depth_desc = ' :: This menu supports items nested up to '+(_this.menu_config.max_depth).toString()+' levels';
     }
-    jsh.$root('.'+xmodel.class+'_max_depth_desc').text(max_depth_desc);
+    jsh.xd('.'+xmodel.class+'_max_depth_desc').text = max_depth_desc;
   };
 
   this.getMenuItem = function(menu_item_id){
@@ -279,7 +284,7 @@ jsh.App[modelid] = new (function(){
 
   this.selectMenuItem = function(menu_item_id){
     if(!menu_item_id){
-      jsh.$root('.xsubform.Menu_Tree_Info').hide();
+      jsh.xd('.xsubform.Menu_Tree_Info').style.display = false;
       _this.selected_menu_item_id = null;
       return;
     }
@@ -289,7 +294,7 @@ jsh.App[modelid] = new (function(){
         xmodel.set('menu_item_id', menu_item_id);
         return;
       }
-      jsh.$root('.xsubform.Menu_Tree_Info').show();
+      jsh.xd('.xsubform.Menu_Tree_Info').style.display = true;
       if(_this.selected_menu_item_id == menu_item_id) return;
       _this.selected_menu_item_id = menu_item_id;
     }
@@ -444,11 +449,11 @@ jsh.App[modelid] = new (function(){
     _this.renderMenu();
     _this.selectMenuItem(new_menu_item_id);
     window.setTimeout(function(){
-      jsh.$root('.menu_item_text.xelem'+_this.getModelInfo().class).focus();
+      jsh.xd('.menu_item_text.xelem'+_this.getModelInfo().class).focus();
       //Scroll menu to item
-      var jtree = jsh.$root('.menu_item_id.xelem'+xmodel.class);
-      var jselected = jtree.find('.tree_item.selected').first();
-      if(jselected.length) XExt.scrollObjIntoView(jtree, jselected);
+      var xdtree = jsh.xd('.menu_item_id.xelem'+xmodel.class);
+      var xdselected = xdtree.get('.tree_item.selected').first();
+      if(xdselected.length) XExt.scrollObjIntoView(xdtree.element, xdselected.element);
     },1);
   };
 

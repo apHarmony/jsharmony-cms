@@ -2,19 +2,19 @@ jsh.App[modelid] = new (function(){
   var _this = this;
 
   _this.onload = function(){
-    var jChangeStatus = jsh.$root('.'+xmodel.class+'_Change_Status');
+    var xdChangeStatus = jsh.xd('.'+xmodel.class+'_Change_Status');
     if((xmodel.get('source_branch_type')||'').toUpperCase()=='USER'){
-      var tmpl = jsh.$root('.'+xmodel.class+'_template_Change_Status').html();
-      jChangeStatus.html(XExt.renderClientEJS(tmpl, { _: _, jsh: jsh }));
+      var tmpl = jsh.xd('.'+xmodel.class+'_template_Change_Status').html;
+      xdChangeStatus.html = XExt.renderClientEJS(tmpl, { _: _, jsh: jsh });
     }
     else {
-      jsh.$root('.'+xmodel.class+'_change_status_group').hide();
+      jsh.xd('.'+xmodel.class+'_change_status_group').style.display = false;
     }
   };
 
   _this.Change_Status_getvalue = function(val, field, xmodel){
-    var checked_option = $("input[name='"+xmodel.class+'_Change_Status_option'+"']:checked:visible");
-    if(checked_option.length) return checked_option.val();
+    var xdchecked_option = jsh.XDom("input[name='"+xmodel.class+'_Change_Status_option'+"']").filter(function(el) {return el.checked && jsh.XDom.isVisible(el);});
+    if(xdchecked_option.length) return xdchecked_option.value;
     return 'RESET';
   };
 

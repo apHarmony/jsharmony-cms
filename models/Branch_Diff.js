@@ -7,18 +7,18 @@ jsh.App[modelid] = new (function(){
 
   //Event handler
   this.onRenderedDiff = [
-    function(jdiff){
-      jdiff.find('.new_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-      jdiff.find('.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    function(diff){
+      jsh.XDom(diff, '.new_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+      jsh.XDom(diff, '.previous_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
 
-      jdiff.find('.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-      jdiff.find('.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+      jsh.XDom(diff, '.new_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+      jsh.XDom(diff, '.previous_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
 
-      jdiff.find('.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-      jdiff.find('.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+      jsh.XDom(diff, '.new_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+      jsh.XDom(diff, '.previous_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
 
-      jdiff.find('.new_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
-      jdiff.find('.previous_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+      jsh.XDom(diff, '.new_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+      jsh.XDom(diff, '.previous_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
     }
   ];
 
@@ -26,9 +26,9 @@ jsh.App[modelid] = new (function(){
     var branch_merge_desc = xmodel.get('branch_merge_desc');
     if (typeof branch_merge_desc === 'string' && branch_merge_desc != '') {
       // the element is briefly visible, so you see a flash of yellow if style is staticly set
-      $('.branch_merge_desc').css('background-color', 'yellow');
+      jsh.xd('.branch_merge_desc').style['background-color'] = 'yellow';
     } else {
-      jsh.$root('.branch_merge_desc').hide();
+      jsh.xd('.branch_merge_desc').style.display = false;
     }
     jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), xmodel.get('site_id'), xmodel.get('sys_user_site_editor'), { containerClass: 'diff_editor_selection_container' });
     //Load API Data
@@ -60,17 +60,17 @@ jsh.App[modelid] = new (function(){
   };
 
   this.render = function(){
-    var jdiff = jsh.$('.diff_display');
+    var xddiff = jsh.XDom('.diff_display');
 
     var map = function(key, dict){
       if(_this.field_mapping[dict] && (key in _this.field_mapping[dict])) return _this.field_mapping[dict][key];
       return key;
     };
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_diff_listing').html();
+    var tmpl = jsh.xd('.'+xmodel.class+'_template_diff_listing').html;
     var item_tmpl = {};
     for(var item_type in _this.branch_diff){
-      item_tmpl[item_type] = jsh.$root('.'+xmodel.class+'_template_diff_' + item_type).html();
+      item_tmpl[item_type] = jsh.xd('.'+xmodel.class+'_template_diff_' + item_type).html;
     }
     var renderParams = {
       _: _,
@@ -86,18 +86,18 @@ jsh.App[modelid] = new (function(){
       return XExt.renderClientEJS(item_tmpl[item_type], _.extend(item_params, renderParams));
     };
 
-    jdiff.html(XExt.renderClientEJS(tmpl, renderParams));
+    xddiff.html = XExt.renderClientEJS(tmpl, renderParams);
 
-    XExt.trigger(_this.onRenderedDiff, jdiff);
+    XExt.trigger(_this.onRenderedDiff, xddiff.element);
   };
 
   this.previewPage = function(obj){
-    var jobj = $(obj);
-    var page_template_id = jobj.data('page_template_id');
-    var page_template_path = jobj.data('page_template_path');
-    var page_key = jobj.data('page_key');
-    var page_filename = jobj.data('page_filename');
-    var page_id = jobj.data('page_id');
+    var xdobj = jsh.XDom(obj);
+    var page_template_id = xdobj.data['page_template_id'];
+    var page_template_path = xdobj.data['page_template_path'];
+    var page_key = xdobj.data['page_key'];
+    var page_filename = xdobj.data['page_filename'];
+    var page_id = xdobj.data['page_id'];
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
@@ -105,26 +105,26 @@ jsh.App[modelid] = new (function(){
   };
 
   this.previewMedia = function(obj){
-    var jobj = $(obj);
-    var media_key = jobj.data('media_key');
-    var media_id = jobj.data('media_id');
-    var media_ext = jobj.data('media_ext');
-    var media_width = jobj.data('media_width');
-    var media_height = jobj.data('media_height');
+    var xdobj = jsh.XDom(obj);
+    var media_key = xdobj.data['media_key'];
+    var media_id = xdobj.data['media_id'];
+    var media_ext = xdobj.data['media_ext'];
+    var media_width = xdobj.data['media_width'];
+    var media_height = xdobj.data['media_height'];
     jsh.System.PreviewMedia(media_key, undefined, media_id, media_ext, media_width, media_height);
   };
 
   this.previewMenu = function(obj){
-    var jobj = $(obj);
-    var menu_key = jobj.data('menu_key');
-    var menu_id = jobj.data('menu_id');
+    var xdobj = jsh.XDom(obj);
+    var menu_key = xdobj.data['menu_key'];
+    var menu_id = xdobj.data['menu_id'];
     XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id, branch_id: xmodel.get('branch_id') });
   };
 
   this.previewSitemap = function(obj){
-    var jobj = $(obj);
-    var sitemap_key = jobj.data('sitemap_key');
-    var sitemap_id = jobj.data('sitemap_id');
+    var xdobj = jsh.XDom(obj);
+    var sitemap_key = xdobj.data['sitemap_key'];
+    var sitemap_id = xdobj.data['sitemap_id'];
     XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id, branch_id: xmodel.get('branch_id') });
   };
 

@@ -33,7 +33,7 @@
       {"control":"html","value":[
         "<div class='jsHarmonyCms_info_tip'>",
         "Clone a Release to create your own Revision and start making changes.<br/>",
-        "<a href='#' onclick='<#-js(\"XExt.CustomPrompt('.'+xmodel.class+'_Revision_Process',jsh.$root('.'+xmodel.class+'_Revision_Process')[0].outerHTML)\")#>'>Learn about the Revision process</a>",
+        "<a href='#' onclick='<#-js(\"XExt.CustomPrompt('.'+xmodel.class+'_Revision_Process',jsh.xd('.'+xmodel.class+'_Revision_Process').outerHTML)\")#>'>Learn about the Revision process</a>",
         "</div>",
       ]},
       {"control":"subform","target":"Branch_Review_Listing","bindings":{},"controlclass":"no-border","roles":{"PUBLISHER":"*"}},

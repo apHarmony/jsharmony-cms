@@ -8,12 +8,12 @@ jsh.App[modelid] = new (function(){
 
   this.oninit = function(xmodel){
     if(!jsh.globalparams.site_id){
-      $('.xform'+xmodel.class).closest('.xsubform').hide();
+      jsh.XDom('.xform'+xmodel.class).parent('.xsubform').style.display = false;
       return;
     }
     //Bind event handlers
-    $(document).bind('mousemove', _this.onmousemove);
-    $(document).bind('mouseup', _this.onmouseup);
+    jsh.XDom.on(document, 'mousemove', _this.onmousemove);
+    jsh.XDom.on(document, 'mouseup', _this.onmouseup);
     //Load API Data
     this.loadData();
   };
@@ -72,20 +72,20 @@ jsh.App[modelid] = new (function(){
     g.selectAll('path').append('title').text(getTooltip);
 
     //Key
-    var jkey = $('.chart_'+xmodel.class+' .key');
-    jkey.empty();
+    var xdkey = jsh.XDom('.chart_'+xmodel.class+' .key');
+    xdkey.clear();
     var sorted_items = _this.code_cnt.slice().sort(function(a,b){
       if(a.cnt > b.cnt) return -1;
       if(a.cnt < b.cnt) return 1;
     });
     _.each(sorted_items, function(data){
       if(!data.cnt) return;
-      var jitem = $('<div class="item"></div>');
-      jitem.text(data.code_txt + ' (' + data.cnt + ')');
-      var jitembox = $('<div class="box"></div>');
-      jitembox.css('background-color',color(getDesc(data)));
-      jitem.prepend(jitembox);
-      jkey.append(jitem);
+      var item = jsh.XDom.render('<div class="item"></div>');
+      jsh.XDom.setHtml(item, data.code_txt + ' (' + data.cnt + ')');
+      var itembox = jsh.XDom.render('<div class="box"></div>');
+      jsh.XDom.setStyle(itembox, 'background-color',color(getDesc(data)));
+      item.prepend(itembox);
+      xdkey.append(item);
     });
 
     //Mouse Over Effects

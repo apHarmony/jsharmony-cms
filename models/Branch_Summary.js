@@ -3,25 +3,25 @@ jsh.App[modelid] = new (function(){
 
   this.oninit = function(xmodel){
     if (xmodel.get('branch_sts') != 'ACTIVE') {
-      jsh.$root('.Branch_Summary_buttonPublish').hide();
-      jsh.$root('.Branch_Summary_buttonArchive').hide();
+      jsh.xd('.Branch_Summary_buttonPublish').style.display = false;
+      jsh.xd('.Branch_Summary_buttonArchive').style.display = false;
     }
     if(xmodel.get('branch_access')!='RW'){
-      jsh.$root('.Branch_Summary_buttonRename').hide();
-      jsh.$root('.Branch_Summary_buttonDelete').hide();
+      jsh.xd('.Branch_Summary_buttonRename').style.display = false;
+      jsh.xd('.Branch_Summary_buttonDelete').style.display = false;
     }
     if (xmodel.get('branch_is_checked_out') == 1) {
-      jsh.$root('.Branch_Summary_buttonMerge').hide();
-      jsh.$root('.Branch_Summary_buttonCheckout').hide();
+      jsh.xd('.Branch_Summary_buttonMerge').style.display = false;
+      jsh.xd('.Branch_Summary_buttonCheckout').style.display = false;
     }
     if (!xmodel.get('branch_merge_id')) {
-      jsh.$root('.Branch_Summary_buttonConflicts').hide();
+      jsh.xd('.Branch_Summary_buttonConflicts').style.display = false;
     }
-    var diffModel = jsh.XModels[jsh.$root('.xform'+xmodel.class+' .xsubform_diff .xpanel .xform').first().data('id')];
-    var actionsBar = jsh.$root('.'+diffModel.class+'_actions_bar');
-    jsh.$root('.xform'+diffModel.class+' .actions_bar_caption').show();
-    var buttonGroup = jsh.$root('.xactions_group.xelem'+xmodel.class+'[data-group="Actions"]');
-    actionsBar.html(buttonGroup.html());
+    var diffModel = jsh.XModels[jsh.xd('.xform'+xmodel.class+' .xsubform_diff .xpanel .xform').first().data.id];
+    var xdActionsBar = jsh.xd('.'+diffModel.class+'_actions_bar');
+    jsh.xd('.xform'+diffModel.class+' .actions_bar_caption').style.display = true;
+    var xdButtonGroup = jsh.xd('.xactions_group.xelem'+xmodel.class+'[data-group="Actions"]');
+    xdActionsBar.html = xdButtonGroup.html;
   };
 
   this.renameBranch = function(branch_id){
@@ -44,13 +44,13 @@ jsh.App[modelid] = new (function(){
 
     if(!xmodel.get('dst_branch_id')) return XExt.Alert('Please clone or checkout the destination revision');
 
-    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      jsh.$dialogBlock(sel + ' .src_branch_desc').html(xform.Data.src_branch_desc);
-      jsh.$dialogBlock(sel + ' .dst_branch_desc').html(xform.Data.dst_branch_desc);
+    XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+      jsh.xdDialogBlock.get(sel + ' .src_branch_desc').html = xform.Data.src_branch_desc;
+      jsh.xdDialogBlock.get(sel + ' .dst_branch_desc').html = xform.Data.dst_branch_desc;
     }, function (success) { //onAccept
       var mergeType = 'changes';
-      var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
-      if(checked_option.length) mergeType = checked_option.val().toLowerCase();
+      var xdchecked_option = jsh.xd("input[name='"+xmodel.class+'_Merge_Type_option'+"']").filter(function(el) {return el.checked && jsh.XDom.isVisible(el);});;
+      if(xdchecked_option.length) mergeType = xdchecked_option.value.toLowerCase();
 
 
 

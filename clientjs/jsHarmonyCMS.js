@@ -65,7 +65,7 @@ var jsHarmonyCMS = function(options){
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
   this.onRender = null;                  //function(page)
   this.onRendered = null;                //function(page)
-  this.onTemplateLoaded = function(f){ $(document).ready(f); };
+  this.onTemplateLoaded = function(f){ jsh.XDom.onPageLoad(f); };
   this.onBeforeTemplateInit = function(f){ return f(); };
   this.onBeforeInit = function(f){ return f(); };
 
@@ -78,7 +78,6 @@ var jsHarmonyCMS = function(options){
   var util = _this.util;
   var jsh = null;
   var XExt = null;
-  var $ = null;
   var async = null;
   var loadErrors = [];
 
@@ -105,7 +104,6 @@ var jsHarmonyCMS = function(options){
           jshInit = true;
         }
       });
-      $ = jsh.$;
       XExt = jsh.XExt;
       async = jsh.async;
 
@@ -121,7 +119,7 @@ var jsHarmonyCMS = function(options){
       async.waterfall([
         function(init_cb){
           XExt.waitUntil(
-            function(){ return !($('.jshCmsInitializing').length); },
+            function(){ return !(jsh.XDom('.jshCmsInitializing').length); },
             init_cb
           );
         },
@@ -181,7 +179,7 @@ var jsHarmonyCMS = function(options){
       return XExt.Alert((typeof loadErrors[0] == 'string') ? loadErrors[0] : JSON.stringify(loadErrors[0]));
     }
     if(_this.onLoad) _this.onLoad(jsh);
-    $('[cms-content-editor]').prop('contenteditable','true');
+    jsh.XDom('[cms-content-editor]').attr.contenteditable = true;
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
       async.parallel([
@@ -216,9 +214,9 @@ var jsHarmonyCMS = function(options){
   };
 
   this.refreshLayout = function(){
-    var wh = $(window).height();
+    var wh = window.innerHeight;
     var barh = _this.toolbar.getHeight();
-    $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').css('max-height', (wh-barh)+'px');
+    jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').style.maxHeight = (wh-barh)+'px';
   };
 
   this.onmessage = function(event){
@@ -235,8 +233,9 @@ var jsHarmonyCMS = function(options){
   };
 
   this.createCoreEditor = function() {
-    var el = $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
-    return new jsHarmonyCMSEditor(jsh, _this, el[0]);
+    var el = jsh.XDom.render('<div id="jsharmony_cms_content_editor_toolbar"></div>');
+    jsh.XDom.prepend('body', el);
+    return new jsHarmonyCMSEditor(jsh, _this, el);
   };
 
   this.createJsHarmonyCMSEditor = function(toolbarElement) {

@@ -90,7 +90,7 @@
     if (jsh.XPage.GetChanges().length > 0) return XExt.Alert('Please save pending changes before continuing.');
 
     var url = jsh._BASEURL+'_funcs/branch/download/'+branch_id+'?source=js';
-    jsh.getFileProxy().prop('src', url);
+    jsh.getFileProxy().src = url;
   };
 
   jsh.System.CheckoutBranch = function(xmodel, branch_id, branch_type) {

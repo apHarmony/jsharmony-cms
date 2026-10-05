@@ -107,9 +107,9 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var selItemPreview = (modelConfig.templates || {}).itemPreview;
   if(selItemPreview){
     //If itemPreview is set, extract the template from the model.ejs file
-    var itemPreview = this._jsh.$(templateHtml).find(selItemPreview);
-    if (itemPreview.length > 1) throw new Error('Item template must contain a single root element. Found ' + itemPreview.length + ' elements');
-    itemTemplate = itemPreview ? itemPreview.html() : undefined;
+    var xdItemPreview = this._jsh.XDom(templateHtml, selItemPreview);
+    if (xdItemPreview.length > 1) throw new Error('Item template must contain a single root element. Found ' + xdItemPreview.length + ' elements');
+    itemTemplate = xdItemPreview ? xdItemPreview.html : undefined;
   }
   else {
     //If templates are not used, return the entire model.ejs as the template

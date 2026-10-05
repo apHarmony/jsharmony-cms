@@ -1,7 +1,7 @@
 jsh.App[modelid] = new (function(){
   var _this = this;
 
-  _this.template_page_template_selection = $('.xctrl_page_template_selection_template').html();
+  _this.template_page_template_selection = jsh.XDom('.xctrl_page_template_selection_template').html;
 
   this.oninit = function(xmodel){
     jsh.System.RequireBranch(xmodel);
@@ -15,7 +15,9 @@ jsh.App[modelid] = new (function(){
     xmodel.controller.grid.NoDataMessage = xmodel.controller.grid.NoResultsMessage;
 
     if(XExt.hasAction(xmodel.actions, 'IU')){
-      jsh.$root('.xtbl.xform'+xmodel.class).closest('.xsubform').off('contextmenu').on('contextmenu',function(e){
+      var xdsubform = jsh.xd('.xtbl.xform'+xmodel.class).parent('.xsubform');
+      xdsubform.off('contextmenu');
+      xdsubform.on('contextmenu',function(e){
         e.preventDefault();
         e.stopPropagation();
         XExt.ShowContextMenu('.'+xmodel.class+'_file_container_context_menu', xmodel.get('page_folder'));
@@ -23,20 +25,24 @@ jsh.App[modelid] = new (function(){
     }
   };
 
-  this.onrowbind = function(xmodel,jobj,datarow){
+  this.onrowbind = function(xmodel,obj,datarow){
     if(XExt.hasAction(xmodel.actions, 'IU')){
       var page_key = parseInt(datarow.page_key||0);
-      jobj.find('.page_filename').contextmenu(function (e) {
+      jsh.XDom(obj).get('.page_filename').on('contextmenu', function (e) {
         e.preventDefault();
         e.stopPropagation();
         XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key);
       });
-      XExt.bindDragSource(jobj.find('.page_filename a'));
+      XExt.bindDragSource(jsh.XDom(obj).get('.page_filename a').element);
     }
   };
 
   this.page_template_selection_render = function(obj, data, enabled){
-    $(obj).toggleClass('standalone', (data.page_template_id=='<Standalone>'));
+    if (data.page_template_id=='<Standalone>') {
+      jsh.XDom.class.add(obj, 'standalone');
+    } else {
+      jsh.XDom.class.remove(obj, 'standalone');
+    }
     return XExt.renderEJS(_this.template_page_template_selection, xmodel.id, {
       data: data,
       obj: obj,
@@ -45,7 +51,7 @@ jsh.App[modelid] = new (function(){
   };
 
   this.page_template_selection_id_onChange = function(obj){
-    var page_template_id = $(obj).val();
+    var page_template_id = jsh.XDom.getValue(obj);
     var rowid = XExt.XModel.GetRowID(modelid, obj);
     var page_template_path = xmodel.get('page_template_path', rowid) || null;
     var isExistingPage = (page_template_id=='<Standalone>');
@@ -57,15 +63,19 @@ jsh.App[modelid] = new (function(){
             return f();
           },
           function(){ //Cancel
-            $(obj).val(xmodel.get('page_template_id', rowid));
+            jsh.XDom.setValue(obj, xmodel.get('page_template_id', rowid));
           }
         );
       },
       function(){
-        $(obj).closest('.page_template').toggleClass('standalone', isExistingPage);
+        if (isExistingPage) {
+          jsh.XDom(obj).parent('.page_template').class.add('standalone');
+        } else {
+          jsh.XDom(obj).parent('.page_template').class.remove('standalone');
+        }
         xmodel.set('page_template_path', isExistingPage?page_template_path:null, rowid);
         xmodel.set('page_template_id', page_template_id, rowid);
-        jsh.$root('.xrow_'+xmodel.class+'[data-id='+rowid+'] .page_template_selection_id').addClass('updated');
+        jsh.xd('.xrow_'+xmodel.class+'[data-id='+rowid+'] .page_template_selection_id').class.add('updated');
       }
     );
   };
@@ -76,7 +86,7 @@ jsh.App[modelid] = new (function(){
     if(!onAccept) onAccept = function(page_template_path){
       if(page_template_path == prev_page_template_path) return;
       xmodel.set('page_template_path', page_template_path, rowid);
-      jsh.$root('.xrow_'+xmodel.class+'[data-id='+rowid+'] .page_template_selection_id').addClass('updated');
+      jsh.xd('.xrow_'+xmodel.class+'[data-id='+rowid+'] .page_template_selection_id').class.add('updated');
     };
     if(!onCancel) onCancel = function(){};
 
@@ -95,16 +105,15 @@ jsh.App[modelid] = new (function(){
   this.viewFileActions = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing page');
 
-    var jobj = $(obj);
-    var rowid = jobj.closest('tr').data('id');
-    var page_key = xmodel.get('page_key', rowid);
+    var xdobj = jsh.XDom(obj);
+    var rowid = parseInt(xdobj.parent('tr').data.id);
+    var page_key = parseInt(xmodel.get('page_key', rowid));
     
     if(!page_key) return XExt.Alert('Please save changes');
 
-    var jpos = jobj.offset();
     event.preventDefault();
     event.stopImmediatePropagation();
-    XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key, undefined, { top: jpos.top + jobj.find('img').outerHeight() + 6, left: jpos.left - 1 });
+    XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', page_key, undefined, { top: xdobj.calc.top() + xdobj.get('img').calc.heightToBorder() + 6, left: xdobj.calc.left() - 1 });
   };
 
   this.editFile = function(obj){ //obj || page_key
@@ -122,7 +131,7 @@ jsh.App[modelid] = new (function(){
         if(rowid < 0) return XExt.Alert('Page key not found in grid');
       }
     }
-    else rowid = $(obj).closest('tr').data('id');
+    else rowid = parseInt(jsh.XDom(obj).parent('tr').data.id);
 
     page_key = xmodel.get('page_key', rowid);
     if(!page_key) return XExt.Alert('Please save page before editing');
@@ -164,44 +173,47 @@ jsh.App[modelid] = new (function(){
     var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_AddFile';
 
-    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$dialogBlock(sel);
+    XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
-      XExt.RenderLOV(xform.Data, jsh.$dialogBlock(sel + ' .page_template_id'), xform.LOVs.page_template_id);
+      XExt.RenderLOV(xform.Data, jsh.xdDialogBlock.get(sel + ' .page_template_id').element, xform.LOVs.page_template_id);
 
       //Clear Values / Set Defaults
-      jprompt.find('.page_filename').val('');
-      jprompt.find('.page_title').val('');
-      jprompt.find('.page_template_id').val(jsh.XPage.getBreadcrumbs().site_default_page_template_id);
-      jprompt.find('.page_template_path').val('');
-      jprompt.find('.site_default_page_filename').text(jsh.XPage.getBreadcrumbs().site_default_page_filename);
+      xdprompt.get('.page_filename').value = '';
+      xdprompt.get('.page_title').value = '';
+      xdprompt.get('.page_template_id').value = jsh.XPage.getBreadcrumbs().site_default_page_template_id;
+      xdprompt.get('.page_template_path').value = '';
+      xdprompt.get('.site_default_page_filename').text = jsh.XPage.getBreadcrumbs().site_default_page_filename;
 
-      var jfilename = jprompt.find('.page_filename');
-      jprompt.find('.page_filename_default_document').off('click').on('click', function(){
-        if($(this).is(':checked')){
-          jfilename.prop('readonly', true);
-          jfilename.val(jsh.App[xmodel.parent].getDefaultPage());
-          jfilename.addClass('uneditable');
+      var xdfilename = xdprompt.get('.page_filename');
+      var xddocument = xdprompt.get('.page_filename_default_document');
+      xddocument.off('click');
+      xddocument.on('click', function(){
+        if(this.checked){
+          xdfilename.attr.readonly = true;
+          xdfilename.value = jsh.App[xmodel.parent].getDefaultPage();
+          xdfilename.class.add('uneditable');
         }
         else{
-          jfilename.prop('readonly', false);
-          jfilename.val('');
-          jfilename.removeClass('uneditable');
+          xdfilename.attr.readonly = false;
+          xdfilename.value = '';
+          xdfilename.class.remove('uneditable');
         }
       });
 
-      var jTemplateId = jprompt.find('.page_template_id');
-      var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); };
-      jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
+      var xdTemplateId = xdprompt.get('.page_template_id');
+      var toggleTemplatePath = function(){ xdprompt.get('.page_template_path_container').style.display = (xdTemplateId.value=='<Standalone>'); jsh.XWindowResize(); };
+      xdTemplateId.off('.template_path');
+      xdTemplateId.on('change.template_path', function(e){ toggleTemplatePath(); });
       toggleTemplatePath();
     }, function (success) { //onAccept
-      var jprompt = jsh.$dialogBlock(sel);
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
       //Validate File Selected
-      var page_filename = jprompt.find('.page_filename').val();
-      var page_title = jprompt.find('.page_title').val();
-      var page_template_id = jprompt.find('.page_template_id').val();
-      var page_template_path = jprompt.find('.page_template_path').val();
+      var page_filename = xdprompt.get('.page_filename').value;
+      var page_title = xdprompt.get('.page_title').value;
+      var page_template_id = xdprompt.get('.page_template_id').value;
+      var page_template_path = xdprompt.get('.page_template_path').value;
 
       if (!page_filename) return XExt.Alert('Please enter a file name');
       if (page_filename.indexOf('/') >= 0) return XExt.Alert('File name cannot contain "/" character');
@@ -237,7 +249,7 @@ jsh.App[modelid] = new (function(){
   };
 
   this.sendToEditor = function(obj){
-    var rowid = $(obj).closest('tr').data('id');
+    var rowid = parseInt(jsh.XDom(obj).parent('tr').data.id);
     var page_key = xmodel.get('page_key', rowid);
     var page_title = xmodel.get('page_title', rowid);
     var page_path = xmodel.get('page_path', rowid);
@@ -301,7 +313,7 @@ jsh.App[modelid] = new (function(){
 
     jsh.App[xmodel.parent].revision_page_key = page_key;
     jsh.App[xmodel.parent].revision_page_id = page.page_id;
-    jsh.XExt.popupShow(xmodel.namespace + 'Page_Revision_Listing','revision_page','Revisions',undefined,jsh.$root('.xform'+jsh.XModels[xmodel.parent].class+' .revision_page_xlookup')[0],{
+    jsh.XExt.popupShow(xmodel.namespace + 'Page_Revision_Listing','revision_page','Revisions',undefined,jsh.xd('.xform'+jsh.XModels[xmodel.parent].class+' .revision_page_xlookup').element,{
       OnControlUpdate:function(obj, rslt){
         if(rslt && rslt.result){
           var page_id = rslt.result;

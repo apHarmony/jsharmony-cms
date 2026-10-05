@@ -19,18 +19,18 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 exports = module.exports = function(cms){
   
-  this.setHTML = function(jobj, html){
+  this.setHTML = function(obj, html){
     try{
-      jobj.html(html);
+      cms.jsh.XDom.setHtml(obj, html)
     }
     catch(ex){
       console.log(ex); // eslint-disable-line no-console
     }
   };
 
-  this.appendHTML = function(jobj, html){
+  this.appendHTML = function(obj, html){
     try{
-      jobj.append(html);
+      cms.jsh.XDom.append(obj, html);
     }
     catch(ex){
       console.log(ex); // eslint-disable-line no-console
@@ -44,21 +44,20 @@ exports = module.exports = function(cms){
     }
   };
 
-  this.disableControl = function(jctrl){
-    jctrl.removeClass('editable');
-    jctrl.addClass('uneditable');
+  this.disableControl = function(ctrl){
+    cms.jsh.XDom.class.remove(ctrl, 'editable');
+    cms.jsh.XDom.class.add(ctrl, 'uneditable');
 
-    jctrl.each(function(){
-      var obj = this;
-      var jobj = cms.jsh.$(this);
-      if (jobj.hasClass('dropdown') || ((obj.nodeName||'').toUpperCase() =='SELECT')) jobj.prop('disabled', true);
-      else if (jobj.hasClass('checkbox') || ((obj.type||'').toUpperCase()=='CHECKBOX')) jobj.prop('disabled', true);
-      else if (jobj.hasClass('radio') || ((obj.type||'').toUpperCase()=='RADIO')) jobj.prop('disabled', true);
-      else if(jobj.hasClass('xtagbox_base')){
-        jobj.prev().addClass('uneditable');
-        jobj.prev().find('input').prop('disabled', true);
+    cms.jsh.XDom(ctrl).elements.forEach(function(obj){
+      var xdobj = cms.jsh.XDom(obj);
+      if (xdobj.class.contains('dropdown') || ((obj.nodeName||'').toUpperCase() =='SELECT')) xdobj.attr.disabled = true;
+      else if (xdobj.class.contains('checkbox') || ((obj.type||'').toUpperCase()=='CHECKBOX')) xdobj.attr.disabled = true;
+      else if (xdobj.class.contains('radio') || ((obj.type||'').toUpperCase()=='RADIO')) xdobj.attr.disabled = true;
+      else if(xdobj.class.contains('xtagbox_base')){
+        xdobj.previousSibling().class.add('uneditable');
+        xdobj.previousSibling().get('input').attr.disabled = true;
       }
-      else jobj.prop('readonly', true);
+      else xdobj.attr.readonly = true;
     });
   };
 

@@ -25,7 +25,7 @@
       {"name":"media_width","caption":"Width","control":"label"},
       {"name":"media_height","caption":"Height","control":"label"},
       {"name":"media_mtstmp","caption":"Modified","control":"label","actions":"B","format":["date","MM/DD/YYYY h:mm a"],"cellstyle":"white-space:nowrap;"},
-      {"control":"html","cellstyle":"text-align:center;","value":"<a class='xgrid_action' href='#' onclick='<%=jsh._instance%>.getFileProxy().prop(\"src\",\"<%=jsh._BASEURL%>_funcs/media/<#=data.media_key#>/?download&media_file_id=<#=data.media_file_id#>\");'><img height='14' src='/images/icon_download.png' /></a>"},
+      {"control":"html","cellstyle":"text-align:center;","value":"<a class='xgrid_action' href='#' onclick='<%=jsh._instance%>.getFileProxy().src = \"<%=jsh._BASEURL%>_funcs/media/<#=data.media_key#>/?download&media_file_id=<#=data.media_file_id#>\";'><img height='14' src='/images/icon_download.png' /></a>"},
     ]
   }
 }

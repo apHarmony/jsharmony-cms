@@ -22,7 +22,6 @@ var JsHarmonyCMSComponent = require('./jsHarmonyCMS.Component');
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var _ = jsh._;
-  var $ = jsh.$;
   var XExt = jsh.XExt;
   var async = jsh.async;
   var ejs = jsh.ejs;
@@ -80,11 +79,10 @@ exports = module.exports = function(jsh, cms){
     var url = (componentTemplate.remote_templates || {}).editor;
     if (!url) return complete_cb();
 
-    $.ajax({
-      type: 'GET',
+    jsh.XExt.Request(jsh.XExt.AppendUrlParamsCacheBust(url), {
+      method: 'GET',
       cache: false,
-      url: url,
-      xhrFields: { withCredentials: true },
+      credentials: 'include',
       success: function(data){
         componentTemplate.templates = componentTemplate.templates || {};
         var template = (componentTemplate.templates.editor || '');
@@ -102,7 +100,7 @@ exports = module.exports = function(jsh, cms){
     var url = '../_funcs/templates/compile_components';
     var qs = { };
     if(cms.token) qs.jshcms_token = cms.token;
-    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+    if(!_.isEmpty(qs)) url += '?' + jsh.XExt.escapeQuery(qs);
     XExt.CallAppFunc(url, 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var components = rslt.components;
@@ -122,22 +120,22 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.renderPageComponents = function(){
-    $('.jsharmony_cms_component,[cms-component]').not('.initialized').each(function(){
-      var jobj = $(this);
-      if(jobj.closest('[cms-content-editor]').length) return; //Do not render page components in content editor
-      if(jobj.closest('[data-jsharmony_cms_properties_toggle_hidden=1]').length) return; //Do not render page components if hidden by cms-onRender function
-      var component_id = jobj.attr('cms-component');
+    jsh.XDom('.jsharmony_cms_component,[cms-component]').omit(function(el) {return el.matches('.initialized');}).items.forEach(function(xdobj){
+      if(xdobj.parent('[cms-content-editor]').length) return; //Do not render page components in content editor
+      if(xdobj.parent('[data-jsharmony_cms_properties_toggle_hidden="1"]').length) return; //Do not render page components if hidden by cms-onRender function
+      var component_id = xdobj.attr['cms-component'];
       if(!component_id){
-        component_id = jobj.data('id');
-        jobj.attr('cms-component', component_id);
+        component_id = xdobj.data.id;
+        xdobj.attr['cms-component'] = component_id;
       }
 
-      var removeContainer = (typeof jobj.attr('cms-component-remove-container') != 'undefined');
-      var virtualComponent = (typeof jobj.attr('cms-component-virtual') != 'undefined');
-      var isContentComponent = !component_id && jobj.closest('[data-component]').length > 0;
+      var removeContainer = (typeof xdobj.attr['cms-component-remove-container'] != 'undefined');
+      var virtualComponent = (typeof xdobj.attr['cms-component-virtual'] != 'undefined');
+      var isContentComponent = !component_id && xdobj.parent('[data-component]').length > 0;
       if (isContentComponent) return;
 
-      jobj.addClass('initialized mceNonEditable');
+      xdobj.class.add('initialized');
+      xdobj.class.add('mceNonEditable');
       var component_content = '';
       if(!component_id) component_content = _this.formatComponentError('*** COMPONENT MISSING data-id ATTRIBUTE ***');
       else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
@@ -151,12 +149,12 @@ exports = module.exports = function(jsh, cms){
             onBeforeRender: undefined,
             onRender: undefined,
             notifyUpdate: function(element, props){
-              if(!element) element = jobj[0];
+              if(!element) element = xdobj.element;
               if(!props) props = {};
               props.element = element;
               props.componentId = component_id;
               props.contentAreaName = null;
-              if(!props.content) props.content = element.html();
+              if(!props.content) props.content = element.innerHTML;
               jsh.XExt.trigger(_this.onNotifyUpdate, props);
             },
           };
@@ -181,7 +179,7 @@ exports = module.exports = function(jsh, cms){
         var hasError = false;
         for(var propName in props){
           var prop = props[propName];
-          var propVal = jobj.attr(propName);
+          var propVal = xdobj.attr[propName];
           if(typeof propVal != 'undefined'){
             if(prop.type=='json'){
               if(propVal === '') propVal = '{}';
@@ -211,18 +209,18 @@ exports = module.exports = function(jsh, cms){
       if(!virtualComponent){
         if(removeContainer){
           var containerlessComponentId = ++_this.cntContainerlessComponents;
-          _this.containerlessComponents[containerlessComponentId] = jobj[0];
-          jobj[0].insertAdjacentHTML('beforebegin', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-start"></script>');
-          jobj[0].insertAdjacentHTML('afterend', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-end"></script>');
-          jobj.replaceWith(component_content);
+          _this.containerlessComponents[containerlessComponentId] = xdobj.element;
+          xdobj.element.insertAdjacentHTML('beforebegin', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-start"></script>');
+          xdobj.element.insertAdjacentHTML('afterend', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-end"></script>');
+          xdobj.element.replaceWith(component_content);
         }
         else {
-          jobj.html(component_content);
+          xdobj.setHtml(component_content);
         }
       }
       try{
-        if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
-        if(component && component.notifyUpdate) component.notifyUpdate(jobj[0], { content: component_content });
+        if(component.onRender) component.onRender(xdobj.element, renderConfig, null, cms, component);
+        if(component && component.notifyUpdate) component.notifyUpdate(xdobj.element, { content: component_content });
       }
       catch(ex){
         cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
@@ -239,29 +237,33 @@ exports = module.exports = function(jsh, cms){
 
   this.restoreContainerlessComponent = function(containerlessComponentId){
     if(!(containerlessComponentId in _this.containerlessComponents)) throw new Error('Containerless component not found');
-    var startNode = $('#jshcms-component-containerless-'+containerlessComponentId.toString()+'-start');
-    if(!startNode.length) throw new Error('Containerless start node not found');
+    var xdStartNode = jsh.XDom('#jshcms-component-containerless-'+containerlessComponentId.toString()+'-start');
+    if(!xdStartNode.length) throw new Error('Containerless start node not found');
     var foundEnd = false;
-    var childNodes = [startNode[0]];
-    var curNode = startNode;
-    while(!foundEnd && (curNode = curNode.next())){
-      if(!curNode.length) break;
-      childNodes.push(curNode[0]);
-      if(curNode[0].id=='jshcms-component-containerless-'+containerlessComponentId.toString()+'-end'){
+    var childNodes = [xdStartNode.element];
+    var xdCurNode = xdStartNode;
+    while(!foundEnd && (xdCurNode = xdCurNode.nextSibling())){
+      if(!xdCurNode.length) break;
+      childNodes.push(xdCurNode.element);
+      if(xdCurNode.element.id=='jshcms-component-containerless-'+containerlessComponentId.toString()+'-end'){
         foundEnd = true;
       }
     }
     if(!foundEnd) throw new Error('Containerless end node not found');
     childNodes[0].replaceWith(_this.containerlessComponents[containerlessComponentId]);
     for(var i=1;i<childNodes.length;i++){
-      $(childNodes[i]).remove();
+      childNodes[i].remove();
     }
     _this.resetPageComponent(_this.containerlessComponents[containerlessComponentId]);
     delete _this.containerlessComponents[containerlessComponentId];
   };
 
   this.resetPageComponent = function(obj){
-    if($(obj).hasClass('initialized')) $(obj).removeClass('initialized mceNonEditable').empty();
+    if(jsh.XDom.class.contains(obj, 'initialized')) {
+      jsh.XDom.class.remove(obj, 'initialized');
+      jsh.XDom.class.remove(obj, 'mceNonEditable')
+      jsh.XDom.clear(obj);
+    }
   };
 
   this.getDefaultValues = function(model){
@@ -289,10 +291,12 @@ exports = module.exports = function(jsh, cms){
     //Preview template
     var hasComponentSubTemplate = false;
     if(componentRawEjs.indexOf('componentTemplate')>=0){
-      var $componentTemplateWrapper = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentTemplate');
-      hasComponentSubTemplate = !!$componentTemplateWrapper.length;
+      var wrapperContainer = document.implementation.createHTMLDocument('virtual').createElement('template');
+      wrapperContainer.innerHTML = '<div>'+componentRawEjs+'</div>';
+      var xdComponentTemplateWrapper = jsh.XDom(wrapperContainer).get('.componentTemplate');
+      hasComponentSubTemplate = !!xdComponentTemplateWrapper.length;
       if (hasComponentSubTemplate){
-        componentTemplate.templates.editor = $componentTemplateWrapper.html();
+        componentTemplate.templates.editor = xdComponentTemplateWrapper.html;
       }
     }
 
@@ -302,15 +306,17 @@ exports = module.exports = function(jsh, cms){
       //Data model EJS
       if(!componentTemplate.data.ejs) componentTemplate.data.ejs = '';
       
-      var $componentPreviewTemplate = null;
+      var xdComponentPreviewTemplate = null;
       if(componentRawEjs.indexOf('componentPreviewTemplate')>=0){
-        $componentPreviewTemplate = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentPreviewTemplate');
-        if ($componentPreviewTemplate.length){
-          componentTemplate.data.ejs += '\n' + $componentPreviewTemplate.html();
+        var previewContainer = document.implementation.createHTMLDocument('virtual').createElement('template');
+        previewContainer.innerHTML = '<div>'+componentRawEjs+'</div>';
+        var xdComponentPreviewTemplate = jsh.XDom(wrapperContainer).get('.componentPreviewTemplate');
+        if (xdComponentPreviewTemplate.length){
+          componentTemplate.data.ejs += '\n' + xdComponentPreviewTemplate.html;
         }
-        else $componentPreviewTemplate = null;
+        else xdComponentPreviewTemplate = null;
       }
-      if(!$componentPreviewTemplate && !hasComponentSubTemplate) {
+      if(!xdComponentPreviewTemplate && !hasComponentSubTemplate) {
         //For grid_preview and form layouts, use the component template as the preview template
         if(componentTemplate.data && _.includes(['grid_preview','form'], componentTemplate.data.layout)){
           componentTemplate.data.ejs += '\n' + componentRawEjs;
@@ -324,9 +330,10 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.renderContainerContentComponents = function(container, callback){
-    var items = $(container).find('[data-component]').not('.initialized').addClass('initialized');
-    async.each(items, function(item, item_cb){
-      $(item).attr('data-component-id', _this.getNextComponentId());
+    var items = jsh.XDom(container).get('[data-component]').omit(function(el){return jsh.XDom.class.contains(el, '.initialized');});
+    items.class.add('initialized');
+    async.each(items.elements, function(item, item_cb){
+      item.setAttribute('data-component-id', _this.getNextComponentId());
       _this.renderContentComponent(item, undefined, item_cb);
     }, callback);
   };
@@ -335,12 +342,12 @@ exports = module.exports = function(jsh, cms){
     if(!callback) callback = function(){};
     options = _.extend({ init: false }, options);
 
-    var componentType = $(element).attr('data-component');
+    var componentType = element.getAttribute('data-component');
     var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
     if (!componentTemplate) return callback();
 
     componentTemplate.id = componentTemplate.id || componentType;
-    var componentId = $(element).attr('data-component-id') || '';
+    var componentId = element.getAttribute('data-component-id') || '';
     if (componentId.length < 1) {
       console.error(new Error('Component is missing [data-component-id] attribute.')); // eslint-disable-line no-console
       return callback();
@@ -367,8 +374,8 @@ exports = module.exports = function(jsh, cms){
 
     //Initialize component
     component.create(componentTemplate, element);
-    if ($(element).attr('data-is-insert')) {
-      $(element).attr('data-is-insert', null);
+    if (element.getAttribute('data-is-insert')) {
+      element.setAttribute('data-is-insert', null);
       if(!options.init){
         element.scrollIntoView(false);
         _this.components[componentId].openDefaultEditor();

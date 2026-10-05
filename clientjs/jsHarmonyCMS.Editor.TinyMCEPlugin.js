@@ -21,7 +21,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 exports = module.exports = function(jsh, cms, editor){
   var _ = jsh._;
-  var $ = jsh.$;
 
   /**
    * @typedef {Object} IconDefinition
@@ -303,7 +302,7 @@ exports = module.exports = function(jsh, cms, editor){
                   text: 'Add Line Break Before',
                   onAction: function () {
                     var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
-                    $(lineBreak).insertBefore(node);
+                    node.parentNode.insertBefore(lineBreak, node);
                     var selection = _this._editor.selection;
                     var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
                     selection.select(textNode);
@@ -314,7 +313,7 @@ exports = module.exports = function(jsh, cms, editor){
                   text: 'Add Line Break After',
                   onAction: function () {
                     var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
-                    $(lineBreak).insertAfter(node);
+                    node.after(lineBreak);
                     var selection = _this._editor.selection;
                     var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
                     selection.select(textNode);
@@ -395,9 +394,14 @@ exports = module.exports = function(jsh, cms, editor){
             text: 'Toggle Outlines',
             onAction: function () {
               if(document && document.body){
-                var hasOutlines =  $(document.body).hasClass('jsHarmonyCMS_showEditorOutlines');
-                $(document.body).toggleClass('jsHarmonyCMS_hideEditorOutlines', hasOutlines);
-                $(document.body).toggleClass('jsHarmonyCMS_showEditorOutlines', !hasOutlines);
+                var hasOutlines = jsh.XDom.class.contains(document.body, 'jsHarmonyCMS_showEditorOutlines');
+                if (hasOutlines) {
+                  jsh.XDom.class.add(document.body, 'jsHarmonyCMS_hideEditorOutlines');
+                  jsh.XDom.class.remove(document.body, 'jsHarmonyCMS_showEditorOutlines');
+                } else {
+                  jsh.XDom.class.remove(document.body, 'jsHarmonyCMS_hideEditorOutlines');
+                  jsh.XDom.class.add(document.body, 'jsHarmonyCMS_showEditorOutlines');
+                }
                 if(!jsh.xDialog.length){
                   var editorManager = tinymce.util.Tools.resolve('tinymce.EditorManager');
                   editorManager.activeEditor.focus();
@@ -564,7 +568,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (!element) return;
     var id = element;
     if (!_.isString(element)) {
-      id = $(element).attr('data-component-id') || '';
+      id = element.getAttribute('data-component-id') || '';
     }
 
     return cms.componentManager.components[id];
@@ -587,7 +591,7 @@ exports = module.exports = function(jsh, cms, editor){
         var id = node.attributes.map['data-component-id'];
         var type = node.attributes.map['data-component'];
         if (id && type) {
-          cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
+          cms.componentManager.renderContentComponent(jsh.XDom(_this._editor.targetElm).get('[data-component-id="' + id + '"]').element);
         }
       }
     });
@@ -728,7 +732,7 @@ exports = module.exports = function(jsh, cms, editor){
       var placeholderId = domUtil.uniqueId();
       var placeholder = domUtil.create('div', { id: placeholderId }, '');
 
-      $(placeholder).insertBefore(currentNode);
+      currentNode.parentNode.insertBefore(placeholder, currentNode);
 
       selection.select(placeholder);
       selection.collapse(false);
@@ -811,7 +815,7 @@ exports = module.exports = function(jsh, cms, editor){
       // Wait for next loop
       var isInitialized = cms.isInitialized;
       setTimeout(function() {
-        cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0], {
+        cms.componentManager.renderContentComponent(jsh.XDom(_this._editor.targetElm).get('[data-component-id="' + id + '"]').element, {
           init: !isInitialized
         });
       });

@@ -19,9 +19,9 @@ jsh.App[modelid] = new (function(){
   };
 
   this.updateButtons = function(deployment_sts){
-    if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.$root('.xform_button_viewChangeLog.xelem'+xmodel.class).show();
-    if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.$root('.xform_button_downloadZip.xelem'+xmodel.class).show();
-    if(_.includes(['COMPLETE'], deployment_sts)) jsh.$root('.xform_button_redeploy.xelem'+xmodel.class).show();
+    if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.xd('.xform_button_viewChangeLog.xelem'+xmodel.class).style.display = true;
+    if(_.includes(['FAILED', 'COMPLETE'], deployment_sts)) jsh.xd('.xform_button_downloadZip.xelem'+xmodel.class).style.display = true;
+    if(_.includes(['COMPLETE'], deployment_sts)) jsh.xd('.xform_button_redeploy.xelem'+xmodel.class).style.display = true;
   };
 
   this.getSleepTime = function(){
@@ -47,29 +47,29 @@ jsh.App[modelid] = new (function(){
         var deployment_sts = (rslt.deployment.deployment_sts||'').toUpperCase();
         var deployment_sts_txt = rslt.deployment.deployment_sts_txt;
         _this.updateButtons(deployment_sts);
-        jsh.$root('.xform_label.deployment_sts.xelem'+xmodel.class).html(deployment_sts_txt);
+        jsh.xd('.xform_label.deployment_sts.xelem'+xmodel.class).html = deployment_sts_txt;
         //Auto Scroll if within 40px of bottom of screen
         var curDocumentHeight = jsh.XGrid.prototype._getDocumentHeight();
-        var auto_scroll = (($(window).height() + $(window).scrollTop()) >= (curDocumentHeight - 50));
+        var auto_scroll = ((window.innerHeight + window.scrollY) >= (curDocumentHeight - 50));
 
         var isRunning = false;
         if(deployment_sts=='RUNNING') isRunning = true;
         else if(deployment_sts=='PENDING') isRunning = true;
 
         //Render Log
-        $('#'+xmodel.class+'_deployment_log').html(XExt.escapeHTMLBR(rslt.log));
+        jsh.XDom('#'+xmodel.class+'_deployment_log').html = XExt.escapeHTMLBR(rslt.log);
         //Add loading animation if RUNNING
-        if(isRunning) $('#'+xmodel.class+'_deployment_log').append('<div style="padding-top:4px;"><img src = "/images/loading.gif" /></div>');
+        if(isRunning) jsh.XDom('#'+xmodel.class+'_deployment_log').append('<div style="padding-top:4px;"><img src = "/images/loading.gif" /></div>');
         else if(deployment_sts=='COMPLETE'){
           if(rslt.deployment.published_url){
-            var jComplete = $('<div style="margin-bottom:15px;"><a class="jsHarmonyCms_action_button" target="_blank" href="'+XExt.escapeHTML(rslt.deployment.published_url)+'">View Deployed Site</a></div>');
-            $('#'+xmodel.class+'_deployment_log').after(jComplete);
+            var complete = jsh.XDom.render('<div style="margin-bottom:15px;"><a class="jsHarmonyCms_action_button" target="_blank" href="'+XExt.escapeHTML(rslt.deployment.published_url)+'">View Deployed Site</a></div>');
+            jsh.XDom('#'+xmodel.class+'_deployment_log').element.after(complete);
           }
         }
         //Auto-scroll
         if(auto_scroll && initialized){
           curDocumentHeight = jsh.XGrid.prototype._getDocumentHeight();
-          if(curDocumentHeight-$(window).height() > 0) $(window).scrollTop(curDocumentHeight-$(window).height());
+          if(curDocumentHeight-window.innerHeight > 0) window.scrollY = curDocumentHeight-window.innerHeight;
         }
         //Auto-refresh
         if(_.includes(['PENDING','RUNNING'], deployment_sts)) setTimeout(function(){ _this.loadData(); }, _this.getSleepTime());

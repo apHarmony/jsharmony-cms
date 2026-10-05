@@ -23,7 +23,6 @@ var jsHarmonyCMSEditorTinyMCEPlugin = require('./jsHarmonyCMS.Editor.TinyMCEPlug
 exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
 
-  var $ = jsh.$;
   var _ = jsh._;
   var XExt = jsh.XExt;
 
@@ -31,7 +30,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
-  this.toolbarContainer = null;
+  this.xdToolbarContainer = null;
   this.defaultToolbarOptions = {
     dock: 'auto',
     show_menu: true,
@@ -117,7 +116,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           }
           return url;
         },
-        fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
+        fixed_toolbar_container: _this.xdToolbarContainer ? '#' + _this.xdToolbarContainer.attr.id : '',
         statusbar: true,
         charmap_append: materialIcons,
         charmap_append_title: (materialIcons.length ? 'Material Icons' : 'Other'),
@@ -130,59 +129,65 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         mceEditor.on('focus', function(){
           //Fix bug where alignment not reset when switching between editors
           if(firstFocus){
-            $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
+            jsh.XDom('.jsharmony_cms_content_editor_toolbar .tox-tbtn--enabled').filter(jsh.XDom.isVisible).class.remove('tox-tbtn--enabled');
             firstFocus = false;
           }
-          $('[data-component="header"]').css('pointer-events', 'none');
+          jsh.XDom.setStyle('[data-component="header"]', 'pointer-events', 'none');
           _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
-          var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
-          if(_this.toolbarContainer.length){
-            var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
+          var wasOnBottom = _this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_bottom');
+          if(_this.xdToolbarContainer.length){
+            var computedContainerStyles = window.getComputedStyle(_this.xdToolbarContainer.element);
             wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
           }
           _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
-          if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
+          if(_this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_bottom')){
             //If dock=bottom, slide up
-            _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
-            _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.style.opacity = 1;
+            _this.xdToolbarContainer.style.display = 'none';
+            _this.xdToolbarContainer.animate.height(true, null, wasOnBottom ? 0 : 300);
           }
-          else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+          else if(_this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
             //Top-offset
-            _this.toolbarContainer.stop(true).css({ opacity:1 });
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.style.opacity = 1;
           }
           else {
-            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.animate.opacity(1,null,300);
           }
           
           cms.refreshLayout();
           var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
-          $('body').not('.jsharmony_cms_editing').addClass('jsharmony_cms_editing');
-          if(jshEditorId) $('body').addClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
+          jsh.XDom('body').omit(function(el) {return el.matches('.jsharmony_cms_editing');}).class.add('jsharmony_cms_editing');
+          if(jshEditorId) jsh.XDom('body').class.add('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
           if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
         });
         mceEditor.on('blur', function(){
-          $('[data-component="header"]').css('pointer-events', 'auto');
+          jsh.XDom.setStyle('[data-component="header"]', 'pointer-events', 'auto');
           _this.isEditing = false;
-          var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); };
-          if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
-            _this.toolbarContainer.stop(true).css({ opacity:0 });
+          var clearClasses = function(){ _this.xdToolbarContainer.class.remove('jsharmony_cms_content_editor_toolbar_hide_toolbar'); };
+          if(_this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.style.opacity = 0;
             clearClasses();
             cms.toolbar.refreshOffsets();
           }
           else {
-            _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.animate.opacity(0, clearClasses, 300);
           }
           if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
-          $('body').removeClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
+          jsh.XDom.class.remove('body', 'jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
           //Remove class
-          if(!$('.mce-edit-focus').length){
-            $('body.jsharmony_cms_editing').removeClass('jsharmony_cms_editing');
-            var bodyElem = $('body')[0];
+          if(!jsh.XDom('.mce-edit-focus').length){
+            jsh.XDom.class.remove('body.jsharmony_cms_editing', 'jsharmony_cms_editing');
+            var bodyElem = jsh.XDom('body').element;
             if(bodyElem){
               var editingClasses = [];
               _.each(bodyElem.classList||[], function(className){ if(className.indexOf('jsharmony_cms_editing_')>=0) editingClasses.push(className); });
-              _.each(editingClasses, function(className){ $('body').removeClass(className); });
+              _.each(editingClasses, function(className){ jsh.XDom.class.remove('body', className); });
             }
           }
         });
@@ -222,7 +227,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     var cb_called = false;
     var orig_cb = cb;
     cb = function(err){ if(cb_called) return; cb_called = true; orig_cb(err); };
-    if(!$('#'+elem_id).length) return cb(new Error('Editor container element not found: #'+elem_id));
+    if(!jsh.XDom('#'+elem_id).length) return cb(new Error('Editor container element not found: #'+elem_id));
     if(!(config_id in _this.editorConfig)) throw new Error('Editor config ' + (config_id||'').toString() + ' not defined');
     var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
     config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, function(){ return cb(); });
@@ -250,20 +255,19 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.disableLinks = function(container, options){
     options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
-    $(container).find('a').each(function(){
-      var jobj = $(this);
+    jsh.XDom(container).get('a').items.forEach(function(xdobj){
       if(options.onlyJSHCMSLinks){
-        var url = jobj.attr('href');
+        var url = xdobj.attr.href;
         //If it is not a jsHarmony Internal Link
         if(url.indexOf('#@JSHCMS') < 0){
           //If it is not inside of a component
-          if(!jobj.closest('[data-component]').length) return;
+          if(!xdobj.parent('[data-component]').length) return;
         }
       }
 
-      if(options.addFlag && jobj.data('disabled_links')) return;
-      if(options.addFlag) jobj.data('disabled_links', '1');
-      jobj.on('click', function(e){ e.preventDefault(); });
+      if(options.addFlag && xdobj.data['disabled_links']) return;
+      if(options.addFlag) xdobj.data['disabled_links'] = '1';
+      xdobj.on('click', function(e){ e.preventDefault(); });
     });
   };
 
@@ -273,7 +277,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
-        $('#'+containerId).html(val);
+        jsh.XDom.setHtml('#'+containerId, val);
         cms.componentManager.renderContainerContentComponents(document.getElementById(containerId), function(err){
           if(err) throw new Error(err);
           _this.disableLinks(document.getElementById(containerId), { addFlag: true, onlyJSHCMSLinks: true });
@@ -297,13 +301,13 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   };
 
   this.initToolbarContainer = function(element) {
-    this.toolbarContainer = $(element);
-    var id = this.toolbarContainer.attr('id');
+    this.xdToolbarContainer = jsh.XDom(element);
+    var id = this.xdToolbarContainer.attr.id;
     if (!id) {
       do {
         id = 'jsharmony_cms_editor_toolbar_' + Math.random().toString().replace('.', '');
-      } while($('#' + id).length > 0);
-      this.toolbarContainer.attr('id', id);
+      } while(jsh.XDom('#' + id).length > 0);
+      this.xdToolbarContainer.attr.id = id;
     }
   };
 
@@ -314,9 +318,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   };
 
   this.getContentEditorTopOffset = function(mceEditor){
-    var contentOffset = $(mceEditor.contentAreaContainer).offset();
-    if(!contentOffset) return undefined;
-    var contentOffsetTop = contentOffset.top;
+    var contentOffsetTop = jsh.XDom(mceEditor.contentAreaContainer).calc.top();
     var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
     contentOffsetTop += parseInt(contentStyles.paddingTop);
     contentOffsetTop -= cms.toolbar.currentOffsetTop;
@@ -333,7 +335,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       //Check if content would overlap editor
       var contentOffsetTop = _this.getContentEditorTopOffset(mceEditor);
       if(typeof contentOffsetTop == 'undefined') return 'top';
-      var editorToolbarHeight = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
+      var editorToolbarHeight = jsh.XDom.calc.heightToBorder('#jsharmony_cms_content_editor_toolbar');
       if(editorToolbarHeight > contentOffsetTop){
         if(cms.toolbar.dockPosition == 'top_offset') return 'top_offset';
       }
@@ -348,7 +350,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if(!mceEditor) return 0;
     var dockPosition = _this.getDockPosition(mceEditor);
     if(dockPosition=='top_offset'){
-      return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
+      return jsh.XDom.calc.heightToBorder('#jsharmony_cms_content_editor_toolbar') || 0;
     }
     return 0;
   };
@@ -366,39 +368,44 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
     toolbarOptions = _.extend({}, _this.defaultToolbarOptions, toolbarOptions);
 
-    var jContentToolbar = $('#jsharmony_cms_content_editor_toolbar');
+    var xdContentToolbar = jsh.XDom('#jsharmony_cms_content_editor_toolbar');
 
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
+    function toggleClass(cls, condition) {
+      if (condition) {
+        xdContentToolbar.class.add(cls);
+      } else {
+        xdContentToolbar.class.remove(cls);
+      }
+    }
+
+    toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
+    toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
 
     var dockPosition = _this.getDockPosition(mceEditor);
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
-    var isPageToolbarBottom = jContentToolbar.hasClass('jsharmony_cms_page_toolbar_bottom');
+    toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
+    toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
+    var isPageToolbarBottom = xdContentToolbar.class.contains('jsharmony_cms_page_toolbar_bottom');
 
     var barh = cms.toolbar.getHeight();
     if (dockPosition == 'bottom') {
       //Bottom Dock Position
-      jContentToolbar
-        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
-        .css('bottom', isPageToolbarBottom ? barh+'px' : '0');
+      xdContentToolbar.style.top = 'auto'; // Need to override any CSS. Use 'auto' instead of clearing.
+      xdContentToolbar.style.bottom = (isPageToolbarBottom ? barh+'px' : '0');
     } else {
       //Top Dock Position
-      
-      jContentToolbar
-        .css('top', isPageToolbarBottom ? '0' : barh + 'px')
-        .css('bottom', '');
+      xdContentToolbar.style.top = (isPageToolbarBottom ? '0' : barh + 'px');
+      xdContentToolbar.style.bottom = '';
     }
     cms.toolbar.refreshOffsets();
   };
 
   this.endEdit = function(){
-    jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
-    $('#jsharmony_cms_virtual_focus_element a').focus();
+    jsh.xdroot.append('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>');
+    jsh.XDom('#jsharmony_cms_virtual_focus_element a').focus();
     setTimeout(function(){
       jsh.XExt.waitUntil(
         function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()); },
-        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); }
+        function(){ jsh.xd('#jsharmony_cms_virtual_focus_element').remove(); }
       );
     }, 100);
   };

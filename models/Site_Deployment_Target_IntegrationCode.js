@@ -128,7 +128,7 @@ jsh.App[modelid] = new (function(){
   };
 
   this.integration_target_onchange = function(obj, newval, undoChange){
-    var tmpl = $('.'+xmodel.class+'_Integration_'+newval).html()||'';
+    var tmpl = jsh.XDom('.'+xmodel.class+'_Integration_'+newval).html||'';
     var platform = newval;
     if((platform=='EXPRESSJS_ROUTER')||(platform=='EXPRESSJS_STANDALONE')) platform = 'EXPRESSJS';
     else if((platform=='NEXTJS_ROUTER')||(platform=='NEXTJS_STANDALONE')) platform = 'NEXTJS';
@@ -157,15 +157,15 @@ jsh.App[modelid] = new (function(){
     tmpl = XExt.ReplaceAll(tmpl, '%%%INTEGRATION_PARAMS_ACCESS_KEYS%%%', _this.getIntegrationParamsString(platform, { access_keys: true, params: params }));
     tmpl = XExt.ReplaceAll(tmpl, '%%%INTEGRATION_PARAMS_CMS_SERVER_URLS%%%', _this.getIntegrationParamsString(platform, { cms_server_urls: true, params: params }));
     tmpl = XExt.ReplaceAll(tmpl, '"%%%PHP_DOCUMENT_ROOT%%%', "$_SERVER['DOCUMENT_ROOT'].\"");
-    jsh.$root('.integration_doc').html(tmpl);
-    jsh.$root('.integration_doc').find('.integration_code').each(function(){
-      this.style.height = '10px';
-      this.style.height = this.scrollHeight+25+'px';
+    jsh.xd('.integration_doc').html = tmpl;
+    jsh.xd('.integration_doc .integration_code').elements.forEach(function(el){
+      el.style.height = '10px';
+      el.style.height = this.scrollHeight+25+'px';
     });
-    jsh.$root('.integration_doc').find('.integration_code_copy').off('.integration').on('click.integration', function(e){
+    jsh.xd('.integration_doc .integration_code_copy').off('.integration').on('click', function(e){
       e.preventDefault();
       e.stopImmediatePropagation();
-      var obj = $(this).prev()[0];
+      var obj = this.previousSibling;
       obj.select();
       obj.setSelectionRange(0, 99999);
       document.execCommand('copy');

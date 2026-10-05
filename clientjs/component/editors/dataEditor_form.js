@@ -84,27 +84,26 @@ function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh, c
 
 /**
  * @private
- * @param {JQuery} $dialog - the dialog element.
- * @param {JQuery} $wrapper - the preview wrapper element.
+ * @param {HTMLElement} dialogElement - the dialog element.
+ * @param {HTMLElement} wrapper - the preview wrapper element.
+ * @param {HTMLElement} toolbar
  */
-DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
+DataEditor_Form.prototype.attachEditors = function(dialogElement, wrapper, toolbar) {
 
   var _this = this;
 
   _.forEach(this._htmlEditors, function(editor) { editor.destroy(); });
 
-  _.forEach($wrapper.find('[data-component-full-editor]'), function (editorEl) {
-    var $el = _this._jsh.$(editorEl);
-    var propName = $el.attr('data-component-full-editor');
-    var editor = new HTMLPropertyEditorController('full', _this._jsh, _this._cms, $dialog, propName,  $el, $toolbar);
+  _.forEach(_this._jsh.XDom(wrapper, '[data-component-full-editor]').elements, function (editorEl) {
+    var propName = editorEl.getAttribute('data-component-full-editor');
+    var editor = new HTMLPropertyEditorController('full', _this._jsh, _this._cms, dialogElement, propName, editorEl, toolbar);
     editor.initialize(function() {});
     _this._htmlEditors.push(editor);
   });
 
-  _.forEach($wrapper.find('[data-component-title-editor]'), function (editorEl) {
-    var $el = _this._jsh.$(editorEl);
-    var propName = $el.attr('data-component-title-editor');
-    var editor = new HTMLPropertyEditorController('title', _this._jsh, _this._cms, $dialog, propName, $el, $toolbar);
+  _.forEach(_this._jsh.XDom(wrapper, '[data-component-title-editor]').elements, function (editorEl) {
+    var propName = editorEl.getAttribute('data-component-title-editor');
+    var editor = new HTMLPropertyEditorController('title', _this._jsh, _this._cms, dialogElement, propName, editorEl, toolbar);
     editor.initialize(function() {});
     _this._htmlEditors.push(editor);
   });
@@ -112,14 +111,14 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
 
 /**
  * @private
- * @param {JQuery} $dialog
+ * @param {HTMLElement} dialog
  * @param {MediaBrowserControlInfo} info
  * @param {boolean} enable
  */
-DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable) {
-  var jctrl = $dialog.find('.xform_ctrl.' + info.titleFieldName);
-  if(jctrl.hasClass('editable')){
-    $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
+DataEditor_Form.prototype.enableBrowserControl = function(dialogElement, info, enable) {
+  var xdctrl = this._jsh.XDom(dialogElement, '.xform_ctrl.' + info.titleFieldName);
+  if(xdctrl.class.contains('editable')){
+    xdctrl.attr.disabled = enable ? null : true;
   }
 };
 
@@ -154,23 +153,23 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     minWidth: modelConfig.popup[0]
   });
 
-  var $toolbar;
+  var toolbar;
 
   dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
     var editor = _this._jsh.App[xmodel.id];
-    var $dialog = _this._jsh.$(dialogSelector);
-    $dialog.css('opacity', '0');
+    var dialogElement = _this._jsh.XDom(dialogSelector).element;
+    dialogElement.style.opacity = '0';
     _this._formSelector = dialogSelector; // remove this
 
     // Note that the toolbar HAS to be in the popup DOM hierarchy for focus/blur
     // events to work correctly.
-    $toolbar = _this._jsh.$('<div class="jsharmony_cms_content_editor_toolbar"></div>')
-      .css('position', 'fixed')
-      .css('top', '0px')
-      .css('left', '0')
-      .css('width', '100%')
-      .css('z-index', '1999999999');
-    _this._jsh.$(dialogSelector).append($toolbar);
+    toolbar = _this._jsh.XDom.render('<div class="jsharmony_cms_content_editor_toolbar"></div>');
+    toolbar.style.position = 'fixed';
+    toolbar.style.top = 0;
+    toolbar.style.left = 0;
+    toolbar.style.width = '100%';
+    toolbar.style['z-index'] = '1999999999';
+    _this._jsh.XDom.append(dialogElement, toolbar);
 
     _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {
       var title = itemData[info.titleFieldName] || '';
@@ -178,7 +177,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       var fieldsMatch = title === data;
       var isDataEmpty = title.length < 1 && data.length < 1;
       var fieldIsEditable = fieldsMatch || isDataEmpty;
-      _this.enableBrowserControl($dialog, info, fieldIsEditable);
+      _this.enableBrowserControl(dialogElement, info, fieldIsEditable);
     });
 
     editor.onChangeData_noDebounce = function() {
@@ -190,11 +189,11 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         }
       });
 
-      var $wrapper =  $dialog.find('[data-id="previewWrapper"]').first();
-      _this.renderPreview($wrapper, template, updatedData, properties, function(){
+      var wrapper = _this._jsh.XDom(dialogElement, '[data-id="previewWrapper"]').element;
+      _this.renderPreview(wrapper, template, updatedData, properties, function(){
         // Don't attach any events until after the onRenderGridItemPreview hook is called.
         // Otherwise, the events might be attached to elements that get replaced or removed.
-        _this.attachEditors($dialog, $wrapper, $toolbar);
+        _this.attachEditors(dialogElement, wrapper, toolbar);
       });
     };
 
@@ -218,7 +217,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         // and then we override the link control.
         xmodel.set(info.titleFieldName, title);
         xmodel.set(browserControlName, url);
-        _this.enableBrowserControl($dialog, info, false);
+        _this.enableBrowserControl(dialogElement, info, false);
         editor.onChangeData();
       };
 
@@ -257,7 +256,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     editor.resetEditorBrowser = function(linkControlName) {
       var info = modelTemplate.getBrowserFieldInfo(linkControlName);
       if (info == undefined) return;
-      _this.enableBrowserControl($dialog, info, true);
+      _this.enableBrowserControl(dialogElement, info, true);
       xmodel.set(linkControlName, '');
       xmodel.set(info.titleFieldName, '');
       editor.onChangeData();
@@ -269,25 +268,25 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     if(onComplete) onComplete();
   };
 
-  dialog.onOpened = function($dialog, xmodel) {
+  dialog.onOpened = function(dialogElement, xmodel) {
     var editor = _this._jsh.App[xmodel.id];
     // Manually call change to do initial render
     setTimeout(function() {
       editor.onChangeData_noDebounce();
       setTimeout(function() {
-        $dialog.css('opacity', '1');
+        dialogElement.style.opacity = '1';
       }, 50);
     });
   };
 
-  dialog.onAccept = function($dialog, xmodel) {
+  dialog.onAccept = function(dialogElement, xmodel) {
     if(!xmodel.controller.Commit(itemData, 'U')) return false;
     itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
   };
 
-  dialog.onCancel = function(options, $dialog, xmodel) {
+  dialog.onCancel = function(options, dialogElement, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
       _this._jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
@@ -297,7 +296,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     }
   };
 
-  dialog.onClose = function($dialog, xmodel) {
+  dialog.onClose = function(dialogElement, xmodel) {
     //Destroy model
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
@@ -313,12 +312,12 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
 /**
  * @private
- * @param {JQuery} $wrapper
+ * @param {HTMLElement} wrapper
  * @param {string} template
  * @param {Object} data
  * @param {Object} properties
  */
-DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties, callback) {
+DataEditor_Form.prototype.renderPreview = function(wrapper, template, data, properties, callback) {
 
   var _this = this;
 
@@ -336,24 +335,24 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh, this._cms, componentConfig);
 
-  $wrapper.empty().append(rendered);
+  _this._jsh.XDom.setHtml(wrapper, rendered);
 
-  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
+  if(this._cms && this._cms.editor) this._cms.editor.disableLinks(wrapper);
   
   var renderPromise = null;
   if (_.isFunction(this._onRenderDataItemPreview)){
-    var renderRslt = this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
+    var renderRslt = this._onRenderDataItemPreview(wrapper.children[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
     if(renderRslt && renderRslt.then) renderPromise = renderRslt;
   }
   
-  _this._component.notifyUpdate($wrapper.children()[0], {
+  _this._component.notifyUpdate(wrapper.children[0], {
     data: renderConfig.data,
     properties: renderConfig.properties,
     isItemPreview: true,
   });
 
   setTimeout(function() {
-    _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
+    _.forEach(_this._jsh.XDom(wrapper.children[0], '[data-component]').elements, function(el) {
       _this._cms.componentManager.renderContentComponent(el);
     });
     if(callback){

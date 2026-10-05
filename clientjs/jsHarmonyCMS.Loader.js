@@ -42,7 +42,7 @@ exports = module.exports = function(cms){
 
     if(loader_obj){
       if(cms.isInitialized) loader_obj.style.backgroundColor = 'rgba(0,0,0,0.2)';
-      if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').fadeIn();
+      if(cms.jsh) cms.jsh.XDom.animate.opacity('#jsHarmonyCMSLoading', 1);
       else loader_obj.style.display = 'block';
     }
     else {
@@ -85,7 +85,8 @@ exports = module.exports = function(cms){
     this.isLoading = false;
     var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); };
     if(cms.jsh){
-      cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut('normal', function(){ triggerLoadingComplete(); });
+      cms.jsh.XDom.stop('#jsHarmonyCMSLoading');
+      cms.jsh.XDom.animate.opacity('#jsHarmonyCMSLoading', 0, function(){ triggerLoadingComplete(); });
     }
     else{
       document.getElementById('jsHarmonyCMSLoading').style.display = 'none';

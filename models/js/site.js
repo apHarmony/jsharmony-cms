@@ -2,7 +2,6 @@
   var XExt = jsh.XExt;
   var XForm = jsh.XForm;
   var _ = jsh._;
-  var $ = jsh.$;
   var async = jsh.async;
 
   jsh.System.onOpenPageEditor = []; //function(callback, page_key, page_filename, page_template_id, options){}
@@ -57,7 +56,7 @@
           var qs = {};
           if(options.page_id) qs.page_id = options.page_id;
           if(options.branch_id) qs.branch_id = options.branch_id;
-          if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+          if(!_.isEmpty(qs)) url += '?' + jsh.XExt.escapeAuery(qs);
           XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
             if ('_success' in rslt) {
               var page = rslt.page;
@@ -70,18 +69,18 @@
               //Display Editor
               var sel = options.rawEditorDialog;
               if(!sel) return XExt.Alert('Raw Text Editor not defined');
-              XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-                var jprompt = jsh.$dialogBlock(sel);
-                jprompt.find('.edit_page_title').text('Edit: '+page_filename);
-                jprompt.find('.page_content').val(page.content.body||'');
-                jprompt.find('.page_content').prop('readonly', readonly);
-                jprompt.find('.button_ok').val(readonly?'Close':'Save');
-                jprompt.find('.button_cancel').toggle(!readonly);
+              XExt.CustomPrompt(sel, jsh.xd(sel).html, function () { //onInit
+                var xdprompt = jsh.XDom(xdDialogBlock, sel);
+                xdprompt.get('.edit_page_title').text = 'Edit: '+page_filename;
+                xdprompt.get('.page_content').value = page.content.body||'';
+                xdprompt.get('.page_content').attr.readonly = readonly;
+                xdprompt.get('.button_ok').value = readonly?'Close':'Save';
+                xdprompt.get('.button_cancel').style.display = !readonly;
               }, function (success) { //onAccept
                 if(readonly) return success();
                 //Save content to server
-                var jprompt = jsh.$dialogBlock(sel);
-                page.content.body = jprompt.find('.page_content').val();
+                var xdprompt = jsh.XDom(xdDialogBlock, sel);
+                page.content.body = xdprompt.get('.page_content').value;
                 url = '../_funcs/page/'+page_key;
                 XExt.CallAppFunc(url, 'post', page, success, function (err) { });
               });
@@ -130,7 +129,7 @@
     }
     else {
       let url = jsh._BASEURL+'_funcs/media/'+media_key+'/?download'+(qs?'&'+qs:'');
-      jsh.getFileProxy().prop('src', url);
+      jsh.getFileProxy().src = url;
     }
   };
 
@@ -147,31 +146,32 @@
   };
 
   jsh.System.applyRoles = function(){
-    if(jsh.globalparams.isWebmaster) jsh.$root('.jsHarmonyCms_role_WEBMASTER').removeClass('jsHarmonyCms_role_WEBMASTER');
+    if(jsh.globalparams.isWebmaster) jsh.xd('.jsHarmonyCms_role_WEBMASTER').class.remove('jsHarmonyCms_role_WEBMASTER');
   };
 
   jsh.System.renderEditorSelection = function(LOV_site_editor, site_id, sys_user_site_editor, options){
     if(!LOV_site_editor || (LOV_site_editor.length <= 2)) return;
     options = _.extend({ after: null, container: null, containerClass: '', }, options);
-    var jcontainer = null;
-    if(options.container) jcontainer = jsh.$root(options.container);
-    else if(options.containerClass && jsh.$root('.'+options.containerClass).length) jcontainer = jsh.$root('.'+options.containerClass);
+    var xdcontainer = null;
+    if(options.container) xdcontainer = jsh.xd(options.container);
+    else if(options.containerClass && jsh.xd('.'+options.containerClass).length) xdcontainer = jsh.xd('.'+options.containerClass);
     else if(options.after){
-      jcontainer = $('<div></div>');
-      if(options.containerClass) jcontainer.addClass(options.containerClass);
-      jsh.$root(options.after).after(jcontainer);
+      container = jsh.XDom.render('<div></div>');
+      if(options.containerClass) jsh.XDom.class.add(container, options.containerClass);
+      jsh.xd(options.after).element.after(container);
+      xdcontainer = jsh.XDom(container);
     }
     else throw new Error('Either options.container, options.after, or an existing options.containerClass is required');
 
-    jcontainer.html(jsh.RenderEJS(jsh.GetEJS('jsHarmonyCMS.EditorSelection'),{
+    xdcontainer.setHtml(jsh.RenderEJS(jsh.GetEJS('jsHarmonyCMS.EditorSelection'),{
       LOV_site_editor: LOV_site_editor,
       sys_user_site_editor: sys_user_site_editor,
     }));
-    var jEditorSelection = jcontainer.find('.editor_selection');
-    XExt.RenderLOV(null, jEditorSelection, LOV_site_editor);
-    jEditorSelection.val(sys_user_site_editor);
-    jEditorSelection.on('change', function(){
-      var new_sys_user_site_editor = $(this).val();
+    var xdEditorSelection = xdcontainer.get('.editor_selection');
+    XExt.RenderLOV(null, xdEditorSelection.element, LOV_site_editor);
+    xdEditorSelection.value = sys_user_site_editor;
+    xdEditorSelection.on('change', function(){
+      var new_sys_user_site_editor = jsh.XDom(this).value;
       jsh.System.updateEditor(site_id, new_sys_user_site_editor);
     });
   };
@@ -190,14 +190,17 @@
     if({is_submodule}) return; // eslint-disable-line no-undef, no-constant-condition
 
     //Render site dropdown in header
-    jsh.$root('.xlogo .xsublogo').html(XExt.renderEJS(jsh.GetEJS('jsHarmonyCMS.SiteSelection')));
-    jsh.$root('.xlogo .xsublogo').attr('onclick','return false;').off('click').on('click', function(e){
-      var jobj = $(this);
+    jsh.xd('.xlogo .xsublogo').setHtml(XExt.renderEJS(jsh.GetEJS('jsHarmonyCMS.SiteSelection')));
+    var xdlogo = jsh.xd('.xlogo .xsublogo')
+    xdlogo.attr.onclick = 'return false;';
+    xdlogo.off('click');
+    xdlogo.on('click', function(e){
+      var xdobj = jsh.XDom(this);
       e.preventDefault();
       e.stopImmediatePropagation();
 
-      if(jobj.hasClass('selected') || jsh.$root('.jsHarmonyCms_site_selection_dropdown').is(':visible')){
-        jsh.$root('.jsHarmonyCms_site_selection_dropdown').remove();
+      if(xdobj.class.contains('selected') || jsh.xd('.jsHarmonyCms_site_selection_dropdown').isVisible()){
+        jsh.xd('.jsHarmonyCms_site_selection_dropdown').remove();
         return;
       }
 
@@ -208,10 +211,13 @@
         }
         else {
           var sites = rslt[execModel];
-          jsh.$root('.jsHarmonyCms_site_selection_dropdown').remove();
-          jsh.root.append(XExt.renderEJS(jsh.$root('.jsHarmonyCms_template_site_selection_dropdown').html(), undefined, { sites: sites }));
-          var jpos = jobj.find('.jsHarmonyCms_site_selection').offset();
-          XExt.ShowContextMenu('.jsHarmonyCms_site_selection_dropdown', undefined, undefined, { top: jpos.top + jobj.outerHeight() - 1, left: jpos.left - 1 });
+          jsh.xd('.jsHarmonyCms_site_selection_dropdown').remove();
+          jsh.xdroot.append(XExt.renderEJS(jsh.xd('.jsHarmonyCms_template_site_selection_dropdown').html, undefined, { sites: sites }));
+          var xdselection = xdobj.get('.jsHarmonyCms_site_selection');
+          XExt.ShowContextMenu('.jsHarmonyCms_site_selection_dropdown', undefined, undefined, {
+            top: xdselection.calc.topFromDocument() + xdobj.calc.height() - 1,
+            left: xdselection.calc.leftFromDocument() - 1
+          });
         }
       });
     });
@@ -223,7 +229,7 @@
 
   jsh.System.setCurrentSite = function(site_id, source){
     if(site_id == jsh.globalparams.site_id) return;
-    var url = jsh._BASEURL + '_funcs/site/checkout?' + $.param({site_id:site_id, source: source});
+    var url = jsh._BASEURL + '_funcs/site/checkout?' + jsh.XExt.escapeQuery({site_id:site_id, source: source});
     window.location.href = url;
   };
 
@@ -258,7 +264,7 @@
       if(err) return XExt.Alert('Error #' + err.Number + ': ' + err.Message);
     };
 
-    jsh.getFileProxy().prop('src', url);
+    jsh.getFileProxy().src = url;
   };
 
 })(window['{req.jshsite.instance}']);

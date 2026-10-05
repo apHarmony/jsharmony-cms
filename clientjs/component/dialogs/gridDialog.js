@@ -46,14 +46,14 @@ var Dialog = require('./dialog');
 /**
   * Called when the dialog is first opened
   * @callback GridDialog~dialogOpenedCallback
-  * @param {JQuery} dialogWrapper - the dialog wrapper element
+  * @param {HTMLElement} dialogWrapper - the dialog wrapper element
   * @param {Object} xmodel - the JSH model instance
   */
 
 /**
  * Called when the dialog closes
  * @callback GridDialog~closeCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  */
 
@@ -113,12 +113,12 @@ GridDialog.prototype.open = function() {
 
   var controller = undefined;
   var xmodel = undefined;
-  var $dialog = undefined;
+  var dialogElement = undefined;
 
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    _this.jsh.$('.xbodyhead.xelem'+xmodel.class).addClass('jsharmony_cms');
+    _this.jsh.XDom.class.add('.xbodyhead.xelem'+xmodel.class, 'jsharmony_cms');
     _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
@@ -129,11 +129,11 @@ GridDialog.prototype.open = function() {
     );
   };
 
-  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
-    $dialog = _$dialog;
+  dialog.onOpened = function(_dialogElement, _xmodel, acceptFunc, cancelFunc) {
+    dialogElement = _dialogElement;
     controller.grid.Prop.Enabled = true;
     controller.Render(function() {
-      if (_.isFunction(_this.onOpened)) _this.onOpened(_$dialog, xmodel);
+      if (_.isFunction(_this.onOpened)) _this.onOpened(_dialogElement, xmodel);
     });
   };
 
@@ -149,7 +149,7 @@ GridDialog.prototype.open = function() {
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
-    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose(dialogElement, xmodel);
   };
 
   dialog.open();

@@ -10,12 +10,14 @@ jsh.App[modelid] = new (function(){
   };
 
   this.onload = function(){
-    $('.'+xmodel.class+'_submit').off('click').on('click', function(){
-      var query = $('.'+xmodel.class+'_query').val().trim();
+    var xdsubmit = jsh.XDom('.'+xmodel.class+'_submit');
+    xdsubmit.off('click');
+    xdsubmit.on('click', function(){
+      var query = jsh.XDom('.'+xmodel.class+'_query').value.trim();
       _this.search(query);
     });
-    $('.'+xmodel.class+'_query').on('keydown', function (e) { if (e.keyCode == 13) { $('.'+xmodel.class+'_submit').trigger('click'); } });
-    $('.'+xmodel.class+'_query').focus();
+    jsh.XDom('.'+xmodel.class+'_query').on('keydown', function (e) { if (e.keyCode == 13) { jsh.XDom.emit('.'+xmodel.class+'_submit', 'click'); } });
+    jsh.XDom('.'+xmodel.class+'_query').focus();
   };
 
   this.initGrid = function(callback){
@@ -23,7 +25,7 @@ jsh.App[modelid] = new (function(){
     if('Search_Grid' in jsh.XModels) return callback(); //Grid already loaded
 
     //Define the grid in-memory
-    XPage.LoadVirtualModel($('.'+xmodel.class+'_grid_container')[0], {
+    XPage.LoadVirtualModel(jsh.XDom('.'+xmodel.class+'_grid_container').element, {
       'id': 'Search_Grid',
       'layout': 'grid',
       'title': '',
@@ -52,7 +54,7 @@ jsh.App[modelid] = new (function(){
         };
 
         _this.openItem = function(obj){
-          var rowid = $(obj).closest('tr').data('id');
+          var rowid = parseInt(jsh.XDom(obj).parent('tr').data.id);
       
           var itemData = xmodel.get('data', rowid);
           itemData = (itemData ? JSON.parse(itemData) : {});

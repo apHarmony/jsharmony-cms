@@ -12,10 +12,10 @@ jsh.App[modelid] = new (function(){
       if ('_success' in rslt) {
         //Render Log
         if(!(rslt.log||'').trim()){
-          $('#'+xmodel.class+'_deployment_change_log').html('-----------');
+          jsh.XDom('#'+xmodel.class+'_deployment_change_log').html = '-----------';
         }
         else {
-          $('#'+xmodel.class+'_deployment_change_log').html(XExt.escapeHTMLBR(rslt.log));
+          jsh.XDom('#'+xmodel.class+'_deployment_change_log').html = XExt.escapeHTMLBR(rslt.log);
         }
       }
       else XExt.Alert('Error while loading data');

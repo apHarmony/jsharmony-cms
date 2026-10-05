@@ -45,15 +45,15 @@ var TemplateRenderer = require('./component/templateRenderer');
 /**
  * @class
  * @param {string} componentId - the globally unique component instance ID
- * @param {(HTMLElement | JQuery)} element
+ * @param {(HTMLElement)} element
  * @param {Object} cms
  * @param {Object} jsh
  * @param {string} componentConfigId
  */
 exports = module.exports = function(componentId, element, cms, jsh, componentConfigId) {
 
-  /** @type {JQuery} */
-  var $element = jsh.$(element);
+  /** @type {XDom} */
+  var xdelement = jsh.XDom(element);
 
   /** @type {ComponentTemplate} */
   var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh, cms);
@@ -81,7 +81,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @return {Object}
    */
   this.getData = function() {
-    return this.domSerializer.getAttr($element, 'data-component-data');
+    return this.domSerializer.getAttr(xdelement, 'data-component-data');
   };
 
   /**
@@ -92,7 +92,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.getProperties = function() {
     var model = componentTemplate.getPropertiesModelTemplate_Form();
-    var properties = this.domSerializer.getAttr($element, 'data-component-properties');
+    var properties = this.domSerializer.getAttr(xdelement, 'data-component-properties');
     return model.populateDataInstance(properties);
   };
 
@@ -209,27 +209,27 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       else rendered = '*** Component Rendering Error: Empty Result ***';
     }
 
-    $element.empty().append(rendered);
+    xdelement.setHtml(rendered);
 
-    $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function(e){
+    xdelement.off('dblclick');
+    xdelement.on('dblclick', function(e){
       _this.openDefaultEditor();
     });
 
-    if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
+    if (_.isFunction(this.onRender)) this.onRender(xdelement.element, data, props, cms, this);
 
-    this.notifyUpdate($element[0], {
+    this.notifyUpdate(xdelement.element, {
       data: data,
       properties: props,
     });
 
     setTimeout(function() {
       jsh.async.each(
-        $element.find('[data-component]'),
+        xdelement.get('[data-component]').elements,
         function(el, el_cb) {
-          var $el = jsh.$(el);
-          if(!$el.hasClass('initialized')){
-            $el.addClass('initialized');
-            $el.attr('data-component-id', cms.componentManager.getNextComponentId());
+          if(!jsh.XDom.class.contains(el, 'initialized')){
+            jsh.XDom.class.add(el, 'initialized');
+            el.setAttribute('data-component-id', cms.componentManager.getNextComponentId());
           }
           cms.componentManager.renderContentComponent(el, undefined, el_cb);
         },
@@ -246,7 +246,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} data
    */
   this.saveData = function(data) {
-    this.domSerializer.setAttr($element, 'data-component-data', data);
+    this.domSerializer.setAttr(xdelement, 'data-component-data', data);
   };
 
   /**
@@ -256,7 +256,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} props
    */
   this.saveProperties = function(props) {
-    this.domSerializer.setAttr($element, 'data-component-properties', props);
+    this.domSerializer.setAttr(xdelement, 'data-component-properties', props);
   };
 
   /**
@@ -265,10 +265,10 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} props
    */
   this.notifyUpdate = function(element, props) {
-    if(!element) element = $element[0];
+    if(!element) element = xdelement.element;
     if(!props) props = {};
     //Get content area name from element
-    var contentAreaName = $element.closest('[cms-content-editor]').attr('cms-content-editor');
+    var contentAreaName = xdelement.parent('[cms-content-editor]').attr['cms-content-editor'];
     var componentId = this.id;
     props.element = element;
     props.componentId = componentId;
@@ -283,7 +283,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.getDialogClass = function() {
     var rslt = (cms.componentManager.dialogClass||'');
-    rslt += ' '+($element.closest('[cms-content-editor]').attr('cms-dialog-class')||'');
+    rslt += ' '+(xdelement.parent('[cms-content-editor]').attr['cms-dialog-class']||'');
     return rslt.trim();
   };
 

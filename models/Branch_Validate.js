@@ -6,14 +6,14 @@ jsh.App[modelid] = new (function(){
 
   //Event handler
   this.onRenderedValidate = [
-    function(jvalidate){
-      jvalidate.find('.view_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+    function(xdvalidate){
+      xdvalidate.get('.view_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
 
-      jvalidate.find('.view_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+      xdvalidate.get('.view_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
 
-      jvalidate.find('.view_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+      xdvalidate.get('.view_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
 
-      jvalidate.find('.view_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+      xdvalidate.get('.view_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
     }
   ];
   
@@ -40,12 +40,12 @@ jsh.App[modelid] = new (function(){
   };
 
   this.render = function(){
-    var jvalidate = jsh.$('.validate_'+xmodel.class);
+    var xdvalidate = jsh.XDom('.validate_'+xmodel.class);
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_validate_listing').html();
+    var tmpl = jsh.xd('.'+xmodel.class+'_template_validate_listing').html;
     var item_tmpl = {};
     for(var item_type in _this.branch_validate){
-      item_tmpl[item_type] = jsh.$root('.'+xmodel.class+'_template_validate_' + item_type).html();
+      item_tmpl[item_type] = jsh.xd('.'+xmodel.class+'_template_validate_' + item_type).html;
     }
     var renderParams = {
       _: _,
@@ -60,20 +60,19 @@ jsh.App[modelid] = new (function(){
       return XExt.renderClientEJS(item_tmpl[item_type], _.extend(item_params, renderParams));
     };
 
-    jvalidate.html(XExt.renderClientEJS(tmpl, renderParams));
+    xdvalidate.html = XExt.renderClientEJS(tmpl, renderParams);
 
-    XExt.trigger(_this.onRenderedValidate, jvalidate);
+    XExt.trigger(_this.onRenderedValidate, xdvalidate);
 
     jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), xmodel.get('site_id'), xmodel.get('sys_user_site_editor'), { containerClass: 'diff_editor_selection_container' });
   };
 
   this.previewPage = function(obj){
-    var jobj = $(obj);
-    var page_template_id = jobj.data('page_template_id');
-    var page_template_path = jobj.data('page_template_path');
-    var page_key = jobj.data('page_key');
-    var page_filename = jobj.data('page_filename');
-    var page_id = jobj.data('page_id');
+    var page_template_id = obj.dataset['page_template_id'];
+    var page_template_path = obj.dataset['page_template_path'];
+    var page_key = obj.dataset['page_key'];
+    var page_filename = obj.dataset['page_filename'];
+    var page_id = obj.dataset['page_id'];
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
@@ -81,26 +80,23 @@ jsh.App[modelid] = new (function(){
   };
 
   this.previewMedia = function(obj){
-    var jobj = $(obj);
-    var media_key = jobj.data('media_key');
-    var media_id = jobj.data('media_id');
-    var media_ext = jobj.data('media_ext');
-    var media_width = jobj.data('media_width');
-    var media_height = jobj.data('media_height');
+    var media_key = obj.dataset['media_key'];
+    var media_id = obj.dataset['media_id'];
+    var media_ext = obj.dataset['media_ext'];
+    var media_width = obj.dataset['media_width'];
+    var media_height = obj.dataset['media_height'];
     jsh.System.PreviewMedia(media_key, undefined, media_id, media_ext, media_width, media_height);
   };
 
   this.previewMenu = function(obj){
-    var jobj = $(obj);
-    var menu_key = jobj.data('menu_key');
-    var menu_id = jobj.data('menu_id');
+    var menu_key = obj.dataset['menu_key'];
+    var menu_id = obj.dataset['menu_id'];
     XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id, branch_id: xmodel.get('branch_id') });
   };
 
   this.previewSitemap = function(obj){
-    var jobj = $(obj);
-    var sitemap_key = jobj.data('sitemap_key');
-    var sitemap_id = jobj.data('sitemap_id');
+    var sitemap_key = obj.datase['sitemap_key'];
+    var sitemap_id = obj.dataset['stitemap_id'];
     XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id, branch_id: xmodel.get('branch_id') });
   };
 

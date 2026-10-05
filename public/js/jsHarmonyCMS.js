@@ -334,9 +334,9 @@ DataModelTemplate_FormPreview.prototype.buildTemplate = function(componentTempla
   var selItemPreview = (modelConfig.templates || {}).itemPreview;
   if(selItemPreview){
     //If itemPreview is set, extract the template from the model.ejs file
-    var itemPreview = this._jsh.$(templateHtml).find(selItemPreview);
-    if (itemPreview.length > 1) throw new Error('Item template must contain a single root element. Found ' + itemPreview.length + ' elements');
-    itemTemplate = itemPreview ? itemPreview.html() : undefined;
+    var xdItemPreview = this._jsh.XDom(templateHtml, selItemPreview);
+    if (xdItemPreview.length > 1) throw new Error('Item template must contain a single root element. Found ' + xdItemPreview.length + ' elements');
+    itemTemplate = xdItemPreview ? xdItemPreview.html : undefined;
   }
   else {
     //If templates are not used, return the entire model.ejs as the template
@@ -575,12 +575,12 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
     {link: 'js:_this.addItem()', icon: 'add', actions: 'I', text: 'Add', class: 'jsharmony_cms_component_dataGridEditor_insert' },
   ];
   model.getapi =   'return _this.getDataApi(xmodel, apitype)';
-  model.onrowbind =   '_this.onRowBind(xmodel,jobj,datarow);';
+  model.onrowbind =   '_this.onRowBind(xmodel,obj,datarow);';
   model.oncommit =  '_this.onCommit(xmodel, rowid, callback);';
   model.ejs =  '';
   model.sort = { [this._sequenceFieldName]: 'asc' };
   model.oninit = [
-    "jsh.$root('.xform'+xmodel.class).before('<div class=\"dataGridEditor_instructions\"><span style=\"font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;\">&#x1f6c8;</span> Add, edit, and re-order items using the icons <span class=\"dataGridEditor_instructions_doubleClick\">:: Double-click to edit</span></div>');",
+    "jsh.XDom('.xform'+xmodel.class).prepend('<div class=\"dataGridEditor_instructions\"><span style=\"font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;\">&#x1f6c8;</span> Add, edit, and re-order items using the icons <span class=\"dataGridEditor_instructions_doubleClick\">:: Double-click to edit</span></div>');",
   ].join(' ');
   model.rowclass = "<%=xejs.iif(rowid==0,'first')%>";
   model.tableclass = ((model.tableclass||'')+' '+(componentConfig&&componentConfig.options&&componentConfig.options.component_preview_size=='collapse'?'jsharmony_cms_component_preview_collapse':'jsharmony_cms_component_preview_expand')).trim();
@@ -595,9 +595,9 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   var selRowPreview = (modelConfig.templates || {}).gridRowPreview;
   if(selRowPreview){
     //If gridRowPreview is set, extract the template from the model.ejs file
-    var rowPreview = this._jsh.$(templateHtml).find(selRowPreview);
-    if (rowPreview.length > 1) throw new Error('Row template must contain a single root element. Found ' + rowPreview.length + ' elements');
-    rowTemplate = rowPreview ? rowPreview.html() : undefined;
+    var xdRowPreview = this._jsh.XDom(templateHtml, selRowPreview);
+    if (xdRowPreview.length > 1) throw new Error('Row template must contain a single root element. Found ' + xdRowPreview.length + ' elements');
+    rowTemplate = xdRowPreview ? xdRowPreview.html : undefined;
   }
   else {
     //If templates are not used, return the entire model.ejs as the template
@@ -1154,7 +1154,7 @@ var OverlayService = require('./overlayService');
 /**
  *  Called when the dialog is first opened
  * @callback Dialog~openedCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {wrapper} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  * @param {Function} acceptFunc - Call this function to trigger accept logic
  * @param {Function} cancelFunc - Call this function to trigger cancel logic
@@ -1174,12 +1174,12 @@ function Dialog(jsh, cms, model, config) {
   this._id = config.dialogId ? config.dialogId : this.getNextId();
   /** @type {DialogConfig} */
   this._config = config || {};
-  this._$wrapper = this.makeDialog(this._id, this._config);
+  this._wrapper = this.makeDialog(this._id, this._config);
   this._destroyed = false;
 
   this.overlayService = new OverlayService(this);
 
-  this._jsh.$(this._jsh.root).append(this._$wrapper);
+  this._jsh.xdroot.append(this._wrapper);
 
   /**
    * @public
@@ -1225,8 +1225,7 @@ Dialog._idLookup = {};
  * @private
  */
 Dialog.prototype.destroy = function() {
-  this._$wrapper.remove();
-  if (this._$overlay) this._$overlay.remove();
+  this._wrapper.remove();
   delete Dialog._idLookup[this._id];
   this._destroyed = true;
 };
@@ -1262,11 +1261,11 @@ Dialog.prototype.getNextId = function() {
 /**
  * Get the scroll top position for the page.
  * @private
- * @param {JQuery} $wrapper
+ * @param {HTMLElement} wrapper
  * @returns {number}
  */
-Dialog.prototype.getScrollTop = function($wrapper) {
-  return $wrapper.scrollParent().scrollTop();
+Dialog.prototype.getScrollTop = function(wrapper) {
+  return scrollParent(wrapper).scrollY;
 };
 
 /**
@@ -1274,7 +1273,7 @@ Dialog.prototype.getScrollTop = function($wrapper) {
  */
 Dialog.prototype.load = function(callback) {
   var _this = this;
-  this._jsh.XPage.LoadVirtualModel(_this._jsh.$(_this.getFormSelector()), this._model, function(xmodel) {
+  this._jsh.XPage.LoadVirtualModel(_this._jsh.XDom(_this.getFormSelector()).element, this._model, function(xmodel) {
     callback(xmodel);
   });
 };
@@ -1287,22 +1286,22 @@ Dialog.prototype.load = function(callback) {
  */
 Dialog.prototype.makeDialog = function(id, config) {
 
-  var $form = this._jsh.$('<div class="xdialogbox"></div>')
-    .addClass(this._id)
-    .attr('id', this._id)
-    .addClass(config.cssClass || '');
-  if(config.maxWidth) $form.css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null);
-  if(config.maxHeight) $form.css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null);
-  if(config.minWidth) $form.css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null);
-  if(config.minHeight) $form.css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null);
-  if(config.height) $form.css('height',  _.isNumber(config.height) ? config.height + 'px' : null);
-  if(config.width) $form.css('width',  _.isNumber(config.width) ? config.width + 'px' : null);
+  var xdform = this._jsh.XDom(this._jsh.XDom.render('<div class="xdialogbox"></div>'));
+  xdform.class.add(this._id);
+  xdform.attr.id = this._id;
+  xdform.class.add(config.cssClass || '');
+  if(config.maxWidth) xdform.style['max-width'] = (_.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null);
+  if(config.maxHeight) xdform.style['max-height'] = (_.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null);
+  if(config.minWidth) xdform.style['min-width'] = (_.isNumber(config.minWidth) ? config.minWidth + 'px' : null);
+  if(config.minHeight) xdform.style['min-height'] = (_.isNumber(config.minHeight) ? config.minHeight + 'px' : null);
+  if(config.height) xdform.style['height'] = (_.isNumber(config.height) ? config.height + 'px' : null);
+  if(config.width) xdform.style['width'] = (_.isNumber(config.width) ? config.width + 'px' : null);
     
-  var $wrapper = this._jsh.$('<div style="display: none;" class="xdialogbox-wrapper"></div>')
-    .attr('id', id)
-    .append($form);
+  var wrapper = this._jsh.XDom.render('<div style="display: none;" class="xdialogbox-wrapper"></div>');
+  wrapper.id = id;
+  this._jsh.XDom.append(wrapper, xdform);
 
-  return $wrapper;
+  return wrapper;
 };
 
 /**
@@ -1320,7 +1319,7 @@ Dialog.prototype.open = function() {
 
   this.load(function(xmodel) {
 
-    var $wrapper = _this._jsh.$(formSelector);
+    var wrapper = _this._jsh.XDom(formSelector).element;
     _this.registerLovs(xmodel);
     var lastScrollTop = 0;
     _this._jsh.XExt.execif(_this.onBeforeOpen,
@@ -1331,12 +1330,12 @@ Dialog.prototype.open = function() {
         /** @type {DialogResizer} */
         var dialogResizer = undefined;
 
-        _this._jsh.XExt.CustomPrompt(formSelector, _this._jsh.$(formSelector),
-          function(acceptFunc, cancelFunc) { //onInit
-            _this.overlayService.pushDialog($wrapper);
-            lastScrollTop = _this.getScrollTop($wrapper);
-            dialogResizer = new DialogResizer($wrapper[0], _this._jsh);
-            if (_.isFunction(_this.onOpened)) _this.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
+        _this._jsh.XExt.CustomPrompt(formSelector, wrapper,
+          function(xDialogObj) { //onInit
+            _this.overlayService.pushDialog(wrapper);
+            lastScrollTop = _this.getScrollTop(wrapper);
+            dialogResizer = new DialogResizer(wrapper, _this._jsh);
+            if (_.isFunction(_this.onOpened)) _this.onOpened(wrapper, xmodel, xDialogObj.acceptfunc, xDialogObj.cancelfunc);
           },
           function(success) { //onAccept
             if (_.isFunction(_this.onAccept)) _this.onAccept(success);
@@ -1357,7 +1356,7 @@ Dialog.prototype.open = function() {
             restoreFocus: false,
             onClosing: function(cb){
               if (oldActive) oldActive.focus();
-              _this.setScrollTop(lastScrollTop, $wrapper);
+              _this.setScrollTop(lastScrollTop, wrapper);
               return cb();
             }
           }
@@ -1394,11 +1393,24 @@ Dialog.prototype.registerLovs = function(xmodel) {
 /**
  * Set the scroll top position for the page.
  * @private
- * @param {JQuery} $wrapper
+ * @param {HTMLElement} wrapper
  * @returns {number} position
  */
-Dialog.prototype.setScrollTop = function(position, $wrapper) {
-  $wrapper.scrollParent().scrollTop(position);
+Dialog.prototype.setScrollTop = function(position, wrapper) {
+  return scrollParent(wrapper).scrollY = position;
+};
+
+
+function scrollParent(obj){
+  var parent = obj && obj.parentNode;
+  var scrollable = /auto|scroll/;
+  while(parent && parent.style) {
+    if (scrollable.test(parent.style.overflow + parent.style['overflow-y'] + parent.style['overflow-x'])) {
+      return parent;
+    }
+    parent = parent.parentNode;
+  }
+  return (obj && obj.ownerDocument) || document;
 };
 
 exports = module.exports = Dialog;
@@ -1605,7 +1617,7 @@ var Dialog = require('./dialog');
 /**
  * Called when the dialog wants to accept/save the changes
  * @callback FormDialogConfig~acceptCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  * @returns {boolean} return true if accept/save was successful. A true return value will trigger modal close.
  */
@@ -1622,7 +1634,7 @@ var Dialog = require('./dialog');
  * Called when the dialog wants to cancel/close without saving
  * @callback FormDialogConfig~cancelCallback
  * @param {Object} options
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  * @returns {boolean}
  */
@@ -1630,14 +1642,14 @@ var Dialog = require('./dialog');
 /**
  * Called when the dialog closes
  * @callback FormDialogConfig~closeCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  */
 
 /**
  * Called when the dialog is first opened
  * @callback FormDialogConfig~openedCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  */
 
@@ -1741,12 +1753,12 @@ FormDialog.prototype.open = function(data) {
 
   var controller = undefined;
   var xmodel = undefined;
-  var $dialog = undefined;
+  var dialogElement = undefined;
 
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    _this.jsh.$('.xbodyhead.xelem'+xmodel.class).addClass('jsharmony_cms');
+    _this.jsh.XDom('.xbodyhead.xelem'+xmodel.class).class.add('jsharmony_cms');
     _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
@@ -1758,17 +1770,27 @@ FormDialog.prototype.open = function(data) {
   };
 
 
-  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
-    $dialog = _$dialog;
+  dialog.onOpened = function(_dialogElement, _xmodel, acceptFunc, cancelFunc) {
+    dialogElement = _dialogElement;
     controller.form.Prop.Enabled = true;
-    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', function(){ if(acceptFunc) acceptFunc(); }).on('click', function(e){ e.preventDefault(); });
-    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', function(){ if(cancelFunc) cancelFunc(); }).on('click', function(e){ e.preventDefault(); });
-    if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
+    var xdSaveButton = _this.jsh.XDom(dialogElement, '.save_button.xelem' + xmodel.id);
+    xdSaveButton.off('click');
+    xdSaveButton.on('click', function(e){
+      if(acceptFunc) acceptFunc();
+      e.preventDefault();
+    });
+    var xdCancelButton = _this.jsh.XDom(dialogElement, '.cancel_button.xelem' + xmodel.id);
+    xdCancelButton.off('click');
+    xdCancelButton.on('click', function(e){
+      if(cancelFunc) cancelFunc();
+      e.preventDefault();
+    });
+    if (_.isFunction(_this.onOpened)) _this.onOpened(dialogElement, xmodel);
   };
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
-    var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept($dialog, xmodel);
+    var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept(dialogElement, xmodel);
     if (isSuccess) success();
   };
 
@@ -1793,7 +1815,7 @@ FormDialog.prototype.open = function(data) {
   // dialog closes.
   dialog.onClose = function() {
     controller.form.Prop.Enabled = false;
-    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose(dialogElement, xmodel);
   };
 
   dialog.open();
@@ -1850,14 +1872,14 @@ var Dialog = require('./dialog');
 /**
   * Called when the dialog is first opened
   * @callback GridDialog~dialogOpenedCallback
-  * @param {JQuery} dialogWrapper - the dialog wrapper element
+  * @param {HTMLElement} dialogWrapper - the dialog wrapper element
   * @param {Object} xmodel - the JSH model instance
   */
 
 /**
  * Called when the dialog closes
  * @callback GridDialog~closeCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  */
 
@@ -1917,12 +1939,12 @@ GridDialog.prototype.open = function() {
 
   var controller = undefined;
   var xmodel = undefined;
-  var $dialog = undefined;
+  var dialogElement = undefined;
 
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    _this.jsh.$('.xbodyhead.xelem'+xmodel.class).addClass('jsharmony_cms');
+    _this.jsh.XDom.class.add('.xbodyhead.xelem'+xmodel.class, 'jsharmony_cms');
     _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
@@ -1933,11 +1955,11 @@ GridDialog.prototype.open = function() {
     );
   };
 
-  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
-    $dialog = _$dialog;
+  dialog.onOpened = function(_dialogElement, _xmodel, acceptFunc, cancelFunc) {
+    dialogElement = _dialogElement;
     controller.grid.Prop.Enabled = true;
     controller.Render(function() {
-      if (_.isFunction(_this.onOpened)) _this.onOpened(_$dialog, xmodel);
+      if (_.isFunction(_this.onOpened)) _this.onOpened(_dialogElement, xmodel);
     });
   };
 
@@ -1953,7 +1975,7 @@ GridDialog.prototype.open = function() {
 
   dialog.onClose = function() {
     controller.grid.Prop.Enabled = false;
-    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose(dialogElement, xmodel);
   };
 
   dialog.open();
@@ -1995,7 +2017,7 @@ function OverlayService(dialog) {
 /**
  * @private
  * @static
- * @type {JQuery[]}
+ * @type {HTMLElement[]}
  */
 OverlayService._dialogStack = [];
 
@@ -2008,29 +2030,29 @@ OverlayService.prototype.popDialog = function() {
 
   OverlayService._dialogStack.pop();
   if (OverlayService._dialogStack.length < 1) {
-    this.jsh.$dialogBlock('.xdialogoverlay').remove();
+    this.jsh.xdDialogBlock.get('.xdialogoverlay').remove();
     return;
   }
 
-  var $overlay = this.getOverlay();
-  var $dialog = this.jsh.$(OverlayService._dialogStack[OverlayService._dialogStack.length - 1]);
-  var zIndex = this.getZIndex($dialog);
-  $overlay.css('z-index', zIndex);
-  $dialog.before($overlay);
+  var overlay = this.getOverlay();
+  var dialog = OverlayService._dialogStack[OverlayService._dialogStack.length - 1];
+  var zIndex = this.getZIndex(dialog);
+  this.jsh.XDom.setStyle(overlay, 'z-index', zIndex);
+  dialog.before(overlay);
 };
 
 /**
  * Add a dialog element to the overlay stack.
  * @public
  * @static
- * @param {(HTMLElement | JQuery)} dialog
+ * @param {HTMLElement} dialog
 */
 OverlayService.prototype.pushDialog = function(dialog) {
   var zIndex = this.getZIndex(dialog);
-  var $overlay = this.getOverlay();
-  $overlay.css('z-index', zIndex);
-  OverlayService._dialogStack.push(this.jsh.$(dialog));
-  this.jsh.$(dialog).before($overlay);
+  var overlay = this.getOverlay();
+  this.jsh.XDom.setStyle(overlay, 'z-index', zIndex);
+  OverlayService._dialogStack.push(dialog);
+  dialog.before(overlay);
 };
 
 /**
@@ -2038,34 +2060,35 @@ OverlayService.prototype.pushDialog = function(dialog) {
  * exist.
  * @private
  * @static
- * @returns {JQuery}
+ * @returns {HTMLElement}
  */
 OverlayService.prototype.getOverlay = function() {
   var _this = this;
-  var $childOverlay = _this.jsh.$dialogBlock('.xdialogoverlay');
-  if ($childOverlay.length > 0) {
-    return $childOverlay;
+  var childOverlay = _this.jsh.xdDialogBlock.get('.xdialogoverlay').element;
+  if (childOverlay) {
+    return childOverlay;
   }
 
-  $childOverlay = _this.jsh.$('<div class="xdialogoverlay"></div>');
-  _this.jsh.dialogBlock.prepend($childOverlay);
+  childOverlay = _this.jsh.XDom.render('<div class="xdialogoverlay"></div>');
+  _this.jsh.xdDialogBlock.prepend(childOverlay);
 
-  $childOverlay.off('click').on('click', function() {
+  _this.jsh.XDom.off(childOverlay, 'click');
+  _this.jsh.XDom.on(childOverlay, 'click', function() {
     _this.jsh.dialogBlock.click();
   });
 
-  return $childOverlay;
+  return childOverlay;
 };
 
 /**
  * Get the z-index for the element.
  * @private
  * @static
- * @param {(HTMLElement | JQuery)} element
+ * @param {HTMLElement} element
  * @returns {number}
  */
 OverlayService.prototype.getZIndex = function(element) {
-  var zIndex = parseInt(this.jsh.$(element).css('zIndex'));
+  var zIndex = parseInt(this.jsh.XDom.getStyle(element, 'zIndex'));
   return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
 };
 
@@ -2157,27 +2180,26 @@ function DataEditor_Form(componentTemplate, gridContext, isReadOnly, cms, jsh, c
 
 /**
  * @private
- * @param {JQuery} $dialog - the dialog element.
- * @param {JQuery} $wrapper - the preview wrapper element.
+ * @param {HTMLElement} dialogElement - the dialog element.
+ * @param {HTMLElement} wrapper - the preview wrapper element.
+ * @param {HTMLElement} toolbar
  */
-DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) {
+DataEditor_Form.prototype.attachEditors = function(dialogElement, wrapper, toolbar) {
 
   var _this = this;
 
   _.forEach(this._htmlEditors, function(editor) { editor.destroy(); });
 
-  _.forEach($wrapper.find('[data-component-full-editor]'), function (editorEl) {
-    var $el = _this._jsh.$(editorEl);
-    var propName = $el.attr('data-component-full-editor');
-    var editor = new HTMLPropertyEditorController('full', _this._jsh, _this._cms, $dialog, propName,  $el, $toolbar);
+  _.forEach(_this._jsh.XDom(wrapper, '[data-component-full-editor]').elements, function (editorEl) {
+    var propName = editorEl.getAttribute('data-component-full-editor');
+    var editor = new HTMLPropertyEditorController('full', _this._jsh, _this._cms, dialogElement, propName, editorEl, toolbar);
     editor.initialize(function() {});
     _this._htmlEditors.push(editor);
   });
 
-  _.forEach($wrapper.find('[data-component-title-editor]'), function (editorEl) {
-    var $el = _this._jsh.$(editorEl);
-    var propName = $el.attr('data-component-title-editor');
-    var editor = new HTMLPropertyEditorController('title', _this._jsh, _this._cms, $dialog, propName, $el, $toolbar);
+  _.forEach(_this._jsh.XDom(wrapper, '[data-component-title-editor]').elements, function (editorEl) {
+    var propName = editorEl.getAttribute('data-component-title-editor');
+    var editor = new HTMLPropertyEditorController('title', _this._jsh, _this._cms, dialogElement, propName, editorEl, toolbar);
     editor.initialize(function() {});
     _this._htmlEditors.push(editor);
   });
@@ -2185,14 +2207,14 @@ DataEditor_Form.prototype.attachEditors = function($dialog, $wrapper, $toolbar) 
 
 /**
  * @private
- * @param {JQuery} $dialog
+ * @param {HTMLElement} dialog
  * @param {MediaBrowserControlInfo} info
  * @param {boolean} enable
  */
-DataEditor_Form.prototype.enableBrowserControl = function($dialog, info, enable) {
-  var jctrl = $dialog.find('.xform_ctrl.' + info.titleFieldName);
-  if(jctrl.hasClass('editable')){
-    $dialog.find('.xform_ctrl.' + info.titleFieldName).attr('disabled', enable ? null : true);
+DataEditor_Form.prototype.enableBrowserControl = function(dialogElement, info, enable) {
+  var xdctrl = this._jsh.XDom(dialogElement, '.xform_ctrl.' + info.titleFieldName);
+  if(xdctrl.class.contains('editable')){
+    xdctrl.attr.disabled = enable ? null : true;
   }
 };
 
@@ -2227,23 +2249,23 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     minWidth: modelConfig.popup[0]
   });
 
-  var $toolbar;
+  var toolbar;
 
   dialog.onBeforeOpen = function(xmodel, dialogSelector, onComplete) {
     var editor = _this._jsh.App[xmodel.id];
-    var $dialog = _this._jsh.$(dialogSelector);
-    $dialog.css('opacity', '0');
+    var dialogElement = _this._jsh.XDom(dialogSelector).element;
+    dialogElement.style.opacity = '0';
     _this._formSelector = dialogSelector; // remove this
 
     // Note that the toolbar HAS to be in the popup DOM hierarchy for focus/blur
     // events to work correctly.
-    $toolbar = _this._jsh.$('<div class="jsharmony_cms_content_editor_toolbar"></div>')
-      .css('position', 'fixed')
-      .css('top', '0px')
-      .css('left', '0')
-      .css('width', '100%')
-      .css('z-index', '1999999999');
-    _this._jsh.$(dialogSelector).append($toolbar);
+    toolbar = _this._jsh.XDom.render('<div class="jsharmony_cms_content_editor_toolbar"></div>');
+    toolbar.style.position = 'fixed';
+    toolbar.style.top = 0;
+    toolbar.style.left = 0;
+    toolbar.style.width = '100%';
+    toolbar.style['z-index'] = '1999999999';
+    _this._jsh.XDom.append(dialogElement, toolbar);
 
     _.forEach(modelTemplate.getBrowserFieldInfos(), function(info) {
       var title = itemData[info.titleFieldName] || '';
@@ -2251,7 +2273,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
       var fieldsMatch = title === data;
       var isDataEmpty = title.length < 1 && data.length < 1;
       var fieldIsEditable = fieldsMatch || isDataEmpty;
-      _this.enableBrowserControl($dialog, info, fieldIsEditable);
+      _this.enableBrowserControl(dialogElement, info, fieldIsEditable);
     });
 
     editor.onChangeData_noDebounce = function() {
@@ -2263,11 +2285,11 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         }
       });
 
-      var $wrapper =  $dialog.find('[data-id="previewWrapper"]').first();
-      _this.renderPreview($wrapper, template, updatedData, properties, function(){
+      var wrapper = _this._jsh.XDom(dialogElement, '[data-id="previewWrapper"]').element;
+      _this.renderPreview(wrapper, template, updatedData, properties, function(){
         // Don't attach any events until after the onRenderGridItemPreview hook is called.
         // Otherwise, the events might be attached to elements that get replaced or removed.
-        _this.attachEditors($dialog, $wrapper, $toolbar);
+        _this.attachEditors(dialogElement, wrapper, toolbar);
       });
     };
 
@@ -2291,7 +2313,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
         // and then we override the link control.
         xmodel.set(info.titleFieldName, title);
         xmodel.set(browserControlName, url);
-        _this.enableBrowserControl($dialog, info, false);
+        _this.enableBrowserControl(dialogElement, info, false);
         editor.onChangeData();
       };
 
@@ -2330,7 +2352,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     editor.resetEditorBrowser = function(linkControlName) {
       var info = modelTemplate.getBrowserFieldInfo(linkControlName);
       if (info == undefined) return;
-      _this.enableBrowserControl($dialog, info, true);
+      _this.enableBrowserControl(dialogElement, info, true);
       xmodel.set(linkControlName, '');
       xmodel.set(info.titleFieldName, '');
       editor.onChangeData();
@@ -2342,25 +2364,25 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     if(onComplete) onComplete();
   };
 
-  dialog.onOpened = function($dialog, xmodel) {
+  dialog.onOpened = function(dialogElement, xmodel) {
     var editor = _this._jsh.App[xmodel.id];
     // Manually call change to do initial render
     setTimeout(function() {
       editor.onChangeData_noDebounce();
       setTimeout(function() {
-        $dialog.css('opacity', '1');
+        dialogElement.style.opacity = '1';
       }, 50);
     });
   };
 
-  dialog.onAccept = function($dialog, xmodel) {
+  dialog.onAccept = function(dialogElement, xmodel) {
     if(!xmodel.controller.Commit(itemData, 'U')) return false;
     itemData = modelTemplate.makePristineCopy(itemData);
     if (_.isFunction(onAcceptCb)) onAcceptCb(itemData);
     return true;
   };
 
-  dialog.onCancel = function(options, $dialog, xmodel) {
+  dialog.onCancel = function(options, dialogElement, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
       _this._jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
@@ -2370,7 +2392,7 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
     }
   };
 
-  dialog.onClose = function($dialog, xmodel) {
+  dialog.onClose = function(dialogElement, xmodel) {
     //Destroy model
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
@@ -2386,12 +2408,12 @@ DataEditor_Form.prototype.open = function(itemData, properties, onAcceptCb, onCl
 
 /**
  * @private
- * @param {JQuery} $wrapper
+ * @param {HTMLElement} wrapper
  * @param {string} template
  * @param {Object} data
  * @param {Object} properties
  */
-DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, properties, callback) {
+DataEditor_Form.prototype.renderPreview = function(wrapper, template, data, properties, callback) {
 
   var _this = this;
 
@@ -2409,24 +2431,24 @@ DataEditor_Form.prototype.renderPreview = function($wrapper, template, data, pro
 
   var rendered = TemplateRenderer.render(renderConfig, 'gridItemPreview', this._jsh, this._cms, componentConfig);
 
-  $wrapper.empty().append(rendered);
+  _this._jsh.XDom.setHtml(wrapper, rendered);
 
-  if(this._cms && this._cms.editor) this._cms.editor.disableLinks($wrapper);
+  if(this._cms && this._cms.editor) this._cms.editor.disableLinks(wrapper);
   
   var renderPromise = null;
   if (_.isFunction(this._onRenderDataItemPreview)){
-    var renderRslt = this._onRenderDataItemPreview($wrapper.children()[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
+    var renderRslt = this._onRenderDataItemPreview(wrapper.children[0], renderConfig.data, renderConfig.properties, _this._cms, _this._component);
     if(renderRslt && renderRslt.then) renderPromise = renderRslt;
   }
   
-  _this._component.notifyUpdate($wrapper.children()[0], {
+  _this._component.notifyUpdate(wrapper.children[0], {
     data: renderConfig.data,
     properties: renderConfig.properties,
     isItemPreview: true,
   });
 
   setTimeout(function() {
-    _.forEach(_this._jsh.$($wrapper.children()[0]).find('[data-component]'), function(el) {
+    _.forEach(_this._jsh.XDom(wrapper.children[0], '[data-component]').elements, function(el) {
       _this._cms.componentManager.renderContentComponent(el);
     });
     if(callback){
@@ -2524,7 +2546,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
     _this.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', _this._componentTemplate.getCaptions());
 
-    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, _this._jsh.$(dialogSelector),
+    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, _this._jsh.XDom(dialogSelector).element,
       _this._cms, _this._jsh, _this._component, modelTemplate, _this._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
@@ -2541,9 +2563,9 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
     var modelInterface = _this._jsh.App[xmodel.id];
 
-    modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
+    modelInterface.onRowBind = function(xmodel, obj, dataRow) {
       if (!dataController) return;
-      dataController.addRow(jobj, dataRow);
+      dataController.addRow(obj, dataRow);
     };
 
     modelInterface.onCommit = function(xmodel, rowId, callback) {
@@ -2561,11 +2583,11 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     if(onComplete) onComplete();
   };
 
-  dialog.onOpened = function($dialog, xmodel) {
+  dialog.onOpened = function(dialogElement, xmodel) {
     dataController.initialize();
   };
 
-  dialog.onClose = function($dialog, xmodel) {
+  dialog.onClose = function(dialogElement, xmodel) {
     //Destroy model
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
@@ -2583,9 +2605,11 @@ DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captio
 
   var text = captions[1] != undefined ? 'Add ' + captions[1] : 'Add';
 
-  var $el = this._jsh.$(selector);
-  var $img = $el.find('img');
-  $el.empty().append($img).append(text);
+  var xdel = this._jsh.XDom(selector);
+  var xdimg = xdel.get('img');
+  xdel.clear();
+  xdel.append(xdimg);
+  xdel.append(text);
 };
 
 
@@ -2645,7 +2669,7 @@ var TemplateRenderer = require('../templateRenderer');
  * @param {Object} xmodel
  * @param {Object} data - the data used to render the component.
  * @param {Object} properties - the component's configured properties (used to render the component)
- * @param {(JQuery | HTMLElement)} dialogWrapper
+ * @param {(HTMLElement)} dialogWrapper
  * @param {Object} cms
  * @param {Object} jsh
  * @param {Object} component
@@ -2671,8 +2695,8 @@ function DataEditor_GridPreviewController(xmodel, data, properties, dialogWrappe
   /** @private @type {Object} */
   this.xmodel = xmodel;
 
-  /** @private @type {JQuery} */
-  this.$dialogWrapper = this.jsh.$(dialogWrapper);
+  /** @private @type {HTMLElement} */
+  this.dialogWrapper = dialogWrapper;
 
   /** @private @type {string} */
   this._idFieldName = dataModelTemplate_GridPreview.getIdFieldName();
@@ -2721,25 +2745,25 @@ function DataEditor_GridPreviewController(xmodel, data, properties, dialogWrappe
 /**
  * Called by JSH when adding a row.
  * @public
- * @param {object} $row - the JQuery row element proper
+ * @param {object} row - the row element proper
  * @param {Object} rowData - the data for the row (augmented by model)
  */
-DataEditor_GridPreviewController.prototype.addRow = function($row, rowData) {
-  var rowId = this.getParentRowId($row);
-  var $rowComponent = this.getRowElementFromRowId(rowId);
+DataEditor_GridPreviewController.prototype.addRow = function(row, rowData) {
+  var rowId = this.getParentRowId(row);
+  var rowComponent = this.getRowElementFromRowId(rowId);
   var _this = this;
 
-  $row.find('td.xgrid_action_cell.delete').remove();
+  this.jsh.XDom(row, 'td.xgrid_action_cell.delete').remove();
   if (rowData._is_insert) {
     var id = this.makeItemId();
     this._insertId = id;
     rowData._insertId = id;
-    $rowComponent.attr('data-item-id', id);
+    rowComponent.setAttribute('data-item-id', id);
     setTimeout(function() {
       _this.scrollToItemRow(id);
     });
   } else {
-    $rowComponent.attr('data-item-id', rowData[this._idFieldName]);
+    rowComponent.setAttribute('data-item-id', rowData[this._idFieldName]);
     this.renderRow(rowData);
   }
 };
@@ -2837,21 +2861,23 @@ DataEditor_GridPreviewController.prototype.forceCommit = function() {
 };
 
 DataEditor_GridPreviewController.prototype.showOverlay = function() {
-  var joverlay = this.$dialogWrapper.find('.refreshLoadingOverlay');
-  if(joverlay.length){
-    joverlay.stop(true);
-    joverlay.show();
-    joverlay.css('opacity', 1);
+  var xdOverlay = this.jsh.XDom(this.dialogWrapper, '.refreshLoadingOverlay');
+  if(xdOverlay.length){
+    xdOverlay.stop();
+    xdOverlay.style.display = true;
+    xdOverlay.style.opacity = 1;
   }
   else {
-    this.$dialogWrapper.append('<div class="refreshLoadingOverlay" style="opacity:1;position:absolute;top:0px;left:0px;width:100%;height:'+this.$dialogWrapper[0].scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
+    this.jsh.XDom.append(this.dialogWrapper, '<div class="refreshLoadingOverlay" style="opacity:1;position:absolute;top:0px;left:0px;width:100%;height:'+this.dialogWrapper.scrollHeight+'px;background-color:white;z-index:2147483639;"></div>');
   }
 };
 
 DataEditor_GridPreviewController.prototype.hideOverlay = function() {
   var _this = this;
-  this.$dialogWrapper.find('.refreshLoadingOverlay').stop().fadeOut(function(){
-    _this.jsh.$(this).remove();
+  var xdOverlay = _this.jsh.XDom(this.dialogWrapper, '.refreshLoadingOverlay');
+  xdOverlay.stop();
+  xdOverlay.animate.opacity(0, function(){
+    xdOverlay.remove();
   });
 };
 
@@ -2864,7 +2890,7 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
   // Need to maintain the scroll position
   // after the grid re-renders
   var _this = this;
-  var scrollTop = _this.$dialogWrapper.scrollTop();
+  var scrollTop = _this.dialogWrapper.scrollY;
 
   //Show overlay
   _this.showOverlay();
@@ -2873,12 +2899,12 @@ DataEditor_GridPreviewController.prototype.forceRefresh = function(cb) {
   controller.grid.Load(undefined, undefined, function(){
     if(cb){
       if(cb()===false){ //Do not hide overlay
-        _this.$dialogWrapper.scrollTop(scrollTop);
+        _this.dialogWrapper.scrollY = scrollTop;
         return;
       }
     }
     _this.hideOverlay();
-    _this.$dialogWrapper.scrollTop(scrollTop);
+    _this.dialogWrapper.scrollY = scrollTop;
 
   });
 };
@@ -2904,8 +2930,8 @@ DataEditor_GridPreviewController.prototype.getGridPreviewRenderContext = functio
  * @return {(Oobject | undefined)}
  */
 DataEditor_GridPreviewController.prototype.getItemDataFromRowId = function(rowId) {
-  var slideId = this.jsh.$('.xrow.xrow_' + this.xmodel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
-    .attr('data-item-id');
+  var slideId = this.jsh.XDom('.xrow.xrow_' + this.xmodel.id + '[data-id="' + rowId + '"] [data-component-template="gridRow"]')
+    .attr['data-item-id'];
   return this._dataStore.getDataItem(slideId) || {};
 };
 
@@ -2926,11 +2952,11 @@ DataEditor_GridPreviewController.prototype.getNextSequenceNumber = function() {
 /**
  * Get the row ID of the parent row for the given element.
  * @private
- * @param {object} $element - a child JQuery element of the row
+ * @param {object} element - a child element of the row
  * @return {number}
  */
-DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
-  return this.jsh.XExt.XModel.GetRowID(this.xmodel.id, $element);
+DataEditor_GridPreviewController.prototype.getParentRowId = function(element) {
+  return this.jsh.XExt.XModel.GetRowID(this.xmodel.id, element);
 };
 
 /**
@@ -2938,11 +2964,11 @@ DataEditor_GridPreviewController.prototype.getParentRowId = function($element) {
  * with the given ID.
  * @private
  * @param {number} rowId
- * @returns {JQuery}
+ * @returns {HTMLElement}
  */
 DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(rowId) {
   var rowSelector = '.xrow[data-id="' + rowId + '"]';
-  return this.$dialogWrapper.find(rowSelector + ' [data-component-template="gridRow"]');
+  return this.jsh.XDom(this.dialogWrapper, rowSelector + ' [data-component-template="gridRow"]').element;
 };
 
 /**
@@ -2952,8 +2978,8 @@ DataEditor_GridPreviewController.prototype.getRowElementFromRowId = function(row
  * @return {number}
  */
 DataEditor_GridPreviewController.prototype.getRowIdFromItemId = function(itemId) {
-  var $el = this.jsh.$(this.$dialogWrapper).find('[data-component-template="gridRow"][data-item-id="' + itemId + '"]');
-  return this.getParentRowId($el);
+  var el = this.jsh.XDom(this.dialogWrapper, '[data-component-template="gridRow"][data-item-id="' + itemId + '"]').element;
+  return this.getParentRowId(el);
 };
 
 /**
@@ -3115,7 +3141,8 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   var _this = this;
   var dataId = data[this._idFieldName];
   var rowId = this.getRowIdFromItemId(dataId);
-  var $row = this.getRowElementFromRowId(rowId);
+  if (rowId == -1) return;
+  var xdRow = this.jsh.XDom(this.getRowElementFromRowId(rowId));
   var componentConfig = this._componentTemplate && this._componentTemplate._componentConfig;
 
   var template =
@@ -3142,7 +3169,8 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
         '</div>' +
       '</div>' +
       '<div class="jsharmony_cms_component_preview" data-component-part="preview"></div>';
-  $row.empty().append(template);
+  xdRow.clear();
+  xdRow.append(template);
 
   var renderConfig = TemplateRenderer.createRenderConfig(this._rowTemplate, { items: [data] }, this._properties || {}, this.cms);
   renderConfig.gridContext = this.getGridPreviewRenderContext(dataId);
@@ -3151,38 +3179,46 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   var rendered = TemplateRenderer.render(renderConfig, 'gridRowDataPreview', this.jsh, this.cms, componentConfig);
 
-  var $wrapper = $row.find('[data-component-part="preview"]');
+  var xdWrapper = xdRow.get('[data-component-part="preview"]');
 
-  $wrapper.empty().append(rendered);
+  xdWrapper.clear();
+  xdWrapper.append(rendered);
 
-  if(this.cms && this.cms.editor) this.cms.editor.disableLinks($wrapper);
+  if(this.cms && this.cms.editor) this.cms.editor.disableLinks(xdWrapper.element);
 
   if (this.isReadOnly()) {
-    $row.find('.component_toolbar_button:not([data-allowReadOnly])').attr('disabled', true);
+    xdRow.get('.component_toolbar_button:not([data-allowReadOnly])').attr.disabled = true;
   } else {
 
-    $row.find('[data-component-part="moveItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
+    var xdMoveItem = xdRow.get('[data-component-part="moveItem"]');
+    xdMoveItem.off('click');
+    xdMoveItem.on('click', function(e) {
       if (_this.isReadOnly()) return;
-      var moveDown = _this.jsh.$(e.target).closest('.component_toolbar_button[data-dir]').attr('data-dir') === 'next';
+      var moveDown = _this.jsh.XDom(e.target).parent('.component_toolbar_button[data-dir]').attr['data-dir'] === 'next';
       _this.changeItemSequence(dataId, moveDown);
     });
 
-    $row.find('[data-component-part="deleteItem"]').off('click.basicComponent').on('click.basicComponent', function(e) {
+    var xdDeleteItem = xdRow.get('[data-component-part="deleteItem"]');
+    xdDeleteItem.off('click');
+    xdDeleteItem.on('click', function(e) {
       if (_this.isReadOnly()) return;
       var rowId = _this.getParentRowId(e.target);
       _this.promptDelete(rowId);
     });
   }
 
-  $row.find('[data-component-part="editButton"]').on('click', function() {
+  xdRow.get('[data-component-part="editButton"]').on('click', function() {
     _this.openItemEditor(dataId);
   });
 
-  $row.find('[data-component-part="preview"]').off('dblclick.cmsComponent').on('dblclick.cmsComponent', function() {
+  var xdPreview = xdRow.get('[data-component-part="preview"]');
+  xdPreview.off('dblclick');
+  xdPreview.on('dblclick', function() {
     _this.openItemEditor(dataId);
   });
 
-  $row.off('mousedown.cmsComponent').on('mousedown.cmsComponent', function(event) {
+  xdRow.off('mousedown');
+  xdRow.on('mousedown', function(event) {
     // We don't want the user to accidentally select text (which happens often)
     // when double clicking. This will prevent that.
     if (event.detail === 2) {
@@ -3192,16 +3228,16 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
 
   this.updateSequenceButtonViews();
 
-  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow($row.find('[data-component-part="preview"]')[0], renderConfig.data, renderConfig.properties, _this.cms, _this.component);
+  if (_.isFunction(this.onRenderGridRow)) this.onRenderGridRow(xdRow.get('[data-component-part="preview"]').element, renderConfig.data, renderConfig.properties, _this.cms, _this.component);
   
-  _this.component.notifyUpdate($row.find('[data-component-part="preview"]')[0], {
+  _this.component.notifyUpdate(xdRow.get('[data-component-part="preview"]').element, {
     data: renderConfig.data,
     properties: renderConfig.properties,
     isGridRowPreview: true,
   });
 
   setTimeout(function() {
-    _.forEach($row.find('[data-component-part="preview"] [data-component]'), function(el) {
+    _.forEach(xdRow.get('[data-component-part="preview"] [data-component]').elements, function(el) {
       _this.cms.componentManager.renderContentComponent(el);
     });
   }, 100);
@@ -3216,14 +3252,14 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
  */
 DataEditor_GridPreviewController.prototype.scrollToItemRow = function(itemId) {
 
-  var $row = this.getRowElementFromRowId(this.getRowIdFromItemId(itemId));
-  if ($row.length < 1 ) return;
+  var row = this.getRowElementFromRowId(this.getRowIdFromItemId(itemId));
+  if (!row) return;
 
-  var $scrollParent = $row.scrollParent();
-  var scrollParentY = $scrollParent.offset().top;
-  var rowRelativeStartY = $row.offset().top - scrollParentY;
-  var rowRelativeEndY = rowRelativeStartY + $row.outerHeight();
-  var parentRelativeMaxY = $scrollParent.height();
+  var rowScrollParent = scrollParent(row);
+  var scrollParentY = this.jsh.XDom.calc.top(rowScrollParent);
+  var rowRelativeStartY = this.jsh.XDom.calc.top(row) - scrollParentY;
+  var rowRelativeEndY = rowRelativeStartY + this.jsh.XDom.calc.heightToBorder(row);
+  var parentRelativeMaxY = this.jsh.XDom.calc.height(rowScrollParent);
 
   var isRowFullyInView = rowRelativeStartY >= 0 && rowRelativeEndY <= parentRelativeMaxY;
   if (isRowFullyInView) return;
@@ -3231,7 +3267,7 @@ DataEditor_GridPreviewController.prototype.scrollToItemRow = function(itemId) {
   var rowFitsInView = (rowRelativeEndY - rowRelativeStartY) < parentRelativeMaxY;
   if (!rowFitsInView) {
     // If the row doesn't fit then just scroll to the top of the row
-    $row[0].scrollIntoView();
+    row.scrollIntoView();
     return;
   }
 
@@ -3239,7 +3275,7 @@ DataEditor_GridPreviewController.prototype.scrollToItemRow = function(itemId) {
   var rowTopDistanceFromParentTop = Math.abs(rowRelativeStartY);
   var rowBottomDistanceFromParentBottom = Math.abs(parentRelativeMaxY - rowRelativeEndY);
   var alignTop = rowTopDistanceFromParentTop <= rowBottomDistanceFromParentBottom;
-  $row[0].scrollIntoView(alignTop);
+  row.scrollIntoView(alignTop);
 };
 
 /**
@@ -3288,17 +3324,29 @@ DataEditor_GridPreviewController.prototype.updateSequenceButtonViews = function(
   var _this = this;
   _.forEach(this._dataStore.getDataArray(), function(item, index) {
     var dataId = item[_this._idFieldName];
-    var $row = _this.getRowElementFromRowId(_this.getRowIdFromItemId(dataId));
+    var row = _this.getRowElementFromRowId(_this.getRowIdFromItemId(dataId));
 
     var isFirst = index < 1;
     var isLast = index >= (_this._dataStore.count() - 1);
 
-    $row.find('[data-component-part="moveItem"][data-dir="prev"]')
-      .attr('disabled', isFirst || _this.isReadOnly());
+    _this.jsh.XDom(row, '[data-component-part="moveItem"][data-dir="prev"]')
+      .attr.disabled = (isFirst || _this.isReadOnly());
 
-    $row.find('[data-component-part="moveItem"][data-dir="next"]')
-      .attr('disabled', isLast || _this.isReadOnly());
+    _this.jsh.XDom(row, '[data-component-part="moveItem"][data-dir="next"]')
+      .attr.disabled = (isLast || _this.isReadOnly());
   });
+};
+
+function scrollParent(obj){
+  var parent = obj && obj.parentNode;
+  var scrollable = /auto|scroll/;
+  while(parent && parent.style) {
+    if (scrollable.test(parent.style.overflow + parent.style['overflow-y'] + parent.style['overflow-x'])) {
+      return parent;
+    }
+    parent = parent.parentNode;
+  }
+  return (obj && obj.ownerDocument) || document;
 };
 
 exports = module.exports = DataEditor_GridPreviewController;
@@ -3465,12 +3513,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
  * @param {('full' | 'title')} editorType
  * @param {Object} jsh
  * @param {Object} csm
- * @param {(JQuery | HTMLElement)} formElement - The form element.
+ * @param {HTMLElement} formElement - The form element.
  * @param {string} hiddenFieldName - See the class description. The hidden field name
  *                                   is used to bind the editor data to the hidden field
  *                                   and denotes the respective elements.
- * @param {(JQuery | HTMLElement)} editorElement - the element that gets attached as the editor
- * @param {(JQuery | HTMLElement)} toolbarElement - the element used to attach the toolbar.
+ * @param {HTMLElement} editorElement - the element that gets attached as the editor
+ * @param {HTMLElement} toolbarElement - the element used to attach the toolbar.
  */
 function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, editorElement, toolbarElement) {
 
@@ -3483,17 +3531,17 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
   /** @private @type {Object} */
   this._cms = cms;
 
-  /** @private @type {JQuery} */
-  this._$formElement = this._jsh.$(formElement);
+  /** @private @type {HTMLElement} */
+  this._formElement = formElement;
 
   /** @private @type {string} */
   this._hiddenFieldName = hiddenFieldName;
 
-  /** @private @type {JQuery} */
-  this._$editorElement = this._jsh.$(editorElement);
+  /** @private @type {HTMLElement} */
+  this._editorElement = editorElement;
 
-  /** @private @type {JQuery} */
-  this._$toolbarElement = this._jsh.$(toolbarElement);
+  /** @private @type {HTMLElement} */
+  this._toolbarElement = toolbarElement;
 
   /** @private @type {Object} */
   this._editor = undefined;
@@ -3516,12 +3564,12 @@ HTMLPropertyEditor.prototype.destroy = function() {
 };
 
 /**
- * Get the hidden field JQuery obj that is bound to the editor.
+ * Get the hidden field element obj that is bound to the editor.
  * @private
- * @returns {JQuery}
+ * @returns {HTMLELement}
  */
 HTMLPropertyEditor.prototype.getDataElement = function() {
-  return this._$formElement.find('.xform_ctrl.' + this._hiddenFieldName);
+  return this._jsh.XDom(this._formElement).get('.xform_ctrl.' + this._hiddenFieldName).element;
 };
 
 /**
@@ -3537,11 +3585,12 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
 
   // ID must match the jsHarmony convention in order to get/set
   // content using the jsHarmonyEditor. So set the ID no matter what.
-  this._$editorElement.attr('id', this._contentId);
-  this._editor = this._cms.createJsHarmonyCMSEditor(this._$toolbarElement[0]);
+  this._editorElement.setAttribute('id', this._contentId);
+  this._editor = this._cms.createJsHarmonyCMSEditor(this._toolbarElement);
   this._editor.onEndEdit = function() {
     var content = _this.processText(_this._editor.getContent(_this._uid));
-    _this.getDataElement().attr('value', content);
+    var dataElement = _this.getDataElement();
+    if (dataElement) dataElement.setAttribute('value', content);
   };
   this._editor.init(function() {
 
@@ -3589,7 +3638,8 @@ HTMLPropertyEditor.prototype.processText = function(text) {
  * @private
  */
 HTMLPropertyEditor.prototype.render = function() {
-  var value = this.getDataElement().attr('value') || '';
+  var dataElement = this.getDataElement();
+  var value = (dataElement && dataElement.getAttribute('value')) || '';
   this._editor.setContent(this._uid, value);
 };
 
@@ -3668,14 +3718,14 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var dialog = new FormDialog(this._jsh, this._cms, model, dialogParams);
 
-  dialog.onAccept = function($dialog, xmodel) {
+  dialog.onAccept = function(dialog, xmodel) {
     if(!xmodel.controller.Commit(data, 'U')) return false;
     data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   };
 
-  dialog.onCancel = function(options, $dialog, xmodel) {
+  dialog.onCancel = function(options, dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
       _this._jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
@@ -3685,7 +3735,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     }
   };
 
-  dialog.onClose = function($dialog, xmodel) {
+  dialog.onClose = function(dialog, xmodel) {
     //Destroy model
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
@@ -4014,12 +4064,12 @@ function DomSerializer(jsh) {
  * The attribute value will be deserialized and returned as an object.
  * @public
  * @static
- * @param {(Element | JQuery)} element - the element to operate on.
+ * @param {(Element | XDom)} element - the element to operate on.
  * @param {string} attrName - the name of the attribute to use
  * @returns {object} - the deserialized object.
  */
 DomSerializer.prototype.getAttr = function(element, attrName) {
-  var rawAttr = this.jsh.$(element).attr(attrName) || '';
+  var rawAttr = this.jsh.XDom(element).attr[attrName] || '';
   return this.deserializeAttrValue(rawAttr);
 };
 
@@ -4039,13 +4089,13 @@ DomSerializer.prototype.deserializeAttrValue = function(value) {
  * Set the object (after serialization) as the attribute value.
  * @public
  * @static
- * @param {(Element | JQuery)} element - the element to operate on.
+ * @param {(Element | XDom)} element - the element to operate on.
  * @param {string} attrName - the name of the attribute to use
  * @param {(object | undefined)} data - the object to set as the attribute value
  */
 DomSerializer.prototype.setAttr = function(element, attrName, data) {
   var attrVal = this.serializeAttrValue(data);
-  return this.jsh.$(element).attr(attrName, attrVal);
+  return this.jsh.XDom(element).attr[attrName] = attrVal;
 };
 
 /**
@@ -4119,15 +4169,15 @@ var TemplateRenderer = require('./component/templateRenderer');
 /**
  * @class
  * @param {string} componentId - the globally unique component instance ID
- * @param {(HTMLElement | JQuery)} element
+ * @param {(HTMLElement)} element
  * @param {Object} cms
  * @param {Object} jsh
  * @param {string} componentConfigId
  */
 exports = module.exports = function(componentId, element, cms, jsh, componentConfigId) {
 
-  /** @type {JQuery} */
-  var $element = jsh.$(element);
+  /** @type {XDom} */
+  var xdelement = jsh.XDom(element);
 
   /** @type {ComponentTemplate} */
   var componentTemplate = new ComponentTemplate(cms.componentManager.componentTemplates[componentConfigId], jsh, cms);
@@ -4155,7 +4205,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @return {Object}
    */
   this.getData = function() {
-    return this.domSerializer.getAttr($element, 'data-component-data');
+    return this.domSerializer.getAttr(xdelement, 'data-component-data');
   };
 
   /**
@@ -4166,7 +4216,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.getProperties = function() {
     var model = componentTemplate.getPropertiesModelTemplate_Form();
-    var properties = this.domSerializer.getAttr($element, 'data-component-properties');
+    var properties = this.domSerializer.getAttr(xdelement, 'data-component-properties');
     return model.populateDataInstance(properties);
   };
 
@@ -4283,27 +4333,27 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
       else rendered = '*** Component Rendering Error: Empty Result ***';
     }
 
-    $element.empty().append(rendered);
+    xdelement.setHtml(rendered);
 
-    $element.off('dblclick.cmsComponent').on('dblclick.cmsComponent', function(e){
+    xdelement.off('dblclick');
+    xdelement.on('dblclick', function(e){
       _this.openDefaultEditor();
     });
 
-    if (_.isFunction(this.onRender)) this.onRender($element[0], data, props, cms, this);
+    if (_.isFunction(this.onRender)) this.onRender(xdelement.element, data, props, cms, this);
 
-    this.notifyUpdate($element[0], {
+    this.notifyUpdate(xdelement.element, {
       data: data,
       properties: props,
     });
 
     setTimeout(function() {
       jsh.async.each(
-        $element.find('[data-component]'),
+        xdelement.get('[data-component]').elements,
         function(el, el_cb) {
-          var $el = jsh.$(el);
-          if(!$el.hasClass('initialized')){
-            $el.addClass('initialized');
-            $el.attr('data-component-id', cms.componentManager.getNextComponentId());
+          if(!jsh.XDom.class.contains(el, 'initialized')){
+            jsh.XDom.class.add(el, 'initialized');
+            el.setAttribute('data-component-id', cms.componentManager.getNextComponentId());
           }
           cms.componentManager.renderContentComponent(el, undefined, el_cb);
         },
@@ -4320,7 +4370,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} data
    */
   this.saveData = function(data) {
-    this.domSerializer.setAttr($element, 'data-component-data', data);
+    this.domSerializer.setAttr(xdelement, 'data-component-data', data);
   };
 
   /**
@@ -4330,7 +4380,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} props
    */
   this.saveProperties = function(props) {
-    this.domSerializer.setAttr($element, 'data-component-properties', props);
+    this.domSerializer.setAttr(xdelement, 'data-component-properties', props);
   };
 
   /**
@@ -4339,10 +4389,10 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    * @param {(Object | undefined)} props
    */
   this.notifyUpdate = function(element, props) {
-    if(!element) element = $element[0];
+    if(!element) element = xdelement.element;
     if(!props) props = {};
     //Get content area name from element
-    var contentAreaName = $element.closest('[cms-content-editor]').attr('cms-content-editor');
+    var contentAreaName = xdelement.parent('[cms-content-editor]').attr['cms-content-editor'];
     var componentId = this.id;
     props.element = element;
     props.componentId = componentId;
@@ -4357,7 +4407,7 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
    */
   this.getDialogClass = function() {
     var rslt = (cms.componentManager.dialogClass||'');
-    rslt += ' '+($element.closest('[cms-content-editor]').attr('cms-dialog-class')||'');
+    rslt += ' '+(xdelement.parent('[cms-content-editor]').attr['cms-dialog-class']||'');
     return rslt.trim();
   };
 
@@ -4390,7 +4440,6 @@ var JsHarmonyCMSComponent = require('./jsHarmonyCMS.Component');
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var _ = jsh._;
-  var $ = jsh.$;
   var XExt = jsh.XExt;
   var async = jsh.async;
   var ejs = jsh.ejs;
@@ -4448,11 +4497,10 @@ exports = module.exports = function(jsh, cms){
     var url = (componentTemplate.remote_templates || {}).editor;
     if (!url) return complete_cb();
 
-    $.ajax({
-      type: 'GET',
+    jsh.XExt.Request(jsh.XExt.AppendUrlParamsCacheBust(url), {
+      method: 'GET',
       cache: false,
-      url: url,
-      xhrFields: { withCredentials: true },
+      credentials: 'include',
       success: function(data){
         componentTemplate.templates = componentTemplate.templates || {};
         var template = (componentTemplate.templates.editor || '');
@@ -4470,7 +4518,7 @@ exports = module.exports = function(jsh, cms){
     var url = '../_funcs/templates/compile_components';
     var qs = { };
     if(cms.token) qs.jshcms_token = cms.token;
-    if(!_.isEmpty(qs)) url += '?' + $.param(qs);
+    if(!_.isEmpty(qs)) url += '?' + jsh.XExt.escapeQuery(qs);
     XExt.CallAppFunc(url, 'post', { components: JSON.stringify(componentTemplates) }, function (rslt) { //On Success
       if ('_success' in rslt) {
         var components = rslt.components;
@@ -4490,22 +4538,22 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.renderPageComponents = function(){
-    $('.jsharmony_cms_component,[cms-component]').not('.initialized').each(function(){
-      var jobj = $(this);
-      if(jobj.closest('[cms-content-editor]').length) return; //Do not render page components in content editor
-      if(jobj.closest('[data-jsharmony_cms_properties_toggle_hidden=1]').length) return; //Do not render page components if hidden by cms-onRender function
-      var component_id = jobj.attr('cms-component');
+    jsh.XDom('.jsharmony_cms_component,[cms-component]').omit(function(el) {return el.matches('.initialized');}).items.forEach(function(xdobj){
+      if(xdobj.parent('[cms-content-editor]').length) return; //Do not render page components in content editor
+      if(xdobj.parent('[data-jsharmony_cms_properties_toggle_hidden="1"]').length) return; //Do not render page components if hidden by cms-onRender function
+      var component_id = xdobj.attr['cms-component'];
       if(!component_id){
-        component_id = jobj.data('id');
-        jobj.attr('cms-component', component_id);
+        component_id = xdobj.data.id;
+        xdobj.attr['cms-component'] = component_id;
       }
 
-      var removeContainer = (typeof jobj.attr('cms-component-remove-container') != 'undefined');
-      var virtualComponent = (typeof jobj.attr('cms-component-virtual') != 'undefined');
-      var isContentComponent = !component_id && jobj.closest('[data-component]').length > 0;
+      var removeContainer = (typeof xdobj.attr['cms-component-remove-container'] != 'undefined');
+      var virtualComponent = (typeof xdobj.attr['cms-component-virtual'] != 'undefined');
+      var isContentComponent = !component_id && xdobj.parent('[data-component]').length > 0;
       if (isContentComponent) return;
 
-      jobj.addClass('initialized mceNonEditable');
+      xdobj.class.add('initialized');
+      xdobj.class.add('mceNonEditable');
       var component_content = '';
       if(!component_id) component_content = _this.formatComponentError('*** COMPONENT MISSING data-id ATTRIBUTE ***');
       else if(!(component_id in _this.componentTemplates)) component_content = _this.formatComponentError('*** MISSING TEMPLATE FOR COMPONENT "' + component_id+'" ***');
@@ -4519,12 +4567,12 @@ exports = module.exports = function(jsh, cms){
             onBeforeRender: undefined,
             onRender: undefined,
             notifyUpdate: function(element, props){
-              if(!element) element = jobj[0];
+              if(!element) element = xdobj.element;
               if(!props) props = {};
               props.element = element;
               props.componentId = component_id;
               props.contentAreaName = null;
-              if(!props.content) props.content = element.html();
+              if(!props.content) props.content = element.innerHTML;
               jsh.XExt.trigger(_this.onNotifyUpdate, props);
             },
           };
@@ -4549,7 +4597,7 @@ exports = module.exports = function(jsh, cms){
         var hasError = false;
         for(var propName in props){
           var prop = props[propName];
-          var propVal = jobj.attr(propName);
+          var propVal = xdobj.attr[propName];
           if(typeof propVal != 'undefined'){
             if(prop.type=='json'){
               if(propVal === '') propVal = '{}';
@@ -4579,18 +4627,18 @@ exports = module.exports = function(jsh, cms){
       if(!virtualComponent){
         if(removeContainer){
           var containerlessComponentId = ++_this.cntContainerlessComponents;
-          _this.containerlessComponents[containerlessComponentId] = jobj[0];
-          jobj[0].insertAdjacentHTML('beforebegin', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-start"></script>');
-          jobj[0].insertAdjacentHTML('afterend', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-end"></script>');
-          jobj.replaceWith(component_content);
+          _this.containerlessComponents[containerlessComponentId] = xdobj.element;
+          xdobj.element.insertAdjacentHTML('beforebegin', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-start"></script>');
+          xdobj.element.insertAdjacentHTML('afterend', '<script id="jshcms-component-containerless-'+containerlessComponentId+'-end"></script>');
+          xdobj.element.replaceWith(component_content);
         }
         else {
-          jobj.html(component_content);
+          xdobj.setHtml(component_content);
         }
       }
       try{
-        if(component.onRender) component.onRender(jobj[0], renderConfig, null, cms, component);
-        if(component && component.notifyUpdate) component.notifyUpdate(jobj[0], { content: component_content });
+        if(component.onRender) component.onRender(xdobj.element, renderConfig, null, cms, component);
+        if(component && component.notifyUpdate) component.notifyUpdate(xdobj.element, { content: component_content });
       }
       catch(ex){
         cms.fatalError('Error rendering component "' + component_id + '": '+ex.toString());
@@ -4607,29 +4655,33 @@ exports = module.exports = function(jsh, cms){
 
   this.restoreContainerlessComponent = function(containerlessComponentId){
     if(!(containerlessComponentId in _this.containerlessComponents)) throw new Error('Containerless component not found');
-    var startNode = $('#jshcms-component-containerless-'+containerlessComponentId.toString()+'-start');
-    if(!startNode.length) throw new Error('Containerless start node not found');
+    var xdStartNode = jsh.XDom('#jshcms-component-containerless-'+containerlessComponentId.toString()+'-start');
+    if(!xdStartNode.length) throw new Error('Containerless start node not found');
     var foundEnd = false;
-    var childNodes = [startNode[0]];
-    var curNode = startNode;
-    while(!foundEnd && (curNode = curNode.next())){
-      if(!curNode.length) break;
-      childNodes.push(curNode[0]);
-      if(curNode[0].id=='jshcms-component-containerless-'+containerlessComponentId.toString()+'-end'){
+    var childNodes = [xdStartNode.element];
+    var xdCurNode = xdStartNode;
+    while(!foundEnd && (xdCurNode = xdCurNode.nextSibling())){
+      if(!xdCurNode.length) break;
+      childNodes.push(xdCurNode.element);
+      if(xdCurNode.element.id=='jshcms-component-containerless-'+containerlessComponentId.toString()+'-end'){
         foundEnd = true;
       }
     }
     if(!foundEnd) throw new Error('Containerless end node not found');
     childNodes[0].replaceWith(_this.containerlessComponents[containerlessComponentId]);
     for(var i=1;i<childNodes.length;i++){
-      $(childNodes[i]).remove();
+      childNodes[i].remove();
     }
     _this.resetPageComponent(_this.containerlessComponents[containerlessComponentId]);
     delete _this.containerlessComponents[containerlessComponentId];
   };
 
   this.resetPageComponent = function(obj){
-    if($(obj).hasClass('initialized')) $(obj).removeClass('initialized mceNonEditable').empty();
+    if(jsh.XDom.class.contains(obj, 'initialized')) {
+      jsh.XDom.class.remove(obj, 'initialized');
+      jsh.XDom.class.remove(obj, 'mceNonEditable')
+      jsh.XDom.clear(obj);
+    }
   };
 
   this.getDefaultValues = function(model){
@@ -4657,10 +4709,12 @@ exports = module.exports = function(jsh, cms){
     //Preview template
     var hasComponentSubTemplate = false;
     if(componentRawEjs.indexOf('componentTemplate')>=0){
-      var $componentTemplateWrapper = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentTemplate');
-      hasComponentSubTemplate = !!$componentTemplateWrapper.length;
+      var wrapperContainer = document.implementation.createHTMLDocument('virtual').createElement('template');
+      wrapperContainer.innerHTML = '<div>'+componentRawEjs+'</div>';
+      var xdComponentTemplateWrapper = jsh.XDom(wrapperContainer).get('.componentTemplate');
+      hasComponentSubTemplate = !!xdComponentTemplateWrapper.length;
       if (hasComponentSubTemplate){
-        componentTemplate.templates.editor = $componentTemplateWrapper.html();
+        componentTemplate.templates.editor = xdComponentTemplateWrapper.html;
       }
     }
 
@@ -4670,15 +4724,17 @@ exports = module.exports = function(jsh, cms){
       //Data model EJS
       if(!componentTemplate.data.ejs) componentTemplate.data.ejs = '';
       
-      var $componentPreviewTemplate = null;
+      var xdComponentPreviewTemplate = null;
       if(componentRawEjs.indexOf('componentPreviewTemplate')>=0){
-        $componentPreviewTemplate = $('<div>'+componentRawEjs+'</div>', document.implementation.createHTMLDocument('virtual')).find('.componentPreviewTemplate');
-        if ($componentPreviewTemplate.length){
-          componentTemplate.data.ejs += '\n' + $componentPreviewTemplate.html();
+        var previewContainer = document.implementation.createHTMLDocument('virtual').createElement('template');
+        previewContainer.innerHTML = '<div>'+componentRawEjs+'</div>';
+        var xdComponentPreviewTemplate = jsh.XDom(wrapperContainer).get('.componentPreviewTemplate');
+        if (xdComponentPreviewTemplate.length){
+          componentTemplate.data.ejs += '\n' + xdComponentPreviewTemplate.html;
         }
-        else $componentPreviewTemplate = null;
+        else xdComponentPreviewTemplate = null;
       }
-      if(!$componentPreviewTemplate && !hasComponentSubTemplate) {
+      if(!xdComponentPreviewTemplate && !hasComponentSubTemplate) {
         //For grid_preview and form layouts, use the component template as the preview template
         if(componentTemplate.data && _.includes(['grid_preview','form'], componentTemplate.data.layout)){
           componentTemplate.data.ejs += '\n' + componentRawEjs;
@@ -4692,9 +4748,10 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.renderContainerContentComponents = function(container, callback){
-    var items = $(container).find('[data-component]').not('.initialized').addClass('initialized');
-    async.each(items, function(item, item_cb){
-      $(item).attr('data-component-id', _this.getNextComponentId());
+    var items = jsh.XDom(container).get('[data-component]').omit(function(el){return jsh.XDom.class.contains(el, '.initialized');});
+    items.class.add('initialized');
+    async.each(items.elements, function(item, item_cb){
+      item.setAttribute('data-component-id', _this.getNextComponentId());
       _this.renderContentComponent(item, undefined, item_cb);
     }, callback);
   };
@@ -4703,12 +4760,12 @@ exports = module.exports = function(jsh, cms){
     if(!callback) callback = function(){};
     options = _.extend({ init: false }, options);
 
-    var componentType = $(element).attr('data-component');
+    var componentType = element.getAttribute('data-component');
     var componentTemplate = componentType ? _this.componentTemplates[componentType] : undefined;
     if (!componentTemplate) return callback();
 
     componentTemplate.id = componentTemplate.id || componentType;
-    var componentId = $(element).attr('data-component-id') || '';
+    var componentId = element.getAttribute('data-component-id') || '';
     if (componentId.length < 1) {
       console.error(new Error('Component is missing [data-component-id] attribute.')); // eslint-disable-line no-console
       return callback();
@@ -4735,8 +4792,8 @@ exports = module.exports = function(jsh, cms){
 
     //Initialize component
     component.create(componentTemplate, element);
-    if ($(element).attr('data-is-insert')) {
-      $(element).attr('data-is-insert', null);
+    if (element.getAttribute('data-is-insert')) {
+      element.setAttribute('data-is-insert', null);
       if(!options.init){
         element.scrollIntoView(false);
         _this.components[componentId].openDefaultEditor();
@@ -5172,7 +5229,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var XExt = jsh.XExt;
-  var $ = jsh.$;
   
   this.lastMediaPath = undefined;
   this.lastLinkPath = undefined;
@@ -5241,12 +5297,12 @@ exports = module.exports = function(jsh, cms){
     return false;
   };
 
-  this.fileSelector_onGetValue = function(val, field, xmodel, jctrl, parentobj){
-    return jctrl.find('input.jsharmony_cms_fileselector').val();
+  this.fileSelector_onGetValue = function(val, field, xmodel, ctrl, parentobj){
+    return jsh.XDom(ctrl, 'input.jsharmony_cms_fileselector').value;
   };
 
   this.fileSelector_render = function(fileSelectorType, xmodel, field, val){  //fileSelectorType = link_browser or media_browser
-    return XExt.renderEJS(jsh.$('.jsharmony_cms_fileselector_template').html(), xmodel.id, {
+    return XExt.renderEJS(jsh.XDom('.jsharmony_cms_fileselector_template').html, xmodel.id, {
       fileSelectorType: fileSelectorType,
       field: field,
       val: val,
@@ -5254,38 +5310,35 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.fileSelector_onChange = function(obj){
-    var jobj = $(obj);
-    var jctrl = jobj.closest('.xform_ctrl');
+    var xdctrl = jsh.XDom.parent(obj, '.xform_ctrl');
     var xform = XExt.getFormFromObject(obj);
-    if(jctrl.length && xform){
-      if(!jctrl.hasClass('editable')) return;
-      xform.Data.OnControlUpdate(jctrl[0]);
+    if(xdctrl.length && xform){
+      if(!xdctrl.class.contains('editable')) return;
+      xform.Data.OnControlUpdate(xdctrl.element);
     }
   };
 
   this.fileSelector_reset = function(obj){
-    var jobj = $(obj);
-    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
-    var jtext = jparent.find('input.jsharmony_cms_fileselector');
-    jtext.val('');
+    var xdparent = jsh.XDom.parent(obj, '.jsharmony_cms_fileselector_container');
+    var xdtext = xdparent.get('input.jsharmony_cms_fileselector');
+    xdtext.value = '';
     _this.fileSelector_onChange(obj);
   };
 
   this.fileSelector_browse = function(obj){
-    var jobj = $(obj);
-    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
-    var jtext = jparent.find('input.jsharmony_cms_fileselector');
-    var fileSelectorType = jparent.data('fileselectortype');
-    var val = jtext.val();
+    var xdparent = jsh.XDom.parent(obj, '.jsharmony_cms_fileselector_container');
+    var xdtext = xdparent.get('input.jsharmony_cms_fileselector');
+    var fileSelectorType = xdparent.data['fileselectortype'];
+    var val = xdtext.value;
     if(fileSelectorType == 'link_browser'){
       _this.openLink(function(url, data) {
-        jtext.val(url);
+        xdtext.value = url;
         _this.fileSelector_onChange(obj);
       }, val);
     }
     else if(fileSelectorType == 'media_browser'){
       _this.openMedia(function(url, data) {
-        jtext.val(url);
+        xdtext.value = url;
         _this.fileSelector_onChange(obj);
       }, val);
     }
@@ -5316,7 +5369,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 exports = module.exports = function(jsh, cms, editor){
   var _ = jsh._;
-  var $ = jsh.$;
 
   /**
    * @typedef {Object} IconDefinition
@@ -5598,7 +5650,7 @@ exports = module.exports = function(jsh, cms, editor){
                   text: 'Add Line Break Before',
                   onAction: function () {
                     var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
-                    $(lineBreak).insertBefore(node);
+                    node.parentNode.insertBefore(lineBreak, node);
                     var selection = _this._editor.selection;
                     var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
                     selection.select(textNode);
@@ -5609,7 +5661,7 @@ exports = module.exports = function(jsh, cms, editor){
                   text: 'Add Line Break After',
                   onAction: function () {
                     var lineBreak = _this._editor.dom.create('p',undefined,'&#160;');
-                    $(lineBreak).insertAfter(node);
+                    node.after(lineBreak);
                     var selection = _this._editor.selection;
                     var textNode = (lineBreak.childNodes && lineBreak.childNodes.length) ? lineBreak.childNodes[0] : lineBreak;
                     selection.select(textNode);
@@ -5690,9 +5742,14 @@ exports = module.exports = function(jsh, cms, editor){
             text: 'Toggle Outlines',
             onAction: function () {
               if(document && document.body){
-                var hasOutlines =  $(document.body).hasClass('jsHarmonyCMS_showEditorOutlines');
-                $(document.body).toggleClass('jsHarmonyCMS_hideEditorOutlines', hasOutlines);
-                $(document.body).toggleClass('jsHarmonyCMS_showEditorOutlines', !hasOutlines);
+                var hasOutlines = jsh.XDom.class.contains(document.body, 'jsHarmonyCMS_showEditorOutlines');
+                if (hasOutlines) {
+                  jsh.XDom.class.add(document.body, 'jsHarmonyCMS_hideEditorOutlines');
+                  jsh.XDom.class.remove(document.body, 'jsHarmonyCMS_showEditorOutlines');
+                } else {
+                  jsh.XDom.class.remove(document.body, 'jsHarmonyCMS_hideEditorOutlines');
+                  jsh.XDom.class.add(document.body, 'jsHarmonyCMS_showEditorOutlines');
+                }
                 if(!jsh.xDialog.length){
                   var editorManager = tinymce.util.Tools.resolve('tinymce.EditorManager');
                   editorManager.activeEditor.focus();
@@ -5859,7 +5916,7 @@ exports = module.exports = function(jsh, cms, editor){
     if (!element) return;
     var id = element;
     if (!_.isString(element)) {
-      id = $(element).attr('data-component-id') || '';
+      id = element.getAttribute('data-component-id') || '';
     }
 
     return cms.componentManager.components[id];
@@ -5882,7 +5939,7 @@ exports = module.exports = function(jsh, cms, editor){
         var id = node.attributes.map['data-component-id'];
         var type = node.attributes.map['data-component'];
         if (id && type) {
-          cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0]);
+          cms.componentManager.renderContentComponent(jsh.XDom(_this._editor.targetElm).get('[data-component-id="' + id + '"]').element);
         }
       }
     });
@@ -6023,7 +6080,7 @@ exports = module.exports = function(jsh, cms, editor){
       var placeholderId = domUtil.uniqueId();
       var placeholder = domUtil.create('div', { id: placeholderId }, '');
 
-      $(placeholder).insertBefore(currentNode);
+      currentNode.parentNode.insertBefore(placeholder, currentNode);
 
       selection.select(placeholder);
       selection.collapse(false);
@@ -6106,7 +6163,7 @@ exports = module.exports = function(jsh, cms, editor){
       // Wait for next loop
       var isInitialized = cms.isInitialized;
       setTimeout(function() {
-        cms.componentManager.renderContentComponent($(_this._editor.targetElm).find('[data-component-id="' + id + '"]')[0], {
+        cms.componentManager.renderContentComponent(jsh.XDom(_this._editor.targetElm).get('[data-component-id="' + id + '"]').element, {
           init: !isInitialized
         });
       });
@@ -6239,7 +6296,6 @@ var jsHarmonyCMSEditorTinyMCEPlugin = require('./jsHarmonyCMS.Editor.TinyMCEPlug
 exports = module.exports = function(jsh, cms, toolbarContainer){
   var _this = this;
 
-  var $ = jsh.$;
   var _ = jsh._;
   var XExt = jsh.XExt;
 
@@ -6247,7 +6303,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   this.picker = new jsHarmonyCMSEditorPicker(jsh, cms);
   this.tinyMCEPlugin = new jsHarmonyCMSEditorTinyMCEPlugin(jsh, cms, this);
   this.defaultConfig = {};
-  this.toolbarContainer = null;
+  this.xdToolbarContainer = null;
   this.defaultToolbarOptions = {
     dock: 'auto',
     show_menu: true,
@@ -6333,7 +6389,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
           }
           return url;
         },
-        fixed_toolbar_container: _this.toolbarContainer ? '#' + _this.toolbarContainer.attr('id') : '',
+        fixed_toolbar_container: _this.xdToolbarContainer ? '#' + _this.xdToolbarContainer.attr.id : '',
         statusbar: true,
         charmap_append: materialIcons,
         charmap_append_title: (materialIcons.length ? 'Material Icons' : 'Other'),
@@ -6346,59 +6402,65 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
         mceEditor.on('focus', function(){
           //Fix bug where alignment not reset when switching between editors
           if(firstFocus){
-            $('.jsharmony_cms_content_editor_toolbar').find('.tox-tbtn--enabled:visible').removeClass('tox-tbtn--enabled');
+            jsh.XDom('.jsharmony_cms_content_editor_toolbar .tox-tbtn--enabled').filter(jsh.XDom.isVisible).class.remove('tox-tbtn--enabled');
             firstFocus = false;
           }
-          $('[data-component="header"]').css('pointer-events', 'none');
+          jsh.XDom.setStyle('[data-component="header"]', 'pointer-events', 'none');
           _this.isEditing = mceEditor.id.substr(('jsharmony_cms_content_').length);
-          var wasOnBottom = _this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom');
-          if(_this.toolbarContainer.length){
-            var computedContainerStyles = window.getComputedStyle(_this.toolbarContainer[0]);
+          var wasOnBottom = _this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_bottom');
+          if(_this.xdToolbarContainer.length){
+            var computedContainerStyles = window.getComputedStyle(_this.xdToolbarContainer.element);
             wasOnBottom = wasOnBottom && (computedContainerStyles.opacity > 0);
           }
           _this.renderContentEditorToolbar(mceEditor, { onFocus: true });
-          if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_bottom')){
+          if(_this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_bottom')){
             //If dock=bottom, slide up
-            _this.toolbarContainer.stop(true).css({ opacity:1, display:'none' });
-            _this.toolbarContainer.slideDown(wasOnBottom ? 0 : 300);
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.style.opacity = 1;
+            _this.xdToolbarContainer.style.display = 'none';
+            _this.xdToolbarContainer.animate.height(true, null, wasOnBottom ? 0 : 300);
           }
-          else if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+          else if(_this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
             //Top-offset
-            _this.toolbarContainer.stop(true).css({ opacity:1 });
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.style.opacity = 1;
           }
           else {
-            _this.toolbarContainer.stop(true).animate({ opacity:1 },300);
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.animate.opacity(1,null,300);
           }
           
           cms.refreshLayout();
           var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
-          $('body').not('.jsharmony_cms_editing').addClass('jsharmony_cms_editing');
-          if(jshEditorId) $('body').addClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
+          jsh.XDom('body').omit(function(el) {return el.matches('.jsharmony_cms_editing');}).class.add('jsharmony_cms_editing');
+          if(jshEditorId) jsh.XDom('body').class.add('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
           if(_this.onBeginEdit) _this.onBeginEdit(mceEditor);
         });
         mceEditor.on('blur', function(){
-          $('[data-component="header"]').css('pointer-events', 'auto');
+          jsh.XDom.setStyle('[data-component="header"]', 'pointer-events', 'auto');
           _this.isEditing = false;
-          var clearClasses = function(){ _this.toolbarContainer.removeClass('jsharmony_cms_content_editor_toolbar_hide_toolbar'); };
-          if(_this.toolbarContainer.hasClass('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
-            _this.toolbarContainer.stop(true).css({ opacity:0 });
+          var clearClasses = function(){ _this.xdToolbarContainer.class.remove('jsharmony_cms_content_editor_toolbar_hide_toolbar'); };
+          if(_this.xdToolbarContainer.class.contains('jsharmony_cms_content_editor_toolbar_dock_top_offset')){
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.style.opacity = 0;
             clearClasses();
             cms.toolbar.refreshOffsets();
           }
           else {
-            _this.toolbarContainer.stop(true).animate({ opacity:0 },300, clearClasses);
+            _this.xdToolbarContainer.stop();
+            _this.xdToolbarContainer.animate.opacity(0, clearClasses, 300);
           }
           if(_this.onEndEdit) _this.onEndEdit(mceEditor);
           var jshEditorId = (mceEditor.id.indexOf('jsharmony_cms_content_')>=0) ? mceEditor.id.substr(('jsharmony_cms_content_').length) : '';
-          $('body').removeClass('jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
+          jsh.XDom.class.remove('body', 'jsharmony_cms_editing_'+XExt.escapeCSSClass(jshEditorId));
           //Remove class
-          if(!$('.mce-edit-focus').length){
-            $('body.jsharmony_cms_editing').removeClass('jsharmony_cms_editing');
-            var bodyElem = $('body')[0];
+          if(!jsh.XDom('.mce-edit-focus').length){
+            jsh.XDom.class.remove('body.jsharmony_cms_editing', 'jsharmony_cms_editing');
+            var bodyElem = jsh.XDom('body').element;
             if(bodyElem){
               var editingClasses = [];
               _.each(bodyElem.classList||[], function(className){ if(className.indexOf('jsharmony_cms_editing_')>=0) editingClasses.push(className); });
-              _.each(editingClasses, function(className){ $('body').removeClass(className); });
+              _.each(editingClasses, function(className){ jsh.XDom.class.remove('body', className); });
             }
           }
         });
@@ -6438,7 +6500,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     var cb_called = false;
     var orig_cb = cb;
     cb = function(err){ if(cb_called) return; cb_called = true; orig_cb(err); };
-    if(!$('#'+elem_id).length) return cb(new Error('Editor container element not found: #'+elem_id));
+    if(!jsh.XDom('#'+elem_id).length) return cb(new Error('Editor container element not found: #'+elem_id));
     if(!(config_id in _this.editorConfig)) throw new Error('Editor config ' + (config_id||'').toString() + ' not defined');
     var config = _.extend({ selector: '#' + elem_id, base_url: window.TINYMCE_BASEPATH }, _this.editorConfig[config_id], options);
     config.init_instance_callback = XExt.chainToEnd(config.init_instance_callback, function(){ return cb(); });
@@ -6466,20 +6528,19 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
 
   this.disableLinks = function(container, options){
     options = _.extend({ onlyJSHCMSLinks: false, addFlag: false }, options);
-    $(container).find('a').each(function(){
-      var jobj = $(this);
+    jsh.XDom(container).get('a').items.forEach(function(xdobj){
       if(options.onlyJSHCMSLinks){
-        var url = jobj.attr('href');
+        var url = xdobj.attr.href;
         //If it is not a jsHarmony Internal Link
         if(url.indexOf('#@JSHCMS') < 0){
           //If it is not inside of a component
-          if(!jobj.closest('[data-component]').length) return;
+          if(!xdobj.parent('[data-component]').length) return;
         }
       }
 
-      if(options.addFlag && jobj.data('disabled_links')) return;
-      if(options.addFlag) jobj.data('disabled_links', '1');
-      jobj.on('click', function(e){ e.preventDefault(); });
+      if(options.addFlag && xdobj.data['disabled_links']) return;
+      if(options.addFlag) xdobj.data['disabled_links'] = '1';
+      xdobj.on('click', function(e){ e.preventDefault(); });
     });
   };
 
@@ -6489,7 +6550,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if(cms.readonly){
       //Delay load, so that errors in the HTML do not stop the page loading process
       window.setTimeout(function(){
-        $('#'+containerId).html(val);
+        jsh.XDom.setHtml('#'+containerId, val);
         cms.componentManager.renderContainerContentComponents(document.getElementById(containerId), function(err){
           if(err) throw new Error(err);
           _this.disableLinks(document.getElementById(containerId), { addFlag: true, onlyJSHCMSLinks: true });
@@ -6513,13 +6574,13 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   };
 
   this.initToolbarContainer = function(element) {
-    this.toolbarContainer = $(element);
-    var id = this.toolbarContainer.attr('id');
+    this.xdToolbarContainer = jsh.XDom(element);
+    var id = this.xdToolbarContainer.attr.id;
     if (!id) {
       do {
         id = 'jsharmony_cms_editor_toolbar_' + Math.random().toString().replace('.', '');
-      } while($('#' + id).length > 0);
-      this.toolbarContainer.attr('id', id);
+      } while(jsh.XDom('#' + id).length > 0);
+      this.xdToolbarContainer.attr.id = id;
     }
   };
 
@@ -6530,9 +6591,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
   };
 
   this.getContentEditorTopOffset = function(mceEditor){
-    var contentOffset = $(mceEditor.contentAreaContainer).offset();
-    if(!contentOffset) return undefined;
-    var contentOffsetTop = contentOffset.top;
+    var contentOffsetTop = jsh.XDom(mceEditor.contentAreaContainer).calc.top();
     var contentStyles = window.getComputedStyle(mceEditor.contentAreaContainer);
     contentOffsetTop += parseInt(contentStyles.paddingTop);
     contentOffsetTop -= cms.toolbar.currentOffsetTop;
@@ -6549,7 +6608,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
       //Check if content would overlap editor
       var contentOffsetTop = _this.getContentEditorTopOffset(mceEditor);
       if(typeof contentOffsetTop == 'undefined') return 'top';
-      var editorToolbarHeight = $('#jsharmony_cms_content_editor_toolbar').outerHeight();
+      var editorToolbarHeight = jsh.XDom.calc.heightToBorder('#jsharmony_cms_content_editor_toolbar');
       if(editorToolbarHeight > contentOffsetTop){
         if(cms.toolbar.dockPosition == 'top_offset') return 'top_offset';
       }
@@ -6564,7 +6623,7 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     if(!mceEditor) return 0;
     var dockPosition = _this.getDockPosition(mceEditor);
     if(dockPosition=='top_offset'){
-      return $('#jsharmony_cms_content_editor_toolbar').outerHeight() || 0;
+      return jsh.XDom.calc.heightToBorder('#jsharmony_cms_content_editor_toolbar') || 0;
     }
     return 0;
   };
@@ -6582,39 +6641,44 @@ exports = module.exports = function(jsh, cms, toolbarContainer){
     }
     toolbarOptions = _.extend({}, _this.defaultToolbarOptions, toolbarOptions);
 
-    var jContentToolbar = $('#jsharmony_cms_content_editor_toolbar');
+    var xdContentToolbar = jsh.XDom('#jsharmony_cms_content_editor_toolbar');
 
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
+    function toggleClass(cls, condition) {
+      if (condition) {
+        xdContentToolbar.class.add(cls);
+      } else {
+        xdContentToolbar.class.remove(cls);
+      }
+    }
+
+    toggleClass('jsharmony_cms_content_editor_toolbar_hide_menu', !toolbarOptions.show_menu);
+    toggleClass('jsharmony_cms_content_editor_toolbar_hide_toolbar', !toolbarOptions.show_toolbar);
 
     var dockPosition = _this.getDockPosition(mceEditor);
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
-    jContentToolbar.toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
-    var isPageToolbarBottom = jContentToolbar.hasClass('jsharmony_cms_page_toolbar_bottom');
+    toggleClass('jsharmony_cms_content_editor_toolbar_dock_bottom', (dockPosition == 'bottom'));
+    toggleClass('jsharmony_cms_content_editor_toolbar_dock_top_offset', (dockPosition == 'top_offset'));
+    var isPageToolbarBottom = xdContentToolbar.class.contains('jsharmony_cms_page_toolbar_bottom');
 
     var barh = cms.toolbar.getHeight();
     if (dockPosition == 'bottom') {
       //Bottom Dock Position
-      jContentToolbar
-        .css('top', 'auto') // Need to override any CSS. Use 'auto' instead of clearing.
-        .css('bottom', isPageToolbarBottom ? barh+'px' : '0');
+      xdContentToolbar.style.top = 'auto'; // Need to override any CSS. Use 'auto' instead of clearing.
+      xdContentToolbar.style.bottom = (isPageToolbarBottom ? barh+'px' : '0');
     } else {
       //Top Dock Position
-      
-      jContentToolbar
-        .css('top', isPageToolbarBottom ? '0' : barh + 'px')
-        .css('bottom', '');
+      xdContentToolbar.style.top = (isPageToolbarBottom ? '0' : barh + 'px');
+      xdContentToolbar.style.bottom = '';
     }
     cms.toolbar.refreshOffsets();
   };
 
   this.endEdit = function(){
-    jsh.root.append($('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>'));
-    $('#jsharmony_cms_virtual_focus_element a').focus();
+    jsh.xdroot.append('<div id="jsharmony_cms_virtual_focus_element" style="width:1px;height:1px;position:fixed;top:0;left:0;"><a href="#">&nbsp;</a></div>');
+    jsh.XDom('#jsharmony_cms_virtual_focus_element a').focus();
     setTimeout(function(){
       jsh.XExt.waitUntil(
         function(){ !(window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.hasFocus()); },
-        function(){ jsh.$root('#jsharmony_cms_virtual_focus_element').remove(); }
+        function(){ jsh.xd('#jsharmony_cms_virtual_focus_element').remove(); }
       );
     }, 100);
   };
@@ -7603,7 +7667,7 @@ exports = module.exports = function(cms){
 
     if(loader_obj){
       if(cms.isInitialized) loader_obj.style.backgroundColor = 'rgba(0,0,0,0.2)';
-      if(cms.jsh) cms.jsh.$('#jsHarmonyCMSLoading').fadeIn();
+      if(cms.jsh) cms.jsh.XDom.animate.opacity('#jsHarmonyCMSLoading', 1);
       else loader_obj.style.display = 'block';
     }
     else {
@@ -7646,7 +7710,8 @@ exports = module.exports = function(cms){
     this.isLoading = false;
     var triggerLoadingComplete = function(){ for(var i=0;i<_this.onLoadingComplete.length;i++) _this.onLoadingComplete[i](); };
     if(cms.jsh){
-      cms.jsh.$('#jsHarmonyCMSLoading').stop(true).fadeOut('normal', function(){ triggerLoadingComplete(); });
+      cms.jsh.XDom.stop('#jsHarmonyCMSLoading');
+      cms.jsh.XDom.animate.opacity('#jsHarmonyCMSLoading', 0, function(){ triggerLoadingComplete(); });
     }
     else{
       document.getElementById('jsHarmonyCMSLoading').style.display = 'none';
@@ -7681,7 +7746,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 exports = module.exports = function(jsh, cms){
   var _this = this;
-  var $ = jsh.$;
   var _ = jsh._;
 
   this.editorBarDocked = true;
@@ -7697,13 +7761,13 @@ exports = module.exports = function(jsh, cms){
  
   this.render = function(){
     cms.util.addStyle('jsharmony_cms_editor_css',cms.views['jsh_cms_editor.css']);
-    jsh.root.append(cms.views['jsh_cms_editor']);
+    jsh.xdroot.append(cms.views['jsh_cms_editor']);
     jsh.InitControls();
     this.renderErrors();
   };
 
   this.getHeight = function(){
-    return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
+    return jsh.XDom.calc.heightToBorder('#jsharmony_cms_page_toolbar .actions') || 0;
   };
 
   this.isAnchored = function(elem, computedStyles){
@@ -7711,9 +7775,8 @@ exports = module.exports = function(jsh, cms){
     if(computedStyles.position=='fixed') return true;
     if(computedStyles.position=='absolute'){
       //Check if there is a positioned ancestor
-      var offsetParent = $(elem).offsetParent();
-      if(offsetParent && offsetParent.length){
-        offsetParent = offsetParent[0];
+      var offsetParent = elem.offsetParent;
+      if(offsetParent){
         if(offsetParent.tagName && _.includes(['HTML','BODY'], offsetParent.tagName.toUpperCase())) offsetParent = null;
       }
       else offsetParent = null;
@@ -7724,42 +7787,42 @@ exports = module.exports = function(jsh, cms){
     return false;
   };
 
-  this.excludeMarginOffset = function(jobj){
-    var obj = jobj[0];
+  this.excludeMarginOffset = function(obj){
     for(let i=0;i<_this.excludeMarginOffsetId.length;i++){
       var excludeId = _this.excludeMarginOffsetId[i];
       if(obj.id == excludeId) return true;
-      if(jobj.closest('#'+excludeId).length) return true;
+      if(jsh.XDom.parent(obj, '#'+excludeId).length) return true;
     }
     for(let i=0;i<_this.excludeMarginOffsetClass.length;i++){
       var excludeClass = _this.excludeMarginOffsetClass[i];
       if(_.includes(obj.classList, excludeClass)) return true;
-      if(jobj.closest('.'+excludeClass).length) return true;
+      if(jsh.XDom.parent(obj, '.'+excludeClass).length) return true;
     }
     return false;
   };
 
   this.saveOrigOffsets = function(options){
     options = _.extend({ preload: false, refreshExisting: false }, options);
-    _.filter($('*').toArray(), function(elem){
+    _.filter(jsh.XDom('*').elements, function(elem){
       if(elem.id=='jsHarmonyCMSLoading') return;
       var computedStyles = window.getComputedStyle(elem);
       if(_this.isAnchored(elem, computedStyles)){
-        var jelem = $(elem);
-        var offsetId = jelem.attr('cms-toolbar-offsetid');
-        if(typeof offsetId != 'undefined'){
+        var xdelem = jsh.XDom(elem);
+        var offsetId = xdelem.attr['cms-toolbar-offsetid'];
+        if(typeof offsetId == 'string'){
+          offsetId = parseInt(offsetId);
           _this.pageElements[offsetId] = elem;
           if(!options.refreshExisting) return;
         }
-        else if(jelem.parent().closest('[cms-content-editor]').length) return;
-        else if(typeof jelem.attr('cms-toolbar-offset-exclude') != 'undefined') return;
-        else if(_this.excludeMarginOffset(jelem)){
-          jelem.attr('cms-toolbar-offset-exclude','1');
+        else if(xdelem.parent().parent('[cms-content-editor]').length) return;
+        else if(!_.isNil(xdelem.attr['cms-toolbar-offset-exclude'])) return;
+        else if(_this.excludeMarginOffset(elem)){
+          xdelem.attr['cms-toolbar-offset-exclude'] = '1';
           return;
         }
         else{
           offsetId = _this.origMarginTop.length;
-          jelem.attr('cms-toolbar-offsetid', offsetId);
+          xdelem.attr['cms-toolbar-offsetid'] = offsetId;
         }
         _this.origMarginTop[offsetId] = computedStyles.marginTop;
         _this.pageElements[offsetId] = elem;
@@ -7795,15 +7858,15 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.getPageElement = function(offsetId){
-    let jelem = null;
+    let elem = null;
     if(elementIsValid(_this.pageElements[offsetId])){
-      jelem = $(_this.pageElements[offsetId]);
+      elem = _this.pageElements[offsetId];
     }
     else{
-      jelem = $('[cms-toolbar-offsetid='+offsetId.toString()+']');
-      if(jelem.length) _this.pageElements[offsetId] = jelem[0];
+      elem = jsh.XDom('[cms-toolbar-offsetid='+offsetId.toString()+']').element;
+      if(elem) _this.pageElements[offsetId] = elem;
     }
-    return jelem;
+    return elem;
   };
 
   this.refreshOffsets = function(options){
@@ -7812,19 +7875,19 @@ exports = module.exports = function(jsh, cms){
     if(options.addNewOffsets) _this.saveOrigOffsets();
     var offsetTop = _this.getOffsetTop();
     var origBodyOffset = null;
-    var scrollTop = $(document).scrollTop();
+    var scrollTop = window.scrollY;
 
     //Save starting offsets
     var startingOffsets = [];
     for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      let jelem = _this.getPageElement(i);
-      if(jelem.length){
-        let elemIsBody = (jelem[0].tagName=='BODY');
+      let elem = _this.getPageElement(i);
+      if(elem){
+        let elemIsBody = (elem.tagName=='BODY');
         //Fixed elements need to subtract scrollTop from offset().top
-        startingOffsets[i] = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
+        startingOffsets[i] = jsh.XDom.calc.top(elem) - (elemIsBody ? 0 : scrollTop);
         if(elemIsBody){
-          origBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+          origBodyOffset = _this.getComputedOffsetTop(elem);
         }
       }
     }
@@ -7832,12 +7895,12 @@ exports = module.exports = function(jsh, cms){
     //Apply offsets
     for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      let jelem = _this.getPageElement(i);
-      if(jelem.length){
-        let elemIsBody = (jelem[0].tagName=='BODY');
+      let elem = _this.getPageElement(i);
+      if(elem){
+        let elemIsBody = (elem.tagName=='BODY');
         if(offsetTop){
           //Fixed elements need to subtract scrollTop from offset().top
-          var curTop = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
+          var curTop = jsh.XDom.calc.top(elem) - (elemIsBody ? 0 : scrollTop);
           if(curTop != startingOffsets[i]){
             //If offset changed automatically because of a parent / body offset, do not add the offset to this element
             _this.origMarginTop[i] = null;
@@ -7845,19 +7908,19 @@ exports = module.exports = function(jsh, cms){
           }
           else {
             var newMarginTop = _this.origMarginTop[i] ? 'calc(' + _this.origMarginTop[i] + ' + ' + offsetTop + 'px)' : offsetTop+'px';
-            jelem.css('marginTop', newMarginTop);
+            elem.style.marginTop = newMarginTop;
           }
         }
         else {
-          jelem.css('marginTop', _this.origMarginTop[i]);
+          elem.style.marginTop = _this.origMarginTop[i];
         }
         //If changing body offset
         if(scrollTop && elemIsBody){
-          var newBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+          var newBodyOffset = _this.getComputedOffsetTop(elem);
           //Keep scroll position
           if(scrollTop && (origBodyOffset != newBodyOffset)){
-            $(document).scrollTop(scrollTop + (parseInt(newBodyOffset) - parseInt(origBodyOffset)));
-            scrollTop = $(document).scrollTop();
+            window.scrollY = (scrollTop + (parseInt(newBodyOffset) - parseInt(origBodyOffset)));
+            scrollTop = window.scrollY;
           }
         }
       }
@@ -7866,19 +7929,19 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.renderErrors = function(){
-    var jcontainer = $('#jsharmony_cms_editor_errors');
-    jcontainer.toggle(!!_this.errors.length);
-    jcontainer.empty();
-    if(jcontainer.length && _this.errors.length){
-      jcontainer.append($('<div class="jsharmony_cms_editor_errors_close">X</div>'));
+    var xdcontainer = jsh.XDom('#jsharmony_cms_editor_errors');
+    xdcontainer.style.display = !!_this.errors.length;
+    xdcontainer.clear();
+    if(xdcontainer.length && _this.errors.length){
+      xdcontainer.append('<div class="jsharmony_cms_editor_errors_close">X</div>');
       for(var i=0;i<_this.errors.length;i++){
         var error = _this.errors[i];
-        var jmessage = $('<div class="jsharmony_cms_editor_error"></div>');
-        if(error.type=='html') jmessage.html(error.message);
-        else jmessage.text(error.message);
-        jcontainer.append(jmessage);
+        var message = jsh.render('<div class="jsharmony_cms_editor_error"></div>');
+        if(error.type=='html') message.innerHTML = error.message;
+        else message.innerText = error.message;
+        xdcontainer.append(message);
       }
-      jcontainer.find('.jsharmony_cms_editor_errors_close').on('click', function(){ $('#jsharmony_cms_editor_errors').hide(); });
+      xdcontainer.get('.jsharmony_cms_editor_errors_close').on('click', function(){ jsh.XDom('#jsharmony_cms_editor_errors').style.display = false; });
     }
   };
 
@@ -7886,39 +7949,44 @@ exports = module.exports = function(jsh, cms){
     if(typeof val =='undefined') val = !this.editorBarDocked;
     this.editorBarDocked = !!val;
     this.refreshOffsets();
-    $('#jsharmony_cms_page_toolbar .autoHideEditorBar').toggleClass('enabled',!val);
+    if (!val) {
+      jsh.XDom.class.add('#jsharmony_cms_page_toolbar .autoHideEditorBar', 'enabled');
+    } else {
+      jsh.XDom.class.remove('#jsharmony_cms_page_toolbar .autoHideEditorBar', 'enabled');
+    }
   };
   
   this.toggleSlideoutButton = function(button, display, noSlide){
-    var jbutton;
+    var xdbutton;
     if(!button) return;
-    if(_.isString(button)) jbutton = $('#jsharmony_cms_page_toolbar .jsharmony_cms_button.'+button);
-    else jbutton = $(button);
-    $('#jsharmony_cms_page_toolbar .jsharmony_cms_button[data-slideout].selected').not(jbutton).each(function(){
-      _this.toggleSlideoutButton(this, false, true);
+    if(_.isString(button)) xdbutton = jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_button.'+button);
+    else xdbutton = jsh.XDom(button);
+    jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_button[data-slideout].selected').elements.forEach(function(el){
+      if (el == xdbutton.element) return;
+      _this.toggleSlideoutButton(el, false, true);
       //Disable slide if another button is already selected
       noSlide = true;
     });
-    var prevdisplay = !!jbutton.hasClass('selected');
+    var prevdisplay = !!xdbutton.class.contains('selected');
     if(typeof display == 'undefined') display = !prevdisplay;
     
     if(prevdisplay==display) return;
     else {
-      var jslideout = $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container.'+jbutton.data('slideout'));
+      var xdslideout = jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container.'+xdbutton.data.slideout);
       if(display){
         //Open
-        jbutton.addClass('selected');
-        jslideout.stop(true);
-        if(noSlide) jslideout.show();
-        else jslideout.slideDown();
+        xdbutton.class.add('selected');
+        jsh.XDom.stop(xdslideout);
+        if(noSlide) xdslideout.display = true;
+        else xdslideout.animate.height(true);
       }
       else {
         //Close
         if(!cms.controller.validate()) return;
-        jbutton.removeClass('selected');
-        jslideout.stop(true);
-        if(noSlide) jslideout.hide();
-        else jslideout.slideUp();
+        xdbutton.class.remove('selected');
+        jsh.XDom.stop(xdslideout);
+        if(noSlide) xdslideout.display = false;
+        else xdslideout.animate.height(false);
       }
     }
   };
@@ -7937,15 +8005,22 @@ exports = module.exports = function(jsh, cms){
   this.setDockPosition = function(dockPosition){
     _this.dockPosition = dockPosition || 'top_offset';
     _this.refreshOffsets();
-    $('#jsharmony_cms_page_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
-    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
+    if (_this.dockPosition=='bottom') {
+      jsh.XDom('#jsharmony_cms_page_toolbar').class.add('jsharmony_cms_page_toolbar_bottom');
+      jsh.XDom('#jsharmony_cms_content_editor_toolbar').class.add('jsharmony_cms_page_toolbar_bottom');
+    } else {
+      jsh.XDom('#jsharmony_cms_page_toolbar').class.remove('jsharmony_cms_page_toolbar_bottom');
+      jsh.XDom('#jsharmony_cms_content_editor_toolbar').class.remove('jsharmony_cms_page_toolbar_bottom');
+    }
 
     if(_this.dockPosition == 'bottom'){
-      $('#jsharmony_cms_page_toolbar').css('opacity', 0);
+      jsh.XDom('#jsharmony_cms_page_toolbar').stlye.opacity = 0;
       var dockAnimation = function(){
         var barHeight = _this.getHeight();
-        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' });
-        $('#jsharmony_cms_page_toolbar').animate({ bottom: '0px' }, function(){ this.style.bottom = null; });
+        var xdpageToolbar = jsh.XDom('#jsharmony_cms_page_toolbar');
+        xdpageToolbar.style.opacity = 1;
+        xdpageToolbar.style.bottom = '-'+barHeight+'px';
+        xdpageToolbar.animate({ bottom: '0px' }, function(){ xdpageToolbar.style.bottom = null; });
       };
       if(cms.isInitialized) dockAnimation();
       else cms.loader.onLoadingComplete.push(dockAnimation);
@@ -7976,18 +8051,18 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 exports = module.exports = function(cms){
   
-  this.setHTML = function(jobj, html){
+  this.setHTML = function(obj, html){
     try{
-      jobj.html(html);
+      cms.jsh.XDom.setHtml(obj, html)
     }
     catch(ex){
       console.log(ex); // eslint-disable-line no-console
     }
   };
 
-  this.appendHTML = function(jobj, html){
+  this.appendHTML = function(obj, html){
     try{
-      jobj.append(html);
+      cms.jsh.XDom.append(obj, html);
     }
     catch(ex){
       console.log(ex); // eslint-disable-line no-console
@@ -8001,21 +8076,20 @@ exports = module.exports = function(cms){
     }
   };
 
-  this.disableControl = function(jctrl){
-    jctrl.removeClass('editable');
-    jctrl.addClass('uneditable');
+  this.disableControl = function(ctrl){
+    cms.jsh.XDom.class.remove(ctrl, 'editable');
+    cms.jsh.XDom.class.add(ctrl, 'uneditable');
 
-    jctrl.each(function(){
-      var obj = this;
-      var jobj = cms.jsh.$(this);
-      if (jobj.hasClass('dropdown') || ((obj.nodeName||'').toUpperCase() =='SELECT')) jobj.prop('disabled', true);
-      else if (jobj.hasClass('checkbox') || ((obj.type||'').toUpperCase()=='CHECKBOX')) jobj.prop('disabled', true);
-      else if (jobj.hasClass('radio') || ((obj.type||'').toUpperCase()=='RADIO')) jobj.prop('disabled', true);
-      else if(jobj.hasClass('xtagbox_base')){
-        jobj.prev().addClass('uneditable');
-        jobj.prev().find('input').prop('disabled', true);
+    cms.jsh.XDom(ctrl).elements.forEach(function(obj){
+      var xdobj = cms.jsh.XDom(obj);
+      if (xdobj.class.contains('dropdown') || ((obj.nodeName||'').toUpperCase() =='SELECT')) xdobj.attr.disabled = true;
+      else if (xdobj.class.contains('checkbox') || ((obj.type||'').toUpperCase()=='CHECKBOX')) xdobj.attr.disabled = true;
+      else if (xdobj.class.contains('radio') || ((obj.type||'').toUpperCase()=='RADIO')) xdobj.attr.disabled = true;
+      else if(xdobj.class.contains('xtagbox_base')){
+        xdobj.previousSibling().class.add('uneditable');
+        xdobj.previousSibling().get('input').attr.disabled = true;
       }
-      else jobj.prop('readonly', true);
+      else xdobj.attr.readonly = true;
     });
   };
 
@@ -8118,7 +8192,7 @@ var jsHarmonyCMS = function(options){
   this.onGetFilePickerParameters = null; //function(filePickerType, url)
   this.onRender = null;                  //function(page)
   this.onRendered = null;                //function(page)
-  this.onTemplateLoaded = function(f){ $(document).ready(f); };
+  this.onTemplateLoaded = function(f){ jsh.XDom.onPageLoad(f); };
   this.onBeforeTemplateInit = function(f){ return f(); };
   this.onBeforeInit = function(f){ return f(); };
 
@@ -8131,7 +8205,6 @@ var jsHarmonyCMS = function(options){
   var util = _this.util;
   var jsh = null;
   var XExt = null;
-  var $ = null;
   var async = null;
   var loadErrors = [];
 
@@ -8158,7 +8231,6 @@ var jsHarmonyCMS = function(options){
           jshInit = true;
         }
       });
-      $ = jsh.$;
       XExt = jsh.XExt;
       async = jsh.async;
 
@@ -8174,7 +8246,7 @@ var jsHarmonyCMS = function(options){
       async.waterfall([
         function(init_cb){
           XExt.waitUntil(
-            function(){ return !($('.jshCmsInitializing').length); },
+            function(){ return !(jsh.XDom('.jshCmsInitializing').length); },
             init_cb
           );
         },
@@ -8234,7 +8306,7 @@ var jsHarmonyCMS = function(options){
       return XExt.Alert((typeof loadErrors[0] == 'string') ? loadErrors[0] : JSON.stringify(loadErrors[0]));
     }
     if(_this.onLoad) _this.onLoad(jsh);
-    $('[cms-content-editor]').prop('contenteditable','true');
+    jsh.XDom('[cms-content-editor]').attr.contenteditable = true;
     if(jsh._GET['branch_id']){
       _this.branch_id = jsh._GET['branch_id'];
       async.parallel([
@@ -8269,9 +8341,9 @@ var jsHarmonyCMS = function(options){
   };
 
   this.refreshLayout = function(){
-    var wh = $(window).height();
+    var wh = window.innerHeight;
     var barh = _this.toolbar.getHeight();
-    $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').css('max-height', (wh-barh)+'px');
+    jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container').style.maxHeight = (wh-barh)+'px';
   };
 
   this.onmessage = function(event){
@@ -8288,8 +8360,9 @@ var jsHarmonyCMS = function(options){
   };
 
   this.createCoreEditor = function() {
-    var el = $('<div id="jsharmony_cms_content_editor_toolbar"></div>').prependTo('body');
-    return new jsHarmonyCMSEditor(jsh, _this, el[0]);
+    var el = jsh.XDom.render('<div id="jsharmony_cms_content_editor_toolbar"></div>');
+    jsh.XDom.prepend('body', el);
+    return new jsHarmonyCMSEditor(jsh, _this, el);
   };
 
   this.createJsHarmonyCMSEditor = function(toolbarElement) {
@@ -8319,15 +8392,14 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.21';
+  var VERSION = '4.17.20';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
 
   /** Error message constants. */
   var CORE_ERROR_TEXT = 'Unsupported core-js use. Try https://npms.io/search?q=ponyfill.',
-      FUNC_ERROR_TEXT = 'Expected a function',
-      INVALID_TEMPL_VAR_ERROR_TEXT = 'Invalid `variable` option passed into `_.template`';
+      FUNC_ERROR_TEXT = 'Expected a function';
 
   /** Used to stand-in for `undefined` hash values. */
   var HASH_UNDEFINED = '__lodash_hash_undefined__';
@@ -8460,11 +8532,10 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
       reHasRegExpChar = RegExp(reRegExpChar.source);
 
-  /** Used to match leading whitespace. */
-  var reTrimStart = /^\s+/;
-
-  /** Used to match a single whitespace character. */
-  var reWhitespace = /\s/;
+  /** Used to match leading and trailing whitespace. */
+  var reTrim = /^\s+|\s+$/g,
+      reTrimStart = /^\s+/,
+      reTrimEnd = /\s+$/;
 
   /** Used to match wrap detail comments. */
   var reWrapComment = /\{(?:\n\/\* \[wrapped with .+\] \*\/)?\n?/,
@@ -8473,18 +8544,6 @@ global.jsHarmonyCMS = jsHarmonyCMS;
 
   /** Used to match words composed of alphanumeric characters. */
   var reAsciiWord = /[^\x00-\x2f\x3a-\x40\x5b-\x60\x7b-\x7f]+/g;
-
-  /**
-   * Used to validate the `validate` option in `_.template` variable.
-   *
-   * Forbids characters which could potentially change the meaning of the function argument definition:
-   * - "()," (modification of function parameters)
-   * - "=" (default value)
-   * - "[]{}" (destructuring of function parameters)
-   * - "/" (beginning of a comment)
-   * - whitespace
-   */
-  var reForbiddenIdentifierChars = /[()=,{}\[\]\/\s]/;
 
   /** Used to match backslashes in property paths. */
   var reEscapeChar = /\\(\\)?/g;
@@ -9315,19 +9374,6 @@ global.jsHarmonyCMS = jsHarmonyCMS;
   }
 
   /**
-   * The base implementation of `_.trim`.
-   *
-   * @private
-   * @param {string} string The string to trim.
-   * @returns {string} Returns the trimmed string.
-   */
-  function baseTrim(string) {
-    return string
-      ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
-      : string;
-  }
-
-  /**
    * The base implementation of `_.unary` without support for storing metadata.
    *
    * @private
@@ -9658,21 +9704,6 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     return hasUnicode(string)
       ? unicodeToArray(string)
       : asciiToArray(string);
-  }
-
-  /**
-   * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
-   * character of `string`.
-   *
-   * @private
-   * @param {string} string The string to inspect.
-   * @returns {number} Returns the index of the last non-whitespace character.
-   */
-  function trimmedEndIndex(string) {
-    var index = string.length;
-
-    while (index-- && reWhitespace.test(string.charAt(index))) {}
-    return index;
   }
 
   /**
@@ -20843,7 +20874,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
       if (typeof value != 'string') {
         return value === 0 ? value : +value;
       }
-      value = baseTrim(value);
+      value = value.replace(reTrim, '');
       var isBinary = reIsBinary.test(value);
       return (isBinary || reIsOctal.test(value))
         ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
@@ -23215,12 +23246,6 @@ global.jsHarmonyCMS = jsHarmonyCMS;
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
       }
-      // Throw an error if a forbidden character was found in `variable`, to prevent
-      // potential command injection attacks.
-      else if (reForbiddenIdentifierChars.test(variable)) {
-        throw new Error(INVALID_TEMPL_VAR_ERROR_TEXT);
-      }
-
       // Cleanup code by stripping empty strings.
       source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
         .replace(reEmptyStringMiddle, '$1')
@@ -23334,7 +23359,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     function trim(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return baseTrim(string);
+        return string.replace(reTrim, '');
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;
@@ -23369,7 +23394,7 @@ global.jsHarmonyCMS = jsHarmonyCMS;
     function trimEnd(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return string.slice(0, trimmedEndIndex(string) + 1);
+        return string.replace(reTrimEnd, '');
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;

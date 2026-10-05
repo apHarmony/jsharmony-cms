@@ -16,7 +16,7 @@
     ],
     "formstyle": "min-width:500px;",
     "nokey": true,
-    "onload": "if(xmodel.get('branch_desc')){ jsh.$root('.'+xmodel.class+'_current_revision').text(xmodel.get('branch_desc')); jsh.$root('.'+xmodel.class+'_deploy_current_revision').show(); }",
+    "onload": "if(xmodel.get('branch_desc')){ jsh.xd('.'+xmodel.class+'_current_revision').text = xmodel.get('branch_desc'); jsh.xd('.'+xmodel.class+'_deploy_current_revision').style.display = true; }",
     "hide_system_buttons":["print","save"],
     "css": [
       ".<%=model.class%>_deploy_release { margin-bottom:30px; }",

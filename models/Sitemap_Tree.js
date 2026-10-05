@@ -44,37 +44,37 @@ jsh.App[modelid] = new (function(){
     }
     jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
     this.sitemap_key = jsh._GET.sitemap_key;
-    $(window).bind('resize', _this.onresize);
+    jsh.XDom.on(window, 'resize', _this.onresize);
     _this.refreshLayout();
     xmodel.controller.HasUpdates = function(){ return _this.hasUpdates(); };
 
-    var jtree = jsh.$root('.xelem'+xmodel.class+'.sitemap_item_id');
-    jtree.data('ondoubleclick', jsh._instance+'.App['+JSON.stringify(xmodel.id)+'].sitemap_item_id_ondoubleclick(n);');
+    var xdtree = jsh.xd('.xelem'+xmodel.class+'.sitemap_item_id');
+    xdtree.data.ondoubleclick = jsh._instance+'.App['+JSON.stringify(xmodel.id)+'].sitemap_item_id_ondoubleclick(n);';
   };
 
   this.ondestroy = function(xmodel){
-    $(window).unbind('resize', _this.onresize);
+    jsh.XDom.off(window, 'resize', _this.onresize);
   };
 
   this.onload = function(){
     var bcrumbs = jsh.XPage.getBreadcrumbs();
     _this.refreshLayout();
     _this.getSitemap();
-    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.$root('.bcrumbs_branch_body'), containerClass: 'bcrumbs_editor_selection_container' });
+    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.xd('.bcrumbs_branch_body').element, containerClass: 'bcrumbs_editor_selection_container' });
   };
 
   this.onresize = function(){ _this.refreshLayout(); };
 
   this.refreshLayout = function(){
-    var jbrowser = $('.'+xmodel.class+'_browser');
+    var xdbrowser = jsh.XDom('.'+xmodel.class+'_browser');
 
-    if(!jbrowser.length) return;
+    if(!xdbrowser.length) return;
 
-    var wh = $(window).height();
-    var top = jbrowser.offset().top;
+    var wh = window.innerHeight;
+    var top = xdbrowser.calc.top();
     var contentheight = wh - top - 20;
 
-    $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
+    jsh.XDom.setStyle('.'+xmodel.class+'_browser', 'height',contentheight+'px');
   };
 
   this.hasUpdates = function(){
@@ -84,7 +84,11 @@ jsh.App[modelid] = new (function(){
 
   this.setDirty = function(isDirty){
     _this.has_changes = isDirty;
-    jsh.$root('.xelem'+xmodel.class+'.xform_button_saveSitemap').toggleClass('hasChanges', isDirty);
+    if (isDirty) {
+      jsh.xd('.xelem'+xmodel.class+'.xform_button_saveSitemap').class.add('hasChanges');
+    } else {
+      jsh.xd('.xelem'+xmodel.class+'.xform_button_saveSitemap').class.remove('hasChanges');
+    }
   };
 
   this.onmessage = function(data){
@@ -189,13 +193,13 @@ jsh.App[modelid] = new (function(){
         if(page_key){
           if(action=='edit'){
             //Update URL
-            $(obj).off('.sitemap_load_url').on('mousedown.sitemap_load_url', function(e){
-              var jobj = $(this);
+            jsh.XDom.off(obj, 'mousedown');
+            jsh.XDom.on(obj, 'mousedown', function(e){
               //Right click
               if(e.which==3){
                 //Resolve URL
                 _this.getEditorURL(page_key, function(url){
-                  jobj.attr('href', url || '#');
+                  jsh.XDom.setAttribute(obj, 'href', url || '#');
                 });
               }
             });
@@ -243,12 +247,12 @@ jsh.App[modelid] = new (function(){
   };
 
   this.getFirstSitemapItemID = function(){
-    var rslt = jsh.$root('.sitemap_item_id.xelem'+xmodel.class).find('.tree_item').first().data('value');
+    var rslt = jsh.xd('.sitemap_item_id.xelem'+xmodel.class).get('.tree_item').first().data.value;
     return rslt||null;
   };
 
   this.getPrevSitemapItemID = function(sitemap_item_id){
-    var sitemap_item_ids = _.map(jsh.$root('.sitemap_item_id.xelem'+xmodel.class).find('.tree_item'), function(obj){ return parseInt(obj.getAttribute('data-value')); });
+    var sitemap_item_ids = _.map(jsh.xd('.sitemap_item_id.xelem'+xmodel.class).get('.tree_item').elements, function(obj){ return parseInt(obj.getAttribute('data-value')); });
     for(var i=0;i<sitemap_item_ids.length;i++){
       if(sitemap_item_ids[i]==sitemap_item_id){
         if(i==0) return null;
@@ -354,7 +358,7 @@ jsh.App[modelid] = new (function(){
     xmodel.controller.form.Render();
     //Expand first node on initial render
     if(_this.first_render){
-      XExt.TreeExpandNode($('.xelem'+xmodel.class+'.sitemap_item_id.tree'),'ROOT');
+      XExt.TreeExpandNode('.xelem'+xmodel.class+'.sitemap_item_id.tree','ROOT');
     }
     //Select current item in tree
     if(_this.selected_sitemap_item_id){
@@ -375,7 +379,7 @@ jsh.App[modelid] = new (function(){
     options = _.extend({ softSave: false }, options);
     sitemap_item_id = parseInt(sitemap_item_id || 0);
     if(!sitemap_item_id){
-      jsh.$root('.xsubform.Sitemap_Tree_Info').hide();
+      jsh.xd('.xsubform.Sitemap_Tree_Info').style.display = false;
       _this.selected_sitemap_item_id = null;
       _this.save({ softSave: true });
       return;
@@ -385,7 +389,7 @@ jsh.App[modelid] = new (function(){
         xmodel.set('sitemap_item_id', sitemap_item_id);
         return;
       }
-      jsh.$root('.xsubform.Sitemap_Tree_Info').show();
+      jsh.xd('.xsubform.Sitemap_Tree_Info').style.display = true;
       if(_this.selected_sitemap_item_id == sitemap_item_id){
         if(options.softSave) _this.save({ softSave: true });
         return;
@@ -643,78 +647,85 @@ jsh.App[modelid] = new (function(){
     var sel = '.'+xmodel.class+'_AddPage';
 
     //Render Dialog for Page
-    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$dialogBlock(sel);
+    XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
-      XExt.RenderLOV(xform.Data, jsh.$dialogBlock(sel + ' .page_template_id'), xform.LOVs.page_template_id);
+      XExt.RenderLOV(xform.Data, jsh.xdDialogBlock.get(sel + ' .page_template_id').elements, xform.LOVs.page_template_id);
 
       //Clear Values / Set Defaults
-      jprompt.find('.page_path').val('');
-      jprompt.find('.page_title').val('');
-      jprompt.find('.page_template_id').val(jsh.XPage.getBreadcrumbs().site_default_page_template_id);
-      jprompt.find('.page_template_path').val('');
-      jprompt.find('.page_path_default').prop('checked', true);
-      jprompt.find('.sitemap_item_text_default').prop('checked', true);
-      jprompt.find('.site_default_page_filename').text(jsh.XPage.getBreadcrumbs().site_default_page_filename);
+      xdprompt.get('.page_path').value = '';
+      xdprompt.get('.page_title').value = '';
+      xdprompt.get('.page_template_id').value = jsh.XPage.getBreadcrumbs().site_default_page_template_id;
+      xdprompt.get('.page_template_path').value = '';
+      xdprompt.get('.page_path_default').attr.checked = true;
+      xdprompt.get('.sitemap_item_text_default').attr.checked = true;
+      xdprompt.get('.site_default_page_filename').text = jsh.XPage.getBreadcrumbs().site_default_page_filename;
 
-      var jfilename = jprompt.find('.page_path');
-      jfilename.prop('readonly', true);
-      jfilename.addClass('uneditable');
+      var xdfilename = xdprompt.get('.page_path');
+      xdfilename.attr.readonly = true;
+      xdfilename.class.add('uneditable');
 
-      var jsitemaptext = jprompt.find('.sitemap_item_text');
-      jsitemaptext.prop('readonly', true);
-      jsitemaptext.addClass('uneditable');
+      var xdsitemaptext = xdprompt.get('.sitemap_item_text');
+      xdsitemaptext.attr.readonly = true;
+      xdsitemaptext.class.add('uneditable');
 
-      var jTemplateId = jprompt.find('.page_template_id');
-      var jtitle = jprompt.find('.page_title');
-      var jTemplatePath = jprompt.find('.page_template_path');
+      var xdTemplateId = xdprompt.get('.page_template_id');
+      var xdtitle = xdprompt.get('.page_title');
+      var xdTemplatePath = xdprompt.get('.page_template_path');
       function refreshDefaultValues(){
-        if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val(), jTemplateId.val(), jTemplatePath.val()));
-        if(jprompt.find('.sitemap_item_text_default').prop('checked')) jsitemaptext.val(jtitle.val());
+        if(xdprompt.get('.page_path_default').attr.checked) xdfilename.value = _this.getDefaultPageFilename(page_type, page_folder, xdtitle.value, xdTemplateId.value, xdTemplatePath.value);
+        if(xdprompt.get('.sitemap_item_text_default').attr.checked) xdsitemaptext.value = xdtitle.value;
       }
 
       var toggleTemplatePath = function(){
-        jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>');
+        xdprompt.get('.page_template_path_container,.page_template_path_tips').style.display = (xdTemplateId.value=='<Standalone>');
         jsh.XWindowResize();
       };
-      jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); refreshDefaultValues(); });
+      xdTemplateId.off('change');
+      xdTemplateId.on('change', function(e){ toggleTemplatePath(); refreshDefaultValues(); });
       toggleTemplatePath();
 
-      jprompt.find('.page_title,.page_template_path').off('input keyup').on('input keyup', function(){ refreshDefaultValues(); });
-      jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val(), jTemplateId.val(), jTemplatePath.val()));
+      var xdTitlePath = xdprompt.get('.page_title,.page_template_path');
+      xdTitlePath.off('input keyup');
+      xdTitlePath.on('input keyup', function(){ refreshDefaultValues(); });
+      xdfilename.value = _this.getDefaultPageFilename(page_type, page_folder, xdtitle.value, xdTemplateId.value, xdTemplatePath.value);
 
-      jprompt.find('.page_path_default').off('click').on('click', function(){
-        if($(this).is(':checked')){
-          jfilename.prop('readonly', true);
-          jfilename.val(_this.getDefaultPageFilename(page_type, page_folder, jtitle.val(), jTemplateId.val(), jTemplatePath.val()));
-          jfilename.addClass('uneditable');
+      var xdPathDefault = xdprompt.get('.page_path_default');
+      xdPathDefault.off('click');
+      xdPathDefault.on('click', function(){
+        if(this.checked){
+          xdfilename.attr.readonly = true;
+          xdfilename.value = _this.getDefaultPageFilename(page_type, page_folder, xdtitle.value, xdTemplateId.value, xdTemplatePath.value);
+          xdfilename.class.add('uneditable');
         }
         else{
-          jfilename.prop('readonly', false);
-          jfilename.removeClass('uneditable');
+          xdfilename.attr.readonly = false;
+          xdfilename.class.remove('uneditable');
         }
       });
 
-      jprompt.find('.sitemap_item_text_default').off('click').on('click', function(){
-        if($(this).is(':checked')){
-          jsitemaptext.prop('readonly', true);
-          jsitemaptext.val(jtitle.val());
-          jsitemaptext.addClass('uneditable');
+      var xdItemText = xdprompt.get('.sitemap_item_text_default');
+      xdItemText.off('click');
+      xdItemText.on('click', function(){
+        if(this.checked){
+          xdsitemaptext.attr.readonly = true;
+          xdsitemaptext.value = xdtitle.value;
+          xdsitemaptext.class.add('uneditable');
         }
         else{
-          jsitemaptext.prop('readonly', false);
-          jsitemaptext.removeClass('uneditable');
+          xdsitemaptext.attr.readonly = false;
+          xdsitemaptext.class.remove('uneditable');
         }
       });
     }, function (success) { //onAccept
-      var jprompt = jsh.$dialogBlock(sel);
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
       //Validate File Selected
-      var page_path = jprompt.find('.page_path').val();
-      var page_title = jprompt.find('.page_title').val();
-      var page_template_id = jprompt.find('.page_template_id').val();
-      var page_template_path = jprompt.find('.page_template_path').val();
-      var sitemap_item_text = jprompt.find('.sitemap_item_text').val();
+      var page_path = xdprompt.get('.page_path').value;
+      var page_title = xdprompt.get('.page_title').value;
+      var page_template_id = xdprompt.get('.page_template_id').value;
+      var page_template_path = xdprompt.get('.page_template_path').value;
+      var sitemap_item_text = xdprompt.get('.sitemap_item_text').value;
 
       if (!page_template_id) return XExt.Alert('Please select a template.');
 
@@ -788,11 +799,11 @@ jsh.App[modelid] = new (function(){
     _this.renderSitemap();
     _this.selectSitemapItem(new_sitemap_item_id);
     window.setTimeout(function(){
-      jsh.$root('.sitemap_item_text.xelem'+_this.getModelInfo().class).focus();
+      jsh.xd('.sitemap_item_text.xelem'+_this.getModelInfo().class).focus();
       //Scroll sitemap to item
-      var jtree = jsh.$root('.sitemap_item_id.xelem'+xmodel.class);
-      var jselected = jtree.find('.tree_item.selected').first();
-      if(jselected.length) XExt.scrollObjIntoView(jtree, jselected);
+      var xdtree = jsh.xd('.sitemap_item_id.xelem'+xmodel.class);
+      var xdselected = xdtree.get('.tree_item.selected').first();
+      if(xdselected.length) XExt.scrollObjIntoView(xdtree.element, xdselected.element);
     },1);
   };
 
@@ -877,33 +888,34 @@ jsh.App[modelid] = new (function(){
 
     _this.getPageInfo(page_key, function(page){
       //Render Dialog for Page
-      XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-        var jprompt = jsh.$dialogBlock(sel);
+      XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+        var xdprompt = jsh.xdDialogBlock.get(sel);
 
-        XExt.RenderLOV(xform.Data, jsh.$dialogBlock(sel + ' .page_template_id'), xform.LOVs.page_template_id);
+        XExt.RenderLOV(xform.Data, jsh.xdDialogBlock.get(sel + ' .page_template_id').element, xform.LOVs.page_template_id);
 
         //Clear Values / Set Defaults
-        jprompt.find('.page_path').val(page.page_path);
-        jprompt.find('.page_title').val(page.page_title);
-        jprompt.find('.page_template_id').val(page.page_template_id);
-        jprompt.find('.page_template_path').val(page.page_template_path);
-        jprompt.find('.site_default_page_filename').text(jsh.XPage.getBreadcrumbs().site_default_page_filename);
+        xdprompt.get('.page_path').value = page.page_path;
+        xdprompt.get('.page_title').value = page.page_title;
+        xdprompt.get('.page_template_id').value = page.page_template_id;
+        xdprompt.get('.page_template_path').value = page.page_template_path;
+        xdprompt.get('.site_default_page_filename').text = jsh.XPage.getBreadcrumbs().site_default_page_filename;
 
-        jprompt.find('input,select').removeClass('default_focus');
-        if(focus_target) jprompt.find('.'+focus_target).addClass('default_focus');
+        xdprompt.get('input,select').class.remove('default_focus');
+        if(focus_target) xdprompt.get('.'+focus_target).class.add('default_focus');
 
-        var jTemplateId = jprompt.find('.page_template_id');
-        var toggleTemplatePath = function(){ jprompt.find('.page_template_path_container,.page_template_path_tips').toggle(jTemplateId.val()=='<Standalone>'); jsh.XWindowResize(); };
-        jTemplateId.off('.template_path').on('change.template_path', function(e){ toggleTemplatePath(); });
+        var xdTemplateId = xdprompt.get('.page_template_id');
+        var toggleTemplatePath = function(){ xdprompt.get('.page_template_path_container,.page_template_path_tips').style.display = (xdTemplateId.value=='<Standalone>'); jsh.XWindowResize(); };
+        xdTemplateId.off('.template_path');
+        xdTemplateId.on('change.template_path', function(e){ toggleTemplatePath(); });
         toggleTemplatePath();
       }, function (success) { //onAccept
-        var jprompt = jsh.$dialogBlock(sel);
+        var xdprompt = jsh.xdDialogBlock.get(sel);
 
         //Validate File Selected
-        var page_path = jprompt.find('.page_path').val();
-        var page_title = jprompt.find('.page_title').val();
-        var page_template_id = jprompt.find('.page_template_id').val();
-        var page_template_path = jprompt.find('.page_template_path').val();
+        var page_path = xdprompt.get('.page_path').value;
+        var page_title = xdprompt.get('.page_title').value;
+        var page_template_id = xdprompt.get('.page_template_id').value;
+        var page_template_path = xdprompt.get('.page_template_path').value;
 
         if (!page_template_id) return XExt.Alert('Please select a template.');
 
@@ -965,7 +977,7 @@ jsh.App[modelid] = new (function(){
     _this.getPageInfo(page_key, function(page){
       _this.revision_page_key = page_key;
       _this.revision_page_id = page.page_id;
-      jsh.XExt.popupShow(xmodel.namespace + 'Page_Revision_Listing','revision_page','Revisions',undefined,jsh.$root('.xform'+xmodel.class+' .revision_page_xlookup')[0],{
+      jsh.XExt.popupShow(xmodel.namespace + 'Page_Revision_Listing','revision_page','Revisions',undefined,jsh.xd('.xform'+xmodel.class+' .revision_page_xlookup').element,{
         OnControlUpdate:function(obj, rslt){
           if(rslt && rslt.result){
             var page_id = rslt.result;
@@ -1017,63 +1029,68 @@ jsh.App[modelid] = new (function(){
       var sel = '.'+xmodel.class+'_DuplicatePage';
   
       //Render Dialog for Page
-      XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-        var jprompt = jsh.$dialogBlock(sel);
+      XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+        var xdprompt = jsh.xdDialogBlock.get(sel);
   
         //Clear Values / Set Defaults
-        jprompt.find('.source_page_path').val(source_page.page_path);
-        jprompt.find('.page_path').val('');
-        jprompt.find('.page_title').val(source_page.page_title);
-        jprompt.find('.page_path_default').prop('checked', true);
-        jprompt.find('.sitemap_item_text_default').prop('checked', true);
+        xdprompt.get('.source_page_path').value = source_page.page_path;
+        xdprompt.get('.page_path').value = '';
+        xdprompt.get('.page_title').value = source_page.page_title;
+        xdprompt.get('.page_path_default').element.checked = true;
+        xdprompt.get('.sitemap_item_text_default').element.checked = true;
   
-        var jfilename = jprompt.find('.page_path');
-        jfilename.prop('readonly', true);
-        jfilename.addClass('uneditable');
+        var xdfilename = xdprompt.get('.page_path');
+        xdfilename.attr.readonly = true;
+        xdfilename.class.add('uneditable');
   
-        var jsitemaptext = jprompt.find('.sitemap_item_text');
-        jsitemaptext.prop('readonly', true);
-        jsitemaptext.addClass('uneditable');
+        var xdsitemaptext = xdprompt.get('.sitemap_item_text');
+        xdsitemaptext.attr.readonly = true;
+        xdsitemaptext.class.add('uneditable');
   
-        var jtitle = jprompt.find('.page_title');
-        jtitle.off('input keyup').on('input keyup', function(){
-          if(jprompt.find('.page_path_default').prop('checked')) jfilename.val(_this.getDefaultPageFilename('', page_folder, jtitle.val()));
-          if(jprompt.find('.sitemap_item_text_default').prop('checked')) jsitemaptext.val(jtitle.val());
+        var xdtitle = xdprompt.get('.page_title');
+        xdtitle.off('input keyup');
+        xdtitle.on('input keyup', function(){
+          if(xdprompt.get('.page_path_default').element.checked) xdfilename.value = _this.getDefaultPageFilename('', page_folder, xdtitle.value);
+          if(xdprompt.get('.sitemap_item_text_default').element.checked) xdsitemaptext.value = xdtitle.value;
         });
 
-        jsitemaptext.val(source_page.page_title);
-        jfilename.val(_this.getDefaultPageFilename('', page_folder, jtitle.val()));
+        xdsitemaptext.value = source_page.page_title;
+        xdfilename.value = _this.getDefaultPageFilename('', page_folder, xdtitle.value);
   
-        jprompt.find('.page_path_default').off('click').on('click', function(){
-          if($(this).is(':checked')){
-            jfilename.prop('readonly', true);
-            jfilename.val(_this.getDefaultPageFilename('', page_folder, jtitle.val()));
-            jfilename.addClass('uneditable');
+        var xdPagePathDefault = xdprompt.get('.page_path_default');
+        xdPagePathDefault.off('click');
+        xdPagePathDefault.on('click', function(){
+          if(this.checked){
+            xdfilename.attr.readonly = true;
+            xdfilename.value = _this.getDefaultPageFilename('', page_folder, xdtitle.value);
+            xdfilename.class.add('uneditable');
           }
           else{
-            jfilename.prop('readonly', false);
-            jfilename.removeClass('uneditable');
+            xdfilename.attr.readonly = false;
+            xdfilename.class.remove('uneditable');
           }
         });
   
-        jprompt.find('.sitemap_item_text_default').off('click').on('click', function(){
-          if($(this).is(':checked')){
-            jsitemaptext.prop('readonly', true);
-            jsitemaptext.val(jtitle.val());
-            jsitemaptext.addClass('uneditable');
+        var xdItemTextDefault = xdprompt.get('.sitemap_item_text_default');
+        xdItemTextDefault.off('click');
+        xdItemTextDefault.on('click', function(){
+          if(this.checked){
+            xdsitemaptext.attr.readonly = true;
+            xdsitemaptext.value = xdtitle.value;
+            xdsitemaptext.class.add('uneditable');
           }
           else{
-            jsitemaptext.prop('readonly', false);
-            jsitemaptext.removeClass('uneditable');
+            xdsitemaptext.attr.readonly = false;
+            xdsitemaptext.class.remove('uneditable');
           }
         });
       }, function (success) { //onAccept
-        var jprompt = jsh.$dialogBlock(sel);
+        var xdprompt = jsh.xdDialogBlock.get(sel);
   
         //Validate File Selected
-        var page_path = jprompt.find('.page_path').val();
-        var page_title = jprompt.find('.page_title').val();
-        var sitemap_item_text = jprompt.find('.sitemap_item_text').val();
+        var page_path = xdprompt.get('.page_path').value;
+        var page_title = xdprompt.get('.page_title').value;
+        var sitemap_item_text = xdprompt.get('.sitemap_item_text').value;
   
         if (!page_path) return XExt.Alert('Please enter a page path');
         if (page_path[page_path.length-1]=='/') return XExt.Alert('Please enter a page filename');

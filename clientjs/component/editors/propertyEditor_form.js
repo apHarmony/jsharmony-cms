@@ -70,14 +70,14 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
 
   var dialog = new FormDialog(this._jsh, this._cms, model, dialogParams);
 
-  dialog.onAccept = function($dialog, xmodel) {
+  dialog.onAccept = function(dialog, xmodel) {
     if(!xmodel.controller.Commit(data, 'U')) return false;
     data = modelTemplate.makePristineCopy(data);
     if (_.isFunction(onAcceptCb)) onAcceptCb(data);
     return true;
   };
 
-  dialog.onCancel = function(options, $dialog, xmodel) {
+  dialog.onCancel = function(options, dialog, xmodel) {
     if (!options.force && xmodel.controller.HasUpdates()) {
       _this._jsh.XExt.Confirm('Close without saving changes?', function() {
         xmodel.controller.form.ResetDataset();
@@ -87,7 +87,7 @@ PropertyEditor_Form.prototype.open = function(properties, onAcceptCb) {
     }
   };
 
-  dialog.onClose = function($dialog, xmodel) {
+  dialog.onClose = function(dialog, xmodel) {
     //Destroy model
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);

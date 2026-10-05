@@ -15,7 +15,7 @@
             <tr><td><label>S3 Bucket:</label></td><td width="100%"><input type="text" data-path-elem="bucket" /></td></tr>
             <tr><td><label>Access Key:</label></td><td width="100%"><input type="text" data-elem="s3_config.accessKeyId" /></td></tr>
             <tr><td><label>Secret Key:</label></td><td width="100%"><input type="text" data-elem="s3_config.secretAccessKey" /></td></tr>
-            <tr><td class="align_top"><label>File Upload Settings:</label></td><td width="100%"><textarea data-elem="s3_config.upload_params" /></td></tr>
+            <tr><td class="align_top"><label>File Upload Settings:</label></td><td width="100%"><textarea data-elem="s3_config.upload_params"></textarea></td></tr>
           </tbody>
           <tbody class="deployment_type_container deployment_type_container_cmshost">
               <tr>
@@ -56,14 +56,14 @@
               <tr><td><label>Username:</label></td><td width="100%"><input type="text" data-path-elem="username" /></td></tr>
               <tr><td><label>Password:</label></td><td width="100%"><input type="text" data-path-elem="password" /></td></tr>
               <tr><td><label>Branch:</label></td><td width="100%"><input type="text" data-elem="git_config.branch" placeholder="master" /></td></tr>
-              <tr><td class="align_top"><label>Git Config:</label></td><td width="100%"><textarea data-elem="git_config.options" /></td></tr>
+              <tr><td class="align_top"><label>Git Config:</label></td><td width="100%"><textarea data-elem="git_config.options"></textarea></td></tr>
             </tbody>
           <tbody class="deployment_type_container deployment_type_container_git_ssh">
             <tr><td><label>Git URL:</label></td><td width="100%"><input type="text" data-path-elem="url" class="parse_url" /></td></tr>
             <tr><td><label>Username:</label></td><td width="100%"><input type="text" data-path-elem="username" /></td></tr>
             <tr><td><label>Public Key:</label></td><td width="100%"><% if(jsh.is_insert){ %>Save to download Public Key<% } else { %><a href="#" class="downloadPublicKey">Download</a><% } %></td></tr>
             <tr><td><label>Branch:</label></td><td width="100%"><input type="text" data-elem="git_config.branch" placeholder="master" /></td></tr>
-            <tr><td class="align_top"><label>Git Config:</label></td><td width="100%"><textarea data-elem="git_config.options" /></td></tr>
+            <tr><td class="align_top"><label>Git Config:</label></td><td width="100%"><textarea data-elem="git_config.options"></textarea></td></tr>
           </tbody>
           <tbody class="deployment_type_container deployment_type_container_file">
               <tr><td><label>Path:</label></td><td width="100%"><input type="text" data-path-elem="path" class="parse_url" /></td></tr>
@@ -119,7 +119,7 @@
                   <label><input type="checkbox" class="checkbox" data-elem="ignore_remote_template_certificate" /> Ignore certificate errors when downloading remote templates</label>
                 </div>
               </td></tr>
-              <tr><td class="align_top"><label>Extended Config:</label></td><td width="100%"><textarea data-elem="ext_config" /></td></tr>
+              <tr><td class="align_top"><label>Extended Config:</label></td><td width="100%"><textarea data-elem="ext_config"></textarea></td></tr>
             </tbody>
         </table>
       </div>

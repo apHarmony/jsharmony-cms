@@ -67,7 +67,7 @@ var OverlayService = require('./overlayService');
 /**
  *  Called when the dialog is first opened
  * @callback Dialog~openedCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {wrapper} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  * @param {Function} acceptFunc - Call this function to trigger accept logic
  * @param {Function} cancelFunc - Call this function to trigger cancel logic
@@ -87,12 +87,12 @@ function Dialog(jsh, cms, model, config) {
   this._id = config.dialogId ? config.dialogId : this.getNextId();
   /** @type {DialogConfig} */
   this._config = config || {};
-  this._$wrapper = this.makeDialog(this._id, this._config);
+  this._wrapper = this.makeDialog(this._id, this._config);
   this._destroyed = false;
 
   this.overlayService = new OverlayService(this);
 
-  this._jsh.$(this._jsh.root).append(this._$wrapper);
+  this._jsh.xdroot.append(this._wrapper);
 
   /**
    * @public
@@ -138,8 +138,7 @@ Dialog._idLookup = {};
  * @private
  */
 Dialog.prototype.destroy = function() {
-  this._$wrapper.remove();
-  if (this._$overlay) this._$overlay.remove();
+  this._wrapper.remove();
   delete Dialog._idLookup[this._id];
   this._destroyed = true;
 };
@@ -175,11 +174,11 @@ Dialog.prototype.getNextId = function() {
 /**
  * Get the scroll top position for the page.
  * @private
- * @param {JQuery} $wrapper
+ * @param {HTMLElement} wrapper
  * @returns {number}
  */
-Dialog.prototype.getScrollTop = function($wrapper) {
-  return $wrapper.scrollParent().scrollTop();
+Dialog.prototype.getScrollTop = function(wrapper) {
+  return scrollParent(wrapper).scrollY;
 };
 
 /**
@@ -187,7 +186,7 @@ Dialog.prototype.getScrollTop = function($wrapper) {
  */
 Dialog.prototype.load = function(callback) {
   var _this = this;
-  this._jsh.XPage.LoadVirtualModel(_this._jsh.$(_this.getFormSelector()), this._model, function(xmodel) {
+  this._jsh.XPage.LoadVirtualModel(_this._jsh.XDom(_this.getFormSelector()).element, this._model, function(xmodel) {
     callback(xmodel);
   });
 };
@@ -200,22 +199,22 @@ Dialog.prototype.load = function(callback) {
  */
 Dialog.prototype.makeDialog = function(id, config) {
 
-  var $form = this._jsh.$('<div class="xdialogbox"></div>')
-    .addClass(this._id)
-    .attr('id', this._id)
-    .addClass(config.cssClass || '');
-  if(config.maxWidth) $form.css('max-width', _.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null);
-  if(config.maxHeight) $form.css('max-height',  _.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null);
-  if(config.minWidth) $form.css('min-width', _.isNumber(config.minWidth) ? config.minWidth + 'px' : null);
-  if(config.minHeight) $form.css('min-height',  _.isNumber(config.minHeight) ? config.minHeight + 'px' : null);
-  if(config.height) $form.css('height',  _.isNumber(config.height) ? config.height + 'px' : null);
-  if(config.width) $form.css('width',  _.isNumber(config.width) ? config.width + 'px' : null);
+  var xdform = this._jsh.XDom(this._jsh.XDom.render('<div class="xdialogbox"></div>'));
+  xdform.class.add(this._id);
+  xdform.attr.id = this._id;
+  xdform.class.add(config.cssClass || '');
+  if(config.maxWidth) xdform.style['max-width'] = (_.isNumber(config.maxWidth) ? config.maxWidth + 'px' : null);
+  if(config.maxHeight) xdform.style['max-height'] = (_.isNumber(config.maxHeight) ? config.maxHeight + 'px' : null);
+  if(config.minWidth) xdform.style['min-width'] = (_.isNumber(config.minWidth) ? config.minWidth + 'px' : null);
+  if(config.minHeight) xdform.style['min-height'] = (_.isNumber(config.minHeight) ? config.minHeight + 'px' : null);
+  if(config.height) xdform.style['height'] = (_.isNumber(config.height) ? config.height + 'px' : null);
+  if(config.width) xdform.style['width'] = (_.isNumber(config.width) ? config.width + 'px' : null);
     
-  var $wrapper = this._jsh.$('<div style="display: none;" class="xdialogbox-wrapper"></div>')
-    .attr('id', id)
-    .append($form);
+  var wrapper = this._jsh.XDom.render('<div style="display: none;" class="xdialogbox-wrapper"></div>');
+  wrapper.id = id;
+  this._jsh.XDom.append(wrapper, xdform);
 
-  return $wrapper;
+  return wrapper;
 };
 
 /**
@@ -233,7 +232,7 @@ Dialog.prototype.open = function() {
 
   this.load(function(xmodel) {
 
-    var $wrapper = _this._jsh.$(formSelector);
+    var wrapper = _this._jsh.XDom(formSelector).element;
     _this.registerLovs(xmodel);
     var lastScrollTop = 0;
     _this._jsh.XExt.execif(_this.onBeforeOpen,
@@ -244,12 +243,12 @@ Dialog.prototype.open = function() {
         /** @type {DialogResizer} */
         var dialogResizer = undefined;
 
-        _this._jsh.XExt.CustomPrompt(formSelector, _this._jsh.$(formSelector),
-          function(acceptFunc, cancelFunc) { //onInit
-            _this.overlayService.pushDialog($wrapper);
-            lastScrollTop = _this.getScrollTop($wrapper);
-            dialogResizer = new DialogResizer($wrapper[0], _this._jsh);
-            if (_.isFunction(_this.onOpened)) _this.onOpened($wrapper, xmodel, acceptFunc, cancelFunc);
+        _this._jsh.XExt.CustomPrompt(formSelector, wrapper,
+          function(xDialogObj) { //onInit
+            _this.overlayService.pushDialog(wrapper);
+            lastScrollTop = _this.getScrollTop(wrapper);
+            dialogResizer = new DialogResizer(wrapper, _this._jsh);
+            if (_.isFunction(_this.onOpened)) _this.onOpened(wrapper, xmodel, xDialogObj.acceptfunc, xDialogObj.cancelfunc);
           },
           function(success) { //onAccept
             if (_.isFunction(_this.onAccept)) _this.onAccept(success);
@@ -270,7 +269,7 @@ Dialog.prototype.open = function() {
             restoreFocus: false,
             onClosing: function(cb){
               if (oldActive) oldActive.focus();
-              _this.setScrollTop(lastScrollTop, $wrapper);
+              _this.setScrollTop(lastScrollTop, wrapper);
               return cb();
             }
           }
@@ -307,11 +306,24 @@ Dialog.prototype.registerLovs = function(xmodel) {
 /**
  * Set the scroll top position for the page.
  * @private
- * @param {JQuery} $wrapper
+ * @param {HTMLElement} wrapper
  * @returns {number} position
  */
-Dialog.prototype.setScrollTop = function(position, $wrapper) {
-  $wrapper.scrollParent().scrollTop(position);
+Dialog.prototype.setScrollTop = function(position, wrapper) {
+  return scrollParent(wrapper).scrollY = position;
+};
+
+
+function scrollParent(obj){
+  var parent = obj && obj.parentNode;
+  var scrollable = /auto|scroll/;
+  while(parent && parent.style) {
+    if (scrollable.test(parent.style.overflow + parent.style['overflow-y'] + parent.style['overflow-x'])) {
+      return parent;
+    }
+    parent = parent.parentNode;
+  }
+  return (obj && obj.ownerDocument) || document;
 };
 
 exports = module.exports = Dialog;

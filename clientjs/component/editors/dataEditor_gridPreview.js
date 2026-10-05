@@ -80,7 +80,7 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
     _this.updateAddButtonText(dialogSelector + ' .xactions .jsharmony_cms_component_dataGridEditor_insert', _this._componentTemplate.getCaptions());
 
-    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, _this._jsh.$(dialogSelector),
+    dataController = new DataEditor_GridPreviewController(xmodel, (data || {}).items, properties, _this._jsh.XDom(dialogSelector).element,
       _this._cms, _this._jsh, _this._component, modelTemplate, _this._componentTemplate);
 
     dataController.onDataUpdated = function(updatedData) {
@@ -97,9 +97,9 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
 
     var modelInterface = _this._jsh.App[xmodel.id];
 
-    modelInterface.onRowBind = function(xmodel, jobj, dataRow) {
+    modelInterface.onRowBind = function(xmodel, obj, dataRow) {
       if (!dataController) return;
-      dataController.addRow(jobj, dataRow);
+      dataController.addRow(obj, dataRow);
     };
 
     modelInterface.onCommit = function(xmodel, rowId, callback) {
@@ -117,11 +117,11 @@ DataEditor_GridPreview.prototype.open = function(data, properties, dataUpdatedCb
     if(onComplete) onComplete();
   };
 
-  dialog.onOpened = function($dialog, xmodel) {
+  dialog.onOpened = function(dialogElement, xmodel) {
     dataController.initialize();
   };
 
-  dialog.onClose = function($dialog, xmodel) {
+  dialog.onClose = function(dialogElement, xmodel) {
     //Destroy model
     if (xmodel.controller && xmodel.controller.OnDestroy) xmodel.controller.OnDestroy();
     if (typeof xmodel.ondestroy != 'undefined') xmodel.ondestroy(xmodel);
@@ -139,9 +139,11 @@ DataEditor_GridPreview.prototype.updateAddButtonText = function(selector, captio
 
   var text = captions[1] != undefined ? 'Add ' + captions[1] : 'Add';
 
-  var $el = this._jsh.$(selector);
-  var $img = $el.find('img');
-  $el.empty().append($img).append(text);
+  var xdel = this._jsh.XDom(selector);
+  var xdimg = xdel.get('img');
+  xdel.clear();
+  xdel.append(xdimg);
+  xdel.append(text);
 };
 
 

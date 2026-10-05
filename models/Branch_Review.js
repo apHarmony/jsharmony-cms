@@ -11,28 +11,28 @@ jsh.App[modelid] = new (function(){
     var xform = xmodel.controller.form;
     var sel = '.'+xmodel.class+'_Merge';
 
-    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$dialogBlock(sel);
+    XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
-      XExt.RenderLOV(xform.Data, jsh.$dialogBlock(sel + ' .dst_branch_id'), xform.LOVs.dst_branch_id);
+      XExt.RenderLOV(xform.Data, jsh.xdDialogBlock.get(sel + ' .dst_branch_id').element, xform.LOVs.dst_branch_id);
 
       //Clear Values / Set Defaults
-      jprompt.find('.dst_branch_id').val('');
+      xdprompt.get('.dst_branch_id').value = '';
     }, function (success) { //onAccept
-      var jprompt = jsh.$dialogBlock(sel);
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
       //Validate File Selected
-      if (!jprompt.find('.dst_branch_id').val()) return XExt.Alert('Please select a target revision for the merge.');
+      if (!xdprompt.get('.dst_branch_id').value) return XExt.Alert('Please select a target revision for the merge.');
 
       var mergeType = 'apply';
-      var checked_option = jsh.$root("input[name='"+xmodel.class+'_Merge_Type_option'+"']:checked:visible");
-      if(checked_option.length) mergeType = checked_option.val().toLowerCase();
+      var xdchecked_option = jsh.xd("input[name='"+xmodel.class+'_Merge_Type_option'+"']").filter(function(el) {return el.checked && jsh.XDom.isVisible(el);});;
+      if(xdchecked_option.length) mergeType = xdchecked_option.value.toLowerCase();
 
       if (mergeType == 'overwrite') {
         // no conflicts possible
         let params = {
           src_branch_id: xmodel.get('branch_id'),
-          dst_branch_id: jprompt.find('.dst_branch_id').val(),
+          dst_branch_id: xdprompt.get('.dst_branch_id').value,
         };
         XForm.Post('/_funcs/merge/'+mergeType, { }, params, function(rslt){
           XForm.Post(xmodel.module_namespace+'Branch_Review_Approve', { }, { branch_id: xmodel.get('branch_id') }, function(rslt){
@@ -43,7 +43,7 @@ jsh.App[modelid] = new (function(){
       } else {
         let params = {
           src_branch_id: xmodel.get('branch_id'),
-          dst_branch_id: jprompt.find('.dst_branch_id').val(),
+          dst_branch_id: xdprompt.get('.dst_branch_id').value,
           merge_type: mergeType,
         };
         XForm.Post('/_funcs/begin_merge/', { }, params, function(rslt){
@@ -51,7 +51,7 @@ jsh.App[modelid] = new (function(){
             success();
             XExt.navTo(jsh._BASEURL+xmodel.module_namespace+'Branch_Conflicts'+
               '?action=update'+
-              '&branch_id='+jprompt.find('.dst_branch_id').val()
+              '&branch_id='+params.dst_branch_id
             );
           });
         });

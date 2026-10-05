@@ -2,17 +2,17 @@ jsh.App[modelid] = new (function(){
   var _this = this;
 
   this.onload = function(){
-    function autoSelectOneDropdownItem(fieldName, jobj){
-      if(jobj.val()) return;
+    function autoSelectOneDropdownItem(fieldName, obj){
+      if(obj.value) return;
       var allOptions = [];
-      jobj.find('option').each(function(){ var val = $(this).attr('value'); if(val) allOptions.push(val); });
+      jsh.XDom(obj, 'option').elements.forEach(function(el){ var val = el.getAttribute('value'); if(val) allOptions.push(val); });
       if(allOptions.length==1) xmodel.set(fieldName, allOptions[0]);
     }
     //Load Deployment Tag
     _this.setDeploymentTag(xmodel.get('branch_id'));
     //Wait for LOVs to update
     setTimeout(function(){
-      autoSelectOneDropdownItem('deployment_target_id', jsh.$root('.deployment_target_id.xelem'+xmodel.class));
+      autoSelectOneDropdownItem('deployment_target_id', jsh.xd('.deployment_target_id.xelem'+xmodel.class).element);
     }, 1);
   };
 

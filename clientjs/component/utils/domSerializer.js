@@ -30,12 +30,12 @@ function DomSerializer(jsh) {
  * The attribute value will be deserialized and returned as an object.
  * @public
  * @static
- * @param {(Element | JQuery)} element - the element to operate on.
+ * @param {(Element | XDom)} element - the element to operate on.
  * @param {string} attrName - the name of the attribute to use
  * @returns {object} - the deserialized object.
  */
 DomSerializer.prototype.getAttr = function(element, attrName) {
-  var rawAttr = this.jsh.$(element).attr(attrName) || '';
+  var rawAttr = this.jsh.XDom(element).attr[attrName] || '';
   return this.deserializeAttrValue(rawAttr);
 };
 
@@ -55,13 +55,13 @@ DomSerializer.prototype.deserializeAttrValue = function(value) {
  * Set the object (after serialization) as the attribute value.
  * @public
  * @static
- * @param {(Element | JQuery)} element - the element to operate on.
+ * @param {(Element | XDom)} element - the element to operate on.
  * @param {string} attrName - the name of the attribute to use
  * @param {(object | undefined)} data - the object to set as the attribute value
  */
 DomSerializer.prototype.setAttr = function(element, attrName, data) {
   var attrVal = this.serializeAttrValue(data);
-  return this.jsh.$(element).attr(attrName, attrVal);
+  return this.jsh.XDom(element).attr[attrName] = attrVal;
 };
 
 /**

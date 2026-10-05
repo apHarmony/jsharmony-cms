@@ -30,12 +30,12 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
  * @param {('full' | 'title')} editorType
  * @param {Object} jsh
  * @param {Object} csm
- * @param {(JQuery | HTMLElement)} formElement - The form element.
+ * @param {HTMLElement} formElement - The form element.
  * @param {string} hiddenFieldName - See the class description. The hidden field name
  *                                   is used to bind the editor data to the hidden field
  *                                   and denotes the respective elements.
- * @param {(JQuery | HTMLElement)} editorElement - the element that gets attached as the editor
- * @param {(JQuery | HTMLElement)} toolbarElement - the element used to attach the toolbar.
+ * @param {HTMLElement} editorElement - the element that gets attached as the editor
+ * @param {HTMLElement} toolbarElement - the element used to attach the toolbar.
  */
 function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, editorElement, toolbarElement) {
 
@@ -48,17 +48,17 @@ function HTMLPropertyEditor(editorType, jsh, cms, formElement, hiddenFieldName, 
   /** @private @type {Object} */
   this._cms = cms;
 
-  /** @private @type {JQuery} */
-  this._$formElement = this._jsh.$(formElement);
+  /** @private @type {HTMLElement} */
+  this._formElement = formElement;
 
   /** @private @type {string} */
   this._hiddenFieldName = hiddenFieldName;
 
-  /** @private @type {JQuery} */
-  this._$editorElement = this._jsh.$(editorElement);
+  /** @private @type {HTMLElement} */
+  this._editorElement = editorElement;
 
-  /** @private @type {JQuery} */
-  this._$toolbarElement = this._jsh.$(toolbarElement);
+  /** @private @type {HTMLElement} */
+  this._toolbarElement = toolbarElement;
 
   /** @private @type {Object} */
   this._editor = undefined;
@@ -81,12 +81,12 @@ HTMLPropertyEditor.prototype.destroy = function() {
 };
 
 /**
- * Get the hidden field JQuery obj that is bound to the editor.
+ * Get the hidden field element obj that is bound to the editor.
  * @private
- * @returns {JQuery}
+ * @returns {HTMLELement}
  */
 HTMLPropertyEditor.prototype.getDataElement = function() {
-  return this._$formElement.find('.xform_ctrl.' + this._hiddenFieldName);
+  return this._jsh.XDom(this._formElement).get('.xform_ctrl.' + this._hiddenFieldName).element;
 };
 
 /**
@@ -102,11 +102,12 @@ HTMLPropertyEditor.prototype.initialize = function(callback) {
 
   // ID must match the jsHarmony convention in order to get/set
   // content using the jsHarmonyEditor. So set the ID no matter what.
-  this._$editorElement.attr('id', this._contentId);
-  this._editor = this._cms.createJsHarmonyCMSEditor(this._$toolbarElement[0]);
+  this._editorElement.setAttribute('id', this._contentId);
+  this._editor = this._cms.createJsHarmonyCMSEditor(this._toolbarElement);
   this._editor.onEndEdit = function() {
     var content = _this.processText(_this._editor.getContent(_this._uid));
-    _this.getDataElement().attr('value', content);
+    var dataElement = _this.getDataElement();
+    if (dataElement) dataElement.setAttribute('value', content);
   };
   this._editor.init(function() {
 
@@ -154,7 +155,8 @@ HTMLPropertyEditor.prototype.processText = function(text) {
  * @private
  */
 HTMLPropertyEditor.prototype.render = function() {
-  var value = this.getDataElement().attr('value') || '';
+  var dataElement = this.getDataElement();
+  var value = (dataElement && dataElement.getAttribute('value')) || '';
   this._editor.setContent(this._uid, value);
 };
 

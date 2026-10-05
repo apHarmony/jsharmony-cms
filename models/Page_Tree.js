@@ -14,10 +14,10 @@ jsh.App[modelid] = new (function(){
     jsh.System.applyRoles();
     jsh.System.RequireBranch(xmodel);
     if(this.isInEditor){
-      jsh.$root('.xbody').addClass('InEditor');
+      jsh.xd('.xbody').class.add('InEditor');
     }
 
-    $(window).bind('resize', _this.onresize);
+    jsh.XDom.on(window, 'resize', _this.onresize);
     jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
     _this.refreshLayout();
   };
@@ -33,15 +33,15 @@ jsh.App[modelid] = new (function(){
   };
 
   this.ondestroy = function(xmodel){
-    $(window).unbind('resize', _this.onresize);
+    jsh.XDom.on(window, 'resize', _this.onresize);
   };
 
   this.onload = function(){
     var bcrumbs = jsh.XPage.getBreadcrumbs();
     _this.refreshLayout();
     _this.state.page_folder = xmodel.get('page_folder');
-    $('.' + xmodel.class + '_page_listing_header_path').text(_this.state.page_folder);
-    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.$root('.bcrumbs_branch_body'), containerClass: 'bcrumbs_editor_selection_container' });
+    jsh.XDom.text = '.' + xmodel.class + '_page_listing_header_path', _this.state.page_folder;
+    jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), bcrumbs.site_id, bcrumbs.sys_user_site_editor, { after: jsh.xd('.bcrumbs_branch_body').element, containerClass: 'bcrumbs_editor_selection_container' });
   };
 
   this.ongetstate = function(){ return _this.state; };
@@ -59,22 +59,22 @@ jsh.App[modelid] = new (function(){
   this.onresize = function(){ _this.refreshLayout(); };
 
   this.refreshLayout = function(){
-    var jbrowser = $('.'+xmodel.class+'_browser');
+    var xdbrowser = jsh.XDom('.'+xmodel.class+'_browser');
 
-    if(!jbrowser.length) return;
+    if(!xdbrowser.length) return;
 
-    var wh = $(window).height();
-    var top = jbrowser.offset().top;
+    var wh = window.innerHeight;
+    var top = xdbrowser.calc.top();
     var contentheight = wh - top - 20;
 
-    $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
+    jsh.XDom.setStyle('.'+xmodel.class+'_browser', 'height',contentheight+'px');
   };
 
   this.page_folder_onchange = function(obj, newval) {
     var historyParams = {};
     if(_this.state.page_folder===null) historyParams = { replaceHistory: true };
     _this.state.page_folder = newval;
-    $('.' + xmodel.class + '_page_listing_header_path').text(_this.state.page_folder);
+    jsh.XDom.text = '.' + xmodel.class + '_page_listing_header_path', _this.state.page_folder;
     jsh.XPage.Select({ modelid: 'Page_Tree_Listing', onCancel: function(){} });
     XPage.AddHistory(undefined, undefined, historyParams);
   };

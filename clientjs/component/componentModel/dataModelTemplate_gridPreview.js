@@ -111,12 +111,12 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
     {link: 'js:_this.addItem()', icon: 'add', actions: 'I', text: 'Add', class: 'jsharmony_cms_component_dataGridEditor_insert' },
   ];
   model.getapi =   'return _this.getDataApi(xmodel, apitype)';
-  model.onrowbind =   '_this.onRowBind(xmodel,jobj,datarow);';
+  model.onrowbind =   '_this.onRowBind(xmodel,obj,datarow);';
   model.oncommit =  '_this.onCommit(xmodel, rowid, callback);';
   model.ejs =  '';
   model.sort = { [this._sequenceFieldName]: 'asc' };
   model.oninit = [
-    "jsh.$root('.xform'+xmodel.class).before('<div class=\"dataGridEditor_instructions\"><span style=\"font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;\">&#x1f6c8;</span> Add, edit, and re-order items using the icons <span class=\"dataGridEditor_instructions_doubleClick\">:: Double-click to edit</span></div>');",
+    "jsh.XDom('.xform'+xmodel.class).prepend('<div class=\"dataGridEditor_instructions\"><span style=\"font-size:1.3em;position:relative;top:1px;margin-right:2px;margin-left:4px;\">&#x1f6c8;</span> Add, edit, and re-order items using the icons <span class=\"dataGridEditor_instructions_doubleClick\">:: Double-click to edit</span></div>');",
   ].join(' ');
   model.rowclass = "<%=xejs.iif(rowid==0,'first')%>";
   model.tableclass = ((model.tableclass||'')+' '+(componentConfig&&componentConfig.options&&componentConfig.options.component_preview_size=='collapse'?'jsharmony_cms_component_preview_collapse':'jsharmony_cms_component_preview_expand')).trim();
@@ -131,9 +131,9 @@ DataModelTemplate_GridPreview.prototype.buildTemplate = function(componentTempla
   var selRowPreview = (modelConfig.templates || {}).gridRowPreview;
   if(selRowPreview){
     //If gridRowPreview is set, extract the template from the model.ejs file
-    var rowPreview = this._jsh.$(templateHtml).find(selRowPreview);
-    if (rowPreview.length > 1) throw new Error('Row template must contain a single root element. Found ' + rowPreview.length + ' elements');
-    rowTemplate = rowPreview ? rowPreview.html() : undefined;
+    var xdRowPreview = this._jsh.XDom(templateHtml, selRowPreview);
+    if (xdRowPreview.length > 1) throw new Error('Row template must contain a single root element. Found ' + xdRowPreview.length + ' elements');
+    rowTemplate = xdRowPreview ? xdRowPreview.html : undefined;
   }
   else {
     //If templates are not used, return the entire model.ejs as the template

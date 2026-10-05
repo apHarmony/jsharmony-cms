@@ -19,7 +19,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 
 exports = module.exports = function(jsh, cms){
   var _this = this;
-  var $ = jsh.$;
   var _ = jsh._;
 
   this.editorBarDocked = true;
@@ -35,13 +34,13 @@ exports = module.exports = function(jsh, cms){
  
   this.render = function(){
     cms.util.addStyle('jsharmony_cms_editor_css',cms.views['jsh_cms_editor.css']);
-    jsh.root.append(cms.views['jsh_cms_editor']);
+    jsh.xdroot.append(cms.views['jsh_cms_editor']);
     jsh.InitControls();
     this.renderErrors();
   };
 
   this.getHeight = function(){
-    return $('#jsharmony_cms_page_toolbar .actions').outerHeight() || 0;
+    return jsh.XDom.calc.heightToBorder('#jsharmony_cms_page_toolbar .actions') || 0;
   };
 
   this.isAnchored = function(elem, computedStyles){
@@ -49,9 +48,8 @@ exports = module.exports = function(jsh, cms){
     if(computedStyles.position=='fixed') return true;
     if(computedStyles.position=='absolute'){
       //Check if there is a positioned ancestor
-      var offsetParent = $(elem).offsetParent();
-      if(offsetParent && offsetParent.length){
-        offsetParent = offsetParent[0];
+      var offsetParent = elem.offsetParent;
+      if(offsetParent){
         if(offsetParent.tagName && _.includes(['HTML','BODY'], offsetParent.tagName.toUpperCase())) offsetParent = null;
       }
       else offsetParent = null;
@@ -62,42 +60,42 @@ exports = module.exports = function(jsh, cms){
     return false;
   };
 
-  this.excludeMarginOffset = function(jobj){
-    var obj = jobj[0];
+  this.excludeMarginOffset = function(obj){
     for(let i=0;i<_this.excludeMarginOffsetId.length;i++){
       var excludeId = _this.excludeMarginOffsetId[i];
       if(obj.id == excludeId) return true;
-      if(jobj.closest('#'+excludeId).length) return true;
+      if(jsh.XDom.parent(obj, '#'+excludeId).length) return true;
     }
     for(let i=0;i<_this.excludeMarginOffsetClass.length;i++){
       var excludeClass = _this.excludeMarginOffsetClass[i];
       if(_.includes(obj.classList, excludeClass)) return true;
-      if(jobj.closest('.'+excludeClass).length) return true;
+      if(jsh.XDom.parent(obj, '.'+excludeClass).length) return true;
     }
     return false;
   };
 
   this.saveOrigOffsets = function(options){
     options = _.extend({ preload: false, refreshExisting: false }, options);
-    _.filter($('*').toArray(), function(elem){
+    _.filter(jsh.XDom('*').elements, function(elem){
       if(elem.id=='jsHarmonyCMSLoading') return;
       var computedStyles = window.getComputedStyle(elem);
       if(_this.isAnchored(elem, computedStyles)){
-        var jelem = $(elem);
-        var offsetId = jelem.attr('cms-toolbar-offsetid');
-        if(typeof offsetId != 'undefined'){
+        var xdelem = jsh.XDom(elem);
+        var offsetId = xdelem.attr['cms-toolbar-offsetid'];
+        if(typeof offsetId == 'string'){
+          offsetId = parseInt(offsetId);
           _this.pageElements[offsetId] = elem;
           if(!options.refreshExisting) return;
         }
-        else if(jelem.parent().closest('[cms-content-editor]').length) return;
-        else if(typeof jelem.attr('cms-toolbar-offset-exclude') != 'undefined') return;
-        else if(_this.excludeMarginOffset(jelem)){
-          jelem.attr('cms-toolbar-offset-exclude','1');
+        else if(xdelem.parent().parent('[cms-content-editor]').length) return;
+        else if(!_.isNil(xdelem.attr['cms-toolbar-offset-exclude'])) return;
+        else if(_this.excludeMarginOffset(elem)){
+          xdelem.attr['cms-toolbar-offset-exclude'] = '1';
           return;
         }
         else{
           offsetId = _this.origMarginTop.length;
-          jelem.attr('cms-toolbar-offsetid', offsetId);
+          xdelem.attr['cms-toolbar-offsetid'] = offsetId;
         }
         _this.origMarginTop[offsetId] = computedStyles.marginTop;
         _this.pageElements[offsetId] = elem;
@@ -133,15 +131,15 @@ exports = module.exports = function(jsh, cms){
   }
 
   this.getPageElement = function(offsetId){
-    let jelem = null;
+    let elem = null;
     if(elementIsValid(_this.pageElements[offsetId])){
-      jelem = $(_this.pageElements[offsetId]);
+      elem = _this.pageElements[offsetId];
     }
     else{
-      jelem = $('[cms-toolbar-offsetid='+offsetId.toString()+']');
-      if(jelem.length) _this.pageElements[offsetId] = jelem[0];
+      elem = jsh.XDom('[cms-toolbar-offsetid='+offsetId.toString()+']').element;
+      if(elem) _this.pageElements[offsetId] = elem;
     }
-    return jelem;
+    return elem;
   };
 
   this.refreshOffsets = function(options){
@@ -150,19 +148,19 @@ exports = module.exports = function(jsh, cms){
     if(options.addNewOffsets) _this.saveOrigOffsets();
     var offsetTop = _this.getOffsetTop();
     var origBodyOffset = null;
-    var scrollTop = $(document).scrollTop();
+    var scrollTop = window.scrollY;
 
     //Save starting offsets
     var startingOffsets = [];
     for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      let jelem = _this.getPageElement(i);
-      if(jelem.length){
-        let elemIsBody = (jelem[0].tagName=='BODY');
+      let elem = _this.getPageElement(i);
+      if(elem){
+        let elemIsBody = (elem.tagName=='BODY');
         //Fixed elements need to subtract scrollTop from offset().top
-        startingOffsets[i] = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
+        startingOffsets[i] = jsh.XDom.calc.top(elem) - (elemIsBody ? 0 : scrollTop);
         if(elemIsBody){
-          origBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+          origBodyOffset = _this.getComputedOffsetTop(elem);
         }
       }
     }
@@ -170,12 +168,12 @@ exports = module.exports = function(jsh, cms){
     //Apply offsets
     for(let i=0;i<_this.origMarginTop.length;i++){
       if(_this.origMarginTop[i] === null) continue;
-      let jelem = _this.getPageElement(i);
-      if(jelem.length){
-        let elemIsBody = (jelem[0].tagName=='BODY');
+      let elem = _this.getPageElement(i);
+      if(elem){
+        let elemIsBody = (elem.tagName=='BODY');
         if(offsetTop){
           //Fixed elements need to subtract scrollTop from offset().top
-          var curTop = jelem.first().offset().top - (elemIsBody ? 0 : scrollTop);
+          var curTop = jsh.XDom.calc.top(elem) - (elemIsBody ? 0 : scrollTop);
           if(curTop != startingOffsets[i]){
             //If offset changed automatically because of a parent / body offset, do not add the offset to this element
             _this.origMarginTop[i] = null;
@@ -183,19 +181,19 @@ exports = module.exports = function(jsh, cms){
           }
           else {
             var newMarginTop = _this.origMarginTop[i] ? 'calc(' + _this.origMarginTop[i] + ' + ' + offsetTop + 'px)' : offsetTop+'px';
-            jelem.css('marginTop', newMarginTop);
+            elem.style.marginTop = newMarginTop;
           }
         }
         else {
-          jelem.css('marginTop', _this.origMarginTop[i]);
+          elem.style.marginTop = _this.origMarginTop[i];
         }
         //If changing body offset
         if(scrollTop && elemIsBody){
-          var newBodyOffset = _this.getComputedOffsetTop(jelem[0]);
+          var newBodyOffset = _this.getComputedOffsetTop(elem);
           //Keep scroll position
           if(scrollTop && (origBodyOffset != newBodyOffset)){
-            $(document).scrollTop(scrollTop + (parseInt(newBodyOffset) - parseInt(origBodyOffset)));
-            scrollTop = $(document).scrollTop();
+            window.scrollY = (scrollTop + (parseInt(newBodyOffset) - parseInt(origBodyOffset)));
+            scrollTop = window.scrollY;
           }
         }
       }
@@ -204,19 +202,19 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.renderErrors = function(){
-    var jcontainer = $('#jsharmony_cms_editor_errors');
-    jcontainer.toggle(!!_this.errors.length);
-    jcontainer.empty();
-    if(jcontainer.length && _this.errors.length){
-      jcontainer.append($('<div class="jsharmony_cms_editor_errors_close">X</div>'));
+    var xdcontainer = jsh.XDom('#jsharmony_cms_editor_errors');
+    xdcontainer.style.display = !!_this.errors.length;
+    xdcontainer.clear();
+    if(xdcontainer.length && _this.errors.length){
+      xdcontainer.append('<div class="jsharmony_cms_editor_errors_close">X</div>');
       for(var i=0;i<_this.errors.length;i++){
         var error = _this.errors[i];
-        var jmessage = $('<div class="jsharmony_cms_editor_error"></div>');
-        if(error.type=='html') jmessage.html(error.message);
-        else jmessage.text(error.message);
-        jcontainer.append(jmessage);
+        var message = jsh.render('<div class="jsharmony_cms_editor_error"></div>');
+        if(error.type=='html') message.innerHTML = error.message;
+        else message.innerText = error.message;
+        xdcontainer.append(message);
       }
-      jcontainer.find('.jsharmony_cms_editor_errors_close').on('click', function(){ $('#jsharmony_cms_editor_errors').hide(); });
+      xdcontainer.get('.jsharmony_cms_editor_errors_close').on('click', function(){ jsh.XDom('#jsharmony_cms_editor_errors').style.display = false; });
     }
   };
 
@@ -224,39 +222,44 @@ exports = module.exports = function(jsh, cms){
     if(typeof val =='undefined') val = !this.editorBarDocked;
     this.editorBarDocked = !!val;
     this.refreshOffsets();
-    $('#jsharmony_cms_page_toolbar .autoHideEditorBar').toggleClass('enabled',!val);
+    if (!val) {
+      jsh.XDom.class.add('#jsharmony_cms_page_toolbar .autoHideEditorBar', 'enabled');
+    } else {
+      jsh.XDom.class.remove('#jsharmony_cms_page_toolbar .autoHideEditorBar', 'enabled');
+    }
   };
   
   this.toggleSlideoutButton = function(button, display, noSlide){
-    var jbutton;
+    var xdbutton;
     if(!button) return;
-    if(_.isString(button)) jbutton = $('#jsharmony_cms_page_toolbar .jsharmony_cms_button.'+button);
-    else jbutton = $(button);
-    $('#jsharmony_cms_page_toolbar .jsharmony_cms_button[data-slideout].selected').not(jbutton).each(function(){
-      _this.toggleSlideoutButton(this, false, true);
+    if(_.isString(button)) xdbutton = jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_button.'+button);
+    else xdbutton = jsh.XDom(button);
+    jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_button[data-slideout].selected').elements.forEach(function(el){
+      if (el == xdbutton.element) return;
+      _this.toggleSlideoutButton(el, false, true);
       //Disable slide if another button is already selected
       noSlide = true;
     });
-    var prevdisplay = !!jbutton.hasClass('selected');
+    var prevdisplay = !!xdbutton.class.contains('selected');
     if(typeof display == 'undefined') display = !prevdisplay;
     
     if(prevdisplay==display) return;
     else {
-      var jslideout = $('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container.'+jbutton.data('slideout'));
+      var xdslideout = jsh.XDom('#jsharmony_cms_page_toolbar .jsharmony_cms_tabcontrol_container.'+xdbutton.data.slideout);
       if(display){
         //Open
-        jbutton.addClass('selected');
-        jslideout.stop(true);
-        if(noSlide) jslideout.show();
-        else jslideout.slideDown();
+        xdbutton.class.add('selected');
+        jsh.XDom.stop(xdslideout);
+        if(noSlide) xdslideout.display = true;
+        else xdslideout.animate.height(true);
       }
       else {
         //Close
         if(!cms.controller.validate()) return;
-        jbutton.removeClass('selected');
-        jslideout.stop(true);
-        if(noSlide) jslideout.hide();
-        else jslideout.slideUp();
+        xdbutton.class.remove('selected');
+        jsh.XDom.stop(xdslideout);
+        if(noSlide) xdslideout.display = false;
+        else xdslideout.animate.height(false);
       }
     }
   };
@@ -275,15 +278,22 @@ exports = module.exports = function(jsh, cms){
   this.setDockPosition = function(dockPosition){
     _this.dockPosition = dockPosition || 'top_offset';
     _this.refreshOffsets();
-    $('#jsharmony_cms_page_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
-    $('#jsharmony_cms_content_editor_toolbar').toggleClass('jsharmony_cms_page_toolbar_bottom', _this.dockPosition=='bottom');
+    if (_this.dockPosition=='bottom') {
+      jsh.XDom('#jsharmony_cms_page_toolbar').class.add('jsharmony_cms_page_toolbar_bottom');
+      jsh.XDom('#jsharmony_cms_content_editor_toolbar').class.add('jsharmony_cms_page_toolbar_bottom');
+    } else {
+      jsh.XDom('#jsharmony_cms_page_toolbar').class.remove('jsharmony_cms_page_toolbar_bottom');
+      jsh.XDom('#jsharmony_cms_content_editor_toolbar').class.remove('jsharmony_cms_page_toolbar_bottom');
+    }
 
     if(_this.dockPosition == 'bottom'){
-      $('#jsharmony_cms_page_toolbar').css('opacity', 0);
+      jsh.XDom('#jsharmony_cms_page_toolbar').stlye.opacity = 0;
       var dockAnimation = function(){
         var barHeight = _this.getHeight();
-        $('#jsharmony_cms_page_toolbar').css({ opacity: 1, bottom: '-'+barHeight+'px' });
-        $('#jsharmony_cms_page_toolbar').animate({ bottom: '0px' }, function(){ this.style.bottom = null; });
+        var xdpageToolbar = jsh.XDom('#jsharmony_cms_page_toolbar');
+        xdpageToolbar.style.opacity = 1;
+        xdpageToolbar.style.bottom = '-'+barHeight+'px';
+        xdpageToolbar.animate({ bottom: '0px' }, function(){ xdpageToolbar.style.bottom = null; });
       };
       if(cms.isInitialized) dockAnimation();
       else cms.loader.onLoadingComplete.push(dockAnimation);

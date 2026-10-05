@@ -22,39 +22,37 @@ jsh.App[modelid] = new (function(){
   this.oninit = function(){
     jsh.System.RequireBranch(xmodel);
     if(this.isInEditor){
-      jsh.$root('.xbody').addClass('InEditor');
+      jsh.xd('.xbody').class.add('InEditor');
     }
 
-    $(window).bind('resize', _this.onresize);
+    jsh.XDom.on(window, 'resize', _this.onresize);
     _this.refreshLayout();
     _this.renderInfo();
-    var jFileListing = jsh.$root('.'+xmodel.class+'_file_listing');
-    jFileListing.on('dragenter', _this.file_listing_onDragEnter);
-    jFileListing.on('dragleave', _this.file_listing_onDragLeave);
-    jFileListing.on('dragover', _this.file_listing_onDragOver);
-    jFileListing.on('drop', _this.file_listing_onDrop.bind(jFileListing[0], null));
+    var xdFileListing = jsh.xd('.'+xmodel.class+'_file_listing');
+    xdFileListing.on('dragenter', _this.xdile_listing_onDragEnter);
+    xdFileListing.on('dragleave', _this.file_listing_onDragLeave);
+    xdFileListing.on('dragover', _this.file_listing_onDragOver);
+    xdFileListing.on('drop', _this.file_listing_onDrop.bind(xdFileListing.element, null));
   };
 
   this.ondestroy = function(xmodel){
-    $(window).unbind('resize', _this.onresize);
+    jsh.XDom.off(window, 'resize', _this.onresize);
   };
 
   this.file_listing_dragCounter = 0;
 
   this.file_listing_onDragEnter = function(e){
-    var jobj = $(this);
     _this.file_listing_dragCounter++;
-    if(!jobj.hasClass('dragOver')) jobj.addClass('dragOver');
+    if(!jsh.XDom.class.contains(this, 'dragOver')) jsh.XDom.class.add(this, 'dragOver');
     e.preventDefault();
     e.stopPropagation();
   };
 
   this.file_listing_onDragLeave = function(e){
-    var jobj = $(this);
     _this.file_listing_dragCounter--;
     if(_this.file_listing_dragCounter <= 0){
       _this.file_listing_dragCounter = 0;
-      jobj.removeClass('dragOver');
+      jsh.XDom.class.remove(this, 'dragOver');
     }
     e.preventDefault();
     e.stopPropagation();
@@ -66,9 +64,8 @@ jsh.App[modelid] = new (function(){
   };
 
   this.file_listing_onDrop = function(replace_media_key, e){
-    var jobj = $(this);
     _this.file_listing_dragCounter = 0;
-    jobj.removeClass('dragOver');
+    jsh.XDom.class.remove(this, 'dragOver');
     e.preventDefault();
     e.stopPropagation();
 
@@ -111,16 +108,10 @@ jsh.App[modelid] = new (function(){
     fd.append('media_path', media_folder + file.name);
 
     jsh.xLoader.StartLoading(_this.loadobj);
-    $.ajax({
-      url: jsh._BASEURL + '_funcs/media/',
-      data: fd,
-      processData: false,
-      contentType: false,
-      type: 'PUT',
-      dataType: 'json',
-      xhrFields: {
-        withCredentials: true
-      },
+    jsh.XExt.Request(jsh._BASEURL + '_funcs/media/', {
+      body: fd,
+      method: 'PUT',
+      credentials: 'include',
       success: function(jdata){
         jsh.xLoader.StopLoading(_this.loadobj);
         if ((jdata instanceof Object) && ('_error' in jdata)) {
@@ -160,16 +151,10 @@ jsh.App[modelid] = new (function(){
     fd.append('media_file', file, file.name);
 
     jsh.xLoader.StartLoading(_this.loadobj);
-    $.ajax({
-      url: jsh._BASEURL + '_funcs/media/' + media_key + '/',
-      data: fd,
-      processData: false,
-      contentType: false,
-      type: 'POST',
-      dataType: 'json',
-      xhrFields: {
-        withCredentials: true
-      },
+    jsh.XExt.Request(jsh._BASEURL + '_funcs/media/' + media_key + '/', {
+      body: fd,
+      method: 'POST',
+      credentials: 'include',
       success: function(jdata){
         jsh.xLoader.StopLoading(_this.loadobj);
         if ((jdata instanceof Object) && ('_error' in jdata)) {
@@ -225,15 +210,15 @@ jsh.App[modelid] = new (function(){
   };
 
   this.refreshLayout = function(){
-    var jbrowser = $('.'+xmodel.class+'_browser');
+    var xdbrowser = jsh.XDom('.'+xmodel.class+'_browser');
 
-    if(!jbrowser.length) return;
+    if(!xdbrowser.length) return;
 
-    var wh = $(window).height();
-    var top = jbrowser.offset().top;
+    var wh = window.innerHeight;
+    var top = xdbrowser.calc.top();
     var contentheight = wh - top - 20;
 
-    $('.'+xmodel.class+'_browser').css('height',contentheight+'px');
+    xdbrowser.style.height = contentheight+'px';
   };
 
   this.media_folder_onchange = function(obj, newval) {
@@ -286,10 +271,10 @@ jsh.App[modelid] = new (function(){
           media_file._is_dirty = false;
         });
         var newScroll = 0;
-        if(sameFolder) newScroll = $('.'+xmodel.class+'_file_listing_scroll').scrollTop();
+        if(sameFolder) newScroll = jsh.XDom('.'+xmodel.class+'_file_listing_scroll').element.scrollY;
         _this.renderListing({ refresh_sidebar: false });
         _this.selectFile(null);
-        $('.'+xmodel.class+'_file_listing_scroll').scrollTop(newScroll);
+        jsh.XDom('.'+xmodel.class+'_file_listing_scroll').element.scrollY = newScroll;
         if (onComplete) onComplete();
       }
       else XExt.Alert('Error while loading data');
@@ -312,100 +297,101 @@ jsh.App[modelid] = new (function(){
     });
 
     //Render Files
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_file_listing_'+_this.state.file_view).html();
-    var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
+    var tmpl = jsh.xd('.'+xmodel.class+'_template_file_listing_'+_this.state.file_view).html;
+    var xdcontainer = jsh.xd('.'+xmodel.class+'_file_listing');
     var media_folder_desc = _this._current_media_folder;
     if(_this.folderIsRoot(media_folder_desc)) media_folder_desc = '(Root)';
-    jcontainer.html(XExt.renderClientEJS(tmpl, { media_folder_desc: media_folder_desc, media_files: _this.sorted_media_files, _: _, jsh: jsh }));
+    xdcontainer.setHtml(XExt.renderClientEJS(tmpl, { media_folder_desc: media_folder_desc, media_files: _this.sorted_media_files, _: _, jsh: jsh }));
     _this.bindEventsListing();
     if(options.refresh_sidebar) _this.selectFile(_this.selected_media_key);
 
     //Update group buttons
-    jsh.$root('.xform_button_group_SortBy .xform_button_caption').text('Sort By: '+_this.SORT[_this.state.file_sort.substr(1)]);
-    jsh.$root('.xform_button_group_View .xform_button_caption').text('View: '+_this.VIEW[_this.state.file_view]);
+    jsh.xd('.xform_button_group_SortBy .xform_button_caption').text = ('Sort By: '+_this.SORT[_this.state.file_sort.substr(1)]);
+    jsh.xd('.xform_button_group_View .xform_button_caption').text = ('View: '+_this.VIEW[_this.state.file_view]);
   };
 
   this.bindEventsListing = function(){
-    var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
+    var xdcontainer = jsh.xd('.'+xmodel.class+'_file_listing');
     if(_this.state.file_view=='tiles'){
-      let jfiles = jcontainer.find('.'+xmodel.class+'_file_tile');
-      jfiles.on('click', function(e){
+      let xdfiles = xdcontainer.get('.'+xmodel.class+'_file_tile');
+      xdfiles.on('click', function(e){
         XExt.HideContextMenu();
-        _this.selectFile($(this).data('key'));
-        $(this).focus();
+        _this.selectFile(jsh.XDom.getData(this, 'key'));
+        this.focus();
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      jfiles.on('dblclick', function(e){
+      xdfiles.on('dblclick', function(e){
         XExt.HideContextMenu();
         if(_this.isInEditor){
-          _this.sendToEditor($(this).data('key'));
+          _this.sendToEditor(jsh.XDom.getData(this, 'key'));
         }
         else {
-          _this.downloadFile($(this).data('key'));
+          _this.downloadFile(jsh.XDom.getData(this, 'key'));
         }
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      jfiles.contextmenu(function(e){
+      xdfiles.on('contextmenu', function(e){
         e.preventDefault();
         e.stopPropagation();
-        XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', $(this).data('key'));
+        XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', jsh.XDom.getData(this, 'key'));
       });
-      jfiles.on('keyup', function(e){
+      xdfiles.on('keyup', function(e){
         if(e.keyCode==46){ //Delete key
-          _this.deleteFile($(this).data('key'));
+          _this.deleteFile(jsh.XDom.getData(this, 'key'));
         }
         else if(e.keyCode==113){ //F2 key
-          _this.renameFile($(this).data('key'));
+          _this.renameFile(jsh.XDom.getData(this, 'key'));
         }
         else if((e.keyCode==37)||(e.keyCode==38)){ //Left / Up
-          _this.selectPrevFile($(this).data('key'));
+          _this.selectPrevFile(jsh.XDom.getData(this, 'key'));
         }
         else if((e.keyCode==39)||(e.keyCode==40)){ //Right / Down
-          _this.selectNextFile($(this).data('key'));
+          _this.selectNextFile(jsh.XDom.getData(this, 'key'));
         }
       });
-      XExt.bindDragSource(jfiles);
+      XExt.bindDragSource(xdfiles.elements);
     }
     else if(_this.state.file_view=='details'){
-      let jfiles = jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr');
-      jfiles.on('click', function(e){
-        _this.selectFile($(this).data('key'));
+      let xdfiles = xdcontainer.get('.'+xmodel.class+'_file_listing_tbl tbody tr');
+      xdfiles.on('click', function(e){
+        _this.selectFile(jsh.XDom.getData(this, 'key'));
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      jfiles.on('dblclick', function(e){
+      xdfiles.on('dblclick', function(e){
         if(_this.isInEditor){
-          _this.sendToEditor($(this).data('key'));
+          _this.sendToEditor(jsh.XDom.getData(this, 'key'));
         }
         else {
-          _this.downloadFile($(this).data('key'));
+          _this.downloadFile(jsh.XDom.getData(this, 'key'));
         }
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      jfiles.contextmenu(function (e) {
+      xdfiles.on('contextmenu', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', $(this).data('key'));
+        XExt.ShowContextMenu('.'+xmodel.class+'_file_context_menu', jsh.XDom.getData(this, 'key'));
       });
-      jcontainer.find('.'+xmodel.class+'_file_listing_tbl thead th[data-sort]').on('click', function(e){
-        _this.setSort($(this).data('sort'));
+      xdcontainer.get('.'+xmodel.class+'_file_listing_tbl thead th[data-sort]').on('click', function(e){
+        _this.setSort(jsh.XDom.getData(this, 'sort'));
         e.preventDefault();
         e.stopImmediatePropagation();
       });
-      XExt.bindDragSource(jfiles.find('.media_filename a'));
+      XExt.bindDragSource(xdfiles.get('.media_filename a').elements);
     }
-    jcontainer.find('.'+xmodel.class+'_add_file').on('click', function(e){
+    xdcontainer.get('.'+xmodel.class+'_add_file').on('click', function(e){
       _this.addFile();
       e.preventDefault();
       e.stopImmediatePropagation();
     });
-    jcontainer.on('click', function(e){
+    xdcontainer.on('click', function(e){
       _this.selectFile(null);
     });
-    jcontainer.off('contextmenu').on('contextmenu',function(e){
+    xdcontainer.off('contextmenu');
+    xdcontainer.on('contextmenu',function(e){
       e.preventDefault();
       e.stopPropagation();
       XExt.ShowContextMenu('.'+xmodel.class+'_file_container_context_menu', _this._current_media_folder);
@@ -435,18 +421,26 @@ jsh.App[modelid] = new (function(){
     var media_file = _this.getMediaFile(media_key||null);
     _this.selected_media_key = media_file ? media_key : null;
     _this.selected_media_file = (media_file ? _.extend({}, media_file) : null);
-    var jcontainer = jsh.$root('.'+xmodel.class+'_file_listing');
-    jcontainer.find('.selected').removeClass('selected');
+    var xdcontainer = jsh.xd('.'+xmodel.class+'_file_listing');
+    xdcontainer.get('.selected').class.remove('selected');
     if(_this.state.file_view=='tiles'){
-      if(media_key) jcontainer.find('.'+xmodel.class+'_file_tile[data-key='+media_key+']').addClass('selected').focus();
+      if(media_key) {
+        var xdtile = xdcontainer.get('.'+xmodel.class+'_file_tile[data-key="'+media_key+'"]');
+        xdtile.class.add('selected');
+        xdtile.focus();
+      }
     }
     else if(_this.state.file_view=='details'){
-      if(media_key) jcontainer.find('.'+xmodel.class+'_file_listing_tbl tbody tr[data-key='+media_key+']').addClass('selected').focus();
+      if(media_key) {
+        var xdrow = xdcontainer.get('.'+xmodel.class+'_file_listing_tbl tbody tr[data-key="'+media_key+'"]');
+        xdrow.class.add('selected');
+        xdrow.focus();
+      }
     }
     _this.renderInfo(_this.selected_media_file);
     if(options.scrollIntoView){
-      var jselected = jcontainer.find('.selected');
-      if(jselected.length) jselected[0].scrollIntoView();
+      var xdselected = xdcontainer.get('.selected');
+      if(xdselected.length) xdselected.element.scrollIntoView();
     }
   };
 
@@ -469,92 +463,92 @@ jsh.App[modelid] = new (function(){
 
   this.renderInfo = function(media_file){
     //Render Files
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_file_info').html();
-    var jcontainer = jsh.$root('.'+xmodel.class+'_file_info');
+    var tmpl = jsh.xd('.'+xmodel.class+'_template_file_info').html;
+    var xdcontainer = jsh.xd('.'+xmodel.class+'_file_info');
 
-    jcontainer.html(XExt.renderClientEJS(tmpl, { media_file: media_file, _: _, jsh: jsh }));
+    xdcontainer.setHtml(XExt.renderClientEJS(tmpl, { media_file: media_file, _: _, jsh: jsh }));
 
     if(media_file){
       if(XExt.hasAction(xmodel.actions, 'U')){
-        jcontainer.find('.media_desc').val(media_file.media_desc);
-        XExt.RenderLOV(null, jcontainer.find('.media_type'), xmodel.controller.form.LOVs.media_type);
-        jcontainer.find('.media_type').val(media_file.media_type);
-        XExt.TagBox_Render(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
-        jcontainer.find('.media_tags').val(media_file.media_tags);
-        XExt.TagBox_Refresh(jcontainer.find('.media_tags_editor'), jcontainer.find('.media_tags'));
+        xdcontainer.get('.media_desc').value = media_file.media_desc;
+        XExt.RenderLOV(null, xdcontainer.get('.media_type').element, xmodel.controller.form.LOVs.media_type);
+        xdcontainer.get('.media_type').value = media_file.media_type;
+        XExt.TagBox_Render(xdcontainer.get('.media_tags_editor').element, xdcontainer.get('.media_tags').element);
+        xdcontainer.get('.media_tags').value = media_file.media_tags;
+        XExt.TagBox_Refresh(xdcontainer.get('.media_tags_editor').element, xdcontainer.get('.media_tags').element);
       }
       else {
-        jcontainer.find('.media_desc').text(media_file.media_desc);
-        jcontainer.find('.media_type').text(XExt.getLOVTxt(xmodel.controller.form.LOVs.media_type, media_file.media_type));
-        jcontainer.find('.media_tags').text(media_file.media_tags);
+        xdcontainer.get('.media_desc').text = media_file.media_desc;
+        xdcontainer.get('.media_type').text = XExt.getLOVTxt(xmodel.controller.form.LOVs.media_type, media_file.media_type);
+        xdcontainer.get('.media_tags').text = media_file.media_tags;
       }
     }
     _this.bindEventsInfo();
   };
 
   this.toggleSidebar = function(show){
-    var jinfo = jsh.$root('.'+xmodel.class+'_file_info');
+    var xdinfo = jsh.xd('.'+xmodel.class+'_file_info');
     if(typeof show == 'undefined') show = !_this.isSidebarVisible();
-    if(!show) jinfo.css('display','none');
-    else jinfo.css('display','flex');
+    if(!show) xdinfo.style.display = 'none';
+    else xdinfo.style.display = 'flex';
   };
 
   this.isSidebarVisible = function(){
-    return jsh.$root('.'+xmodel.class+'_file_info').is(':visible');
+    return jsh.xd('.'+xmodel.class+'_file_info').isVisible();
   };
 
   this.bindEventsInfo = function(){
-    var jcontainer = jsh.$root('.'+xmodel.class+'_file_info');
+    var xdcontainer = jsh.xd('.'+xmodel.class+'_file_info');
 
-    var jpreview = jsh.$root('.'+xmodel.class+'_file_info_preview');
-    jpreview.on('click', function(e){
+    var xdpreview = jsh.xd('.'+xmodel.class+'_file_info_preview');
+    xdpreview.on('click', function(e){
       _this.previewFile(_this.selected_media_file);
       e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_download').on('click', function(e){
+    jsh.xd('.'+xmodel.class+'_file_info_download').on('click', function(e){
       _this.downloadFile(_this.selected_media_key);
       e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_replace').on('click', function(e){
+    jsh.xd('.'+xmodel.class+'_file_info_replace').on('click', function(e){
       _this.replaceFile(_this.selected_media_key);
       e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_delete').on('click', function(e){
+    jsh.xd('.'+xmodel.class+'_file_info_delete').on('click', function(e){
       _this.deleteFile(_this.selected_media_key);
       e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_rename').on('click', function(e){
+    jsh.xd('.'+xmodel.class+'_file_info_rename').on('click', function(e){
       _this.renameFile(_this.selected_media_key);
       e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_move').on('click', function(e){
+    jsh.xd('.'+xmodel.class+'_file_info_move').on('click', function(e){
       _this.moveFile(_this.selected_media_key);
       e.preventDefault();
     });
 
-    jsh.$root('.'+xmodel.class+'_file_info_view_revisions').on('click', function(e){
+    jsh.xd('.'+xmodel.class+'_file_info_view_revisions').on('click', function(e){
       _this.viewRevisions(_this.selected_media_key);
       e.preventDefault();
     });
 
-    jcontainer.find('.media_desc').on('input keyup', function(){
-      _this.setMediaProp('media_desc', $(this).val());
+    xdcontainer.get('.media_desc').on('input keyup', function(){
+      _this.setMediaProp('media_desc', jsh.XDom.getValue(this));
     });
 
-    jcontainer.find('.media_type').on('input keyup', function(){
-      _this.setMediaProp('media_type', $(this).val());
+    xdcontainer.get('.media_type').on('input keyup', function(){
+      _this.setMediaProp('media_type', jsh.XDom.getValue(this));
     });
 
-    jcontainer.find('.media_tags').on('input keyup', function(){
-      _this.setMediaProp('media_tags', $(this).val());
+    xdcontainer.get('.media_tags').on('input keyup', function(){
+      _this.setMediaProp('media_tags', jsh.XDom.getValue(this));
     });
 
-    jcontainer.find('.save_changes').on('click', function(e){
+    xdcontainer.get('.save_changes').on('click', function(e){
       _this.saveMediaFileInfo();
       e.preventDefault();
     });
@@ -601,14 +595,22 @@ jsh.App[modelid] = new (function(){
     if(!cb) cb = function(){};
     media_file._is_dirty = isDirty;
     if(media_file == _this.selected_media_file){
-      var jSaveChanges = jsh.$root('.'+xmodel.class+'_file_info .save_changes');
-      if(jSaveChanges.is(':visible')){
+      var xdSaveChanges = jsh.xd('.'+xmodel.class+'_file_info .save_changes');
+      if(xdSaveChanges.isVisible()){
         //Hide "Save Changes"
-        if(!isDirty) return jSaveChanges.parent().stop(true).slideUp(400, cb);
+        if(!isDirty) {
+          xdSaveChanges.parent().stop();
+          xdSaveChanges.parent().animate.height(false);
+          return;
+        }
       }
       else{
         //Show "Save Changes"
-        if(isDirty) return jSaveChanges.parent().stop(true).slideDown(400, cb);
+        if(isDirty) {
+          xdSaveChanges.parent().stop();
+          xdSaveChanges.parent().animate.height(true);
+          return;
+        }
       }
     }
     return cb();
@@ -628,7 +630,7 @@ jsh.App[modelid] = new (function(){
   this.downloadFile = function(media_key){
     var media_file = _this.getMediaFile(media_key);
     var url = jsh._BASEURL+'_funcs/media/'+media_file.media_key+'/?download&media_file_id='+media_file.media_file_id;
-    jsh.getFileProxy().prop('src', url);
+    jsh.getFileProxy().src = url;
   };
 
   this.viewRevisions = function(media_key){
@@ -637,7 +639,7 @@ jsh.App[modelid] = new (function(){
 
     xmodel.set('revision_media_key', media_key);
     xmodel.set('revision_media_id', media_file.media_id);
-    jsh.XExt.popupShow(xmodel.namespace + 'Media_Revision_Listing','revision_media','Revisions',undefined,jsh.$root('.xform'+xmodel.class+' .revision_media_xlookup')[0],{
+    jsh.XExt.popupShow(xmodel.namespace + 'Media_Revision_Listing','revision_media','Revisions',undefined,jsh.xd('.xform'+xmodel.class+' .revision_media_xlookup').element,{
       OnControlUpdate:function(obj, rslt){
         if(rslt && rslt.result){
           var media_id = rslt.result;
@@ -673,17 +675,17 @@ jsh.App[modelid] = new (function(){
 
     var sel = '.'+xmodel.class+'_ReplaceMedia';
 
-    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$dialogBlock(sel);
+    XExt.CustomPrompt(sel, jsh.xd(sel).element.outerHTML, function () { //onInit
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
-      jprompt.off('.file_upload');
-      jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
-      jprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
-      jprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
-      jprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(jprompt[0], media_key));
-      jprompt.find('.media_upload').off('change');
-      XExt.clearFileInput(jprompt.find('.media_upload')[0]);
-      jprompt.find('.media_upload').on('change', function(e){
+      xdprompt.off('.file_upload');
+      xdprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
+      xdprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
+      xdprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
+      xdprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(xdprompt.element, media_key));
+      xdprompt.get('.media_upload').off('change');
+      XExt.clearFileInput(xdprompt.get('.media_upload').element);
+      xdprompt.get('.media_upload').on('change', function(e){
         _this.uploadReplacementFile(media_key, this.files);
       });
     }, function (success) { //onAccept
@@ -780,21 +782,21 @@ jsh.App[modelid] = new (function(){
     if(typeof media_folder == 'undefined') media_folder = xmodel.get('media_folder');
     var sel = '.'+xmodel.class+'_AddMedia';
 
-    XExt.CustomPrompt(sel, jsh.$root(sel)[0].outerHTML, function () { //onInit
-      var jprompt = jsh.$dialogBlock(sel);
+    XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+      var xdprompt = jsh.xdDialogBlock.get(sel);
 
-      jprompt.off('.file_upload');
-      jprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
-      jprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
-      jprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
-      jprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(jprompt[0], null));
+      xdprompt.off('.file_upload');
+      xdprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
+      xdprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
+      xdprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
+      xdprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(xdprompt.element, null));
       var folderDesc = media_folder;
       if(_this.folderIsRoot(media_folder)) folderDesc = '(Root)';
       folderDesc = XExt.ReplaceAll(folderDesc,'/','/\u200b');
-      jprompt.find('.'+xmodel.class+'_drop_overlay_path').text(folderDesc);
-      jprompt.find('.media_upload').off('change');
-      XExt.clearFileInput(jprompt.find('.media_upload')[0]);
-      jprompt.find('.media_upload').on('change', function(e){
+      xdprompt.get('.'+xmodel.class+'_drop_overlay_path').text = folderDesc;
+      xdprompt.get('.media_upload').off('change');
+      XExt.clearFileInput(xdprompt.get('.media_upload').element);
+      xdprompt.get('.media_upload').on('change', function(e){
         _this.uploadFiles(media_folder, this.files);
       });
     }, function (success) { //onAccept

@@ -12,16 +12,16 @@ jsh.App[modelid] = new (function(){
   this.numUnresolved = 0;
 
   this.onRenderedConflicts = [
-    function(jdiff){
-      jdiff.find('.preview_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
-      jdiff.find('.preview_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
-      jdiff.find('.preview_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
-      jdiff.find('.preview_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
-      jdiff.find('.branch_diff_item_toggle').on('click', function(e){ _this.toggleDiff(this); e.preventDefault(); });
+    function(xddiff){
+      xddiff.get('.preview_page').on('click', function(e){ _this.previewPage(this); e.preventDefault(); });
+      xddiff.get('.preview_media').on('click', function(e){ _this.previewMedia(this); e.preventDefault(); });
+      xddiff.get('.preview_menu').on('click', function(e){ _this.previewMenu(this); e.preventDefault(); });
+      xddiff.get('.preview_sitemap').on('click', function(e){ _this.previewSitemap(this); e.preventDefault(); });
+      xddiff.get('.branch_diff_item_toggle').on('click', function(e){ _this.toggleDiff(this); e.preventDefault(); });
 
       _.each(_this.branch_conflicts, function(branch_items, item_type){
-        jdiff.find('.button_resolve_'+item_type).on('click', function(e){ _this.resolveConflict(this, item_type); e.preventDefault(); });
-        jdiff.find('.button_unresolve_'+item_type).on('click', function(e){ _this.resolveConflict(this, item_type); e.preventDefault(); });
+        xddiff.get('.button_resolve_'+item_type).on('click', function(e){ _this.resolveConflict(this, item_type); e.preventDefault(); });
+        xddiff.get('.button_unresolve_'+item_type).on('click', function(e){ _this.resolveConflict(this, item_type); e.preventDefault(); });
       });
     }
   ];
@@ -73,18 +73,18 @@ jsh.App[modelid] = new (function(){
   };
 
   this.render = function(){
-    var jdiff = jsh.$('.conflict_display');
+    var xddiff = jsh.XDom('.conflict_display');
 
     var map = function(key, dict){
       if(_this.field_mapping[dict] && (key in _this.field_mapping[dict])) return _this.field_mapping[dict][key];
       return key;
     };
 
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_diff_listing').html();
+    var tmpl = jsh.xd('.'+xmodel.class+'_template_diff_listing').html;
     var templates = {};
     var item_tmpl = {};
     for(var item_type in _this.branch_conflicts){
-      item_tmpl[item_type] = jsh.$root('.'+xmodel.class+'_template_diff_' + item_type).html();
+      item_tmpl[item_type] = jsh.xd('.'+xmodel.class+'_template_diff_' + item_type).html;
     }
     var renderParams = {
       _: _,
@@ -107,7 +107,7 @@ jsh.App[modelid] = new (function(){
     renderParams.renderTemplate = function(path, data){
       var t = templates[path];
       if (!t) {
-        t = templates[path] = jsh.$root('.'+xmodel.class+'_template_'+path).html();
+        t = templates[path] = jsh.xd('.'+xmodel.class+'_template_'+path).html;
       }
       if (t) {
         return XExt.renderClientEJS(t, _.extend(data, renderParams));
@@ -116,22 +116,21 @@ jsh.App[modelid] = new (function(){
       }
     };
 
-    jdiff.html(XExt.renderClientEJS(tmpl, renderParams));
+    xddiff.html = XExt.renderClientEJS(tmpl, renderParams);
 
-    XExt.trigger(_this.onRenderedConflicts, jdiff);
+    XExt.trigger(_this.onRenderedConflicts, xddiff);
 
-    jdiff.find('.button_execute_merge').on('click', function(e){ _this.executeMerge(this); e.preventDefault(); });
+    xddiff.get('.button_execute_merge').on('click', function(e){ _this.executeMerge(this); e.preventDefault(); });
 
     jsh.System.renderEditorSelection(xmodel.controller.getLOV('site_editor'), xmodel.get('site_id'), xmodel.get('sys_user_site_editor'), { containerClass: 'diff_editor_selection_container' });
   };
 
   this.previewPage = function(obj){
-    var jobj = $(obj);
-    var page_template_id = jobj.data('page_template_id');
-    var page_template_path = jobj.data('page_template_path');
-    var page_key = jobj.data('page_key');
-    var page_filename = jobj.data('page_filename');
-    var page_id = jobj.data('page_id');
+    var page_template_id = obj.dataset['page_template_id'];
+    var page_template_path = obj.dataset['page_template_path'];
+    var page_key = obj.dataset['page_key'];
+    var page_filename = obj.dataset['page_filename'];
+    var page_id = obj.dataset['page_id'];
 
     if(!page_template_id) return XExt.Alert('Invalid page template');
 
@@ -139,48 +138,37 @@ jsh.App[modelid] = new (function(){
   };
 
   this.previewMedia = function(obj){
-    var jobj = $(obj);
-    var media_key = jobj.data('media_key');
-    var media_id = jobj.data('media_id');
-    var media_ext = jobj.data('media_ext');
-    var media_width = jobj.data('media_width');
-    var media_height = jobj.data('media_height');
+    var media_key = obj.dataset['media_key'];
+    var media_id = obj.dataset['media_id'];
+    var media_ext = obj.dataset['media_ext'];
+    var media_width = obj.dataset['media_width'];
+    var media_height = obj.dataset['media_height'];
     jsh.System.PreviewMedia(media_key, undefined, media_id, media_ext, media_width, media_height);
   };
 
   this.previewMenu = function(obj){
-    var jobj = $(obj);
-    var menu_key = jobj.data('menu_key');
-    var menu_id = jobj.data('menu_id');
+    var menu_key = obj.dataset['menu_key'];
+    var menu_id = obj.dataset['menu_id'];
     XExt.popupForm(xmodel.namespace+'Menu_Tree_Browse','browse', { menu_key: menu_key, menu_id: menu_id, branch_id: xmodel.get('branch_id') });
   };
 
   this.previewSitemap = function(obj){
-    var jobj = $(obj);
-    var sitemap_key = jobj.data('sitemap_key');
-    var sitemap_id = jobj.data('sitemap_id');
+    var sitemap_key = obj.dataset['sitemap_key'];
+    var sitemap_id = obj.dataset['sitemap_id'];
     XExt.popupForm(xmodel.namespace+'Sitemap_Tree_Browse','browse', { sitemap_key: sitemap_key, sitemap_id: sitemap_id, branch_id: xmodel.get('branch_id') });
   };
 
   this.toggleDiff = function(obj){
-    var jobj = $(obj);
-    var jdiff = jobj.parent('.branch_diff_item');
-    if(jdiff.hasClass('branch_diff_item_collapsed')){
-      jdiff.removeClass('branch_diff_item_collapsed');
-    } else {
-      jdiff.addClass('branch_diff_item_collapsed');
-    }
+    jsh.XDom(obj).parent('.branch_diff_item').animate.class('branch_diff_item_collapsed');
   };
 
   this.resolveConflict = function(obj, item_type){
-    var jobj = $(obj);
-
     var params = {
       branch_item_type: item_type,
       branch_id: xmodel.get('branch_id'),
-      key: jobj.data('key'),
-      merge_id: jobj.data('id'),
-      branch_merge_action: jobj.data('branch_action'),
+      key: obj.dataset.key,
+      merge_id: obj.dataset.id,
+      branch_merge_action: obj.dataset.branch_action,
     };
 
     XForm.Post('/_funcs/conflicts/resolve', {}, params, function(rslt){

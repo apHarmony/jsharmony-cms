@@ -31,7 +31,7 @@ function OverlayService(dialog) {
 /**
  * @private
  * @static
- * @type {JQuery[]}
+ * @type {HTMLElement[]}
  */
 OverlayService._dialogStack = [];
 
@@ -44,29 +44,29 @@ OverlayService.prototype.popDialog = function() {
 
   OverlayService._dialogStack.pop();
   if (OverlayService._dialogStack.length < 1) {
-    this.jsh.$dialogBlock('.xdialogoverlay').remove();
+    this.jsh.xdDialogBlock.get('.xdialogoverlay').remove();
     return;
   }
 
-  var $overlay = this.getOverlay();
-  var $dialog = this.jsh.$(OverlayService._dialogStack[OverlayService._dialogStack.length - 1]);
-  var zIndex = this.getZIndex($dialog);
-  $overlay.css('z-index', zIndex);
-  $dialog.before($overlay);
+  var overlay = this.getOverlay();
+  var dialog = OverlayService._dialogStack[OverlayService._dialogStack.length - 1];
+  var zIndex = this.getZIndex(dialog);
+  this.jsh.XDom.setStyle(overlay, 'z-index', zIndex);
+  dialog.before(overlay);
 };
 
 /**
  * Add a dialog element to the overlay stack.
  * @public
  * @static
- * @param {(HTMLElement | JQuery)} dialog
+ * @param {HTMLElement} dialog
 */
 OverlayService.prototype.pushDialog = function(dialog) {
   var zIndex = this.getZIndex(dialog);
-  var $overlay = this.getOverlay();
-  $overlay.css('z-index', zIndex);
-  OverlayService._dialogStack.push(this.jsh.$(dialog));
-  this.jsh.$(dialog).before($overlay);
+  var overlay = this.getOverlay();
+  this.jsh.XDom.setStyle(overlay, 'z-index', zIndex);
+  OverlayService._dialogStack.push(dialog);
+  dialog.before(overlay);
 };
 
 /**
@@ -74,34 +74,35 @@ OverlayService.prototype.pushDialog = function(dialog) {
  * exist.
  * @private
  * @static
- * @returns {JQuery}
+ * @returns {HTMLElement}
  */
 OverlayService.prototype.getOverlay = function() {
   var _this = this;
-  var $childOverlay = _this.jsh.$dialogBlock('.xdialogoverlay');
-  if ($childOverlay.length > 0) {
-    return $childOverlay;
+  var childOverlay = _this.jsh.xdDialogBlock.get('.xdialogoverlay').element;
+  if (childOverlay) {
+    return childOverlay;
   }
 
-  $childOverlay = _this.jsh.$('<div class="xdialogoverlay"></div>');
-  _this.jsh.dialogBlock.prepend($childOverlay);
+  childOverlay = _this.jsh.XDom.render('<div class="xdialogoverlay"></div>');
+  _this.jsh.xdDialogBlock.prepend(childOverlay);
 
-  $childOverlay.off('click').on('click', function() {
+  _this.jsh.XDom.off(childOverlay, 'click');
+  _this.jsh.XDom.on(childOverlay, 'click', function() {
     _this.jsh.dialogBlock.click();
   });
 
-  return $childOverlay;
+  return childOverlay;
 };
 
 /**
  * Get the z-index for the element.
  * @private
  * @static
- * @param {(HTMLElement | JQuery)} element
+ * @param {HTMLElement} element
  * @returns {number}
  */
 OverlayService.prototype.getZIndex = function(element) {
-  var zIndex = parseInt(this.jsh.$(element).css('zIndex'));
+  var zIndex = parseInt(this.jsh.XDom.getStyle(element, 'zIndex'));
   return isNaN(zIndex) || zIndex == undefined ? 0 : zIndex;
 };
 

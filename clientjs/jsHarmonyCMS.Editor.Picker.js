@@ -20,7 +20,6 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 exports = module.exports = function(jsh, cms){
   var _this = this;
   var XExt = jsh.XExt;
-  var $ = jsh.$;
   
   this.lastMediaPath = undefined;
   this.lastLinkPath = undefined;
@@ -89,12 +88,12 @@ exports = module.exports = function(jsh, cms){
     return false;
   };
 
-  this.fileSelector_onGetValue = function(val, field, xmodel, jctrl, parentobj){
-    return jctrl.find('input.jsharmony_cms_fileselector').val();
+  this.fileSelector_onGetValue = function(val, field, xmodel, ctrl, parentobj){
+    return jsh.XDom(ctrl, 'input.jsharmony_cms_fileselector').value;
   };
 
   this.fileSelector_render = function(fileSelectorType, xmodel, field, val){  //fileSelectorType = link_browser or media_browser
-    return XExt.renderEJS(jsh.$('.jsharmony_cms_fileselector_template').html(), xmodel.id, {
+    return XExt.renderEJS(jsh.XDom('.jsharmony_cms_fileselector_template').html, xmodel.id, {
       fileSelectorType: fileSelectorType,
       field: field,
       val: val,
@@ -102,38 +101,35 @@ exports = module.exports = function(jsh, cms){
   };
 
   this.fileSelector_onChange = function(obj){
-    var jobj = $(obj);
-    var jctrl = jobj.closest('.xform_ctrl');
+    var xdctrl = jsh.XDom.parent(obj, '.xform_ctrl');
     var xform = XExt.getFormFromObject(obj);
-    if(jctrl.length && xform){
-      if(!jctrl.hasClass('editable')) return;
-      xform.Data.OnControlUpdate(jctrl[0]);
+    if(xdctrl.length && xform){
+      if(!xdctrl.class.contains('editable')) return;
+      xform.Data.OnControlUpdate(xdctrl.element);
     }
   };
 
   this.fileSelector_reset = function(obj){
-    var jobj = $(obj);
-    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
-    var jtext = jparent.find('input.jsharmony_cms_fileselector');
-    jtext.val('');
+    var xdparent = jsh.XDom.parent(obj, '.jsharmony_cms_fileselector_container');
+    var xdtext = xdparent.get('input.jsharmony_cms_fileselector');
+    xdtext.value = '';
     _this.fileSelector_onChange(obj);
   };
 
   this.fileSelector_browse = function(obj){
-    var jobj = $(obj);
-    var jparent = jobj.closest('.jsharmony_cms_fileselector_container');
-    var jtext = jparent.find('input.jsharmony_cms_fileselector');
-    var fileSelectorType = jparent.data('fileselectortype');
-    var val = jtext.val();
+    var xdparent = jsh.XDom.parent(obj, '.jsharmony_cms_fileselector_container');
+    var xdtext = xdparent.get('input.jsharmony_cms_fileselector');
+    var fileSelectorType = xdparent.data['fileselectortype'];
+    var val = xdtext.value;
     if(fileSelectorType == 'link_browser'){
       _this.openLink(function(url, data) {
-        jtext.val(url);
+        xdtext.value = url;
         _this.fileSelector_onChange(obj);
       }, val);
     }
     else if(fileSelectorType == 'media_browser'){
       _this.openMedia(function(url, data) {
-        jtext.val(url);
+        xdtext.value = url;
         _this.fileSelector_onChange(obj);
       }, val);
     }

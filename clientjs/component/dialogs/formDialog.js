@@ -40,7 +40,7 @@ var Dialog = require('./dialog');
 /**
  * Called when the dialog wants to accept/save the changes
  * @callback FormDialogConfig~acceptCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  * @returns {boolean} return true if accept/save was successful. A true return value will trigger modal close.
  */
@@ -57,7 +57,7 @@ var Dialog = require('./dialog');
  * Called when the dialog wants to cancel/close without saving
  * @callback FormDialogConfig~cancelCallback
  * @param {Object} options
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  * @returns {boolean}
  */
@@ -65,14 +65,14 @@ var Dialog = require('./dialog');
 /**
  * Called when the dialog closes
  * @callback FormDialogConfig~closeCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  */
 
 /**
  * Called when the dialog is first opened
  * @callback FormDialogConfig~openedCallback
- * @param {JQuery} dialogWrapper - the dialog wrapper element
+ * @param {HTMLElement} dialogWrapper - the dialog wrapper element
  * @param {Object} xmodel - the JSH model instance
  */
 
@@ -176,12 +176,12 @@ FormDialog.prototype.open = function(data) {
 
   var controller = undefined;
   var xmodel = undefined;
-  var $dialog = undefined;
+  var dialogElement = undefined;
 
   dialog.onBeforeOpen = function(_xmodel, onComplete) {
     xmodel = _xmodel;
     controller = _xmodel.controller;
-    _this.jsh.$('.xbodyhead.xelem'+xmodel.class).addClass('jsharmony_cms');
+    _this.jsh.XDom('.xbodyhead.xelem'+xmodel.class).class.add('jsharmony_cms');
     _this.jsh.XExt.execif(_this.onBeforeOpen,
       function(f){
         _this.onBeforeOpen(xmodel, dialog.getFormSelector(), f);
@@ -193,17 +193,27 @@ FormDialog.prototype.open = function(data) {
   };
 
 
-  dialog.onOpened = function(_$dialog, _xmodel, acceptFunc, cancelFunc) {
-    $dialog = _$dialog;
+  dialog.onOpened = function(_dialogElement, _xmodel, acceptFunc, cancelFunc) {
+    dialogElement = _dialogElement;
     controller.form.Prop.Enabled = true;
-    $dialog.find('.save_button.xelem' + xmodel.id).off('click').on('click', function(){ if(acceptFunc) acceptFunc(); }).on('click', function(e){ e.preventDefault(); });
-    $dialog.find('.cancel_button.xelem' + xmodel.id).off('click').on('click', function(){ if(cancelFunc) cancelFunc(); }).on('click', function(e){ e.preventDefault(); });
-    if (_.isFunction(_this.onOpened)) _this.onOpened($dialog, xmodel);
+    var xdSaveButton = _this.jsh.XDom(dialogElement, '.save_button.xelem' + xmodel.id);
+    xdSaveButton.off('click');
+    xdSaveButton.on('click', function(e){
+      if(acceptFunc) acceptFunc();
+      e.preventDefault();
+    });
+    var xdCancelButton = _this.jsh.XDom(dialogElement, '.cancel_button.xelem' + xmodel.id);
+    xdCancelButton.off('click');
+    xdCancelButton.on('click', function(e){
+      if(cancelFunc) cancelFunc();
+      e.preventDefault();
+    });
+    if (_.isFunction(_this.onOpened)) _this.onOpened(dialogElement, xmodel);
   };
 
   // This callback is called when trying to set/save the data.
   dialog.onAccept = function(success) {
-    var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept($dialog, xmodel);
+    var isSuccess = _.isFunction(_this.onAccept) && _this.onAccept(dialogElement, xmodel);
     if (isSuccess) success();
   };
 
@@ -228,7 +238,7 @@ FormDialog.prototype.open = function(data) {
   // dialog closes.
   dialog.onClose = function() {
     controller.form.Prop.Enabled = false;
-    if (_.isFunction(_this.onClose)) _this.onClose($dialog, xmodel);
+    if (_.isFunction(_this.onClose)) _this.onClose(dialogElement, xmodel);
   };
 
   dialog.open();

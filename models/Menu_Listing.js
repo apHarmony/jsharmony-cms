@@ -17,7 +17,7 @@ jsh.App[modelid] = new (function(){
   this.openMenuEditor = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing menu');
 
-    var rowid = $(obj).closest('tr').data('id');
+    var rowid = parseInt(jsh.XDom(obj).parent('tr').data.id);
 
     var menu_key = xmodel.get('menu_key', rowid);
     if(!menu_key) return XExt.Alert('Please save menu before editing');
@@ -32,12 +32,12 @@ jsh.App[modelid] = new (function(){
   this.viewRevisions = function(obj){
     if (jsh.XPage.GetChanges().length) return XExt.Alert('Please save all changes before editing menu');
 
-    var rowid = $(obj).closest('tr').data('id');
+    var rowid = parseInt(jsh.XDom(obj).parent('tr').data.id);
     var menu_key = xmodel.get('menu_key', rowid);
 
     _this.revision_menu_key = menu_key;
     _this.revision_menu_id = xmodel.get('menu_id', rowid);
-    jsh.XExt.popupShow(xmodel.namespace + 'Menu_Revision_Listing','revision_menu','Revisions',undefined,jsh.$root('.xform'+xmodel.class+' .revision_menu_xlookup')[0],{
+    jsh.XExt.popupShow(xmodel.namespace + 'Menu_Revision_Listing','revision_menu','Revisions',undefined,jsh.xd('.xform'+xmodel.class+' .revision_menu_xlookup').element,{
       OnPopupClosed:function(rslt){
         if(rslt && rslt.resultrow && rslt.resultrow.menu_id){
           var menu_id = rslt.resultrow.menu_id;

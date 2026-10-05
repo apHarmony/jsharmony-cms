@@ -70,15 +70,15 @@
       {"name":"sitemap_item_tag","control":"textbox_M","caption":"Tag","nl":true, "captionstyle":"width:130px;"},
 
       {"name":"sitemap_item_exclude_from_breadcrumbs","control":"checkbox","controlstyle":"margin-left:132px;","caption":"","caption_ext":"Exclude from Breadcrumbs","controlparams":{"value_true":1,"value_false":0},"nl":true},
-      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_exclude_from_breadcrumbs\").click();'>Exclude from Breadcrumbs</label>"},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.XDom(this).parent(\".xform\").get(\"input.sitemap_item_exclude_from_breadcrumbs\").emit(\"click\");'>Exclude from Breadcrumbs</label>"},
       {"name":"sitemap_item_exclude_from_parent_menu","control":"checkbox","controlstyle":"margin-left:132px;","caption":"","caption_ext":"Exclude from Parent / Sibling Menus","controlparams":{"value_true":1,"value_false":0},"nl":true},
-      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_exclude_from_parent_menu\").click();'>Exclude from Parent / Sibling Menus</label>"},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.XDom(this).parent(\".xform\").get(\"input.sitemap_item_exclude_from_parent_menu\").emit(\"click\");'>Exclude from Parent / Sibling Menus</label>"},
       {"name":"sitemap_item_hide_menu_parents","control":"checkbox","controlstyle":"margin-left:132px;","caption":"","caption_ext":"Menu: Hide Parents","controlparams":{"value_true":1,"value_false":0},"nl":true},
-      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_hide_menu_parents\").click();'>Menu: Hide Parents</label>"},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.XDom(this).parent(\".xform\").get(\"input.sitemap_item_hide_menu_parents\").emit(\"click\");'>Menu: Hide Parents</label>"},
       {"name":"sitemap_item_hide_menu_siblings","control":"checkbox","controlstyle":"margin-left:132px;","caption":"","caption_ext":"Menu: Hide Siblings","controlparams":{"value_true":1,"value_false":0},"nl":true},
-      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_hide_menu_siblings\").click();'>Menu: Hide Siblings</label>"},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.XDom(this).parent(\".xform\").get(\"input.sitemap_item_hide_menu_siblings\").emit(\"click\");'>Menu: Hide Siblings</label>"},
       {"name":"sitemap_item_hide_menu_children","control":"checkbox","controlstyle":"margin-left:132px;","caption":"","caption_ext":"Menu: Hide Children","controlparams":{"value_true":1,"value_false":0},"nl":true},
-      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.$(this).closest(\".xform\").find(\"input.sitemap_item_hide_menu_children\").click();'>Menu: Hide Children</label>"},
+      {"control":"html","value":"<label class='notextselect' onclick='<%=jsh._instance%>.XDom(this).parent(\".xform\").get(\"input.sitemap_item_hide_menu_children\").emit(\"click\");'>Menu: Hide Children</label>"},
 
       {"control":"hidden", "name":"page_template_id", "lov":"#LOV_CMS_PAGE_TEMPLATES" }
 	  ]

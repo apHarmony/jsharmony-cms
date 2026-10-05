@@ -6,7 +6,7 @@ jsh.App[modelid] = new (function(){
 
   this.oninit = function(xmodel){
     if(!jsh.globalparams.site_id){
-      $('.xform'+xmodel.class).closest('.xsubform').hide();
+      jsh.XDom('.xform'+xmodel.class).parent('.xsubform').style.display = false;
       return;
     }
     //Load API Data
@@ -29,10 +29,10 @@ jsh.App[modelid] = new (function(){
   };
 
   this.render = function(){
-    var tmpl = jsh.$root('.'+xmodel.class+'_template_QuickLinks').html();
-    var jContent = jsh.$root('.'+xmodel.class+'_content');
+    var tmpl = jsh.xd('.'+xmodel.class+'_template_QuickLinks').element.outerHTML;
+    var xdContent = jsh.xd('.'+xmodel.class+'_content');
 
-    jContent.html(XExt.renderClientEJS(tmpl, { _: _, jsh: jsh, branch_data: _this.branch_data }));
+    xdContent.setHtml(XExt.renderClientEJS(tmpl, { _: _, jsh: jsh, branch_data: _this.branch_data }));
   };
 
 })();

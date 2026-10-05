@@ -18,7 +18,7 @@
     ],
     "formstyle": "min-width:900px;",
     "nokey": true,
-    "onload":"jsh.$root('.Dashboard_MOTD').html(xmodel.controller.form.Data.motd); if(parseInt(xmodel.get('note_sys_count'))) jsh.$root('.xform'+xmodel.class+' .qnssl').show();",
+    "onload":"jsh.xd('.Dashboard_MOTD').setHtml(xmodel.controller.form.Data.motd); if(parseInt(xmodel.get('note_sys_count'))) jsh.xd('.xform'+xmodel.class+' .qnssl').style.display = true;",
     "css":[
       ".xform<%=model.class%> .xsubform.Dashboard_BranchOverview .xpanel { border:0; padding:2px; }"
     ],
