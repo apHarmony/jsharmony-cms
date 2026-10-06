@@ -18,7 +18,7 @@ module.exports = {
       "XBase": "readonly",
       "XModels": "readonly",
       "XFormat": "readonly",
-      "$": "readonly",
+      "XDom": "readonly",
       "_": "readonly",
       "ejs": "readonly",
       "moment": "readonly",

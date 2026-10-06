@@ -93,7 +93,7 @@ jsHarmonyCMSPreviewServer.prototype.Run = function(run_cb){
   app.all('*', function (req, res, next) {
     req.jshsite = siteConfig;
     req.baseurl = cms.getCmsBaseUrlFromReq(req);
-    //Delete jQuery Anti-Cache timestamp
+    //Delete Anti-Cache timestamp
     if('_' in req.query) delete req.query['_'];
     setNoCache(req,res);
     res.setHeader('X-UA-Compatible','IE=edge');
