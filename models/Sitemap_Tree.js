@@ -657,8 +657,8 @@ jsh.App[modelid] = new (function(){
       xdprompt.get('.page_title').value = '';
       xdprompt.get('.page_template_id').value = jsh.XPage.getBreadcrumbs().site_default_page_template_id;
       xdprompt.get('.page_template_path').value = '';
-      xdprompt.get('.page_path_default').attr.checked = true;
-      xdprompt.get('.sitemap_item_text_default').attr.checked = true;
+      xdprompt.get('.page_path_default').element.checked = true;
+      xdprompt.get('.sitemap_item_text_default').element.checked = true;
       xdprompt.get('.site_default_page_filename').text = jsh.XPage.getBreadcrumbs().site_default_page_filename;
 
       var xdfilename = xdprompt.get('.page_path');
@@ -673,8 +673,8 @@ jsh.App[modelid] = new (function(){
       var xdtitle = xdprompt.get('.page_title');
       var xdTemplatePath = xdprompt.get('.page_template_path');
       function refreshDefaultValues(){
-        if(xdprompt.get('.page_path_default').attr.checked) xdfilename.value = _this.getDefaultPageFilename(page_type, page_folder, xdtitle.value, xdTemplateId.value, xdTemplatePath.value);
-        if(xdprompt.get('.sitemap_item_text_default').attr.checked) xdsitemaptext.value = xdtitle.value;
+        if(xdprompt.get('.page_path_default').element.checked) xdfilename.value = _this.getDefaultPageFilename(page_type, page_folder, xdtitle.value, xdTemplateId.value, xdTemplatePath.value);
+        if(xdprompt.get('.sitemap_item_text_default').element.checked) xdsitemaptext.value = xdtitle.value;
       }
 
       var toggleTemplatePath = function(){

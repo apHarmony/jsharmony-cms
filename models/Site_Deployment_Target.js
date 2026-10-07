@@ -163,14 +163,14 @@ jsh.App[modelid] = new (function(){
       })(); }
       else if(protocol=='cmshost'){ (function(){
         var cmshost_config = parsed_config.cmshost_config||{};
-        xdDeploymentType.get('[data-elem="cmshost_config.download_remote_templates"]').attr.checked = !!cmshost_config.download_remote_templates;
+        xdDeploymentType.get('[data-elem="cmshost_config.download_remote_templates"]').element.checked = !!cmshost_config.download_remote_templates;
         xdDeploymentType.get('[data-elem="cmshost_config.remote_timeout"]').value = cmshost_config.remote_timeout||'';
         _.each(['download_remote_templates','remote_timeout'], function(key){ delete cmshost_config[key]; });
         if(_.isEmpty(cmshost_config)) delete parsed_config.cmshost_config;
       })(); }
       else if(protocol=='file'){ (function(){
         var fs_config = parsed_config.fs_config||{};
-        xdDeploymentType.get('[data-elem="fs_config.delete_excess_files"]').attr.checked = !!fs_config.delete_excess_files;
+        xdDeploymentType.get('[data-elem="fs_config.delete_excess_files"]').element.checked = !!fs_config.delete_excess_files;
         _.each(['delete_excess_files'], function(key){ delete fs_config[key]; });
         if(_.isEmpty(fs_config)) delete parsed_config.fs_config;
       })(); }
@@ -190,10 +190,10 @@ jsh.App[modelid] = new (function(){
       })(); }
       else if((protocol=='ftp')||(protocol=='ftps')||(protocol=='sftp')){ (function(){
         var ftp_config = parsed_config.ftp_config||{};
-        xdDeploymentType.get('[data-elem="ftp_config.overwrite_all"]').attr.checked = !!ftp_config.overwrite_all;
-        xdDeploymentType.get('[data-elem="ftp_config.delete_excess_files"]').attr.checked = !!ftp_config.delete_excess_files;
-        if((protocol=='ftp')||(protocol=='ftps')) xdDeploymentType.get('[data-elem="ftp_config.compression"]').attr.checked = !!ftp_config.compression;
-        if(protocol=='ftps') xdDeploymentType.get('[data-elem="ftp_config.ignore_certificate_errors"]').attr.checked = !!ftp_config.ignore_certificate_errors;
+        xdDeploymentType.get('[data-elem="ftp_config.overwrite_all"]').element.checked = !!ftp_config.overwrite_all;
+        xdDeploymentType.get('[data-elem="ftp_config.delete_excess_files"]').element.checked = !!ftp_config.delete_excess_files;
+        if((protocol=='ftp')||(protocol=='ftps')) xdDeploymentType.get('[data-elem="ftp_config.compression"]').element.checked = !!ftp_config.compression;
+        if(protocol=='ftps') xdDeploymentType.get('[data-elem="ftp_config.ignore_certificate_errors"]').element.checked = !!ftp_config.ignore_certificate_errors;
         _.each(['overwrite_all','delete_excess_files','compression','ignore_certificate_errors'], function(key){ delete ftp_config[key]; });
         if(_.isEmpty(ftp_config)) delete parsed_config.ftp_config;
       })(); }
@@ -204,8 +204,8 @@ jsh.App[modelid] = new (function(){
     xdcontainer.get('[data-elem="url_prefix_media_override"]').value = parsed_config.url_prefix_media_override;
     xdcontainer.get('[data-elem="page_subfolder"]').value = parsed_config.page_subfolder;
     xdcontainer.get('[data-elem="media_subfolder"]').value = parsed_config.media_subfolder;
-    xdcontainer.get('[data-elem="publish_local_templates"]').attr.checked = !!parsed_config.publish_local_templates;
-    xdcontainer.get('[data-elem="ignore_remote_template_certificate"]').attr.checked = !!parsed_config.ignore_remote_template_certificate;
+    xdcontainer.get('[data-elem="publish_local_templates"]').element.checked = !!parsed_config.publish_local_templates;
+    xdcontainer.get('[data-elem="ignore_remote_template_certificate"]').element.checked = !!parsed_config.ignore_remote_template_certificate;
 
     _.forEach(xdcontainer.get('.edit_button').elements, function(el){
       var target = el.getAttribute('data-target');
