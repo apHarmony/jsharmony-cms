@@ -49,7 +49,7 @@ jsh.App[modelid] = new (function(){
       jsh.xdDialogBlock.get(sel + ' .dst_branch_desc').html = xform.Data.dst_branch_desc;
     }, function (success) { //onAccept
       var mergeType = 'changes';
-      var xdchecked_option = jsh.xd("input[name='"+xmodel.class+'_Merge_Type_option'+"']").filter(function(el) {return el.checked && jsh.XDom.isVisible(el);});;
+      var xdchecked_option = jsh.xd("input[name='"+xmodel.class+'_Merge_Type_option'+"']").filter(function(el) {return el.checked && jsh.XDom.isVisible(el);});
       if(xdchecked_option.length) mergeType = xdchecked_option.value.toLowerCase();
 
 

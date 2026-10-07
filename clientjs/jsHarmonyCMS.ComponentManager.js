@@ -261,7 +261,7 @@ exports = module.exports = function(jsh, cms){
   this.resetPageComponent = function(obj){
     if(jsh.XDom.class.contains(obj, 'initialized')) {
       jsh.XDom.class.remove(obj, 'initialized');
-      jsh.XDom.class.remove(obj, 'mceNonEditable')
+      jsh.XDom.class.remove(obj, 'mceNonEditable');
       jsh.XDom.clear(obj);
     }
   };
@@ -310,7 +310,7 @@ exports = module.exports = function(jsh, cms){
       if(componentRawEjs.indexOf('componentPreviewTemplate')>=0){
         var previewContainer = document.implementation.createHTMLDocument('virtual').createElement('template');
         previewContainer.innerHTML = '<div>'+componentRawEjs+'</div>';
-        var xdComponentPreviewTemplate = jsh.XDom(wrapperContainer).get('.componentPreviewTemplate');
+        xdComponentPreviewTemplate = jsh.XDom(wrapperContainer).get('.componentPreviewTemplate');
         if (xdComponentPreviewTemplate.length){
           componentTemplate.data.ejs += '\n' + xdComponentPreviewTemplate.html;
         }

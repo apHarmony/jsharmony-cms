@@ -21,7 +21,7 @@ exports = module.exports = function(cms){
   
   this.setHTML = function(obj, html){
     try{
-      cms.jsh.XDom.setHtml(obj, html)
+      cms.jsh.XDom.setHtml(obj, html);
     }
     catch(ex){
       console.log(ex); // eslint-disable-line no-console

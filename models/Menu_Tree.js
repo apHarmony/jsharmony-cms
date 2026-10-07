@@ -71,7 +71,7 @@ jsh.App[modelid] = new (function(){
 
   this.setDirty = function(isDirty){
     _this.has_changes = isDirty;
-    var xdSaveMenu = jsh.xd('.xelem'+xmodel.class+'.xform_button_saveMenu')
+    var xdSaveMenu = jsh.xd('.xelem'+xmodel.class+'.xform_button_saveMenu');
     if (isDirty) {
       xdSaveMenu.class.add('hasChanges');
     } else {

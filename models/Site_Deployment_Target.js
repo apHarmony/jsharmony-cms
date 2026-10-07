@@ -286,7 +286,7 @@ jsh.App[modelid] = new (function(){
         deployment_type_url = protocol+'://'+parsed_url.hostname;
         if(parsed_url.port || options.override) xdDeploymentType.get('[data-path-elem="port"]').value = parsed_url.port||'';
         if(parsed_url.username || options.override) xdDeploymentType.get('[data-path-elem="username"]').value = parsed_url.username||'';
-        if(parsed_url.password || options.override) gxdDeploymentType.get('[data-path-elem="password"]').value = parsed_url.password||'';
+        if(parsed_url.password || options.override) xdDeploymentType.get('[data-path-elem="password"]').value = parsed_url.password||'';
         if(parsed_url.path || options.override){
           if(!options.override && (parsed_url.path =='/') &&xdDeploymentType.get('[data-path-elem="path"]').value){ /* Do nothing */ }
           else xdDeploymentType.get('[data-path-elem="path"]').value = parsed_url.path||'';
@@ -460,7 +460,8 @@ jsh.App[modelid] = new (function(){
 
       var ftp_config = {};
       _.each(['overwrite_all','delete_excess_files','compression','ignore_certificate_errors'], function(key){
-        var val = xdDeploymentType.get('[data-elem="ftp_config.'+key+'"]').element.checked;
+        var el = xdDeploymentType.get('[data-elem="ftp_config.'+key+'"]').element;
+        var val = el && el.checked;
         if(val) ftp_config[key] = true;
       });
       if(!_.isEmpty(ftp_config)) generated_config.ftp_config = ftp_config;
@@ -549,7 +550,7 @@ jsh.App[modelid] = new (function(){
       var xdDeploymentType = xdcontainer.get('.deployment_type_container_'+protocol);
       if(protocol=='s3'){ (function(){
         if(!_.trim(xdDeploymentType.get('[data-path-elem="bucket"]').value)) errors.push('Bucket is required for Amazon S3 deployment');
-        if(!_tirm(xdDeploymentType.get('[data-elem="s3_config.accessKeyId"]').value)) errors.push('Access Key is required for Amazon S3 deployment');
+        if(!_.trim(xdDeploymentType.get('[data-elem="s3_config.accessKeyId"]').value)) errors.push('Access Key is required for Amazon S3 deployment');
         if(!_.trim(xdDeploymentType.get('[data-elem="s3_config.secretAccessKey"]').value)) errors.push('Secret Key is required for Amazon S3 deployment');
         if(!_this.validate_json(errors, 'File Upload Settings', xdDeploymentType.get('[data-elem="s3_config.upload_params"]').value)) return;
       })(); }

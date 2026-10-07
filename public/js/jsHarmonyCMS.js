@@ -1411,7 +1411,7 @@ function scrollParent(obj){
     parent = parent.parentNode;
   }
   return (obj && obj.ownerDocument) || document;
-};
+}
 
 exports = module.exports = Dialog;
 
@@ -3347,7 +3347,7 @@ function scrollParent(obj){
     parent = parent.parentNode;
   }
   return (obj && obj.ownerDocument) || document;
-};
+}
 
 exports = module.exports = DataEditor_GridPreviewController;
 
@@ -4679,7 +4679,7 @@ exports = module.exports = function(jsh, cms){
   this.resetPageComponent = function(obj){
     if(jsh.XDom.class.contains(obj, 'initialized')) {
       jsh.XDom.class.remove(obj, 'initialized');
-      jsh.XDom.class.remove(obj, 'mceNonEditable')
+      jsh.XDom.class.remove(obj, 'mceNonEditable');
       jsh.XDom.clear(obj);
     }
   };
@@ -4728,7 +4728,7 @@ exports = module.exports = function(jsh, cms){
       if(componentRawEjs.indexOf('componentPreviewTemplate')>=0){
         var previewContainer = document.implementation.createHTMLDocument('virtual').createElement('template');
         previewContainer.innerHTML = '<div>'+componentRawEjs+'</div>';
-        var xdComponentPreviewTemplate = jsh.XDom(wrapperContainer).get('.componentPreviewTemplate');
+        xdComponentPreviewTemplate = jsh.XDom(wrapperContainer).get('.componentPreviewTemplate');
         if (xdComponentPreviewTemplate.length){
           componentTemplate.data.ejs += '\n' + xdComponentPreviewTemplate.html;
         }
@@ -8053,7 +8053,7 @@ exports = module.exports = function(cms){
   
   this.setHTML = function(obj, html){
     try{
-      cms.jsh.XDom.setHtml(obj, html)
+      cms.jsh.XDom.setHtml(obj, html);
     }
     catch(ex){
       console.log(ex); // eslint-disable-line no-console

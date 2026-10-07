@@ -25,7 +25,7 @@ jsh.App[modelid] = new (function(){
       if (!xdprompt.get('.dst_branch_id').value) return XExt.Alert('Please select a target revision for the merge.');
 
       var mergeType = 'apply';
-      var xdchecked_option = jsh.xd("input[name='"+xmodel.class+'_Merge_Type_option'+"']").filter(function(el) {return el.checked && jsh.XDom.isVisible(el);});;
+      var xdchecked_option = jsh.xd("input[name='"+xmodel.class+'_Merge_Type_option'+"']").filter(function(el) {return el.checked && jsh.XDom.isVisible(el);});
       if(xdchecked_option.length) mergeType = xdchecked_option.value.toLowerCase();
 
       if (mergeType == 'overwrite') {

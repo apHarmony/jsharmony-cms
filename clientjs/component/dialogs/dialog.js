@@ -324,6 +324,6 @@ function scrollParent(obj){
     parent = parent.parentNode;
   }
   return (obj && obj.ownerDocument) || document;
-};
+}
 
 exports = module.exports = Dialog;
