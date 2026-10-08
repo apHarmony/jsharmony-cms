@@ -9,13 +9,15 @@ jsh.App[modelid] = new (function(){
   this.oninit = function(){
   };
 
+  this.submit_onClick = function(){
+    var query = jsh.XDom('.'+xmodel.class+'_query').value.trim();
+    _this.search(query);
+  };
+
   this.onload = function(){
     var xdsubmit = jsh.XDom('.'+xmodel.class+'_submit');
-    xdsubmit.off('click');
-    xdsubmit.on('click', function(){
-      var query = jsh.XDom('.'+xmodel.class+'_query').value.trim();
-      _this.search(query);
-    });
+    xdsubmit.off('click', _this.submit_onClick);
+    xdsubmit.on('click', _this.submit_onClick);
     jsh.XDom('.'+xmodel.class+'_query').on('keydown', function (e) { if (e.keyCode == 13) { jsh.XDom.emit('.'+xmodel.class+'_submit', 'click'); } });
     jsh.XDom('.'+xmodel.class+'_query').focus();
   };

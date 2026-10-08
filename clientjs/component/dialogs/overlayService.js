@@ -26,6 +26,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 function OverlayService(dialog) {
   this.dialog = dialog;
   this.jsh = dialog._jsh;
+  this.overlay_onClick = function() {
+    dialog._jsh.dialogBlock.click();
+  };
 }
 
 /**
@@ -86,10 +89,8 @@ OverlayService.prototype.getOverlay = function() {
   childOverlay = _this.jsh.XDom.render('<div class="xdialogoverlay"></div>');
   _this.jsh.xdDialogBlock.prepend(childOverlay);
 
-  _this.jsh.XDom.off(childOverlay, 'click');
-  _this.jsh.XDom.on(childOverlay, 'click', function() {
-    _this.jsh.dialogBlock.click();
-  });
+  _this.jsh.XDom.off(childOverlay, 'click', _this.overlay_onClick);
+  _this.jsh.XDom.on(childOverlay, 'click', _this.overlay_onClick);
 
   return childOverlay;
 };

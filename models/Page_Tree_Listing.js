@@ -16,8 +16,8 @@ jsh.App[modelid] = new (function(){
 
     if(XExt.hasAction(xmodel.actions, 'IU')){
       var xdsubform = jsh.xd('.xtbl.xform'+xmodel.class).parent('.xsubform');
-      xdsubform.off('contextmenu');
-      xdsubform.on('contextmenu',function(e){
+      xdsubform.off('contextmenu.pagetree');
+      xdsubform.on('contextmenu.pagetree',function(e){
         e.preventDefault();
         e.stopPropagation();
         XExt.ShowContextMenu('.'+xmodel.class+'_file_container_context_menu', xmodel.get('page_folder'));
@@ -187,8 +187,8 @@ jsh.App[modelid] = new (function(){
 
       var xdfilename = xdprompt.get('.page_filename');
       var xddocument = xdprompt.get('.page_filename_default_document');
-      xddocument.off('click');
-      xddocument.on('click', function(){
+      xddocument.off('click.addfile');
+      xddocument.on('click.addfile', function(){
         if(this.checked){
           xdfilename.attr.readonly = true;
           xdfilename.value = jsh.App[xmodel.parent].getDefaultPage();
@@ -203,7 +203,7 @@ jsh.App[modelid] = new (function(){
 
       var xdTemplateId = xdprompt.get('.page_template_id');
       var toggleTemplatePath = function(){ xdprompt.get('.page_template_path_container').style.display = (xdTemplateId.value=='<Standalone>'); jsh.XWindowResize(); };
-      xdTemplateId.off('.template_path');
+      xdTemplateId.off('change.template_path');
       xdTemplateId.on('change.template_path', function(e){ toggleTemplatePath(); });
       toggleTemplatePath();
     }, function (success) { //onAccept

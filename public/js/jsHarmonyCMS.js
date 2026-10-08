@@ -1774,14 +1774,14 @@ FormDialog.prototype.open = function(data) {
     dialogElement = _dialogElement;
     controller.form.Prop.Enabled = true;
     var xdSaveButton = _this.jsh.XDom(dialogElement, '.save_button.xelem' + xmodel.id);
-    xdSaveButton.off('click');
-    xdSaveButton.on('click', function(e){
+    xdSaveButton.off('click.dialog');
+    xdSaveButton.on('click.dialog', function(e){
       if(acceptFunc) acceptFunc();
       e.preventDefault();
     });
     var xdCancelButton = _this.jsh.XDom(dialogElement, '.cancel_button.xelem' + xmodel.id);
-    xdCancelButton.off('click');
-    xdCancelButton.on('click', function(e){
+    xdCancelButton.off('click.dialog');
+    xdCancelButton.on('click.dialog', function(e){
       if(cancelFunc) cancelFunc();
       e.preventDefault();
     });
@@ -2012,6 +2012,9 @@ along with this package.  If not, see <http://www.gnu.org/licenses/>.
 function OverlayService(dialog) {
   this.dialog = dialog;
   this.jsh = dialog._jsh;
+  this.overlay_onClick = function() {
+    dialog._jsh.dialogBlock.click();
+  };
 }
 
 /**
@@ -2072,10 +2075,8 @@ OverlayService.prototype.getOverlay = function() {
   childOverlay = _this.jsh.XDom.render('<div class="xdialogoverlay"></div>');
   _this.jsh.xdDialogBlock.prepend(childOverlay);
 
-  _this.jsh.XDom.off(childOverlay, 'click');
-  _this.jsh.XDom.on(childOverlay, 'click', function() {
-    _this.jsh.dialogBlock.click();
-  });
+  _this.jsh.XDom.off(childOverlay, 'click', _this.overlay_onClick);
+  _this.jsh.XDom.on(childOverlay, 'click', _this.overlay_onClick);
 
   return childOverlay;
 };
@@ -3131,6 +3132,14 @@ DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   });
 };
 
+var preventDoubleClickSelect = function(event) {
+  // We don't want the user to accidentally select text (which happens often)
+  // when double clicking. This will prevent that.
+  if (event.detail === 2) {
+    event.preventDefault();
+  }
+};
+
 /**
  * Render the row defined by the data
  * @override
@@ -3191,16 +3200,16 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   } else {
 
     var xdMoveItem = xdRow.get('[data-component-part="moveItem"]');
-    xdMoveItem.off('click');
-    xdMoveItem.on('click', function(e) {
+    xdMoveItem.off('click.moveitem');
+    xdMoveItem.on('click.moveitem', function(e) {
       if (_this.isReadOnly()) return;
       var moveDown = _this.jsh.XDom(e.target).parent('.component_toolbar_button[data-dir]').attr['data-dir'] === 'next';
       _this.changeItemSequence(dataId, moveDown);
     });
 
     var xdDeleteItem = xdRow.get('[data-component-part="deleteItem"]');
-    xdDeleteItem.off('click');
-    xdDeleteItem.on('click', function(e) {
+    xdDeleteItem.off('click.deleteitem');
+    xdDeleteItem.on('click.deleteitem', function(e) {
       if (_this.isReadOnly()) return;
       var rowId = _this.getParentRowId(e.target);
       _this.promptDelete(rowId);
@@ -3212,19 +3221,13 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   });
 
   var xdPreview = xdRow.get('[data-component-part="preview"]');
-  xdPreview.off('dblclick');
-  xdPreview.on('dblclick', function() {
+  xdPreview.off('dblclick.preview');
+  xdPreview.on('dblclick.preview', function() {
     _this.openItemEditor(dataId);
   });
 
-  xdRow.off('mousedown');
-  xdRow.on('mousedown', function(event) {
-    // We don't want the user to accidentally select text (which happens often)
-    // when double clicking. This will prevent that.
-    if (event.detail === 2) {
-      event.preventDefault();
-    }
-  });
+  xdRow.off('mousedown', preventDoubleClickSelect);
+  xdRow.on('mousedown', preventDoubleClickSelect);
 
   this.updateSequenceButtonViews();
 
@@ -4308,6 +4311,8 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     else if(hasProperties) _this.openPropertiesEditor();
   };
 
+  this.component_onDblClick = this.openDataEditor.bind(this);
+
   /**
    * Render the component
    * @public
@@ -4335,10 +4340,8 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     xdelement.setHtml(rendered);
 
-    xdelement.off('dblclick');
-    xdelement.on('dblclick', function(e){
-      _this.openDefaultEditor();
-    });
+    xdelement.off('dblclick', _this.component_onDblClick);
+    xdelement.on('dblclick', _this.component_onDblClick);
 
     if (_.isFunction(this.onRender)) this.onRender(xdelement.element, data, props, cms, this);
 

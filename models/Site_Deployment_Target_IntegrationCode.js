@@ -127,6 +127,15 @@ jsh.App[modelid] = new (function(){
     return integrationParamsString;
   };
 
+  var integration_copyText = function(e){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var obj = this.previousElementSibling;
+    obj.select();
+    obj.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+  };
+
   this.integration_target_onchange = function(obj, newval, undoChange){
     var tmpl = jsh.XDom('.'+xmodel.class+'_Integration_'+newval).html||'';
     var platform = newval;
@@ -160,16 +169,10 @@ jsh.App[modelid] = new (function(){
     jsh.xd('.integration_doc').html = tmpl;
     jsh.xd('.integration_doc .integration_code').elements.forEach(function(el){
       el.style.height = '10px';
-      el.style.height = this.scrollHeight+25+'px';
+      el.style.height = el.scrollHeight+25+'px';
     });
-    jsh.xd('.integration_doc .integration_code_copy').off('.integration').on('click', function(e){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      var obj = this.previousSibling;
-      obj.select();
-      obj.setSelectionRange(0, 99999);
-      document.execCommand('copy');
-    });
+    jsh.xd('.integration_doc .integration_code_copy').off('click', integration_copyText);
+    jsh.xd('.integration_doc .integration_code_copy').on('click', integration_copyText);
   };
 
 })();

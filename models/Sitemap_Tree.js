@@ -193,8 +193,8 @@ jsh.App[modelid] = new (function(){
         if(page_key){
           if(action=='edit'){
             //Update URL
-            jsh.XDom.off(obj, 'mousedown');
-            jsh.XDom.on(obj, 'mousedown', function(e){
+            jsh.XDom.off(obj, 'mousedown.pageedit');
+            jsh.XDom.on(obj, 'mousedown.pageedit', function(e){
               //Right click
               if(e.which==3){
                 //Resolve URL
@@ -681,18 +681,18 @@ jsh.App[modelid] = new (function(){
         xdprompt.get('.page_template_path_container,.page_template_path_tips').style.display = (xdTemplateId.value=='<Standalone>');
         jsh.XWindowResize();
       };
-      xdTemplateId.off('change');
-      xdTemplateId.on('change', function(e){ toggleTemplatePath(); refreshDefaultValues(); });
+      xdTemplateId.off('change.addsitemappage');
+      xdTemplateId.on('change.addsitemappage', function(e){ toggleTemplatePath(); refreshDefaultValues(); });
       toggleTemplatePath();
 
       var xdTitlePath = xdprompt.get('.page_title,.page_template_path');
-      xdTitlePath.off('input keyup');
-      xdTitlePath.on('input keyup', function(){ refreshDefaultValues(); });
+      xdTitlePath.off('input.addsitemappage keyup.addsitemappage');
+      xdTitlePath.on('input.addsitemappage keyup.addsitemappage', function(){ refreshDefaultValues(); });
       xdfilename.value = _this.getDefaultPageFilename(page_type, page_folder, xdtitle.value, xdTemplateId.value, xdTemplatePath.value);
 
       var xdPathDefault = xdprompt.get('.page_path_default');
-      xdPathDefault.off('click');
-      xdPathDefault.on('click', function(){
+      xdPathDefault.off('click.addsitemappage');
+      xdPathDefault.on('click.addsitemappage', function(){
         if(this.checked){
           xdfilename.attr.readonly = true;
           xdfilename.value = _this.getDefaultPageFilename(page_type, page_folder, xdtitle.value, xdTemplateId.value, xdTemplatePath.value);
@@ -705,8 +705,8 @@ jsh.App[modelid] = new (function(){
       });
 
       var xdItemText = xdprompt.get('.sitemap_item_text_default');
-      xdItemText.off('click');
-      xdItemText.on('click', function(){
+      xdItemText.off('click.addsitemappage');
+      xdItemText.on('click.addsitemappage', function(){
         if(this.checked){
           xdsitemaptext.attr.readonly = true;
           xdsitemaptext.value = xdtitle.value;
@@ -905,7 +905,7 @@ jsh.App[modelid] = new (function(){
 
         var xdTemplateId = xdprompt.get('.page_template_id');
         var toggleTemplatePath = function(){ xdprompt.get('.page_template_path_container,.page_template_path_tips').style.display = (xdTemplateId.value=='<Standalone>'); jsh.XWindowResize(); };
-        xdTemplateId.off('.template_path');
+        xdTemplateId.off('change.template_path');
         xdTemplateId.on('change.template_path', function(e){ toggleTemplatePath(); });
         toggleTemplatePath();
       }, function (success) { //onAccept
@@ -1048,8 +1048,8 @@ jsh.App[modelid] = new (function(){
         xdsitemaptext.class.add('uneditable');
   
         var xdtitle = xdprompt.get('.page_title');
-        xdtitle.off('input keyup');
-        xdtitle.on('input keyup', function(){
+        xdtitle.off('input.getpageinfo keyup.getpageinfo');
+        xdtitle.on('input.getpageinfo keyup.getpageinfo', function(){
           if(xdprompt.get('.page_path_default').element.checked) xdfilename.value = _this.getDefaultPageFilename('', page_folder, xdtitle.value);
           if(xdprompt.get('.sitemap_item_text_default').element.checked) xdsitemaptext.value = xdtitle.value;
         });
@@ -1058,8 +1058,8 @@ jsh.App[modelid] = new (function(){
         xdfilename.value = _this.getDefaultPageFilename('', page_folder, xdtitle.value);
   
         var xdPagePathDefault = xdprompt.get('.page_path_default');
-        xdPagePathDefault.off('click');
-        xdPagePathDefault.on('click', function(){
+        xdPagePathDefault.off('click.getpageinfo');
+        xdPagePathDefault.on('click.getpageinfo', function(){
           if(this.checked){
             xdfilename.attr.readonly = true;
             xdfilename.value = _this.getDefaultPageFilename('', page_folder, xdtitle.value);
@@ -1072,8 +1072,8 @@ jsh.App[modelid] = new (function(){
         });
   
         var xdItemTextDefault = xdprompt.get('.sitemap_item_text_default');
-        xdItemTextDefault.off('click');
-        xdItemTextDefault.on('click', function(){
+        xdItemTextDefault.off('click.getpageinfo');
+        xdItemTextDefault.on('click.getpageinfo', function(){
           if(this.checked){
             xdsitemaptext.attr.readonly = true;
             xdsitemaptext.value = xdtitle.value;

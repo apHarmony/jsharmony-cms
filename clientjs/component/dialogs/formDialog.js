@@ -197,14 +197,14 @@ FormDialog.prototype.open = function(data) {
     dialogElement = _dialogElement;
     controller.form.Prop.Enabled = true;
     var xdSaveButton = _this.jsh.XDom(dialogElement, '.save_button.xelem' + xmodel.id);
-    xdSaveButton.off('click');
-    xdSaveButton.on('click', function(e){
+    xdSaveButton.off('click.dialog');
+    xdSaveButton.on('click.dialog', function(e){
       if(acceptFunc) acceptFunc();
       e.preventDefault();
     });
     var xdCancelButton = _this.jsh.XDom(dialogElement, '.cancel_button.xelem' + xmodel.id);
-    xdCancelButton.off('click');
-    xdCancelButton.on('click', function(e){
+    xdCancelButton.off('click.dialog');
+    xdCancelButton.on('click.dialog', function(e){
       if(cancelFunc) cancelFunc();
       e.preventDefault();
     });

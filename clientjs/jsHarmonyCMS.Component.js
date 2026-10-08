@@ -184,6 +184,8 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
     else if(hasProperties) _this.openPropertiesEditor();
   };
 
+  this.component_onDblClick = this.openDataEditor.bind(this);
+
   /**
    * Render the component
    * @public
@@ -211,10 +213,8 @@ exports = module.exports = function(componentId, element, cms, jsh, componentCon
 
     xdelement.setHtml(rendered);
 
-    xdelement.off('dblclick');
-    xdelement.on('dblclick', function(e){
-      _this.openDefaultEditor();
-    });
+    xdelement.off('dblclick', _this.component_onDblClick);
+    xdelement.on('dblclick', _this.component_onDblClick);
 
     if (_.isFunction(this.onRender)) this.onRender(xdelement.element, data, props, cms, this);
 

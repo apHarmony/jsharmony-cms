@@ -183,6 +183,34 @@
     });
   };
 
+  var logoClickHandler = function(e){
+    var xdobj = jsh.XDom(this);
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    if(xdobj.class.contains('selected') || jsh.xd('.jsHarmonyCms_site_selection_dropdown').isVisible()){
+      jsh.xd('.jsHarmonyCms_site_selection_dropdown').remove();
+      return;
+    }
+
+    var execModel = '{namespace}Site_Listing';
+    XForm.Get(execModel, { rowstart: 0, rowcount: 99999 }, { }, function(rslt){
+      if(!rslt || !rslt[execModel] || !rslt[execModel].length || !rslt[execModel][0]){
+        XExt.Alert('No sites found');
+      }
+      else {
+        var sites = rslt[execModel];
+        jsh.xd('.jsHarmonyCms_site_selection_dropdown').remove();
+        jsh.xdroot.append(XExt.renderEJS(jsh.xd('.jsHarmonyCms_template_site_selection_dropdown').html, undefined, { sites: sites }));
+        var xdselection = xdobj.get('.jsHarmonyCms_site_selection');
+        XExt.ShowContextMenu('.jsHarmonyCms_site_selection_dropdown', undefined, undefined, {
+          top: xdselection.calc.topFromDocument() + xdobj.calc.height() - 1,
+          left: xdselection.calc.leftFromDocument() - 1
+        });
+      }
+    });
+  };
+
   jsh.System.renderCurrentSite = function(site_id, site_name){
     jsh.globalparams.site_id = site_id;
     jsh.globalparams.site_name = site_name;
@@ -193,34 +221,8 @@
     jsh.xd('.xlogo .xsublogo').setHtml(XExt.renderEJS(jsh.GetEJS('jsHarmonyCMS.SiteSelection')));
     var xdlogo = jsh.xd('.xlogo .xsublogo');
     xdlogo.attr.onclick = 'return false;';
-    xdlogo.off('click');
-    xdlogo.on('click', function(e){
-      var xdobj = jsh.XDom(this);
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      if(xdobj.class.contains('selected') || jsh.xd('.jsHarmonyCms_site_selection_dropdown').isVisible()){
-        jsh.xd('.jsHarmonyCms_site_selection_dropdown').remove();
-        return;
-      }
-
-      var execModel = '{namespace}Site_Listing';
-      XForm.Get(execModel, { rowstart: 0, rowcount: 99999 }, { }, function(rslt){
-        if(!rslt || !rslt[execModel] || !rslt[execModel].length || !rslt[execModel][0]){
-          XExt.Alert('No sites found');
-        }
-        else {
-          var sites = rslt[execModel];
-          jsh.xd('.jsHarmonyCms_site_selection_dropdown').remove();
-          jsh.xdroot.append(XExt.renderEJS(jsh.xd('.jsHarmonyCms_template_site_selection_dropdown').html, undefined, { sites: sites }));
-          var xdselection = xdobj.get('.jsHarmonyCms_site_selection');
-          XExt.ShowContextMenu('.jsHarmonyCms_site_selection_dropdown', undefined, undefined, {
-            top: xdselection.calc.topFromDocument() + xdobj.calc.height() - 1,
-            left: xdselection.calc.leftFromDocument() - 1
-          });
-        }
-      });
-    });
+    xdlogo.off('click', logoClickHandler);
+    xdlogo.on('click', logoClickHandler);
   };
 
   jsh.on('jsh_render_init', function(){

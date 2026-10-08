@@ -514,6 +514,14 @@ DataEditor_GridPreviewController.prototype.promptDelete = function(rowId) {
   });
 };
 
+var preventDoubleClickSelect = function(event) {
+  // We don't want the user to accidentally select text (which happens often)
+  // when double clicking. This will prevent that.
+  if (event.detail === 2) {
+    event.preventDefault();
+  }
+};
+
 /**
  * Render the row defined by the data
  * @override
@@ -574,16 +582,16 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   } else {
 
     var xdMoveItem = xdRow.get('[data-component-part="moveItem"]');
-    xdMoveItem.off('click');
-    xdMoveItem.on('click', function(e) {
+    xdMoveItem.off('click.moveitem');
+    xdMoveItem.on('click.moveitem', function(e) {
       if (_this.isReadOnly()) return;
       var moveDown = _this.jsh.XDom(e.target).parent('.component_toolbar_button[data-dir]').attr['data-dir'] === 'next';
       _this.changeItemSequence(dataId, moveDown);
     });
 
     var xdDeleteItem = xdRow.get('[data-component-part="deleteItem"]');
-    xdDeleteItem.off('click');
-    xdDeleteItem.on('click', function(e) {
+    xdDeleteItem.off('click.deleteitem');
+    xdDeleteItem.on('click.deleteitem', function(e) {
       if (_this.isReadOnly()) return;
       var rowId = _this.getParentRowId(e.target);
       _this.promptDelete(rowId);
@@ -595,19 +603,13 @@ DataEditor_GridPreviewController.prototype.renderRow = function(data) {
   });
 
   var xdPreview = xdRow.get('[data-component-part="preview"]');
-  xdPreview.off('dblclick');
-  xdPreview.on('dblclick', function() {
+  xdPreview.off('dblclick.preview');
+  xdPreview.on('dblclick.preview', function() {
     _this.openItemEditor(dataId);
   });
 
-  xdRow.off('mousedown');
-  xdRow.on('mousedown', function(event) {
-    // We don't want the user to accidentally select text (which happens often)
-    // when double clicking. This will prevent that.
-    if (event.detail === 2) {
-      event.preventDefault();
-    }
-  });
+  xdRow.off('mousedown', preventDoubleClickSelect);
+  xdRow.on('mousedown', preventDoubleClickSelect);
 
   this.updateSequenceButtonViews();
 

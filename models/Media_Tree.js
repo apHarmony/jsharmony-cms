@@ -72,13 +72,12 @@ jsh.App[modelid] = new (function(){
     if(!XExt.hasAction(xmodel.actions, 'I')){
       return XExt.Alert('Upload permission denied');
     }
-    var srcevent = e.originalEvent;
-    if(srcevent && srcevent.dataTransfer && srcevent.dataTransfer.files){
+    if(e && e.dataTransfer && e.dataTransfer.files){
       if(replace_media_key){
-        _this.uploadReplacementFile(replace_media_key, srcevent.dataTransfer.files);
+        _this.uploadReplacementFile(replace_media_key, e.dataTransfer.files);
       }
       else{
-        _this.uploadFiles(_this._current_media_folder, srcevent.dataTransfer.files);
+        _this.uploadFiles(_this._current_media_folder, e.dataTransfer.files);
       }
     }
   };
@@ -390,7 +389,6 @@ jsh.App[modelid] = new (function(){
     xdcontainer.on('click', function(e){
       _this.selectFile(null);
     });
-    xdcontainer.off('contextmenu');
     xdcontainer.on('contextmenu',function(e){
       e.preventDefault();
       e.stopPropagation();
@@ -678,14 +676,20 @@ jsh.App[modelid] = new (function(){
     XExt.CustomPrompt(sel, jsh.xd(sel).element.outerHTML, function () { //onInit
       var xdprompt = jsh.xdDialogBlock.get(sel);
 
-      xdprompt.off('.file_upload');
-      xdprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
-      xdprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
-      xdprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
+      xdprompt.off('dragenter', _this.file_listing_onDragEnter);
+      xdprompt.on('dragenter', _this.file_listing_onDragEnter);
+      xdprompt.off('dragleave', _this.file_listing_onDragLeave);
+      xdprompt.on('dragleave', _this.file_listing_onDragLeave);
+      xdprompt.off('dragover', _this.file_listing_onDragOver);
+      xdprompt.on('dragover', _this.file_listing_onDragOver);
+
+      xdprompt.off('drop.file_upload');
       xdprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(xdprompt.element, media_key));
-      xdprompt.get('.media_upload').off('change');
-      XExt.clearFileInput(xdprompt.get('.media_upload').element);
-      xdprompt.get('.media_upload').on('change', function(e){
+
+      var xdupload = xdprompt.get('.media_upload');
+      xdupload.off('change.file_upload');
+      XExt.clearFileInput(xdupload.element);
+      xdupload.on('change.file_upload', function(e){
         _this.uploadReplacementFile(media_key, this.files);
       });
     }, function (success) { //onAccept
@@ -785,18 +789,25 @@ jsh.App[modelid] = new (function(){
     XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
       var xdprompt = jsh.xdDialogBlock.get(sel);
 
-      xdprompt.off('.file_upload');
-      xdprompt.on('dragenter.file_upload', _this.file_listing_onDragEnter);
-      xdprompt.on('dragleave.file_upload', _this.file_listing_onDragLeave);
-      xdprompt.on('dragover.file_upload', _this.file_listing_onDragOver);
+      xdprompt.off('dragenter', _this.file_listing_onDragEnter);
+      xdprompt.on('dragenter', _this.file_listing_onDragEnter);
+      xdprompt.off('dragleave', _this.file_listing_onDragLeave);
+      xdprompt.on('dragleave', _this.file_listing_onDragLeave);
+      xdprompt.off('dragover', _this.file_listing_onDragOver);
+      xdprompt.on('dragover', _this.file_listing_onDragOver);
+
+      xdprompt.off('drop.file_upload');
       xdprompt.on('drop.file_upload', _this.file_listing_onDrop.bind(xdprompt.element, null));
+
       var folderDesc = media_folder;
       if(_this.folderIsRoot(media_folder)) folderDesc = '(Root)';
       folderDesc = XExt.ReplaceAll(folderDesc,'/','/\u200b');
       xdprompt.get('.'+xmodel.class+'_drop_overlay_path').text = folderDesc;
-      xdprompt.get('.media_upload').off('change');
-      XExt.clearFileInput(xdprompt.get('.media_upload').element);
-      xdprompt.get('.media_upload').on('change', function(e){
+
+      var xdupload = xdprompt.get('.media_upload');
+      xdupload.off('change.file_upload');
+      XExt.clearFileInput(xdupload.element);
+      xdupload.on('change.file_upload', function(e){
         _this.uploadFiles(media_folder, this.files);
       });
     }, function (success) { //onAccept
@@ -913,9 +924,8 @@ jsh.App[modelid] = new (function(){
 
     var media_folder = dropval;
 
-    var srcevent = e.originalEvent;
-    if(srcevent && srcevent.dataTransfer && srcevent.dataTransfer.files){
-      _this.uploadFiles(media_folder, srcevent.dataTransfer.files, function(){
+    if(e && e.dataTransfer && e.dataTransfer.files){
+      _this.uploadFiles(media_folder, e.dataTransfer.files, function(){
         _this.setFolderBeforeLoad(media_folder);
         jsh.XPage.Select({ modelid: xmodel.id, onCancel: function(){} });
       });
