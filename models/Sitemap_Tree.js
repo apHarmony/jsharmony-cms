@@ -42,7 +42,7 @@ jsh.App[modelid] = new (function(){
     } else {
       jsh.System.RequireBranch(xmodel);
     }
-    jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
+    jsh.on('jsh_message', function(data){ _this.onmessage(data); });
     this.sitemap_key = jsh._GET.sitemap_key;
     jsh.XDom.on(window, 'resize', _this.onresize);
     _this.refreshLayout();

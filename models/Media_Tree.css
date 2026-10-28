@@ -296,3 +296,7 @@ a.<%=model.class%>_file_info_view_revisions img { height:14px; position:relative
 }
 .<%=model.class%>_file_context_menu .select { display:none; }
 .xbody.InEditor .<%=model.class%>_file_context_menu .select { display:block; }
+.<%=model.class%>_AddMedia.xdialogbox.xpromptbox,
+.<%=model.class%>_ReplaceMedia.xdialogbox.xpromptbox {
+  box-sizing: content-box;
+}

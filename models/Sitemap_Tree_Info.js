@@ -6,7 +6,7 @@ jsh.App[modelid] = new (function(){
   this.page_info_key = null;
 
   this.oninit = function(){
-    jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
+    jsh.on('jsh_message', function(data){ _this.onmessage(data); });
     _this.bindEvents();
   };
 

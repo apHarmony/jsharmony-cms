@@ -81,7 +81,7 @@ jsh.App[modelid] = new (function(){
     _.each(sorted_items, function(data){
       if(!data.cnt) return;
       var item = jsh.XDom.render('<div class="item"></div>');
-      jsh.XDom.setHtml(item, data.code_txt + ' (' + data.cnt + ')');
+      jsh.XDom.setText(item, data.code_txt + ' (' + data.cnt + ' edits)');
       var itembox = jsh.XDom.render('<div class="box"></div>');
       jsh.XDom.setStyle(itembox, 'background-color',color(getDesc(data)));
       item.prepend(itembox);

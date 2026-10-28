@@ -118,7 +118,7 @@ DataEditor_Form.prototype.attachEditors = function(dialogElement, wrapper, toolb
 DataEditor_Form.prototype.enableBrowserControl = function(dialogElement, info, enable) {
   var xdctrl = this._jsh.XDom(dialogElement, '.xform_ctrl.' + info.titleFieldName);
   if(xdctrl.class.contains('editable')){
-    xdctrl.attr.disabled = enable ? null : true;
+    xdctrl.attr.disabled = !enable;
   }
 };
 

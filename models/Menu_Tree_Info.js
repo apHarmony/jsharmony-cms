@@ -4,7 +4,7 @@ jsh.App[modelid] = new (function(){
   this.prev_link_type = '';
 
   this.oninit = function(){
-    jsh.on('jsh_message', function(event, data){ _this.onmessage(data); });
+    jsh.on('jsh_message', function(data){ _this.onmessage(data); });
   };
 
   this.onload = function(){

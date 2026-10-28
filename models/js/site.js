@@ -56,7 +56,7 @@
           var qs = {};
           if(options.page_id) qs.page_id = options.page_id;
           if(options.branch_id) qs.branch_id = options.branch_id;
-          if(!_.isEmpty(qs)) url += '?' + jsh.XExt.escapeAuery(qs);
+          if(!_.isEmpty(qs)) url += '?' + jsh.XExt.escapeQuery(qs);
           XExt.CallAppFunc(url, 'get', { }, function (rslt) { //On Success
             if ('_success' in rslt) {
               var page = rslt.page;
@@ -69,8 +69,8 @@
               //Display Editor
               var sel = options.rawEditorDialog;
               if(!sel) return XExt.Alert('Raw Text Editor not defined');
-              XExt.CustomPrompt(sel, jsh.xd(sel).html, function () { //onInit
-                var xdprompt = jsh.XDom(jsh.xdDialogBlock, sel);
+              XExt.CustomPrompt(sel, jsh.xd(sel).outerHTML, function () { //onInit
+                var xdprompt = jsh.xdDialogBlock.get(sel);
                 xdprompt.get('.edit_page_title').text = 'Edit: '+page_filename;
                 xdprompt.get('.page_content').value = page.content.body||'';
                 xdprompt.get('.page_content').attr.readonly = readonly;
@@ -79,7 +79,7 @@
               }, function (success) { //onAccept
                 if(readonly) return success();
                 //Save content to server
-                var xdprompt = jsh.XDom(jsh.xdDialogBlock, sel);
+                var xdprompt = jsh.xdDialogBlock.get(sel);
                 page.content.body = xdprompt.get('.page_content').value;
                 url = '../_funcs/page/'+page_key;
                 XExt.CallAppFunc(url, 'post', page, success, function (err) { });
@@ -153,12 +153,12 @@
     if(!LOV_site_editor || (LOV_site_editor.length <= 2)) return;
     options = _.extend({ after: null, container: null, containerClass: '', }, options);
     var xdcontainer = null;
-    if(options.container) xdcontainer = jsh.xd(options.container);
+    if(options.container) xdcontainer = jsh.XDom(options.container);
     else if(options.containerClass && jsh.xd('.'+options.containerClass).length) xdcontainer = jsh.xd('.'+options.containerClass);
     else if(options.after){
       var container = jsh.XDom.render('<div></div>');
       if(options.containerClass) jsh.XDom.class.add(container, options.containerClass);
-      jsh.xd(options.after).element.after(container);
+      jsh.XDom(options.after).element.after(container);
       xdcontainer = jsh.XDom(container);
     }
     else throw new Error('Either options.container, options.after, or an existing options.containerClass is required');
